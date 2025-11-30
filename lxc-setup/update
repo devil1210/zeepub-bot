@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+echo "=== Actualizando Zeepub Bot ==="
+cd /opt/zeepub-bot
+
+echo "1. Descargando cambios (git pull)..."
+git pull origin stable
+
+echo "2. Actualizando dependencias..."
+./venv/bin/pip install -r requirements.txt
+
+echo "3. Reiniciando servicios..."
+systemctl restart zeepub-bot
+
+echo "=== Actualización completada ==="

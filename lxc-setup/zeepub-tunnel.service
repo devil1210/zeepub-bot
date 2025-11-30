@@ -1,0 +1,13 @@
+[Unit]
+Description=Cloudflare Tunnel
+After=network.target
+
+[Service]
+User=root
+EnvironmentFile=/opt/zeepub-bot/.env
+ExecStart=/usr/bin/cloudflared tunnel run --token ${TUNNEL_TOKEN}
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

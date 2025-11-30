@@ -1,0 +1,14 @@
+[Unit]
+Description=Zeepub Bot Service
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/opt/zeepub-bot
+EnvironmentFile=/opt/zeepub-bot/.env
+ExecStart=/opt/zeepub-bot/venv/bin/python main.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
