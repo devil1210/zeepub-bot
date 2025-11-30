@@ -5,6 +5,8 @@
 !.gitignore
 !Dockerfile
 !docker-compose.yml
+!Dockerfile.lxc
+!lxc-setup/
 !.github/
 !.github/workflows/
 !.github/workflows/*.yml

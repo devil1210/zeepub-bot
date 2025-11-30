@@ -1,0 +1,44 @@
+FROM debian:testing
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instalar dependencias del sistema y systemd
+RUN apt-get update && apt-get install -y \
+    systemd \
+    systemd-sysv \
+    python3 \
+    python3-pip \
+    python3-venv \
+    git \
+    curl \
+    ffmpeg \
+    sqlite3 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar Cloudflared (Túnel Nativo)
+RUN curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb && \
+    dpkg -i cloudflared.deb && \
+    rm cloudflared.deb
+
+# Preparar directorios
+WORKDIR /opt/zeepub-bot
+
+# Copiar scripts de configuración y servicios
+COPY lxc-setup/ /tmp/lxc-setup/
+
+# Instalar servicios
+RUN cp /tmp/lxc-setup/zeepub-bot.service /etc/systemd/system/ && \
+    cp /tmp/lxc-setup/zeepub-tunnel.service /etc/systemd/system/ && \
+    cp /tmp/lxc-setup/first-boot.service /etc/systemd/system/ && \
+    cp /tmp/lxc-setup/setup.sh /usr/local/bin/setup-lxc.sh && \
+    cp /tmp/lxc-setup/update /usr/local/bin/update && \
+    chmod +x /usr/local/bin/setup-lxc.sh && \
+    chmod +x /usr/local/bin/update
+
+# Habilitar servicio de primer arranque
+RUN systemctl enable first-boot.service
+
+# Configurar systemd como entrypoint para que el contenedor se comporte como una VM/LXC
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]
