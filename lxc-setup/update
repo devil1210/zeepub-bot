@@ -4,6 +4,14 @@ set -e
 echo "=== Actualizando Zeepub Bot ==="
 cd /opt/zeepub-bot
 
+# Verificar si es un repositorio git
+if [ ! -d ".git" ]; then
+    echo "Error: No se detectó un repositorio git."
+    echo "Intentando ejecutar configuración inicial..."
+    /usr/local/bin/setup-lxc.sh
+    exit 0
+fi
+
 echo "1. Descargando cambios (git pull)..."
 git pull origin stable
 
