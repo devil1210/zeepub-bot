@@ -7,6 +7,21 @@ TARGET_DIR="/opt/zeepub-bot"
 
 echo "Iniciando configuración inicial de Zeepub Bot..."
 
+# 0. Verificación de Red y DNS
+echo "Verificando conectividad..."
+if ! ping -c 1 github.com >/dev/null 2>&1; then
+    echo "Advertencia: No se puede resolver github.com. Intentando arreglar DNS..."
+    if ping -c 1 8.8.8.8 >/dev/null 2>&1; then
+        echo "Hay conexión a internet pero falla el DNS. Forzando Google DNS..."
+        echo "nameserver 8.8.8.8" > /etc/resolv.conf
+        echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+    else
+        echo "Error Crítico: No hay conexión a internet (ni siquiera a 8.8.8.8)."
+        echo "Por favor verifica la configuración de red de tu contenedor LXC en Proxmox."
+        exit 1
+    fi
+fi
+
 # 1. Obtener el código
 if [ ! -d "$TARGET_DIR/.git" ]; then
     echo "Clonando repositorio (rama stable)..."
