@@ -14,6 +14,10 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     sqlite3 \
     nano \
+    ifupdown \
+    iproute2 \
+    iputils-ping \
+    dnsutils \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
