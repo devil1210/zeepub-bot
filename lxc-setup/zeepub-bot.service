@@ -6,7 +6,7 @@ After=network.target
 User=root
 WorkingDirectory=/opt/zeepub-bot
 EnvironmentFile=/opt/zeepub-bot/.env
-ExecStart=/opt/zeepub-bot/venv/bin/python main.py
+ExecStart=/opt/zeepub-bot/venv/bin/python run_with_api.py
 Restart=always
 RestartSec=10
 
