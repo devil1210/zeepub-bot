@@ -363,7 +363,7 @@ async def validate_and_update_url(url_hash: str, url: str) -> bool:
             async with session.get(
                 url,
                 headers=headers,
-                timeout=aiohttp.ClientTimeout(total=15),
+                timeout=aiohttp.ClientTimeout(total=30),
                 allow_redirects=True,
             ) as resp:
                 # Aceptar 200 (OK) o 206 (Partial Content)
