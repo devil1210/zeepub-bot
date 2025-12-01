@@ -33,6 +33,11 @@ RUN curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/r
     dpkg -i cloudflared.deb && \
     rm cloudflared.deb
 
+# Instalar Node.js 20.x (para compilar la Mini App)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
 # Preparar directorios
 WORKDIR /opt/zeepub-bot
 
