@@ -51,6 +51,8 @@ if [ ! -d "venv" ]; then
 fi
 
 echo "Instalando dependencias..."
+# Intentar instalar lxml desde binario primero para ahorrar RAM/Tiempo
+./venv/bin/pip install --only-binary=:all: lxml || true
 ./venv/bin/pip install -r requirements.txt
 
 # 3. Configurar .env
@@ -64,6 +66,10 @@ fi
 
 # 4. Crear directorios de datos
 mkdir -p data pgdata
+
+# 4.5 Ejecutar migraciones de base de datos
+echo "Ejecutando migraciones de base de datos..."
+./venv/bin/alembic upgrade head || echo "Advertencia: Falló la migración de Alembic. ¿Es la primera vez? (Puede ser normal si usas SQLite y create_all)"
 
 # 5. Habilitar servicios
 echo "Habilitando servicios..."
