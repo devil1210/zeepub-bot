@@ -41,6 +41,11 @@ class CommandHandlers:
         app.add_handler(CommandHandler("restore_db", self.restore_db))
         # Registrar /export_db (publishers only)
         app.add_handler(CommandHandler("export_db", self.export_db))
+        # Registrar /import_history (admin only)
+        app.add_handler(CommandHandler("import_history", self.import_history))
+        app.add_handler(CommandHandler("latest_books", self.latest_books))
+        app.add_handler(CommandHandler("clear_history", self.clear_history))
+        app.add_handler(CommandHandler("export_history", self.export_history))
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
@@ -182,7 +187,13 @@ class CommandHandlers:
             commands.extend([
                 ("📦 /backup_db", "Generar backup de la base de datos"),
                 ("♻️ /restore_db", "Restaurar base de datos desde archivo"),
-                ("😈 /evil", "Entrar en modo Evil (Admin)"),
+                ("📚 /import_history", "Importar historial desde archivo JSON de Telegram"),
+                ("🆕 /latest_books", "Ver últimos libros publicados\n"
+                 "   • Sin argumentos: todos los libros con su chat_id\n"
+                 "   • Con chat_id: solo libros de ese chat\n"
+                 "   Ejemplo: /latest_books -1001234567890"),
+                ("📤 /export_history", "Exportar historial a CSV"),
+                ("🗑️ /clear_history", "Borrar todo el historial (Admin)"),
                 ("🔄 /reset", "Resetear descargas de usuario (uso: /reset <id>)"),
                 ("🐞 /debug_state", "Ver estado interno de usuario"),
             ])
@@ -1087,3 +1098,190 @@ class CommandHandlers:
                 message_id=msg.message_id,
                 text=f"❌ Error al generar CSV: {str(e)}",
             )
+
+    async def import_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Activa el modo de importación de historial (solo admins)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            return
+
+        st = state_manager.get_user_state(uid)
+        st["waiting_for_history_json"] = True
+
+        await update.message.reply_text(
+            "📂 <b>Modo de Importación Activado</b>\n\n"
+            "Por favor, envía ahora el archivo <code>result.json</code> exportado de Telegram Desktop.\n"
+            "El bot procesará el archivo y guardará el historial de libros publicados.\n\n"
+            "<i>Este modo se desactivará automáticamente después de recibir el archivo.</i>",
+            parse_mode="HTML"
+        )
+
+    async def latest_books(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Muestra los últimos 10 libros importados/publicados (solo admins).
+
+        Uso:
+            /latest_books              -> Muestra todos los últimos 10 libros
+            /latest_books <chat_id>    -> Filtra por chat_id específico
+        """
+        uid = update.effective_user.id
+
+        # Restricción: solo admins
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            return
+
+        try:
+            from services.history_service import get_latest_books
+
+            # Parse argumentos: chat_id opcional
+            channel_filter = None
+            if context.args and len(context.args) > 0:
+                try:
+                    channel_filter = int(context.args[0])
+                except ValueError:
+                    await update.message.reply_text(
+                        "❌ Chat ID inválido. Uso: /latest_books [chat_id]\n"
+                        "Ejemplo: /latest_books -1001234567890"
+                    )
+                    return
+
+            # Obtener libros con o sin filtro
+            books = get_latest_books(limit=10, channel_id=channel_filter)
+
+            if not books:
+                if channel_filter:
+                    await update.message.reply_text(
+                        f"📚 No hay libros registrados en el chat {channel_filter}."
+                    )
+                else:
+                    await update.message.reply_text("📚 No hay libros registrados en el historial.")
+                return
+
+            # Título del mensaje según modo
+            if channel_filter:
+                text = f"📚 <b>Últimos 10 Libros en Chat {channel_filter}</b>\n\n"
+            else:
+                text = "📚 <b>Últimos 10 Libros Publicados</b>\n\n"
+
+            for b in books:
+                # b is a Row object (title, author, series, slug, date, ..., channel_id)
+                title = b.title or "Sin título"
+                author = b.author or "Desconocido"
+                series = f" ({b.series})" if b.series else ""
+                date_str = b.date_published.strftime("%Y-%m-%d %H:%M") if b.date_published else "?"
+
+                text += f"🔹 <b>{title}</b>{series}\n"
+                text += f"   ✍️ {author}\n"
+                text += f"   📅 {date_str} | #️⃣ {b.slug}\n"
+
+                # Mostrar chat_id si NO estamos filtrando (modo sin argumentos)
+                if not channel_filter and hasattr(b, 'channel_id') and b.channel_id:
+                    text += f"   📍 Chat: {b.channel_id}\n"
+
+                text += "\n"
+
+            await update.message.reply_text(text, parse_mode="HTML")
+
+        except Exception as e:
+            logger.error(f"Error in latest_books: {e}")
+            await update.message.reply_text("❌ Error al obtener el historial.")
+
+    async def clear_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Borra todo el historial de libros publicados (solo admin)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            return
+
+        # Confirmación simple (podría ser mejor con botones, pero por ahora texto)
+        if not context.args or context.args[0] != "confirm":
+            await update.message.reply_text(
+                "⚠️ <b>¡ATENCIÓN!</b> Esto borrará TODO el historial de libros publicados.\n"
+                "Para confirmar, usa: <code>/clear_history confirm</code>",
+                parse_mode="HTML"
+            )
+            return
+
+        try:
+            from services.history_service import clear_history
+            if clear_history():
+                await update.message.reply_text("✅ Historial borrado exitosamente.")
+            else:
+                await update.message.reply_text("❌ Error al borrar el historial.")
+        except Exception as e:
+            logger.error(f"Error in clear_history: {e}")
+            await update.message.reply_text("❌ Error inesperado al borrar el historial.")
+
+    async def export_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Exporta el historial de libros publicados a CSV."""
+        uid = update.effective_user.id
+        # Allow publishers and admins
+        if uid not in config.ADMIN_USERS and uid not in config.PUBLISHER_USERS:
+            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            return
+
+        try:
+            from services.history_service import get_latest_books
+            # Get all books (set a high limit)
+            books = get_latest_books(limit=10000)
+
+            if not books:
+                await update.message.reply_text("📚 No hay libros registrados en el historial.")
+                return
+
+            # Create CSV
+            import csv
+            import io
+            output = io.StringIO()
+            writer = csv.writer(output)
+
+            # Header
+            writer.writerow([
+                'Título', 
+                'Maquetado por', 
+                'Demografía', 
+                'Géneros', 
+                'Autor', 
+                'Serie', 
+                'Slug', 
+                'Ilustrador', 
+                'Traducción', 
+                'Fecha Publicación', 
+                'Tamaño'
+            ])
+
+            # Data
+            for b in books:
+                # Format file size if available
+                file_size_str = ""
+                if hasattr(b, 'file_size') and b.file_size:
+                    # Convert bytes to MB
+                    file_size_mb = b.file_size / (1024 * 1024)
+                    file_size_str = f"{file_size_mb:.2f} MB"
+
+                writer.writerow([
+                    b.title or "Unknown",
+                    b.maquetado_por or "" if hasattr(b, 'maquetado_por') else "",
+                    b.demografia or "" if hasattr(b, 'demografia') else "",
+                    b.generos or "" if hasattr(b, 'generos') else "",
+                    b.author or "Desconocido",
+                    b.series or "",
+                    b.slug or "",
+                    b.ilustrador or "" if hasattr(b, 'ilustrador') else "",
+                    b.traduccion or "" if hasattr(b, 'traduccion') else "",
+                    b.date_published.strftime("%Y-%m-%d %H:%M") if b.date_published else "",
+                    file_size_str
+                ])
+
+            # Send as file
+            csv_bytes = output.getvalue().encode('utf-8')
+            await update.message.reply_document(
+                document=csv_bytes,
+                filename="historial_libros.csv",
+                caption=f"📊 Historial de {len(books)} libros publicados"
+            )
+
+        except Exception as e:
+            logger.error(f"Error in export_history: {e}")
+            await update.message.reply_text("❌ Error al exportar el historial.")

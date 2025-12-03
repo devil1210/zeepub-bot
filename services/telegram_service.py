@@ -578,7 +578,7 @@ async def descargar_epub_pendiente(
         if slug:
             caption += f"\n#{slug}"
 
-        await send_doc_bytes(
+        sent_doc = await send_doc_bytes(
             bot,
             destino,
             caption,
@@ -587,6 +587,27 @@ async def descargar_epub_pendiente(
             parse_mode="HTML",
             message_thread_id=thread_id_destino,
         )
+
+        if sent_doc:
+            # Log to history
+            from services.history_service import log_published_book
+            # file_info construction
+            file_info = {
+                "file_size": sent_doc.document.file_size,
+                "file_unique_id": sent_doc.document.file_unique_id
+            }
+            # Run in background or await? It's sync db op, maybe run in thread or make it async?
+            # The service uses sqlalchemy sync engine. Better to run in thread if possible, or just call it if it's fast.
+            # For now, just call it. SQLite is fast.
+            try:
+                log_published_book(
+                    meta=meta,
+                    message_id=sent_doc.message_id,
+                    channel_id=sent_doc.chat.id,
+                    file_info=file_info
+                )
+            except Exception as e:
+                logger.error(f"Failed to log book history: {e}")
 
         # Registrar descarga
         record_download(uid)
@@ -894,9 +915,26 @@ async def enviar_libro_directo(
                 unquote(urlparse(download_url).path.split("/")[-1]) or "archivo.epub"
             )
 
-            await send_doc_bytes(
+            sent_doc = await send_doc_bytes(
                 bot, destino, caption, epub_bytes, filename=fname, parse_mode="HTML"
             )
+
+            # Registrar en historial
+            if sent_doc:
+                from services.history_service import log_published_book
+                file_info = {
+                    "file_size": sent_doc.document.file_size,
+                    "file_unique_id": sent_doc.document.file_unique_id
+                }
+                try:
+                    log_published_book(
+                        meta=meta,
+                        message_id=sent_doc.message_id,
+                        channel_id=sent_doc.chat.id,
+                        file_info=file_info
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to log book history in enviar_libro_directo: {e}")
 
             # 8. Registrar descarga y notificar
             record_download(user_id)

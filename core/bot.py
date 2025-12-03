@@ -69,6 +69,12 @@ class ZeePubBot:
             MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto)
         )
 
+        # JSON Upload Handler
+        from handlers.message_handlers import handle_json_upload
+        self.app.add_handler(
+            MessageHandler(filters.Document.MimeType("application/json"), handle_json_upload)
+        )
+
     def start(self):
         """Arranca el bot en polling (bloqueante, modo legacy)."""
         logger.info("Bot iniciado, entrando en polling...")
