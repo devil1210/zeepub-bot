@@ -71,6 +71,14 @@ mkdir -p data pgdata
 echo "Ejecutando migraciones de base de datos..."
 ./venv/bin/alembic upgrade head || echo "Advertencia: Falló la migración de Alembic. ¿Es la primera vez? (Puede ser normal si usas SQLite y create_all)"
 
+# 4.8 Instalar comando update
+echo "Instalando comando de actualización..."
+if [ -L "/usr/bin/update" ] || [ -f "/usr/bin/update" ]; then
+    rm -f /usr/bin/update
+fi
+ln -s "$TARGET_DIR/lxc-setup/update" /usr/bin/update
+chmod +x "$TARGET_DIR/lxc-setup/update"
+
 # 5. Habilitar servicios
 echo "Habilitando servicios..."
 systemctl enable zeepub-bot
