@@ -73,6 +73,10 @@ echo "Ejecutando migraciones de base de datos..."
 
 # 4.8 Instalar comando update
 echo "Instalando comando de actualización..."
+# Eliminar scripts viejos que puedan causar conflictos de PATH
+if [ -L "/usr/local/bin/update" ] || [ -f "/usr/local/bin/update" ]; then
+    rm -f /usr/local/bin/update
+fi
 if [ -L "/usr/bin/update" ] || [ -f "/usr/bin/update" ]; then
     rm -f /usr/bin/update
 fi
