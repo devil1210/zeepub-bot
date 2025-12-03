@@ -1,24 +1,100 @@
 #!/bin/bash
 set -e
 
-echo "=== Actualizando Zeepub Bot ==="
+# Colores para output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}╔════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║  Actualizando Zeepub Bot          ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════╝${NC}"
 cd /opt/zeepub-bot
 
 # Verificar si es un repositorio git
 if [ ! -d ".git" ]; then
-    echo "Error: No se detectó un repositorio git."
+    echo -e "${RED}✗ Error: No se detectó un repositorio git.${NC}"
     echo "Intentando ejecutar configuración inicial..."
     /usr/local/bin/setup-lxc.sh
     exit 0
 fi
 
-echo "1. Descargando cambios (git pull)..."
-git pull origin stable
+echo ""
+echo -e "${BLUE}→ Descargando cambios...${NC}"
 
-echo "2. Actualizando dependencias..."
-./venv/bin/pip install -r requirements.txt
+# Capturar salida de git pull
+GIT_OUTPUT=$(git pull origin stable 2>&1)
+GIT_EXIT=$?
 
-echo "3. Reiniciando servicios..."
-systemctl restart zeepub-bot
+if [ $GIT_EXIT -ne 0 ]; then
+    echo -e "${RED}✗ Error en git pull:${NC}"
+    echo "$GIT_OUTPUT"
+    exit 1
+fi
 
-echo "=== Actualización completada ==="
+# Verificar si hubo cambios
+if echo "$GIT_OUTPUT" | grep -q "Already up to date"; then
+    echo -e "${GREEN}✓ Ya estás en la última versión${NC}"
+else
+    # Extraer información relevante
+    COMMIT_RANGE=$(echo "$GIT_OUTPUT" | grep -oP '(?<=Updating )[a-f0-9]+\.\.[a-f0-9]+' || echo "")
+    FILES_CHANGED=$(echo "$GIT_OUTPUT" | grep -oP '\d+(?= files? changed)' || echo "0")
+    INSERTIONS=$(echo "$GIT_OUTPUT" | grep -oP '\d+(?= insertion)' || echo "0")
+    DELETIONS=$(echo "$GIT_OUTPUT" | grep -oP '\d+(?= deletion)' || echo "0")
+    
+    if [ -n "$COMMIT_RANGE" ]; then
+        echo -e "${GREEN}✓ Actualizado${NC} ${COMMIT_RANGE}"
+    else
+        echo -e "${GREEN}✓ Cambios descargados${NC}"
+    fi
+    
+    if [ "$FILES_CHANGED" != "0" ]; then
+        echo -e "  ${FILES_CHANGED} archivo(s) modificado(s) ${GREEN}+${INSERTIONS}${NC} ${RED}-${DELETIONS}${NC}"
+    fi
+fi
+
+echo ""
+echo -e "${BLUE}→ Verificando dependencias...${NC}"
+
+# Capturar salida de pip y contar paquetes instalados/actualizados
+PIP_LOG="/tmp/zeepub_pip_install.log"
+./venv/bin/pip install -r requirements.txt > "$PIP_LOG" 2>&1
+PIP_EXIT=$?
+
+if [ $PIP_EXIT -ne 0 ]; then
+    echo -e "${RED}✗ Error instalando dependencias:${NC}"
+    cat "$PIP_LOG"
+    rm -f "$PIP_LOG"
+    exit 1
+fi
+
+# Verificar si hubo instalaciones/actualizaciones
+NEW_PACKAGES=$(grep -c "Successfully installed" "$PIP_LOG" 2>/dev/null || echo "0")
+UPDATED_PACKAGES=$(grep -c "Collecting" "$PIP_LOG" 2>/dev/null || echo "0")
+
+if [ "$NEW_PACKAGES" != "0" ] || [ "$UPDATED_PACKAGES" != "0" ]; then
+    echo -e "${GREEN}✓ Dependencias actualizadas${NC}"
+    if [ "$NEW_PACKAGES" != "0" ]; then
+        echo -e "  ${NEW_PACKAGES} paquete(s) instalado(s)"
+    fi
+else
+    echo -e "${GREEN}✓ Todas las dependencias están actualizadas${NC}"
+fi
+rm -f "$PIP_LOG"
+
+echo ""
+echo -e "${BLUE}→ Reiniciando servicios...${NC}"
+
+if systemctl restart zeepub-bot 2>/dev/null; then
+    echo -e "${GREEN}✓ Servicio reiniciado correctamente${NC}"
+else
+    echo -e "${YELLOW}⚠ Error al reiniciar el servicio${NC}"
+    exit 1
+fi
+
+echo ""
+echo -e "${GREEN}╔════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║  ✓ Actualización completada       ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════╝${NC}"
