@@ -7,7 +7,9 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
-### Agregado (Rama Stable - LXC)
+## [2.0.1-lxc] - 2025-12-05
+
+### Agregado
 - Template LXC completo para despliegue en Proxmox
 - Workflow de CI para construcción automática de imágenes LXC OCI
 - Script `update` mejorado con salida detallada y manejo robusto
@@ -19,17 +21,30 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Editor nano incluido en imagen LXC
 - Dependencias de compilación para lxml y paquetes Python
 - Archivo `.env.example` en repositorio
+- Lógica de reintento con backoff exponencial para descargas HTTP para manejar problemas con Cloudflare
+- Logging detallado para diagnóstico de descargas y extracción de metadatos
+- Sistema de releases automáticas con extracción de notas desde CHANGELOG
+- Versionado semántico de imágenes Docker (major, major.minor, version)
+- Documentación completa de versionado en `VERSIONING.md`
+- `CHANGELOG.md` siguiendo estándar Keep a Changelog
 
-### Cambiado (Rama Stable - LXC)
+### Cambiado
 - Cambiado a Debian Bookworm para estabilidad de Python 3.11
 - Aumentado timeout de cliente aiohttp de 15 a 30 segundos
 - Mejorado uso de `run_with_api.py` con timeout de 30s
 - Directorio `lxc-setup` ya no ignorado en git
+- Mejorado formato de Vista Previa Facebook eliminando etiqueta duplicada
+- Mejorado manejo de errores con mensajes más descriptivos sobre Cloudflare
+- Optimizado parsing de metadatos EPUB con extracción centralizada
+- Mejorado cálculo de tamaño de archivo para EPUBs grandes (>10MB)
+- Mejorados labels de imágenes Docker con metadata del proyecto
 
-### Corregido (Rama Stable - LXC)
+### Corregido
 - Eliminado script viejo `/usr/local/bin/update` durante setup
 - Corregidos archivos faltantes de lxc-setup
 - Agregadas dependencias de compilación para lxml
+- Error en formato de Vista Previa Facebook mostrando metadatos vacíos
+- Problemas de descarga causados por bloqueos temporales de Cloudflare
 
 ## [2.0.1] - 2025-12-05
 
@@ -193,7 +208,8 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Navegación dentro del bot al descargar EPUB
 - Redirección del comando "volver a la página anterior"
 
-[No Publicado]: https://github.com/devil1210/zeepub-bot/compare/v2.0.1...HEAD
+[No Publicado]: https://github.com/devil1210/zeepub-bot/compare/v2.0.1-lxc...stable
+[2.0.1-lxc]: https://github.com/devil1210/zeepub-bot/compare/v2.0.1...v2.0.1-lxc
 [2.0.1]: https://github.com/devil1210/zeepub-bot/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/devil1210/zeepub-bot/compare/v1.5.0...v2.0.0
 [1.5.0]: https://github.com/devil1210/zeepub-bot/compare/v1.4.0...v1.5.0
