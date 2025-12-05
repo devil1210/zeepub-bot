@@ -3,6 +3,7 @@ name: Publish LXC Image
 on:
   push:
     branches: [ stable ]
+    tags: [ 'v*-lxc' ]  # Trigger on LXC version tags
   workflow_dispatch:
 
 env:
@@ -33,8 +34,15 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable={{is_default_branch}}
             type=sha
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+          labels: |
+            org.opencontainers.image.title=ZeePub Bot LXC
+            org.opencontainers.image.description=Template LXC de ZeePub Bot para despliegue en Proxmox
+            org.opencontainers.image.vendor=devil1210
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
