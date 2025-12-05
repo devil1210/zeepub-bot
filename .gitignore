@@ -5,9 +5,6 @@
 !.gitignore
 !Dockerfile
 !docker-compose.yml
-!Dockerfile.lxc
-!lxc-setup/
-!lxc-setup/**
 !.github/
 !.github/workflows/
 !.github/workflows/*.yml
@@ -18,7 +15,6 @@
 # Virtualenvs
 venv/
 .env
-!.env.example
 
 # Archivos compilados de Python
 __pycache__/
@@ -40,6 +36,8 @@ __pycache__/
 !main.py
 !README.md
 !DOCKER_README.md
+!CHANGELOG.md
+!VERSIONING.md
 
 !bot/
 !bot/*.py
