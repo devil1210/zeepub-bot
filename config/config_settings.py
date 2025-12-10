@@ -77,8 +77,10 @@ class BotConfig:
     FACEBOOK_PAGE_ACCESS_TOKEN: str = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "")
     FACEBOOK_GROUP_ID: str = os.getenv("FACEBOOK_GROUP_ID", "")
 
-    # Domain for public downloads
-    DL_DOMAIN: str = os.getenv("DL_DOMAIN", "dl.zeepubs.com")
+    # Validar que al menos tengamos los sufijos (usando los nombres del .env)
+    
+    # ZITADEL Actions
+    ZITADEL_SIGNING_KEY: str = os.getenv("ZITADEL_SIGNING_KEY", "")
 
     # Límites por hora
     MAX_DOWNLOADS_PER_DAY: int = int(os.getenv("MAX_DOWNLOADS_PER_DAY", "5"))

@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response, Depends,
 from typing import Optional
 import httpx
 import os
+import hmac
+import hashlib
+import json
 from config.config_settings import config
 from utils.http_client import parse_feed_from_url
 from utils.helpers import build_search_url
@@ -544,3 +547,76 @@ async def download_book(request: Request, current_uid: int = Depends(get_current
     except Exception as e:
         logger.error(f"Error in download endpoint: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/zitadel-action")
+async def zitadel_action(request: Request):
+    """
+    Endpoint para ZITADEL Actions v2 (Pre UserInfo).
+    Valida firma HMAC SHA256 e inyecta roles/claims para Kavita.
+    """
+    # 1. Validar firma HMAC SHA256
+    signing_key = config.ZITADEL_SIGNING_KEY
+    if signing_key:
+        signature = request.headers.get("x-zitadel-signature")
+        if not signature:
+            logger.warning("Missing x-zitadel-signature header")
+            raise HTTPException(status_code=401, detail="Missing signature")
+        
+        body_bytes = await request.body()
+        
+        # Calcular HMAC SHA256 del body
+        expected_sig = hmac.new(
+            signing_key.encode("utf-8"),
+            body_bytes,
+            hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(expected_sig, signature):
+            logger.error(f"Invalid ZITADEL signature. Got: {signature}")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+    else:
+        logger.warning("ZITADEL_SIGNING_KEY not configured. Skipping signature validation.")
+
+    try:
+        # 2. Procesar payload
+        # ZITADEL v2 actions payload context
+        body = await request.json()
+        
+        # Estructura típica: {"request": {"user": {...}}}
+        req_data = body.get("request", {})
+        user_data = req_data.get("user", {})
+        
+        # Extraer datos básicos
+        username = user_data.get("username", "")
+        email = user_data.get("email", "") # Primary email
+        if not email and "emails" in user_data:
+             # Try to find verified email
+             for e in user_data["emails"]:
+                 if e.get("verified", False):
+                     email = e.get("email")
+                     break
+        
+        # 3. Determinar preferred_username
+        # Kavita usa esto para el mapeo de usuarios
+        preferred_username = email if email else username
+        
+        # 4. Inyectar roles estáticos
+        # Por defecto "download" para todos
+        roles = ["download", "page_read", "book_read"] 
+        
+        # Si el usuario es admin en el bot (por ID? No tenemos ID de ZITADEL mapeado a Telegram ID aquí fácil)
+        # Asumimos roles estáticos básicos por ahora.
+        
+        # 5. Respuesta formato ZITADEL Action
+        return {
+            "appendClaims": {
+                "role": roles,
+                "preferred_username": preferred_username,
+                "email_verified": True # Force verified if coming from trusted IdP
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Error processing ZITADEL action: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
