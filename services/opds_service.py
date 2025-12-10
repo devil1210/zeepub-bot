@@ -1,5 +1,6 @@
 # services/opds_service.py
 
+import re
 import uuid
 import logging
 from urllib.parse import urlparse, unquote
@@ -39,6 +40,13 @@ async def mostrar_colecciones(
 
     root_url = st.get("opds_root")
 
+    # Extraer seriesId de la URL si estamos en una serie
+    series_id = None
+    series_match = re.search(r'/series/(\d+)', url)
+    if series_match:
+        series_id = int(series_match.group(1))
+        logger.debug(f"Detected series context with seriesId: {series_id}")
+
     # Actualizar estado (sin tocar historial, lo gestiona el handler)
     st.update(
         {
@@ -46,6 +54,7 @@ async def mostrar_colecciones(
             "libros": {},
             "colecciones": {},
             "nav": {"prev": None, "next": None},
+            "series_id": series_id,  # Guardar series_id en el estado
         }
     )
 
@@ -154,6 +163,15 @@ async def mostrar_colecciones(
 
     if nav_buttons:
         keyboard.append(nav_buttons)
+
+    # Botón de descarga de serie completa (solo para admins)
+    if uid in config.ADMIN_USERS and st.get("series_id") and libros:
+        keyboard.append([
+            InlineKeyboardButton(
+                "📦 Descargar Serie Completa (ZIP)",
+                callback_data=f"download_series|{st['series_id']}"
+            )
+        ])
 
     # Botón Salir solo en el primer nivel (sin historial)
     if not st["historial"]:

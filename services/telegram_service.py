@@ -1377,6 +1377,186 @@ async def _publish_choice_telegram(
     st["msg_botones_id"] = sent.message_id
 
 
+async def descargar_serie_completa(
+    update, context: ContextTypes.DEFAULT_TYPE, uid: int, series_id: int
+):
+    """Descarga una serie completa como ZIP desde Kavita."""
+    bot = context.bot
+    query = update.callback_query
+    
+    from utils.helpers import get_thread_id
+    import httpx
+    
+    thread_id = get_thread_id(update)
+    chat_id = update.effective_chat.id
+    
+    # Verificar que tengamos la API key de Kavita
+    if not config.KAVITA_API_KEY:
+        await query.edit_message_text(
+            "❌ Error: No se ha configurado la API key de Kavita."
+        )
+        return
+    
+    try:
+        # 1. Obtener JWT token de Kavita
+        auth_url = f"{config.BASE_URL}/api/Plugin/authenticate"
+        logger.info(f"Autenticando con Kavita para obtener JWT token")
+        
+        async with httpx.AsyncClient() as client:
+            auth_response = await client.post(
+                auth_url,
+                params={"apiKey": config.KAVITA_API_KEY},
+                timeout=10
+            )
+            
+            if auth_response.status_code != 200:
+                logger.error(f"Error de autenticación: {auth_response.status_code} - {auth_response.text}")
+                await query.edit_message_text(
+                    "❌ Error de autenticación con Kavita. Verifica la API key."
+                )
+                return
+            
+            auth_data = auth_response.json()
+            jwt_token = auth_data.get("token")
+            
+            if not jwt_token:
+                logger.error(f"No se recibió token JWT en la respuesta: {auth_data}")
+                await query.edit_message_text(
+                    "❌ Error: No se pudo obtener token de autenticación."
+                )
+                return
+            
+            logger.info("JWT token obtenido exitosamente")
+        
+        # 2. Verificar tamaño de la serie
+        size_url = f"{config.BASE_URL}/api/Download/series-size"
+        headers = {"Authorization": f"Bearer {jwt_token}"}
+        params = {"seriesId": series_id}
+        
+        logger.info(f"Verificando tamaño de serie {series_id}")
+        
+        async with httpx.AsyncClient() as client:
+            size_response = await client.get(
+                size_url,
+                params=params,
+                headers=headers,
+                timeout=10
+            )
+            
+            if size_response.status_code == 200:
+                size_value = int(size_response.text.strip())
+                size_mb = size_value / (1024 * 1024)
+                logger.info(f"Tamaño de serie {series_id}: {size_mb:.2f} MB")
+            else:
+                logger.warning(f"No se pudo obtener tamaño: {size_response.status_code}")
+                size_mb = 0
+        
+        # 3. Advertir si es muy grande
+        if size_mb > 500:
+            keyboard = [
+                [InlineKeyboardButton("✅ Sí, continuar", callback_data=f"confirm_download_series|{series_id}")],
+                [InlineKeyboardButton("❌ Cancelar", callback_data="cerrar")]
+            ]
+            await query.edit_message_text(
+                f"⚠️ La serie completa pesa {size_mb:.2f} MB.\n\n"
+                f"¿Deseas continuar con la descarga?",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return
+        
+        # 4. Mensaje de preparación
+        try:
+            await query.edit_message_text("📦 Preparando descarga de la serie completa...")
+        except Exception:
+            pass
+        
+        prep = await bot.send_message(
+            chat_id=chat_id,
+            text="⏳ Descargando serie completa... Esto puede tardar varios minutos.",
+            message_thread_id=thread_id
+        )
+        
+        # 5. Descargar ZIP desde Kavita usando JWT
+        download_url = f"{config.BASE_URL}/api/Download/series"
+        logger.info(f"Descargando serie completa (ID: {series_id})")
+        
+        async with httpx.AsyncClient(timeout=600) as client:  # 10 min timeout
+            download_response = await client.get(
+                download_url,
+                params={"seriesId": series_id},
+                headers=headers,
+                follow_redirects=True
+            )
+            
+            if download_response.status_code != 200:
+                logger.error(f"Error descargando serie: {download_response.status_code}")
+                await bot.edit_message_text(
+                    chat_id=chat_id,
+                    message_id=prep.message_id,
+                    text="❌ Error al descargar la serie. Intenta de nuevo más tarde."
+                )
+                return
+            
+            zip_data = download_response.content
+        
+        if not zip_data:
+            await bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=prep.message_id,
+                text="❌ Error al descargar la serie. Intenta de nuevo más tarde."
+            )
+            return
+        
+        # 6. Calcular tamaño final
+        final_size_mb = len(zip_data) / (1024 * 1024)
+        logger.info(f"Serie descargada, tamaño: {final_size_mb:.2f} MB")
+        
+        # 7. Actualizar mensaje de preparación
+        await bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=prep.message_id,
+            text=f"📤 Enviando archivo ({final_size_mb:.2f} MB)..."
+        )
+        
+        # 8. Enviar archivo ZIP
+        caption = (
+            f"📦 <b>Serie Completa</b>\n"
+            f"🆔 Serie ID: {series_id}\n"
+            f"📦 Tamaño: {final_size_mb:.2f} MB"
+        )
+        
+        filename = f"Serie_{series_id}.zip"
+        
+        await send_doc_bytes(
+            bot, 
+            chat_id, 
+            caption, 
+            zip_data, 
+            filename=filename,
+            parse_mode="HTML",
+            message_thread_id=thread_id
+        )
+        
+        # 9. Limpiar mensajes de preparación
+        try:
+            await bot.delete_message(chat_id=chat_id, message_id=prep.message_id)
+        except Exception:
+            pass
+        
+        logger.info(f"Serie {series_id} enviada exitosamente al usuario {uid}")
+        
+    except Exception as e:
+        logger.error(f"Error en descargar_serie_completa: {e}", exc_info=True)
+        try:
+            await bot.send_message(
+                chat_id=chat_id,
+                text=f"❌ Error al descargar la serie: {str(e)}",
+                message_thread_id=thread_id
+            )
+        except Exception:
+            pass
+
+
 async def publicar_facebook_action(
     update, context: ContextTypes.DEFAULT_TYPE, uid: int
 ):

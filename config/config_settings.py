@@ -22,6 +22,9 @@ class BotConfig:
 
     # URL base del servidor OPDS (ej: https://apps.tailfe99c.ts.net)
     OPDS_SERVER_URL: str = os.getenv("OPDS_SERVER_URL", "")
+    
+    # API Key de Kavita para acceso a endpoints de descarga
+    KAVITA_API_KEY: str = os.getenv("KAVITA_API_KEY", "")
 
     # URL de la Mini App (para botones y referencias)
     WEBAPP_URL: str = os.getenv("WEBAPP_URL", "")

@@ -425,6 +425,18 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.debug("Could not send set_publish_temp response")
         return
 
+    # Descarga de serie completa (solo admin)
+    if data.startswith("download_series|"):
+        if uid not in config.ADMIN_USERS:
+            await query.answer("⛔ Solo administradores pueden descargar series completas.")
+            return
+        
+        series_id = int(data.split("|", 1)[1])
+        from services.telegram_service import descargar_serie_completa
+        
+        await descargar_serie_completa(update, context, uid, series_id)
+        return
+
     # Subir nivel (usar historial para ir al nivel anterior)
     if data == "subir_nivel":
         if "historial" not in st:
@@ -580,7 +592,7 @@ def register_handlers(app):
     app.add_handler(
         CallbackQueryHandler(
             button_handler,
-            pattern="^(col\\||lib\\||nav\\||subir_nivel|volver_colecciones|volver_ultima|cerrar|descargar_epub|preparar_post_fb|publicar_fb|descartar_fb|publish_target\\||set_publish_temp\\|)",
+            pattern="^(col\\||lib\\||nav\\||download_series\\||subir_nivel|volver_colecciones|volver_ultima|cerrar|descargar_epub|preparar_post_fb|publicar_fb|descartar_fb|publish_target\\||set_publish_temp\\|)",
         )
     )
     # Texto libre handlers
