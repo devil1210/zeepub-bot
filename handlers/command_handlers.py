@@ -225,6 +225,34 @@ class CommandHandlers:
             message_thread_id=thread_id,
         )
 
+    async def stats(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /stats: muestra estadísticas de uso del día."""
+        uid = update.effective_user.id
+        # Verificar permisos (Admin o Staff)
+        from services.user_service import get_effective_user
+        user_info = get_effective_user(uid)
+        role = user_info.get("role", "free")
+        
+        if role not in ("admin", "staff") and uid not in config.ADMIN_USERS:
+            return
+
+        from services.stats_service import get_daily_stats
+        data = get_daily_stats()
+        
+        text = (
+            "📊 <b>Estadísticas Diarias (Hoy)</b>\n\n"
+            f"👥 <b>Usuarios Únicos:</b> {data['unique_users']}\n"
+            f"⬇️ <b>Descargas Totales:</b> {data['total_downloads']}\n"
+        )
+        
+        thread_id = get_thread_id(update)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
+
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /status: informa estado interno, nivel de usuario y descargas restantes."""
         uid = update.effective_user.id
