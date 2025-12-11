@@ -145,3 +145,10 @@ def record_download(uid: int) -> None:
 
     # Persistir cambio
     save_download(uid, new_count)
+
+    # Registrar estadísticas globales
+    try:
+        from services.stats_service import record_activity
+        record_activity(uid, "download")
+    except Exception as e:
+        logger.error(f"Error registrando estadísticas: {e}")
