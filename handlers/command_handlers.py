@@ -913,11 +913,13 @@ class CommandHandlers:
         Solo para Admins.
         """
         uid = update.effective_user.id
+        msg = update.effective_message
+        
         if uid not in config.ADMIN_USERS:
             return
 
         if not context.args or len(context.args) < 2:
-            await update.message.reply_text(
+            await msg.reply_text(
                 "❌ Uso: /set_staff_status <id> <label>\n"
                 "Ejemplo: /set_staff_status 123456789 Editor Jefe"
             )
@@ -925,7 +927,7 @@ class CommandHandlers:
 
         target_id_str = context.args[0]
         if not target_id_str.isdigit():
-            await update.message.reply_text("❌ ID inválido.")
+            await msg.reply_text("❌ ID inválido.")
             return
         target_id = int(target_id_str)
 
@@ -936,13 +938,13 @@ class CommandHandlers:
 
         try:
             update_user_status_label(target_id, new_label)
-            await update.message.reply_text(
+            await msg.reply_text(
                 f"✅ Status actualizado para <code>{target_id}</code>: <b>{new_label}</b>",
                 parse_mode="HTML"
             )
         except Exception as e:
             logger.error(f"Error set_staff_status: {e}")
-            await update.message.reply_text("❌ Error al actualizar status.")
+            await msg.reply_text("❌ Error al actualizar status.")
 
 
     async def set_auto_delete_time(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -951,11 +953,13 @@ class CommandHandlers:
         Configura el tiempo de auto-borrado para descargas de admins en grupos.
         """
         uid = update.effective_user.id
+        msg = update.effective_message
+        
         if uid not in config.ADMIN_USERS:
             return
 
         if not context.args or not context.args[0].isdigit():
-            await update.message.reply_text("❌ Uso: /set_auto_delete_time <minutos>")
+            await msg.reply_text("❌ Uso: /set_auto_delete_time <minutos>")
             return
 
         minutes = int(context.args[0])
@@ -963,13 +967,13 @@ class CommandHandlers:
         
         try:
             set_setting("group_retention_minutes", str(minutes))
-            await update.message.reply_text(
+            await msg.reply_text(
                 f"✅ Tiempo de auto-borrado configurado a: <b>{minutes} minutos</b>",
                 parse_mode="HTML"
             )
         except Exception as e:
             logger.error(f"Error set_auto_delete_time: {e}")
-            await update.message.reply_text("❌ Error al guardar configuración.")
+            await msg.reply_text("❌ Error al guardar configuración.")
 
     async def setlog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """

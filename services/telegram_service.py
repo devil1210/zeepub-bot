@@ -654,16 +654,19 @@ async def descargar_epub_pendiente(
                 logger.error(f"Failed to log book history: {e}")
                 
             # Programar Auto-Delete si aplica
-            if is_group and is_privileged and context.job_queue:
-                from services.settings_service import get_setting
-                retention_mins = int(get_setting("group_retention_minutes", "5"))
-                context.job_queue.run_once(
-                    delete_message_job, 
-                    retention_mins * 60, 
-                    data=sent_doc.message_id,
-                    chat_id=destino
-                )
-                logger.info(f"Scheduled auto-delete for msg {sent_doc.message_id} in {retention_mins}m")
+            if is_group and is_privileged:
+                if context.job_queue:
+                    from services.settings_service import get_setting
+                    retention_mins = int(get_setting("group_retention_minutes", "5"))
+                    context.job_queue.run_once(
+                        delete_message_job, 
+                        retention_mins * 60, 
+                        data=sent_doc.message_id,
+                        chat_id=destino
+                    )
+                    logger.info(f"Scheduled auto-delete for msg {sent_doc.message_id} in {retention_mins}m")
+                else:
+                    logger.warning("Auto-delete skipped: context.job_queue is None. Check if JobQueue is enabled.")
 
         # Registrar descarga
         record_download(uid)
