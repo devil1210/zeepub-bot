@@ -365,12 +365,17 @@ class CommandHandlers:
         )
 
         keyboard = [
-            [
-                InlineKeyboardButton(
-                    "✅ Ya realicé la donación", callback_data="notificar_donacion"
-                )
-            ]
+        [
+            InlineKeyboardButton(
+                "✅ Ya realicé la donación", callback_data="notificar_donacion"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "⏳ Donar más tarde", callback_data="cerrar"
+            )
         ]
+    ]
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
