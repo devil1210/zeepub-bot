@@ -401,3 +401,32 @@ def get_users_by_role(role: str) -> list[Dict[str, Any]]:
             conn.close()
 
     return results
+
+
+def update_user_status_label(telegram_id: int, new_label: str):
+    """
+    Actualiza el custom_status de un usuario existente.
+    Si el usuario no existe en DB, no hace nada (debería existir si tiene rol).
+    """
+    engine = _get_engine()
+    if engine:
+        meta = MetaData()
+        users = Table("users", meta, autoload_with=engine)
+        with engine.begin() as conn:
+            upd = (
+                users.update()
+                .where(users.c.telegram_id == telegram_id)
+                .values(custom_status=new_label)
+            )
+            conn.execute(upd)
+    else:
+        conn = get_sqlite_conn()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE users SET custom_status = ? WHERE telegram_id = ?",
+                (new_label, telegram_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
