@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   zeepubs_bot:
-    # image: ghcr.io/devil1210/zeepub-bot:latest
-    build: .
+    image: ghcr.io/devil1210/zeepub-bot:latest
+    # build: .
     container_name: zeepubs_bot
     restart: always
     # ports:
@@ -42,3 +42,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+    restart: always
