@@ -949,17 +949,17 @@ class CommandHandlers:
         uid = update.effective_user.id
         if uid not in config.ADMIN_USERS:
             return
-        
+
         chat_id = update.effective_chat.id
         thread_id = update.message.message_thread_id if update.message.message_thread_id else "N/A"
-        
+
         msg = (
             f"🆔 <b>Info del Chat</b>\n"
             f"Chat ID: <code>{chat_id}</code>\n"
             f"User ID: <code>{uid}</code>\n"
             f"Thread ID: <code>{thread_id}</code>"
         )
-        
+
         try:
             await context.bot.send_message(chat_id=uid, text=msg, parse_mode="HTML")
             # Si se pidió desde un grupo, avisar discretamente o reaccionar
