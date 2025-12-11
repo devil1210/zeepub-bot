@@ -25,7 +25,32 @@ async def daily_reset_loop():
             # Esperar hasta medianoche
             await asyncio.sleep(wait_seconds)
 
-            # Ejecutar reset
+            # Ejecutar reporte antes del reset
+            if bot:
+                try:
+                    from services.stats_service import get_daily_stats, reset_stats
+                    from config.config_settings import config
+                    
+                    data = get_daily_stats()
+                    report_text = (
+                        "📊 <b>Reporte Diario Automático</b>\n\n"
+                        f"👥 <b>Usuarios Únicos:</b> {data['unique_users']}\n"
+                        f"⬇️ <b>Descargas Totales:</b> {data['total_downloads']}\n"
+                        "🔄 <i>Reseteando contadores...</i>"
+                    )
+                    
+                    for admin_id in config.ADMIN_USERS:
+                        try:
+                            await bot.send_message(chat_id=admin_id, text=report_text, parse_mode="HTML")
+                        except Exception as e:
+                            logger.error(f"Error enviando reporte a admin {admin_id}: {e}")
+                    
+                    # Resetear stats
+                    reset_stats()
+                except Exception as e:
+                    logger.error(f"Error generando reporte diario: {e}")
+
+            # Ejecutar reset descargas
             logger.info("Ejecutando reset diario de descargas...")
             reset_all_downloads()
             logger.info("Reset diario completado.")
@@ -45,7 +70,6 @@ async def daily_reset_loop():
 def start_daily_reset_scheduler(bot=None):
     """
     Inicia la tarea de reset diario en background.
-    El argumento 'bot' se acepta para consistencia con otros schedulers, aunque no se usa aquí.
     """
-    asyncio.create_task(daily_reset_loop())
+    asyncio.create_task(daily_reset_loop(bot))
     logger.info("Daily reset scheduler task created")
