@@ -127,6 +127,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
 
+    # Check ban status
+    from services.user_service import get_effective_user
+    user_info = get_effective_user(uid)
+    if user_info.get("role") == "banned":
+        expires_at = user_info.get("expires_at")
+        msg = "⛔ Estás <b>baneado</b> del bot."
+        if expires_at:
+            msg += f" Hasta: <b>{expires_at.strftime('%Y-%m-%d %H:%M')}</b>"
+        await query.answer(msg.replace("<b>", "").replace("</b>", ""), show_alert=True)
+        return
+
     # Selección de colección
     if data.startswith("col|"):
         idx = int(data.split("|", 1)[1])

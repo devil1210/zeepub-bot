@@ -526,6 +526,22 @@ class CommandHandlers:
         thread_id = get_thread_id(update)
         st["message_thread_id"] = thread_id  # Guardar para respuestas
 
+        # Check ban status
+        from services.user_service import get_effective_user
+        user_info = get_effective_user(uid)
+        if user_info.get("role") == "banned":
+            expires_at = user_info.get("expires_at")
+            msg = "⛔ Estás <b>baneado</b> del bot."
+            if expires_at:
+                msg += f" Hasta: <b>{expires_at.strftime('%Y-%m-%d %H:%M')}</b>"
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=msg,
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+            return
+
         # Verificar si hay término de búsqueda en el comando
         if context.args:
             # Hay término: /search harry potter
