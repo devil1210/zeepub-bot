@@ -248,14 +248,16 @@ class CommandHandlers:
         status_label = user_data.get("status_label")
         expires_at = user_data.get("expires_at")
 
-        # Override label if custom status exists for staff or just generally
-        # The prompt asked for custom status for staff.
+        # Override label if custom status exists
         user_level = (
             status_label if status_label else roles_display.get(role_key, "Lector")
         )
+        
+        if role_key == "banned":
+            user_level = "🚫 Baneado"
 
         # Max dl logic
-        if role_key in ("admin", "staff", "premium"):
+        if role_key in ("admin", "staff", "premium", "banned"):
             max_dl = None
         elif role_key == "vip":
             max_dl = config.VIP_DOWNLOADS_PER_DAY
@@ -268,10 +270,14 @@ class CommandHandlers:
         used = st.get("downloads_used", 0)
 
         if max_dl is None:
-            left_text = "✅ Descargas ilimitadas"
+            if role_key == "banned":
+                 left_text = "⛔ Acceso denegado"
+            else:
+                 left_text = "✅ Descargas ilimitadas"
         else:
             remaining = max_dl - used
             left_text = f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día (de {max_dl})"
+
         # Calcular tiempo para próximo reset
         from datetime import datetime, timedelta
 
@@ -295,12 +301,16 @@ class CommandHandlers:
         )
 
         if expires_at:
-            text += f"📅 <b>Vence:</b> {expires_at.strftime('%d/%m/%Y')}\n"
+            if role_key == "banned":
+                text += f"📅 <b>Castigo hasta:</b> {expires_at.strftime('%d/%m/%Y %H:%M')}\n"
+            else:
+                text += f"📅 <b>Vence:</b> {expires_at.strftime('%d/%m/%Y')}\n"
 
-        text += (
-            f"📉 <b>Descargas:</b> {left_text}\n"
-            f"⏳ <b>Reinicio en:</b> {hours}h {minutes}m\n"
-        )
+        text += f"📉 <b>Descargas:</b> {left_text}\n"
+        
+        # Solo mostrar reinicio si NO es ilimitado y NO está baneado
+        if max_dl is not None:
+            text += f"⏳ <b>Reinicio en:</b> {hours}h {minutes}m\n"
 
         thread_id = get_thread_id(update)
         await context.bot.send_message(
