@@ -15,6 +15,10 @@ logger = logging.getLogger(__name__)
 
 async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Maneja mensajes de texto cuando se espera input del usuario."""
+    # Ignorar mensajes editados o vacíos
+    if not update.message:
+        return
+
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
     text = update.message.text.strip()
