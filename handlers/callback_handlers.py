@@ -651,6 +651,132 @@ async def set_log_level_callback(update: Update, context: ContextTypes.DEFAULT_T
         await query.answer("Error al cambiar nivel")
 
 
+def _get_help_data(uid):
+    """Genera la estructura de ayuda y el teclado según el rol del usuario."""
+    is_admin = uid in config.ADMIN_USERS
+    is_publisher = uid in config.FACEBOOK_PUBLISHERS
+
+    # Definir contenido por categorías
+    # Formato: (Comando, Descripción)
+
+    # 1. Inicio (Todos)
+    cat_home = [
+        ("🚀 /start", "Iniciar el bot"),
+        ("ℹ️ /help", "Mostrar esta ayuda"),
+        ("📊 /status", "Ver tu estado y descargas"),
+        ("❌ /cancel", "Cancelar acción actual"),
+        ("☕ /donar", "Link de donación"),
+        ("🌟 /niveles", "Info de niveles de usuario"),
+    ]
+
+    # 2. Contenido / Herramientas (Mixed)
+    cat_content = [
+        ("🔍 /search", "Buscar libros"),
+    ]
+    if is_publisher or is_admin:
+        cat_content.extend([
+            ("📤 /export_db", "Exportar mapeo de URLs a CSV"),
+            ("📈 /status_links", "Ver estado de links acortados"),
+            ("📋 /link_list", "Listar links acortados recientes"),
+            ("🗑️ /purge_link", "Eliminar un link acortado"),
+        ])
+
+    # 3. Admin (Admin only)
+    cat_admin = []
+    if is_admin:
+        cat_admin = [
+            ("➕ /add_user", "Agregar/Editar usuario"),
+            ("➖ /remove_user", "Remover usuario"),
+            ("🏷️ /set_staff_status", "Definir status de Staff"),
+            ("🔄 /reset", "Resetear descargas"),
+            ("💲 /set_price", "Configurar precio donación"),
+            ("🐞 /debug_state", "Info debug usuario"),
+            ("🔧 /setlog", "Configurar logs"),
+            ("👋 /saludo", "Broadcast mensaje"),
+            ("🆔 /id", "Info ID chat/user"),
+            ("🧩 /plugins", "Listar plugins"),
+        ]
+
+    # 4. Datos / Backup (Admin only)
+    cat_data = []
+    if is_admin:
+        cat_data = [
+            ("📦 /backup_db", "Backup DB"),
+            ("♻️ /restore_db", "Restaurar DB desde archivo"),
+            ("📚 /import_history", "Importar historial JSON"),
+            ("📤 /export_history", "Exportar historial CSV"),
+            ("🆕 /latest_books", "Ver últimos libros"),
+            ("🗑️ /clear_history", "Borrar historial"),
+        ]
+
+    return {
+        "home": ("🏠 Inicio", cat_home),
+        "content": ("📚 Content", cat_content),
+        "admin": ("🛠 Admin", cat_admin),
+        "data": ("💾 Datos", cat_data),
+    }, is_admin, is_publisher
+
+
+async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Maneja la navegación del menú de ayuda."""
+    query = update.callback_query
+    uid = update.effective_user.id
+
+    try:
+        _, target_cat = query.data.split("|", 1)
+    except ValueError:
+        target_cat = "home"
+
+    help_data, is_admin, is_publisher = _get_help_data(uid)
+
+    # Validar acceso a categorías restringidas
+    if target_cat in ("admin", "data") and not is_admin:
+        await query.answer("⛔ Acceso restringido", show_alert=True)
+        return
+
+    # Construir texto
+    cat_title, commands = help_data.get(target_cat, ("Desconocido", []))
+
+    text = f"🤖 <b>Ayuda de ZeePub Bot</b>\n\n"
+    text += f"📂 <b>Categoría: {cat_title}</b>\n\n"
+
+    for cmd, desc in commands:
+        safe_desc = desc.replace("<", "&lt;").replace(">", "&gt;")
+        text += f"<b>{cmd}</b>\n   ╰ {safe_desc}\n"
+
+    # Construir teclado
+    # Fila 1: Home | Content
+    # Fila 2: Admin | Data (Solo si es admin)
+
+    row1 = [
+        InlineKeyboardButton("🏠 Inicio", callback_data="help|home"),
+        InlineKeyboardButton("📚 Content", callback_data="help|content"),
+    ]
+
+    keyboard = [row1]
+
+    if is_admin:
+        row2 = [
+            InlineKeyboardButton("🛠 Admin", callback_data="help|admin"),
+            InlineKeyboardButton("💾 Datos", callback_data="help|data"),
+        ]
+        keyboard.append(row2)
+
+    # Marcar el botón activo visualmente? (Telegram no soporta 'active' state nativo,
+    # pero podríamos cambiar el texto del botón actual, ej: "• Inicio •")
+    # Por simplicidad, dejamos los botones fijos.
+
+    # Botón cerrar
+    keyboard.append([InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")])
+
+    await query.edit_message_text(
+        text=text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="HTML"
+    )
+    await query.answer()
+
+
 def register_handlers(app):
     # CallbackQuery handlers
     app.add_handler(CallbackQueryHandler(set_destino, pattern="^destino\\|"))

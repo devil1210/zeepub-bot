@@ -181,101 +181,47 @@ class CommandHandlers:
         await mostrar_colecciones(update, context, root, from_collection=False)
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /help: muestra ayuda dinámica según el rol del usuario."""
+        """Handle /help: muestra ayuda dinámica y paginada."""
         uid = update.effective_user.id
         thread_id = get_thread_id(update)
 
-        # Comandos básicos para todos
-        commands = [
-            ("🚀 /start", "Iniciar el bot"),
-            ("ℹ️ /help", "Mostrar esta ayuda"),
-            ("📊 /status", "Ver tu estado y descargas"),
-            ("❌ /cancel", "Cancelar acción actual"),
-            ("🔍 /search", "Buscar libros"),
-            ("☕ /donar", "Link de donación"),
-            ("🌟 /niveles", "Info de niveles de usuario"),
-        ]
+        # Importar lógica compartida para evitar duplicación
+        # (Importación local para evitar ciclos y errores de carga inicial)
+        from handlers.callback_handlers import _get_help_data
 
-        # Comandos para Publishers (y Admins)
-        is_publisher = uid in config.FACEBOOK_PUBLISHERS
-        is_admin = uid in config.ADMIN_USERS
+        help_data, is_admin, _ = _get_help_data(uid)
 
-        if is_publisher or is_admin:
-            commands.extend(
-                [
-                    ("📤 /export_db", "Exportar mapeo de URLs a CSV"),
-                    ("📈 /status_links", "Ver estado de links acortados"),
-                    ("📋 /link_list", "Listar links acortados recientes"),
-                    (
-                        "🗑️ /purge_link",
-                        "Eliminar un link acortado (uso: /purge_link <hash>)",
-                    ),
-                ]
-            )
+        # Mostrar categoría "home" por defecto
+        cat_title, commands = help_data.get("home", ("Inicio", []))
 
-        # Comandos exclusivos de Admin
-        if is_admin:
-            commands.extend(
-                [
-                    ("📦 /backup_db", "Generar backup de la base de datos"),
-                    ("♻️ /restore_db", "Restaurar base de datos desde archivo"),
-                    (
-                        "📚 /import_history",
-                        "Importar historial desde archivo JSON de Telegram",
-                    ),
-                    (
-                        "🆕 /latest_books",
-                        "Ver últimos libros publicados\n"
-                        "   • Sin argumentos: todos los libros con su chat_id\n"
-                        "   • Con chat_id: solo libros de ese chat\n"
-                        "   Ejemplo: /latest_books -1001234567890",
-                    ),
-                    ("📤 /export_history", "Exportar historial a CSV"),
-                    ("🗑️ /clear_history", "Borrar todo el historial (Admin)"),
-                    (
-                        "➕ /add_user",
-                        "Agregar/Editar usuario (Uso: /add_user <id> <rol> [meses])",
-                    ),
-                    ("➖ /remove_user", "Remover usuario de DB"),
-                    (
-                        "🏷️ /set_staff_status",
-                        "Definir status de Staff (Uso: /set_staff_status <id> <txt>)",
-                    ),
-                    ("🔄 /reset", "Resetear descargas de usuario (uso: /reset <id>)"),
-                    (
-                        "💲 /set_price",
-                        "Configurar precio de donación (Uso: /set_price <nivel> <monto>)",
-                    ),
-                    ("🧩 /plugins", "Listar plugins activos"),
-                    ("🐞 /debug_state", "Ver estado interno de usuario"),
-                    (
-                        "🔧 /setlog",
-                        "Cambiar nivel de log (Uso: /setlog <LEVEL>)\n"
-                        "   Niveles: DEBUG, INFO, WARNING, ERROR",
-                    ),
-                    (
-                        "👋 /saludo",
-                        "Enviar mensaje a chat (Uso: /saludo <id> \"texto\")",
-                    ),
-                    (
-                        "🆔 /id",
-                        "Obtener ID del chat actual",
-                    ),
-                ]
-            )
+        text = f"🤖 <b>Ayuda de ZeePub Bot</b>\n\n"
+        text += f"📂 <b>Categoría: {cat_title}</b>\n\n"
 
-        # Construir mensaje
-        # Construir mensaje
-        text = "🤖 <b>Ayuda de ZeePub Bot</b>\n\nAquí tienes lo que puedo hacer por ti:\n\n"
         for cmd, desc in commands:
-            # Escape HTML special chars in description (e.g. <hash>, <id>)
             safe_desc = desc.replace("<", "&lt;").replace(">", "&gt;")
-            text += f"<b>{cmd}</b> - {safe_desc}\n"
+            text += f"<b>{cmd}</b>\n   ╰ {safe_desc}\n"
+
+        # Teclado inicial
+        row1 = [
+            InlineKeyboardButton("🏠 Inicio", callback_data="help|home"),
+            InlineKeyboardButton("📚 Content", callback_data="help|content"),
+        ]
+        keyboard = [row1]
+
+        if is_admin:
+            row2 = [
+                InlineKeyboardButton("🛠 Admin", callback_data="help|admin"),
+                InlineKeyboardButton("💾 Datos", callback_data="help|data"),
+            ]
+            keyboard.append(row2)
+
+        keyboard.append([InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")])
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
             parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup(keyboard),
             message_thread_id=thread_id,
         )
 
