@@ -32,7 +32,7 @@ async def daily_reset_loop(bot=None):
                     from config.config_settings import config
 
                     data = get_daily_stats()
-                    
+
                     # Formatear breakdown
                     by_role = data.get("by_role", {})
                     roles_txt = ""

@@ -359,7 +359,7 @@ def get_users_by_role(role: str) -> list[Dict[str, Any]]:
     """
     engine = _get_engine()
     results = []
-    
+
     if engine:
         meta = MetaData()
         users = Table("users", meta, autoload_with=engine)
@@ -391,7 +391,7 @@ def get_users_by_role(role: str) -> list[Dict[str, Any]]:
                         expires_at = parser.parse(expires_at)
                     except ImportError:
                         pass
-                
+
                 results.append({
                     "telegram_id": row[0],
                     "role": row[1],
@@ -399,5 +399,5 @@ def get_users_by_role(role: str) -> list[Dict[str, Any]]:
                 })
         finally:
             conn.close()
-            
+
     return results
