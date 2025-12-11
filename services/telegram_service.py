@@ -550,6 +550,39 @@ async def descargar_epub_pendiente(
         )
         return
 
+    # Validar lógica de grupos
+    chat_type = update.effective_chat.type
+    is_group = chat_type in ("group", "supergroup", "channel")
+    
+    # Check User Role
+    from services.user_service import get_effective_user
+    user_info = get_effective_user(uid)
+    role = user_info.get("role", "free")
+    is_privileged = role in ("admin", "staff") or uid in config.ADMIN_USERS
+
+    # Lógica de Redirección/Auto-Delete
+    auto_delete_msg_id = None
+    
+    if is_group:
+        if is_privileged:
+            # Admin/Staff: Enviar al grupo, pero programar auto-borrado
+            pass  # destino sigue siendo el grupo
+        else:
+            # Usuario Normal: Enviar a Privado
+            destino = uid
+            thread_id_destino = None # PM no usa threads
+            # No borrar mensaje de info (resumen) en el grupo
+            msg_info_id = None 
+
+            try:
+                await bot.answer_callback_query(
+                    update.callback_query.id, 
+                    text="📂 Te envié el archivo al privado.", 
+                    show_alert=False
+                )
+            except Exception:
+                pass
+
     # Preparar envío
     prep = await bot.send_message(
         chat_id=destino,
@@ -582,6 +615,12 @@ async def descargar_epub_pendiente(
         slug = generar_slug_from_meta(meta)
         if slug:
             caption += f"\n#{slug}"
+            
+        # Si es Admin en Grupo, añadir aviso de auto-borrado
+        if is_group and is_privileged:
+            from services.settings_service import get_setting
+            retention_mins = int(get_setting("group_retention_minutes", "5"))
+            caption += f"\n\n⏳ <i>Este mensaje se borrará en {retention_mins} minutos.</i>"
 
         sent_doc = await send_doc_bytes(
             bot,
@@ -613,6 +652,18 @@ async def descargar_epub_pendiente(
                 )
             except Exception as e:
                 logger.error(f"Failed to log book history: {e}")
+                
+            # Programar Auto-Delete si aplica
+            if is_group and is_privileged and context.job_queue:
+                from services.settings_service import get_setting
+                retention_mins = int(get_setting("group_retention_minutes", "5"))
+                context.job_queue.run_once(
+                    delete_message_job, 
+                    retention_mins * 60, 
+                    data=sent_doc.message_id,
+                    chat_id=destino
+                )
+                logger.info(f"Scheduled auto-delete for msg {sent_doc.message_id} in {retention_mins}m")
 
         # Registrar descarga
         record_download(uid)
@@ -792,23 +843,14 @@ async def enviar_libro_directo(
             if format_type == "fb_preview":
                 # Enviar Portada y Caption al usuario
                 if portada_data:
-                    # Enviar portada sola primero? O con caption?
-                    # User request: "mensaje que se enviara al char priavdo sera la vista previa facebbok (inluyendo la portada antes del mensaje principal)"
-                    # Esto suena a: Foto con caption, o Foto y luego Texto.
-                    # El bot actual suele enviar Foto con caption corto, y luego Texto largo.
-                    # Pero para FB preview, mejor todo en uno si cabe, o separado.
-                    # Telegram caption limit is 1024 chars. FB posts can be longer.
-                    # Vamos a intentar enviar Foto sin caption (o titulo) y luego el texto completo.
-                    await send_photo_bytes(
-                        bot, user_id, None, portada_data, filename="cover.jpg"
+                    await send_photo_bytes(bot, user_id, fb_caption, portada_data)
+                else:
+                    await bot.send_message(
+                        chat_id=user_id,
+                        text=fb_caption,
+                        parse_mode="HTML",
+                        disable_web_page_preview=False,
                     )
-
-                await bot.send_message(
-                    chat_id=user_id,
-                    text=fb_caption,
-                    parse_mode="HTML",
-                    disable_web_page_preview=False,
-                )
 
             elif format_type == "fb_direct":
                 # Publicar en FB
