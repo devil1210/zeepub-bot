@@ -119,7 +119,7 @@ def upsert_user(
     """
     expires_at = None
     from datetime import timedelta
-    
+
     now = datetime.utcnow()
 
     if duration_days is not None:

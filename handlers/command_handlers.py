@@ -252,7 +252,7 @@ class CommandHandlers:
         user_level = (
             status_label if status_label else roles_display.get(role_key, "Lector")
         )
-        
+
         if role_key == "banned":
             user_level = "🚫 Baneado"
 
@@ -271,9 +271,9 @@ class CommandHandlers:
 
         if max_dl is None:
             if role_key == "banned":
-                 left_text = "⛔ Acceso denegado"
+                left_text = "⛔ Acceso denegado"
             else:
-                 left_text = "✅ Descargas ilimitadas"
+                left_text = "✅ Descargas ilimitadas"
         else:
             remaining = max_dl - used
             left_text = f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día (de {max_dl})"
@@ -307,7 +307,7 @@ class CommandHandlers:
                 text += f"📅 <b>Vence:</b> {expires_at.strftime('%d/%m/%Y')}\n"
 
         text += f"📉 <b>Descargas:</b> {left_text}\n"
-        
+
         # Solo mostrar reinicio si NO es ilimitado y NO está baneado
         if max_dl is not None:
             text += f"⏳ <b>Reinicio en:</b> {hours}h {minutes}m\n"
