@@ -782,12 +782,23 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
     # Botón cerrar
     keyboard.append([InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")])
 
-    await query.edit_message_text(
-        text=text,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode="HTML"
-    )
-    await query.answer()
+    try:
+        await query.edit_message_text(
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        # Ignore "Message is not modified"
+        if "Message is not modified" in str(e):
+            pass
+        else:
+            logger.warning(f"Error updating help menu: {e}")
+
+    try:
+        await query.answer()
+    except Exception:
+        pass
 
 
 def register_handlers(app):
