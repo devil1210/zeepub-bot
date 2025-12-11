@@ -32,10 +32,20 @@ async def daily_reset_loop(bot=None):
                     from config.config_settings import config
 
                     data = get_daily_stats()
+                    
+                    # Formatear breakdown
+                    by_role = data.get("by_role", {})
+                    roles_txt = ""
+                    if by_role:
+                        roles_txt = "\n🏷️ <b>Por Nivel:</b>\n"
+                        for r, count in by_role.items():
+                            roles_txt += f"  • {r.capitalize()}: {count}\n"
+
                     report_text = (
                         "📊 <b>Reporte Diario Automático</b>\n\n"
                         f"👥 <b>Usuarios Únicos:</b> {data['unique_users']}\n"
                         f"⬇️ <b>Descargas Totales:</b> {data['total_downloads']}\n"
+                        f"{roles_txt}"
                         "🔄 <i>Reseteando contadores...</i>"
                     )
 
