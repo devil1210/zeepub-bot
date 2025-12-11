@@ -71,6 +71,9 @@ class CommandHandlers:
         # Registrar /id (admin only)
         app.add_handler(CommandHandler("id", self.get_id))
 
+        # Registrar /stats (admin only)
+        app.add_handler(CommandHandler("stats", self.stats))
+
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
 
