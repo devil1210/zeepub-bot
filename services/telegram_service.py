@@ -1540,3 +1540,16 @@ async def publicar_facebook_action(
             message_id=msg.message_id,
             text=f"❌ Error al publicar: {str(e)}",
         )
+
+
+async def delete_message_job(context: ContextTypes.DEFAULT_TYPE):
+    """Job callback para borrar mensajes automáticamente."""
+    try:
+        job = context.job
+        chat_id = job.chat_id
+        message_id = job.data  # Pasamos message_id en data
+        
+        await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+        logger.debug(f"Mensaje {message_id} en chat {chat_id} eliminado automáticamente.")
+    except Exception as e:
+        logger.warning(f"No se pudo borrar mensaje automático en {chat_id}: {e}")
