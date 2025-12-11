@@ -351,3 +351,53 @@ def get_effective_user(uid: int) -> Dict[str, Any]:
         }
 
     return {"role": "free", "status_label": "Lector", "expires_at": None}
+
+
+def get_users_by_role(role: str) -> list[Dict[str, Any]]:
+    """
+    Retorna lista de usuarios con un rol específico desde la DB.
+    """
+    engine = _get_engine()
+    results = []
+    
+    if engine:
+        meta = MetaData()
+        users = Table("users", meta, autoload_with=engine)
+        with engine.connect() as conn:
+            sel = sa.select(users.c.telegram_id, users.c.role, users.c.expires_at).where(
+                users.c.role == role
+            )
+            rows = conn.execute(sel).fetchall()
+            for row in rows:
+                results.append({
+                    "telegram_id": row[0],
+                    "role": row[1],
+                    "expires_at": row[2]
+                })
+    else:
+        conn = get_sqlite_conn()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT telegram_id, role, expires_at FROM users WHERE role = ?",
+                (role,),
+            )
+            rows = cursor.fetchall()
+            for row in rows:
+                expires_at = row[2]
+                if isinstance(expires_at, str) and expires_at:
+                    try:
+                        from dateutil import parser
+                        expires_at = parser.parse(expires_at)
+                    except ImportError:
+                        pass
+                
+                results.append({
+                    "telegram_id": row[0],
+                    "role": row[1],
+                    "expires_at": expires_at
+                })
+        finally:
+            conn.close()
+            
+    return results
