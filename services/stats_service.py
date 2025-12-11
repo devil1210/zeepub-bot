@@ -54,9 +54,28 @@ def record_activity(uid: int, activity_type: str = "download"):
 
 def get_daily_stats() -> Dict[str, Any]:
     data = _load_stats()
+    
+    unique_users = data["users"]
+    total_downloads = data["downloads"]
+    
+    # Calculate breakdown by role
+    by_role = {}
+    if unique_users:
+        # Avoid circular import at top level if possible, or handle inside function
+        from services.user_service import get_effective_user
+        
+        for uid in unique_users:
+            try:
+                user_info = get_effective_user(uid)
+                role = user_info.get("role", "free")
+                by_role[role] = by_role.get(role, 0) + 1
+            except Exception as e:
+                logger.error(f"Error getting effective user for stats {uid}: {e}")
+
     return {
-        "unique_users": len(data["users"]),
-        "total_downloads": data["downloads"]
+        "unique_users": len(unique_users),
+        "total_downloads": total_downloads,
+        "by_role": by_role
     }
 
 
