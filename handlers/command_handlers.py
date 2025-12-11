@@ -61,6 +61,8 @@ class CommandHandlers:
         app.add_handler(CommandHandler("add_user", self.add_user))
         app.add_handler(CommandHandler("remove_user", self.remove_user))
         app.add_handler(CommandHandler("set_staff_status", self.set_staff_status))
+        # Registrar /set_auto_delete_time
+        app.add_handler(CommandHandler("set_auto_delete_time", self.set_auto_delete_time))
 
         # Registrar /setlog (admin only)
         app.add_handler(CommandHandler("setlog", self.setlog))
@@ -904,37 +906,70 @@ class CommandHandlers:
             f"✅ Usuario <code>{target_id}</code> removido de la DB.", parse_mode="HTML"
         )
 
-    async def set_staff_status(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def set_staff_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
-        /set_staff_status <id> <texto>
-        Establece un status personalizado para un usuario Staff.
+        /set_staff_status <id> <label>
+        Cambia el 'custom_status' de un usuario (ej: 'El Chambeador', 'Editor Jefe').
+        Solo para Admins.
         """
         uid = update.effective_user.id
         if uid not in config.ADMIN_USERS:
             return
 
         if not context.args or len(context.args) < 2:
-            await update.message.reply_text("❌ Uso: /set_staff_status <id> <texto>")
+            await update.message.reply_text(
+                "❌ Uso: /set_staff_status <id> <label>\n"
+                "Ejemplo: /set_staff_status 123456789 Editor Jefe"
+            )
             return
 
         target_id_str = context.args[0]
         if not target_id_str.isdigit():
             await update.message.reply_text("❌ ID inválido.")
             return
-
         target_id = int(target_id_str)
-        status_text = " ".join(context.args[1:])
 
+        new_label = " ".join(context.args[1:])
+
+        # Importar update_user_status_label
         from services.user_service import update_user_status_label
 
-        update_user_status_label(target_id, status_text)
+        try:
+            update_user_status_label(target_id, new_label)
+            await update.message.reply_text(
+                f"✅ Status actualizado para <code>{target_id}</code>: <b>{new_label}</b>",
+                parse_mode="HTML"
+            )
+        except Exception as e:
+            logger.error(f"Error set_staff_status: {e}")
+            await update.message.reply_text("❌ Error al actualizar status.")
 
-        await update.message.reply_text(
-            f"✅ Status para <code>{target_id}</code> actualizado a: <b>{status_text}</b>",
-            parse_mode="HTML",
-        )
+
+    async def set_auto_delete_time(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        /set_auto_delete_time <minutos>
+        Configura el tiempo de auto-borrado para descargas de admins en grupos.
+        """
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            return
+
+        if not context.args or not context.args[0].isdigit():
+            await update.message.reply_text("❌ Uso: /set_auto_delete_time <minutos>")
+            return
+
+        minutes = int(context.args[0])
+        from services.settings_service import set_setting
+        
+        try:
+            set_setting("group_retention_minutes", str(minutes))
+            await update.message.reply_text(
+                f"✅ Tiempo de auto-borrado configurado a: <b>{minutes} minutos</b>",
+                parse_mode="HTML"
+            )
+        except Exception as e:
+            logger.error(f"Error set_auto_delete_time: {e}")
+            await update.message.reply_text("❌ Error al guardar configuración.")
 
     async def setlog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
