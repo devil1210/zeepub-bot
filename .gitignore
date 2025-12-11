@@ -12,6 +12,9 @@
 !start.sh
 !.flake8
 
+!scripts/
+!scripts/*.sh
+
 # Virtualenvs
 venv/
 .env
