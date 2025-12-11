@@ -226,25 +226,98 @@ class CommandHandlers:
         )
 
     async def stats(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /stats: muestra estadísticas de uso del día."""
+        """
+        Handle /stats: muestra estadísticas.
+        Uso: 
+        - /stats: Resumen diario (usuarios activos, descargas, roles).
+        - /stats <rol>: Lista usuarios en base de datos con ese rol.
+        """
         uid = update.effective_user.id
         # Verificar permisos (Admin o Staff)
         from services.user_service import get_effective_user
         user_info = get_effective_user(uid)
         role = user_info.get("role", "free")
+        
         if role not in ("admin", "staff") and uid not in config.ADMIN_USERS:
             return
 
+        thread_id = get_thread_id(update)
+        
+        # Modo Listar Usuarios por Rol: /stats premium
+        if context.args:
+            target_role = context.args[0].lower()
+            from services.user_service import get_users_by_role
+            users_list = get_users_by_role(target_role)
+            
+            if not users_list:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=f"ℹ️ No se encontraron usuarios con el rol <b>{target_role}</b> en base de datos.",
+                    parse_mode="HTML",
+                    message_thread_id=thread_id,
+                )
+                return
+
+            msg = f"📋 <b>Usuarios con rol: {target_role.capitalize()}</b> ({len(users_list)})\n\n"
+            count = 0
+            for u in users_list:
+                count += 1
+                if count > 50:
+                    msg += f"... y otros {len(users_list) - 50} más."
+                    break
+                    
+                u_id = u['telegram_id']
+                expires = u.get('expires_at')
+                
+                exp_str = "Infinito"
+                if expires:
+                    from datetime import datetime
+                    # Calcular días restantes
+                    now = datetime.utcnow()
+                    if isinstance(expires, str):
+                        try:
+                            from dateutil import parser
+                            expires = parser.parse(expires)
+                        except:
+                            pass
+                    
+                    if hasattr(expires, 'date'):
+                        delta = expires - now
+                        days_left = delta.days
+                        if days_left < 0:
+                            exp_str = "Vencido"
+                        else:
+                            exp_str = f"{days_left} días"
+                
+                msg += f"👤 <code>{u_id}</code> | ⏳ {exp_str}\n"
+
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=msg,
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+            return
+
+        # Modo Resumen Diario
         from services.stats_service import get_daily_stats
         data = get_daily_stats()
-
+        
+        # Formatear desglose por roles
+        by_role = data.get("by_role", {})
+        roles_txt = ""
+        if by_role:
+            roles_txt = "\n🏷️ <b>Por Nivel (Activos):</b>\n"
+            for r, count in by_role.items():
+                roles_txt += f"  • {r.capitalize()}: {count}\n"
+        
         text = (
             "📊 <b>Estadísticas Diarias (Hoy)</b>\n\n"
             f"👥 <b>Usuarios Únicos:</b> {data['unique_users']}\n"
             f"⬇️ <b>Descargas Totales:</b> {data['total_downloads']}\n"
+            f"{roles_txt}"
         )
-
-        thread_id = get_thread_id(update)
+        
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
