@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 STATS_FILE = os.path.join("data", "daily_stats.json")
 
+
 def _load_stats() -> Dict[str, Any]:
     if not os.path.exists(STATS_FILE):
         return {"users": [], "downloads": 0}
@@ -23,6 +24,7 @@ def _load_stats() -> Dict[str, Any]:
         logger.error(f"Error loading stats: {e}")
         return {"users": [], "downloads": 0}
 
+
 def _save_stats(data: Dict[str, Any]):
     try:
         os.makedirs(os.path.dirname(STATS_FILE), exist_ok=True)
@@ -31,6 +33,7 @@ def _save_stats(data: Dict[str, Any]):
     except Exception as e:
         logger.error(f"Error saving stats: {e}")
 
+
 def record_activity(uid: int, activity_type: str = "download"):
     """
     Registra actividad.
@@ -38,15 +41,16 @@ def record_activity(uid: int, activity_type: str = "download"):
                    'interaction' (solo unique users, si quisiéramos traquear solo uso)
     """
     data = _load_stats()
-    
+
     # Update unique users
     if uid not in data["users"]:
         data["users"].append(uid)
-    
+
     if activity_type == "download":
         data["downloads"] += 1
-        
+
     _save_stats(data)
+
 
 def get_daily_stats() -> Dict[str, Any]:
     data = _load_stats()
@@ -54,6 +58,7 @@ def get_daily_stats() -> Dict[str, Any]:
         "unique_users": len(data["users"]),
         "total_downloads": data["downloads"]
     }
+
 
 def reset_stats():
     """Resetea las estadísticas diarias."""

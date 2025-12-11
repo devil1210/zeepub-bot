@@ -6,7 +6,7 @@ from utils.download_limiter import reset_all_downloads
 logger = logging.getLogger(__name__)
 
 
-async def daily_reset_loop():
+async def daily_reset_loop(bot=None):
     """
     Loop infinito que espera hasta la próxima medianoche para resetear las descargas.
     """
@@ -30,7 +30,7 @@ async def daily_reset_loop():
                 try:
                     from services.stats_service import get_daily_stats, reset_stats
                     from config.config_settings import config
-                    
+
                     data = get_daily_stats()
                     report_text = (
                         "📊 <b>Reporte Diario Automático</b>\n\n"
@@ -38,13 +38,13 @@ async def daily_reset_loop():
                         f"⬇️ <b>Descargas Totales:</b> {data['total_downloads']}\n"
                         "🔄 <i>Reseteando contadores...</i>"
                     )
-                    
+
                     for admin_id in config.ADMIN_USERS:
                         try:
                             await bot.send_message(chat_id=admin_id, text=report_text, parse_mode="HTML")
                         except Exception as e:
                             logger.error(f"Error enviando reporte a admin {admin_id}: {e}")
-                    
+
                     # Resetear stats
                     reset_stats()
                 except Exception as e:

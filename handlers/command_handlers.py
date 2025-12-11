@@ -232,19 +232,18 @@ class CommandHandlers:
         from services.user_service import get_effective_user
         user_info = get_effective_user(uid)
         role = user_info.get("role", "free")
-        
         if role not in ("admin", "staff") and uid not in config.ADMIN_USERS:
             return
 
         from services.stats_service import get_daily_stats
         data = get_daily_stats()
-        
+
         text = (
             "📊 <b>Estadísticas Diarias (Hoy)</b>\n\n"
             f"👥 <b>Usuarios Únicos:</b> {data['unique_users']}\n"
             f"⬇️ <b>Descargas Totales:</b> {data['total_downloads']}\n"
         )
-        
+
         thread_id = get_thread_id(update)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -365,17 +364,17 @@ class CommandHandlers:
         )
 
         keyboard = [
-        [
-            InlineKeyboardButton(
-                "✅ Ya realicé la donación", callback_data="notificar_donacion"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "⏳ Donar más tarde", callback_data="cerrar"
-            )
+            [
+                InlineKeyboardButton(
+                    "✅ Ya realicé la donación", callback_data="notificar_donacion"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "⏳ Donar más tarde", callback_data="cerrar"
+                )
+            ]
         ]
-    ]
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
