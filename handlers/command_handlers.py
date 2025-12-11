@@ -701,7 +701,7 @@ class CommandHandlers:
             return
         target_id = int(target_id_str)
 
-        valid_roles = ["white", "vip", "premium", "staff"]
+        valid_roles = ["white", "vip", "premium", "staff", "banned"]
         if role not in valid_roles:
             await update.message.reply_text(
                 f"❌ Rol inválido. Use: {', '.join(valid_roles)}"
@@ -710,23 +710,32 @@ class CommandHandlers:
 
         # Determine duration
         duration = None
+        duration_days = None
+
         if len(context.args) >= 3:
             if context.args[2].isdigit():
-                duration = int(context.args[2])
+                val = int(context.args[2])
+                # If role is banned, treat duration as days
+                if role == "banned":
+                    duration_days = val
+                else:
+                    duration = val
         else:
             # Use default from settings if not provided
             # Only for non-staff roles usually, but consistent behavior is better
-            if role != "staff":
+            if role != "staff" and role != "banned":
                 from services.settings_service import get_setting
 
                 duration = int(get_setting("benefit_duration_months", "6"))
 
         from services.user_service import upsert_user
 
-        upsert_user(target_id, role, duration_months=duration, created_by=uid)
+        upsert_user(target_id, role, duration_months=duration, created_by=uid, duration_days=duration_days)
 
         msg = f"✅ Usuario <code>{target_id}</code> agregado como <b>{role.capitalize()}</b>"
-        if duration:
+        if duration_days:
+            msg += f" por <b>{duration_days} días</b> (Baneado)."
+        elif duration:
             msg += f" por <b>{duration} meses</b>."
         else:
             msg += " (Permanente/Hasta cancelación)."

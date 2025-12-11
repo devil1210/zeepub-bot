@@ -111,21 +111,21 @@ def upsert_user(
     duration_months: Optional[int] = None,
     custom_status: Optional[str] = None,
     created_by: Optional[int] = None,
+    duration_days: Optional[int] = None,
 ):
     """
     Agrega o actualiza un usuario.
-    Si duration_months es None y no existe, es 'infinito' (o controlado por logica de staff).
-    Si duration_months se provee, se calcula expires_at = now + months.
+    Si duration_months/days es None y no existe, es 'infinito'.
     """
     expires_at = None
-    if duration_months is not None:
-        from datetime import timedelta
-        import calendar
+    from datetime import timedelta
+    
+    now = datetime.utcnow()
 
+    if duration_days is not None:
+        expires_at = now + timedelta(days=duration_days)
+    elif duration_months is not None:
         # Simple approximation: 30 days * months
-        # Or more precise:
-        now = datetime.utcnow()
-        # Add months logic roughly
         days = duration_months * 30
         expires_at = now + timedelta(days=days)
 
