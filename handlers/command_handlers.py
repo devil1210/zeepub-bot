@@ -198,8 +198,9 @@ class CommandHandlers:
         text += f"📂 <b>Categoría: {cat_title}</b>\n\n"
 
         for cmd, desc in commands:
+            safe_cmd = cmd.replace("<", "&lt;").replace(">", "&gt;")
             safe_desc = desc.replace("<", "&lt;").replace(">", "&gt;")
-            text += f"<b>{cmd}</b>\n   ╰ {safe_desc}\n"
+            text += f"<b>{safe_cmd}</b>\n   ╰ {safe_desc}\n"
 
         # Teclado inicial
         row1 = [

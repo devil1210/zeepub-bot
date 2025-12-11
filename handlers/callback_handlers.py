@@ -753,8 +753,9 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
     text += f"📂 <b>Categoría: {cat_title}</b>\n\n"
 
     for cmd, desc in commands:
+        safe_cmd = cmd.replace("<", "&lt;").replace(">", "&gt;")
         safe_desc = desc.replace("<", "&lt;").replace(">", "&gt;")
-        text += f"<b>{cmd}</b>\n   ╰ {safe_desc}\n"
+        text += f"<b>{safe_cmd}</b>\n   ╰ {safe_desc}\n"
 
     # Construir teclado
     # Fila 1: Home | Content
