@@ -4,7 +4,7 @@ import io
 import os
 import logging
 from urllib.parse import urlparse, unquote
-from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 # from core.state_manager import state_manager (Moved to local scope)

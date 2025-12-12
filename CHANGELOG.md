@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.9] - 2025-12-12
+
+### Corregido
+- **Crash Loop**: Corregido `NameError: name 'Update' is not defined` en `services/telegram_service.py` causado por falta de importación en el parche anterior.
+
 ## [2.1.8] - 2025-12-12
 
 ### Corregido
