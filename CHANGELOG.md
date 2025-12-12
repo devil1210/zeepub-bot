@@ -7,6 +7,18 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.2.0] - 2025-12-12
+### Resumen del Lanzamiento
+Versión mayor que consolida todas las correcciones críticas del sistema de actualizaciones. Ahora Watchtower funciona correctamente gracias a la sincronización de la API de Docker y la política de reinicio. Se incluye el comando de actualización forzada y documentación actualizada.
+
+### Funcionalidades
+- **Nuevo Comando**: `⚠️ /update_system force` añadido al menú de ayuda (`/help` -> Admin). Permite forzar la reinstalación completa del contenedor incluso si no hay cambios en git.
+
+### Correcciones Críticas (Recap)
+- **Watchtower Race Condition**: Solucionado el fallo silencioso de actualizaciones cambiando `restart: always` por `restart: unless-stopped`.
+- **Docker API**: Sincronizada versión de cliente (1.52) con el host para evitar rechazos de conexión.
+- **Port Collision**: Movido puerto de Watchtower a 8081 para no chocar con Zitadel.
+
 ## [2.1.28] - 2025-12-12
 
 ### Configuración

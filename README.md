@@ -1,15 +1,22 @@
 # Zeepub Bot
 
 **Zeepub Bot** es un bot de Telegram avanzado que permite buscar y descargar libros electrónicos en formato EPUB. Integra una **Mini App** (Web App) para una experiencia de usuario moderna, búsqueda por palabra clave, navegación por catálogos OPDS y un sistema robusto de límites de descarga.
+![Version](https://img.shields.io/badge/version-2.2.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/python-3.9%2B-yellow)
+![Docker](https://img.shields.io/badge/docker-enabled-blue)
 
 ***
 
-## 🚀 Características
+## 📋 Características
 
-- **Mini App Integrada**: Interfaz web moderna dentro de Telegram para navegar y descargar.
-- **Búsqueda Global**: Busca libros en tu catálogo OPDS directamente desde Telegram.
-- **Navegación OPDS**: Explora colecciones, géneros y novedades.
-- **Descarga Directa**: Envía archivos EPUB al chat con metadatos enriquecidos (portada, sinopsis, autor).
+- **Gestión de Libros**: Búsqueda, descarga y organización de metadatos EPUB.
+- **Opción "Evil"**: Publicación directa a canales (Admin only).
+- **Integración OPDS**: Navegación fluida por catálogos.
+- **Sistema de Actualizaciones**: Actualización automática vía Watchtower con comando `/update_system` y modo forzado `/update_system force`.
+- **Gestión de Usuarios**: Niveles, baneos, y límites de descarga.
+- **Reportes**: Estadísticas diarias y semanales.
+- **Plugins**: Arquitectura extensible.
 - **Soporte para Grupos**: Funciona en grupos con topics/forums, respondiendo en el hilo correcto.
 - **Seguridad**: Validación criptográfica de `initData` para prevenir suplantación de identidad.
 - **Modo Administrador**:
