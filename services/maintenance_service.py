@@ -26,7 +26,7 @@ async def trigger_watchtower_update():
     try:
         async with aiohttp.ClientSession() as session:
             # Watchtower usa POST para updates
-            async with session.post(url, headers=headers, timeout=10) as resp:
+            async with session.post(url, headers=headers, timeout=60) as resp:
                 if resp.status == 200:
                     return True, "✅ Solicitud de actualización enviada a Watchtower."
                 else:
