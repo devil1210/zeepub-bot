@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.7] - 2025-12-12
+
+### Corregido
+- **Crash Loop**: Solucionado `ImportError` crítico causado por la falta de la clase `SettingsService`. Se ha implementado un wrapper asíncrono para mantener compatibilidad con los nuevos comandos.
+
 ## [2.1.6] - 2025-12-12
 
 ### Corregido

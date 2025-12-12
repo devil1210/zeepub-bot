@@ -155,8 +155,19 @@ def set_setting(key: str, value: str):
         conn.close()
 
 
-# Inicializar al importar
 try:
     init_settings_db()
 except Exception as e:
     logger.error(f"Could not init settings DB: {e}")
+
+
+class SettingsService:
+    """Wrapper asíncrono para los handlers."""
+
+    async def set_setting(self, key: str, value: str):
+        # Ejecutar síncrono por ahora, SQLite es rápido.
+        # En el futuro usar run_in_executor si se migra a DB pesada.
+        return set_setting(key, value)
+
+    async def get_setting(self, key: str, default: str = None) -> Optional[str]:
+        return get_setting(key, default)
