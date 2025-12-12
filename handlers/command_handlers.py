@@ -1061,15 +1061,15 @@ class CommandHandlers:
                 f"🔹 <b>Versión Local:</b> <code>{local_hash}</code>\n"
                 f"🔸 <b>Versión Remota:</b> <code>{remote_hash}</code>\n\n"
             )
-            
+
             if force_update:
-                 msg_text += "⚠️ <b>Actualización Forzada.</b> Reinstalando sistema...\n"
+                msg_text += "⚠️ <b>Actualización Forzada.</b> Reinstalando sistema...\n"
             else:
-                 msg_text += "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
+                msg_text += "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
 
             await status_msg.edit_text(msg_text, parse_mode="HTML")
-            
-            text = msg_text # Conservar para el siguiente paso
+
+            text = msg_text  # Conservar para el siguiente paso
         else:
             text = f"🔹 <b>Versión Local:</b> <code>{local_hash}</code>\n🔸 <b>Versión Remota:</b> <code>{remote_hash}</code>\n\n"
             text += "✅ <b>El sistema está actualizado.</b>\n"
@@ -1114,10 +1114,10 @@ class CommandHandlers:
             import asyncio
             import os
             import sys
-            
+
             logger.info("Esperando 10s antes de forzar reinicio...")
             await asyncio.sleep(10)
-            
+
             logger.warning("Watchtower no reinició el contenedor. Forzando salida (exit code 1)...")
             # Forzar vaciado de buffers de log si es posible
             logging.shutdown()
