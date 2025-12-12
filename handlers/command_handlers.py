@@ -1049,22 +1049,33 @@ class CommandHandlers:
         except Exception as e:
             logger.error(f"Error checking remote git via API: {e}")
 
-        # 3. Comparar
-        text = f"🔹 <b>Versión Local:</b> <code>{local_hash}</code>\n🔸 <b>Versión Remota:</b> <code>{remote_hash}</code>\n\n"
+        # 3. Comparar versiones
+        # Si se pasa "force" como argumento, saltar chequeo
+        force_update = False
+        if context.args and "force" in context.args[0].lower():
+            force_update = True
+            logger.info(f"Update forzado por usuario {uid}")
 
-        if local_hash != "Desconocido" and remote_hash != "Desconocido":
-            if local_hash == remote_hash:
-                await status_msg.edit_text(
-                    text + "✅ <b>El sistema ya está actualizado.</b>\nNo se requiere acción.",
-                    parse_mode="HTML"
-                )
-                return
+        if local_hash != remote_hash or force_update:
+            msg_text = (
+                f"🔹 <b>Versión Local:</b> <code>{local_hash}</code>\n"
+                f"🔸 <b>Versión Remota:</b> <code>{remote_hash}</code>\n\n"
+            )
+            
+            if force_update:
+                 msg_text += "⚠️ <b>Actualización Forzada.</b> Reinstalando sistema...\n"
             else:
-                text += "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
-                await status_msg.edit_text(text, parse_mode="HTML")
+                 msg_text += "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
+
+            await status_msg.edit_text(msg_text, parse_mode="HTML")
+            
+            text = msg_text # Conservar para el siguiente paso
         else:
-            text += "⚠️ No se pudo verificar versiones. Forzando actualización...\n"
+            text = f"🔹 <b>Versión Local:</b> <code>{local_hash}</code>\n🔸 <b>Versión Remota:</b> <code>{remote_hash}</code>\n\n"
+            text += "✅ <b>El sistema está actualizado.</b>\n"
+            text += f"Versión actual: <code>{local_hash}</code>"
             await status_msg.edit_text(text, parse_mode="HTML")
+            return
 
         # 4. Guardar estado antes de trigger (por si Watchtower mata el contenedor muy rápido)
         try:

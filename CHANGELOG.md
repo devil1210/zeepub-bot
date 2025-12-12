@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.26] - 2025-12-12
+
+### Funcionalidades
+- **Force Update**: Añadido soporte para `/update_system force`. Permite reinstalar la versión actual o forzar el ciclo de actualización incluso si los commits coinciden (útil para cambios en Dockerfile o dependencias base).
+
 ## [2.1.25] - 2025-12-12
 
 ### Configuración
