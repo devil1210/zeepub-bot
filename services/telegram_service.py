@@ -626,6 +626,7 @@ async def descargar_epub_pendiente(
         )
 
         slug = generar_slug_from_meta(meta)
+        logger.info(f"DEBUG SLUG GENERATION: Meta title={meta.get('titulo_volumen')}, Generated Slug='{slug}'")
         if slug:
             caption += f"\n#{slug}"
 
