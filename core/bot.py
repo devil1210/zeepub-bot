@@ -50,7 +50,6 @@ class ZeePubBot:
             read_timeout=20.0,
             write_timeout=20.0,
         )
-        
         self.app = ApplicationBuilder().token(token).request(trequest).build()
         self.app.add_error_handler(error_handler)
 
