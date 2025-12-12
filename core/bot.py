@@ -68,9 +68,17 @@ class ZeePubBot:
         self.app.add_handler(CallbackQueryHandler(abrir_zeepubs, pattern="^abrir"))
 
         # Log Level Interface
-        from handlers.callback_handlers import set_log_level_callback, help_navigation_callback
-        self.app.add_handler(CallbackQueryHandler(set_log_level_callback, pattern="^setlog\\|"))
-        self.app.add_handler(CallbackQueryHandler(help_navigation_callback, pattern="^help\\|"))
+        from handlers.callback_handlers import (
+            set_log_level_callback,
+            help_navigation_callback,
+        )
+
+        self.app.add_handler(
+            CallbackQueryHandler(set_log_level_callback, pattern="^setlog\\|")
+        )
+        self.app.add_handler(
+            CallbackQueryHandler(help_navigation_callback, pattern="^help\\|")
+        )
 
         self.app.add_handler(CallbackQueryHandler(button_handler))
 
@@ -88,8 +96,11 @@ class ZeePubBot:
 
         # JSON Upload Handler
         from handlers.message_handlers import handle_json_upload
+
         self.app.add_handler(
-            MessageHandler(filters.Document.MimeType("application/json"), handle_json_upload)
+            MessageHandler(
+                filters.Document.MimeType("application/json"), handle_json_upload
+            )
         )
 
     def start(self):
@@ -144,6 +155,29 @@ class ZeePubBot:
             logger.info("Daily reset scheduler iniciado")
         except Exception as e:
             logger.error(f"Error iniciando daily reset scheduler: {e}", exc_info=True)
+
+        # Verificar si venimos de un update via Watchtower
+        try:
+            import os
+            import json
+            from utils.helpers import get_current_version
+
+            if os.path.exists("update_state.json"):
+                with open("update_state.json", "r") as f:
+                    state = json.load(f)
+
+                chat_id = state.get("chat_id")
+                if chat_id:
+                    v = get_current_version()
+                    await self.app.bot.send_message(
+                        chat_id=chat_id,
+                        text=f"✅ <b>¡Actualización Completada!</b>\n\n🤖 ZeePub Bot v{v} está en línea. 🚀",
+                        parse_mode="HTML",
+                    )
+
+                os.remove("update_state.json")
+        except Exception as e:
+            logger.error(f"Error notificando update: {e}")
 
     async def stop_async(self):
         """Detiene el bot de forma asíncrona."""

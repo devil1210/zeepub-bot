@@ -62,7 +62,9 @@ class CommandHandlers:
         app.add_handler(CommandHandler("remove_user", self.remove_user))
         app.add_handler(CommandHandler("set_staff_status", self.set_staff_status))
         # Registrar /set_auto_delete_time
-        app.add_handler(CommandHandler("set_auto_delete_time", self.set_auto_delete_time))
+        app.add_handler(
+            CommandHandler("set_auto_delete_time", self.set_auto_delete_time)
+        )
         # Registrar /update_system
         app.add_handler(CommandHandler("update_system", self.update_system))
 
@@ -243,6 +245,7 @@ class CommandHandlers:
         uid = update.effective_user.id
         # Verificar permisos (Admin o Staff)
         from services.user_service import get_effective_user
+
         user_info = get_effective_user(uid)
         role = user_info.get("role", "free")
         is_admin = role == "admin" or uid in config.ADMIN_USERS
@@ -255,6 +258,7 @@ class CommandHandlers:
         if context.args:
             target_role = context.args[0].lower()
             from services.user_service import get_users_by_role
+
             users_list = get_users_by_role(target_role)
 
             if not users_list:
@@ -274,22 +278,24 @@ class CommandHandlers:
                     msg += f"... y otros {len(users_list) - 50} más."
                     break
 
-                u_id = u['telegram_id']
-                expires = u.get('expires_at')
+                u_id = u["telegram_id"]
+                expires = u.get("expires_at")
 
                 exp_str = "Infinito"
                 if expires:
                     from datetime import datetime
+
                     # Calcular días restantes
                     now = datetime.utcnow()
                     if isinstance(expires, str):
                         try:
                             from dateutil import parser
+
                             expires = parser.parse(expires)
                         except Exception:
                             pass
 
-                    if hasattr(expires, 'date'):
+                    if hasattr(expires, "date"):
                         delta = expires - now
                         days_left = delta.days
                         if days_left < 0:
@@ -309,6 +315,7 @@ class CommandHandlers:
 
         # Modo Resumen Diario
         from services.stats_service import get_daily_stats
+
         data = get_daily_stats()
 
         # Formatear desglose por roles
@@ -402,6 +409,7 @@ class CommandHandlers:
         )
 
         from utils.helpers import get_current_version
+
         version = get_current_version()
 
         text = (
@@ -454,11 +462,7 @@ class CommandHandlers:
                     "✅ Ya realicé la donación", callback_data="notificar_donacion"
                 )
             ],
-            [
-                InlineKeyboardButton(
-                    "⏳ Donar más tarde", callback_data="cerrar"
-                )
-            ]
+            [InlineKeyboardButton("⏳ Donar más tarde", callback_data="cerrar")],
         ]
 
         await context.bot.send_message(
@@ -655,6 +659,7 @@ class CommandHandlers:
 
         # Check ban status
         from services.user_service import get_effective_user
+
         user_info = get_effective_user(uid)
         if user_info.get("role") == "banned":
             expires_at = user_info.get("expires_at")
@@ -873,7 +878,13 @@ class CommandHandlers:
 
         from services.user_service import upsert_user
 
-        upsert_user(target_id, role, duration_months=duration, created_by=uid, duration_days=duration_days)
+        upsert_user(
+            target_id,
+            role,
+            duration_months=duration,
+            created_by=uid,
+            duration_days=duration_days,
+        )
 
         msg = f"✅ Usuario <code>{target_id}</code> agregado como <b>{role.capitalize()}</b>"
         if duration_days:
@@ -912,7 +923,9 @@ class CommandHandlers:
             f"✅ Usuario <code>{target_id}</code> removido de la DB.", parse_mode="HTML"
         )
 
-    async def set_staff_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def set_staff_status(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """
         /set_staff_status <id> <label>
         Cambia el 'custom_status' de un usuario (ej: 'El Chambeador', 'Editor Jefe').
@@ -946,13 +959,15 @@ class CommandHandlers:
             update_user_status_label(target_id, new_label)
             await msg.reply_text(
                 f"✅ Status actualizado para <code>{target_id}</code>: <b>{new_label}</b>",
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
         except Exception as e:
             logger.error(f"Error set_staff_status: {e}")
             await update.effective_message.reply_text(f"❌ Error: {str(e)}")
 
-    async def set_auto_delete_time(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def set_auto_delete_time(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """
         /set_auto_delete_time <minutos>
         Configura el tiempo de auto-borrado para descargas de admins en grupos.
@@ -973,7 +988,7 @@ class CommandHandlers:
             await self.settings_service.set_setting("group_retention_minutes", minutes)
             await msg.reply_text(
                 f"✅ Tiempo de auto-borrado configurado a: <b>{minutes} minutos</b>",
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
         except Exception as e:
             logger.error(f"Error set_auto_delete_time: {e}")
@@ -997,9 +1012,19 @@ class CommandHandlers:
         success, message = await trigger_watchtower_update()
 
         if success:
-            from utils.helpers import get_current_version
-            v = get_current_version()
-            message += f"\n\n🤖 <b>Versión Actual:</b> {v}"
+            # Guardar estado para notificar al reiniciar
+            try:
+                import json
+
+                state = {"chat_id": uid, "message_id": msg.message_id}
+                with open("update_state.json", "w") as f:
+                    json.dump(state, f)
+            except Exception as e:
+                logger.error(f"No se pudo guardar update_state: {e}")
+
+            message += (
+                "\n\n⏳ <b>El sistema se reiniciará si hay actualizaciones...</b>"
+            )
 
         await msg.reply_text(message, parse_mode="HTML")
 
@@ -1050,14 +1075,22 @@ class CommandHandlers:
         logging.getLogger().setLevel(new_level)
 
         # 2. Cambiar loggers específicos
-        loggers_to_update = ["uvicorn", "uvicorn.access", "httpx", "telegram", "apscheduler"]
+        loggers_to_update = [
+            "uvicorn",
+            "uvicorn.access",
+            "httpx",
+            "telegram",
+            "apscheduler",
+        ]
         for logger_name in loggers_to_update:
             logging.getLogger(logger_name).setLevel(new_level)
 
         # Loguear el cambio inmediato para verificar
         logger.log(new_level, f"Log level cambiado a {level_str} por admin {uid}")
 
-        await update.message.reply_text(f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML")
+        await update.message.reply_text(
+            f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML"
+        )
 
     async def saludo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -1090,13 +1123,15 @@ class CommandHandlers:
 
             # Enviar mensaje
             await context.bot.send_message(chat_id=target_chat_id, text=message_text)
-            await update.message.reply_text(f"✅ Mensaje enviado a <code>{target_chat_id}</code>", parse_mode="HTML")
+            await update.message.reply_text(
+                f"✅ Mensaje enviado a <code>{target_chat_id}</code>", parse_mode="HTML"
+            )
 
         except ValueError:
             await update.message.reply_text(
                 "❌ Uso incorrecto.\n"
-                "Uso: /saludo <chat_id> \"Mensaje entre comillas\"\n"
-                "Ejemplo: /saludo -100123456 \"Hola a todos\""
+                'Uso: /saludo <chat_id> "Mensaje entre comillas"\n'
+                'Ejemplo: /saludo -100123456 "Hola a todos"'
             )
         except Exception as e:
             await update.message.reply_text(f"❌ Error al enviar mensaje: {e}")
@@ -1108,7 +1143,11 @@ class CommandHandlers:
             return
 
         chat_id = update.effective_chat.id
-        thread_id = update.message.message_thread_id if update.message.message_thread_id else "N/A"
+        thread_id = (
+            update.message.message_thread_id
+            if update.message.message_thread_id
+            else "N/A"
+        )
 
         msg = (
             f"🆔 <b>Info del Chat</b>\n"
@@ -1121,12 +1160,14 @@ class CommandHandlers:
             await context.bot.send_message(chat_id=uid, text=msg, parse_mode="HTML")
             # Si se pidió desde un grupo, avisar discretamente o reaccionar
             if update.effective_chat.type != "private":
-                await update.message.reply_text("✅ Info enviada al privado.", quote=True)
+                await update.message.reply_text(
+                    "✅ Info enviada al privado.", quote=True
+                )
         except Exception as e:
             # Fallback si no se puede enviar al privado (e.g. usuario no inició bot)
             await update.message.reply_text(
                 f"❌ No pude enviarte MP (¿me has iniciado?). Aquí tienes:\n\n{msg}",
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
 
     async def reset_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1847,7 +1888,9 @@ class CommandHandlers:
                 await update.message.reply_text("❌ Error al borrar el historial.")
         except Exception as e:
             logger.error(f"Error en update_system: {e}")
-            await update.effective_message.reply_text("❌ Error interno al intentar actualizar.")
+            await update.effective_message.reply_text(
+                "❌ Error interno al intentar actualizar."
+            )
 
     async def export_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Exporta el historial de libros publicados a CSV."""
