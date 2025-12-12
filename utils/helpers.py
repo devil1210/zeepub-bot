@@ -4,6 +4,31 @@ from urllib.parse import urljoin, urlparse
 from config.config_settings import config
 
 
+import os
+
+
+def get_current_version() -> str:
+    """Extrae la versión actual desde CHANGELOG.md (primer encabezado [X.X.X])."""
+    try:
+        # Asumiendo que helpers.py está en utils/, subir un nivel a root
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        changelog_path = os.path.join(base_dir, "CHANGELOG.md")
+        if not os.path.exists(changelog_path):
+            return "Desconocida (No CHANGELOG)"
+
+        with open(changelog_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            # Buscar formato: ## [2.1.0] - 2025-12-11
+            match = re.search(r"## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})", content)
+            if match:
+                version = match.group(1)
+                date = match.group(2)
+                return f"{version} ({date})"
+    except Exception:
+        pass
+    return "Desconocida"
+
+
 def get_thread_id(update) -> int:
     """
     Extrae el message_thread_id de un Update de Telegram.

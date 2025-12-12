@@ -401,7 +401,11 @@ class CommandHandlers:
             ">", "&gt;"
         )
 
+        from utils.helpers import get_current_version
+        version = get_current_version()
+
         text = (
+            f"🤖 <b>ZeePub Bot</b> v{version}\n\n"
             "📊 <b>Tu Estado</b>\n\n"
             f"👤 <b>Usuario:</b> {user_name}\n"
             f"🆔 <b>ID:</b> {uid}\n"
@@ -991,6 +995,11 @@ class CommandHandlers:
         from services.maintenance_service import trigger_watchtower_update
 
         success, message = await trigger_watchtower_update()
+
+        if success:
+            from utils.helpers import get_current_version
+            v = get_current_version()
+            message += f"\n\n🤖 <b>Versión Actual:</b> {v}"
 
         await msg.reply_text(message)
 
