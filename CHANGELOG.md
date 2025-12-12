@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.10] - 2025-12-12
+
+### Corregido
+- **Update Loop**: Se ha forzado la invalidación de caché en el Dockerfile para asegurar que `version_hash.txt` se actualice correctamente en nuevas builds.
+
 ## [2.1.9] - 2025-12-12
 
 ### Corregido

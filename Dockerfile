@@ -24,7 +24,8 @@ RUN curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/r
 
 # Bake git hash
 ARG GIT_COMMIT=unknown
-RUN echo $GIT_COMMIT > version_hash.txt
+ARG BUILD_DATE=unknown
+RUN echo $GIT_COMMIT > version_hash.txt && echo $BUILD_DATE > build_date.txt
 
 COPY . .
 
