@@ -1098,6 +1098,20 @@ class CommandHandlers:
             message += "\n\n⏳ <b>El sistema se reiniciará en breve...</b>"
             await msg.reply_text(message, parse_mode="HTML")
 
+            # Fallback suicida: Si Watchtower no nos mata en 10s, nos matamos nosotros
+            # para forzar a Docker a reiniciarnos (y pillar la nueva imagen ya descargada).
+            import asyncio
+            import os
+            import sys
+            
+            logger.info("Esperando 10s antes de forzar reinicio...")
+            await asyncio.sleep(10)
+            
+            logger.warning("Watchtower no reinició el contenedor. Forzando salida (exit code 1)...")
+            # Forzar vaciado de buffers de log si es posible
+            logging.shutdown()
+            os._exit(1)
+
     async def setlog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /setlog [LEVEL]

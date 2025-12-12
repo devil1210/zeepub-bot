@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.21] - 2025-12-12
+
+### Robustez
+- **Update Fallback**: Implementado un mecanismo de "reinicio forzado" si Watchtower no detiene el contenedor automáticamente tras 10 segundos. Esto asegura que la actualización se aplique incluso si hubo problemas de permisos con Docker.
+
 ## [2.1.20] - 2025-12-12
 
 ### Calidad de Código
