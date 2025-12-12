@@ -7,6 +7,12 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.22] - 2025-12-12
+
+### Calidad de Código
+- **Corrección Menor**: Eliminados espacios en blanco en líneas vacías (`W293`) para cumplir estrictamente con el linter.
+- **Documentación**: Actualizado `README.md` con detalles sobre el sistema de actualizaciones robusto (filtrado de Watchtower y reinicio forzado).
+
 ## [2.1.21] - 2025-12-12
 
 ### Robustez

@@ -206,6 +206,8 @@ El bot integra **Watchtower** para facilitar la actualización de imágenes Dock
 
 - **Comando**: `/update_system` (Solo Admin)
 - **Funcionamiento**: Verifica versiones consultando la API de GitHub (sin dependencias de git local) y solicita a Watchtower que busque nuevas imágenes. Si encuentra una nueva versión, descarga la imagen y reinicia el contenedor automáticamente.
+- **Filtrado Inteligente**: Configurado para que Watchtower solo supervise el contenedor del bot (`zeepubs_bot`), ignorando otros servicios del VPS.
+- **Resiliencia**: Incluye mecanismo de "suicide fallback" que fuerza el reinicio del contenedor si Watchtower falla al detenerlo tras una actualización exitosa.
 - **Verificación**: Persistencia robusta del estado para asegurar que el bot notifique el éxito tras el reinicio.
 
 ## 🛠 Desarrollo
