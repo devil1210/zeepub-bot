@@ -977,6 +977,25 @@ class CommandHandlers:
             logger.error(f"Error set_auto_delete_time: {e}")
             await msg.reply_text("❌ Error al guardar configuración.")
 
+    async def update_system(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        /update_system
+        Fuerza una actualización del sistema via Watchtower.
+        """
+        uid = update.effective_user.id
+        msg = update.effective_message
+        
+        if uid not in config.ADMIN_USERS:
+            return
+            
+        await msg.reply_text("⏳ Iniciando solicitud de actualización al sistema...")
+        
+        from services.maintenance_service import trigger_watchtower_update
+        
+        success, message = await trigger_watchtower_update()
+        
+        await msg.reply_text(message)
+
     async def setlog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /setlog [LEVEL]
