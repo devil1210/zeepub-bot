@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.24] - 2025-12-12
+
+### Configuración
+- **Watchtower Port**: Cambiado el puerto expuesto de Watchtower a `8081` para evitar colisión con Zitadel (que usa el 8080). Internamente el bot sigue comunicándose por el puerto 8080 de la red Docker.
+
 ## [2.1.23] - 2025-12-12
 
 ### Configuración
