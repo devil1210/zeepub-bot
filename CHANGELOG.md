@@ -7,17 +7,17 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
-## [2.1.1] - 2025-12-12
+## [2.1.2] - 2025-12-12
 
 ### Agregado
-- **Actualizaciones Automáticas**: Integración con Watchtower y comando `/update_system` para autogestión.
-- **Visualización de Versión**: Comandos `/status` y `/update_system` muestran la versión actual leyendo `CHANGELOG.md`.
+- **Estadísticas Mejoradas**: Comando `/stats` con desglose detallado por roles (White, VIP, Premium).
+- **Sistema de Baneos**: Soporte para rol `banned` con duración temporal. Accesible via `/add_user <id> banned <días>`.
+- **Actualizaciones Automáticas**: Integración con Watchtower y nuevo comando `/update_system`.
+- **Visualización de Versión**: Indicador de versión en `/status` y `/update_system`.
 
 ### Corregido
-- **Estabilidad de Red**: Solucionados errores de resolución DNS (`[Errno -3]`) forzando DNS de Google.
-- **Timeouts**: Aumentados tiempos de espera para conexiones HTTP (20s) y Watchtower (60s).
-- **Linting**: Corrección masiva de estilos (`flake8`, `black`) y limpieza de espacios en blanco.
-- **Sintaxis**: Arreglada regresión en inicialización de `bot.py`.
+- **Estabilidad de Red**: Resolución DNS forzada (`8.8.8.8`) para mitigar errores de conexión.
+- **Correcciones Técnicas**: Timeout extendido en Watchtower (60s), limpieza de linting (`flake8`) y arreglos de sintaxis.
 
 ## [2.1.0] - 2025-12-11
 
