@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.25] - 2025-12-12
+
+### Configuración
+- **Watchtower Fix**: Restaurada la variable `DOCKER_API_VERSION` y actualizada a `1.45`. La eliminación anterior causó que Watchtower usara una versión cliente antigua (1.25) incompatible con el host moderno (min 1.44).
+
 ## [2.1.24] - 2025-12-12
 
 ### Configuración
