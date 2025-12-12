@@ -7,6 +7,18 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.3] - 2025-12-12
+
+### Cambiado
+- **Mecanismo de Actualización**: Reemplazado uso de `git ls-remote` por API de GitHub (`httpx`) para verificar versiones, eliminado problemas de autenticación y dependencias de CLI.
+- **Persistencia en Grupos**: El mensaje de información del libro (portada + metadatos) ahora persiste siempre en grupos para todos los usuarios, mejorando el contexto.
+- **Notificación de Update**: Movida la lógica de guardado de estado *antes* del reinicio del contenedor para garantizar notificaciones de éxito resilientes.
+
+### Corregido
+- **Falta de Slug**: Restaurado el slug en los mensajes de archivo y resumen inicial que había desaparecido accidentalmente.
+- **Formato de Slug**: Reemplazo automático del carácter `×` por `x` en la generación de slugs.
+- **Race Condition**: Solucionado un problema donde el bot se reiniciaba antes de guardar el estado de actualización.
+
 ## [2.1.2] - 2025-12-12
 
 ### Agregado

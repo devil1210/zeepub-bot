@@ -205,8 +205,8 @@ El bot implementa medidas de seguridad para proteger la API de la Mini App:
 El bot integra **Watchtower** para facilitar la actualización de imágenes Docker.
 
 - **Comando**: `/update_system` (Solo Admin)
-- **Funcionamiento**: Solicita a Watchtower que busque nuevas imágenes en GitHub Container Registry (`ghcr.io`). Si encuentra una nueva versión, descarga la imagen y reinicia el contenedor del bot automáticamente con `timeout` extendido (60s).
-- **Verificación**: Al finalizar, el bot notifica el éxito y muestra la nueva versión instalada.
+- **Funcionamiento**: Verifica versiones consultando la API de GitHub (sin dependencias de git local) y solicita a Watchtower que busque nuevas imágenes. Si encuentra una nueva versión, descarga la imagen y reinicia el contenedor automáticamente.
+- **Verificación**: Persistencia robusta del estado para asegurar que el bot notifique el éxito tras el reinicio.
 
 ## 🛠 Desarrollo
 
