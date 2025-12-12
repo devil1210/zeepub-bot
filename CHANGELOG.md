@@ -7,6 +7,12 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.19] - 2025-12-12
+
+### Debug
+- **Notificación de Update**: Añadido logging detallado en el arranque para diagnosticar por qué a veces no se envía el mensaje de éxito tras una actualización.
+- **Robustez**: Asegurada la creación del directorio `data/` antes de guardar el estado de actualización.
+
 ## [2.1.18] - 2025-12-12
 
 ### Configuración

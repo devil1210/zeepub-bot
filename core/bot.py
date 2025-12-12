@@ -164,21 +164,28 @@ class ZeePubBot:
 
             state_path = "data/update_state.json"
             if os.path.exists(state_path):
+                logger.info(f"Found update state file at {state_path}")
                 with open(state_path, "r") as f:
                     state = json.load(f)
 
                 chat_id = state.get("chat_id")
                 if chat_id:
                     v = get_version_string()
+                    logger.info(f"Sending update success message to {chat_id}")
                     await self.app.bot.send_message(
                         chat_id=chat_id,
                         text=f"✅ <b>¡Actualización Completada!</b>\n\n🤖 ZeePub Bot v{v} está en línea. 🚀",
                         parse_mode="HTML",
                     )
-
+                else:
+                    logger.warning("Update state file found but no chat_id key")
+                
                 os.remove(state_path)
+            else:
+                logger.info(f"No update state file found at {state_path}")
+
         except Exception as e:
-            logger.error(f"Error notificando update: {e}")
+            logger.error(f"Error notificando update: {e}", exc_info=True)
 
     async def stop_async(self):
         """Detiene el bot de forma asíncrona."""

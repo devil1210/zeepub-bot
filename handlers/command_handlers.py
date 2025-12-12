@@ -1069,9 +1069,13 @@ class CommandHandlers:
         # 4. Guardar estado antes de trigger (por si Watchtower mata el contenedor muy rápido)
         try:
             import json
+            # Ensure data dir exists
+            os.makedirs("data", exist_ok=True)
+            
             state = {"chat_id": uid, "message_id": msg.message_id}
             with open("data/update_state.json", "w") as f:
                 json.dump(state, f)
+            logger.info(f"Saved update state to data/update_state.json: {state}")
         except Exception as e:
             logger.error(f"No se pudo guardar update_state: {e}")
 
