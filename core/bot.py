@@ -34,12 +34,23 @@ async def error_handler(update, context):
     return
 
 
+from telegram.request import HTTPXRequest
+
 class ZeePubBot:
     """Clase principal del bot."""
 
     def __init__(self):
         token = config.TELEGRAM_TOKEN
-        self.app = ApplicationBuilder().token(token).build()
+        
+        # Configurar custom request con timeouts extendidos para evitar DNS/Network errors
+        trequest = HTTPXRequest(
+            connection_pool_size=10,
+            connect_timeout=20.0,
+            read_timeout=20.0,
+            write_timeout=20.0,
+        )
+        
+        self.app = ApplicationBuilder().token(token).request(trequest).build()
         self.app.add_error_handler(error_handler)
 
         # Inicializar plugins manager (async init happens in initialize())
