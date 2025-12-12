@@ -14,13 +14,17 @@ WORKDIR /app
 # Copiar archivos de requirements y código
 # Copiar archivos de requirements y código
 COPY requirements.txt ./
-RUN apt-get update && apt-get install -y postgresql-client curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y postgresql-client curl git && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install cloudflared
 RUN curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb && \
     dpkg -i cloudflared.deb && \
     rm cloudflared.deb
+
+# Bake git hash
+ARG GIT_COMMIT=unknown
+RUN echo $GIT_COMMIT > version_hash.txt
 
 COPY . .
 

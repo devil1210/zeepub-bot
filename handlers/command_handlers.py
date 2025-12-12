@@ -1009,15 +1009,23 @@ class CommandHandlers:
 
         # 1. Obtener Hash Local
         import subprocess
+        import os
 
         try:
-            local_hash = (
-                subprocess.check_output(
-                    ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.STDOUT
+            # Primero intentar archivo baked en docker
+            if os.path.exists("version_hash.txt"):
+                with open("version_hash.txt", "r") as f:
+                    local_hash = f.read().strip()[:7]
+            else:
+                # Fallback a comando git (para dev environment)
+                local_hash = (
+                    subprocess.check_output(
+                        ["git", "rev-parse", "--short", "HEAD"],
+                        stderr=subprocess.STDOUT,
+                    )
+                    .decode()
+                    .strip()
                 )
-                .decode()
-                .strip()
-            )
         except Exception:
             local_hash = "Desconocido"
 
