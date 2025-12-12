@@ -54,6 +54,7 @@ services:
       - WATCHTOWER_HTTP_API_UPDATE=true
       - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
       - WATCHTOWER_MONITOR_ONLY=${WATCHTOWER_MONITOR_ONLY:-false}
+      - DOCKER_API_VERSION=1.44
     ports:
       - "8080:8080"
     restart: always
