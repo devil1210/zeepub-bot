@@ -706,6 +706,7 @@ def _get_help_data(uid):
             ("🔧 /setlog", "Configurar logs"),
             ("👋 /saludo", "Broadcast mensaje"),
             ("🆔 /id", "Info ID chat/user"),
+            ("🆕 /update_system", "Actualizar sistema"),
             ("🧩 /plugins", "Listar plugins"),
         ]
 
