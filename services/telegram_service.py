@@ -615,8 +615,40 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         if slug:
             caption += f"\n#{slug}"
 
-        # Si es Admin en Grupo, añadir aviso de auto-borrado
+        if slug:
+            caption += f"\n#{slug}"
+
+        # Si es Admin en Grupo:
+        # 1. Enviar mensaje de Resumen Persistente (Portada + Info)
+        # 2. Añadir aviso de auto-borrado al archivo
         if is_group and is_privileged:
+            try:
+                from services.epub_service import extract_cover_from_epub
+                from utils.helpers import formatear_mensaje_portada
+
+                # Extraer portada
+                cover_bytes = extract_cover_from_epub(epub_buffer)
+                summary_text = formatear_mensaje_portada(meta)
+
+                if cover_bytes:
+                    await send_photo_bytes(
+                        bot,
+                        destino,
+                        summary_text,
+                        cover_bytes,
+                        parse_mode="HTML",
+                        message_thread_id=thread_id_destino
+                    )
+                else:
+                    await bot.send_message(
+                        chat_id=destino,
+                        text=summary_text,
+                        parse_mode="HTML",
+                        message_thread_id=thread_id_destino
+                    )
+            except Exception as e:
+                logger.error(f"Error enviando resumen persistente: {e}")
+
             from services.settings_service import get_setting
             retention_mins = int(get_setting("group_retention_minutes", "5"))
             caption += f"\n\n⏳ <i>Este mensaje se borrará en {retention_mins} minutos.</i>"
