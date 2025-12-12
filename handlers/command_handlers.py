@@ -408,9 +408,9 @@ class CommandHandlers:
             ">", "&gt;"
         )
 
-        from utils.helpers import get_current_version
+        from utils.helpers import get_version_string
 
-        version = get_current_version()
+        version = get_version_string()
 
         text = (
             f"🤖 <b>ZeePub Bot</b> v{version}\n\n"

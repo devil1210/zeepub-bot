@@ -160,7 +160,7 @@ class ZeePubBot:
         try:
             import os
             import json
-            from utils.helpers import get_current_version
+            from utils.helpers import get_version_string
 
             state_path = "data/update_state.json"
             if os.path.exists(state_path):
@@ -169,7 +169,7 @@ class ZeePubBot:
 
                 chat_id = state.get("chat_id")
                 if chat_id:
-                    v = get_current_version()
+                    v = get_version_string()
                     await self.app.bot.send_message(
                         chat_id=chat_id,
                         text=f"✅ <b>¡Actualización Completada!</b>\n\n🤖 ZeePub Bot v{v} está en línea. 🚀",

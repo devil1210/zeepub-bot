@@ -4,31 +4,6 @@ from urllib.parse import urljoin, urlparse
 from config.config_settings import config
 
 
-import os
-
-
-def get_current_version() -> str:
-    """Extrae la versión actual desde CHANGELOG.md (primer encabezado [X.X.X])."""
-    try:
-        # Asumiendo que helpers.py está en utils/, subir un nivel a root
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        changelog_path = os.path.join(base_dir, "CHANGELOG.md")
-        if not os.path.exists(changelog_path):
-            return "Desconocida (No CHANGELOG)"
-
-        with open(changelog_path, "r", encoding="utf-8") as f:
-            content = f.read()
-            # Buscar formato: ## [2.1.0] - 2025-12-11
-            match = re.search(r"## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})", content)
-            if match:
-                version = match.group(1)
-                date = match.group(2)
-                return f"{version} ({date})"
-    except Exception:
-        pass
-    return "Desconocida"
-
-
 def get_thread_id(update) -> int:
     """
     Extrae el message_thread_id de un Update de Telegram.
@@ -207,7 +182,6 @@ def generar_slug_from_meta(meta: dict) -> str:
     base_titulo = re.sub(r"\[.*?\]", "", base_titulo)
     base_titulo = base_titulo.split("-", 1)[0].strip()
     base_titulo = base_titulo.replace(",", " ")
-    base_titulo = base_titulo.replace("×", "x")
     for ch in (
         "'",
         "’",
@@ -480,3 +454,29 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
         return False, msg
 
     return True, ""
+
+
+CURRENT_VERSION = "2.1.3"
+
+
+def get_current_version() -> str:
+    return CURRENT_VERSION
+
+
+def get_commit_hash() -> str:
+    try:
+        import os
+        if os.path.exists("version_hash.txt"):
+            with open("version_hash.txt", "r") as f:
+                return f.read().strip()[:7]
+    except Exception:
+        pass
+    return "unknown"
+
+
+def get_version_string() -> str:
+    v = get_current_version()
+    h = get_commit_hash()
+    if h and h != "unknown":
+        return f"{v} ({h})"
+    return v
