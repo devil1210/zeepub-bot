@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.13] - 2025-12-12
+
+### Corregido
+- **Comando Help**: Solucionado error lógico que impedía enviar el mensaje de ayuda a usuarios no administradores (Readers).
+
 ## [2.1.12] - 2025-12-12
 
 ### Changed

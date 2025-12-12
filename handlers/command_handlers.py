@@ -221,13 +221,12 @@ class CommandHandlers:
             InlineKeyboardButton("📚 Content", callback_data="help|content"),
         ]
         keyboard = [row1]
-        if not is_admin:
-            return
-        row2 = [
-            InlineKeyboardButton("🛠 Admin", callback_data="help|admin"),
-            InlineKeyboardButton("💾 Datos", callback_data="help|data"),
-        ]
-        keyboard.append(row2)
+        if is_admin:
+            row2 = [
+                InlineKeyboardButton("🛠 Admin", callback_data="help|admin"),
+                InlineKeyboardButton("💾 Datos", callback_data="help|data"),
+            ]
+            keyboard.append(row2)
 
         keyboard.append([InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")])
 
