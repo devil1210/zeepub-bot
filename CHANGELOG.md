@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.5] - 2025-12-12
+
+### Corregido
+- **Generación de Slugs**: Restaurado el reemplazo explícito del carácter `×` por `x` (ej: "Hunter×Hunter" -> "HunterxHunter") que se había perdido en commits anteriores.
+
 ## [2.1.4] - 2025-12-12
 
 ### Corregido

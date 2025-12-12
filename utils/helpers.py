@@ -181,6 +181,7 @@ def generar_slug_from_meta(meta: dict) -> str:
     base_titulo = titulo_serie.split(":", 1)[0].strip()
     base_titulo = re.sub(r"\[.*?\]", "", base_titulo)
     base_titulo = base_titulo.split("-", 1)[0].strip()
+    base_titulo = base_titulo.replace("×", "x")
     base_titulo = base_titulo.replace(",", " ")
     for ch in (
         "'",
@@ -456,7 +457,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "2.1.4"
+CURRENT_VERSION = "2.1.5"
 
 
 def get_current_version() -> str:
