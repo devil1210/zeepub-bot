@@ -7,6 +7,12 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.17] - 2025-12-12
+
+### Mejoras
+- **Debug**: Comando `/status` ahora muestra explícitamente las descargas usadas vs totales (ej: "[Usadas: 3]") para facilitar el diagnóstico.
+- **Estabilidad**: Reforzada la lógica interna del comando `/reset` para garantizar la consistencia en memoria.
+
 ## [2.1.16] - 2025-12-12
 
 ### Mejoras

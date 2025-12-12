@@ -395,7 +395,7 @@ class CommandHandlers:
                 left_text = "✅ Descargas ilimitadas"
         else:
             remaining = max_dl - used
-            left_text = f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día (de {max_dl})"
+            left_text = f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día (de {max_dl}) [Usadas: {used}]"
 
         # Calcular tiempo para próximo reset
         from datetime import datetime, timedelta
@@ -1265,6 +1265,8 @@ class CommandHandlers:
 
         # Resetear descargas
         from utils.download_limiter import save_download
+        # Paranoid import to ensure singleton consistency
+        from core.state_manager import state_manager
 
         user_state = state_manager.get_user_state(target_uid)
         old_count = user_state.get("downloads_used", 0)
@@ -1272,6 +1274,9 @@ class CommandHandlers:
 
         # Actualizar persistencia
         save_download(target_uid, 0)
+        
+        # Verify in log
+        logger.info(f"Reset confirmed. Mem: {user_state.get('downloads_used')}")
 
         await update.message.reply_text(
             f"✅ Contador de descargas reseteado para el usuario {target_uid}.\n"
