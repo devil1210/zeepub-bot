@@ -13,6 +13,7 @@ sys.modules["services.telegram_service"] = MagicMock()
 sys.modules["services"] = MagicMock()
 sys.modules["utils.http_client"] = MagicMock()
 sys.modules["utils.helpers"] = MagicMock()
+sys.modules["services.settings_service"] = MagicMock()
 sys.modules["config.config_settings"] = MagicMock()
 
 import importlib.util
