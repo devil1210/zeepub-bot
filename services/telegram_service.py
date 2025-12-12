@@ -533,10 +533,9 @@ async def descargar_epub_pendiente(
 
     # Decidir si borrar mensaje de info
     # - Private: Borrar siempre (limpieza)
-    # - Group + Admin: Borrar (se envía uno nuevo persistente más abajo)
-    # - Group + Normal: MANTENER (porque el archivo va al PM y si borramos se pierde el contexto)
+    # - Group (Cualquiera): MANTENER (para preservar contexto)
     should_delete_info = True
-    if is_group and not is_privileged:
+    if is_group:
         should_delete_info = False
 
     # Borrar botones (siempre)
@@ -592,7 +591,7 @@ async def descargar_epub_pendiente(
                 await bot.answer_callback_query(
                     update.callback_query.id,
                     text="📂 Te envié el archivo al privado.",
-                    show_alert=False,
+                    show_alert=False
                 )
             except Exception:
                 pass
@@ -631,36 +630,8 @@ async def descargar_epub_pendiente(
             caption += f"\n#{slug}"
 
         # Si es Admin en Grupo:
-        # 1. Enviar mensaje de Resumen Persistente (Portada + Info)
-        # 2. Añadir aviso de auto-borrado al archivo
+        # Solo añadir aviso de auto-borrado al archivo (ya tenemos el resumen original preservado)
         if is_group and is_privileged:
-            try:
-                from services.epub_service import extract_cover_from_epub
-                from utils.helpers import formatear_mensaje_portada
-
-                # Extraer portada
-                cover_bytes = extract_cover_from_epub(epub_buffer)
-                summary_text = formatear_mensaje_portada(meta)
-
-                if cover_bytes:
-                    await send_photo_bytes(
-                        bot,
-                        destino,
-                        summary_text,
-                        cover_bytes,
-                        parse_mode="HTML",
-                        message_thread_id=thread_id_destino,
-                    )
-                else:
-                    await bot.send_message(
-                        chat_id=destino,
-                        text=summary_text,
-                        parse_mode="HTML",
-                        message_thread_id=thread_id_destino,
-                    )
-            except Exception as e:
-                logger.error(f"Error enviando resumen persistente: {e}")
-
             from services.settings_service import get_setting
 
             retention_mins = int(get_setting("group_retention_minutes", "5"))
