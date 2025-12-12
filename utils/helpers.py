@@ -207,6 +207,7 @@ def generar_slug_from_meta(meta: dict) -> str:
     base_titulo = re.sub(r"\[.*?\]", "", base_titulo)
     base_titulo = base_titulo.split("-", 1)[0].strip()
     base_titulo = base_titulo.replace(",", " ")
+    base_titulo = base_titulo.replace("×", "x")
     for ch in (
         "'",
         "’",

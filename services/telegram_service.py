@@ -7,6 +7,7 @@ from urllib.parse import urlparse, unquote
 from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
+
 # from core.state_manager import state_manager (Moved to local scope)
 # from core.session_manager import session_manager (Moved to local scope)
 from config.config_settings import config
@@ -264,8 +265,10 @@ async def publicar_libro(
     bot = context.bot
 
     from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
     from core.session_manager import session_manager
+
     lock = session_manager.get_publish_lock(uid)
 
     async with lock:
@@ -489,11 +492,14 @@ async def publicar_libro(
         user_state["titulo_pendiente"] = titulo
 
 
-async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int):
+async def descargar_epub_pendiente(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int
+):
     """Envía el EPUB guardado tras confirmación del usuario."""
     bot = context.bot
 
     from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
 
     from utils.helpers import get_thread_id
@@ -520,6 +526,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     is_group = chat_type in ("group", "supergroup", "channel")
 
     from services.user_service import get_effective_user
+
     user_info = get_effective_user(uid)
     role = user_info.get("role", "free")
     is_privileged = role in ("admin", "staff") or uid in config.ADMIN_USERS
@@ -585,7 +592,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
                 await bot.answer_callback_query(
                     update.callback_query.id,
                     text="📂 Te envié el archivo al privado.",
-                    show_alert=False
+                    show_alert=False,
                 )
             except Exception:
                 pass
@@ -623,9 +630,6 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         if slug:
             caption += f"\n#{slug}"
 
-        if slug:
-            caption += f"\n#{slug}"
-
         # Si es Admin en Grupo:
         # 1. Enviar mensaje de Resumen Persistente (Portada + Info)
         # 2. Añadir aviso de auto-borrado al archivo
@@ -645,21 +649,24 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
                         summary_text,
                         cover_bytes,
                         parse_mode="HTML",
-                        message_thread_id=thread_id_destino
+                        message_thread_id=thread_id_destino,
                     )
                 else:
                     await bot.send_message(
                         chat_id=destino,
                         text=summary_text,
                         parse_mode="HTML",
-                        message_thread_id=thread_id_destino
+                        message_thread_id=thread_id_destino,
                     )
             except Exception as e:
                 logger.error(f"Error enviando resumen persistente: {e}")
 
             from services.settings_service import get_setting
+
             retention_mins = int(get_setting("group_retention_minutes", "5"))
-            caption += f"\n\n⏳ <i>Este mensaje se borrará en {retention_mins} minutos.</i>"
+            caption += (
+                f"\n\n⏳ <i>Este mensaje se borrará en {retention_mins} minutos.</i>"
+            )
 
         sent_doc = await send_doc_bytes(
             bot,
@@ -674,10 +681,11 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         if sent_doc:
             # Log to history
             from services.history_service import log_published_book
+
             # file_info construction
             file_info = {
                 "file_size": sent_doc.document.file_size,
-                "file_unique_id": sent_doc.document.file_unique_id
+                "file_unique_id": sent_doc.document.file_unique_id,
             }
             # Run in background or await? It's sync db op, maybe run in thread or make it async?
             # The service uses sqlalchemy sync engine. Better to run in thread if possible, or just call it if it's fast.
@@ -687,7 +695,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
                     meta=meta,
                     message_id=sent_doc.message_id,
                     channel_id=sent_doc.chat.id,
-                    file_info=file_info
+                    file_info=file_info,
                 )
             except Exception as e:
                 logger.error(f"Failed to log book history: {e}")
@@ -696,16 +704,21 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         if is_group and is_privileged:
             if context.job_queue:
                 from services.settings_service import get_setting
+
                 retention_mins = int(get_setting("group_retention_minutes", "5"))
                 context.job_queue.run_once(
                     delete_message_job,
                     retention_mins * 60,
                     data=sent_doc.message_id,
-                    chat_id=destino
+                    chat_id=destino,
                 )
-                logger.info(f"Scheduled auto-delete for msg {sent_doc.message_id} in {retention_mins}m")
+                logger.info(
+                    f"Scheduled auto-delete for msg {sent_doc.message_id} in {retention_mins}m"
+                )
             else:
-                logger.warning("Auto-delete skipped: context.job_queue is None. Check if JobQueue is enabled.")
+                logger.warning(
+                    "Auto-delete skipped: context.job_queue is None. Check if JobQueue is enabled."
+                )
 
         # Registrar descarga
         record_download(uid)
@@ -798,7 +811,9 @@ async def enviar_libro_directo(
             )
             return False
 
-        logger.info(f"EPUB descargado exitosamente: {len(epub_bytes) if isinstance(epub_bytes, bytes) else 'archivo temp'} bytes")
+        logger.info(
+            f"EPUB descargado exitosamente: {len(epub_bytes) if isinstance(epub_bytes, bytes) else 'archivo temp'} bytes"
+        )
 
         # 4. Parsear metadatos del EPUB
         meta = {
@@ -811,7 +826,9 @@ async def enviar_libro_directo(
 
         logger.debug(f"Iniciando extracción de metadatos para: {title}")
         meta = await enrich_metadata_from_epub(epub_bytes, download_url, meta)
-        logger.debug(f"Metadatos extraídos - titulo_serie: {meta.get('titulo_serie')}, internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}")
+        logger.debug(
+            f"Metadatos extraídos - titulo_serie: {meta.get('titulo_serie')}, internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}"
+        )
 
         # 5. Preparar Portada
         cover_bytes = extract_cover_from_epub(epub_bytes)
@@ -1014,19 +1031,22 @@ async def enviar_libro_directo(
             # Registrar en historial
             if sent_doc:
                 from services.history_service import log_published_book
+
                 file_info = {
                     "file_size": sent_doc.document.file_size,
-                    "file_unique_id": sent_doc.document.file_unique_id
+                    "file_unique_id": sent_doc.document.file_unique_id,
                 }
                 try:
                     log_published_book(
                         meta=meta,
                         message_id=sent_doc.message_id,
                         channel_id=sent_doc.chat.id,
-                        file_info=file_info
+                        file_info=file_info,
                     )
                 except Exception as e:
-                    logger.error(f"Failed to log book history in enviar_libro_directo: {e}")
+                    logger.error(
+                        f"Failed to log book history in enviar_libro_directo: {e}"
+                    )
 
             # 8. Registrar descarga y notificar
             record_download(user_id)
@@ -1062,6 +1082,7 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     bot = context.bot
 
     from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
 
     # Recuperar datos del estado
@@ -1198,6 +1219,7 @@ async def _publish_choice_facebook(
     bot = context.bot
 
     from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
 
     # Clear awaiting flag (we're handling the choice now)
@@ -1303,6 +1325,7 @@ async def _publish_choice_telegram(
     bot = context.bot
 
     from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
     st.pop("awaiting_publish_target", None)
     logger.debug(
@@ -1479,6 +1502,7 @@ async def publicar_facebook_action(
     bot = context.bot
 
     from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
 
     # Validar credenciales antes de proceder
@@ -1589,6 +1613,8 @@ async def delete_message_job(context: ContextTypes.DEFAULT_TYPE):
         message_id = job.data  # Pasamos message_id en data
 
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-        logger.debug(f"Mensaje {message_id} en chat {chat_id} eliminado automáticamente.")
+        logger.debug(
+            f"Mensaje {message_id} en chat {chat_id} eliminado automáticamente."
+        )
     except Exception as e:
         logger.warning(f"No se pudo borrar mensaje automático en {chat_id}: {e}")
