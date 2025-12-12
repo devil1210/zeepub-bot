@@ -1062,26 +1062,33 @@ class CommandHandlers:
             text += "⚠️ No se pudo verificar versiones. Forzando actualización...\n"
             await status_msg.edit_text(text, parse_mode="HTML")
 
-        # 4. Trigger Watchtower
+        # 4. Guardar estado antes de trigger (por si Watchtower mata el contenedor muy rápido)
+        try:
+            import json
+            state = {"chat_id": uid, "message_id": msg.message_id}
+            with open("data/update_state.json", "w") as f:
+                json.dump(state, f)
+        except Exception as e:
+            logger.error(f"No se pudo guardar update_state: {e}")
+
+        # 5. Trigger Watchtower
         from services.maintenance_service import trigger_watchtower_update
 
         success, message = await trigger_watchtower_update()
 
-        if success:
-            # Guardar estado para notificar al reiniciar
+        if not success:
+            # Si falló, borrar el estado para que no notifique falsamente al reiniciar (si es que reinicia)
             try:
-                import json
+                import os
+                if os.path.exists("data/update_state.json"):
+                    os.remove("data/update_state.json")
+            except Exception:
+                pass
 
-                # Usar data/ para persistencia
-                state = {"chat_id": uid, "message_id": msg.message_id}
-                with open("data/update_state.json", "w") as f:
-                    json.dump(state, f)
-            except Exception as e:
-                logger.error(f"No se pudo guardar update_state: {e}")
-
+            await msg.reply_text(message, parse_mode="HTML")
+        else:
             message += "\n\n⏳ <b>El sistema se reiniciará en breve...</b>"
-
-        await msg.reply_text(message, parse_mode="HTML")
+            await msg.reply_text(message, parse_mode="HTML")
 
     async def setlog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
