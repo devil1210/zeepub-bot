@@ -23,6 +23,8 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     dns:
       - 8.8.8.8
       - 1.1.1.1
@@ -59,6 +61,7 @@ services:
       - WATCHTOWER_MONITOR_ONLY=${WATCHTOWER_MONITOR_ONLY:-false}
       - WATCHTOWER_DEBUG=true
       - DOCKER_API_VERSION=1.44
+      - WATCHTOWER_LABEL_ENABLE=true
     ports:
       - "8080:8080"
     restart: always

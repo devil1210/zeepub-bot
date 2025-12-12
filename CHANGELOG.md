@@ -7,6 +7,12 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.18] - 2025-12-12
+
+### Configuración
+- **Watchtower Seleccionado**: Actualizada la configuración de Watchtower para que **solo** supervise y actualice el contenedor `zeepubs_bot`, ignorando otros servicios del VPS (como Zitadel, Postgres, etc.) para reducir ruido y evitar reinicios no deseados.
+- **Docker Compose**: Se ha añadido `WATCHTOWER_LABEL_ENABLE=true` y la etiqueta correspondiente al servicio del bot.
+
 ## [2.1.17] - 2025-12-12
 
 ### Mejoras
