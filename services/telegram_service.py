@@ -435,7 +435,10 @@ async def publicar_libro(
                 f"📦 Tamaño: {size_mb:.2f} MB"
             )
 
-            # Enviar mensaje de información separado (siempre en chat_origen con thread_id)
+            slug = generar_slug_from_meta(meta)
+            if slug:
+                info_text += f"\n#{slug}"
+
             # Enviar mensaje de información separado (siempre en chat_origen con thread_id)
             try:
                 msg_info = await bot.send_message(
