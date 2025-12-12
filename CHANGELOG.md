@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.8] - 2025-12-12
+
+### Corregido
+- **Auto-borrado en Grupos**: Solucionada una importación circular (`core.bot` <-> `services.telegram_service`) que impedía la ejecución correcta del temporizador de borrado. La referencia a `job_queue` ahora se pasa explícitamente.
+
 ## [2.1.7] - 2025-12-12
 
 ### Corregido

@@ -492,16 +492,16 @@ async def publicar_libro(
         user_state["titulo_pendiente"] = titulo
 
 
-async def descargar_epub_pendiente(
-    update, context: ContextTypes.DEFAULT_TYPE, uid: int
-):
-    """Envía el EPUB guardado tras confirmación del usuario."""
-    bot = context.bot
-
+async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int, job_queue=None):
+    """
+    Función llamada cuando el usuario presiona "Descargar" en el menú intermedio.
+    """
     from core.state_manager import state_manager
     user_state = state_manager.get_user_state(uid)
 
     from utils.helpers import get_thread_id
+
+    bot = context.bot # This line was originally here, and the instruction didn't explicitly remove it, only replaced the function signature and docstring. Keeping it.
 
     thread_id_origen = user_state.get(
         "message_thread_id"
@@ -601,11 +601,14 @@ async def descargar_epub_pendiente(
                 # Default 2 minutos (120s) si no está seteado. 0 = no borrar.
                 delete_minutes_str = get_setting("auto_delete_time", "2")
                 delete_minutes = int(delete_minutes_str)
+                logger.debug(f"Auto-delete check: group={is_group}, priv={is_privileged}, min={delete_minutes}")
                 if delete_minutes > 0:
                     delete_seconds = delete_minutes * 60
                     caption += f"\n\n🗑️ <i>Se borrará en {delete_minutes} min</i>"
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Error reading auto_delete_time: {e}")
+        else:
+            logger.debug(f"Skipping auto-delete: group={is_group}, priv={is_privileged}")
 
         sent_doc = await send_doc_bytes(
             bot,
@@ -620,12 +623,13 @@ async def descargar_epub_pendiente(
         if sent_doc:
             # Programar auto-borrado si corresponde
             if delete_seconds > 0:
-                from core.bot import app_instance 
-                if app_instance and app_instance.job_queue:
-                    app_instance.job_queue.run_once(
+                if job_queue:
+                    job_queue.run_once(
                         lambda ctx: ctx.bot.delete_message(chat_id=destino, message_id=sent_doc.message_id),
                         when=delete_seconds
                     )
+                else:
+                    logger.warning("Auto-delete skipped: No job_queue available")
 
             # Log to history
             from services.history_service import log_published_book

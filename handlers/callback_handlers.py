@@ -543,7 +543,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.debug("Could not answer callback for descargar_epub: %s", e)
         from services.telegram_service import descargar_epub_pendiente
 
-        await descargar_epub_pendiente(update, context, uid)
+        await descargar_epub_pendiente(update, context, uid, job_queue=context.job_queue)
         return
 
     # Facebook handlers
