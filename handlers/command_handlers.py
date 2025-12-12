@@ -215,13 +215,13 @@ class CommandHandlers:
             InlineKeyboardButton("📚 Content", callback_data="help|content"),
         ]
         keyboard = [row1]
-
-        if is_admin:
-            row2 = [
-                InlineKeyboardButton("🛠 Admin", callback_data="help|admin"),
-                InlineKeyboardButton("💾 Datos", callback_data="help|data"),
-            ]
-            keyboard.append(row2)
+        if not is_admin:
+            return
+        row2 = [
+            InlineKeyboardButton("🛠 Admin", callback_data="help|admin"),
+            InlineKeyboardButton("💾 Datos", callback_data="help|data"),
+        ]
+        keyboard.append(row2)
 
         keyboard.append([InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")])
 
@@ -245,8 +245,8 @@ class CommandHandlers:
         from services.user_service import get_effective_user
         user_info = get_effective_user(uid)
         role = user_info.get("role", "free")
-
-        if role not in ("admin", "staff") and uid not in config.ADMIN_USERS:
+        is_admin = role == "admin" or uid in config.ADMIN_USERS
+        if not is_admin and role != "staff":
             return
 
         thread_id = get_thread_id(update)
@@ -643,7 +643,7 @@ class CommandHandlers:
         bot_username = context.bot.username
         if not is_command_for_bot(update, bot_username):
             return
-
+        # Check User Role
         uid = update.effective_user.id
         st = state_manager.get_user_state(uid)
         thread_id = get_thread_id(update)
@@ -916,7 +916,7 @@ class CommandHandlers:
         """
         uid = update.effective_user.id
         msg = update.effective_message
-        
+
         if uid not in config.ADMIN_USERS:
             return
 
@@ -955,7 +955,7 @@ class CommandHandlers:
         """
         uid = update.effective_user.id
         msg = update.effective_message
-        
+
         if uid not in config.ADMIN_USERS:
             return
 
@@ -982,16 +982,16 @@ class CommandHandlers:
         """
         uid = update.effective_user.id
         msg = update.effective_message
-        
+
         if uid not in config.ADMIN_USERS:
             return
-            
+
         await msg.reply_text("⏳ Iniciando solicitud de actualización al sistema...")
-        
+
         from services.maintenance_service import trigger_watchtower_update
-        
+
         success, message = await trigger_watchtower_update()
-        
+
         await msg.reply_text(message)
 
     async def setlog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

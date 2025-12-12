@@ -5,6 +5,8 @@ import os
 from config.config_settings import config
 
 logger = logging.getLogger(__name__)
+
+
 async def trigger_watchtower_update():
     """
     Envía una solicitud a la API de Watchtower para buscar actualizaciones.
@@ -17,7 +19,7 @@ async def trigger_watchtower_update():
     # Watchtower API endpoint
     # Como estamos en docker network, hostname es 'watchtower'
     url = "http://watchtower:8080/v1/update"
-    
+
     headers = {"Authorization": f"Bearer {token}"}
 
     try:

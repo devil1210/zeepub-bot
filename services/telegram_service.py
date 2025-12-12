@@ -4,7 +4,7 @@ import io
 import os
 import logging
 from urllib.parse import urlparse, unquote
-from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 # from core.state_manager import state_manager (Moved to local scope)
@@ -487,6 +487,8 @@ async def publicar_libro(
                 raise e
         user_state["msg_botones_id"] = sent.message_id
         user_state["titulo_pendiente"] = titulo
+
+
 async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int):
     """Envía el EPUB guardado tras confirmación del usuario."""
     bot = context.bot
@@ -549,7 +551,8 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     # Validar lógica de grupos
     user_id = update.callback_query.from_user.id
     chat_type = update.callback_query.message.chat.type  # "private", "group", "supergroup", "channel"
-    
+    is_group = chat_type in ("group", "supergroup", "channel")
+
     # Check User Role
     from services.user_service import get_effective_user
     user_info = get_effective_user(uid)
@@ -558,7 +561,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
 
     # Lógica de Redirección/Auto-Delete
     auto_delete_msg_id = None
-    
+
     if is_group:
         if is_privileged:
             # Admin/Staff: Enviar al grupo, pero programar auto-borrado
@@ -566,14 +569,14 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         else:
             # Usuario Normal: Enviar a Privado
             destino = uid
-            thread_id_destino = None # PM no usa threads
+            thread_id_destino = None  # PM no usa threads
             # No borrar mensaje de info (resumen) en el grupo
-            msg_info_id = None 
+            msg_info_id = None
 
             try:
                 await bot.answer_callback_query(
-                    update.callback_query.id, 
-                    text="📂 Te envié el archivo al privado.", 
+                    update.callback_query.id,
+                    text="📂 Te envié el archivo al privado.",
                     show_alert=False
                 )
             except Exception:
@@ -611,7 +614,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         slug = generar_slug_from_meta(meta)
         if slug:
             caption += f"\n#{slug}"
-            
+
         # Si es Admin en Grupo, añadir aviso de auto-borrado
         if is_group and is_privileged:
             from services.settings_service import get_setting
@@ -648,15 +651,15 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
                 )
             except Exception as e:
                 logger.error(f"Failed to log book history: {e}")
-        
+
         # Si es grupo, programar borrado-Delete si aplica
         if is_group and is_privileged:
             if context.job_queue:
                 from services.settings_service import get_setting
                 retention_mins = int(get_setting("group_retention_minutes", "5"))
                 context.job_queue.run_once(
-                    delete_message_job, 
-                    retention_mins * 60, 
+                    delete_message_job,
+                    retention_mins * 60,
                     data=sent_doc.message_id,
                     chat_id=destino
                 )
@@ -1544,7 +1547,7 @@ async def delete_message_job(context: ContextTypes.DEFAULT_TYPE):
         job = context.job
         chat_id = job.chat_id
         message_id = job.data  # Pasamos message_id en data
-        
+
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
         logger.debug(f"Mensaje {message_id} en chat {chat_id} eliminado automáticamente.")
     except Exception as e:
