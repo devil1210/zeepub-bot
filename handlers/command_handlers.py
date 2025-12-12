@@ -997,7 +997,7 @@ class CommandHandlers:
     async def update_system(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /update_system
-        Fuerza una actualización del sistema via Watchtower.
+        Verifica si hay cambios en git antes de invocar a Watchtower.
         """
         uid = update.effective_user.id
         msg = update.effective_message
@@ -1005,8 +1005,68 @@ class CommandHandlers:
         if uid not in config.ADMIN_USERS:
             return
 
-        await msg.reply_text("⏳ Iniciando solicitud de actualización al sistema...")
+        status_msg = await msg.reply_text("⏳ Comprobando versiones...")
 
+        # 1. Obtener Hash Local
+        import subprocess
+
+        try:
+            local_hash = (
+                subprocess.check_output(
+                    ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.STDOUT
+                )
+                .decode()
+                .strip()
+            )
+        except Exception:
+            local_hash = "Desconocido"
+
+        # 2. Obtener Hash Remoto
+        remote_hash = "Desconocido"
+        try:
+            # Usar un timeout para no colgar el bot
+            remote_out = (
+                subprocess.check_output(
+                    [
+                        "git",
+                        "ls-remote",
+                        "https://github.com/devil1210/zeepub-bot.git",
+                        "HEAD",
+                    ],
+                    stderr=subprocess.STDOUT,
+                    timeout=10,
+                )
+                .decode()
+                .strip()
+            )
+            # ls-remote output: "hash\tHEAD"
+            parts = remote_out.split()
+            if parts:
+                remote_hash = parts[0][:7]  # Short hash
+        except Exception as e:
+            logger.error(f"Error checking remote git: {e}")
+
+        # 3. Comparar
+        text = f"🔹 <b>Versión Local:</b> <code>{local_hash}</code>\n🔸 <b>Versión Remota:</b> <code>{remote_hash}</code>\n\n"
+
+        if local_hash != "Desconocido" and remote_hash != "Desconocido":
+            if local_hash == remote_hash:
+                await status_msg.edit_text(
+                    text
+                    + "✅ <b>El sistema ya está actualizado.</b>\nNo se requiere acción.",
+                    parse_mode="HTML",
+                )
+                return
+            else:
+                text += (
+                    "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
+                )
+                await status_msg.edit_text(text, parse_mode="HTML")
+        else:
+            text += "⚠️ No se pudo verificar versiones. Forzando actualización...\n"
+            await status_msg.edit_text(text, parse_mode="HTML")
+
+        # 4. Trigger Watchtower
         from services.maintenance_service import trigger_watchtower_update
 
         success, message = await trigger_watchtower_update()
@@ -1016,16 +1076,14 @@ class CommandHandlers:
             try:
                 import json
 
+                # Usar data/ para persistencia
                 state = {"chat_id": uid, "message_id": msg.message_id}
-                # Guardar en data/ para persistencia entre contenedores
                 with open("data/update_state.json", "w") as f:
                     json.dump(state, f)
             except Exception as e:
                 logger.error(f"No se pudo guardar update_state: {e}")
 
-            message += (
-                "\n\n⏳ <b>El sistema se reiniciará si hay actualizaciones...</b>"
-            )
+            message += "\n\n⏳ <b>El sistema se reiniciará en breve...</b>"
 
         await msg.reply_text(message, parse_mode="HTML")
 
