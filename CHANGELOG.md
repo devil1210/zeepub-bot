@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.12] - 2025-12-12
+
+### Changed
+- **Infraestructura**: Desactivado PostgreSQL en `docker-compose.yml` por defecto para usar SQLite (`zeepub.db`), simplificando el despliegue y reduciendo el consumo de recursos.
+
 ## [2.1.11] - 2025-12-12
 
 ### Otros

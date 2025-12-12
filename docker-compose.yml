@@ -10,8 +10,8 @@ services:
     #   - "8000:8000"
     env_file:
       - .env
-    depends_on:
-      - db
+    # depends_on:
+    #   - db
     volumes:
       - ./data:/app/data # Persist URL cache database
       # - ./config:/app/config  # Only for development
@@ -27,24 +27,24 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg2://zeepub:zeepub@db:5432/zeepub}
+      - DATABASE_URL=sqlite:////app/data/zeepub.db
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
 
-  db:
-    image: postgres:15
-    container_name: zeepub_db
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-zeepub}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zeepub}
-      POSTGRES_DB: ${POSTGRES_DB:-zeepub}
-    volumes:
-      - ./pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zeepub}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # db:
+  #   image: postgres:15
+  #   container_name: zeepub_db
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: ${POSTGRES_USER:-zeepub}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zeepub}
+  #     POSTGRES_DB: ${POSTGRES_DB:-zeepub}
+  #   volumes:
+  #     - ./pgdata:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zeepub}" ]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
   watchtower:
     image: containrrr/watchtower
@@ -57,6 +57,7 @@ services:
       - WATCHTOWER_HTTP_API_UPDATE=true
       - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
       - WATCHTOWER_MONITOR_ONLY=${WATCHTOWER_MONITOR_ONLY:-false}
+      - WATCHTOWER_DEBUG=true
       - DOCKER_API_VERSION=1.44
     ports:
       - "8080:8080"
