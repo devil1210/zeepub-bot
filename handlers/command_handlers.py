@@ -1001,7 +1001,7 @@ class CommandHandlers:
             v = get_current_version()
             message += f"\n\n🤖 <b>Versión Actual:</b> {v}"
 
-        await msg.reply_text(message)
+        await msg.reply_text(message, parse_mode="HTML")
 
     async def setlog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """

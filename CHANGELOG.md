@@ -7,6 +7,18 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.1] - 2025-12-12
+
+### Agregado
+- **Actualizaciones Automáticas**: Integración con Watchtower y comando `/update_system` para autogestión.
+- **Visualización de Versión**: Comandos `/status` y `/update_system` muestran la versión actual leyendo `CHANGELOG.md`.
+
+### Corregido
+- **Estabilidad de Red**: Solucionados errores de resolución DNS (`[Errno -3]`) forzando DNS de Google.
+- **Timeouts**: Aumentados tiempos de espera para conexiones HTTP (20s) y Watchtower (60s).
+- **Linting**: Corrección masiva de estilos (`flake8`, `black`) y limpieza de espacios en blanco.
+- **Sintaxis**: Arreglada regresión en inicialización de `bot.py`.
+
 ## [2.1.0] - 2025-12-11
 
 ### Agregado
