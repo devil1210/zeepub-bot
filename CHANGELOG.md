@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.11] - 2025-12-12
+
+### Otros
+- **Verificación**: Commit de prueba para validar que el sistema de actualizaciones funciona correctamente sin bucles.
+
 ## [2.1.10] - 2025-12-12
 
 ### Corregido
