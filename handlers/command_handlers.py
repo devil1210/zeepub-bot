@@ -946,8 +946,7 @@ class CommandHandlers:
             )
         except Exception as e:
             logger.error(f"Error set_staff_status: {e}")
-            await msg.reply_text("❌ Error al actualizar status.")
-
+            await update.effective_message.reply_text(f"❌ Error: {str(e)}")
 
     async def set_auto_delete_time(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -965,10 +964,9 @@ class CommandHandlers:
             return
 
         minutes = int(context.args[0])
-        from services.settings_service import set_setting
-        
+
         try:
-            set_setting("group_retention_minutes", str(minutes))
+            await self.settings_service.set_setting("group_retention_minutes", minutes)
             await msg.reply_text(
                 f"✅ Tiempo de auto-borrado configurado a: <b>{minutes} minutos</b>",
                 parse_mode="HTML"
@@ -1839,10 +1837,8 @@ class CommandHandlers:
             else:
                 await update.message.reply_text("❌ Error al borrar el historial.")
         except Exception as e:
-            logger.error(f"Error in clear_history: {e}")
-            await update.message.reply_text(
-                "❌ Error inesperado al borrar el historial."
-            )
+            logger.error(f"Error en update_system: {e}")
+            await update.effective_message.reply_text("❌ Error interno al intentar actualizar.")
 
     async def export_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Exporta el historial de libros publicados a CSV."""

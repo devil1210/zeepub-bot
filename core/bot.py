@@ -36,12 +36,13 @@ async def error_handler(update, context):
 
 from telegram.request import HTTPXRequest
 
+
 class ZeePubBot:
     """Clase principal del bot."""
 
     def __init__(self):
         token = config.TELEGRAM_TOKEN
-        
+
         # Configurar custom request con timeouts extendidos para evitar DNS/Network errors
         trequest = HTTPXRequest(
             connection_pool_size=10,

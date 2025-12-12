@@ -487,11 +487,7 @@ async def publicar_libro(
                 raise e
         user_state["msg_botones_id"] = sent.message_id
         user_state["titulo_pendiente"] = titulo
-
-
-async def descargar_epub_pendiente(
-    update, context: ContextTypes.DEFAULT_TYPE, uid: int
-):
+async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int):
     """Envía el EPUB guardado tras confirmación del usuario."""
     bot = context.bot
 
@@ -551,8 +547,8 @@ async def descargar_epub_pendiente(
         return
 
     # Validar lógica de grupos
-    chat_type = update.effective_chat.type
-    is_group = chat_type in ("group", "supergroup", "channel")
+    user_id = update.callback_query.from_user.id
+    chat_type = update.callback_query.message.chat.type  # "private", "group", "supergroup", "channel"
     
     # Check User Role
     from services.user_service import get_effective_user
@@ -652,21 +648,21 @@ async def descargar_epub_pendiente(
                 )
             except Exception as e:
                 logger.error(f"Failed to log book history: {e}")
-                
-            # Programar Auto-Delete si aplica
-            if is_group and is_privileged:
-                if context.job_queue:
-                    from services.settings_service import get_setting
-                    retention_mins = int(get_setting("group_retention_minutes", "5"))
-                    context.job_queue.run_once(
-                        delete_message_job, 
-                        retention_mins * 60, 
-                        data=sent_doc.message_id,
-                        chat_id=destino
-                    )
-                    logger.info(f"Scheduled auto-delete for msg {sent_doc.message_id} in {retention_mins}m")
-                else:
-                    logger.warning("Auto-delete skipped: context.job_queue is None. Check if JobQueue is enabled.")
+        
+        # Si es grupo, programar borrado-Delete si aplica
+        if is_group and is_privileged:
+            if context.job_queue:
+                from services.settings_service import get_setting
+                retention_mins = int(get_setting("group_retention_minutes", "5"))
+                context.job_queue.run_once(
+                    delete_message_job, 
+                    retention_mins * 60, 
+                    data=sent_doc.message_id,
+                    chat_id=destino
+                )
+                logger.info(f"Scheduled auto-delete for msg {sent_doc.message_id} in {retention_mins}m")
+            else:
+                logger.warning("Auto-delete skipped: context.job_queue is None. Check if JobQueue is enabled.")
 
         # Registrar descarga
         record_download(uid)
