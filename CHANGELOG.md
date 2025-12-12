@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.27] - 2025-12-12
+
+### Configuración
+- **Watchtower Tuning**: Ajustado `DOCKER_API_VERSION=1.52` para coincidir exactamente con la versión del host. Se ha observado que versiones inferiores permitían la descarga de la imagen pero fallaban silenciosamente en la recreación del contenedor.
+
 ## [2.1.26] - 2025-12-12
 
 ### Funcionalidades
