@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.23] - 2025-12-12
+
+### Configuración
+- **Watchtower**: Eliminada la restricción `DOCKER_API_VERSION=1.44` para permitir la negociación automática con la API del host (v1.52). Esto debería solucionar el problema donde Watchtower descargaba la imagen pero no recreaba el contenedor.
+
 ## [2.1.22] - 2025-12-12
 
 ### Calidad de Código
