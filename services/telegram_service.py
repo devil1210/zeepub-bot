@@ -514,13 +514,33 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     # Solo usar thread_id si destino == chat_origen
     thread_id_destino = thread_id_origen if destino == chat_origen else None
 
-    # Borrar botones y mensaje de info
+    # --- Hoisted Logic for Conditional Deletion ---
+    # Validar lógica de grupos y roles temprano
+    chat_type = update.callback_query.message.chat.type
+    is_group = chat_type in ("group", "supergroup", "channel")
+
+    from services.user_service import get_effective_user
+    user_info = get_effective_user(uid)
+    role = user_info.get("role", "free")
+    is_privileged = role in ("admin", "staff") or uid in config.ADMIN_USERS
+
+    # Decidir si borrar mensaje de info
+    # - Private: Borrar siempre (limpieza)
+    # - Group + Admin: Borrar (se envía uno nuevo persistente más abajo)
+    # - Group + Normal: MANTENER (porque el archivo va al PM y si borramos se pierde el contexto)
+    should_delete_info = True
+    if is_group and not is_privileged:
+        should_delete_info = False
+
+    # Borrar botones (siempre)
     if msg_id:
         try:
             await bot.delete_message(chat_id=chat_origen, message_id=msg_id)
         except Exception as e:
             logger.debug("Could not delete msg_id %s: %s", msg_id, e)
-    if msg_info_id:
+
+    # Borrar info (según lógica)
+    if msg_info_id and should_delete_info:
         try:
             await bot.delete_message(chat_id=chat_origen, message_id=msg_info_id)
         except Exception as e:
@@ -548,17 +568,6 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         )
         return
 
-    # Validar lógica de grupos
-    user_id = update.callback_query.from_user.id
-    chat_type = update.callback_query.message.chat.type  # "private", "group", "supergroup", "channel"
-    is_group = chat_type in ("group", "supergroup", "channel")
-
-    # Check User Role
-    from services.user_service import get_effective_user
-    user_info = get_effective_user(uid)
-    role = user_info.get("role", "free")
-    is_privileged = role in ("admin", "staff") or uid in config.ADMIN_USERS
-
     # Lógica de Redirección/Auto-Delete
     auto_delete_msg_id = None
 
@@ -570,8 +579,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
             # Usuario Normal: Enviar a Privado
             destino = uid
             thread_id_destino = None  # PM no usa threads
-            # No borrar mensaje de info (resumen) en el grupo
-            msg_info_id = None
+            # No borrar mensaje de info (resumen) en el grupo -> Ya manejado arriba con should_delete_info=False
 
             try:
                 await bot.answer_callback_query(
