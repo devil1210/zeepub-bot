@@ -179,7 +179,7 @@ class ZeePubBot:
                     )
                 else:
                     logger.warning("Update state file found but no chat_id key")
-                
+
                 os.remove(state_path)
             else:
                 logger.info(f"No update state file found at {state_path}")

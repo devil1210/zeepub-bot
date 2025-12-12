@@ -532,7 +532,6 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         # Pero wait, line 564 usa 'destino'. Si cambiamos destino a uid, el mensaje "Preparando..." va al privado.
         # Eso es correcto.
 
-
     # Borrar botones (siempre)
     if msg_id:
         try:

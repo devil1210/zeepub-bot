@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.20] - 2025-12-12
+
+### Calidad de Código
+- **Linting**: Corregidos errores de espacios en blanco (`W293`, `E303`) reportados por `flake8` tras los últimos cambios.
+
 ## [2.1.19] - 2025-12-12
 
 ### Debug

@@ -1071,7 +1071,7 @@ class CommandHandlers:
             import json
             # Ensure data dir exists
             os.makedirs("data", exist_ok=True)
-            
+
             state = {"chat_id": uid, "message_id": msg.message_id}
             with open("data/update_state.json", "w") as f:
                 json.dump(state, f)
@@ -1278,7 +1278,7 @@ class CommandHandlers:
 
         # Actualizar persistencia
         save_download(target_uid, 0)
-        
+
         # Verify in log
         logger.info(f"Reset confirmed. Mem: {user_state.get('downloads_used')}")
 
