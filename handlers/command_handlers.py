@@ -63,6 +63,8 @@ class CommandHandlers:
         app.add_handler(CommandHandler("set_staff_status", self.set_staff_status))
         # Registrar /set_auto_delete_time
         app.add_handler(CommandHandler("set_auto_delete_time", self.set_auto_delete_time))
+        # Registrar /update_system
+        app.add_handler(CommandHandler("update_system", self.update_system))
 
         # Registrar /setlog (admin only)
         app.add_handler(CommandHandler("setlog", self.setlog))
