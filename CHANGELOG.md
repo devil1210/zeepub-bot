@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.28] - 2025-12-12
+
+### Configuración
+- **Watchtower Fix Final**: Cambiado `restart: always` a `restart: unless-stopped` en el contenedor del bot. Esto resuelve la condición de carrera donde Docker reiniciaba el contenedor antes de que Watchtower pudiera recrearlo con la nueva imagen, causando que las actualizaciones fallaran silenciosamente a pesar de mostrar `Updated=1`.
+
 ## [2.1.27] - 2025-12-12
 
 ### Configuración
