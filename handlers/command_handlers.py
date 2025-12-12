@@ -1083,7 +1083,9 @@ class CommandHandlers:
             # Ensure data dir exists
             os.makedirs("data", exist_ok=True)
 
-            state = {"chat_id": uid, "message_id": msg.message_id}
+            # Save CURRENT CHAT ID (not user ID) to notify in the same thread/group
+            chat_id = update.effective_chat.id
+            state = {"chat_id": chat_id, "message_id": msg.message_id}
             with open("data/update_state.json", "w") as f:
                 json.dump(state, f)
             logger.info(f"Saved update state to data/update_state.json: {state}")

@@ -7,6 +7,10 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.2.1] - 2025-12-12
+### Correcciones
+- **Notificaciones de Update**: Corregido bug donde la notificación de éxito se enviaba siempre al privado del usuario que lanzaba el comando. Ahora se envía correctamente al chat de origen (Grupo o Privado).
+
 ## [2.2.0] - 2025-12-12
 ### Resumen del Lanzamiento
 Versión mayor que consolida todas las correcciones críticas del sistema de actualizaciones. Ahora Watchtower funciona correctamente gracias a la sincronización de la API de Docker y la política de reinicio. Se incluye el comando de actualización forzada y documentación actualizada.
