@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.14] - 2025-12-12
+
+### Corregido
+- **Comando Start en Grupos**: Se forza el envío de un nuevo mensaje en lugar de una respuesta (`reply_text`) para asegurar compatibilidad con temas (topics) y evitar fallos silenciosos en grupos.
+
 ## [2.1.13] - 2025-12-12
 
 ### Corregido

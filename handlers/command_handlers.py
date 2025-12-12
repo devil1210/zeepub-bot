@@ -87,8 +87,6 @@ class CommandHandlers:
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
 
-        uid = update.effective_user.id
-        left = downloads_left(uid)
         text = (
             "👋 ¡Hola! Comencemos.\n\n✅ Tienes descargas ilimitadas."
             if left == "ilimitadas"
@@ -191,7 +189,7 @@ class CommandHandlers:
         st["opds_root_base"] = root
         st["historial"] = []
         st["ultima_pagina"] = root
-        await mostrar_colecciones(update, context, root, from_collection=False)
+        await mostrar_colecciones(update, context, root, from_collection=False, new_message=True)
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /help: muestra ayuda dinámica y paginada."""
