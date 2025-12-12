@@ -1017,7 +1017,8 @@ class CommandHandlers:
                 import json
 
                 state = {"chat_id": uid, "message_id": msg.message_id}
-                with open("update_state.json", "w") as f:
+                # Guardar en data/ para persistencia entre contenedores
+                with open("data/update_state.json", "w") as f:
                     json.dump(state, f)
             except Exception as e:
                 logger.error(f"No se pudo guardar update_state: {e}")

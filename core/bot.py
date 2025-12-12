@@ -162,8 +162,9 @@ class ZeePubBot:
             import json
             from utils.helpers import get_current_version
 
-            if os.path.exists("update_state.json"):
-                with open("update_state.json", "r") as f:
+            state_path = "data/update_state.json"
+            if os.path.exists(state_path):
+                with open(state_path, "r") as f:
                     state = json.load(f)
 
                 chat_id = state.get("chat_id")
@@ -175,7 +176,7 @@ class ZeePubBot:
                         parse_mode="HTML",
                     )
 
-                os.remove("update_state.json")
+                os.remove(state_path)
         except Exception as e:
             logger.error(f"Error notificando update: {e}")
 
