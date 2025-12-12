@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.16] - 2025-12-12
+
+### Mejoras
+- **Privacidad en Grupos**: Las descargas solicitadas en grupos públicos por usuarios normales ahora se envían forzosamente al **chat privado** del usuario, evitando spam y manteniendo la limpieza del grupo. Solo Admins/Staff pueden recibir archivos en el grupo (con auto-borrado).
+
 ## [2.1.15] - 2025-12-12
 
 ### Corregido

@@ -523,6 +523,16 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     is_group = update.effective_chat.type in ("group", "supergroup")
     is_privileged = uid in config.ADMIN_USERS or uid in config.FACEBOOK_PUBLISHERS
 
+    # Si es grupo y NO es privilegiado, forzar envío al privado
+    if is_group and not is_privileged:
+        destino = uid
+        thread_id_destino = None
+        # Opcional: Avisar en el grupo que se envió al privado?
+        # Por ahora lo hacemos silencioso o asumimos que 'prep' message (line 564) iría al privado.
+        # Pero wait, line 564 usa 'destino'. Si cambiamos destino a uid, el mensaje "Preparando..." va al privado.
+        # Eso es correcto.
+
+
     # Borrar botones (siempre)
     if msg_id:
         try:
