@@ -501,7 +501,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
 
     from utils.helpers import get_thread_id
 
-    bot = context.bot # This line was originally here, and the instruction didn't explicitly remove it, only replaced the function signature and docstring. Keeping it.
+    bot = context.bot
 
     thread_id_origen = user_state.get(
         "message_thread_id"
