@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.6] - 2025-12-12
+
+### Corregido
+- **Comando `/set_auto_delete_time`**: Solucionado error interno al guardar la configuración (falta de inicialización del servicio) y corregida la inconsistencia de nombres de clave que impedía que el ajuste surtiera efecto.
+
 ## [2.1.5] - 2025-12-12
 
 ### Corregido

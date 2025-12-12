@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 class CommandHandlers:
     def __init__(self, app):
         self.app = app
+        from services.settings_service import SettingsService
+
+        self.settings_service = SettingsService()
+
         # Registrar handlers existentes
         app.add_handler(CommandHandler("search", self.search))
         app.add_handler(CommandHandler("start", self.start))
@@ -985,7 +989,7 @@ class CommandHandlers:
         minutes = int(context.args[0])
 
         try:
-            await self.settings_service.set_setting("group_retention_minutes", minutes)
+            await self.settings_service.set_setting("auto_delete_time", minutes)
             await msg.reply_text(
                 f"✅ Tiempo de auto-borrado configurado a: <b>{minutes} minutos</b>",
                 parse_mode="HTML",
