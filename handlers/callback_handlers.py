@@ -699,6 +699,7 @@ def _get_help_data(uid):
             ("➕ /add_user", "Agregar/Editar usuario"),
             ("➖ /remove_user", "Remover usuario"),
             ("🏷️ /set_staff_status", "Definir status de Staff"),
+            ("⏲️ /set_auto_delete_time", "Tiempo auto-borrado (grupos)"),
             ("📊 /stats <rol>", "Ver stats o listar usuarios"),
             ("🔄 /reset", "Resetear descargas"),
             ("💲 /set_price", "Configurar precio donación"),
