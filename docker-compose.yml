@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   zeepubs_bot:
-    build: .
-    # image: ghcr.io/devil1210/zeepub-bot:latest
+    # build: .
+    image: ghcr.io/devil1210/zeepub-bot:latest
     container_name: zeepubs_bot
     restart: always
     # ports:
