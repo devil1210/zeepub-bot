@@ -1032,27 +1032,18 @@ class CommandHandlers:
         # 2. Obtener Hash Remoto
         remote_hash = "Desconocido"
         try:
-            # Usar un timeout para no colgar el bot
-            remote_out = (
-                subprocess.check_output(
-                    [
-                        "git",
-                        "ls-remote",
-                        "https://github.com/devil1210/zeepub-bot.git",
-                        "HEAD",
-                    ],
-                    stderr=subprocess.STDOUT,
-                    timeout=10,
+            import httpx
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    "https://api.github.com/repos/devil1210/zeepub-bot/commits/main",
+                    headers={"User-Agent": "ZeePubBot/2.0"}
                 )
-                .decode()
-                .strip()
-            )
-            # ls-remote output: "hash\tHEAD"
-            parts = remote_out.split()
-            if parts:
-                remote_hash = parts[0][:7]  # Short hash
+                if resp.status_code == 200:
+                    data = resp.json()
+                    # data['sha'] es el hash completo
+                    remote_hash = data.get("sha", "")[:7]
         except Exception as e:
-            logger.error(f"Error checking remote git: {e}")
+            logger.error(f"Error checking remote git via API: {e}")
 
         # 3. Comparar
         text = f"🔹 <b>Versión Local:</b> <code>{local_hash}</code>\n🔸 <b>Versión Remota:</b> <code>{remote_hash}</code>\n\n"
@@ -1060,15 +1051,12 @@ class CommandHandlers:
         if local_hash != "Desconocido" and remote_hash != "Desconocido":
             if local_hash == remote_hash:
                 await status_msg.edit_text(
-                    text
-                    + "✅ <b>El sistema ya está actualizado.</b>\nNo se requiere acción.",
-                    parse_mode="HTML",
+                    text + "✅ <b>El sistema ya está actualizado.</b>\nNo se requiere acción.",
+                    parse_mode="HTML"
                 )
                 return
             else:
-                text += (
-                    "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
-                )
+                text += "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
                 await status_msg.edit_text(text, parse_mode="HTML")
         else:
             text += "⚠️ No se pudo verificar versiones. Forzando actualización...\n"
