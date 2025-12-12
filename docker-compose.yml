@@ -51,4 +51,9 @@ services:
     environment:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
+      - WATCHTOWER_MONITOR_ONLY=${WATCHTOWER_MONITOR_ONLY:-false}
+    ports:
+      - "8080:8080"
     restart: always
