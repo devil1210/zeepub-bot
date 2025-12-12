@@ -7,6 +7,11 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.15] - 2025-12-12
+
+### Corregido
+- **Regression**: Solucionado `NameError` en comando `/start` causado por eliminación accidental de variables durante un revert anterior.
+
 ## [2.1.14] - 2025-12-12
 
 ### Corregido

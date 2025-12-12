@@ -87,6 +87,9 @@ class CommandHandlers:
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
 
+        uid = update.effective_user.id
+        left = downloads_left(uid)
+
         text = (
             "👋 ¡Hola! Comencemos.\n\n✅ Tienes descargas ilimitadas."
             if left == "ilimitadas"
