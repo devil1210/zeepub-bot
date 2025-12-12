@@ -519,13 +519,20 @@ async def descargar_epub_pendiente(
     # Solo usar thread_id si destino == chat_origen
     thread_id_destino = thread_id_origen if destino == chat_origen else None
 
-    # Borrar botones y mensaje de info
+    # Identificar si es grupo
+    is_group = update.effective_chat.type in ("group", "supergroup")
+    is_privileged = uid in config.ADMIN_USERS or uid in config.FACEBOOK_PUBLISHERS
+
+    # Borrar botones (siempre)
     if msg_id:
         try:
             await bot.delete_message(chat_id=chat_origen, message_id=msg_id)
         except Exception as e:
             logger.debug("Could not delete msg_id %s: %s", msg_id, e)
-    if msg_info_id:
+
+    # Borrar mensaje de info (SOLO si NO es grupo)
+    # En grupos queremos que persista para contexto
+    if msg_info_id and not is_group:
         try:
             await bot.delete_message(chat_id=chat_origen, message_id=msg_info_id)
         except Exception as e:
@@ -586,6 +593,20 @@ async def descargar_epub_pendiente(
         if slug:
             caption += f"\n#{slug}"
 
+        # Lógica de auto-borrado para admins en grupos
+        delete_seconds = 0
+        if is_group and is_privileged:
+            from services.settings_service import get_setting
+            try:
+                # Default 2 minutos (120s) si no está seteado. 0 = no borrar.
+                delete_minutes_str = get_setting("auto_delete_time", "2")
+                delete_minutes = int(delete_minutes_str)
+                if delete_minutes > 0:
+                    delete_seconds = delete_minutes * 60
+                    caption += f"\n\n🗑️ <i>Se borrará en {delete_minutes} min</i>"
+            except Exception:
+                pass
+
         sent_doc = await send_doc_bytes(
             bot,
             destino,
@@ -597,6 +618,15 @@ async def descargar_epub_pendiente(
         )
 
         if sent_doc:
+            # Programar auto-borrado si corresponde
+            if delete_seconds > 0:
+                from core.bot import app_instance 
+                if app_instance and app_instance.job_queue:
+                    app_instance.job_queue.run_once(
+                        lambda ctx: ctx.bot.delete_message(chat_id=destino, message_id=sent_doc.message_id),
+                        when=delete_seconds
+                    )
+            
             # Log to history
             from services.history_service import log_published_book
             # file_info construction

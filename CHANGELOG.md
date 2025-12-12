@@ -7,6 +7,12 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+## [2.1.4] - 2025-12-12
+
+### Corregido
+- **Regresión UX en Grupos**: Solucionado bug crítico donde el mensaje de resumen se borraba incondicionalmente en grupos. Ahora persiste correctamente.
+- **Aviso de Auto-borrado**: Restaurada la lógica que añade la advertencia "🗑️ Se borrará en X min" y programa la eliminación automática para descargas de administradores en grupos.
+
 ## [2.1.3] - 2025-12-12
 
 ### Cambiado
