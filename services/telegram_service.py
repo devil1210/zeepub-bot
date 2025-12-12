@@ -626,7 +626,7 @@ async def descargar_epub_pendiente(
                         lambda ctx: ctx.bot.delete_message(chat_id=destino, message_id=sent_doc.message_id),
                         when=delete_seconds
                     )
-            
+
             # Log to history
             from services.history_service import log_published_book
             # file_info construction
