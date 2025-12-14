@@ -12,6 +12,7 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - **Bienvenida Automática**: Mensaje configurable cuando el bot es añadido a un grupo (`/set_welcome`).
 - **Saludo Mejorado**: Comando `/saludo` ahora soporta envío de mensajes almacenados por ID además de texto plano.
 - Refactorizado sistema de donaciones a plugin independiente `plugins/donations_plugin.py`.
+- Refactorizado gestor de links a plugin independiente `plugins/links_manager_plugin.py`.
 - Funcionalidad de mensajes personalizados extraída a plugin `plugins/custom_messages_plugin.py`.
 - **Configuración Modular**: Nueva arquitectura de plugins activable mediante entorno (`ENABLE_CUSTOM_MESSAGES`).
 

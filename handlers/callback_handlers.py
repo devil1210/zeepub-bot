@@ -698,9 +698,6 @@ def _get_help_data(uid):
         cat_content.extend(
             [
                 ("📤 /export_db", "Exportar mapeo de URLs a CSV"),
-                ("📈 /status_links", "Ver estado de links acortados"),
-                ("📋 /link_list", "Listar links acortados recientes"),
-                ("🗑️ /purge_link", "Eliminar un link acortado"),
             ]
         )
 
@@ -759,6 +756,16 @@ def _get_help_data(uid):
         if is_admin:
             cat_donations.append(("💲 /set_price", "Configurar precio donación"))
 
+    # 7. Plugins (Links Manager)
+    cat_links = []
+    enable_links = os.getenv("ENABLE_LINKS_MANAGER", "True").lower() == "true"
+    if enable_links and (is_publisher or is_admin):
+        cat_links = [
+            ("📈 /status_links", "Ver estado de links acortados"),
+            ("📋 /link_list", "Listar links acortados recientes"),
+            ("🗑️ /purge_link", "Eliminar un link acortado"),
+        ]
+
     return (
         {
             "home": ("🏠 Inicio", cat_home),
@@ -767,6 +774,7 @@ def _get_help_data(uid):
             "data": ("💾 Datos", cat_data),
             "plugins": ("🧩 Mensajes", cat_plugins),
             "donations": ("💸 Donaciones", cat_donations),
+            "links": ("🔗 Links", cat_links),
         },
         is_admin,
         is_publisher,
@@ -787,6 +795,9 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
 
     # Validar acceso a categorías restringidas
     if target_cat in ("admin", "data", "plugins") and not is_admin:
+        await query.answer("⛔ Acceso restringido", show_alert=True)
+        return
+    if target_cat == "links" and not (is_admin or is_publisher):
         await query.answer("⛔ Acceso restringido", show_alert=True)
         return
 
@@ -818,19 +829,21 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
 
     keyboard = [row1]
 
-    if is_admin:
-        row2 = [
-            InlineKeyboardButton("🛠 Admin", callback_data="help|admin"),
-            InlineKeyboardButton("💾 Datos", callback_data="help|data"),
-        ]
-        # Check if plugin is enabled to show button
-        import os
+    row2 = []
+    enable_links = os.getenv("ENABLE_LINKS_MANAGER", "True").lower() == "true"
+    if enable_links and (is_admin or is_publisher):
+        row2.append(InlineKeyboardButton("🔗 Links", callback_data="help|links"))
 
+    if is_admin:
+        row2.append(InlineKeyboardButton("🛠 Admin", callback_data="help|admin"))
+        row2.append(InlineKeyboardButton("💾 Datos", callback_data="help|data"))
+        # Check if plugin is enabled to show button
         if os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true":
             row2.append(
                 InlineKeyboardButton("🧩 Mensajes", callback_data="help|plugins")
             )
 
+    if row2:
         keyboard.append(row2)
 
     # Marcar el botón activo visualmente? (Telegram no soporta 'active' state nativo,
