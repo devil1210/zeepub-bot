@@ -705,7 +705,7 @@ def _get_help_data(uid):
             ("💲 /set_price", "Configurar precio donación"),
             ("🐞 /debug_state", "Info debug usuario"),
             ("🔧 /setlog", "Configurar logs"),
-            ("👋 /saludo", "Broadcast mensaje"),
+
             ("🆔 /id", "Info ID chat/user"),
             ("🆕 /update_system", "Actualizar sistema"),
             ("⚠️ /update_system force", "Forzar reinstalación"),
@@ -724,11 +724,26 @@ def _get_help_data(uid):
             ("🗑️ /clear_history", "Borrar historial"),
         ]
 
+
+    # 5. Plugins (Custom Messages)
+    cat_plugins = []
+    import os
+    enable_custom = os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true"
+    if is_admin and enable_custom:
+        cat_plugins = [
+            ("📝 /add_msge &lt;id&gt;", "Guardar mensaje respondido"),
+            ("📂 /list_msge [id]", "Listar o ver mensaje"),
+            ("📨 /send_msge &lt;id&gt; &lt;chat&gt;", "Enviar mensaje guardado"),
+            ("👋 /saludo &lt;chat&gt; &lt;id|txt&gt;", "Enviar saludo/mensaje"),
+            ("🚪 /set_welcome &lt;id|off&gt;", "Configurar bienvenida"),
+        ]
+
     return {
         "home": ("🏠 Inicio", cat_home),
         "content": ("📚 Content", cat_content),
         "admin": ("🛠 Admin", cat_admin),
         "data": ("💾 Datos", cat_data),
+        "plugins": ("🧩 Mensajes", cat_plugins),
     }, is_admin, is_publisher
 
 
@@ -745,7 +760,7 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
     help_data, is_admin, is_publisher = _get_help_data(uid)
 
     # Validar acceso a categorías restringidas
-    if target_cat in ("admin", "data") and not is_admin:
+    if target_cat in ("admin", "data", "plugins") and not is_admin:
         await query.answer("⛔ Acceso restringido", show_alert=True)
         return
 
@@ -776,6 +791,11 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
             InlineKeyboardButton("🛠 Admin", callback_data="help|admin"),
             InlineKeyboardButton("💾 Datos", callback_data="help|data"),
         ]
+        # Check if plugin is enabled to show button
+        import os
+        if os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true":
+            row2.append(InlineKeyboardButton("🧩 Mensajes", callback_data="help|plugins"))
+        
         keyboard.append(row2)
 
     # Marcar el botón activo visualmente? (Telegram no soporta 'active' state nativo,
