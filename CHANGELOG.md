@@ -2,7 +2,11 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.7.0] - 2025-12-14
+## [2.7.1] - 2025-12-14
+
+### Correcciones
+- **Custom Messages**: Ahora el comando `/list_msge <slug> [id]` permite probar el reemplazo de variables (ej: `[Nombre]`) simulando que se envía al usuario con el ID especificado.
+
 
 ### Mejoras
 - **Group Manager Plugin**:

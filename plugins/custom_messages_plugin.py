@@ -1,5 +1,6 @@
 import logging
 import os
+import html
 from datetime import datetime
 from typing import Dict, Callable, List, Optional, Any
 from sqlalchemy import (
@@ -247,6 +248,44 @@ class CustomMessagesPlugin(BasePlugin):
             if not msg:
                 await update.message.reply_text("❌ Mensaje no encontrado.")
                 return
+
+            # Check for optional target_uid for variable replacement testing
+            target_uid = None
+            if len(context.args) > 1:
+                try:
+                    target_uid = int(context.args[1])
+                except ValueError:
+                    pass
+
+            # If text_content exists and we have a target for replacement
+            if target_uid and hasattr(msg, "text_content") and msg.text_content:
+                try:
+                    # Get user info to replace [Nombre]
+                    # We try to get chat member info from the current chat if possible, or get_chat
+                    try:
+                        member = await context.bot.get_chat_member(
+                            update.effective_chat.id, target_uid
+                        )
+                        user = member.user
+                    except Exception:
+                        # Fallback to get_chat (might fail if bot never met user)
+                        chat = await context.bot.get_chat(target_uid)
+                        user = chat
+
+                    first_name = user.first_name if user else "Usuario"
+                    safe_name = html.escape(first_name)
+                    text_to_send = msg.text_content.replace("[Nombre]", safe_name)
+
+                    await context.bot.send_message(
+                        chat_id=update.effective_chat.id,
+                        text=text_to_send,
+                        parse_mode="HTML",
+                    )
+                    return
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to test vars in list_msge: {e} - Falling back to copy"
+                    )
 
             try:
                 await context.bot.copy_message(
