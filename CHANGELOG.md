@@ -2,7 +2,10 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.5.0] - 2025-12-14
+## [2.5.1] - 2025-12-14
+
+### Correcciones
+- **Comando /help**: Se agregaron los comandos faltantes (`/sugerencia`) a la lista de ayuda visible.
 
 ### Cambios Importantes (Breaking Changes)
 - **Base de Datos**: SQLite es ahora el motor por defecto. La integración con PostgreSQL se ha movido a un plugin opcional.

@@ -684,8 +684,9 @@ def _get_help_data(uid):
 
     # 1. Inicio (Todos)
     cat_home = [
-        ("🚀 /start", "Iniciar el bot"),
-        ("ℹ️ /help", "Mostrar esta ayuda"),
+        ("📚 /start", "Menú Principal"),
+        ("❓ /help", "Ver este mensaje"),
+        ("💡 /sugerencia <txt>", "Enviar sugerencia"),
         ("📊 /status", "Ver tu estado y descargas"),
         ("❌ /cancel", "Cancelar acción actual"),
     ]
