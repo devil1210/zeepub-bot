@@ -92,34 +92,9 @@ function App() {
 
       const data = await fetchFeed(targetUrl, uid);
       if (data && data.entries) {
-        // Auto-navegación: saltar automáticamente si hay elementos de navegación y estamos en niveles iniciales
-        if (depth < 2 && data.entries.length > 0) {
-          // Buscar un elemento de navegación (preferiblemente "Todas las bibliotecas" o "ZeePubs")
-          const navItems = data.entries.filter(item =>
-            item.links?.some(l =>
-              l.rel === 'subsection' ||
-              (l.type?.includes('opds-catalog') && l.type?.includes('navigation'))
-            )
-          );
 
-          if (navItems.length > 0) {
-            // Priorizar "Todas las bibliotecas" o el primer elemento de navegación
-            const targetItem = navItems.find(item =>
-              item.title?.toLowerCase().includes('biblioteca') ||
-              item.title?.toLowerCase().includes('zeepub')
-            ) || navItems[0];
-
-            const navLink = targetItem.links?.find(l =>
-              l.rel === 'subsection' || l.type?.includes('opds-catalog')
-            );
-
-            if (navLink && navLink.href) {
-              // Navegar automáticamente al siguiente nivel
-              loadFeed(navLink.href, depth + 1);
-              return;
-            }
-          }
-        }
+        // Auto-navegación DESACTIVADA para corregir bug de categorías
+        // if (depth < 2 && data.entries.length > 0) { ... }
 
         setItems(data.entries);
         if (data.title) setCurrentTitle(data.title);
@@ -316,8 +291,8 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white overflow-hidden">
-      <header className="flex-none bg-blue-600 shadow-lg z-10 p-4">
+    <div className="flex flex-col h-screen bg-transparent text-white overflow-hidden font-sans">
+      <header className="flex-none bg-slate-900/80 backdrop-blur-md border-b border-white/10 shadow-lg z-10 p-4 sticky top-0">
         <SearchBar onSearch={debouncedSearch} />
 
         {/* Admin Controls */}
@@ -374,15 +349,21 @@ function App() {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
         ) : error === 'ACCESS_DENIED' ? (
-          <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-4">
-            <div className="text-6xl">🚫</div>
-            <h2 className="text-xl font-bold text-white">Acceso Restringido</h2>
-            <p className="text-gray-300">
-              Esta función solo está disponible para usuarios <b>VIP</b>, <b>Premium</b> o <b>Patrocinadores</b>.
+          <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-6">
+            <div className="p-4 bg-red-500/10 rounded-full">
+              <div className="text-6xl animate-pulse">🔒</div>
+            </div>
+            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
+              Acceso Exclusivo
+            </h2>
+            <p className="text-gray-300 max-w-xs leading-relaxed">
+              Esta sección está reservada para usuarios <span className="text-yellow-400 font-bold">VIP</span>.
             </p>
-            <p className="text-sm text-gray-500">
-              Contacta al administrador si crees que esto es un error.
-            </p>
+            <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+              <p className="text-xs text-gray-400">
+                Si crees que esto es un error, intenta recargar o contacta soporte con tu ID: <code>{WebApp.initDataUnsafe?.user?.id}</code>
+              </p>
+            </div>
           </div>
         ) : error ? (
           <div className="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">
