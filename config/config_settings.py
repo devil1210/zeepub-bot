@@ -100,11 +100,27 @@ class BotConfig:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
     ENABLE_PLUGINS: bool = os.getenv("ENABLE_PLUGINS", "true").lower() == "true"
     PLUGIN_DIRECTORY: str = os.getenv("PLUGIN_DIRECTORY", "plugins")
+
+    # Plugin PostgreSQL
+    ENABLE_POSTGRES_PLUGIN: bool = (
+        os.getenv("ENABLE_POSTGRES_PLUGIN", "False").lower() == "true"
+    )
+
     # Ruta para la base de datos de URL acortadas (puede ser absoluta o relativa).
     URL_CACHE_DB_PATH: str = os.getenv("URL_CACHE_DB_PATH", "data/url_cache.db")
-    # Optional SQLAlchemy URL for external DB (Postgres, MySQL etc.). If provided
-    # url_cache will prefer this over the local SQLite file.
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+
+    # Optional SQLAlchemy URL.
+    # Solo se carga si el plugin está habilitado explícitamente.
+    # Esto asegura que SQLite sea el default incluso si DATABASE_URL existe en el entorno.
+    DATABASE_URL: str = field(init=False)
+
+    def __post_init__(self):
+        # Lógica de inicialización post-construcción para campos dependientes
+        raw_db_url = os.getenv("DATABASE_URL", "")
+        if self.ENABLE_POSTGRES_PLUGIN and raw_db_url:
+            self.DATABASE_URL = raw_db_url
+        else:
+            self.DATABASE_URL = ""
 
     @property
     def OPDS_ROOT_START(self) -> str:

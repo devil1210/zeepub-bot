@@ -2,7 +2,14 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.4.1] - 2025-12-14
+## [2.5.0] - 2025-12-14
+
+### Cambios Importantes (Breaking Changes)
+- **Base de Datos**: SQLite es ahora el motor por defecto. La integración con PostgreSQL se ha movido a un plugin opcional.
+- **Configuración**: Nueva variable `ENABLE_POSTGRES_PLUGIN` (Default: False). Si tienías configurado PostgreSQL, debes establecer esto en `True` para mantener el comportamiento anterior, o dejarlo en `False` para migrar a SQLite.
+
+### Funcionalidades
+- **Plugin PostgreSQL**: `plugins/postgres_plugin.py` creado para gestionar la activación explícita de la base de datos externa.
 
 ### Correcciones
 - **Comando /help**: Ahora muestra correctamente todas las categorías disponibles según el rol del usuario desde el inicio (antes requerían interacción para aparecer). Refactorización de lógica de teclado para consistencia.
