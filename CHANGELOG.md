@@ -2,8 +2,12 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
-y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
+## [2.4.0] - 2025-12-14
+
+### Funcionalidades
+- **Plugin de Sugerencias**: Nuevo comando `/sugerencia` para enviar feedback a los administradores.
+- **Refactorización Mini App**: La integración con la Web App ahora es un plugin independiente (`plugins/miniapp_plugin.py`) y la API se carga condicionalmente.
+- **Configuración**: `ENABLE_MINI_APP` en `.env` para controlar la funcionalidad web.
 
 ## [2.3.0] - 2025-12-14
 
