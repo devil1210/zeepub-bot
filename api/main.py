@@ -4,10 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.bot import ZeePubBot
 import logging
 
-# Configurar logging
-from config.config_settings import config
 
 # Configurar logging
+from config.config_settings import config
+import os
+
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     level=getattr(logging, config.LOG_LEVEL.upper(), logging.INFO),
@@ -60,46 +61,53 @@ app.add_middleware(
 )
 
 # Importar rutas
-from api.routes import router
 
-app.include_router(router)
+# Validar si el plugin está activo
+enable_miniapp = os.getenv("ENABLE_MINI_APP", "True").lower() == "true"
 
+if enable_miniapp:
+    # Importar rutas solo si está activo
+    from api.routes import router
 
-@app.get("/api_health")
-async def root():
-    return {"message": "ZeePub Bot API is running"}
+    app.include_router(router)
 
+    # Montar archivos estáticos del frontend
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
 
-# Montar archivos estáticos del frontend
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-import os
-
-# Ruta al directorio de build del frontend
-frontend_dist = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "zeepub-web", "dist"
-)
-
-if os.path.exists(frontend_dist):
-    app.mount(
-        "/assets",
-        StaticFiles(directory=os.path.join(frontend_dist, "assets")),
-        name="assets",
+    # Ruta al directorio de build del frontend
+    frontend_dist = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "zeepub-web", "dist"
     )
 
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        # Si es una ruta de API, dejar que FastAPI la maneje (ya definidas arriba)
-        if full_path.startswith("api"):
-            return {"error": "Not found"}
+    if os.path.exists(frontend_dist):
+        app.mount(
+            "/assets",
+            StaticFiles(directory=os.path.join(frontend_dist, "assets")),
+            name="assets",
+        )
 
-        # Servir index.html para cualquier otra ruta (SPA routing)
-        index_path = os.path.join(frontend_dist, "index.html")
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
-        return {"error": "Frontend not built"}
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str):
+            # Si es una ruta de API, dejar que FastAPI la maneje (ya definidas arriba)
+            if full_path.startswith("api"):
+                # Si llegamos aquí y no matcheó api routes, es 404
+                return {"error": "Not found"}
+
+            # Servir index.html para cualquier otra ruta (SPA routing)
+            index_path = os.path.join(frontend_dist, "index.html")
+            if os.path.exists(index_path):
+                return FileResponse(index_path)
+            return {"error": "Frontend not built"}
+
+    else:
+        logger.warning(
+            f"No se encontró el directorio {frontend_dist}. El frontend no se servirá."
+        )
 
 else:
-    print(
-        f"Advertencia: No se encontró el directorio {frontend_dist}. El frontend no se servirá."
-    )
+    logger.info("Mini App desactivada por configuración (ENABLE_MINI_APP=False).")
+
+    @app.get("/{full_path:path}")
+    async def disabled_root(full_path: str):
+        return {"message": "Mini App Service is Disabled"}
