@@ -7,15 +7,18 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
-### Funcionalidades
-- **Plugin de Mensajes**: Sistema modular para almacenar y reutilizar mensajes (`/add_msge`, `/list_msge`).
-- **Bienvenida Automática**: Mensaje configurable cuando el bot es añadido a un grupo (`/set_welcome`).
-- **Saludo Mejorado**: Comando `/saludo` ahora soporta envío de mensajes almacenados por ID además de texto plano.
-- Refactorizado sistema de donaciones a plugin independiente `plugins/donations_plugin.py`.
-- Refactorizado gestor de links a plugin independiente `plugins/links_manager_plugin.py`.
-- Refactorizado herramientas de mantenimiento a plugin independiente `plugins/maintenance_plugin.py`.
-- Funcionalidad de mensajes personalizados extraída a plugin `plugins/custom_messages_plugin.py`.
-- **Configuración Modular**: Nueva arquitectura de plugins activable mediante entorno (`ENABLE_CUSTOM_MESSAGES`).
+### Refactorización y Plugins
+- **Arquitectura de Plugins**: Sistema modular activable mediante variables de entorno (`ENABLE_*`).
+- **Plugin de Mensajes** (`ENABLE_CUSTOM_MESSAGES`):
+    - Comandos: `/add_msge`, `/list_msge`, `/send_msge`.
+    - Soporte para **Bienvenida Automática** (`/set_welcome`) y **Saludos Mejorados** (`/saludo`).
+- **Plugin de Donaciones** (`ENABLE_DONATIONS`):
+    - Comandos: `/donar`, `/niveles`, `/set_price`.
+- **Plugin de Links** (`ENABLE_LINKS_MANAGER`):
+    - Comandos: `/status_links`, `/link_list`, `/purge_link`.
+- **Plugin de Mantenimiento** (`ENABLE_DB_MAINTENANCE`):
+    - Herramientas de Backup/Restore y gestión de historial (`/backup_db`, `/export_history`, `/latest_books`, etc).
+
 
 
 ## [2.2.1] - 2025-12-12

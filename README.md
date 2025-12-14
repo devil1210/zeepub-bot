@@ -38,44 +38,48 @@
   - **Frontend**: React (Vite) servido estáticamente.
   - **Infraestructura**: Docker + Cloudflare Tunnel (sin abrir puertos).
   - **Base de Datos**: Soporte para PostgreSQL y SQLite con gestión de URLs acortadas.
-- **Publisher Workflow**:
-  - Menú de selección en `/start` para elegir destino de publicación (Telegram/Facebook).
-  - Preferencia temporal que se aplica al siguiente libro seleccionado.
-  - Publicación directa sin menús de interrupción.
-- **Comandos de Publishers**:
-  - `/export_db`: Exporta la tabla `url_mappings` a CSV.
-  - `/link_list [limit]`: Lista los links acortados más recientes (hasta 50).
-  - `/status_links`: Muestra el estado de los últimos 5 links con validación en tiempo real.
-  - `/purge_link <hash>`: Elimina un link acortado específico de la base de datos.
-- **Comandos de Administración** (Solo Admins):
-  - `/backup_db`: Genera y envía un backup completo de la base de datos PostgreSQL.
-  - `/restore_db`: Restaura la base de datos desde un archivo .sql.
-  - `/reset <user_id>`: Resetea el contador de descargas de un usuario.
-  - `/debug_state`: Muestra el estado actual del usuario (para debugging).
-  - `/latest_books [chat_id]`: Ver últimos libros publicados (con filtro opcional por chat).
-  - `/import_history`: Importar historial desde JSON de Telegram.
-  - `/export_history`: Exportar historial a CSV.
-  - `/clear_history confirm`: Borrar todo el historial de publicaciones.
-- **Reportes Automáticos**:
-  - Sistema de reportes semanales automáticos cada lunes a las 9:00 AM con estadísticas de links (total, válidos, rotos, tasa de éxito).
-  - Los reportes se envían automáticamente a todos los publishers configurados.
-- **Formato Mejorado de EPUBs**:
-  - Extracción avanzada de metadatos con soporte para `epub:type="fulltitle"`.
-  - Formato de título completo: `Serie ║ Colección ║ Título Interno`.
-  - Preservación de puntuación y subtítulos multilinea.
-  - Función centralizada de enriquecimiento de metadatos para consistencia.
-- **Integración con Facebook**:
-  - Preparación automatizada de posts con formato completo (título, metadata, sinopsis, info del archivo).
-  - Publicación directa en grupos de Facebook con un solo clic.
-  - Vista previa correcta del título (sin slug) para Facebook.
-- **Sistema de Historial de Libros** (Solo Admins):
-  - Registro automático de todos los libros publicados (desde bot y Mini App).
-  - Almacenamiento de metadatos completos: maquetadores, demografía, géneros, ilustrador, traducción.
-  - `/latest_books`: Ver últimos 10 libros publicados (todos los chats).
-  - `/latest_books <chat_id>`: Filtrar libros por chat específico.
-  - `/import_history`: Importar historial desde exportación JSON de Telegram.
-  - `/export_history`: Exportar historial completo a CSV.
-  - `/clear_history confirm`: Borrar todo el historial.
+- **Arquitectura Modular (Plugins)**:
+  - **Custom Messages**: Almacena y envía mensajes/media frecuentas, bienvenidas y saludos custom.
+  - **Links Manager**: Gestión y auditoría de links acortados.
+  - **Donations**: Información de donaciones y niveles.
+  - **Maintenance**: Herramientas de backup, restore y gestión de historial.
+
+## 🧩 Plugins y Comandos
+
+El bot se ha dividido en módulos activables.
+
+### 1. Mensajes Personalizados (`ENABLE_CUSTOM_MESSAGES`)
+Permite guardar mensajes (con fotos/ficheros) y usarlos como respuestas rápidas o bienvenidas.
+- `/add_msge <id>`: Guarda el mensaje respondido.
+- `/list_msge [id]`: Lista o previsualiza mensajes.
+- `/send_msge <id> <chat>`: Envía un mensaje a otro chat.
+- `/saludo <chat> <id|txt>`: Envía saludo o mensaje guardado.
+- `/set_welcome <id|off>`: Configura mensaje de bienvenida para el grupo actual.
+
+### 2. Gestión de Links (`ENABLE_LINKS_MANAGER`)
+Herramientas para publishers y admins.
+- `/status_links`: Estado de links y validación.
+- `/link_list`: Últimos links acortados.
+- `/purge_link <hash>`: Eliminar un link.
+
+### 3. Mantenimiento (`ENABLE_DB_MAINTENANCE`)
+Gestión de base de datos e historial.
+- `/backup_db`, `/restore_db`: (Admin) Backup completo.
+- `/export_db`: (Pub) CSV de links.
+- `/import_history`, `/export_history`: (Admin) Gestión de historial.
+- `/latest_books`: Ver últimos publicados.
+- `/clear_history`: Limpiar historial.
+
+### 4. Donaciones (`ENABLE_DONATIONS`)
+- `/donar`, `/niveles`.
+- `/set_price`: Configurar precio.
+
+### 5. Comandos Core (Siempre activos)
+- `/start`, `/help`: Inicio y ayuda dinámica.
+- `/status`: Estado del bot y cuotas.
+- `/update_system`: (Admin) Actualización vía Watchtower.
+- `/reset <uid>`: (Admin) Resetear cuota de usuario.
+
 
 ***
 
@@ -174,6 +178,12 @@ DL_DOMAIN=https://tu-dominio.com
 
 # ZITADEL Actions
 ZITADEL_SIGNING_KEY=tu_clave_de_firma_zitadel
+
+# Plugins (Opcional - True por defecto)
+ENABLE_CUSTOM_MESSAGES=True
+ENABLE_DONATIONS=True
+ENABLE_LINKS_MANAGER=True
+ENABLE_DB_MAINTENANCE=True
 ```
 
 ### 3. Desplegar con Docker
