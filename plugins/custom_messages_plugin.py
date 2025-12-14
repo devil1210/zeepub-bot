@@ -222,7 +222,7 @@ class CustomMessagesPlugin(BasePlugin):
         for m in msgs:
             text += f"🔹 <code>{m.slug}</code>\n"
 
-        text += "\nUsa <code>/list_msge <id></code> para ver uno."
+        text += "\nUsa <code>/list_msge &lt;id&gt;</code> para ver uno."
         await update.message.reply_text(text, parse_mode="HTML")
 
     async def send_msge(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
