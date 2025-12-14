@@ -202,9 +202,10 @@ docker compose up -d --build
 
 ### 8. Plugins (Group Manager)
 **Variables:** `ENABLE_GROUP_MANAGER=True/False`
-- `/authorize_group`: (Admin) Autoriza al bot a gestionar el grupo actual.
-- `/revoke_group`: (Admin) Revoca la autorización en el grupo actual.
-- `/set_group_welcome <slug>`: (Admin) Define el mensaje de bienvenida para el grupo (usa mensajes guardados con `/add_msge`).
+- `/authorize_group [id]`: (Admin) Autoriza al bot a gestionar el grupo actual o el ID especificado via DM.
+- `/revoke_group [id]`: (Admin) Revoca la autorización.
+- `/set_group_welcome <slug>`: (Admin) Define el mensaje de bienvenida. Soporta `[Nombre]` para sustitución.
+
 
 ---
 

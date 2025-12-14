@@ -2,7 +2,15 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.6.0] - 2025-12-14
+## [2.7.0] - 2025-12-14
+
+### Mejoras
+- **Group Manager Plugin**:
+  - Soporte para variables en mensajes de bienvenida (Ej: `[Nombre]` -> Nombre del usuario).
+  - Comandos `/authorize_group` y `/revoke_group` ahora aceptan un ID de chat opcional, permitiendo gestionar grupos por privado.
+- **Custom Messages Plugin**:
+  - Base de datos actualizada para almacenar el contenido de texto de los mensajes, permitiendo su modificación dinámica (reemplazo de variables) al enviarlos.
+
 
 ### Funcionalidades
 - **Plugin Group Manager**: Gestión de grupos con autorización explícita y mensajes de bienvenida personalizados (integrado con `custom_messages`).

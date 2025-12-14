@@ -1,5 +1,6 @@
 import logging
 import os
+import html
 from sqlalchemy import create_engine, Column, String, Boolean, Integer, BigInteger
 from sqlalchemy.orm import declarative_base, sessionmaker
 from telegram import Update, ChatMember, ChatMemberUpdated
@@ -109,10 +110,20 @@ class GroupManagerPlugin(BasePlugin):
         if not self._is_admin(update.effective_user.id):
             return
 
-        chat_id = update.effective_chat.id
-        if update.effective_chat.type not in ["group", "supergroup"]:
-            await update.message.reply_text("⛔ Este comando solo funciona en grupos.")
-            return
+        # Check for arguments (e.g., /authorize_group -100123456789)
+        if context.args:
+            try:
+                chat_id = int(context.args[0])
+            except ValueError:
+                await update.message.reply_text("❌ ID de chat inválido.")
+                return
+        else:
+            chat_id = update.effective_chat.id
+            if update.effective_chat.type not in ["group", "supergroup"]:
+                await update.message.reply_text(
+                    "⛔ Usa este comando en un grupo o proporciona un ID: /authorize_group <id>"
+                )
+                return
 
         session = self.Session()
         try:
@@ -124,7 +135,7 @@ class GroupManagerPlugin(BasePlugin):
             group.is_authorized = True
             session.commit()
             await update.message.reply_text(
-                "✅ Grupo autorizado. El bot ahora está activo aquí."
+                f"✅ Grupo {chat_id} autorizado. El bot ahora está activo allí."
             )
         except Exception as e:
             logger.error(f"Error authorizing group: {e}")
@@ -136,7 +147,15 @@ class GroupManagerPlugin(BasePlugin):
         if not self._is_admin(update.effective_user.id):
             return
 
-        chat_id = update.effective_chat.id
+        if context.args:
+            try:
+                chat_id = int(context.args[0])
+            except ValueError:
+                await update.message.reply_text("❌ ID de chat inválido.")
+                return
+        else:
+            chat_id = update.effective_chat.id
+
         session = self.Session()
         try:
             group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
@@ -144,7 +163,7 @@ class GroupManagerPlugin(BasePlugin):
                 group.is_authorized = False
                 session.commit()
             await update.message.reply_text(
-                "⛔ Grupo revocado. El bot dejará de actuar aquí."
+                f"⛔ Grupo {chat_id} revocado. El bot dejará de actuar allí."
             )
         except Exception as e:
             logger.error(f"Error revoking group: {e}")
@@ -161,7 +180,8 @@ class GroupManagerPlugin(BasePlugin):
             await update.message.reply_text("Uso: /set_group_welcome <slug_mensaje>")
             return
 
-        slug = context.args[0]
+        slug = context.args[0].lower()
+        # Default to current chat if no second arg (not implemented yet, stick to current chat)
         chat_id = update.effective_chat.id
 
         # Verify slug exists
@@ -175,20 +195,20 @@ class GroupManagerPlugin(BasePlugin):
         try:
             group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
             if not group:
-                group = GroupSettings(
-                    chat_id=chat_id, is_authorized=True
-                )  # Auto-auth if setting welcome? Maybe safer strict.
-                # Let's enforce auth first or assume setting config implies auth intentions, but sticking to explicit auth is better.
-                # Only allow setting if record exists or create it but default auth?
-                # User said: "el admin definirá en que grupos el bot tendrá ese poder".
-                # I'll create the record if missing but keep authorized=False unless /authorize is run?
-                # Or auto-create as False.
+                # Require explicit authorization first? Or auto-create?
+                # Let's auto-create but warn if not authorized.
+                group = GroupSettings(chat_id=chat_id)
                 session.add(group)
+                msg_extra = (
+                    " (Nota: El grupo aún no está autorizado, usa /authorize_group)"
+                )
+            else:
+                msg_extra = ""
 
             group.welcome_msg_slug = slug
             session.commit()
             await update.message.reply_text(
-                f"✅ Mensaje de bienvenida establecido a: {slug}"
+                f"✅ Mensaje de bienvenida establecido a: {slug}{msg_extra}"
             )
         except Exception as e:
             logger.error(f"Error setting welcome: {e}")
@@ -224,13 +244,7 @@ class GroupManagerPlugin(BasePlugin):
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         """Track when bot is added/removed from groups."""
-        result = self._extract_status_change(update.chat_member)
-        if result is None:
-            return
-
-        was_member, is_member = result
-        # If bot was added needed processing?
-        # For now we rely on explicit /authorize_group
+        # Optional: Auto-create entry in DB disabled by default?
         pass
 
     async def welcome_member(
@@ -253,7 +267,6 @@ class GroupManagerPlugin(BasePlugin):
                 group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
                 if not group or not group.is_authorized or not group.welcome_msg_slug:
                     return
-
                 slug = group.welcome_msg_slug
             finally:
                 session.close()
@@ -264,23 +277,33 @@ class GroupManagerPlugin(BasePlugin):
                 return
 
             new_member = update.chat_member.new_chat_member.user
-            mention = new_member.mention_html()
+            first_name = new_member.first_name
+            # Escape HTML to prevent injection if using manual replacement
+            safe_name = html.escape(first_name)
 
-            # Assuming CustomMessagesPlugin stores original message_id and chat_id to forward/copy
-            # Or description is the text? StoredMessage model has: slug, source_chat_id, source_message_id, description.
-            # We should COPY the message to the new chat.
+            # Try to send as new message if text_content is available (supports variables)
+            if hasattr(msg_data, "text_content") and msg_data.text_content:
+                text_to_send = msg_data.text_content.replace("[Nombre]", safe_name)
 
+                try:
+                    await context.bot.send_message(
+                        chat_id=chat_id, text=text_to_send, parse_mode="HTML"
+                    )
+                    return  # Sent successfully
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to send text welcome, falling back to copy: {e}"
+                    )
+
+            # Fallback: Copy original message (No variable replacement)
             try:
                 await context.bot.copy_message(
                     chat_id=chat_id,
                     from_chat_id=msg_data.source_chat_id,
                     message_id=msg_data.source_message_id,
                 )
-                # Opcional: Enviar también texto si se requiere reemplazo de variables?
-                # CustomMessagesPlugin generalmente reenvía. El usuario pidió "responda con un mensaje... el cual será uno de los ya almacenados".
-                # copy_message es lo más fiel al original.
             except Exception as e:
-                logger.error(f"Error sending welcome message: {e}")
+                logger.error(f"Error sending welcome message (copy): {e}")
 
     def _extract_status_change(self, chat_member_update: ChatMemberUpdated):
         """Helper to Determine if user joined or left."""

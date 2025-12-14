@@ -11,6 +11,7 @@ from sqlalchemy import (
     Text,
     DateTime,
 )
+from sqlalchemy.sql import text  # Importar text explícitamente
 from sqlalchemy.orm import declarative_base, sessionmaker
 from telegram import Update, Message
 from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler
@@ -27,6 +28,9 @@ class StoredMessage(Base):
     source_chat_id = Column(BigInteger, nullable=False)
     source_message_id = Column(Integer, nullable=False)
     description = Column(Text, nullable=True)
+    text_content = Column(
+        Text, nullable=True
+    )  # Contenido capturado para reemplazo de variables
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -75,8 +79,39 @@ class CustomMessagesPlugin(BasePlugin):
         try:
             self.engine = create_engine(db_url, future=True)
             Base.metadata.create_all(self.engine)
+
+            # Migration: Ensure text_content column exists
+            with self.engine.connect() as conn:
+                try:
+                    # Check if column exists by selecting it? Or just try adding it and ignore error
+                    # SQLite doesn't support IF NOT EXISTS in ADD COLUMN effectively in all versions,
+                    # but easiest is to try query it, catch error, then add.
+                    # Or check pragma table_info.
+                    if "sqlite" in db_url:
+                        result = conn.execute(
+                            text("PRAGMA table_info(stored_messages)")
+                        )
+                        columns = [
+                            row[1] for row in result.fetchall()
+                        ]  # row[1] is name
+                        if "text_content" not in columns:
+                            logger.info("Migrating DB: Adding text_content column...")
+                            conn.execute(
+                                text(
+                                    "ALTER TABLE stored_messages ADD COLUMN text_content TEXT"
+                                )
+                            )
+                    else:
+                        # Postgres logic if using it (unlikely for this plugin default path but good practice)
+                        pass
+                except Exception as ex:
+                    logger.warning(
+                        f"Migration check failed (might be already up to date): {ex}"
+                    )
+
             self.Session = sessionmaker(bind=self.engine)
             logger.info("Plugin CustomMessages: Base de datos inicializada.")
+
         except Exception as e:
             logger.error(f"Error inicializando BD del plugin: {e}")
             return False
@@ -116,14 +151,19 @@ class CustomMessagesPlugin(BasePlugin):
                 msg.source_chat_id = chat_id
                 msg.source_message_id = message_id
                 msg.description = description
+                # Si description contiene el texto real (pasado desde add_msge), lo guardamos en text_content tambien
+                msg.text_content = description
+
             else:
                 msg = StoredMessage(
                     slug=slug,
                     source_chat_id=chat_id,
                     source_message_id=message_id,
                     description=description,
+                    text_content=description,  # Usamos description para pasar el texto en add_msge
                 )
                 session.add(msg)
+
             session.commit()
 
     def _get_message(self, slug):
@@ -175,12 +215,20 @@ class CustomMessagesPlugin(BasePlugin):
         # copy_message necesita permisos para ver ese chat.
 
         try:
+            # Capturar texto o caption para guardarlo
+            content_text = (
+                original_msg.text_html
+                or original_msg.caption_html
+                or "Mensaje Multimedia"
+            )
+
             self._save_message(
                 slug,
                 original_msg.chat_id,
                 original_msg.message_id,
-                description="Guardado manualmente",
+                description=content_text,  # Pasamos el texto como descripción/contenido
             )
+
             await update.message.reply_text(
                 f"✅ Mensaje guardado como <code>{slug}</code>.", parse_mode="HTML"
             )
