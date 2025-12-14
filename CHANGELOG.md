@@ -2,7 +2,14 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.5.1] - 2025-12-14
+## [2.6.0] - 2025-12-14
+
+### Funcionalidades
+- **Plugin Group Manager**: Gestión de grupos con autorización explícita y mensajes de bienvenida personalizados (integrado con `custom_messages`).
+  - `/authorize_group`: Autorizar al bot.
+  - `/revoke_group`: Revocar autorización.
+  - `/set_group_welcome <slug>`: Definir mensaje de bienvenida desde los almacenados.
+
 
 ### Correcciones
 - **Comando /help**: Se agregaron los comandos faltantes (`/sugerencia`) a la lista de ayuda visible.
