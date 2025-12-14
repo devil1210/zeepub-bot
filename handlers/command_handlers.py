@@ -172,9 +172,9 @@ class CommandHandlers:
 
         # Importar lógica compartida para evitar duplicación
         # (Importación local para evitar ciclos y errores de carga inicial)
-        from handlers.callback_handlers import _get_help_data
+        from handlers.callback_handlers import _get_help_data, _get_help_keyboard
 
-        help_data, is_admin, _ = _get_help_data(uid)
+        help_data, is_admin, is_publisher = _get_help_data(uid)
 
         # Mostrar categoría "home" por defecto
         cat_title, commands = help_data.get("home", ("Inicio", []))
@@ -187,26 +187,14 @@ class CommandHandlers:
             safe_desc = desc.replace("<", "&lt;").replace(">", "&gt;")
             text += f"<b>{safe_cmd}</b>\n   ╰ {safe_desc}\n"
 
-        # Teclado inicial
-        row1 = [
-            InlineKeyboardButton("🏠 Inicio", callback_data="help|home"),
-            InlineKeyboardButton("📚 Content", callback_data="help|content"),
-        ]
-        keyboard = [row1]
-        if is_admin:
-            row2 = [
-                InlineKeyboardButton("🛠 Admin", callback_data="help|admin"),
-                InlineKeyboardButton("💾 Datos", callback_data="help|data"),
-            ]
-            keyboard.append(row2)
-
-        keyboard.append([InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")])
+        # Teclado dinámico
+        keyboard = _get_help_keyboard(is_admin, is_publisher)
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=keyboard,
             message_thread_id=thread_id,
         )
 

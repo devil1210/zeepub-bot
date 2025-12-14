@@ -831,11 +831,29 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
     # Fila 1: Home | Content
     # Fila 2: Admin | Data (Solo si es admin)
 
+    reply_markup = _get_help_keyboard(is_admin, is_publisher)
+
+    try:
+        await query.edit_message_text(
+            text=text, reply_markup=reply_markup, parse_mode="HTML"
+        )
+    except Exception as e:
+        pass  # Evitar error si el mensaje no cambió
+
+    try:
+        await query.answer()
+    except Exception:
+        pass
+
+
+def _get_help_keyboard(is_admin: bool, is_publisher: bool):
+    """Genera el teclado de ayuda dinámicamente."""
+    import os
+
     row1 = [
         InlineKeyboardButton("🏠 Inicio", callback_data="help|home"),
         InlineKeyboardButton("📚 Content", callback_data="help|content"),
     ]
-    import os
 
     if os.getenv("ENABLE_DONATIONS", "True").lower() == "true":
         row1.append(
@@ -847,6 +865,7 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
     row2 = []
     enable_links = os.getenv("ENABLE_LINKS_MANAGER", "True").lower() == "true"
     enable_maint = os.getenv("ENABLE_DB_MAINTENANCE", "True").lower() == "true"
+
     if enable_links and (is_admin or is_publisher):
         row2.append(InlineKeyboardButton("🔗 Links", callback_data="help|links"))
 
@@ -857,7 +876,6 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
         row2.append(InlineKeyboardButton("💾 Datos", callback_data="help|data"))
 
     if is_admin:
-        # Check if plugin is enabled to show button
         if os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true":
             row2.append(
                 InlineKeyboardButton("🧩 Mensajes", callback_data="help|plugins")
@@ -866,28 +884,8 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
     if row2:
         keyboard.append(row2)
 
-    # Marcar el botón activo visualmente? (Telegram no soporta 'active' state nativo,
-    # pero podríamos cambiar el texto del botón actual, ej: "• Inicio •")
-    # Por simplicidad, dejamos los botones fijos.
-
-    # Botón cerrar
     keyboard.append([InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")])
-
-    try:
-        await query.edit_message_text(
-            text=text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
-        )
-    except Exception as e:
-        # Ignore "Message is not modified"
-        if "Message is not modified" in str(e):
-            pass
-        else:
-            logger.warning(f"Error updating help menu: {e}")
-
-    try:
-        await query.answer()
-    except Exception:
-        pass
+    return InlineKeyboardMarkup(keyboard)
 
 
 def register_handlers(app):

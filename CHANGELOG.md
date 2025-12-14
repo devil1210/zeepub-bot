@@ -2,7 +2,10 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.4.0] - 2025-12-14
+## [2.4.1] - 2025-12-14
+
+### Correcciones
+- **Comando /help**: Ahora muestra correctamente todas las categorías disponibles según el rol del usuario desde el inicio (antes requerían interacción para aparecer). Refactorización de lógica de teclado para consistencia.
 
 ### Funcionalidades
 - **Plugin de Sugerencias**: Nuevo comando `/sugerencia` para enviar feedback a los administradores.
