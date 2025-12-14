@@ -33,9 +33,7 @@ class CommandHandlers:
         # Registrar /reset
         app.add_handler(CommandHandler("reset", self.reset_command))
 
-        app.add_handler(CommandHandler("latest_books", self.latest_books))
-        app.add_handler(CommandHandler("clear_history", self.clear_history))
-        app.add_handler(CommandHandler("export_history", self.export_history))
+
 
         # Registrar comandos de gestión de usuarios (admin)
         app.add_handler(CommandHandler("add_user", self.add_user))

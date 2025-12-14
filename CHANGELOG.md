@@ -5,7 +5,7 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
-## [No Publicado]
+## [2.3.0] - 2025-12-14
 
 ### Refactorización y Plugins
 - **Arquitectura de Plugins**: Sistema modular activable mediante variables de entorno (`ENABLE_*`).
