@@ -720,16 +720,28 @@ def _get_help_data(uid):
         ]
 
     # 4. Datos / Backup (Admin only)
+    import os
+
     cat_data = []
-    if is_admin:
-        cat_data = [
-            ("📦 /backup_db", "Backup DB"),
-            ("♻️ /restore_db", "Restaurar DB desde archivo"),
-            ("📚 /import_history", "Importar historial JSON"),
-            ("📤 /export_history", "Exportar historial CSV"),
-            ("🆕 /latest_books", "Ver últimos libros"),
-            ("🗑️ /clear_history", "Borrar historial"),
-        ]
+    enable_maint = os.getenv("ENABLE_DB_MAINTENANCE", "True").lower() == "true"
+    if enable_maint:
+        if is_admin:
+            cat_data.extend(
+                [
+                    ("📦 /backup_db", "Backup DB"),
+                    ("♻️ /restore_db", "Restaurar DB desde archivo"),
+                    ("📚 /import_history", "Importar historial JSON"),
+                    ("🆕 /latest_books", "Ver últimos libros"),
+                    ("🗑️ /clear_history", "Borrar historial"),
+                ]
+            )
+        if is_admin or is_publisher:
+            cat_data.extend(
+                [
+                    ("📤 /export_db", "Exportar DB CSV"),
+                    ("📤 /export_history", "Exportar historial CSV"),
+                ]
+            )
 
     # 5. Plugins (Custom Messages)
     cat_plugins = []
@@ -794,7 +806,10 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
     help_data, is_admin, is_publisher = _get_help_data(uid)
 
     # Validar acceso a categorías restringidas
-    if target_cat in ("admin", "data", "plugins") and not is_admin:
+    if target_cat in ("admin", "plugins") and not is_admin:
+        await query.answer("⛔ Acceso restringido", show_alert=True)
+        return
+    if target_cat == "data" and not (is_admin or is_publisher):
         await query.answer("⛔ Acceso restringido", show_alert=True)
         return
     if target_cat == "links" and not (is_admin or is_publisher):
@@ -831,12 +846,17 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
 
     row2 = []
     enable_links = os.getenv("ENABLE_LINKS_MANAGER", "True").lower() == "true"
+    enable_maint = os.getenv("ENABLE_DB_MAINTENANCE", "True").lower() == "true"
     if enable_links and (is_admin or is_publisher):
         row2.append(InlineKeyboardButton("🔗 Links", callback_data="help|links"))
 
     if is_admin:
         row2.append(InlineKeyboardButton("🛠 Admin", callback_data="help|admin"))
+
+    if enable_maint and (is_admin or is_publisher):
         row2.append(InlineKeyboardButton("💾 Datos", callback_data="help|data"))
+
+    if is_admin:
         # Check if plugin is enabled to show button
         if os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true":
             row2.append(
