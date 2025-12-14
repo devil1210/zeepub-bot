@@ -7,6 +7,13 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No Publicado]
 
+### Funcionalidades
+- **Plugin de Mensajes**: Sistema modular para almacenar y reutilizar mensajes (`/add_msge`, `/list_msge`).
+- **Bienvenida Automática**: Mensaje configurable cuando el bot es añadido a un grupo (`/set_welcome`).
+- **Saludo Mejorado**: Comando `/saludo` ahora soporta envío de mensajes almacenados por ID además de texto plano.
+- **Configuración Modular**: Nueva arquitectura de plugins activable mediante entorno (`ENABLE_CUSTOM_MESSAGES`).
+
+
 ## [2.2.1] - 2025-12-12
 ### Correcciones
 - **Notificaciones de Update**: Corregido bug donde la notificación de éxito se enviaba siempre al privado del usuario que lanzaba el comando. Ahora se envía correctamente al chat de origen (Grupo o Privado).

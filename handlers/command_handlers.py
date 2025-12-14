@@ -75,8 +75,7 @@ class CommandHandlers:
         # Registrar /setlog (admin only)
         app.add_handler(CommandHandler("setlog", self.setlog))
 
-        # Registrar /saludo (admin only)
-        app.add_handler(CommandHandler("saludo", self.saludo))
+
 
         # Registrar /id (admin only)
         app.add_handler(CommandHandler("id", self.get_id))
@@ -1189,49 +1188,7 @@ class CommandHandlers:
             f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML"
         )
 
-    async def saludo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """
-        /saludo <chat_id> "Texto entre comillas"
-        Envía un mensaje como el bot al chat especificado.
-        """
-        uid = update.effective_user.id
-        if uid not in config.ADMIN_USERS:
-            return
 
-        # Reconstruir los argumentos originales para parsear comillas correctamente
-        # context.args ya ha dividido por espacios, lo cual rompe los mensajes.
-        # Es mejor usar shlex.split sobre el mensaje raw pero Telegram no lo da tan limpio.
-        # Alternativa: Usar update.message.text y regex o shlex.
-        import shlex
-
-        try:
-            # Obtener el comando completo sin la parte '/saludo '
-            full_text = update.message.text
-            # Quitamos el comando (aproximado)
-            if full_text.startswith("/saludo"):
-                full_text = full_text[7:].strip()
-
-            args = shlex.split(full_text)
-            if len(args) < 2:
-                raise ValueError("Faltan argumentos")
-
-            target_chat_id = args[0]
-            message_text = args[1]
-
-            # Enviar mensaje
-            await context.bot.send_message(chat_id=target_chat_id, text=message_text)
-            await update.message.reply_text(
-                f"✅ Mensaje enviado a <code>{target_chat_id}</code>", parse_mode="HTML"
-            )
-
-        except ValueError:
-            await update.message.reply_text(
-                "❌ Uso incorrecto.\n"
-                'Uso: /saludo <chat_id> "Mensaje entre comillas"\n'
-                'Ejemplo: /saludo -100123456 "Hola a todos"'
-            )
-        except Exception as e:
-            await update.message.reply_text(f"❌ Error al enviar mensaje: {e}")
 
     async def get_id(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Devuelve el ID del chat actual y del usuario (admin only)."""
