@@ -33,11 +33,6 @@ class CommandHandlers:
         # Registrar /reset
         app.add_handler(CommandHandler("reset", self.reset_command))
 
-
-
-        # Registrar comandos de gestión de usuarios (admin)
-        app.add_handler(CommandHandler("add_user", self.add_user))
-        app.add_handler(CommandHandler("remove_user", self.remove_user))
         # Registrar comandos de gestión de usuarios (admin)
         app.add_handler(CommandHandler("add_user", self.add_user))
         app.add_handler(CommandHandler("remove_user", self.remove_user))
