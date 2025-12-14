@@ -129,6 +129,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Check ban status
     from services.user_service import get_effective_user
+
     user_info = get_effective_user(uid)
     if user_info.get("role") == "banned":
         expires_at = user_info.get("expires_at")
@@ -543,7 +544,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.debug("Could not answer callback for descargar_epub: %s", e)
         from services.telegram_service import descargar_epub_pendiente
 
-        await descargar_epub_pendiente(update, context, uid, job_queue=context.job_queue)
+        await descargar_epub_pendiente(
+            update, context, uid, job_queue=context.job_queue
+        )
         return
 
     # Facebook handlers
@@ -595,7 +598,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "✅ <b>Notificación enviada</b>\n\n"
                 "Un administrador revisará tu donación pronto y actualizará tu nivel.\n"
                 "¡Muchas gracias por tu apoyo! ❤️",
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
         except Exception:
             pass
@@ -611,7 +614,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         for admin_id in config.ADMIN_USERS:
             try:
-                await context.bot.send_message(chat_id=admin_id, text=admin_msg, parse_mode="HTML")
+                await context.bot.send_message(
+                    chat_id=admin_id, text=admin_msg, parse_mode="HTML"
+                )
             except Exception as e:
                 logger.error(f"Error notificando admin {admin_id}: {e}")
         return
@@ -642,18 +647,25 @@ async def set_log_level_callback(update: Update, context: ContextTypes.DEFAULT_T
         logging.getLogger().setLevel(new_level)
 
         # 2. Specific loggers
-        loggers_to_update = ["uvicorn", "uvicorn.access", "httpx", "telegram", "apscheduler"]
+        loggers_to_update = [
+            "uvicorn",
+            "uvicorn.access",
+            "httpx",
+            "telegram",
+            "apscheduler",
+        ]
         for logger_name in loggers_to_update:
             logging.getLogger(logger_name).setLevel(new_level)
 
-        logger.log(new_level, f"Log level cambiado a {level_str} por admin {uid} (vía botón)")
+        logger.log(
+            new_level, f"Log level cambiado a {level_str} por admin {uid} (vía botón)"
+        )
 
         # Update message to reflect active state
         # Rebuild keyboard to show selection? Or just text update.
         # Text update is simpler and cleaner.
         await query.edit_message_text(
-            f"✅ Nivel de log cambiado a <b>{level_str}</b>",
-            parse_mode="HTML"
+            f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML"
         )
         await query.answer(f"Nivel cambiado a {level_str}")
 
@@ -676,8 +688,6 @@ def _get_help_data(uid):
         ("ℹ️ /help", "Mostrar esta ayuda"),
         ("📊 /status", "Ver tu estado y descargas"),
         ("❌ /cancel", "Cancelar acción actual"),
-        ("☕ /donar", "Link de donación"),
-        ("🌟 /niveles", "Info de niveles de usuario"),
     ]
 
     # 2. Contenido / Herramientas (Mixed)
@@ -685,12 +695,14 @@ def _get_help_data(uid):
         ("🔍 /search", "Buscar libros"),
     ]
     if is_publisher or is_admin:
-        cat_content.extend([
-            ("📤 /export_db", "Exportar mapeo de URLs a CSV"),
-            ("📈 /status_links", "Ver estado de links acortados"),
-            ("📋 /link_list", "Listar links acortados recientes"),
-            ("🗑️ /purge_link", "Eliminar un link acortado"),
-        ])
+        cat_content.extend(
+            [
+                ("📤 /export_db", "Exportar mapeo de URLs a CSV"),
+                ("📈 /status_links", "Ver estado de links acortados"),
+                ("📋 /link_list", "Listar links acortados recientes"),
+                ("🗑️ /purge_link", "Eliminar un link acortado"),
+            ]
+        )
 
     # 3. Admin (Admin only)
     cat_admin = []
@@ -702,10 +714,8 @@ def _get_help_data(uid):
             ("⏲️ /set_auto_delete_time", "Tiempo auto-borrado (grupos)"),
             ("📊 /stats <rol>", "Ver stats o listar usuarios"),
             ("🔄 /reset", "Resetear descargas"),
-            ("💲 /set_price", "Configurar precio donación"),
             ("🐞 /debug_state", "Info debug usuario"),
             ("🔧 /setlog", "Configurar logs"),
-
             ("🆔 /id", "Info ID chat/user"),
             ("🆕 /update_system", "Actualizar sistema"),
             ("⚠️ /update_system force", "Forzar reinstalación"),
@@ -724,10 +734,10 @@ def _get_help_data(uid):
             ("🗑️ /clear_history", "Borrar historial"),
         ]
 
-
     # 5. Plugins (Custom Messages)
     cat_plugins = []
     import os
+
     enable_custom = os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true"
     if is_admin and enable_custom:
         cat_plugins = [
@@ -738,13 +748,29 @@ def _get_help_data(uid):
             ("🚪 /set_welcome &lt;id|off&gt;", "Configurar bienvenida"),
         ]
 
-    return {
-        "home": ("🏠 Inicio", cat_home),
-        "content": ("📚 Content", cat_content),
-        "admin": ("🛠 Admin", cat_admin),
-        "data": ("💾 Datos", cat_data),
-        "plugins": ("🧩 Mensajes", cat_plugins),
-    }, is_admin, is_publisher
+    # 6. Plugins (Donations)
+    cat_donations = []
+    enable_donations = os.getenv("ENABLE_DONATIONS", "True").lower() == "true"
+    if enable_donations:
+        cat_donations = [
+            ("☕ /donar", "Link de donación"),
+            ("🌟 /niveles", "Info de niveles de usuario"),
+        ]
+        if is_admin:
+            cat_donations.append(("💲 /set_price", "Configurar precio donación"))
+
+    return (
+        {
+            "home": ("🏠 Inicio", cat_home),
+            "content": ("📚 Content", cat_content),
+            "admin": ("🛠 Admin", cat_admin),
+            "data": ("💾 Datos", cat_data),
+            "plugins": ("🧩 Mensajes", cat_plugins),
+            "donations": ("💸 Donaciones", cat_donations),
+        },
+        is_admin,
+        is_publisher,
+    )
 
 
 async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -783,6 +809,12 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
         InlineKeyboardButton("🏠 Inicio", callback_data="help|home"),
         InlineKeyboardButton("📚 Content", callback_data="help|content"),
     ]
+    import os
+
+    if os.getenv("ENABLE_DONATIONS", "True").lower() == "true":
+        row1.append(
+            InlineKeyboardButton("💸 Donaciones", callback_data="help|donations")
+        )
 
     keyboard = [row1]
 
@@ -793,9 +825,12 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
         ]
         # Check if plugin is enabled to show button
         import os
+
         if os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true":
-            row2.append(InlineKeyboardButton("🧩 Mensajes", callback_data="help|plugins"))
-        
+            row2.append(
+                InlineKeyboardButton("🧩 Mensajes", callback_data="help|plugins")
+            )
+
         keyboard.append(row2)
 
     # Marcar el botón activo visualmente? (Telegram no soporta 'active' state nativo,
@@ -807,9 +842,7 @@ async def help_navigation_callback(update: Update, context: ContextTypes.DEFAULT
 
     try:
         await query.edit_message_text(
-            text=text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="HTML"
+            text=text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
         )
     except Exception as e:
         # Ignore "Message is not modified"

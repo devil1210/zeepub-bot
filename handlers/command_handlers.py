@@ -50,13 +50,6 @@ class CommandHandlers:
         app.add_handler(CommandHandler("latest_books", self.latest_books))
         app.add_handler(CommandHandler("clear_history", self.clear_history))
         app.add_handler(CommandHandler("export_history", self.export_history))
-        # Registrar comandos de donación
-        app.add_handler(CommandHandler("donar", self.donate))
-        app.add_handler(CommandHandler("donate", self.donate))
-        app.add_handler(CommandHandler("niveles", self.niveles))
-        app.add_handler(CommandHandler("levels", self.niveles))
-        # Registrar /set_price (admin only)
-        app.add_handler(CommandHandler("set_price", self.set_price))
 
         # Registrar comandos de gestión de usuarios (admin)
         app.add_handler(CommandHandler("add_user", self.add_user))
@@ -74,8 +67,6 @@ class CommandHandlers:
 
         # Registrar /setlog (admin only)
         app.add_handler(CommandHandler("setlog", self.setlog))
-
-
 
         # Registrar /id (admin only)
         app.add_handler(CommandHandler("id", self.get_id))
@@ -191,7 +182,9 @@ class CommandHandlers:
         st["opds_root_base"] = root
         st["historial"] = []
         st["ultima_pagina"] = root
-        await mostrar_colecciones(update, context, root, from_collection=False, new_message=True)
+        await mostrar_colecciones(
+            update, context, root, from_collection=False, new_message=True
+        )
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /help: muestra ayuda dinámica y paginada."""
@@ -442,134 +435,6 @@ class CommandHandlers:
             parse_mode="HTML",
             message_thread_id=thread_id,
         )
-
-    async def donate(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /donar: envía link de donación."""
-        thread_id = get_thread_id(update)
-        user_name = update.effective_user.first_name
-        text = (
-            "☕ <b>Apóyanos en Ko-fi</b>\n\n"
-            f"Hola {user_name}, gracias por considerar apoyarnos. "
-            "Tu ayuda nos permite mantener activo tanto el <b>Bot</b> como el servidor <b>Kavita</b> "
-            "y mejorarlos constantemente.\n\n"
-            "📝 <b>Instrucciones:</b>\n"
-            "1. Haz tu donación en Ko-fi.\n"
-            "2. En el mensaje de la donación, puedes incluir un saludo.\n"
-            "3. Vuelve aquí y presiona el botón de abajo para avisarnos.\n\n"
-            f"👉 <a href='{config.DONATION_URL}'>Haz clic aquí para donar</a>"
-        )
-
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    "✅ Ya realicé la donación", callback_data="notificar_donacion"
-                )
-            ],
-            [InlineKeyboardButton("⏳ Donar más tarde", callback_data="cerrar")],
-        ]
-
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=text,
-            parse_mode="HTML",
-            message_thread_id=thread_id,
-            disable_web_page_preview=False,
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
-
-    async def niveles(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /niveles: explica niveles de usuario y beneficios."""
-        thread_id = get_thread_id(update)
-
-        from services.settings_service import get_setting
-
-        # Obtener precios dinámicos (con defaults)
-        p_white = get_setting("price_whitelist", "5")
-        p_vip = get_setting("price_vip", "10")
-        p_premium = get_setting("price_premium", "20")
-        months = get_setting("benefit_duration_months", "6")
-
-        text = (
-            "🌟 <b>Niveles de Usuario y Beneficios</b> 🌟\n\n"
-            "Las donaciones nos ayudan a cubrir los costos del servidor. "
-            f"Como agradecimiento, otorgamos beneficios por <b>{months} meses</b>.\n\n"
-            "🔹 <b>Lector (Gratis)</b>\n"
-            f"• {config.MAX_DOWNLOADS_PER_DAY} descargas diarias\n"
-            "• Acceso a búsqueda básica\n\n"
-            "🔹 <b>Patrocinador</b>\n"
-            f"• Donación desde: <b>${p_white} USD</b>\n"
-            f"• {config.WHITELIST_DOWNLOADS_PER_DAY} descargas diarias\n"
-            "• Acceso prioritario\n\n"
-            "🔹 <b>VIP</b>\n"
-            f"• Donación desde: <b>${p_vip} USD</b>\n"
-            f"• {config.VIP_DOWNLOADS_PER_DAY} descargas diarias\n"
-            "• Soporte directo\n"
-            "• 📱 Acceso a Mini App\n\n"
-            "🔹 <b>Premium</b>\n"
-            f"• Donación desde: <b>${p_premium} USD</b>\n"
-            "• ♾️ <b>Descargas Ilimitadas</b>\n"
-            "• 📱 Acceso a Mini App\n"
-            "• Acceso a funciones exclusivas futuras\n\n"
-            "💳 Usa /donar para obtener el link de Ko-fi.\n"
-            "<i>(Los montos ayudan a mantener el proyecto vivo ❤️)</i>"
-        )
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=text,
-            parse_mode="HTML",
-            message_thread_id=thread_id,
-        )
-
-    async def set_price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Configura el precio de donación para un nivel (solo admins)."""
-        uid = update.effective_user.id
-        if uid not in config.ADMIN_USERS:
-            await update.message.reply_text("⛔ No tienes permisos.")
-            return
-
-        if not context.args or len(context.args) != 2:
-            await update.message.reply_text(
-                "❌ Uso: /set_price <nivel> <monto>\n"
-                "Niveles: white, vip, premium, meses\n"
-                "Ejemplo: /set_price vip 15"
-            )
-            return
-
-        level = context.args[0].lower()
-        amount = context.args[1]
-
-        # Validar que amount sea número (o al menos string razonable)
-        if not amount.isdigit() and not amount.replace(".", "", 1).isdigit():
-            await update.message.reply_text("❌ El monto debe ser un número.")
-            return
-
-        key_map = {
-            "white": "price_whitelist",
-            "patrocinador": "price_whitelist",
-            "vip": "price_vip",
-            "premium": "price_premium",
-            "meses": "benefit_duration_months",
-            "duration": "benefit_duration_months",
-        }
-
-        if level not in key_map:
-            await update.message.reply_text(
-                "❌ Nivel inválido. Usa: white, vip, premium, meses"
-            )
-            return
-
-        from services.settings_service import set_setting
-
-        set_setting(key_map[level], amount)
-
-        if level in ("meses", "duration"):
-            msg_text = f"✅ Duración de beneficios actualizada a: <b>{amount} meses</b>"
-        else:
-            msg_text = (
-                f"✅ Precio para <b>{level}</b> actualizado a: <b>${amount} USD</b>"
-            )
-
-        await update.message.reply_text(msg_text, parse_mode="HTML")
 
     async def cancel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /cancel: limpia estado, borra menús y confirma cancelación."""
@@ -1036,10 +901,11 @@ class CommandHandlers:
         remote_hash = "Desconocido"
         try:
             import httpx
+
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.get(
                     "https://api.github.com/repos/devil1210/zeepub-bot/commits/main",
-                    headers={"User-Agent": "ZeePubBot/2.0"}
+                    headers={"User-Agent": "ZeePubBot/2.0"},
                 )
                 if resp.status_code == 200:
                     data = resp.json()
@@ -1064,7 +930,9 @@ class CommandHandlers:
             if force_update:
                 msg_text += "⚠️ <b>Actualización Forzada.</b> Reinstalando sistema...\n"
             else:
-                msg_text += "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
+                msg_text += (
+                    "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
+                )
 
             await status_msg.edit_text(msg_text, parse_mode="HTML")
 
@@ -1079,6 +947,7 @@ class CommandHandlers:
         # 4. Guardar estado antes de trigger (por si Watchtower mata el contenedor muy rápido)
         try:
             import json
+
             # Ensure data dir exists
             os.makedirs("data", exist_ok=True)
 
@@ -1100,6 +969,7 @@ class CommandHandlers:
             # Si falló, borrar el estado para que no notifique falsamente al reiniciar (si es que reinicia)
             try:
                 import os
+
                 if os.path.exists("data/update_state.json"):
                     os.remove("data/update_state.json")
             except Exception:
@@ -1119,7 +989,9 @@ class CommandHandlers:
             logger.info("Esperando 10s antes de forzar reinicio...")
             await asyncio.sleep(10)
 
-            logger.warning("Watchtower no reinició el contenedor. Forzando salida (exit code 1)...")
+            logger.warning(
+                "Watchtower no reinició el contenedor. Forzando salida (exit code 1)..."
+            )
             # Forzar vaciado de buffers de log si es posible
             logging.shutdown()
             os._exit(1)
@@ -1188,8 +1060,6 @@ class CommandHandlers:
             f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML"
         )
 
-
-
     async def get_id(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Devuelve el ID del chat actual y del usuario (admin only)."""
         uid = update.effective_user.id
@@ -1253,6 +1123,7 @@ class CommandHandlers:
 
         # Resetear descargas
         from utils.download_limiter import save_download
+
         # Paranoid import to ensure singleton consistency
         from core.state_manager import state_manager
 

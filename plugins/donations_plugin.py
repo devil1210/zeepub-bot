@@ -1,0 +1,172 @@
+import logging
+import os
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ContextTypes, CommandHandler
+from plugins.base_plugin import BasePlugin
+from config.config_settings import config
+from utils.helpers import get_thread_id
+from services.settings_service import get_setting, set_setting
+
+logger = logging.getLogger(__name__)
+
+
+class DonationsPlugin(BasePlugin):
+    @property
+    def name(self) -> str:
+        return "donations"
+
+    @property
+    def version(self) -> str:
+        return "1.0.0"
+
+    @property
+    def description(self) -> str:
+        return "Sistema de donaciones, niveles de usuario y precios configurables."
+
+    async def initialize(self, bot_instance) -> bool:
+        self.enabled = os.getenv("ENABLE_DONATIONS", "True").lower() == "true"
+
+        if not self.enabled:
+            logger.info("Plugin Donations desactivado por configuración.")
+            return False
+
+        try:
+            app = bot_instance
+            app.add_handler(CommandHandler("donar", self.donate))
+            app.add_handler(CommandHandler("donate", self.donate))
+            app.add_handler(CommandHandler("niveles", self.niveles))
+            app.add_handler(CommandHandler("levels", self.niveles))
+            app.add_handler(CommandHandler("set_price", self.set_price))
+
+            logger.info("Plugin Donations: Handlers registrados.")
+            return True
+        except Exception as e:
+            logger.error(f"Error registrando handlers del plugin Donations: {e}")
+            return False
+
+    async def cleanup(self) -> None:
+        pass
+
+    async def donate(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /donar: envía link de donación."""
+        thread_id = get_thread_id(update)
+        user_name = update.effective_user.first_name
+        text = (
+            "☕ <b>Apóyanos en Ko-fi</b>\n\n"
+            f"Hola {user_name}, gracias por considerar apoyarnos. "
+            "Tu ayuda nos permite mantener activo tanto el <b>Bot</b> como el servidor <b>Kavita</b> "
+            "y mejorarlos constantemente.\n\n"
+            "📝 <b>Instrucciones:</b>\n"
+            "1. Haz tu donación en Ko-fi.\n"
+            "2. En el mensaje de la donación, puedes incluir un saludo.\n"
+            "3. Vuelve aquí y presiona el botón de abajo para avisarnos.\n\n"
+            f"👉 <a href='{config.DONATION_URL}'>Haz clic aquí para donar</a>"
+        )
+
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "✅ Ya realicé la donación", callback_data="notificar_donacion"
+                )
+            ],
+            [InlineKeyboardButton("⏳ Donar más tarde", callback_data="cerrar")],
+        ]
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+            disable_web_page_preview=False,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+
+    async def niveles(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /niveles: explica niveles de usuario y beneficios."""
+        thread_id = get_thread_id(update)
+
+        # Obtener precios dinámicos (con defaults)
+        p_white = get_setting("price_whitelist", "5")
+        p_vip = get_setting("price_vip", "10")
+        p_premium = get_setting("price_premium", "20")
+        months = get_setting("benefit_duration_months", "6")
+
+        text = (
+            "🌟 <b>Niveles de Usuario y Beneficios</b> 🌟\n\n"
+            "Las donaciones nos ayudan a cubrir los costos del servidor. "
+            f"Como agradecimiento, otorgamos beneficios por <b>{months} meses</b>.\n\n"
+            "🔹 <b>Lector (Gratis)</b>\n"
+            f"• {config.MAX_DOWNLOADS_PER_DAY} descargas diarias\n"
+            "• Acceso a búsqueda básica\n\n"
+            "🔹 <b>Patrocinador</b>\n"
+            f"• Donación desde: <b>${p_white} USD</b>\n"
+            f"• {config.WHITELIST_DOWNLOADS_PER_DAY} descargas diarias\n"
+            "• Acceso prioritario\n\n"
+            "🔹 <b>VIP</b>\n"
+            f"• Donación desde: <b>${p_vip} USD</b>\n"
+            f"• {config.VIP_DOWNLOADS_PER_DAY} descargas diarias\n"
+            "• Soporte directo\n"
+            "• 📱 Acceso a Mini App\n\n"
+            "🔹 <b>Premium</b>\n"
+            f"• Donación desde: <b>${p_premium} USD</b>\n"
+            "• ♾️ <b>Descargas Ilimitadas</b>\n"
+            "• 📱 Acceso a Mini App\n"
+            "• Acceso a funciones exclusivas futuras\n\n"
+            "💳 Usa /donar para obtener el link de Ko-fi.\n"
+            "<i>(Los montos ayudan a mantener el proyecto vivo ❤️)</i>"
+        )
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
+
+    async def set_price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Configura el precio de donación para un nivel (solo admins)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text("⛔ No tienes permisos.")
+            return
+
+        if not context.args or len(context.args) != 2:
+            await update.message.reply_text(
+                "❌ Uso: /set_price <nivel> <monto>\n"
+                "Niveles: white, vip, premium, meses\n"
+                "Ejemplo: /set_price vip 15"
+            )
+            return
+
+        level = context.args[0].lower()
+        amount = context.args[1]
+
+        # Validar que amount sea número (o al menos string razonable)
+        if not amount.isdigit() and not amount.replace(".", "", 1).isdigit():
+            await update.message.reply_text("❌ El monto debe ser un número.")
+            return
+
+        key_map = {
+            "white": "price_whitelist",
+            "patrocinador": "price_whitelist",
+            "vip": "price_vip",
+            "premium": "price_premium",
+            "meses": "benefit_duration_months",
+            "duration": "benefit_duration_months",
+        }
+
+        if level not in key_map:
+            await update.message.reply_text(
+                "❌ Nivel inválido. Usa: white, vip, premium, meses"
+            )
+            return
+
+        set_setting(key_map[level], amount)
+
+        if level in ("meses", "duration"):
+            msg_text = f"✅ Duración de beneficios actualizada a: <b>{amount} meses</b>"
+        else:
+            msg_text = (
+                f"✅ Precio para <b>{level}</b> actualizado a: <b>${amount} USD</b>"
+            )
+
+        await update.message.reply_text(msg_text, parse_mode="HTML")
