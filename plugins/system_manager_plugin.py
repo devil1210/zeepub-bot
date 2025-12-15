@@ -126,6 +126,7 @@ class SystemManagerPlugin(BasePlugin):
                 "uvicorn",
                 "uvicorn.access",
                 "httpx",
+                "httpcore",
                 "telegram",
                 "apscheduler",
             ]
