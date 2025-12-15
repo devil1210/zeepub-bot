@@ -105,9 +105,11 @@ class BotConfig:
     ENABLE_POSTGRES_PLUGIN: bool = (
         os.getenv("ENABLE_POSTGRES_PLUGIN", "False").lower() == "true"
     )
-    
+
     # Plugin Group Manager
-    ENABLE_GROUP_MANAGER: bool = os.getenv("ENABLE_GROUP_MANAGER", "False").lower() == "true"
+    ENABLE_GROUP_MANAGER: bool = (
+        os.getenv("ENABLE_GROUP_MANAGER", "False").lower() == "true"
+    )
 
     # Ruta para la base de datos de URL acortadas (puede ser absoluta o relativa).
     URL_CACHE_DB_PATH: str = os.getenv("URL_CACHE_DB_PATH", "data/url_cache.db")
