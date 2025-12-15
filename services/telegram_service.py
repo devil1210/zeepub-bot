@@ -7,6 +7,7 @@ from urllib.parse import urlparse, unquote
 from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
+
 # from core.state_manager import state_manager (Moved to local scope)
 # from core.session_manager import session_manager (Moved to local scope)
 from config.config_settings import config
@@ -264,8 +265,10 @@ async def publicar_libro(
     bot = context.bot
 
     from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
     from core.session_manager import session_manager
+
     lock = session_manager.get_publish_lock(uid)
 
     async with lock:
@@ -492,11 +495,14 @@ async def publicar_libro(
         user_state["titulo_pendiente"] = titulo
 
 
-async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int, job_queue=None):
+async def descargar_epub_pendiente(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int, job_queue=None
+):
     """
     Función llamada cuando el usuario presiona "Descargar" en el menú intermedio.
     """
     from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
 
     from utils.helpers import get_thread_id
@@ -604,20 +610,25 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
 
         # Lógica de auto-borrado para admins en grupos
         delete_seconds = 0
-        if is_group and is_privileged:
+        if is_group and is_privileged and str(destino) == str(update.effective_chat.id):
             from services.settings_service import get_setting
+
             try:
                 # Default 2 minutos (120s) si no está seteado. 0 = no borrar.
                 delete_minutes_str = get_setting("auto_delete_time", "2")
                 delete_minutes = int(delete_minutes_str)
-                logger.debug(f"Auto-delete check: group={is_group}, priv={is_privileged}, min={delete_minutes}")
+                logger.debug(
+                    f"Auto-delete check: group={is_group}, priv={is_privileged}, min={delete_minutes}"
+                )
                 if delete_minutes > 0:
                     delete_seconds = delete_minutes * 60
                     caption += f"\n\n🗑️ <i>Se borrará en {delete_minutes} min</i>"
             except Exception as e:
                 logger.error(f"Error reading auto_delete_time: {e}")
         else:
-            logger.debug(f"Skipping auto-delete: group={is_group}, priv={is_privileged}")
+            logger.debug(
+                f"Skipping auto-delete: group={is_group}, priv={is_privileged}"
+            )
 
         sent_doc = await send_doc_bytes(
             bot,
@@ -634,18 +645,21 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
             if delete_seconds > 0:
                 if job_queue:
                     job_queue.run_once(
-                        lambda ctx: ctx.bot.delete_message(chat_id=destino, message_id=sent_doc.message_id),
-                        when=delete_seconds
+                        lambda ctx: ctx.bot.delete_message(
+                            chat_id=destino, message_id=sent_doc.message_id
+                        ),
+                        when=delete_seconds,
                     )
                 else:
                     logger.warning("Auto-delete skipped: No job_queue available")
 
             # Log to history
             from services.history_service import log_published_book
+
             # file_info construction
             file_info = {
                 "file_size": sent_doc.document.file_size,
-                "file_unique_id": sent_doc.document.file_unique_id
+                "file_unique_id": sent_doc.document.file_unique_id,
             }
             # Run in background or await? It's sync db op, maybe run in thread or make it async?
             # The service uses sqlalchemy sync engine. Better to run in thread if possible, or just call it if it's fast.
@@ -655,7 +669,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
                     meta=meta,
                     message_id=sent_doc.message_id,
                     channel_id=sent_doc.chat.id,
-                    file_info=file_info
+                    file_info=file_info,
                 )
             except Exception as e:
                 logger.error(f"Failed to log book history: {e}")
@@ -751,7 +765,9 @@ async def enviar_libro_directo(
             )
             return False
 
-        logger.info(f"EPUB descargado exitosamente: {len(epub_bytes) if isinstance(epub_bytes, bytes) else 'archivo temp'} bytes")
+        logger.info(
+            f"EPUB descargado exitosamente: {len(epub_bytes) if isinstance(epub_bytes, bytes) else 'archivo temp'} bytes"
+        )
 
         # 4. Parsear metadatos del EPUB
         meta = {
@@ -764,7 +780,9 @@ async def enviar_libro_directo(
 
         logger.debug(f"Iniciando extracción de metadatos para: {title}")
         meta = await enrich_metadata_from_epub(epub_bytes, download_url, meta)
-        logger.debug(f"Metadatos extraídos - titulo_serie: {meta.get('titulo_serie')}, internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}")
+        logger.debug(
+            f"Metadatos extraídos - titulo_serie: {meta.get('titulo_serie')}, internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}"
+        )
 
         # 5. Preparar Portada
         cover_bytes = extract_cover_from_epub(epub_bytes)
@@ -976,19 +994,22 @@ async def enviar_libro_directo(
             # Registrar en historial
             if sent_doc:
                 from services.history_service import log_published_book
+
                 file_info = {
                     "file_size": sent_doc.document.file_size,
-                    "file_unique_id": sent_doc.document.file_unique_id
+                    "file_unique_id": sent_doc.document.file_unique_id,
                 }
                 try:
                     log_published_book(
                         meta=meta,
                         message_id=sent_doc.message_id,
                         channel_id=sent_doc.chat.id,
-                        file_info=file_info
+                        file_info=file_info,
                     )
                 except Exception as e:
-                    logger.error(f"Failed to log book history in enviar_libro_directo: {e}")
+                    logger.error(
+                        f"Failed to log book history in enviar_libro_directo: {e}"
+                    )
 
             # 8. Registrar descarga y notificar
             record_download(user_id)
@@ -1024,6 +1045,7 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     bot = context.bot
 
     from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
 
     # Recuperar datos del estado
@@ -1160,6 +1182,7 @@ async def _publish_choice_facebook(
     bot = context.bot
 
     from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
 
     # Clear awaiting flag (we're handling the choice now)
@@ -1265,6 +1288,7 @@ async def _publish_choice_telegram(
     bot = context.bot
 
     from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
     st.pop("awaiting_publish_target", None)
     logger.debug(
@@ -1441,6 +1465,7 @@ async def publicar_facebook_action(
     bot = context.bot
 
     from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
 
     # Validar credenciales antes de proceder
