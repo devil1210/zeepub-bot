@@ -50,11 +50,15 @@ class ZeePubBot:
             read_timeout=20.0,
             write_timeout=20.0,
         )
-        self.app = ApplicationBuilder().token(token).request(trequest).build()
+        self.plugin_manager = PluginManager()
+
+        # Configure application with post_init to ensure plugins load in all modes
+        builder = ApplicationBuilder().token(token).request(trequest)
+        builder.post_init(self.post_init)
+        self.app = builder.build()
+
         self.app.add_error_handler(error_handler)
 
-        # Inicializar plugins manager (async init happens in initialize())
-        self.plugin_manager = PluginManager()
         # attach plugin manager to app so handlers can access it
         setattr(self.app, "plugin_manager", self.plugin_manager)
 
@@ -83,6 +87,14 @@ class ZeePubBot:
             )
         )
 
+    async def post_init(self, application):
+        """Hook de inicialización para cargar plugins antes de arrancar."""
+        logger.info("Ejecutando post_init: Cargando plugins...")
+        try:
+            await self.plugin_manager.initialize(application)
+        except Exception as e:
+            logger.error(f"Error cargando plugins en post_init: {e}", exc_info=True)
+
     def start(self):
         """Arranca el bot en polling (bloqueante, modo legacy)."""
         logger.info("Bot iniciado, entrando en polling...")
@@ -92,11 +104,6 @@ class ZeePubBot:
     async def initialize(self):
         """Inicializa la aplicación (para uso con API)."""
         await self.app.initialize()
-        # Initialize plugins asynchronously after app is initialized
-        try:
-            await self.plugin_manager.initialize(self.app)
-        except Exception as e:
-            logger.error("Error initializing plugins: %s", e, exc_info=True)
 
     async def start_async(self):
         """Inicia el bot y el polling de forma asíncrona (para uso con API)."""
