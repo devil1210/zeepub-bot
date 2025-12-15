@@ -205,6 +205,8 @@ docker compose up -d --build
 - `/authorize_group [id]`: (Admin) Autoriza al bot a gestionar el grupo actual o el ID especificado via DM.
 - `/revoke_group [id]`: (Admin) Revoca la autorización.
 - `/set_group_welcome <slug>`: (Admin) Define el mensaje de bienvenida. Soporta `[Nombre]` para sustitución.
+- `/reglas`, `/rules`: Muestra las reglas del grupo (buscará mensaje con slug 'reglas').
+
 
 
 ---

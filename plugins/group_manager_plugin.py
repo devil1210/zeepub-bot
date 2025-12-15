@@ -60,6 +60,9 @@ class GroupManagerPlugin(BasePlugin):
             app.add_handler(CommandHandler("authorize_group", self.authorize_group))
             app.add_handler(CommandHandler("revoke_group", self.revoke_group))
             app.add_handler(CommandHandler("set_group_welcome", self.set_group_welcome))
+            # Rules command
+            app.add_handler(CommandHandler("reglas", self.reglas))
+            app.add_handler(CommandHandler("rules", self.reglas))
 
             # Events
             app.add_handler(
@@ -215,6 +218,37 @@ class GroupManagerPlugin(BasePlugin):
             await update.message.reply_text("❌ Error guardando configuración.")
         finally:
             session.close()
+
+    async def reglas(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Muestra las reglas del grupo (desde mensaje guardado 'reglas' o default)."""
+        # Intentar cargar mensaje personalizado "reglas"
+        msg = self._get_stored_message("reglas")
+
+        if msg:
+            # Si existe el mensaje, lo enviamos (copia o texto)
+            # Priorizamos texto si existe para permitir edición
+            if msg.text_content:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=msg.text_content,
+                    parse_mode="HTML",
+                )
+            else:
+                await context.bot.copy_message(
+                    chat_id=update.effective_chat.id,
+                    from_chat_id=msg.source_chat_id,
+                    message_id=msg.source_message_id,
+                )
+        else:
+            # Fallback
+            await update.message.reply_text(
+                "📜 <b>Reglas del Grupo</b>\n\n"
+                "1. Respeto mutuo.\n"
+                "2. No spam.\n"
+                "3. Disfrutar de la lectura.\n\n"
+                "<i>(Configura este mensaje guardando uno con slug 'reglas')</i>",
+                parse_mode="HTML",
+            )
 
     def _slug_exists(self, slug):
         if not self.CustomMsgSession:

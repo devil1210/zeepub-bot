@@ -2,7 +2,11 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.8.0] - 2025-12-14
+## [2.8.1] - 2025-12-14
+
+### Funcionalidades
+- **Group Manager**: Agregado comando `/reglas` (alias `/rules`). Usa un mensaje guardado con slug `reglas` (si existe) o un texto por defecto.
+
 
 ### Mejoras
 - **Donations Plugin**:
