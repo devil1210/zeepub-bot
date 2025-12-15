@@ -2,7 +2,27 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.9.0] - 2025-12-14
+## [3.0.0] - 2025-12-14
+
+### 🚀 Major Refactor (Plugins)
+Re-arquitectura completa de la gestión del sistema para modularidad y seguridad.
+
+#### Nuevos Plugins
+- **UserManagerPlugin** (`plugins/user_manager_plugin.py`):
+  - Comandos migrados: `/add_user`, `/remove_user`, `/reset`, `/id`, `/set_staff_status`.
+  - Configurable: `ENABLE_USER_MANAGER`.
+- **StatsPlugin** (`plugins/stats_plugin.py`):
+  - Comandos migrados: `/stats` (Resumen y Lista por rol).
+  - Configurable: `ENABLE_STATS_PLUGIN`.
+- **SystemManagerPlugin** (Expandido):
+  - Comando migrado: `/setlog` (Logging dinámico).
+
+### Cambios Internos
+- Limpieza masiva de `handlers/command_handlers.py`.
+- Mejor separación de responsabilidades:
+  - `handlers`: Solo lógica de navegación y libros.
+  - `plugins`: Administración y herramientas.
+
 
 ### Refactorización
 - **System Manager**: Migrada la lógica de sistema (`/update_system`, `/set_auto_delete_time`) a un nuevo plugin dedicado `SystemManagerPlugin`.
