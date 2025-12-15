@@ -3,7 +3,7 @@ version: '3.8'
 services:
   zeepubs_bot:
     # build: .
-    image: ghcr.io/devil1210/zeepub-bot:latest
+    image: ghcr.io/devil1210/zeepub-bot:3.6.4
     container_name: zeepubs_bot
     restart: unless-stopped
     # ports:
@@ -25,9 +25,6 @@ services:
         max-file: "3"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
     environment:
       - DATABASE_URL=sqlite:////app/data/zeepub.db
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
