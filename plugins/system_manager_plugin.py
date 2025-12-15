@@ -72,6 +72,9 @@ class SystemManagerPlugin(BasePlugin):
 
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
+        current_level_int = logging.getLogger().getEffectiveLevel()
+        current_level_name = logging.getLevelName(current_level_int)
+
         keyboard = [
             [
                 InlineKeyboardButton("DEBUG", callback_data="setlog|DEBUG"),
@@ -86,7 +89,7 @@ class SystemManagerPlugin(BasePlugin):
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="🛠 <b>Configuración de Logs</b>\nSelecciona el nivel deseado:",
+            text=f"🔧 <b>Configuración de Logs</b>\n\nNivel actual: <b>{current_level_name}</b>\nSelecciona un nuevo nivel:",
             reply_markup=reply_markup,
             parse_mode="HTML",
             message_thread_id=thread_id,
