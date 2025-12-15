@@ -40,7 +40,6 @@ class ZeePubBot:
 
         self.plugin_manager = PluginManager()
 
-        self.app = ApplicationBuilder().token(token).request(trequest).build()
 
         # Usar nuevo ErrorHandler
         self.app.add_error_handler(ErrorHandler.handle_error)
