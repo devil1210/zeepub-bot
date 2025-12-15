@@ -35,8 +35,17 @@ class ZeePubBot:
     def __init__(self):
         token = config.TELEGRAM_TOKEN
 
-        # Inicializar la aplicación con configuración por defecto (similar a v3.1.3)
-        self.app = ApplicationBuilder().token(token).build()
+        # Inicializar la aplicación con config de red optimizada pero segura
+        # El default de 5s connect provoca Timeouts en redes lentas/VPN
+        trequest = HTTPXRequest(
+            connection_pool_size=20,
+            connect_timeout=15.0,  # Aumentado de default 5.0s -> 15.0s
+            read_timeout=30.0,
+            write_timeout=30.0,
+            pool_timeout=30.0,
+        )
+
+        self.app = ApplicationBuilder().token(token).request(trequest).build()
 
         self.plugin_manager = PluginManager()
 
