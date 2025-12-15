@@ -83,8 +83,6 @@ class ZeePubBot:
             )
         )
 
-
-
     def start(self):
         """Arranca el bot en polling (bloqueante, modo legacy)."""
         logger.info("Bot iniciado, entrando en polling...")

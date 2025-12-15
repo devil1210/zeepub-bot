@@ -2,6 +2,11 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
+## [3.1.2] - 2025-12-15
+
+### Calidad de Código
+- **Correcciones de Estilo**: Aplicado formateo automático con `black` en `core/bot.py` y `handlers/callback_handlers.py` para resolver errores de linting (líneas en blanco excesivas y espacios en líneas vacías).
+
 ## [3.1.1] - 2025-12-15
 
 ### 🐛 Bugfixes

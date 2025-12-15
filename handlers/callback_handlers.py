@@ -125,12 +125,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pass
     data = query.data
     uid = update.effective_user.id
-    
+
     # Skip callbacks handled by plugins
     plugin_prefixes = ("setlog|", "help|", "close")
     if data and any(data.startswith(prefix) for prefix in plugin_prefixes):
         return
-    
+
     st = state_manager.get_user_state(uid)
 
     # Check ban status
