@@ -676,7 +676,7 @@ async def descargar_epub_pendiente(
 
         # Registrar descarga
         record_download(uid)
-        restantes = downloads_left(uid)
+        restantes = await downloads_left(uid)
 
         # Mostrar descargas restantes (excepto Premium)
         if restantes != "ilimitadas":
