@@ -121,6 +121,11 @@ class BotConfig:
         os.getenv("ENABLE_USER_MANAGER", "True").lower() == "true"
     )
 
+    # Plugin Stats
+    ENABLE_STATS_PLUGIN: bool = (
+        os.getenv("ENABLE_STATS_PLUGIN", "True").lower() == "true"
+    )
+
     # Ruta para la base de datos de URL acortadas (puede ser absoluta o relativa).
     URL_CACHE_DB_PATH: str = os.getenv("URL_CACHE_DB_PATH", "data/url_cache.db")
 
