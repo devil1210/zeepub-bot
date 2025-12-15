@@ -2,7 +2,11 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.8.1] - 2025-12-14
+## [2.8.2] - 2025-12-14
+
+### Correcciones
+- **Comandos**: Agregado `/reglas` y otros comandos admin al mensaje de ayuda `/help` que faltaban.
+
 
 ### Funcionalidades
 - **Group Manager**: Agregado comando `/reglas` (alias `/rules`). Usa un mensaje guardado con slug `reglas` (si existe) o un texto por defecto.
