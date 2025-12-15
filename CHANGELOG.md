@@ -2,6 +2,15 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
+## [3.1.3] - 2025-12-15
+
+### 🐛 Bugfixes
+- **Telegram Service**: Corregido bug crítico que eliminaba archivos en canales de publicación si el comando se ejecutaba desde un grupo.
+  - El auto-borrado ahora verifica estrictamente si el destino es el mismo chat de origen.
+
+### ✨ Funcionalidades
+- **Update Notification**: El mensaje de "Actualización Completada" ahora incluye, para los administradores, el mensaje del último commit (`git log -1`) que generó dicha versión, facilitando el seguimiento de cambios rápidos.
+
 ## [3.1.2] - 2025-12-15
 
 ### Calidad de Código
