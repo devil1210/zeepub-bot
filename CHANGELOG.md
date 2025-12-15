@@ -2,6 +2,22 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
+## [3.2.0] - 2025-12-15
+
+### 🏗️ Refactorización Core
+- **Bot Initialization**: Implementado `BotInitializer` para separar la lógica de arranque y gestión de schedulers.
+- **Error Handling**: Implementado `ErrorHandler` centralizado con manejo inteligente de reintentos y notificaciones a admin.
+- **Optimización HTTP**: `HTTPXRequest` configurado con connection pooling agresivo (size=20) y timeouts optimizados para alto rendimiento.
+
+### 🛡️ Seguridad y Control
+- **Rate Limiting**:
+  - Implementado `RateLimiter` global asíncrono y thread-safe.
+  - Aplicado límite de tasa al comando `/search` (30 req/min) para prevenir abuso.
+- **Validación WebApp**: Agregada capacidad de validación de firma para `initData` en payloads de la Mini App.
+
+### 🔧 Utilidades
+- **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
+
 ## [3.1.3] - 2025-12-15
 
 ### 🐛 Bugfixes

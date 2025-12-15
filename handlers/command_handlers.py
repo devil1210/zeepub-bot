@@ -11,6 +11,7 @@ from services.opds_service import mostrar_colecciones
 from config.config_settings import config
 from utils.helpers import get_thread_id, is_command_for_bot, build_search_url
 from utils.http_client import parse_feed_from_url
+from utils.decorators import rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -320,6 +321,7 @@ class CommandHandlers:
         )
         st["msg_esperando_pwd"] = message.message_id
 
+    @rate_limit("search", max_requests=30, window_seconds=60)
     async def search(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /search: busca EPUB con término inline o pide uno."""
         # En grupos con múltiples bots, ignorar si el comando no es para este bot

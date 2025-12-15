@@ -2,6 +2,7 @@ import logging
 import subprocess
 import os
 import httpx
+import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 from plugins.base_plugin import BasePlugin
@@ -151,10 +152,35 @@ class SystemManagerPlugin(BasePlugin):
             )
 
             # Update message to show confirmation (legacy behavior: no buttons)
-            await query.edit_message_text(
-                f"✅ Nivel de log cambiado a <b>{level_str}</b>",
-                parse_mode="HTML"
-            )
+            # Retry logic for network stability
+            try:
+                await query.edit_message_text(
+                    f"✅ Nivel de log cambiado a <b>{level_str}</b>",
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logger.warning(f"Error editing message (attempt 1): {e}. Retrying...")
+                await asyncio.sleep(0.5)
+                try:
+                    await query.edit_message_text(
+                        f"✅ Nivel de log cambiado a <b>{level_str}</b>",
+                        parse_mode="HTML"
+                    )
+                except Exception as e2:
+                    logger.warning(f"Error editing message (attempt 2): {e2}. Fallback to delete+send.")
+                    try:
+                        await query.message.delete()
+                    except Exception:
+                        pass
+                    
+                    try:
+                        await context.bot.send_message(
+                            chat_id=query.message.chat_id,
+                            text=f"✅ Nivel de log cambiado a <b>{level_str}</b>",
+                            parse_mode="HTML"
+                        )
+                    except Exception as e3:
+                         logger.error(f"Failed to send confirmation message: {e3}")
             await query.answer(f"Nivel cambiado a {level_str}")
 
         except Exception as e:

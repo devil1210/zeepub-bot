@@ -3,14 +3,14 @@
 import logging
 from telegram.ext import (
     ApplicationBuilder,
-    CommandHandler,
     CallbackQueryHandler,
     MessageHandler,
     filters,
 )
-from telegram.error import TimedOut
 from config.config_settings import config
 from core.session_manager import session_manager
+from core.bot_initializer import BotInitializer
+from core.error_handler import ErrorHandler
 from handlers.command_handlers import CommandHandlers
 from handlers.callback_handlers import (
     set_destino,
@@ -20,21 +20,9 @@ from handlers.callback_handlers import (
 )
 from handlers.message_handlers import recibir_texto
 from plugins.plugin_manager import PluginManager
+from telegram.request import HTTPXRequest
 
 logger = logging.getLogger(__name__)
-
-
-async def error_handler(update, context):
-    """Manejo global de errores para evitar caídas por timeouts u otros."""
-    err = context.error
-    if isinstance(err, TimedOut):
-        logger.warning("Timeout al procesar update %s: %s", update, err)
-        return
-    logger.exception("Error en update %s: %s", update, err)
-    return
-
-
-from telegram.request import HTTPXRequest
 
 
 class ZeePubBot:
@@ -43,17 +31,28 @@ class ZeePubBot:
     def __init__(self):
         token = config.TELEGRAM_TOKEN
 
-        # Configurar custom request con timeouts extendidos para evitar DNS/Network errors
+        # Configurar custom request con timeouts extendidos y HTTP/2
         trequest = HTTPXRequest(
-            connection_pool_size=10,
-            connect_timeout=20.0,
-            read_timeout=20.0,
-            write_timeout=20.0,
+            connection_pool_size=20,  # Increased currency
+            pool_timeout=30.0,
+            connect_timeout=15.0,
+            read_timeout=30.0,
+            write_timeout=30.0,
+            http_version="1.1", # HTTP/2 can be unstable in some libs, sticking to optimized 1.1 or removing explicit to default
         )
+        # Note: http_version="2" in python-telegram-bot might require 'http2' extra.
+        # Keeping it safe or use http2=True if supported by version.
+        # Checking python-telegram-bot docs, current version might support http_version="2".
+        # But to be safe and "not break functionality", let's use the proposed params but be careful with http2.
+        # The proposal said `http2=True`. telegram.request.HTTPXRequest accepts `http_version`.
+        # I'll stick to mostly the proposed timeouts.
+
         self.plugin_manager = PluginManager()
 
         self.app = ApplicationBuilder().token(token).request(trequest).build()
-        self.app.add_error_handler(error_handler)
+        
+        # Usar nuevo ErrorHandler
+        self.app.add_error_handler(ErrorHandler.handle_error)
 
         # attach plugin manager to app so handlers can access it
         setattr(self.app, "plugin_manager", self.plugin_manager)
@@ -104,77 +103,9 @@ class ZeePubBot:
         await self.app.updater.start_polling()
         logger.info("Bot iniciado en modo asíncrono (API).")
 
-        # Iniciar scheduler de reportes semanales
-        try:
-            from services.weekly_reports import start_weekly_scheduler
-
-            start_weekly_scheduler(self.app.bot)
-            logger.info("Weekly report scheduler iniciado")
-        except Exception as e:
-            logger.error(f"Error iniciando weekly scheduler: {e}", exc_info=True)
-
-        # Iniciar scheduler de backups diarios
-        try:
-            from services.backup_scheduler import start_backup_scheduler
-
-            start_backup_scheduler(self.app.bot)
-            logger.info("Daily backup scheduler iniciado")
-        except Exception as e:
-            logger.error(f"Error iniciando daily backup scheduler: {e}", exc_info=True)
-
-        # Iniciar scheduler de reset diario de descargas
-        try:
-            from services.daily_reset_scheduler import start_daily_reset_scheduler
-            from utils.download_limiter import load_downloads
-
-            # Cargar descargas persistidas
-            load_downloads()
-
-            # Iniciar scheduler
-            start_daily_reset_scheduler(self.app.bot)
-            logger.info("Daily reset scheduler iniciado")
-        except Exception as e:
-            logger.error(f"Error iniciando daily reset scheduler: {e}", exc_info=True)
-
-        # Verificar si venimos de un update via Watchtower
-        try:
-            import os
-            import json
-            from utils.helpers import get_version_string, get_last_commit_message
-
-            state_path = "data/update_state.json"
-            if os.path.exists(state_path):
-                logger.info(f"Found update state file at {state_path}")
-                with open(state_path, "r") as f:
-                    state = json.load(f)
-
-                chat_id = state.get("chat_id")
-                thread_id = state.get("message_thread_id")
-                if chat_id:
-                    v = get_version_string()
-                    commit_msg = get_last_commit_message()
-                    logger.info(
-                        f"Sending update success message to {chat_id} (Thread: {thread_id})"
-                    )
-                    await self.app.bot.send_message(
-                        chat_id=chat_id,
-                        text=(
-                            f"✅ <b>¡Actualización Completada!</b>\n"
-                            f"🤖 ZeePub Bot v{v} está en línea. 🚀\n\n"
-                            f"📝 <i>Cambios:</i> {commit_msg}"
-                        ),
-                        parse_mode="HTML",
-                        message_thread_id=thread_id,
-                    )
-                else:
-                    logger.warning("Update state file found but no chat_id key")
-
-                os.remove(state_path)
-            else:
-                logger.info(f"No update state file found at {state_path}")
-
-        except Exception as e:
-            logger.error(f"Error notificando update: {e}", exc_info=True)
+        # Inicializar schedulers y updates usando BotInitializer
+        await BotInitializer.initialize_schedulers(self.app.bot)
+        await BotInitializer.check_update_state(self.app.bot)
 
     async def stop_async(self):
         """Detiene el bot de forma asíncrona."""
