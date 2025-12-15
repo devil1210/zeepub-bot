@@ -14,10 +14,12 @@ sys.modules["utils"] = MagicMock()
 sys.modules["utils.http_client"] = MagicMock()
 sys.modules["utils.helpers"] = MagicMock()
 sys.modules["config"] = MagicMock()
-sys.modules["config.config_settings"] = MagicMock()
+from unittest.mock import AsyncMock
+
+sys.modules["services.user_service"] = MagicMock()
+sys.modules["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
 
 import pytest
-from unittest.mock import AsyncMock
 
 # Now we can import safely
 # We need to import the function, but since we mocked everything, the import might fail if we are not careful.
@@ -93,7 +95,7 @@ async def test_recibir_texto_group_chat_with_active_state():
         # Mock context.bot.send_message and edit_message_text
         context.bot.send_message = AsyncMock()
         context.bot.edit_message_text = AsyncMock()
-        
+
         # Run the handler
         await recibir_texto(update, context)
         

@@ -16,6 +16,7 @@ sys.modules["utils.helpers"] = MagicMock()
 sys.modules["services.settings_service"] = MagicMock()
 sys.modules["config.config_settings"] = MagicMock()
 sys.modules["services.user_service"] = MagicMock()
+sys.modules["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
 
 import importlib.util
 from pathlib import Path

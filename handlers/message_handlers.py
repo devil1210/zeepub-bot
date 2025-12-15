@@ -29,7 +29,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check ban status
     from services.user_service import get_effective_user
 
-    user_info = get_effective_user(uid)
+    user_info = await get_effective_user(uid)
     if user_info.get("role") == "banned":
         expires_at = user_info.get("expires_at")
         msg = "⛔ Estás <b>baneado</b> del bot."

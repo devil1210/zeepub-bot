@@ -58,7 +58,7 @@ class StatsPlugin(BasePlugin):
         """
         uid = update.effective_user.id
         # Verificar permisos (Admin o Staff)
-        user_info = get_effective_user(uid)
+        user_info = await get_effective_user(uid)
         role = user_info.get("role", "free")
         is_admin = role == "admin" or uid in config.ADMIN_USERS
         if not is_admin and role != "staff":

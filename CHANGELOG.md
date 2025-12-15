@@ -18,6 +18,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.5.2] - 2025-12-15
+
+### 🐛 Bugfixes
+- **Handlers**: Fix crítico `AttributeError` en menús de callback y mensajes por llamadas asíncronas faltantes a `get_effective_user`.
+
 ## [3.5.1] - 2025-12-15
 
 ### 🐛 Bugfixes
