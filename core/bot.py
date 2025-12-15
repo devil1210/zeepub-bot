@@ -67,7 +67,7 @@ class ZeePubBot:
         self.app.add_handler(CallbackQueryHandler(buscar_epub, pattern="^buscar"))
         self.app.add_handler(CallbackQueryHandler(abrir_zeepubs, pattern="^abrir"))
 
-        self.app.add_handler(CallbackQueryHandler(button_handler))
+        self.app.add_handler(CallbackQueryHandler(button_handler), group=1)
 
         # Mensajes de texto
         self.app.add_handler(
