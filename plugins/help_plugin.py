@@ -44,6 +44,9 @@ class HelpPlugin(BasePlugin):
             logger.error(f"Error registrando handlers del plugin Help: {e}")
             return False
 
+    async def cleanup(self) -> None:
+        pass
+
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /help: muestra ayuda dinámica y paginada."""
         uid = update.effective_user.id
