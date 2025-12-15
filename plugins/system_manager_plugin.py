@@ -3,7 +3,7 @@ import subprocess
 import os
 import httpx
 from telegram import Update
-from telegram.ext import ContextTypes, CommandHandler
+from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
@@ -45,6 +45,11 @@ class SystemManagerPlugin(BasePlugin):
             )
             app.add_handler(CommandHandler("setlog", self.setlog))
 
+            # Callback Handlers
+            app.add_handler(
+                CallbackQueryHandler(self.set_log_level_callback, pattern=r"^setlog\|")
+            )
+
             logger.info("Plugin SystemManager: Handlers registrados.")
             return True
         except Exception as e:
@@ -56,6 +61,57 @@ class SystemManagerPlugin(BasePlugin):
 
     def _is_admin(self, uid: int) -> bool:
         return uid in config.ADMIN_USERS
+
+    async def set_log_level_callback(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
+        """Callback para botones de /setlog."""
+        query = update.callback_query
+        uid = update.effective_user.id
+
+        if not self._is_admin(uid):
+            await query.answer("⛔ No tienes permisos.", show_alert=True)
+            return
+
+        try:
+            data = query.data
+            _, level_str = data.split("|", 1)
+            level_str = level_str.upper()
+
+            valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+            if level_str not in valid_levels:
+                await query.answer(f"Nivel inválido: {level_str}", show_alert=True)
+                return
+
+            new_level = getattr(logging, level_str)
+
+            # 1. Root logger
+            logging.getLogger().setLevel(new_level)
+
+            # 2. Specific loggers
+            loggers_to_update = [
+                "uvicorn",
+                "uvicorn.access",
+                "httpx",
+                "telegram",
+                "apscheduler",
+            ]
+            for logger_name in loggers_to_update:
+                logging.getLogger(logger_name).setLevel(new_level)
+
+            logger.log(
+                new_level,
+                f"Log level cambiado a {level_str} por admin {uid} (vía botón)",
+            )
+
+            await query.edit_message_text(
+                f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML"
+            )
+            await query.answer(f"Nivel cambiado a {level_str}")
+
+        except Exception as e:
+            logger.error(f"Error en set_log_level_callback: {e}", exc_info=True)
+            await query.answer("Error al cambiar nivel")
 
     async def set_auto_delete_time(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE

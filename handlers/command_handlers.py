@@ -25,7 +25,7 @@ class CommandHandlers:
         # Registrar handlers existentes
         app.add_handler(CommandHandler("search", self.search))
         app.add_handler(CommandHandler("start", self.start))
-        app.add_handler(CommandHandler("help", self.help))
+
         app.add_handler(CommandHandler("status", self.status))
         app.add_handler(CommandHandler("cancel", self.cancel))
         app.add_handler(CommandHandler("plugins", self.plugins))
@@ -141,39 +141,6 @@ class CommandHandlers:
         st["ultima_pagina"] = root
         await mostrar_colecciones(
             update, context, root, from_collection=False, new_message=True
-        )
-
-    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /help: muestra ayuda dinámica y paginada."""
-        uid = update.effective_user.id
-        thread_id = get_thread_id(update)
-
-        # Importar lógica compartida para evitar duplicación
-        # (Importación local para evitar ciclos y errores de carga inicial)
-        from handlers.callback_handlers import _get_help_data, _get_help_keyboard
-
-        help_data, is_admin, is_publisher = _get_help_data(uid)
-
-        # Mostrar categoría "home" por defecto
-        cat_title, commands = help_data.get("home", ("Inicio", []))
-
-        text = f"🤖 <b>Ayuda de ZeePub Bot</b>\n\n"
-        text += f"📂 <b>Categoría: {cat_title}</b>\n\n"
-
-        for cmd, desc in commands:
-            safe_cmd = cmd.replace("<", "&lt;").replace(">", "&gt;")
-            safe_desc = desc.replace("<", "&lt;").replace(">", "&gt;")
-            text += f"<b>{safe_cmd}</b>\n   ╰ {safe_desc}\n"
-
-        # Teclado dinámico
-        keyboard = _get_help_keyboard(is_admin, is_publisher)
-
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=text,
-            parse_mode="HTML",
-            reply_markup=keyboard,
-            message_thread_id=thread_id,
         )
 
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

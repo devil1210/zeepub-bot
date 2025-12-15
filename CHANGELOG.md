@@ -2,6 +2,17 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
+## [3.1.0] - 2025-12-14
+
+### 🧩 Refactor Final (Help & System)
+- **HelpPlugin**: La ayuda (`/help`) y su navegación interactiva ahora son un plugin independiente (`plugins/help_plugin.py`).
+  - Activado con `ENABLE_HELP_PLUGIN`.
+- **SystemManagerPlugin**: Ahora gestiona completamente los callbacks de botones de log (`setlog`), eliminando la última dependencia técnica en `handlers`.
+
+### Limpieza
+- `handlers/callback_handlers.py`: Reducido significativamente al migrar lógica de ayuda y logs.
+- `handlers/command_handlers.py`: Completamente limpio de lógica de sistema y ayuda.
+
 ## [3.0.0] - 2025-12-14
 
 ### 🚀 Major Refactor (Plugins)
