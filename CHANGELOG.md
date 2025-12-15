@@ -18,6 +18,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.5.4] - 2025-12-15
+
+### 🐛 Bugfixes
+- **Core**: Eliminada importación residual de `Unauthorized` de `telegram.error` que causaba crash en versiones recientes de `python-telegram-bot`.
+
 ## [3.5.3] - 2025-12-15
 
 ### 🚀 Performance

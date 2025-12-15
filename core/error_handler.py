@@ -11,6 +11,7 @@ from telegram.error import (
 from config.config_settings import config
 
 text_logger = logging.getLogger(__name__)
+# Fixed ImportError: Unauthorized removed in PTB 22.x
 
 
 class ErrorHandler:
