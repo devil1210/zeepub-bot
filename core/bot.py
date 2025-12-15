@@ -162,13 +162,17 @@ class ZeePubBot:
                     state = json.load(f)
 
                 chat_id = state.get("chat_id")
+                thread_id = state.get("message_thread_id")
                 if chat_id:
                     v = get_version_string()
-                    logger.info(f"Sending update success message to {chat_id}")
+                    logger.info(
+                        f"Sending update success message to {chat_id} (Thread: {thread_id})"
+                    )
                     await self.app.bot.send_message(
                         chat_id=chat_id,
                         text=f"✅ <b>¡Actualización Completada!</b>\n\n🤖 ZeePub Bot v{v} está en línea. 🚀",
                         parse_mode="HTML",
+                        message_thread_id=thread_id,
                     )
                 else:
                     logger.warning("Update state file found but no chat_id key")

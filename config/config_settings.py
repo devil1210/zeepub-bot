@@ -110,7 +110,7 @@ class BotConfig:
     ENABLE_GROUP_MANAGER: bool = (
         os.getenv("ENABLE_GROUP_MANAGER", "False").lower() == "true"
     )
-    
+
     # Plugin System Manager
     ENABLE_SYSTEM_MANAGER: bool = (
         os.getenv("ENABLE_SYSTEM_MANAGER", "True").lower() == "true"
@@ -127,9 +127,7 @@ class BotConfig:
     )
 
     # Plugin Help
-    ENABLE_HELP_PLUGIN: bool = (
-        os.getenv("ENABLE_HELP_PLUGIN", "True").lower() == "true"
-    )
+    ENABLE_HELP_PLUGIN: bool = os.getenv("ENABLE_HELP_PLUGIN", "True").lower() == "true"
 
     # Ruta para la base de datos de URL acortadas (puede ser absoluta o relativa).
     URL_CACHE_DB_PATH: str = os.getenv("URL_CACHE_DB_PATH", "data/url_cache.db")
