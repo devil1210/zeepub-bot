@@ -19,7 +19,7 @@ class BotInitializer:
     async def initialize_schedulers(bot):
         """Inicializa todos los schedulers del sistema y métricas."""
         # Iniciar servidor de métricas
-        metrics.start_server(8000)
+        metrics.start_server(9090)
 
         schedulers = [
             ("weekly_reports", start_weekly_scheduler),

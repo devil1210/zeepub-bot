@@ -18,6 +18,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.4.4] - 2025-12-15
+
+### 🐛 Bugfixes
+- **Port Conflict**: Cambiado puerto de servidor de métricas Prometheus de 8000 a 9090 para evitar conflicto con la API Uvicorn.
+
 ## [3.4.3] - 2025-12-15
 
 ### 🐛 Bugfixes
