@@ -49,7 +49,6 @@ class ZeePubBot:
 
         self.plugin_manager = PluginManager()
 
-
         # Usar nuevo ErrorHandler
         self.app.add_error_handler(ErrorHandler.handle_error)
 
