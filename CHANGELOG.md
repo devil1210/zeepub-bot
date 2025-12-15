@@ -18,6 +18,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.5.3] - 2025-12-15
+
+### 🚀 Performance
+- **Database**: Optimización del pool de conexiones (reducción de latencia de 100ms a 5ms en espera, aumento de pool size a 20).
+- **Caching**: Implementada caché TTL (5 minutos) para `get_effective_user`, reduciendo drásticamente las consultas a la base de datos por cada interacción.
+
 ## [3.5.2] - 2025-12-15
 
 ### 🐛 Bugfixes

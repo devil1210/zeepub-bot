@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class DatabaseManager:
     """Gestión centralizada de conexiones a BD SQLite con pooling básico."""
 
-    def __init__(self, db_path: str, pool_size: int = 5):
+    def __init__(self, db_path: str, pool_size: int = 20):
         self.db_path = db_path
         self._pool: List[aiosqlite.Connection] = []
         self._pool_size = pool_size
@@ -24,7 +24,6 @@ class DatabaseManager:
             await conn.execute("PRAGMA synchronous=NORMAL")
             logger.info(f"Database initialized at {self.db_path} (WAL mode enabled)")
 
-    @asynccontextmanager
     async def connection(self):
         """Context manager para obtener conexión del pool con retry logic."""
         conn = None
@@ -51,8 +50,9 @@ class DatabaseManager:
             if asyncio.get_event_loop().time() - start_time > timeout:
                 raise asyncio.TimeoutError("Timeout waiting for DB connection")
 
-            # Esperar un poco antes de reintentar
-            await asyncio.sleep(0.1)
+            # Esperar un poco antes de reintentar (optimizado 10ms vs 100ms)
+            from asyncio import sleep
+            await sleep(0.005)
 
         try:
             yield conn

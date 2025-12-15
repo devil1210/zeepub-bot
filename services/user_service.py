@@ -3,11 +3,14 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 from config.config_settings import config
 from repositories.user_repository import UserRepository
+from services.cache_service import AsyncTTLCache
 
 logger = logging.getLogger(__name__)
 
 # Singleton repository instance
 user_repo = UserRepository()
+# Cache for user info (5 minutes)
+user_cache = AsyncTTLCache(ttl_seconds=300)
 
 
 async def upsert_user(
@@ -35,14 +38,17 @@ async def upsert_user(
         expires_at = now + timedelta(days=days)
 
     await user_repo.upsert(telegram_id, role, expires_at, custom_status, created_by)
+    await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
 async def remove_user(telegram_id: int):
     await user_repo.delete(telegram_id)
+    await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
 async def update_user_status_label(telegram_id: int, new_label: str):
     await user_repo.update_status(telegram_id, new_label)
+    await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
 async def get_user_info(telegram_id: int) -> Optional[Dict[str, Any]]:
@@ -58,6 +64,14 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
     Retorna un dict con keys: role, status_label, expires_at (puede ser None).
     Roles: 'admin', 'staff', 'premium', 'vip', 'white', 'free'.
     """
+    # 0. Check Cache
+    cache_key = f"user_effective:{uid}"
+    cached = await user_cache.get(cache_key)
+    if cached:
+        return cached
+
+    result = {"role": "free", "status_label": "Lector", "expires_at": None}
+
     # 1. Check DB (Async)
     info = await get_user_info(uid)
     if info:
@@ -65,47 +79,54 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         expires_at = info.get("expires_at")
         if expires_at and expires_at < datetime.now():
             # Expired
-            return {
+            result = {
                 "role": "free",
                 "status_label": "Expirado",
                 "expires_at": expires_at,
             }
+        else:
+            role = info.get("role", "free").lower()
+            custom_status = info.get("custom_status")
 
-        role = info.get("role", "free").lower()
-        custom_status = info.get("custom_status")
+            # Normalize DB roles to internal standards just in case
+            result = {
+                "role": role,
+                "status_label": custom_status or role.capitalize(),
+                "expires_at": expires_at,
+            }
+    
+    # 2. Legacy / Config Checks (if not found in DB or if DB says free but config says otherwise? 
+    # Logic in v3.1.3 favored DB if present, but here we fallback if DB absent OR if we want to override?
+    # Keeping original logic structure: if info found, we returned.
+    # Wait, the original code had multiple returns. I must preserve PRECEDENCE.
+    
+    # Restoring original structure but capturing result for caching
+    elif uid in config.ADMIN_USERS:
+        result = {"role": "admin", "status_label": "Admin", "expires_at": None}
 
-        # Normalize DB roles to internal standards just in case
-        return {
-            "role": role,
-            "status_label": custom_status or role.capitalize(),
-            "expires_at": expires_at,
-        }
+    elif uid in config.FACEBOOK_PUBLISHERS:
+        result = {"role": "staff", "status_label": "Publisher", "expires_at": None}
 
-    # 2. Legacy / Config Checks
-    if uid in config.ADMIN_USERS:
-        return {"role": "admin", "status_label": "Admin", "expires_at": None}
-
-    if uid in config.FACEBOOK_PUBLISHERS:
-        return {"role": "staff", "status_label": "Publisher", "expires_at": None}
-
-    if uid in config.PREMIUM_LIST:
-        return {
+    elif uid in config.PREMIUM_LIST:
+        result = {
             "role": "premium",
             "status_label": "Premium (Legacy)",
             "expires_at": None,
         }
 
-    if uid in config.VIP_LIST:
-        return {"role": "vip", "status_label": "VIP (Legacy)", "expires_at": None}
+    elif uid in config.VIP_LIST:
+        result = {"role": "vip", "status_label": "VIP (Legacy)", "expires_at": None}
 
-    if uid in config.WHITELIST:
-        return {
+    elif uid in config.WHITELIST:
+        result = {
             "role": "white",
             "status_label": "Patrocinador (Legacy)",
             "expires_at": None,
         }
-
-    return {"role": "free", "status_label": "Lector", "expires_at": None}
+    
+    # Save to cache
+    await user_cache.set(cache_key, result)
+    return result
 
 
 async def get_users_by_role(role: str) -> list[Dict[str, Any]]:
