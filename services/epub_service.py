@@ -53,6 +53,9 @@ def extract_internal_title(data_or_path: Union[bytes, str]) -> Optional[str]:
             try:
                 content = zf.read(name).decode("utf-8", errors="ignore")
 
+                # Remove HTML comments first to avoid matching commented-out tags
+                content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
+
                 # 1. Intentar fulltitle
                 match = fulltitle_pattern.search(content)
                 if match:
@@ -75,6 +78,8 @@ def extract_internal_title(data_or_path: Union[bytes, str]) -> Optional[str]:
                     # Si no hay sub-tags claros, limpiar HTML (reemplazando br con espacio)
                     clean = re.sub(r"<br\s*/?>", " ", inner_html, flags=re.IGNORECASE)
                     clean = re.sub(r"<[^>]+>", "", clean).strip()
+                    clean = clean.replace("-->", "").strip()
+                    clean = " ".join(clean.split())
                     if clean:
                         return clean
 
