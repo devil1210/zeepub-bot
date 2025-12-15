@@ -44,9 +44,19 @@ async def fetch_bytes(
 
             sess = session or session_manager.get_session()
             logger.debug(
-                f"Iniciando descarga de URL OPDS (intento {attempt + 1}/{max_retries}): {url}"
+                f"Iniciando descarga de URL (intento {attempt + 1}/{max_retries}): {url}"
             )
-            async with sess.get(url, timeout=timeout) as resp:
+
+            # Use smart timeout: total=None implies no total limit (good for large files),
+            # but sock_read enforces liveness.
+            # If timeout is an int, we treat it as sock_read/sock_connect timeout.
+            request_timeout = timeout
+            if isinstance(timeout, int):
+                request_timeout = aiohttp.ClientTimeout(
+                    total=None, sock_connect=timeout, sock_read=timeout
+                )
+
+            async with sess.get(url, timeout=request_timeout) as resp:
                 # Log response status and headers for debugging
                 logger.debug(
                     f"Response status: {resp.status}, headers: {dict(resp.headers)}"
