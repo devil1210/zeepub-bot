@@ -18,6 +18,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.5.10] - 2025-12-15
+
+### 🐛 Bugfixes
+- **Descargas**: Corregido error que abortaba descargas grandes (EPUBs) si tardaban más de 15 segundos en total. Ahora se usa un "smart timeout" que mantiene la conexión abierta indefinidamente mientras se reciban datos (timeout solo si la conexión se cuelga).
+
 ## [3.5.9] - 2025-12-15
 
 ### 🚀 Optimizations
