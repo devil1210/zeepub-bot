@@ -18,7 +18,18 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
-## [3.1.3] - 2025-12-15
+## [3.3.0] - 2025-12-15
+
+### 🚀 Optimización de Rendimiento
+- **Async Caching**: Implementado `cache_service` con TTL para reducir carga en servidores externos y tiempos de espera.
+- **OPDS Caching**: Integrado caché inteligente en la navegación de bibliotecas (10 minutos de expiración), mejorando drásticamente la velocidad de navegación.
+- **Database Pooling**: Implementado `DatabaseManager` con pooling de conexiones para SQLite, mejorando la concurrencia en operaciones locales.
+
+### 🧹 Calidad de Código
+- **Type Hints**: Completada la cobertura de tipado estático en `config_settings.py` y nuevas clases de servicio.
+- **Limpieza**: Refactorización de espacios en blanco y estilos para cumplir estrictamente con los estándares (flake8/black).
+
+## [3.2.0] - 2025-12-15
 
 ### 🐛 Bugfixes
 - **Telegram Service**: Corregido bug crítico que eliminaba archivos en canales de publicación si el comando se ejecutaba desde un grupo.

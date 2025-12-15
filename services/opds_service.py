@@ -1,5 +1,3 @@
-# services/opds_service.py
-
 import uuid
 import logging
 from urllib.parse import urlparse, unquote
@@ -9,8 +7,26 @@ from core.state_manager import state_manager
 from config.config_settings import config
 from utils.http_client import parse_feed_from_url
 from utils.helpers import abs_url, find_zeepubs_destino
+from services.cache_service import AsyncTTLCache
 
 logger = logging.getLogger(__name__)
+
+# Cache global para OPDS feeds (10 minutos TTL)
+opds_cache = AsyncTTLCache(ttl_seconds=600)
+
+
+async def get_cached_feed(url: str):
+    """Obtiene feed del caché o lo descarga."""
+    cached = await opds_cache.get(url)
+    if cached:
+        logger.debug(f"Cache hit for {url}")
+        return cached
+    
+    logger.debug(f"Cache miss for {url}, downloading...")
+    feed = await parse_feed_from_url(url)
+    if feed and getattr(feed, "entries", []):
+         await opds_cache.set(url, feed)
+    return feed
 
 
 async def mostrar_colecciones(
@@ -28,7 +44,9 @@ async def mostrar_colecciones(
     if "historial" not in st:
         st["historial"] = []
 
-    feed = await parse_feed_from_url(url)
+    # Usar get_cached_feed en lugar de parse_feed_from_url directo
+    feed = await get_cached_feed(url)
+    
     if not feed or not getattr(feed, "entries", []):
         msg = "❌ No se pudo leer el feed o no hay resultados."
         if hasattr(update, "message") and update.message:
@@ -40,6 +58,7 @@ async def mostrar_colecciones(
     root_url = st.get("opds_root")
 
     # Actualizar estado (sin tocar historial, lo gestiona el handler)
+    # ... (rest of logic unchanged, just ensuring we cache successful feeds)
     st.update(
         {
             "url": url,
@@ -188,7 +207,8 @@ async def buscar_zeepubs_directo(update, context, uid: int):
     st = state_manager.get_user_state(uid)
     url = st.get("opds_root")
     logger.debug("Intentando acceso directo a ZeePubs desde %s", url)
-    feed = await parse_feed_from_url(url)
+    # Usar caché también aquí
+    feed = await get_cached_feed(url)
     destino = find_zeepubs_destino(feed, prefer_libraries=True)
     if destino:
         st.update({"titulo": "📁 ZeePubs [ES]", "historial": []})
@@ -200,11 +220,11 @@ async def buscar_zeepubs_directo(update, context, uid: int):
 async def get_zeepubs_first_library(url: str) -> str:
     """Obtiene la URL de la primera biblioteca dentro de ZeePubs [ES]."""
     # url es la raíz (OPDS_ROOT)
-    feed = await parse_feed_from_url(url)
+    feed = await get_cached_feed(url)
     libraries_url = find_zeepubs_destino(feed, prefer_libraries=True)
 
     # Ahora obtener la primera biblioteca dentro de /libraries
-    lib_feed = await parse_feed_from_url(libraries_url)
+    lib_feed = await get_cached_feed(libraries_url)
     for entry in lib_feed.entries:
         for link in getattr(entry, "links", []):
             if getattr(link, "rel", "") == "subsection":

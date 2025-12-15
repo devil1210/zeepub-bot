@@ -12,7 +12,7 @@ load_dotenv()
 
 @dataclass
 class BotConfig:
-    TELEGRAM_TOKEN: str = os.getenv("TELEGRAM_TOKEN", "")
+    TELEGRAM_TOKEN: str = field(default_factory=lambda: os.getenv("TELEGRAM_TOKEN", ""))
 
     # Dominio público (ej: zp-dev.sp-core.xyz o zeepub-bot.sp-core.xyz)
     PUBLIC_DOMAIN: str = os.getenv("PUBLIC_DOMAIN", "")
