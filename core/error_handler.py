@@ -5,7 +5,6 @@ from telegram.error import (
     TimedOut,
     NetworkError,
     BadRequest,
-    Unauthorized,
     Forbidden,
     RetryAfter,
 )
@@ -18,7 +17,7 @@ class ErrorHandler:
     """Manejo centralizado de errores del bot."""
 
     RETRY_ERRORS = (TimedOut, NetworkError)
-    USER_ERRORS = (BadRequest, Unauthorized, Forbidden)
+    USER_ERRORS = (BadRequest, Forbidden)
 
     @staticmethod
     async def handle_error(update, context):
