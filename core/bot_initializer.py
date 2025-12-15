@@ -9,12 +9,17 @@ import json
 
 logger = logging.getLogger(__name__)
 
+from utils.metrics import metrics
+
 class BotInitializer:
     """Maneja la inicialización de schedulers y notificaciones."""
     
     @staticmethod
     async def initialize_schedulers(bot):
-        """Inicializa todos los schedulers del sistema."""
+        """Inicializa todos los schedulers del sistema y métricas."""
+        # Iniciar servidor de métricas
+        metrics.start_server(8000)
+
         schedulers = [
             ('weekly_reports', start_weekly_scheduler),
             ('backup', start_backup_scheduler),

@@ -184,7 +184,8 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
     mock_state.get_user_state.return_value = st
     monkeypatch.setattr(ch, "state_manager", mock_state)
     # avoid downloads_left using core.state_manager/config inside ch
-    monkeypatch.setattr(ch, "downloads_left", lambda uid: "ilimitadas")
+    mock_dl = AsyncMock(return_value="ilimitadas")
+    monkeypatch.setattr(ch, "downloads_left", mock_dl)
     mc = AsyncMock()
     monkeypatch.setattr(ch, "mostrar_colecciones", mc)
 

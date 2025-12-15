@@ -286,7 +286,7 @@ async def publicar_libro(
         thread_id_destino = thread_id_origen if destino == chat_origen else None
 
         # Verificar límite antes de descargar
-        if not can_download(uid):
+        if not await can_download(uid):
             await bot.send_message(
                 chat_id=destino,
                 text="🚫 Has alcanzado tu límite de descargas por hoy.",
@@ -567,7 +567,7 @@ async def descargar_epub_pendiente(
         return
 
     # Verificar cuota nuevamente
-    if not can_download(uid):
+    if not await can_download(uid):
         await bot.send_message(
             chat_id=destino,
             text="🚫 Límite de descargas alcanzado.",
@@ -739,7 +739,7 @@ async def enviar_libro_directo(
     """
     try:
         # 1. Verificar límite
-        if not can_download(user_id):
+        if not await can_download(user_id):
             await bot.send_message(
                 chat_id=user_id, text="🚫 Has alcanzado tu límite de descargas por hoy."
             )

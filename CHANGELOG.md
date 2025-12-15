@@ -18,6 +18,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.4.0] - 2025-12-15
+
+### 🏗️ Arquitectura y Monitorización (Fase 3)
+- **Monitoring**: Implementado `MetricsManager` (`utils/metrics.py`) exportando métricas de rendimiento (requests, descargas, usuarios activos) vía Prometheus.
+- **Repository Pattern**: Implementada capa de persistencia asíncrona (`repositories/user_repository.py`) para desacoplar lógica de negocio del acceso a datos.
+- **Async Migration**: Migración total a asíncrono de servicios críticos (`user_service`, `telegram_service`, `download_limiter`) eliminando bloqueos de I/O.
+- **Lazy Loading**: Refactorizado `PluginManager` para carga diferida e inicialización concurrente de plugins, optimizando el tiempo de arranque.
+
 ## [3.3.0] - 2025-12-15
 
 ### 🚀 Optimización de Rendimiento

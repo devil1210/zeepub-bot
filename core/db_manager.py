@@ -69,5 +69,7 @@ class DatabaseManager:
             while self._pool:
                 conn = self._pool.pop()
                 await conn.close()
-            self._active_connections = 0
             logger.info("All DB connections closed.")
+
+from config.config_settings import config
+db_manager = DatabaseManager(config.URL_CACHE_DB_PATH)

@@ -52,7 +52,7 @@ def record_activity(uid: int, activity_type: str = "download"):
     _save_stats(data)
 
 
-def get_daily_stats() -> Dict[str, Any]:
+async def get_daily_stats() -> Dict[str, Any]:
     data = _load_stats()
 
     unique_users = data["users"]
@@ -66,7 +66,7 @@ def get_daily_stats() -> Dict[str, Any]:
 
         for uid in unique_users:
             try:
-                user_info = get_effective_user(uid)
+                user_info = await get_effective_user(uid)
                 role = user_info.get("role", "free")
                 by_role[role] = by_role.get(role, 0) + 1
             except Exception as e:

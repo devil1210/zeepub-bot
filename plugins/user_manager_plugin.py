@@ -113,7 +113,7 @@ class UserManagerPlugin(BasePlugin):
             if role != "staff" and role != "banned":
                 duration = int(get_setting("benefit_duration_months", "6"))
 
-        upsert_user(
+        await upsert_user(
             target_id,
             role,
             duration_months=duration,
@@ -158,7 +158,7 @@ class UserManagerPlugin(BasePlugin):
             return
         target_id = int(target_id_str)
 
-        remove_user(target_id)
+        await remove_user(target_id)
 
         await update.message.reply_text(
             f"✅ Usuario <code>{target_id}</code> removido de la DB.",
@@ -198,7 +198,7 @@ class UserManagerPlugin(BasePlugin):
         new_label = " ".join(context.args[1:])
 
         try:
-            update_user_status_label(target_id, new_label)
+            await update_user_status_label(target_id, new_label)
             await msg.reply_text(
                 f"✅ Status actualizado para <code>{target_id}</code>: <b>{new_label}</b>",
                 parse_mode="HTML",

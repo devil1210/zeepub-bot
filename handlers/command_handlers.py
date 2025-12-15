@@ -36,7 +36,7 @@ class CommandHandlers:
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
 
         uid = update.effective_user.id
-        left = downloads_left(uid)
+        left = await downloads_left(uid)
 
         text = (
             "👋 ¡Hola! Comencemos.\n\n✅ Tienes descargas ilimitadas."
@@ -152,7 +152,7 @@ class CommandHandlers:
         # Obtener info extendida
         from services.user_service import get_effective_user
 
-        user_data = get_effective_user(uid)
+        user_data = await get_effective_user(uid)
 
         roles_display = {
             "admin": "Admin 🛠️",
@@ -337,7 +337,7 @@ class CommandHandlers:
         # Check ban status
         from services.user_service import get_effective_user
 
-        user_info = get_effective_user(uid)
+        user_info = await get_effective_user(uid)
         if user_info.get("role") == "banned":
             expires_at = user_info.get("expires_at")
             msg = "⛔ Estás <b>baneado</b> del bot."

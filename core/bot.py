@@ -5,12 +5,14 @@ from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
     MessageHandler,
+    TypeHandler,
     filters,
 )
 from config.config_settings import config
 from core.session_manager import session_manager
 from core.bot_initializer import BotInitializer
 from core.error_handler import ErrorHandler
+from utils.metrics import metrics
 from handlers.command_handlers import CommandHandlers
 from handlers.callback_handlers import (
     set_destino,
@@ -56,6 +58,9 @@ class ZeePubBot:
 
         # attach plugin manager to app so handlers can access it
         setattr(self.app, "plugin_manager", self.plugin_manager)
+
+        # Metrics Middleware (Group -1 to run first)
+        self.app.add_handler(TypeHandler(Update, self._metrics_middleware), group=-1)
 
         # Comandos
         self.command_handlers = CommandHandlers(self.app)
@@ -114,3 +119,12 @@ class ZeePubBot:
         await self.app.shutdown()
         session_manager.close()
         logger.info("Bot detenido (API).")
+
+    async def _metrics_middleware(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Middleware para recolectar métricas básicas."""
+        if update.message and update.message.text and update.message.text.startswith("/"):
+            try:
+                cmd = update.message.text.split()[0].split('@')[0]
+                metrics.inc_command(cmd)
+            except Exception:
+                pass
