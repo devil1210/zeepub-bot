@@ -18,6 +18,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.4.3] - 2025-12-15
+
+### 🐛 Bugfixes
+- **NameError**: Añadido import faltante de `asyncio` en `plugins/plugin_manager.py`.
+
 ## [3.4.2] - 2025-12-15
 
 ### 🐛 Bugfixes
