@@ -60,6 +60,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/api_health")
+async def health_check():
+    return {"message": "ZeePub Bot API is running"}
+
 # Importar rutas
 
 # Validar si el plugin está activo
