@@ -2,7 +2,13 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.7.1] - 2025-12-14
+## [2.8.0] - 2025-12-14
+
+### Mejoras
+- **Donations Plugin**:
+  - El comando `/niveles` ahora busca un mensaje personalizado llamado `niveles` (configurable con `/add_msge`).
+  - Soporta variables de precio dinámicas: `[white]`, `[vip]`, `[premium]`, `[duration]`, que se reemplazan con los valores configurados en `/set_price`.
+
 
 ### Correcciones
 - **Custom Messages**: Ahora el comando `/list_msge <slug> [id]` permite probar el reemplazo de variables (ej: `[Nombre]`) simulando que se envía al usuario con el ID especificado.

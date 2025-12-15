@@ -1,11 +1,15 @@
 import logging
 import os
+import html
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
 from services.settings_service import get_setting, set_setting
+from plugins.custom_messages_plugin import StoredMessage  # Import model
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +21,16 @@ class DonationsPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.0.0"
+        return "1.1.0"
 
     @property
     def description(self) -> str:
         return "Sistema de donaciones, niveles de usuario y precios configurables."
+
+    def __init__(self):
+        self.custom_msg_engine = None
+        self.CustomMsgSession = None
+        self.enabled = False
 
     async def initialize(self, bot_instance) -> bool:
         self.enabled = os.getenv("ENABLE_DONATIONS", "True").lower() == "true"
@@ -29,6 +38,9 @@ class DonationsPlugin(BasePlugin):
         if not self.enabled:
             logger.info("Plugin Donations desactivado por configuración.")
             return False
+
+        # Initialize Connection to CustomMessages DB
+        self._init_custom_msg_db()
 
         try:
             app = bot_instance
@@ -43,6 +55,18 @@ class DonationsPlugin(BasePlugin):
         except Exception as e:
             logger.error(f"Error registrando handlers del plugin Donations: {e}")
             return False
+
+    def _init_custom_msg_db(self):
+        db_url = config.DATABASE_URL
+        if not db_url:
+            db_path = os.path.join("data", "custom_messages.db")
+            db_url = f"sqlite:///{db_path}"
+
+        try:
+            self.custom_msg_engine = create_engine(db_url, future=True)
+            self.CustomMsgSession = sessionmaker(bind=self.custom_msg_engine)
+        except Exception as e:
+            logger.warning(f"DonationsPlugin no pudo conectar a CustomMessages DB: {e}")
 
     async def cleanup(self) -> None:
         pass
@@ -81,6 +105,17 @@ class DonationsPlugin(BasePlugin):
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
 
+    def _get_stored_message(self, slug):
+        if not self.CustomMsgSession:
+            return None
+        session = self.CustomMsgSession()
+        try:
+            return session.query(StoredMessage).filter_by(slug=slug).first()
+        except Exception:
+            return None
+        finally:
+            session.close()
+
     async def niveles(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /niveles: explica niveles de usuario y beneficios."""
         thread_id = get_thread_id(update)
@@ -91,6 +126,30 @@ class DonationsPlugin(BasePlugin):
         p_premium = get_setting("price_premium", "20")
         months = get_setting("benefit_duration_months", "6")
 
+        # Intentar cargar mensaje personalizado "niveles"
+        msg = self._get_stored_message("niveles")
+
+        if msg and (msg.text_content or msg.description):
+            # Usar mensaje personalizado
+            raw_text = msg.text_content if msg.text_content else msg.description
+            # Reemplazar variables
+            text = (
+                raw_text.replace("[white]", p_white)
+                .replace("[vip]", p_vip)
+                .replace("[premium]", p_premium)
+                .replace("[duration]", months)  # Added bonus variable just in case
+            )
+
+            # Send message
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=text,
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+            return
+
+        # Fallback Hardcoded
         text = (
             "🌟 <b>Niveles de Usuario y Beneficios</b> 🌟\n\n"
             "Las donaciones nos ayudan a cubrir los costos del servidor. "
