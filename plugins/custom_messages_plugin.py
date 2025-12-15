@@ -18,6 +18,7 @@ from telegram import Update, Message
 from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
+from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
 Base = declarative_base()
@@ -280,6 +281,7 @@ class CustomMessagesPlugin(BasePlugin):
                         chat_id=update.effective_chat.id,
                         text=text_to_send,
                         parse_mode="HTML",
+                        message_thread_id=get_thread_id(update),
                     )
                     return
                 except Exception as e:
@@ -292,6 +294,7 @@ class CustomMessagesPlugin(BasePlugin):
                     chat_id=update.effective_chat.id,
                     from_chat_id=msg.source_chat_id,
                     message_id=msg.source_message_id,
+                    message_thread_id=get_thread_id(update),
                 )
             except Exception as e:
                 await update.message.reply_text(

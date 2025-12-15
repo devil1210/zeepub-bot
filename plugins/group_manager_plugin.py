@@ -7,6 +7,7 @@ from telegram import Update, ChatMember, ChatMemberUpdated
 from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
+from utils.helpers import get_thread_id
 from plugins.custom_messages_plugin import StoredMessage  # To access message model
 
 logger = logging.getLogger(__name__)
@@ -221,6 +222,7 @@ class GroupManagerPlugin(BasePlugin):
 
     async def reglas(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Muestra las reglas del grupo (desde mensaje guardado 'reglas' o default)."""
+        thread_id = get_thread_id(update)
         # Intentar cargar mensaje personalizado "reglas"
         msg = self._get_stored_message("reglas")
 
@@ -232,12 +234,14 @@ class GroupManagerPlugin(BasePlugin):
                     chat_id=update.effective_chat.id,
                     text=msg.text_content,
                     parse_mode="HTML",
+                    message_thread_id=thread_id,
                 )
             else:
                 await context.bot.copy_message(
                     chat_id=update.effective_chat.id,
                     from_chat_id=msg.source_chat_id,
                     message_id=msg.source_message_id,
+                    message_thread_id=thread_id,
                 )
         else:
             # Fallback
@@ -248,6 +252,7 @@ class GroupManagerPlugin(BasePlugin):
                 "3. Disfrutar de la lectura.\n\n"
                 "<i>(Configura este mensaje guardando uno con slug 'reglas')</i>",
                 parse_mode="HTML",
+                message_thread_id=thread_id,
             )
 
     def _slug_exists(self, slug):

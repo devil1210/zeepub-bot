@@ -2,7 +2,11 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.8.2] - 2025-12-14
+## [2.8.3] - 2025-12-14
+
+### Correcciones
+- **Soporte de Topics (Foros)**: Ahora `/reglas`, `/niveles` y `/list_msge` responden correctamente en el hilo (topic) donde fueron invocados, en lugar de enviarse al chat General.
+
 
 ### Correcciones
 - **Comandos**: Agregado `/reglas` y otros comandos admin al mensaje de ayuda `/help` que faltaban.
