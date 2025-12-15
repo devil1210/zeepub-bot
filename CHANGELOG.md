@@ -2,6 +2,22 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
+## [3.1.1] - 2025-12-15
+
+### 🐛 Bugfixes
+- **setlog**: Corregido el comando `/setlog` que no cambiaba efectivamente el nivel de logs.
+  - Ahora actualiza tanto los loggers como los handlers (ambos niveles de filtrado de Python logging).
+  - Agregado `httpcore`, `httpcore.http11`, `httpcore.connection` y `telegram.ext` a la lista de loggers actualizados dinámicamente.
+  - Corregido `button_handler` global que interceptaba callbacks de plugins antes de que llegaran a sus handlers específicos.
+- **HelpPlugin**: Restaurada la UI legacy del menú `/help` con todas las categorías (Inicio, Content, Admin, Datos, Mensajes, Donaciones, Links).
+  - Implementado botón "Cerrar" con manejo interno del plugin.
+- **SystemManagerPlugin**: 
+  - Agregado método `setlog` faltante que causaba fallos silenciosos durante la inicialización del plugin.
+  - La UI de `/setlog` ahora muestra el nivel actual y se actualiza dinámicamente al cambiar.
+
+### 📦 Dependencias
+- Agregado `python-dateutil==2.9.0.post0` para `stats_plugin`.
+
 ## [3.1.0] - 2025-12-14
 
 ### 🧩 Refactor Final (Help & System)
