@@ -5,6 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.6.2] - 2025-12-15
+
+### Añadido
+- **Sistema**: Implementada tarea de chequeo automático de actualizaciones (cada 6 horas).
+- **Estabilidad**: Modo Seguro ("Safety Net"); si los plugins fallan, el bot inicia en modo de emergencia permitiendo usar `/update_system`.
+
+### Arreglado
+- **Metadata**: Corregida extracción de títulos en EPUBs removiendo comentarios HTML y artefactos `-->`.
+- **Descargas**: Solucionado bug que mostraba `<coroutine object>` en lugar del número de descargas restantes (falta de `await`).
+- **Código**: Correcciones de estilo y espacios en blanco (`black`).
+
 ## [3.6.1] - 2025-12-15
 
 ### Arreglado

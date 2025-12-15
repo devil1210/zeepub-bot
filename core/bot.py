@@ -106,22 +106,22 @@ class ZeePubBot:
                 # Instantiate a temporary SystemManager to access its update logic
                 # or define a minimal standalone fallback function.
                 # Using a standalone function is safer to avoid recursive dependency errors.
-                
+
                 async def emergency_update_handler(update, context):
                     uid = update.effective_user.id
                     if uid not in config.ADMIN_USERS:
                         return
-                    
+
                     await context.bot.send_message(
                         chat_id=update.effective_chat.id,
                         text="⚠️ <b>MODO SEGURO ACTIVADO</b>\n\nEl sistema de plugins falló al iniciar. Intentando actualización de emergencia...",
                         parse_mode="HTML"
                     )
-                    
+
                     # Glue code to trigger update
                     # Reusing the existing update logic from SystemManager might be risky if imports failed.
                     # But typically SystemManagerPlugin is fine, passing a class method should work if the file parses.
-                    
+
                     # Let's try to manually trigger the same logic sequence
                     try:
                         from services.maintenance_service import trigger_watchtower_update
@@ -131,7 +131,7 @@ class ZeePubBot:
                         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Error crítico en update: {ex}")
 
                 self.app.add_handler(CommandHandler("update_system", emergency_update_handler))
-                
+
                 # Notify admins of Safe Mode
                 for admin_id in config.ADMIN_USERS:
                     try:
