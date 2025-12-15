@@ -18,6 +18,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.5.7] - 2025-12-15
+
+### 🚀 Optimizations
+- **Network**: Aumentados los timeouts de conexión y lectura a 60s (antes 30s) y conexión a 30s (antes 15s) para evitar errores `TimedOut` en entornos con latencia o conexiones lentas.
+
 ## [3.5.6] - 2025-12-15
 
 ### 🐛 Bugfixes
