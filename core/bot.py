@@ -38,10 +38,10 @@ class ZeePubBot:
         # Configurar custom request con timeouts extendidos y HTTP/2
         trequest = HTTPXRequest(
             connection_pool_size=20,  # Increased currency
-            pool_timeout=60.0,
-            connect_timeout=30.0,
-            read_timeout=60.0,
-            write_timeout=60.0,
+            pool_timeout=30.0,
+            connect_timeout=15.0,
+            read_timeout=30.0,
+            write_timeout=30.0,
             http_version="1.1",  # HTTP/2 can be unstable in some libs, sticking to optimized 1.1 or removing explicit to default
         )
         # Note: http_version="2" in python-telegram-bot might require 'http2' extra.
