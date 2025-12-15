@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 # Singleton repository instance
 user_repo = UserRepository()
-# Cache for user info (5 minutes)
-user_cache = AsyncTTLCache(ttl_seconds=300)
+# Cache for user info (1 hour) - changed from 5 minutes for high-volume bot (1000+ msg/sec)
+user_cache = AsyncTTLCache(ttl_seconds=3600)
 
 
 async def upsert_user(
