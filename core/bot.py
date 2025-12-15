@@ -140,7 +140,7 @@ class ZeePubBot:
         try:
             import os
             import json
-            from utils.helpers import get_version_string
+            from utils.helpers import get_version_string, get_last_commit_message
 
             state_path = "data/update_state.json"
             if os.path.exists(state_path):
@@ -152,12 +152,17 @@ class ZeePubBot:
                 thread_id = state.get("message_thread_id")
                 if chat_id:
                     v = get_version_string()
+                    commit_msg = get_last_commit_message()
                     logger.info(
                         f"Sending update success message to {chat_id} (Thread: {thread_id})"
                     )
                     await self.app.bot.send_message(
                         chat_id=chat_id,
-                        text=f"✅ <b>¡Actualización Completada!</b>\n\n🤖 ZeePub Bot v{v} está en línea. 🚀",
+                        text=(
+                            f"✅ <b>¡Actualización Completada!</b>\n"
+                            f"🤖 ZeePub Bot v{v} está en línea. 🚀\n\n"
+                            f"📝 <i>Cambios:</i> {commit_msg}"
+                        ),
                         parse_mode="HTML",
                         message_thread_id=thread_id,
                     )

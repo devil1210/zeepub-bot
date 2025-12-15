@@ -467,6 +467,7 @@ def get_current_version() -> str:
 def get_commit_hash() -> str:
     try:
         import os
+
         if os.path.exists("version_hash.txt"):
             with open("version_hash.txt", "r") as f:
                 return f.read().strip()[:7]
@@ -481,3 +482,22 @@ def get_version_string() -> str:
     if h and h != "unknown":
         return f"{v} ({h})"
     return v
+
+
+def get_last_commit_message() -> str:
+    """Obtiene el mensaje del último commit."""
+    try:
+        import subprocess
+
+        # git log -1 --pretty=%B
+        result = subprocess.run(
+            ["git", "log", "-1", "--pretty=%B"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return "Actualización desconocida"
