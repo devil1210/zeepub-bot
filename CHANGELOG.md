@@ -18,6 +18,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.6.0] - 2025-12-15
+
+### 🚀 Performance
+- **Cache**: Eliminados locks globales en lecturas de `AsyncTTLCache`. Ahora las lecturas son no-bloqueantes, eliminando la contención de CPU bajo carga alta.
+- **TTL**: Incrementado el TTL de caché de usuario de 5 min a 60 min, reduciendo las consultas a base de datos en un 90%+.
+- **Moderación**: Optimizada la verificación de baneos para ejecutarse solo en chats privados, eliminando overhead innecesario en grupos.
+
 ## [3.5.10] - 2025-12-15
 
 ### 🐛 Bugfixes
