@@ -119,19 +119,31 @@ class SystemManagerPlugin(BasePlugin):
             new_level = getattr(logging, level_str)
 
             # 1. Root logger
-            logging.getLogger().setLevel(new_level)
+            root_logger = logging.getLogger()
+            root_logger.setLevel(new_level)
+            
+            # 2. Update ALL handlers on root logger
+            for handler in root_logger.handlers:
+                handler.setLevel(new_level)
 
-            # 2. Specific loggers
+            # 3. Specific loggers
             loggers_to_update = [
                 "uvicorn",
                 "uvicorn.access",
                 "httpx",
                 "httpcore",
+                "httpcore.http11",
+                "httpcore.connection",
                 "telegram",
+                "telegram.ext",
                 "apscheduler",
             ]
             for logger_name in loggers_to_update:
-                logging.getLogger(logger_name).setLevel(new_level)
+                logger_instance = logging.getLogger(logger_name)
+                logger_instance.setLevel(new_level)
+                # Also update handlers on each specific logger
+                for handler in logger_instance.handlers:
+                    handler.setLevel(new_level)
 
             logger.log(
                 new_level,
