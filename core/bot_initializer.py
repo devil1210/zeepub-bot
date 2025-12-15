@@ -9,6 +9,7 @@ import json
 
 logger = logging.getLogger(__name__)
 
+from config.config_settings import config
 from utils.metrics import metrics
 
 
