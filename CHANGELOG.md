@@ -18,6 +18,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.5.6] - 2025-12-15
+
+### 🐛 Bugfixes
+- **Database**: Restaurado el decorador `@asynccontextmanager` en `DatabaseManager.connection` que se perdió accidentalmente en la optimización de rendimiento (v3.5.3), causando errores críticos en todas las operaciones de BD.
+
 ## [3.5.5] - 2025-12-15
 
 ### 🐛 Bugfixes

@@ -24,6 +24,7 @@ class DatabaseManager:
             await conn.execute("PRAGMA synchronous=NORMAL")
             logger.info(f"Database initialized at {self.db_path} (WAL mode enabled)")
 
+    @asynccontextmanager
     async def connection(self):
         """Context manager para obtener conexión del pool con retry logic."""
         conn = None
