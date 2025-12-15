@@ -2,7 +2,13 @@
 
 Todos los cambios notables de este proyecto serán documentados en este archivo.
 
-## [2.8.3] - 2025-12-14
+## [2.9.0] - 2025-12-14
+
+### Refactorización
+- **System Manager**: Migrada la lógica de sistema (`/update_system`, `/set_auto_delete_time`) a un nuevo plugin dedicado `SystemManagerPlugin`.
+  - Configurable vía `ENABLE_SYSTEM_MANAGER` (por defecto `True`).
+  - Mejora la limpieza del código base y seguridad.
+
 
 ### Correcciones
 - **Soporte de Topics (Foros)**: Ahora `/reglas`, `/niveles` y `/list_msge` responden correctamente en el hilo (topic) donde fueron invocados, en lugar de enviarse al chat General.
