@@ -26,7 +26,7 @@ def test_read_root():
     assert response.json() == {"message": "ZeePub Bot API is running"}
 
 def test_get_feed_no_url():
-    # Mockear parse_feed_from_url
+    # Mockear get_cached_feed
     with pytest.MonkeyPatch.context() as m:
         mock_parse = AsyncMock()
         mock_feed = MagicMock()
@@ -48,7 +48,7 @@ def test_get_feed_no_url():
         mock_feed.entries = [entry]
         mock_parse.return_value = mock_feed
         
-        m.setattr("api.routes.parse_feed_from_url", mock_parse)
+        m.setattr("api.routes.get_cached_feed", mock_parse)
         
         response = client.get("/api/feed")
         assert response.status_code == 200
@@ -66,7 +66,7 @@ def test_search_books():
         mock_feed.entries = []
         mock_parse.return_value = mock_feed
         
-        m.setattr("api.routes.parse_feed_from_url", mock_parse)
+        m.setattr("api.routes.get_cached_feed", mock_parse)
         
         response = client.get("/api/search?q=harry")
         assert response.status_code == 200

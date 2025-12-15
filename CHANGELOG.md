@@ -18,6 +18,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.5.0] - 2025-12-15
+
+### 🚀 Mejoras
+- **Base de Datos**: Implementado pooling robusto con lógica de espera y reintento en `DatabaseManager` para manejar mejor la carga.
+- **Rendimiento**: Extendido el uso de caché (TTL 10m) a todos los endpoints de OPDS (API y Bot), reduciendo llamadas externas redundantes.
+- **Configuración**: Puerto de métricas Prometheus ahora es configurable vía variable de entorno `METRICS_PORT` (default: 9090) y activable con `ENABLE_METRICS`.
+
 ## [3.4.4] - 2025-12-15
 
 ### 🐛 Bugfixes

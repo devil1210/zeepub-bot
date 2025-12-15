@@ -7,10 +7,10 @@ from datetime import datetime, timedelta
 from telegram.ext import ContextTypes, CommandHandler
 from core.state_manager import state_manager
 from utils.download_limiter import downloads_left, record_download, can_download
-from services.opds_service import mostrar_colecciones
+from services.opds_service import mostrar_colecciones, get_cached_feed
 from config.config_settings import config
 from utils.helpers import get_thread_id, is_command_for_bot, build_search_url
-from utils.http_client import parse_feed_from_url
+# from utils.http_client import parse_feed_from_url  <-- Removing this
 from utils.decorators import rate_limit
 
 logger = logging.getLogger(__name__)
@@ -359,7 +359,7 @@ class CommandHandlers:
 
             search_url = build_search_url(termino, uid)
             logger.debug(f"URL de búsqueda: {search_url}")
-            feed = await parse_feed_from_url(search_url)
+            feed = await get_cached_feed(search_url)
 
             if not feed or not getattr(feed, "entries", []):
                 keyboard = [

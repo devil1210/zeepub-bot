@@ -4,10 +4,10 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from core.state_manager import state_manager
-from services.opds_service import mostrar_colecciones
+from services.opds_service import mostrar_colecciones, get_cached_feed
 from config.config_settings import config
 from utils.helpers import build_search_url
-from utils.http_client import parse_feed_from_url
+# from utils.http_client import parse_feed_from_url
 from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         st["message_thread_id"] = thread_id  # Guardar thread_id
         search_url = build_search_url(text, uid)
         logger.debug(f"URL de búsqueda: {search_url}")
-        feed = await parse_feed_from_url(search_url)
+        feed = await get_cached_feed(search_url)
         if not feed or not getattr(feed, "entries", []):
             keyboard = [
                 [InlineKeyboardButton("🔄 Volver a buscar", callback_data="buscar")],

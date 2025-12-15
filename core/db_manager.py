@@ -26,40 +26,59 @@ class DatabaseManager:
 
     @asynccontextmanager
     async def connection(self):
-        """Context manager para obtener conexión del pool."""
+        """Context manager para obtener conexión del pool con retry logic."""
         conn = None
-        async with self._lock:
-            if self._pool:
-                conn = self._pool.pop()
-            else:
-                if self._active_connections < self._pool_size:
-                    pass  # We will create one below
-                else:
-                    # Pool empty and max connections reached?
-                    # For simplicity in this basic pool, we just create a new one if pool empty,
-                    # but real pooling would wait. Given SQLite constraint (single writer),
-                    # we usually want limited connections.
-                    # Let's verify if we want to enforce hard limit or just soft pool.
-                    # Proposal said "pool_size".
-                    pass  # Just create new for now to avoid blocking, user is single tenant mostly.
+        start_time = asyncio.get_event_loop().time()
+        timeout = 5.0  # Tiempo máximo de espera
 
-        if not conn:
-            try:
-                conn = await aiosqlite.connect(self.db_path)
-                self._active_connections += 1
-            except Exception as e:
-                logger.error(f"Error connecting to DB: {e}")
-                raise
+        # Esperar hasta que haya una conexión disponible
+        while True:
+            async with self._lock:
+                if self._pool:
+                    conn = self._pool.pop()
+                    break
+                elif self._active_connections < self._pool_size:
+                    # Crear nueva conexión
+                    try:
+                        conn = await aiosqlite.connect(self.db_path)
+                        self._active_connections += 1
+                        break
+                    except Exception as e:
+                        logger.error(f"Error connecting to DB: {e}")
+                        raise
+
+            # Si llegamos aquí, el pool está lleno. Verificar timeout.
+            if asyncio.get_event_loop().time() - start_time > timeout:
+                raise asyncio.TimeoutError("Timeout waiting for DB connection")
+
+            # Esperar un poco antes de reintentar
+            await asyncio.sleep(0.1)
 
         try:
             yield conn
-        finally:
+        except Exception:
+            # Si ocurre un error con la conexión, intentamos cerrarla
+            # y no la devolvemos al pool para evitar estados corruptos
+            try:
+                await conn.close()
+            except Exception:
+                pass
             async with self._lock:
+                self._active_connections -= 1
+            raise
+        else:
+            # Si todo salió bien, devolver al pool
+            async with self._lock:
+                # Verificar si el pool tiene espacio (por si acaso se cambió el tamaño)
+                # O si queremos mantener límite estricto
                 if len(self._pool) < self._pool_size:
-                    # Reset connection state if needed? aiosqlite handles some.
-                    # Ideally rollback any pending transaction
-                    await conn.rollback()
-                    self._pool.append(conn)
+                    try:
+                        await conn.rollback()  # Reset state
+                        self._pool.append(conn)
+                    except Exception:
+                        # Si falla el rollback, descartar conexión
+                        await conn.close()
+                        self._active_connections -= 1
                 else:
                     await conn.close()
                     self._active_connections -= 1

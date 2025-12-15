@@ -6,7 +6,8 @@ import hmac
 import hashlib
 import json
 from config.config_settings import config
-from utils.http_client import parse_feed_from_url
+from services.opds_service import get_cached_feed
+# from utils.http_client import parse_feed_from_url
 from utils.helpers import build_search_url
 from utils.security import validate_telegram_data
 from utils.http_client import fetch_bytes
@@ -77,7 +78,7 @@ async def get_feed(
 
     target_url = url if url else config.OPDS_ROOT_START
     try:
-        feed = await parse_feed_from_url(target_url)
+        feed = await get_cached_feed(target_url)
         if not feed:
             raise HTTPException(status_code=404, detail="No se pudo cargar el feed")
 
