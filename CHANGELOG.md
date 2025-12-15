@@ -18,6 +18,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.5.5] - 2025-12-15
+
+### 🐛 Bugfixes
+- **Deps**: Downgrade de `httpx` a `0.27.2` y `httpcore` a `1.0.5` para solucionar errores de conexión SSL (`BrokenResourceError`) con la API de Telegram.
+
 ## [3.5.4] - 2025-12-15
 
 ### 🐛 Bugfixes
