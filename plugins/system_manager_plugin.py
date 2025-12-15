@@ -137,8 +137,25 @@ class SystemManagerPlugin(BasePlugin):
                 f"Log level cambiado a {level_str} por admin {uid} (vía botón)",
             )
 
+            # Rebuild keyboard to keep UI interactive
+            from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+            keyboard = [
+                [
+                    InlineKeyboardButton("DEBUG", callback_data="setlog|DEBUG"),
+                    InlineKeyboardButton("INFO", callback_data="setlog|INFO"),
+                ],
+                [
+                    InlineKeyboardButton("WARNING", callback_data="setlog|WARNING"),
+                    InlineKeyboardButton("ERROR", callback_data="setlog|ERROR"),
+                ],
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
             await query.edit_message_text(
-                f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML"
+                f"🔧 <b>Configuración de Logs</b>\n\nNivel actual: <b>{level_str}</b>\nSelecciona un nuevo nivel:",
+                reply_markup=reply_markup,
+                parse_mode="HTML"
             )
             await query.answer(f"Nivel cambiado a {level_str}")
 
