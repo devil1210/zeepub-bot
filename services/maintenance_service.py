@@ -1,4 +1,3 @@
-
 import logging
 import aiohttp
 import os
@@ -35,4 +34,7 @@ async def trigger_watchtower_update():
         logger.error(f"Error trigger_watchtower_update: {repr(e)}")
         # Si el error es de conexión pero Watchtower recibió el request (como suele pasar),
         # podríamos informar "Posible éxito".
-        return False, f"⚠️ Error conexión ({type(e).__name__}): {e}. Si Watchtower se reinició, la update funcionó."
+        return (
+            False,
+            f"⚠️ Error conexión ({type(e).__name__}): {e}. Si Watchtower se reinició, la update funcionó.",
+        )

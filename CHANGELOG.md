@@ -18,6 +18,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.4.1] - 2025-12-15
+
+### 🧹 Calidad de Código
+- **Linting**: Corregidos errores de estilo (`black`) y referencias indefinidas (`F821`) en `core/bot.py` detectados tras el release de la fase 3.
+
 ## [3.4.0] - 2025-12-15
 
 ### 🏗️ Arquitectura y Monitorización (Fase 3)

@@ -7,6 +7,7 @@ import feedparser
 import tempfile
 from typing import Union
 from typing import Union
+
 # from core.session_manager import session_manager (Moved to local scope)
 import logging
 
@@ -25,7 +26,10 @@ def cleanup_tmp(path):
 
 
 async def fetch_bytes(
-    url: str, session: aiohttp.ClientSession = None, timeout: int = 15, max_retries: int = 3
+    url: str,
+    session: aiohttp.ClientSession = None,
+    timeout: int = 15,
+    max_retries: int = 3,
 ) -> Union[bytes, str, None]:
     """
     Descarga el contenido de `url`. Si supera MAX_IN_MEMORY_BYTES escribe a fichero temporal.
@@ -37,11 +41,16 @@ async def fetch_bytes(
     for attempt in range(max_retries):
         try:
             from core.session_manager import session_manager
+
             sess = session or session_manager.get_session()
-            logger.debug(f"Iniciando descarga de URL OPDS (intento {attempt + 1}/{max_retries}): {url}")
+            logger.debug(
+                f"Iniciando descarga de URL OPDS (intento {attempt + 1}/{max_retries}): {url}"
+            )
             async with sess.get(url, timeout=timeout) as resp:
                 # Log response status and headers for debugging
-                logger.debug(f"Response status: {resp.status}, headers: {dict(resp.headers)}")
+                logger.debug(
+                    f"Response status: {resp.status}, headers: {dict(resp.headers)}"
+                )
 
                 # Check for Cloudflare errors
                 if resp.status == 403:
@@ -113,15 +122,23 @@ async def fetch_bytes(
                 return data
 
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            logger.warning(f"Error fetch_bytes (intento {attempt + 1}/{max_retries}) para {url}: {e}")
+            logger.warning(
+                f"Error fetch_bytes (intento {attempt + 1}/{max_retries}) para {url}: {e}"
+            )
 
             # If this is not the last attempt, wait before retrying
             if attempt < max_retries - 1:
-                delay = retry_delays[attempt] if attempt < len(retry_delays) else retry_delays[-1]
+                delay = (
+                    retry_delays[attempt]
+                    if attempt < len(retry_delays)
+                    else retry_delays[-1]
+                )
                 logger.info(f"Reintentando en {delay} segundos...")
                 await asyncio.sleep(delay)
             else:
-                logger.error(f"Error fetch_bytes después de {max_retries} intentos para {url}: {e}")
+                logger.error(
+                    f"Error fetch_bytes después de {max_retries} intentos para {url}: {e}"
+                )
                 return None
         except Exception as e:
             logger.error(f"Error inesperado fetch_bytes para {url}: {e}", exc_info=True)

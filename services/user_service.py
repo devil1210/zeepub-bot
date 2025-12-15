@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 # Singleton repository instance
 user_repo = UserRepository()
 
+
 async def upsert_user(
     telegram_id: int,
     role: str,
@@ -33,21 +34,23 @@ async def upsert_user(
         days = duration_months * 30
         expires_at = now + timedelta(days=days)
 
-    await user_repo.upsert(
-        telegram_id, role, expires_at, custom_status, created_by
-    )
+    await user_repo.upsert(telegram_id, role, expires_at, custom_status, created_by)
+
 
 async def remove_user(telegram_id: int):
     await user_repo.delete(telegram_id)
 
+
 async def update_user_status_label(telegram_id: int, new_label: str):
     await user_repo.update_status(telegram_id, new_label)
+
 
 async def get_user_info(telegram_id: int) -> Optional[Dict[str, Any]]:
     """
     Retorna info del usuario desde DB.
     """
     return await user_repo.get_by_id(telegram_id)
+
 
 async def get_effective_user(uid: int) -> Dict[str, Any]:
     """
@@ -104,11 +107,13 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
 
     return {"role": "free", "status_label": "Lector", "expires_at": None}
 
+
 async def get_users_by_role(role: str) -> list[Dict[str, Any]]:
     """
     Retorna lista de usuarios con un rol específico desde la DB.
     """
     return await user_repo.get_by_role(role)
+
 
 # Init DB is handled by DatabaseManager/UserRepository instantiation
 # We don't need init_user_db() explicit call here as repo handles connections lazily or via manager

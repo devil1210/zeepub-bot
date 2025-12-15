@@ -466,7 +466,9 @@ async def enrich_metadata_from_epub(
         logger.debug("Attempting to parse OPF metadata...")
         opf_meta = await parse_opf_from_epub(epub_bytes)
         if opf_meta:
-            logger.debug(f"OPF metadata extracted successfully: titulo_volumen={opf_meta.get('titulo_volumen')}, titulo_serie={opf_meta.get('titulo_serie')}")
+            logger.debug(
+                f"OPF metadata extracted successfully: titulo_volumen={opf_meta.get('titulo_volumen')}, titulo_serie={opf_meta.get('titulo_serie')}"
+            )
             # Merge OPF metadata, preserving existing autores if present
             if opf_meta.get("autores"):
                 meta["autores"] = opf_meta["autores"]
@@ -493,7 +495,9 @@ async def enrich_metadata_from_epub(
                 if opf_meta.get(key):
                     meta[key] = opf_meta[key]
         else:
-            logger.warning("OPF metadata parsing returned None - no metadata extracted from OPF")
+            logger.warning(
+                "OPF metadata parsing returned None - no metadata extracted from OPF"
+            )
     except Exception as e:
         logger.error(f"enrich_metadata_from_epub: OPF parse failed: {e}", exc_info=True)
 
@@ -508,7 +512,8 @@ async def enrich_metadata_from_epub(
             logger.debug("No internal title found in EPUB")
     except Exception as e:
         logger.error(
-            f"enrich_metadata_from_epub: internal title extraction failed: {e}", exc_info=True
+            f"enrich_metadata_from_epub: internal title extraction failed: {e}",
+            exc_info=True,
         )
 
     # Extract filename title from URL
@@ -519,7 +524,9 @@ async def enrich_metadata_from_epub(
         meta["filename_title"] = filename_title
         logger.debug(f"Filename title extracted: {filename_title}")
     except Exception as e:
-        logger.error(f"enrich_metadata_from_epub: filename extraction failed: {e}", exc_info=True)
+        logger.error(
+            f"enrich_metadata_from_epub: filename extraction failed: {e}", exc_info=True
+        )
 
     # Extract publisher URL from HTML (prioritized over OPF)
     try:

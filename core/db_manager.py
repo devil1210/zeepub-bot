@@ -6,16 +6,17 @@ from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
+
 class DatabaseManager:
     """Gestión centralizada de conexiones a BD SQLite con pooling básico."""
-    
+
     def __init__(self, db_path: str, pool_size: int = 5):
         self.db_path = db_path
         self._pool: List[aiosqlite.Connection] = []
         self._pool_size = pool_size
         self._lock = asyncio.Lock()
         self._active_connections = 0
-    
+
     async def initialize(self):
         """Inicializa la base de datos (WAL mode)."""
         async with self.connection() as conn:
@@ -41,7 +42,7 @@ class DatabaseManager:
                     # Let's verify if we want to enforce hard limit or just soft pool.
                     # Proposal said "pool_size".
                     pass  # Just create new for now to avoid blocking, user is single tenant mostly.
-        
+
         if not conn:
             try:
                 conn = await aiosqlite.connect(self.db_path)
@@ -62,7 +63,7 @@ class DatabaseManager:
                 else:
                     await conn.close()
                     self._active_connections -= 1
-    
+
     async def close_all(self):
         """Cierra todas las conexiones del pool."""
         async with self._lock:
@@ -71,5 +72,7 @@ class DatabaseManager:
                 await conn.close()
             logger.info("All DB connections closed.")
 
+
 from config.config_settings import config
+
 db_manager = DatabaseManager(config.URL_CACHE_DB_PATH)

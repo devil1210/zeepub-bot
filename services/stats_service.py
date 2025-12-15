@@ -75,7 +75,7 @@ async def get_daily_stats() -> Dict[str, Any]:
     return {
         "unique_users": len(unique_users),
         "total_downloads": total_downloads,
-        "by_role": by_role
+        "by_role": by_role,
     }
 
 

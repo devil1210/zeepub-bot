@@ -1,11 +1,13 @@
 # core/bot.py
 
 import logging
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
     MessageHandler,
     TypeHandler,
+    ContextTypes,
     filters,
 )
 from config.config_settings import config
@@ -40,7 +42,7 @@ class ZeePubBot:
             connect_timeout=15.0,
             read_timeout=30.0,
             write_timeout=30.0,
-            http_version="1.1", # HTTP/2 can be unstable in some libs, sticking to optimized 1.1 or removing explicit to default
+            http_version="1.1",  # HTTP/2 can be unstable in some libs, sticking to optimized 1.1 or removing explicit to default
         )
         # Note: http_version="2" in python-telegram-bot might require 'http2' extra.
         # Keeping it safe or use http2=True if supported by version.
@@ -52,7 +54,7 @@ class ZeePubBot:
         self.plugin_manager = PluginManager()
 
         self.app = ApplicationBuilder().token(token).request(trequest).build()
-        
+
         # Usar nuevo ErrorHandler
         self.app.add_error_handler(ErrorHandler.handle_error)
 
@@ -120,11 +122,17 @@ class ZeePubBot:
         session_manager.close()
         logger.info("Bot detenido (API).")
 
-    async def _metrics_middleware(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def _metrics_middleware(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """Middleware para recolectar métricas básicas."""
-        if update.message and update.message.text and update.message.text.startswith("/"):
+        if (
+            update.message
+            and update.message.text
+            and update.message.text.startswith("/")
+        ):
             try:
-                cmd = update.message.text.split()[0].split('@')[0]
+                cmd = update.message.text.split()[0].split("@")[0]
                 metrics.inc_command(cmd)
             except Exception:
                 pass

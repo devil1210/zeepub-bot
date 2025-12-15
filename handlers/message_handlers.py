@@ -28,6 +28,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Check ban status
     from services.user_service import get_effective_user
+
     user_info = get_effective_user(uid)
     if user_info.get("role") == "banned":
         expires_at = user_info.get("expires_at")
@@ -142,7 +143,9 @@ async def handle_json_upload(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return
 
     # Verificar nombre de archivo
-    if not (document.file_name == "result.json" or document.mime_type == "application/json"):
+    if not (
+        document.file_name == "result.json" or document.mime_type == "application/json"
+    ):
         return
 
     # Verificar admin (opcional, pero recomendado)
@@ -159,7 +162,9 @@ async def handle_json_upload(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Limpiar estado
     st["waiting_for_history_json"] = False
 
-    status_msg = await update.message.reply_text("⏳ Procesando archivo de historial...")
+    status_msg = await update.message.reply_text(
+        "⏳ Procesando archivo de historial..."
+    )
 
     try:
         # Descargar archivo
@@ -176,6 +181,7 @@ async def handle_json_upload(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
         # Reportar
         import os
+
         os.remove(file_path)
 
         text = (

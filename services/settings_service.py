@@ -15,6 +15,7 @@ _HAS_SQLALCHEMY = False
 try:
     import sqlalchemy as sa
     from sqlalchemy import Table, Column, String, Text, MetaData
+
     _HAS_SQLALCHEMY = True
 except Exception:
     sa = None

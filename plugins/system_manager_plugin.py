@@ -122,7 +122,7 @@ class SystemManagerPlugin(BasePlugin):
             # 1. Root logger
             root_logger = logging.getLogger()
             root_logger.setLevel(new_level)
-            
+
             # 2. Update ALL handlers on root logger
             for handler in root_logger.handlers:
                 handler.setLevel(new_level)
@@ -155,8 +155,7 @@ class SystemManagerPlugin(BasePlugin):
             # Retry logic for network stability
             try:
                 await query.edit_message_text(
-                    f"✅ Nivel de log cambiado a <b>{level_str}</b>",
-                    parse_mode="HTML"
+                    f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML"
                 )
             except Exception as e:
                 logger.warning(f"Error editing message (attempt 1): {e}. Retrying...")
@@ -164,23 +163,25 @@ class SystemManagerPlugin(BasePlugin):
                 try:
                     await query.edit_message_text(
                         f"✅ Nivel de log cambiado a <b>{level_str}</b>",
-                        parse_mode="HTML"
+                        parse_mode="HTML",
                     )
                 except Exception as e2:
-                    logger.warning(f"Error editing message (attempt 2): {e2}. Fallback to delete+send.")
+                    logger.warning(
+                        f"Error editing message (attempt 2): {e2}. Fallback to delete+send."
+                    )
                     try:
                         await query.message.delete()
                     except Exception:
                         pass
-                    
+
                     try:
                         await context.bot.send_message(
                             chat_id=query.message.chat_id,
                             text=f"✅ Nivel de log cambiado a <b>{level_str}</b>",
-                            parse_mode="HTML"
+                            parse_mode="HTML",
                         )
                     except Exception as e3:
-                         logger.error(f"Failed to send confirmation message: {e3}")
+                        logger.error(f"Failed to send confirmation message: {e3}")
             await query.answer(f"Nivel cambiado a {level_str}")
 
         except Exception as e:

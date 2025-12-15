@@ -11,9 +11,10 @@ logger = logging.getLogger(__name__)
 
 from utils.metrics import metrics
 
+
 class BotInitializer:
     """Maneja la inicialización de schedulers y notificaciones."""
-    
+
     @staticmethod
     async def initialize_schedulers(bot):
         """Inicializa todos los schedulers del sistema y métricas."""
@@ -21,14 +22,14 @@ class BotInitializer:
         metrics.start_server(8000)
 
         schedulers = [
-            ('weekly_reports', start_weekly_scheduler),
-            ('backup', start_backup_scheduler),
-            ('daily_reset', start_daily_reset_scheduler),
+            ("weekly_reports", start_weekly_scheduler),
+            ("backup", start_backup_scheduler),
+            ("daily_reset", start_daily_reset_scheduler),
         ]
-        
+
         # Pre-load needed data for schedulers if any
         try:
-             load_downloads()
+            load_downloads()
         except Exception as e:
             logger.error(f"Error loading downloads persistence: {e}")
 
@@ -38,12 +39,12 @@ class BotInitializer:
                 logger.info(f"{name} scheduler iniciado")
             except Exception as e:
                 logger.error(f"Error iniciando {name}: {e}", exc_info=True)
-    
+
     @staticmethod
     async def check_update_state(bot):
         """Verifica y notifica actualizaciones completadas (Watchtower)."""
         state_path = "data/update_state.json"
-        
+
         if not os.path.exists(state_path):
             logger.info(f"No update state file found at {state_path}")
             return
@@ -55,7 +56,7 @@ class BotInitializer:
 
             chat_id = state.get("chat_id")
             thread_id = state.get("message_thread_id")
-            
+
             if chat_id:
                 v = get_version_string()
                 commit_msg = get_last_commit_message()

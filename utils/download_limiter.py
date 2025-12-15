@@ -6,6 +6,7 @@ import logging
 from typing import Union, Dict
 from config.config_settings import config
 from services.user_service import get_effective_user
+
 # from core.state_manager import state_manager (Moved to local scope)
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ def load_downloads() -> None:
             try:
                 uid = int(uid_str)
                 from core.state_manager import state_manager
+
                 st = state_manager.get_user_state(uid)
                 st["downloads_used"] = downloads
                 count += 1
@@ -76,6 +78,7 @@ def reset_all_downloads() -> None:
     # Nota: state_manager.user_state es un dict {uid: {state...}}
     # Iteramos sobre todos los usuarios cargados en memoria
     from core.state_manager import state_manager
+
     for uid, state in state_manager.user_state.items():
         if "downloads_used" in state:
             state["downloads_used"] = 0
@@ -101,6 +104,7 @@ async def downloads_left(uid: int) -> Union[int, str]:
     - Resto: MAX_DOWNLOADS_PER_DAY por defecto (p.ej. 5)
     """
     from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
     used = st.get("downloads_used", 0)
 
@@ -139,6 +143,7 @@ def record_download(uid: int) -> None:
     y lo persiste en disco.
     """
     from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
     new_count = st.get("downloads_used", 0) + 1
     st["downloads_used"] = new_count
@@ -149,6 +154,7 @@ def record_download(uid: int) -> None:
     # Registrar estadísticas globales
     try:
         from services.stats_service import record_activity
+
         record_activity(uid, "download")
     except Exception as e:
         logger.error(f"Error registrando estadísticas: {e}")

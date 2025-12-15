@@ -90,12 +90,12 @@ class HelpPlugin(BasePlugin):
         except ValueError:
             target_cat = "home"
 
-        # Handle 'close' if it was part of the legacy logic (though legacy usually had a separate close handler, 
-        # checking the screenshot showing 'Cerrar' button which likely emits 'close' or similar. 
+        # Handle 'close' if it was part of the legacy logic (though legacy usually had a separate close handler,
+        # checking the screenshot showing 'Cerrar' button which likely emits 'close' or similar.
         # But wait, legacy code used 'help|...' or just top level?
         # The legacy _get_help_keyboard didn't seem to have a 'close' button in the snippet I read?
-        # Wait, the screenshot SHOWS 'Cerrar'. 
-        # Let me re-read the snippet in step 1730... 
+        # Wait, the screenshot SHOWS 'Cerrar'.
+        # Let me re-read the snippet in step 1730...
         # It ends abruptly at "if os.getenv...". I missed reading the end of _get_help_keyboard!
         # I should assume there was a Close button. I will add one.
 
@@ -118,7 +118,7 @@ class HelpPlugin(BasePlugin):
         if target_cat == "links" and not (is_admin or is_publisher):
             await query.answer("⛔ Acceso restringido", show_alert=True)
             return
-        
+
         # Construir texto
         cat_title, commands = help_data.get(target_cat, ("Desconocido", []))
 
@@ -137,7 +137,7 @@ class HelpPlugin(BasePlugin):
                 text=text, reply_markup=reply_markup, parse_mode="HTML"
             )
         except Exception:
-            pass 
+            pass
         await query.answer()
 
     def _get_help_data(self, uid):
@@ -154,7 +154,7 @@ class HelpPlugin(BasePlugin):
             ("❌ /cancel", "Cancelar acción actual"),
         ]
         if config.ENABLE_GROUP_MANAGER:
-             cat_home.append(("📋 /reglas", "Ver reglas del grupo"))
+            cat_home.append(("📋 /reglas", "Ver reglas del grupo"))
 
         # 2. Contenido / Herramientas (Mixed)
         cat_content = [
@@ -280,14 +280,16 @@ class HelpPlugin(BasePlugin):
 
         if enable_maint and (is_admin or is_publisher):
             row2.append(InlineKeyboardButton("💾 Datos", callback_data="help|data"))
-        
+
         if row2:
             keyboard.append(row2)
-            
+
         row3 = []
         if is_admin:
-             if os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true":
-                  row3.append(InlineKeyboardButton("🧩 Mensajes", callback_data="help|plugins"))
+            if os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true":
+                row3.append(
+                    InlineKeyboardButton("🧩 Mensajes", callback_data="help|plugins")
+                )
 
         if row3:
             keyboard.append(row3)

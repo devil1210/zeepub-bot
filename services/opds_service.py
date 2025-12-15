@@ -21,11 +21,11 @@ async def get_cached_feed(url: str):
     if cached:
         logger.debug(f"Cache hit for {url}")
         return cached
-    
+
     logger.debug(f"Cache miss for {url}, downloading...")
     feed = await parse_feed_from_url(url)
     if feed and getattr(feed, "entries", []):
-         await opds_cache.set(url, feed)
+        await opds_cache.set(url, feed)
     return feed
 
 
@@ -46,7 +46,7 @@ async def mostrar_colecciones(
 
     # Usar get_cached_feed en lugar de parse_feed_from_url directo
     feed = await get_cached_feed(url)
-    
+
     if not feed or not getattr(feed, "entries", []):
         msg = "❌ No se pudo leer el feed o no hay resultados."
         if hasattr(update, "message") and update.message:
