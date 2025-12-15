@@ -35,21 +35,8 @@ class ZeePubBot:
     def __init__(self):
         token = config.TELEGRAM_TOKEN
 
-        # Configurar custom request con timeouts extendidos y HTTP/2
-        trequest = HTTPXRequest(
-            connection_pool_size=20,  # Increased currency
-            pool_timeout=30.0,
-            connect_timeout=15.0,
-            read_timeout=30.0,
-            write_timeout=30.0,
-            http_version="1.1",  # HTTP/2 can be unstable in some libs, sticking to optimized 1.1 or removing explicit to default
-        )
-        # Note: http_version="2" in python-telegram-bot might require 'http2' extra.
-        # Keeping it safe or use http2=True if supported by version.
-        # Checking python-telegram-bot docs, current version might support http_version="2".
-        # But to be safe and "not break functionality", let's use the proposed params but be careful with http2.
-        # The proposal said `http2=True`. telegram.request.HTTPXRequest accepts `http_version`.
-        # I'll stick to mostly the proposed timeouts.
+        # Inicializar la aplicación con configuración por defecto (similar a v3.1.3)
+        self.app = ApplicationBuilder().token(token).build()
 
         self.plugin_manager = PluginManager()
 
