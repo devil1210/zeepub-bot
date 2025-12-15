@@ -62,6 +62,36 @@ class SystemManagerPlugin(BasePlugin):
     def _is_admin(self, uid: int) -> bool:
         return uid in config.ADMIN_USERS
 
+    async def setlog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Muestra botones para cambiar el nivel de log."""
+        uid = update.effective_user.id
+        thread_id = get_thread_id(update)
+
+        if not self._is_admin(uid):
+            return
+
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+        keyboard = [
+            [
+                InlineKeyboardButton("DEBUG", callback_data="setlog|DEBUG"),
+                InlineKeyboardButton("INFO", callback_data="setlog|INFO"),
+            ],
+            [
+                InlineKeyboardButton("WARNING", callback_data="setlog|WARNING"),
+                InlineKeyboardButton("ERROR", callback_data="setlog|ERROR"),
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="🛠 <b>Configuración de Logs</b>\nSelecciona el nivel deseado:",
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
+
     async def set_log_level_callback(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ):
