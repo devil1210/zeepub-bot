@@ -4,7 +4,6 @@ python-telegram-bot[job-queue]==22.5
 # HTTP client y soporte async
 aiohttp==3.9.5
 httpx==0.27.2
-httpcore==1.0.5
 aiosqlite==0.22.0
 prometheus_client==0.20.0
 

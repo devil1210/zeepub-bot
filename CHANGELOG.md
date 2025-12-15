@@ -18,6 +18,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 ### 🔧 Utilidades
 - **Logging Estructurado**: Nuevo `StructuredLogger` para logs en formato JSON, facilitando la integración con sistemas de monitoreo futuros.
 
+## [3.5.9] - 2025-12-15
+
+### 🚀 Optimizations
+- **Deps**: Desbloqueada la versión de `httpcore` (manteniendo `httpx==0.27.2`) para permitir que el resolutor de dependencias instale la versión más compatible y performante (posiblemente v1.0.7), solucionando la lentitud extrema observada con v1.0.5.
+
 ## [3.5.8] - 2025-12-15
 
 ### 🚀 Optimizations
