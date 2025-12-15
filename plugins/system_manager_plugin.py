@@ -51,6 +51,13 @@ class SystemManagerPlugin(BasePlugin):
                 CallbackQueryHandler(self.set_log_level_callback, pattern=r"^setlog\|")
             )
 
+            # Auto-update check job (Every 6 hours = 21600 seconds)
+            if app.job_queue:
+                app.job_queue.run_repeating(
+                    self.check_for_updates_job, interval=21600, first=60
+                )
+                logger.info("SystemManager: Auto-update check scheduled (every 6h).")
+
             logger.info("Plugin SystemManager: Handlers registrados.")
             return True
         except Exception as e:
@@ -59,6 +66,69 @@ class SystemManagerPlugin(BasePlugin):
 
     async def cleanup(self) -> None:
         pass
+
+    async def check_for_updates_job(self, context: ContextTypes.DEFAULT_TYPE):
+        """Tarea programada para revisar actualizaciones."""
+        try:
+            local_hash, remote_hash = await self._get_git_hashes()
+            
+            if local_hash == "Desconocido" or remote_hash == "Desconocido":
+                return
+
+            if local_hash != remote_hash:
+                # Check if we already notified recently? 
+                # For now simplify: Just notify. The interval is 6 hours, so it's not too spammy.
+                # Maybe checking a stored state would be better, but let's start simple.
+                
+                msg = (
+                    f"🔔 <b>Actualización Disponible</b>\n\n"
+                    f"Actual: <code>{local_hash}</code>\n"
+                    f"Nueva: <code>{remote_hash}</code>\n\n"
+                    f"Usa /update_system para aplicar cambios."
+                )
+                
+                for admin_id in config.ADMIN_USERS:
+                    try:
+                        await context.bot.send_message(chat_id=admin_id, text=msg, parse_mode="HTML")
+                    except Exception as e:
+                        logger.warning(f"Could not notify admin {admin_id} about update: {e}")
+        except Exception as e:
+            logger.error(f"Error in check_for_updates_job: {e}")
+
+    async def _get_git_hashes(self):
+        """Helper to get local and remote hashes."""
+        # 1. Local
+        try:
+            if os.path.exists("version_hash.txt"):
+                with open("version_hash.txt", "r") as f:
+                    local_hash = f.read().strip()[:7]
+            else:
+                local_hash = (
+                    subprocess.check_output(
+                        ["git", "rev-parse", "--short", "HEAD"],
+                        stderr=subprocess.STDOUT,
+                    )
+                    .decode()
+                    .strip()
+                )
+        except Exception:
+            local_hash = "Desconocido"
+
+        # 2. Remote
+        remote_hash = "Desconocido"
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    "https://api.github.com/repos/devil1210/zeepub-bot/commits/main",
+                    headers={"User-Agent": "ZeePubBot/2.0"},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    remote_hash = data.get("sha", "")[:7]
+        except Exception as e:
+            logger.error(f"Error checking remote git via API: {e}")
+            
+        return local_hash, remote_hash
 
     def _is_admin(self, uid: int) -> bool:
         return uid in config.ADMIN_USERS
@@ -246,36 +316,12 @@ class SystemManagerPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-        # 1. Obtener Hash Local
+        # 1. & 2. Obtener hashes
         try:
-            if os.path.exists("version_hash.txt"):
-                with open("version_hash.txt", "r") as f:
-                    local_hash = f.read().strip()[:7]
-            else:
-                local_hash = (
-                    subprocess.check_output(
-                        ["git", "rev-parse", "--short", "HEAD"],
-                        stderr=subprocess.STDOUT,
-                    )
-                    .decode()
-                    .strip()
-                )
+            local_hash, remote_hash = await self._get_git_hashes()
         except Exception:
             local_hash = "Desconocido"
-
-        # 2. Obtener Hash Remoto
-        remote_hash = "Desconocido"
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(
-                    "https://api.github.com/repos/devil1210/zeepub-bot/commits/main",
-                    headers={"User-Agent": "ZeePubBot/2.0"},
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    remote_hash = data.get("sha", "")[:7]
-        except Exception as e:
-            logger.error(f"Error checking remote git via API: {e}")
+            remote_hash = "Desconocido"
 
         # 3. Comparar versiones
         force_update = False

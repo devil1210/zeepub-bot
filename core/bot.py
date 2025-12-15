@@ -97,7 +97,53 @@ class ZeePubBot:
         try:
             await self.plugin_manager.initialize(self.app)
         except Exception as e:
-            logger.error("Error initializing plugins: %s", e, exc_info=True)
+            logger.error(f"CRITICAL: Error initializing plugins: {e}", exc_info=True)
+            # Safe Mode: Register emergency update handler
+            try:
+                from telegram.ext import CommandHandler
+                from plugins.system_manager_plugin import SystemManagerPlugin
+
+                # Instantiate a temporary SystemManager to access its update logic
+                # or define a minimal standalone fallback function.
+                # Using a standalone function is safer to avoid recursive dependency errors.
+                
+                async def emergency_update_handler(update, context):
+                    uid = update.effective_user.id
+                    if uid not in config.ADMIN_USERS:
+                        return
+                    
+                    await context.bot.send_message(
+                        chat_id=update.effective_chat.id,
+                        text="⚠️ <b>MODO SEGURO ACTIVADO</b>\n\nEl sistema de plugins falló al iniciar. Intentando actualización de emergencia...",
+                        parse_mode="HTML"
+                    )
+                    
+                    # Glue code to trigger update
+                    # Reusing the existing update logic from SystemManager might be risky if imports failed.
+                    # But typically SystemManagerPlugin is fine, passing a class method should work if the file parses.
+                    
+                    # Let's try to manually trigger the same logic sequence
+                    try:
+                        from services.maintenance_service import trigger_watchtower_update
+                        success, msg = await trigger_watchtower_update()
+                        await context.bot.send_message(chat_id=update.effective_chat.id, text=msg, parse_mode="HTML")
+                    except Exception as ex:
+                        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Error crítico en update: {ex}")
+
+                self.app.add_handler(CommandHandler("update_system", emergency_update_handler))
+                
+                # Notify admins of Safe Mode
+                for admin_id in config.ADMIN_USERS:
+                    try:
+                        await self.app.bot.send_message(
+                            chat_id=admin_id,
+                            text=f"🚨 <b>ALERTA CRÍTICA</b>\nEl bot inició en <b>MODO SEGURO</b> debido a un error en los plugins:\n\n<pre>{str(e)}</pre>\n\nUsa /update_system para intentar reparar.",
+                            parse_mode="HTML"
+                        )
+                    except Exception:
+                        pass
+            except Exception as e2:
+                logger.error(f"FATAL: Could not register emergency handler: {e2}")
 
     async def start_async(self):
         """Inicia el bot y el polling de forma asíncrona (para uso con API)."""
