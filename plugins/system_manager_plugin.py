@@ -43,6 +43,7 @@ class SystemManagerPlugin(BasePlugin):
             app.add_handler(
                 CommandHandler("set_auto_delete_time", self.set_auto_delete_time)
             )
+            app.add_handler(CommandHandler("setlog", self.setlog))
 
             logger.info("Plugin SystemManager: Handlers registrados.")
             return True

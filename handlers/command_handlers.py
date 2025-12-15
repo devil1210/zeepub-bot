@@ -38,9 +38,6 @@ class CommandHandlers:
         app.add_handler(CommandHandler("remove_user", self.remove_user))
         app.add_handler(CommandHandler("set_staff_status", self.set_staff_status))
 
-        # Registrar /setlog (admin only)
-        app.add_handler(CommandHandler("setlog", self.setlog))
-
         # Registrar /id (admin only)
         app.add_handler(CommandHandler("id", self.get_id))
 
@@ -691,70 +688,6 @@ class CommandHandlers:
             await update.effective_message.reply_text(f"❌ Error: {str(e)}")
 
             os._exit(1)
-
-    async def setlog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """
-        /setlog [LEVEL]
-        Cambia dinámicamente el nivel de log. Si no se da argumento, muestra botones.
-        Solo admins.
-        """
-        uid = update.effective_user.id
-        if uid not in config.ADMIN_USERS:
-            return
-
-        # Si no hay argumentos, mostrar UI
-        if not context.args:
-            current_level_int = logging.getLogger().getEffectiveLevel()
-            current_level_name = logging.getLevelName(current_level_int)
-
-            keyboard = [
-                [
-                    InlineKeyboardButton("DEBUG", callback_data="setlog|DEBUG"),
-                    InlineKeyboardButton("INFO", callback_data="setlog|INFO"),
-                ],
-                [
-                    InlineKeyboardButton("WARNING", callback_data="setlog|WARNING"),
-                    InlineKeyboardButton("ERROR", callback_data="setlog|ERROR"),
-                ],
-            ]
-            await update.message.reply_text(
-                f"🔧 <b>Configuración de Logs</b>\n\nNivel actual: <b>{current_level_name}</b>\nSelecciona un nuevo nivel:",
-                reply_markup=InlineKeyboardMarkup(keyboard),
-                parse_mode="HTML",
-            )
-            return
-
-        level_str = context.args[0].upper()
-        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-
-        if level_str not in valid_levels:
-            await update.message.reply_text(
-                f"❌ Nivel inválido. Debe ser uno de: {', '.join(valid_levels)}"
-            )
-            return
-
-        new_level = getattr(logging, level_str)
-
-        # 1. Cambiar root logger
-        logging.getLogger().setLevel(new_level)
-
-        # 2. Cambiar loggers específicos
-        loggers_to_update = [
-            "uvicorn",
-            "uvicorn.access",
-            "httpx",
-            "telegram",
-            "apscheduler",
-        ]
-        for logger_name in loggers_to_update:
-            logging.getLogger(logger_name).setLevel(new_level)
-
-        # Loguear el cambio inmediato para verificar
-        logger.log(new_level, f"Log level cambiado a {level_str} por admin {uid}")
-
-        await update.message.reply_text(
-            f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML"
-        )
 
     async def get_id(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Devuelve el ID del chat actual y del usuario (admin only)."""
