@@ -120,7 +120,7 @@ class StatsPlugin(BasePlugin):
             return
 
         # Modo Resumen Diario
-        data = get_daily_stats()
+        data = await get_daily_stats()
 
         # Formatear desglose por roles
         by_role = data.get("by_role", {})
