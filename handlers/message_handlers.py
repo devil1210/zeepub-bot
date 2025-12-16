@@ -1,12 +1,14 @@
 # handlers/message_handlers.py
 
 import logging
+import html
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from core.state_manager import state_manager
 from services.opds_service import mostrar_colecciones, get_cached_feed
 from config.config_settings import config
 from utils.helpers import build_search_url
+
 # from utils.http_client import parse_feed_from_url
 from utils.helpers import get_thread_id
 
@@ -34,9 +36,25 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_info = await get_effective_user(uid)
         if user_info.get("role") == "banned":
             expires_at = user_info.get("expires_at")
-            msg = "⛔ Estás <b>baneado</b> del bot."
+
+            # Template System
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            default_msg = "⛔ Estás <b>baneado</b> del bot."
             if expires_at:
-                msg += f" Hasta: <b>{expires_at.strftime('%Y-%m-%d %H:%M')}</b>"
+                default_msg += f" Hasta: <b>{expires_at.strftime('%Y-%m-%d %H:%M')}</b>"
+
+            msg = default_msg
+            if cms and cms.enabled:
+                # We can pass formatted date as a variable if we want custom message to use it
+                exp_str = (
+                    expires_at.strftime("%Y-%m-%d %H:%M")
+                    if expires_at
+                    else "Indefinido"
+                )
+                msg = cms.get_text(
+                    "banned_message", default_text=default_msg, Fecha=exp_str
+                )
+
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=msg,
@@ -59,6 +77,16 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("📢 ZeePubs", callback_data="destino|@ZeePubs")],
                 [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
             ]
+
+            # Template System
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_text = "✅ Contraseña correcta. Elige destino:"
+            text_success = (
+                cms.get_text("evil_password_success", base_text)
+                if (cms and cms.enabled)
+                else base_text
+            )
+
             # Editar el prompt original si se guardó
             msg_id = st.get("msg_esperando_pwd")
             if msg_id:
@@ -66,28 +94,40 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await context.bot.edit_message_text(
                         chat_id=update.effective_chat.id,
                         message_id=msg_id,
-                        text="✅ Contraseña correcta. Elige destino:",
+                        text=text_success,
                         reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode="HTML",
                     )
                 except Exception:
                     await context.bot.send_message(
                         chat_id=update.effective_chat.id,
-                        text="✅ Contraseña correcta. Elige destino:",
+                        text=text_success,
                         reply_markup=InlineKeyboardMarkup(keyboard),
                         message_thread_id=thread_id,
+                        parse_mode="HTML",
                     )
             else:
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    text="✅ Contraseña correcta. Elige destino:",
+                    text=text_success,
                     reply_markup=InlineKeyboardMarkup(keyboard),
                     message_thread_id=thread_id,
+                    parse_mode="HTML",
                 )
         else:
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_fail = "❌ Contraseña incorrecta."
+            text_fail = (
+                cms.get_text("evil_password_fail", base_fail)
+                if (cms and cms.enabled)
+                else base_fail
+            )
+
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text="❌ Contraseña incorrecta.",
+                text=text_fail,
                 message_thread_id=thread_id,
+                parse_mode="HTML",
             )
         return
 
@@ -117,11 +157,29 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                 ],
             ]
+
+            # Template System
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_no_results = f"🔍 No se encontraron resultados para: {text}"
+
+            # Using safe helper for text
+            safe_term = html.escape(text)
+            text_no_results = base_no_results  # Default
+
+            if cms and cms.enabled:
+                # We can provide [Termino] as replacement
+                text_no_results = cms.get_text(
+                    "search_no_results",
+                    default_text=f"🔍 No se encontraron resultados para: {safe_term}",
+                    Termino=safe_term,
+                )
+
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=f"🔍 No se encontraron resultados para: {text}",
+                text=text_no_results,
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 message_thread_id=thread_id,
+                parse_mode="HTML",
             )
         else:
             logger.debug(f"Encontrados {len(feed.entries)} resultados")
@@ -132,9 +190,16 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # 4) Cualquier otro texto - solo responder en chats privados
     if chat_type == "private":
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_fallback = "Usa /start para comenzar o selecciona una opción del menú."
+        text_fallback = (
+            cms.get_text("private_default_fallback", base_fallback)
+            if (cms and cms.enabled)
+            else base_fallback
+        )
+
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="Usa /start para comenzar o selecciona una opción del menú.",
+            chat_id=update.effective_chat.id, text=text_fallback, parse_mode="HTML"
         )
 
 
