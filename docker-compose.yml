@@ -47,7 +47,7 @@ services:
   #     retries: 5
 
   watchtower:
-    image: containrrr/watchtower
+    image: containrrr/watchtower:latest
     container_name: zeepub_watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -57,7 +57,7 @@ services:
       - WATCHTOWER_HTTP_API_UPDATE=true
       - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
       - WATCHTOWER_MONITOR_ONLY=${WATCHTOWER_MONITOR_ONLY:-false}
-      - WATCHTOWER_DEBUG=true
+      - WATCHTOWER_DEBUG=false
       - DOCKER_API_VERSION=1.52
       - WATCHTOWER_LABEL_ENABLE=true
     ports:
