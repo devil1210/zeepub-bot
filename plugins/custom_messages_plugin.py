@@ -475,6 +475,7 @@ class CustomMessagesPlugin(BasePlugin):
         try:
             app = bot_instance
             app.add_handler(CommandHandler("add_msge", self.add_msge))
+            app.add_handler(CommandHandler("reset_msge", self.reset_msge))
             app.add_handler(CommandHandler("list_msge", self.list_msge))
             app.add_handler(CommandHandler("send_msge", self.send_msge))
             app.add_handler(CommandHandler("saludo", self.saludo))
@@ -1119,6 +1120,46 @@ class CustomMessagesPlugin(BasePlugin):
                 f"👋 Bienvenida configurada con mensaje: <code>{arg}</code>",
                 parse_mode="HTML",
             )
+
+    async def reset_msge(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Borra un mensaje personalizado y restaura el valor por defecto."""
+        if update.effective_user.id not in config.ADMIN_USERS:
+            return
+
+        if not context.args:
+            await update.message.reply_text("❌ Uso: /reset_msge <slug>")
+            return
+
+        slug = context.args[0].lower()
+
+        session = self.Session()
+        try:
+            msg = session.query(StoredMessage).filter_by(slug=slug).first()
+            if not msg:
+                if slug in TEMPLATE_REGISTRY:
+                    await update.message.reply_text(
+                        f"ℹ️ El mensaje <code>{slug}</code> ya está usando el valor por defecto.",
+                        parse_mode="HTML",
+                    )
+                else:
+                    await update.message.reply_text(
+                        f"❌ Mensaje <code>{slug}</code> no encontrado.", parse_mode="HTML"
+                    )
+                return
+
+            session.delete(msg)
+            session.commit()
+
+            await update.message.reply_text(
+                f"✅ Mensaje <code>{slug}</code> restaurado a su valor por defecto.",
+                parse_mode="HTML",
+            )
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Error reset_msge: {e}")
+            await update.message.reply_text(f"❌ Error: {e}")
+        finally:
+            session.close()
 
     def _get_template_categories(self) -> Dict[str, List[str]]:
         categories = {
