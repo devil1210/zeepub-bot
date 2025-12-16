@@ -265,24 +265,28 @@ COMMANDS_REGISTRY = {
         "cat": "admin",
         "desc": "Lista las plantillas disponibles",
         "long_desc": "Muestra todas las plantillas de mensajes registradas y las variables que aceptan.",
+        "usage": "/templates",
         "example": "/templates",
     },
     "set_var": {
         "cat": "admin",
         "desc": "Define variable global",
         "long_desc": "Crea o actualiza una variable global que puede usarse en cualquier plantilla con [NombreVariable].",
+        "usage": "/set_var <Variable> <Valor>",
         "example": "/set_var CanalOficial https://t.me/mi_canal",
     },
     "del_var": {
         "cat": "admin",
         "desc": "Elimina variable global",
         "long_desc": "Borra una variable global personalizada.",
+        "usage": "/del_var <Variable>",
         "example": "/del_var CanalOficial",
     },
     "vars": {
         "cat": "admin",
         "desc": "Lista variables globales",
         "long_desc": "Muestra todas las variables globales disponibles (del sistema y personalizadas). Alías: /template_vars",
+        "usage": "/vars",
         "example": "/vars",
     },
     "template_vars": {
@@ -356,7 +360,7 @@ class HelpPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "2.1.0"
+        return "2.1.1"
 
     @property
     def description(self) -> str:
