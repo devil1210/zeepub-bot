@@ -535,16 +535,29 @@ class HelpPlugin(BasePlugin):
                 await query.answer("⛔ No tienes permiso.", show_alert=True)
                 return
 
-            usage_safe = html.escape(cmd_data["usage"])
+            # Try to get from template system
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            template_text = None
+            if cms and cms.enabled:
+                # Use update.effective_user or context.bot.get_chat(uid) if getting user object
+                # We have 'update' here so:
+                template_text = await cms.get_text(
+                    f"help_cmd_{cmd_key}", user=update.effective_user
+                )
 
-            text = (
-                f"ℹ️ <b>Comando: /{cmd_key}</b>\n\n"
-                f"📝 <b>Descripción:</b>\n{cmd_data['long_desc']}\n\n"
-                f"⌨️ <b>Uso:</b> <code>{usage_safe}</code>\n"
-            )
-            if "example" in cmd_data:
-                ex_safe = html.escape(cmd_data["example"])
-                text += f"💡 <b>Ejemplo:</b> <code>{ex_safe}</code>"
+            # Fallback if no template or plugin disabled (should match default registry content)
+            if template_text:
+                text = template_text
+            else:
+                usage_safe = html.escape(cmd_data["usage"])
+                text = (
+                    f"ℹ️ <b>Comando: /{cmd_key}</b>\n\n"
+                    f"📝 <b>Descripción:</b>\n{cmd_data['long_desc']}\n\n"
+                    f"⌨️ <b>Uso:</b> <code>{usage_safe}</code>\n"
+                )
+                if "example" in cmd_data:
+                    ex_safe = html.escape(cmd_data["example"])
+                    text += f"💡 <b>Ejemplo:</b> <code>{ex_safe}</code>"
 
             keyboard = self._build_detail_keyboard(cmd_data["cat"])
             await query.edit_message_text(

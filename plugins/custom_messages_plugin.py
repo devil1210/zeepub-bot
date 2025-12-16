@@ -140,7 +140,228 @@ TEMPLATE_REGISTRY = {
     "status_message": {
         "desc": "Mensaje de estado (/status)",
         "vars": ["[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]"],
-        "default": "🤖 <b>ZeePub Bot</b> [VersionBot]\n\n📊 <b>Tu Estado</b>\n\n👤 <b>Usuario:</b> [Nombre]\n🆔 <b>ID:</b> [ID]\n⭐ <b>Nivel:</b> [Nivel]\n{{if Expires}}📅 <b>Vence:</b> [Expires]\n{{endif}}📉 <b>Descargas:</b> [Descargas]\n{{if ResetTime}}⏳ <b>Reinicio en:</b> [ResetTime]\n{{endif}}",
+        "default": "🤖 <b>ZeePub Bot</b> [VersionBot]\n\n📊 <b>Tu Estado</b>\n\n👤 <b>Usuario:</b> [Nombre]\n🆔 <b>ID:</b> [ID]\n⭐ <b>Nivel:</b> [Nivel]\n{{if Rol}}👨🏻‍💻 <b>Rol:</b> [Rol]\n{{endif}}{{if Apodo}}👨🏻‍💻 <b>Apodo:</b> [Apodo]\n{{endif}}{{if Expires}}📅 <b>Vence:</b> [Expires]\n{{endif}}📉 <b>Descargas:</b> [Descargas]\n{{if ResetTime}}⏳ <b>Reinicio en:</b> [ResetTime]\n{{endif}}",
+    },
+    # --- Help Command Templates ---
+    "help_cmd_start": {
+        "desc": "Ayuda: /start",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /start</b>\n\n📝 <b>Descripción:</b>\nInicia el bot, registra al usuario en la base de datos si es nuevo y muestra el menú principal o las descargas disponibles.\n\n⌨️ <b>Uso:</b> <code>/start</code>\n💡 <b>Ejemplo:</b> <code>/start</code>",
+    },
+    "help_cmd_help": {
+        "desc": "Ayuda: /help",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /help</b>\n\n📝 <b>Descripción:</b>\nMuestra el menú de ayuda interactivo con categorías y detalles de comandos.\n\n⌨️ <b>Uso:</b> <code>/help</code>\n💡 <b>Ejemplo:</b> <code>/help</code>",
+    },
+    "help_cmd_status": {
+        "desc": "Ayuda: /status",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /status</b>\n\n📝 <b>Descripción:</b>\nMuestra información sobre tu cuenta: nivel de usuario (Free, VIP, etc.), descargas restantes hoy y tiempo para el reinicio.\n\n⌨️ <b>Uso:</b> <code>/status</code>\n💡 <b>Ejemplo:</b> <code>/status</code>",
+    },
+    "help_cmd_cancel": {
+        "desc": "Ayuda: /cancel",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /cancel</b>\n\n📝 <b>Descripción:</b>\nCancela cualquier operación en curso, como búsquedas pendientes o navegación de menús, y limpia el estado temporal.\n\n⌨️ <b>Uso:</b> <code>/cancel</code>\n💡 <b>Ejemplo:</b> <code>/cancel</code>",
+    },
+    "help_cmd_sugerencia": {
+        "desc": "Ayuda: /sugerencia",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /sugerencia</b>\n\n📝 <b>Descripción:</b>\nEnvía un mensaje directo al equipo de staff. Úsalo para reportar errores, sugerir nuevas funciones o pedir libros específicos. Adjunta detalles para que podamos ayudarte mejor.\n\n⌨️ <b>Uso:</b> <code>/sugerencia &lt;texto&gt;</code>\n💡 <b>Ejemplo:</b> <code>/sugerencia Hola, el libro 'Dune' tiene un error en el capítulo 3.</code>",
+    },
+    "help_cmd_search": {
+        "desc": "Ayuda: /search",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /search</b>\n\n📝 <b>Descripción:</b>\nBusca libros en la biblioteca. Puedes buscar por Título, Autor o Serie. Los resultados mostrarán un botón para descargar.\n\nTip: Sé específico para mejores resultados.\n\n⌨️ <b>Uso:</b> <code>/search &lt;término&gt;</code>\n💡 <b>Ejemplo:</b> <code>/search Brandon Sanderson</code>",
+    },
+    "help_cmd_donar": {
+        "desc": "Ayuda: /donar",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /donar</b>\n\n📝 <b>Descripción:</b>\nGenera un enlace para realizar donaciones a través de Ko-fi y apoyar el proyecto.\n\n⌨️ <b>Uso:</b> <code>/donar</code>\n💡 <b>Ejemplo:</b> <code>/donar</code>",
+    },
+    "help_cmd_niveles": {
+        "desc": "Ayuda: /niveles",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /niveles</b>\n\n📝 <b>Descripción:</b>\nMuestra la tabla de niveles de donación y los beneficios asociados a cada uno (VIP, Premium, etc.).\n\n⌨️ <b>Uso:</b> <code>/niveles</code>\n💡 <b>Ejemplo:</b> <code>/niveles</code>",
+    },
+    "help_cmd_reglas": {
+        "desc": "Ayuda: /reglas",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /reglas</b>\n\n📝 <b>Descripción:</b>\nMuestra las reglas configuradas para el grupo actual.\n\n⌨️ <b>Uso:</b> <code>/reglas</code>\n💡 <b>Ejemplo:</b> <code>/reglas</code>",
+    },
+    "help_cmd_add_user": {
+        "desc": "Ayuda: /add_user",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /add_user</b>\n\n📝 <b>Descripción:</b>\nAgrega un usuario a la base de datos o actualiza su rol (VIP, Premium, etc.) y duración de beneficios.\n\n⌨️ <b>Uso:</b> <code>/add_user &lt;user_id&gt; &lt;rol&gt; [dias]</code>\n💡 <b>Ejemplo:</b> <code>/add_user 123456789 vip 30</code>",
+    },
+    "help_cmd_remove_user": {
+        "desc": "Ayuda: /remove_user",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /remove_user</b>\n\n📝 <b>Descripción:</b>\nRevoca los privilegios especiales de un usuario, volviéndolo al estado 'Free'.\n\n⌨️ <b>Uso:</b> <code>/remove_user &lt;user_id&gt;</code>\n💡 <b>Ejemplo:</b> <code>/remove_user 123456789</code>",
+    },
+    "help_cmd_set_staff_status": {
+        "desc": "Ayuda: /set_staff_status",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /set_staff_status</b>\n\n📝 <b>Descripción:</b>\nOtorga o revoca el estado de 'Staff' a un usuario. Cambia el [Rol] funcional.\n\n⌨️ <b>Uso:</b> <code>/set_staff_status &lt;user_id&gt; &lt;label&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_staff_status 123456789 Editor Jefe</code>",
+    },
+    "help_cmd_set_apodo": {
+        "desc": "Ayuda: /set_apodo",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /set_apodo</b>\n\n📝 <b>Descripción:</b>\nEstablece un apodo personalizado para un usuario, accesible via [Apodo].\n\n⌨️ <b>Uso:</b> <code>/set_apodo &lt;user_id&gt; &lt;apodo&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_apodo 123456789 El Charly</code>",
+    },
+    "help_cmd_reset": {
+        "desc": "Ayuda: /reset",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /reset</b>\n\n📝 <b>Descripción:</b>\nReinicia el contador de descargas diario de un usuario específico a 0.\n\n⌨️ <b>Uso:</b> <code>/reset &lt;user_id&gt;</code>\n💡 <b>Ejemplo:</b> <code>/reset 123456789</code>",
+    },
+    "help_cmd_id": {
+        "desc": "Ayuda: /id",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /id</b>\n\n📝 <b>Descripción:</b>\nMuestra el ID numérico del chat actual y del usuario que envía el mensaje.\n\n⌨️ <b>Uso:</b> <code>/id</code>\n💡 <b>Ejemplo:</b> <code>/id</code>",
+    },
+    "help_cmd_setlog": {
+        "desc": "Ayuda: /setlog",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /setlog</b>\n\n📝 <b>Descripción:</b>\nCambia el nivel de verbosidad de los logs del sistema en tiempo real.\n\n⌨️ <b>Uso:</b> <code>/setlog &lt;INFO|DEBUG|WARNING&gt;</code>\n💡 <b>Ejemplo:</b> <code>/setlog DEBUG</code>",
+    },
+    "help_cmd_set_auto_delete_time": {
+        "desc": "Ayuda: /set_auto_delete_time",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /set_auto_delete_time</b>\n\n📝 <b>Descripción:</b>\nConfigura el tiempo (en minutos) antes de que los libros enviados se eliminen automáticamente.\n\n⌨️ <b>Uso:</b> <code>/set_auto_delete_time &lt;minutos&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_auto_delete_time 60</code>",
+    },
+    "help_cmd_debug_state": {
+        "desc": "Ayuda: /debug_state",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /debug_state</b>\n\n📝 <b>Descripción:</b>\nMuestra el estado interno completo de un usuario: historial de navegación OPDS temporal, buffer de descarga y variables de sesión. Útil para diagnosticar problemas de navegación.\n\n⌨️ <b>Uso:</b> <code>/debug_state &lt;user_id&gt;</code>\n💡 <b>Ejemplo:</b> <code>/debug_state 123456789</code>",
+    },
+    "help_cmd_update_system": {
+        "desc": "Ayuda: /update_system",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /update_system</b>\n\n📝 <b>Descripción:</b>\nEjecuta un 'git pull' y reinicia el contenedor para actualizar el bot. Use 'force' para sobrescribir cambios locales.\n\n⌨️ <b>Uso:</b> <code>/update_system [force]</code>\n💡 <b>Ejemplo:</b> <code>/update_system force</code>",
+    },
+    "help_cmd_plugins": {
+        "desc": "Ayuda: /plugins",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /plugins</b>\n\n📝 <b>Descripción:</b>\nLista todos los plugins cargados y sus versiones.\n\n⌨️ <b>Uso:</b> <code>/plugins</code>\n💡 <b>Ejemplo:</b> <code>/plugins</code>",
+    },
+    "help_cmd_set_price": {
+        "desc": "Ayuda: /set_price",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /set_price</b>\n\n📝 <b>Descripción:</b>\nConfigura el precio base para los niveles de donación.\n\n⌨️ <b>Uso:</b> <code>/set_price &lt;nivel&gt; &lt;monto&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_price vip 10</code>",
+    },
+    "help_cmd_backup_db": {
+        "desc": "Ayuda: /backup_db",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /backup_db</b>\n\n📝 <b>Descripción:</b>\nGenera y envía un archivo de respaldo de la base de datos principal.\n\n⌨️ <b>Uso:</b> <code>/backup_db</code>\n💡 <b>Ejemplo:</b> <code>/backup_db</code>",
+    },
+    "help_cmd_restore_db": {
+        "desc": "Ayuda: /restore_db",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /restore_db</b>\n\n📝 <b>Descripción:</b>\nRestaura la base de datos desde un archivo adjunto. Debe responder al mensaje del archivo.\n\n⌨️ <b>Uso:</b> Responder a archivo con <code>/restore_db</code>\n💡 <b>Ejemplo:</b> <code>/restore_db</code>",
+    },
+    "help_cmd_import_history": {
+        "desc": "Ayuda: /import_history",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /import_history</b>\n\n📝 <b>Descripción:</b>\nImporta historial de publicaciones desde un JSON exportado de Telegram.\n\n⌨️ <b>Uso:</b> Responder a archivo JSON con <code>/import_history</code>\n💡 <b>Ejemplo:</b> <code>/import_history</code>",
+    },
+    "help_cmd_latest_books": {
+        "desc": "Ayuda: /latest_books",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /latest_books</b>\n\n📝 <b>Descripción:</b>\nMuestra una lista de los últimos libros añadidos al historial de publicaciones.\n\n⌨️ <b>Uso:</b> <code>/latest_books [chat_id]</code>\n💡 <b>Ejemplo:</b> <code>/latest_books -100123456</code>",
+    },
+    "help_cmd_clear_history": {
+        "desc": "Ayuda: /clear_history",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /clear_history</b>\n\n📝 <b>Descripción:</b>\nElimina todos los registros de libros publicados del historial. Requiere confirmación.\n\n⌨️ <b>Uso:</b> <code>/clear_history</code>\n💡 <b>Ejemplo:</b> <code>/clear_history</code>",
+    },
+    "help_cmd_export_db": {
+        "desc": "Ayuda: /export_db",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /export_db</b>\n\n📝 <b>Descripción:</b>\nExporta el mapeo de IDs a base de datos en formato CSV.\n\n⌨️ <b>Uso:</b> <code>/export_db</code>\n💡 <b>Ejemplo:</b> <code>/export_db</code>",
+    },
+    "help_cmd_export_history": {
+        "desc": "Ayuda: /export_history",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /export_history</b>\n\n📝 <b>Descripción:</b>\nExporta el historial completo de libros publicados a un archivo CSV.\n\n⌨️ <b>Uso:</b> <code>/export_history</code>\n💡 <b>Ejemplo:</b> <code>/export_history</code>",
+    },
+    "help_cmd_add_msge": {
+        "desc": "Ayuda: /add_msge",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /add_msge</b>\n\n📝 <b>Descripción:</b>\nGuarda el contenido del mensaje al que se responde para usarlo posteriormente. Requiere un ID único (slug).\n\n⌨️ <b>Uso:</b> Responder con <code>/add_msge &lt;slug&gt;</code>\n💡 <b>Ejemplo:</b> <code>/add_msge bienvenida_v1</code>",
+    },
+    "help_cmd_list_msge": {
+        "desc": "Ayuda: /list_msge",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /list_msge</b>\n\n📝 <b>Descripción:</b>\nLista todos los mensajes guardados. Si se da un ID, muestra una vista previa de ese mensaje.\n\n⌨️ <b>Uso:</b> <code>/list_msge [slug]</code>\n💡 <b>Ejemplo:</b> <code>/list_msge bienvenida_v1</code>",
+    },
+    "help_cmd_send_msge": {
+        "desc": "Ayuda: /send_msge",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /send_msge</b>\n\n📝 <b>Descripción:</b>\nEnvía una copia exacta de un mensaje guardado a un chat específico.\n\n⌨️ <b>Uso:</b> <code>/send_msge &lt;slug&gt; &lt;chat_id&gt;</code>\n💡 <b>Ejemplo:</b> <code>/send_msge bienvenida_v1 -1001234567</code>",
+    },
+    "help_cmd_saludo": {
+        "desc": "Ayuda: /saludo",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /saludo</b>\n\n📝 <b>Descripción:</b>\nEnvía un mensaje de texto o un mensaje guardado a un chat.\n\n⌨️ <b>Uso:</b> <code>/saludo &lt;chat_id&gt; &lt;texto|slug&gt;</code>\n💡 <b>Ejemplo:</b> <code>/saludo -100123 Hola!</code>",
+    },
+    "help_cmd_set_welcome": {
+        "desc": "Ayuda: /set_welcome",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /set_welcome</b>\n\n📝 <b>Descripción:</b>\nDefine qué mensaje guardado se usará como bienvenida automática global (si aplica).\n\n⌨️ <b>Uso:</b> <code>/set_welcome &lt;slug|off&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_welcome bienvenida_v1</code>",
+    },
+    "help_cmd_templates": {
+        "desc": "Ayuda: /templates",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /templates</b>\n\n📝 <b>Descripción:</b>\nMuestra todas las plantillas de mensajes registradas y las variables que aceptan.\n\n⌨️ <b>Uso:</b> <code>/templates</code>\n💡 <b>Ejemplo:</b> <code>/templates</code>",
+    },
+    "help_cmd_set_var": {
+        "desc": "Ayuda: /set_var",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /set_var</b>\n\n📝 <b>Descripción:</b>\nCrea o actualiza una variable global que puede usarse en cualquier plantilla con [NombreVariable].\n\n⌨️ <b>Uso:</b> <code>/set_var &lt;Variable&gt; &lt;Valor&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_var CanalOficial https://t.me/mi_canal</code>",
+    },
+    "help_cmd_del_var": {
+        "desc": "Ayuda: /del_var",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /del_var</b>\n\n📝 <b>Descripción:</b>\nBorra una variable global personalizada.\n\n⌨️ <b>Uso:</b> <code>/del_var &lt;Variable&gt;</code>\n💡 <b>Ejemplo:</b> <code>/del_var CanalOficial</code>",
+    },
+    "help_cmd_vars": {
+        "desc": "Ayuda: /vars",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /vars</b>\n\n📝 <b>Descripción:</b>\nMuestra todas las variables globales disponibles (del sistema y personalizadas). Alías: /template_vars\n\n⌨️ <b>Uso:</b> <code>/vars</code>\n💡 <b>Ejemplo:</b> <code>/vars</code>",
+    },
+    "help_cmd_template_vars": {
+        "desc": "Ayuda: /template_vars",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /template_vars</b>\n\n📝 <b>Descripción:</b>\nLista las variables globales disponibles (como [Nombre], [Fecha]) para usar en cualquier plantilla.\n\n⌨️ <b>Uso:</b> <code>/template_vars</code>\n💡 <b>Ejemplo:</b> <code>/template_vars</code>",
+    },
+    "help_cmd_status_links": {
+        "desc": "Ayuda: /status_links",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /status_links</b>\n\n📝 <b>Descripción:</b>\nMuestra estadísticas sobre los enlaces generados y su estado.\n\n⌨️ <b>Uso:</b> <code>/status_links</code>\n💡 <b>Ejemplo:</b> <code>/status_links</code>",
+    },
+    "help_cmd_link_list": {
+        "desc": "Ayuda: /link_list",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /link_list</b>\n\n📝 <b>Descripción:</b>\nMuestra una lista de los enlaces generados recientemente.\n\n⌨️ <b>Uso:</b> <code>/link_list</code>\n💡 <b>Ejemplo:</b> <code>/link_list</code>",
+    },
+    "help_cmd_purge_link": {
+        "desc": "Ayuda: /purge_link",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /purge_link</b>\n\n📝 <b>Descripción:</b>\nElimina un enlace generado de la base de datos.\n\n⌨️ <b>Uso:</b> <code>/purge_link &lt;id&gt;</code>\n💡 <b>Ejemplo:</b> <code>/purge_link 123</code>",
+    },
+    "help_cmd_authorize_group": {
+        "desc": "Ayuda: /authorize_group",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /authorize_group</b>\n\n📝 <b>Descripción:</b>\nAutoriza al bot a funcionar en el grupo especificado.\n\n⌨️ <b>Uso:</b> <code>/authorize_group [chat_id]</code>\n💡 <b>Ejemplo:</b> <code>/authorize_group -100123456</code>",
+    },
+    "help_cmd_revoke_group": {
+        "desc": "Ayuda: /revoke_group",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /revoke_group</b>\n\n📝 <b>Descripción:</b>\nRevoca la autorización del bot en un grupo.\n\n⌨️ <b>Uso:</b> <code>/revoke_group [chat_id]</code>\n💡 <b>Ejemplo:</b> <code>/revoke_group</code>",
+    },
+    "help_cmd_set_group_welcome": {
+        "desc": "Ayuda: /set_group_welcome",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /set_group_welcome</b>\n\n📝 <b>Descripción:</b>\nConfigura un mensaje de bienvenida personalizado para este grupo. Debes crear el mensaje primero con /add_msge.\n\n✨ <b>Personalización:</b> Si el mensaje guardado contiene <code>[Nombre]</code>, será reemplazado por el nombre del usuario nuevo.\n\n⌨️ <b>Uso:</b> <code>/set_group_welcome &lt;slug&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_group_welcome bienvenida_grupo</code>",
     },
 }
 
@@ -426,6 +647,9 @@ class CustomMessagesPlugin(BasePlugin):
             "banned": "Baneado",
         }
         raw_role = user_data.get("role") or "free"
+        if isinstance(raw_role, str):
+            raw_role = raw_role.strip().lower()
+            
         system_role_display = role_map.get(raw_role, raw_role.capitalize()) # [Nivel]
 
         custom_status = user_level # This variable 'user_level' holds status_label from get_effective_user which is custom_status or role.capitalize()
