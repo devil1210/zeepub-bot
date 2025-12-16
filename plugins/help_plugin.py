@@ -1,3 +1,4 @@
+import logging
 import os
 import html
 from datetime import datetime
