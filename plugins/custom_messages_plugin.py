@@ -1123,16 +1123,28 @@ class CustomMessagesPlugin(BasePlugin):
         if update.effective_user.id not in config.ADMIN_USERS:
             return
 
-        text = "📋 <b>Plantillas Disponibles</b>\n\n"
-        text += "Usa <code>/add_msge &lt;slug&gt;</code> para personalizar.\n\n"
+        header = "📋 <b>Plantillas Disponibles</b>\n\nUsa <code>/add_msge &lt;slug&gt;</code> para personalizar.\n\n"
+        buffer = header
+        
+        # Sort keys for consistent order
+        sorted_keys = sorted(TEMPLATE_REGISTRY.keys())
 
-        for slug, info in TEMPLATE_REGISTRY.items():
+        for slug in sorted_keys:
+            info = TEMPLATE_REGISTRY[slug]
             vars_str = ", ".join(info["vars"]) if info["vars"] else "Ninguna"
-            text += f"🔹 <b>{slug}</b>\n"
-            text += f"   📝 {info['desc']}\n"
-            text += f"   💲 Variables: <code>{vars_str}</code>\n\n"
+            
+            entry = f"🔹 <b>{slug}</b>\n"
+            entry += f"   📝 {info['desc']}\n"
+            entry += f"   💲 Variables: <code>{vars_str}</code>\n\n"
 
-        await update.message.reply_text(text, parse_mode="HTML")
+            if len(buffer) + len(entry) > 3500:
+                await update.message.reply_text(buffer, parse_mode="HTML")
+                buffer = "" # Continuation doesn't need header again
+            
+            buffer += entry
+
+        if buffer:
+            await update.message.reply_text(buffer, parse_mode="HTML")
 
     async def set_var(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_user.id not in config.ADMIN_USERS:
