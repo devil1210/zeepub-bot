@@ -223,6 +223,16 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "ℹ️ <b>Comando: /setlog</b>\n\n📝 <b>Descripción:</b>\nCambia el nivel de verbosidad de los logs del sistema en tiempo real.\n\n⌨️ <b>Uso:</b> <code>/setlog &lt;INFO|DEBUG|WARNING&gt;</code>\n💡 <b>Ejemplo:</b> <code>/setlog DEBUG</code>",
     },
+    "help_cmd_stats": {
+        "desc": "Ayuda: /stats",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /stats</b>\n\n📝 <b>Descripción:</b>\nMuestra estadísticas diarias del sistema o lista usuarios por rol (Admin/Staff only).\n\n⌨️ <b>Uso:</b> <code>/stats [rol]</code>\n💡 <b>Ejemplo:</b> <code>/stats vip</code>",
+    },
+    "help_cmd_evil": {
+        "desc": "Ayuda: /evil",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /evil</b>\n\n📝 <b>Descripción:</b>\nInicia el modo privado (Evil) solicitando contraseña.\n\n⌨️ <b>Uso:</b> <code>/evil</code>\n💡 <b>Ejemplo:</b> <code>/evil</code>",
+    },
     "help_cmd_set_auto_delete_time": {
         "desc": "Ayuda: /set_auto_delete_time",
         "vars": [],

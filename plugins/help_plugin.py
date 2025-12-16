@@ -140,6 +140,20 @@ COMMANDS_REGISTRY = {
         "usage": "/setlog <INFO|DEBUG|WARNING>",
         "example": "/setlog DEBUG",
     },
+    "stats": {
+        "cat": "admin",
+        "desc": "Estadísticas",
+        "long_desc": "Muestra estadísticas diarias del sistema o lista usuarios por rol (Admin/Staff only).",
+        "usage": "/stats [rol]",
+        "example": "/stats vip",
+    },
+    "evil": {
+        "cat": "admin",
+        "desc": "Modo Privado",
+        "long_desc": "Inicia el modo privado (Evil) solicitando contraseña.",
+        "usage": "/evil",
+        "example": "/evil",
+    },
     "set_auto_delete_time": {
         "cat": "admin",
         "desc": "Tiempo auto-borrado",
