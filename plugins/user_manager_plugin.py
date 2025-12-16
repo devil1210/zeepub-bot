@@ -89,7 +89,7 @@ class UserManagerPlugin(BasePlugin):
             return
         target_id = int(target_id_str)
 
-        valid_roles = ["white", "vip", "premium", "staff", "banned"]
+        valid_roles = ["white", "vip", "premium", "staff", "banned", "free", "user"]
         if role not in valid_roles:
             await update.message.reply_text(
                 f"❌ Rol inválido. Use: {', '.join(valid_roles)}",
@@ -196,12 +196,19 @@ class UserManagerPlugin(BasePlugin):
             return
         target_id = int(target_id_str)
 
-        new_label = " ".join(context.args[1:])
+        # Check for deletion keywords
+        delete_keywords = ["borrar", "eliminar", "none", "null", "remove", "off"]
+        if len(context.args) == 2 and context.args[1].lower() in delete_keywords:
+            new_label = None
+            success_msg = f"✅ Status eliminado para <code>{target_id}</code> (vuelve a default)."
+        else:
+            new_label = " ".join(context.args[1:])
+            success_msg = f"✅ Status actualizado para <code>{target_id}</code>: <b>{new_label}</b>"
 
         try:
             await update_user_status_label(target_id, new_label)
             await msg.reply_text(
-                f"✅ Status actualizado para <code>{target_id}</code>: <b>{new_label}</b>",
+                success_msg,
                 parse_mode="HTML",
                 message_thread_id=thread_id,
             )
@@ -237,12 +244,19 @@ class UserManagerPlugin(BasePlugin):
             return
         target_id = int(target_id_str)
 
-        new_label = " ".join(context.args[1:])
+        # Check for deletion keywords
+        delete_keywords = ["borrar", "eliminar", "none", "null", "remove", "off"]
+        if len(context.args) == 2 and context.args[1].lower() in delete_keywords:
+            new_label = None
+            success_msg = f"✅ Apodo eliminado para <code>{target_id}</code>."
+        else:
+            new_label = " ".join(context.args[1:])
+            success_msg = f"✅ Apodo actualizado para <code>{target_id}</code>: <b>{new_label}</b>"
 
         try:
             await update_user_nickname(target_id, new_label)
             await msg.reply_text(
-                f"✅ Apodo actualizado para <code>{target_id}</code>: <b>{new_label}</b>",
+                success_msg,
                 parse_mode="HTML",
                 message_thread_id=thread_id,
             )

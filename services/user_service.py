@@ -49,12 +49,12 @@ async def remove_user(telegram_id: int):
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
-async def update_user_status_label(telegram_id: int, new_label: str):
+async def update_user_status_label(telegram_id: int, new_label: Optional[str]):
     await user_repo.update_status(telegram_id, new_label)
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
-async def update_user_nickname(telegram_id: int, new_nickname: str):
+async def update_user_nickname(telegram_id: int, new_nickname: Optional[str]):
     await user_repo.update_nickname(telegram_id, new_nickname)
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 

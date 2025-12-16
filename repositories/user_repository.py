@@ -109,7 +109,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             await conn.commit()
             return {"telegram_id": telegram_id, "role": role}
 
-    async def update_status(self, telegram_id: int, custom_status: str):
+    async def update_status(self, telegram_id: int, custom_status: Optional[str]):
         async with self.db.connection() as conn:
             await conn.execute(
                 "UPDATE users SET custom_status = ? WHERE telegram_id = ?",
@@ -136,7 +136,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 )
         return results
 
-    async def update_nickname(self, telegram_id: int, nickname: str):
+    async def update_nickname(self, telegram_id: int, nickname: Optional[str]):
         async with self.db.connection() as conn:
             await conn.execute(
                 "UPDATE users SET nickname = ? WHERE telegram_id = ?",
