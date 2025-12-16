@@ -44,6 +44,12 @@ class PluginSettings(Base):
     value = Column(Text, nullable=True)
 
 
+class GlobalVariable(Base):
+    __tablename__ = "global_variables"
+    key = Column(String(64), primary_key=True)
+    value = Column(Text, nullable=True)
+
+
 # Registry for available templates
 TEMPLATE_REGISTRY = {
     "banned_message": {
@@ -156,7 +162,7 @@ class CustomMessagesPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.1.0"
+        return "1.2.0"
 
     @property
     def description(self) -> str:
@@ -166,6 +172,7 @@ class CustomMessagesPlugin(BasePlugin):
         self.engine = None
         self.Session = None
         self.enabled = False
+        self._global_vars_cache = {}
 
     async def initialize(self, bot_instance) -> bool:
         # Check env var directly or via os.environ if not in config object yet
@@ -219,6 +226,8 @@ class CustomMessagesPlugin(BasePlugin):
                     )
 
             self.Session = sessionmaker(bind=self.engine)
+            # Load global vars to cache
+            self._refresh_global_vars_cache()
             logger.info("Plugin CustomMessages: Base de datos inicializada.")
 
         except Exception as e:
@@ -236,7 +245,10 @@ class CustomMessagesPlugin(BasePlugin):
             app.add_handler(CommandHandler("set_welcome", self.set_welcome))
 
             app.add_handler(CommandHandler("templates", self.templates))
-            app.add_handler(CommandHandler("template_vars", self.template_vars))
+            app.add_handler(CommandHandler("template_vars", self.vars))  # Legacy alias
+            app.add_handler(CommandHandler("vars", self.vars))
+            app.add_handler(CommandHandler("set_var", self.set_var))
+            app.add_handler(CommandHandler("del_var", self.del_var))
 
             # ChatMemberHandler for welcome message
             # MY_CHAT_MEMBER is triggered when bot is added/promoted/removed
@@ -301,9 +313,113 @@ class CustomMessagesPlugin(BasePlugin):
             s = session.get(PluginSettings, key)
             return s.value if s else None
 
+    def _refresh_global_vars_cache(self):
+        with self.Session() as session:
+            vars_db = session.query(GlobalVariable).all()
+            self._global_vars_cache = {v.key: v.value for v in vars_db}
+
+    def _set_global_var(self, key, value):
+        with self.Session() as session:
+            v = session.get(GlobalVariable, key)
+            if v:
+                v.value = value
+            else:
+                v = GlobalVariable(key=key, value=value)
+                session.add(v)
+            session.commit()
+        self._refresh_global_vars_cache()
+
+    def _del_global_var(self, key):
+        with self.Session() as session:
+            v = session.get(GlobalVariable, key)
+            if v:
+                session.delete(v)
+                session.commit()
+        self._refresh_global_vars_cache()
+
+    async def _get_extended_user_context(self, user) -> Dict[str, Any]:
+        """
+        Calcula variables dinámicas del usuario (Nivel, Descargas, etc.)
+        Solo se llama si el template las requiere.
+        """
+        from services.user_service import get_effective_user
+        from core.state_manager import state_manager
+        from datetime import datetime, timedelta
+
+        uid = user.id
+        user_data = await get_effective_user(uid)
+        st = state_manager.get_user_state(uid)
+
+        # Mapping roles to display names
+        roles_display = {
+            "admin": "Admin 🛠️",
+            "staff": "Staff 🛡️",
+            "premium": "Premium ✨",
+            "vip": "VIP ⭐️",
+            "white": "Patrocinador 🤍",
+            "free": "Lector 📚",
+        }
+
+        role_key = user_data.get("role", "free")
+        status_label = user_data.get("status_label")
+        expires_at = user_data.get("expires_at")
+
+        user_level = (
+            status_label if status_label else roles_display.get(role_key, "Lector")
+        )
+        if role_key == "banned":
+            user_level = "🚫 Baneado"
+
+        # Max Download Logic
+        if role_key in ("admin", "staff", "premium", "banned"):
+            max_dl = None
+        elif role_key == "vip":
+            max_dl = config.VIP_DOWNLOADS_PER_DAY
+        elif role_key == "white":
+            max_dl = config.WHITELIST_DOWNLOADS_PER_DAY
+        else:
+            max_dl = config.MAX_DOWNLOADS_PER_DAY
+
+        # Used / Remaining
+        used = st.get("downloads_used", 0)
+        
+        if max_dl is None:
+            if role_key == "banned":
+                descargas_text = "⛔ Acceso denegado"
+            else:
+                descargas_text = "✅ Descargas ilimitadas"
+        else:
+            remaining = max_dl - used
+            descargas_text = f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día"
+
+        # Reset Time
+        reset_time_str = None
+        if max_dl is not None:
+             now = datetime.now()
+             next_midnight = (now + timedelta(days=1)).replace(
+                 hour=0, minute=0, second=0, microsecond=0
+             )
+             time_left = next_midnight - now
+             hours, remainder = divmod(int(time_left.total_seconds()), 3600)
+             minutes, _ = divmod(remainder, 60)
+             reset_time_str = f"{hours}h {minutes}m"
+
+        # Expires
+        expires_str = None
+        if expires_at:
+             fmt = "%d/%m/%Y %H:%M" if role_key == "banned" else "%d/%m/%Y"
+             expires_str = expires_at.strftime(fmt)
+
+        return {
+            "Nivel": user_level,
+            "Descargas": descargas_text,
+            "ResetTime": reset_time_str,
+            "Expires": expires_str,
+        }
+
     # --- Helper Methods for Template System ---
 
-    def get_text(
+    async def get_text(
         self, slug: str, default_text: str = None, user=None, **replacements
     ) -> str:
         """
@@ -335,50 +451,50 @@ class CustomMessagesPlugin(BasePlugin):
         if not final_text:
             return ""
 
-        # 1. Inject Global Variables if user is provided
-        vars_to_use = replacements.copy()
+        # 0. Admin Global Vars (System-wide)
+        vars_to_use = self._global_vars_cache.copy() # Start with admin globals
 
-        # Date/Time are always available
+        # 1. Inject System Variables (Time/Version)
         from datetime import datetime
-
         now = datetime.now()
         vars_to_use["Fecha"] = now.strftime("%Y-%m-%d")
         vars_to_use["Hora"] = now.strftime("%H:%M")
 
         from utils.helpers import get_version_string
-
         vars_to_use["VersionBot"] = get_version_string()
 
+        # 2. Inject User Variables (Context)
         if user:
             vars_to_use["Nombre"] = user.first_name or "Usuario"
-            vars_to_use["Alias"] = user.username  # Can be None, works with {{if Alias}}
+            vars_to_use["Alias"] = user.username
             vars_to_use["ID"] = str(user.id)
 
-        # 2. Conditional Logic: {{if Var}}...{{endif}}
-        # We process this BEFORE simple replacement so we can hide blocks involving variables that are empty/false.
+            # 2.1 Auto-Inject Extended User Stats if needed
+            # We check if keys are present in final_text to avoid expensive DB calls
+            needed_keys = {"[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]"}
+            # Simple string check (fast)
+            if any(k in final_text for k in needed_keys):
+                extended_context = await self._get_extended_user_context(user)
+                vars_to_use.update(extended_context)
+
+        # 3. Explicit Replacements (Arguments) - Override everything
+        vars_to_use.update(replacements)
+
+        # 4. Conditional Logic (Sync)
         def replacer(match):
             key = match.group(1)
             content = match.group(2)
             val = vars_to_use.get(key)
-            # Check truthiness:
-            # - None -> False
-            # - False -> False
-            # - "" -> False
-            # - 0 -> False
             is_true = bool(val)
-            # Special case: allow 0 as True if it's an integer/number, usually we want to display "0 variables"
             if val == 0 or val == "0":
                 is_true = True
-
-            # If falsy, strip content. If truthy, keep content (and remove tags)
             return content if is_true else ""
 
-        # Using dotall so {{if}} can span newlines
         final_text = re.sub(
             r"{{if\s+(\w+)}}(.*?){{endif}}", replacer, final_text, flags=re.DOTALL
         )
 
-        # 3. Variable Replacement
+        # 5. Variable Replacement
         for key, value in vars_to_use.items():
             placeholder = f"[{key}]"
             safe_value = str(value)
@@ -490,7 +606,7 @@ class CustomMessagesPlugin(BasePlugin):
                     # Use get_text. Note: we don't pass default_text because we already resolved it or it's in registry
                     # But actually get_text will resolve it again if we pass just the slug.
                     # It's better to rely on get_text's internal resolution to be consistent.
-                    text_sent = self.get_text(slug, user=user)
+                    text_sent = await self.get_text(slug, user=user)
 
                     await context.bot.send_message(
                         chat_id=update.effective_chat.id,
@@ -610,7 +726,7 @@ class CustomMessagesPlugin(BasePlugin):
                 # We can't really "send" a template without variables replaced...
                 # This command is raw. Maybe just send the text?
                 # Or try to render with empty vars?
-                text_to_send = self.get_text(slug)
+                text_to_send = await self.get_text(slug)
                 await context.bot.send_message(
                     chat_id=target_chat_id, text=text_to_send, parse_mode=ParseMode.HTML
                 )
@@ -669,7 +785,7 @@ class CustomMessagesPlugin(BasePlugin):
                     # But /saludo is often used for static things or manual sends.
                     # If it has variables they will remain placeholders unless we inject dummy ones.
                     # Let's send processed text.
-                    text_to_send = self.get_text(slug)
+                    text_to_send = await self.get_text(slug)
                     await context.bot.send_message(
                         chat_id=target_chat_id, text=text_to_send, parse_mode="HTML"
                     )
@@ -739,18 +855,65 @@ class CustomMessagesPlugin(BasePlugin):
 
         await update.message.reply_text(text, parse_mode="HTML")
 
-    async def template_vars(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Lista las variables globales disponibles."""
+    async def set_var(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if update.effective_user.id not in config.ADMIN_USERS:
+            return
+
+        if len(context.args) < 2:
+            await update.message.reply_text(
+                "❌ Uso: /set_var <Variable> <Valor>\n"
+                "Ejemplo: /set_var CanalOficial https://t.me/mi_canal"
+            )
+            return
+
+        key = context.args[0]
+        # Remove brackets if user typed them
+        key = key.replace("[", "").replace("]", "")
+        value = " ".join(context.args[1:])
+
+        self._set_global_var(key, value)
+        await update.message.reply_text(
+            f"✅ Variable global <code>[{key}]</code> establecida a: <b>{html.escape(value)}</b>",
+            parse_mode="HTML"
+        )
+
+    async def del_var(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if update.effective_user.id not in config.ADMIN_USERS:
+            return
+
+        if not context.args:
+            await update.message.reply_text("❌ Uso: /del_var <Variable>")
+            return
+
+        key = context.args[0].replace("[", "").replace("]", "")
+        self._del_global_var(key)
+        await update.message.reply_text(f"🗑 Variable global <code>[{key}]</code> eliminada.", parse_mode="HTML")
+
+    async def vars(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Lista las variables globales disponibles (Sistema + Admin)."""
         if update.effective_user.id not in config.ADMIN_USERS:
             return
 
         text = "💲 <b>Variables Globales</b>\n\n"
-        text += "Estas variables se pueden usar en <b>cualquier</b> plantilla:\n\n"
-
+        
+        # System Vars
+        text += "🤖 <b>Sistema (Automáticas):</b>\n"
         for key, desc in GLOBAL_VARIABLES.items():
-            text += f"🔹 <code>[{key}]</code>: {desc}\n"
+             text += f"🔹 <code>[{key}]</code>: {desc}\n"
+        
+        # Admin Vars
+        text += "\n🛠 <b>Personalizadas (Admin):</b>\n"
+        if not self._global_vars_cache:
+            text += "<i>(Ninguna definida, usa /set_var)</i>\n"
+        else:
+            for k, v in self._global_vars_cache.items():
+                text += f"🔸 <code>[{k}]</code>: {html.escape(v)}\n"
 
         await update.message.reply_text(text, parse_mode="HTML")
+
+    async def template_vars(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        # Legacy alias for /vars
+        await self.vars(update, context)
 
     async def welcome_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Triggered on MY_CHAT_MEMBER updates

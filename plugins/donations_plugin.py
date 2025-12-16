@@ -92,7 +92,7 @@ class DonationsPlugin(BasePlugin):
         text = base_text
         if cms and cms.enabled:
             # We pass donation_url as a variable just in case they want to use it
-            text = cms.get_text(
+            text = await cms.get_text(
                 "donate_message",
                 user=update.effective_user,
                 DonationUrl=config.DONATION_URL,
@@ -160,7 +160,7 @@ class DonationsPlugin(BasePlugin):
             # OR we just pass them as kwargs and let get_text handle [Key] replacement.
             # get_text replaces [Key] with value.
             # Our variables here are: white, vip, premium, duration
-            text = cms.get_text(
+            text = await cms.get_text(
                 "levels_message",
                 white=p_white,
                 vip=p_vip,

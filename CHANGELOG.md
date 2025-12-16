@@ -5,6 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.8.0] - 2025-12-16
+
+### Añadido
+- **Variables Globales**: Sistema completo de variables globales.
+    - **Admin**: Comandos `/set_var`, `/del_var` y `/vars` para definir variables estáticas usables en cualquier plantilla.
+    - **Sistema**: Inyección automática de `[Nivel]`, `[Descargas]`, `[ResetTime]`, `[Expires]` en todas las plantillas (ya no requieren soporte explícito por comando).
+- **Core**: Refactorización mayor de `get_text` a asíncrono para soportar consultas de base de datos dinámicas.
+
+### Actualizado
+- **Plugins**: Custom Messages v1.2.0, Help v2.1.0.
+
 ## [3.7.6] - 2025-12-16
 
 ### Refactorizado

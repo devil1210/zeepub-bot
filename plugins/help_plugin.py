@@ -262,11 +262,28 @@ COMMANDS_REGISTRY = {
         "example": "/set_welcome bienvenida_v1",
     },
     "templates": {
-        "cat": "plugins",
-        "desc": "Listar plantillas",
-        "long_desc": "Lista todas las plantillas de mensajes disponibles para personalizar, mostrando sus variables y uso.",
-        "usage": "/templates",
+        "cat": "admin",
+        "desc": "Lista las plantillas disponibles",
+        "long_desc": "Muestra todas las plantillas de mensajes registradas y las variables que aceptan.",
         "example": "/templates",
+    },
+    "set_var": {
+        "cat": "admin",
+        "desc": "Define variable global",
+        "long_desc": "Crea o actualiza una variable global que puede usarse en cualquier plantilla con [NombreVariable].",
+        "example": "/set_var CanalOficial https://t.me/mi_canal",
+    },
+    "del_var": {
+        "cat": "admin",
+        "desc": "Elimina variable global",
+        "long_desc": "Borra una variable global personalizada.",
+        "example": "/del_var CanalOficial",
+    },
+    "vars": {
+        "cat": "admin",
+        "desc": "Lista variables globales",
+        "long_desc": "Muestra todas las variables globales disponibles (del sistema y personalizadas). Alías: /template_vars",
+        "example": "/vars",
     },
     "template_vars": {
         "cat": "plugins",
@@ -339,7 +356,7 @@ class HelpPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "2.0.1"
+        return "2.1.0"
 
     @property
     def description(self) -> str:
@@ -420,7 +437,7 @@ class HelpPlugin(BasePlugin):
         )
         text = base_text
         if cms and cms.enabled:
-            text = cms.get_text(
+            text = await cms.get_text(
                 "help_main_header", user=update.effective_user
             )
 
@@ -452,7 +469,7 @@ class HelpPlugin(BasePlugin):
             base_closing = "👋 Gracias por usar el bot."
             text_closing = base_closing
             if cms and cms.enabled:
-                text_closing = cms.get_text(
+                text_closing = await cms.get_text(
                     "bot_closing", Nombre=first_name
                 )
 
@@ -467,7 +484,7 @@ class HelpPlugin(BasePlugin):
             )
             text = base_text
             if cms and cms.enabled:
-                text = cms.get_text(
+                text = await cms.get_text(
                     "help_main_header", Nombre=first_name
                 )
 

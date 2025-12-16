@@ -101,7 +101,7 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         text_instr = base_instr
         if cms and cms.enabled:
-            text_instr = cms.get_text(
+            text_instr = await cms.get_text(
                 "search_instructions_legacy"
             )
 
@@ -555,7 +555,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         base_closing = "👋 Gracias por usar el bot."
         text_closing = base_closing
         if cms and cms.enabled:
-            text_closing = cms.get_text("bot_closing")
+            text_closing = await cms.get_text("bot_closing")
 
         await query.edit_message_text(text_closing)
         return
@@ -628,7 +628,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             text_success = base_success
             if cms and cms.enabled:
-                text_success = cms.get_text(
+                text_success = await cms.get_text(
                     "donation_success", user=user
                 )
 

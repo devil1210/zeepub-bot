@@ -48,7 +48,7 @@ class CommandHandlers:
 
         if left == "ilimitadas":
             text = (
-                cms.get_text("start_welcome_unlimited", Nombre=first_name)
+                await cms.get_text("start_welcome_unlimited", Nombre=first_name)
                 if (cms and cms.enabled)
                 else "👋 ¡Hola {first_name}! Comencemos.\n\n✅ Tienes descargas ilimitadas.".replace(
                     "{first_name}", first_name
@@ -56,7 +56,7 @@ class CommandHandlers:
             )
         else:
             text = (
-                cms.get_text(
+                await cms.get_text(
                     "start_welcome_limited",
                     Nombre=first_name,
                     Descargas=left,
@@ -152,7 +152,7 @@ class CommandHandlers:
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_txt = "🔧 Modo Evil: ¿Dónde quieres publicar?"
             text_evil = (
-                cms.get_text("evil_mode_prompt") if (cms and cms.enabled) else base_txt
+                await cms.get_text("evil_mode_prompt") if (cms and cms.enabled) else base_txt
             )
 
             await context.bot.send_message(
@@ -276,7 +276,7 @@ class CommandHandlers:
 
         final_text = base_text
         if cms and cms.enabled:
-            final_text = cms.get_text(
+            final_text = await cms.get_text(
                 "status_message",
                 user=update.effective_user,
                 Nivel=user_level,
@@ -324,7 +324,7 @@ class CommandHandlers:
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_cancel = "✅ ¡Entendido! Operación cancelada."
         text_cancel = (
-            cms.get_text(
+            await cms.get_text(
                 "cancel_confirmation",
                 user=update.effective_user,
             )

@@ -44,7 +44,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             default_msg_template = "⛔ Estás <b>baneado</b> del bot.{{if Fecha}} Hasta: <b>[Fecha]</b>{{endif}}"
 
             if cms and cms.enabled:
-                msg = cms.get_text(
+                msg = await cms.get_text(
                     "banned_message",
                     user=update.effective_user,
                     Fecha=exp_str,
