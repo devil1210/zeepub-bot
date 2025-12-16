@@ -379,8 +379,14 @@ class HelpPlugin(BasePlugin):
 
         try:
             app = bot_instance
-            app.add_handler(CommandHandler("help", self.help))
-            app.add_handler(CommandHandler("ayuda", self.help))
+            # New mapping
+            app.add_handler(CommandHandler("help", self.help_simple))
+            app.add_handler(CommandHandler("ayuda", self.help_simple))
+            
+            # Interactive mode
+            app.add_handler(CommandHandler("menu", self.help_interactive))
+            app.add_handler(CommandHandler("help_full", self.help_interactive))
+            
             app.add_handler(
                 CallbackQueryHandler(self.help_navigation_callback, pattern=r"^help\|")
             )
@@ -428,8 +434,46 @@ class HelpPlugin(BasePlugin):
 
         return visible
 
-    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Muestra el menú principal de ayuda."""
+    async def help_simple(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Muestra una lista simple de comandos disponibles."""
+        uid = update.effective_user.id
+        thread_id = get_thread_id(update)
+        
+        is_admin, is_publisher = self._check_permissions(uid)
+        visible_cats = self._get_visible_categories(is_admin, is_publisher)
+        
+        text = "🤖 <b>Comandos Disponibles</b>\n\n"
+        
+        # Iterar categorias en orden deseado (definido en CATEGORIES o visible_cats order)
+        # visible_cats tiene un orden basico
+        
+        for cat_key in visible_cats:
+            cat_name = CATEGORIES.get(cat_key, cat_key)
+            
+            # Get commands for this cat
+            cmds = [k for k, v in COMMANDS_REGISTRY.items() if v["cat"] == cat_key]
+            cmds.sort()
+            
+            if not cmds:
+                continue
+                
+            text += f"<b>{cat_name}</b>\n"
+            for cmd in cmds:
+                desc = COMMANDS_REGISTRY[cmd]["desc"]
+                text += f"/{cmd} - {desc}\n"
+            text += "\n"
+            
+        text += "💡 <i>Usa /menu para ver la ayuda interactiva.</i>"
+        
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
+
+    async def help_interactive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Muestra el menú principal de ayuda (Interactivo)."""
         uid = update.effective_user.id
         first_name = update.effective_user.first_name
         thread_id = get_thread_id(update)
