@@ -75,7 +75,9 @@ class DonationsPlugin(BasePlugin):
         """Handle /donar: envía link de donación."""
         thread_id = get_thread_id(update)
         user_name = update.effective_user.first_name
-        text = (
+
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_text = (
             "☕ <b>Apóyanos en Ko-fi</b>\n\n"
             f"Hola {user_name}, gracias por considerar apoyarnos. "
             "Tu ayuda nos permite mantener activo tanto el <b>Bot</b> como el servidor <b>Kavita</b> "
@@ -86,6 +88,16 @@ class DonationsPlugin(BasePlugin):
             "3. Vuelve aquí y presiona el botón de abajo para avisarnos.\n\n"
             f"👉 <a href='{config.DONATION_URL}'>Haz clic aquí para donar</a>"
         )
+
+        text = base_text
+        if cms and cms.enabled:
+            # We pass donation_url as a variable just in case they want to use it
+            text = cms.get_text(
+                "donate_message",
+                default_text=base_text,
+                Nombre=user_name,
+                DonationUrl=config.DONATION_URL,
+            )
 
         keyboard = [
             [
@@ -105,17 +117,6 @@ class DonationsPlugin(BasePlugin):
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
 
-    def _get_stored_message(self, slug):
-        if not self.CustomMsgSession:
-            return None
-        session = self.CustomMsgSession()
-        try:
-            return session.query(StoredMessage).filter_by(slug=slug).first()
-        except Exception:
-            return None
-        finally:
-            session.close()
-
     async def niveles(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /niveles: explica niveles de usuario y beneficios."""
         thread_id = get_thread_id(update)
@@ -126,31 +127,10 @@ class DonationsPlugin(BasePlugin):
         p_premium = get_setting("price_premium", "20")
         months = get_setting("benefit_duration_months", "6")
 
-        # Intentar cargar mensaje personalizado "niveles"
-        msg = self._get_stored_message("niveles")
-
-        if msg and (msg.text_content or msg.description):
-            # Usar mensaje personalizado
-            raw_text = msg.text_content if msg.text_content else msg.description
-            # Reemplazar variables
-            text = (
-                raw_text.replace("[white]", p_white)
-                .replace("[vip]", p_vip)
-                .replace("[premium]", p_premium)
-                .replace("[duration]", months)  # Added bonus variable just in case
-            )
-
-            # Send message
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=text,
-                parse_mode="HTML",
-                message_thread_id=thread_id,
-            )
-            return
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
 
         # Fallback Hardcoded
-        text = (
+        base_text = (
             "🌟 <b>Niveles de Usuario y Beneficios</b> 🌟\n\n"
             "Las donaciones nos ayudan a cubrir los costos del servidor. "
             f"Como agradecimiento, otorgamos beneficios por <b>{months} meses</b>.\n\n"
@@ -174,6 +154,22 @@ class DonationsPlugin(BasePlugin):
             "💳 Usa /donar para obtener el link de Ko-fi.\n"
             "<i>(Los montos ayudan a mantener el proyecto vivo ❤️)</i>"
         )
+
+        text = base_text
+        if cms and cms.enabled:
+            # We map the brackets style variables to the kwargs style used by get_text if possible,
+            # OR we just pass them as kwargs and let get_text handle [Key] replacement.
+            # get_text replaces [Key] with value.
+            # Our variables here are: white, vip, premium, duration
+            text = cms.get_text(
+                "levels_message",
+                default_text=base_text,
+                white=p_white,
+                vip=p_vip,
+                premium=p_premium,
+                duration=months,
+            )
+
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,

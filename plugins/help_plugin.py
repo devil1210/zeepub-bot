@@ -396,11 +396,16 @@ class HelpPlugin(BasePlugin):
         uid = update.effective_user.id
         thread_id = get_thread_id(update)
 
-        text = (
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+        base_text = (
             "🤖 <b>Ayuda de ZeePub Bot</b>\n\n"
             "Bienvenido al sistema de ayuda interactiva. Selecciona una categoría abajo "
             "para ver los comandos disponibles y sus detalles."
         )
+        text = base_text
+        if cms and cms.enabled:
+            text = cms.get_text("help_main_header", default_text=base_text)
 
         keyboard = self._build_category_keyboard(uid)
 
@@ -428,10 +433,15 @@ class HelpPlugin(BasePlugin):
             return
 
         if action == "home":
-            text = (
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_text = (
                 "🤖 <b>Ayuda de ZeePub Bot</b>\n\n"
                 "Selecciona una categoría para ver los comandos:"
             )
+            text = base_text
+            if cms and cms.enabled:
+                text = cms.get_text("help_main_header", default_text=base_text)
+
             keyboard = self._build_category_keyboard(uid)
             await query.edit_message_text(
                 text=text, reply_markup=keyboard, parse_mode="HTML"

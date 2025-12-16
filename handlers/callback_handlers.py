@@ -92,10 +92,21 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("🔍 Escribe parte del título del EPUB:")
     else:
         # Bot NO es admin: solo recibe comandos
-        await query.edit_message_text(
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+        base_instr = (
             "🔍 Para buscar, usa el comando:\n\n"
             "<code>/search término de búsqueda</code>\n\n"
-            "Ejemplo: <code>/search harry potter</code>",
+            "Ejemplo: <code>/search harry potter</code>"
+        )
+        text_instr = base_instr
+        if cms and cms.enabled:
+            text_instr = cms.get_text(
+                "search_instructions_legacy", default_text=base_instr
+            )
+
+        await query.edit_message_text(
+            text_instr,
             parse_mode="HTML",
         )
 
@@ -539,7 +550,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Cerrar menú
     if data == "cerrar":
-        await query.edit_message_text("👋 Gracias por usar el bot.")
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+        base_closing = "👋 Gracias por usar el bot."
+        text_closing = base_closing
+        if cms and cms.enabled:
+            text_closing = cms.get_text("bot_closing", default_text=base_closing)
+
+        await query.edit_message_text(text_closing)
         return
 
     # Descargar EPUB pendiente
@@ -597,20 +615,32 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         username = user.username or "Sin alias"
         full_name = user.full_name
 
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+
         # Enviar confirmación al usuario
         try:
             await query.answer("¡Gracias! Hemos notificado a los administradores.")
-            await query.edit_message_text(
+
+            base_success = (
                 "✅ <b>Notificación enviada</b>\n\n"
                 "Un administrador revisará tu donación pronto y actualizará tu nivel.\n"
-                "¡Muchas gracias por tu apoyo! ❤️",
+                "¡Muchas gracias por tu apoyo! ❤️"
+            )
+            text_success = base_success
+            if cms and cms.enabled:
+                text_success = cms.get_text(
+                    "donation_success", default_text=base_success, Nombre=full_name
+                )
+
+            await query.edit_message_text(
+                text_success,
                 parse_mode="HTML",
             )
         except Exception:
             pass
 
         # Notificar a los administradores
-        admin_msg = (
+        base_admin_msg = (
             "💰 <b>Nueva Donación Reportada</b>\n\n"
             f"👤 <b>Usuario:</b> {full_name}\n"
             f"🔗 <b>Alias:</b> @{username}\n"
@@ -618,6 +648,19 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "El usuario ha indicado que realizó una donación en Ko-fi.\n"
             "Por favor verifica y usa <code>/nivel</code> (si existiera) o actualiza manualmente."
         )
+        # Note: We can't easily template this admin message fully dynamically if it relies on complex structure,
+        # but we can wrap the text part.
+        admin_msg = base_admin_msg
+        if cms and cms.enabled:
+            # We pass all potentially useful vars
+            admin_msg = cms.get_text(
+                "donation_admin_alert",
+                default_text=base_admin_msg,
+                Nombre=full_name,
+                Alias=username,
+                ID=uid,
+            )
+
         for admin_id in config.ADMIN_USERS:
             try:
                 await context.bot.send_message(
