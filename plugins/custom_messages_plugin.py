@@ -1,6 +1,7 @@
 import logging
 import os
 import html
+import re
 from datetime import datetime
 from typing import Dict, Callable, List, Optional, Any
 from sqlalchemy import (
@@ -326,7 +327,33 @@ class CustomMessagesPlugin(BasePlugin):
             vars_to_use["Alias"] = user.username or "Sin Alias"
             vars_to_use["ID"] = str(user.id)
 
-        # 2. Variable Replacement
+        # 2. Conditional Logic: {{if Var}}...{{endif}}
+        # We process this BEFORE simple replacement so we can hide blocks involving variables that are empty/false.
+        def replacer(match):
+            key = match.group(1)
+            content = match.group(2)
+            val = vars_to_use.get(key)
+            # Check truthiness:
+            # - None -> False
+            # - False -> False
+            # - "" -> False
+            # - 0 -> False (maybe? usually we want 0 to show, but in templates 0 downloads might mean show?
+            #   For safety, strict python truthiness is usually fine, but be careful with 0.
+            #   Let's check if it exists and is not None and (is not string empty).
+            is_true = bool(val)
+            # Special case: allow 0 as True if it's an integer/number, usually we want to display "0 variables"
+            if val == 0 or val == "0":
+                is_true = True
+
+            # If falsy, strip content. If truthy, keep content (and remove tags)
+            return content if is_true else ""
+
+        # Using dotall so {{if}} can span newlines
+        final_text = re.sub(
+            r"{{if\s+(\w+)}}(.*?){{endif}}", replacer, final_text, flags=re.DOTALL
+        )
+
+        # 3. Variable Replacement
         for key, value in vars_to_use.items():
             placeholder = f"[{key}]"
             safe_value = str(value)

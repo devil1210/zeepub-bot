@@ -255,34 +255,29 @@ class CommandHandlers:
 
         version = get_version_string()
 
-        # Build default text structure for fallback
+        if expires_at:
+            fmt = "%d/%m/%Y %H:%M" if role_key == "banned" else "%d/%m/%Y"
+            label = "Castigo hasta" if role_key == "banned" else "Vence"
+            expires_str = expires_at.strftime(fmt)
+        else:
+            expires_str = None  # Ensure it is None so {{if}} sees it as False
+
+        # Reset Time logic
+        reset_time_str = None
+        if max_dl is not None:
+            reset_time_str = f"{hours}h {minutes}m"
+
+        # Build default text structure for fallback with Conditional Syntax
         base_text = (
             f"🤖 <b>ZeePub Bot</b> {version}\n\n"
             "📊 <b>Tu Estado</b>\n\n"
             f"👤 <b>Usuario:</b> [Nombre]\n"
             f"🆔 <b>ID:</b> [ID]\n"
             f"⭐ <b>Nivel:</b> [Nivel]\n"
+            "{{if Expires}}📅 <b>Vence:</b> [Expires]\n{{endif}}"
+            f"📉 <b>Descargas:</b> [Descargas]\n"
+            "{{if ResetTime}}⏳ <b>Reinicio en:</b> [ResetTime]\n{{endif}}"
         )
-        if expires_at:
-            base_text += f"📅 <b>Vence:</b> [Expires]\n"
-
-        base_text += f"📉 <b>Descargas:</b> [Descargas]\n"
-
-        if max_dl is not None:
-            base_text += f"⏳ <b>Reinicio en:</b> [ResetTime]\n"
-
-        # Prepare variables
-        reset_time_str = f"{hours}h {minutes}m"
-        expires_str = ""
-        if expires_at:
-            fmt = "%d/%m/%Y %H:%M" if role_key == "banned" else "%d/%m/%Y"
-            label = (
-                "Castigo hasta" if role_key == "banned" else "Vence"
-            )  # Label dynamic logic handled in default text??
-            # Actually, standard template might just use [Expires] value.
-            # If expires is None, default template logic skips it?
-            # We'll just pass the formatted string.
-            expires_str = expires_at.strftime(fmt)
 
         cms = context.application.plugin_manager.get_plugin("custom_messages")
 
