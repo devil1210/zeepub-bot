@@ -1,5 +1,5 @@
-import logging
 import os
+import html
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
@@ -473,13 +473,16 @@ class HelpPlugin(BasePlugin):
                 await query.answer("⛔ No tienes permiso.", show_alert=True)
                 return
 
+            usage_safe = html.escape(cmd_data["usage"])
+
             text = (
                 f"ℹ️ <b>Comando: /{cmd_key}</b>\n\n"
                 f"📝 <b>Descripción:</b>\n{cmd_data['long_desc']}\n\n"
-                f"⌨️ <b>Uso:</b> <code>{cmd_data['usage']}</code>\n"
+                f"⌨️ <b>Uso:</b> <code>{usage_safe}</code>\n"
             )
             if "example" in cmd_data:
-                text += f"💡 <b>Ejemplo:</b> <code>{cmd_data['example']}</code>"
+                ex_safe = html.escape(cmd_data["example"])
+                text += f"💡 <b>Ejemplo:</b> <code>{ex_safe}</code>"
 
             keyboard = self._build_detail_keyboard(cmd_data["cat"])
             await query.edit_message_text(
