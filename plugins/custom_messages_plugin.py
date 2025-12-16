@@ -95,7 +95,7 @@ TEMPLATE_REGISTRY = {
     },
     "bot_closing": {
         "desc": "Mensaje al cerrar menú",
-        "vars": [],
+        "vars": ["[Nombre]"],
     },
     "donation_success": {
         "desc": "Confirmación de donación reportada",
@@ -111,7 +111,7 @@ TEMPLATE_REGISTRY = {
     },
     "help_main_header": {
         "desc": "Encabezado principal de /help",
-        "vars": [],
+        "vars": ["[Nombre]"],
     },
 }
 

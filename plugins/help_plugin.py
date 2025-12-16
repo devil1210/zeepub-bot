@@ -401,6 +401,7 @@ class HelpPlugin(BasePlugin):
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Muestra el menú principal de ayuda."""
         uid = update.effective_user.id
+        first_name = update.effective_user.first_name
         thread_id = get_thread_id(update)
 
         cms = context.application.plugin_manager.get_plugin("custom_messages")
@@ -412,7 +413,9 @@ class HelpPlugin(BasePlugin):
         )
         text = base_text
         if cms and cms.enabled:
-            text = cms.get_text("help_main_header", default_text=base_text)
+            text = cms.get_text(
+                "help_main_header", default_text=base_text, Nombre=first_name
+            )
 
         keyboard = self._build_category_keyboard(uid)
 
@@ -429,6 +432,7 @@ class HelpPlugin(BasePlugin):
     ):
         query = update.callback_query
         uid = update.effective_user.id
+        first_name = update.effective_user.first_name
         data = query.data.split("|")
 
         # Format: help | action | arg
@@ -436,7 +440,16 @@ class HelpPlugin(BasePlugin):
         arg = data[2] if len(data) > 2 else None
 
         if action == "close":
-            await query.message.delete()
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+            base_closing = "👋 Gracias por usar el bot."
+            text_closing = base_closing
+            if cms and cms.enabled:
+                text_closing = cms.get_text(
+                    "bot_closing", default_text=base_closing, Nombre=first_name
+                )
+
+            await query.edit_message_text(text_closing)
             return
 
         if action == "home":
@@ -447,13 +460,14 @@ class HelpPlugin(BasePlugin):
             )
             text = base_text
             if cms and cms.enabled:
-                text = cms.get_text("help_main_header", default_text=base_text)
+                text = cms.get_text(
+                    "help_main_header", default_text=base_text, Nombre=first_name
+                )
 
             keyboard = self._build_category_keyboard(uid)
             await query.edit_message_text(
                 text=text, reply_markup=keyboard, parse_mode="HTML"
             )
-            return
 
         is_admin, is_publisher = self._check_permissions(uid)
         visible_cats = self._get_visible_categories(is_admin, is_publisher)
