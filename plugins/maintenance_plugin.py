@@ -411,7 +411,7 @@ class MaintenancePlugin(BasePlugin):
 
                 text += f"🔹 <b>{title}</b>{series}\n"
                 text += f"   ✍️ {author}\n"
-                text += f"   📅 {date_str} | #️⃣ {b.slug}\n"
+                text += f"   📅 {date_str} | #{b.slug}\n"
 
                 if not channel_filter and hasattr(b, "channel_id") and b.channel_id:
                     text += f"   📍 Chat: {b.channel_id}\n"
