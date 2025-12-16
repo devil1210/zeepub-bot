@@ -1123,8 +1123,7 @@ class CustomMessagesPlugin(BasePlugin):
         if update.effective_user.id not in config.ADMIN_USERS:
             return
 
-        header = "📋 <b>Plantillas Disponibles</b>\n\nUsa <code>/add_msge &lt;slug&gt;</code> para personalizar.\n\n"
-        buffer = header
+
 
         # Define category buckets
         categories = {
@@ -1169,17 +1168,17 @@ class CustomMessagesPlugin(BasePlugin):
             "Otros"
         ]
 
+        await update.message.reply_text(
+            "📋 <b>Plantillas Disponibles</b>\nUsa <code>/add_msge &lt;slug&gt;</code> para personalizar.",
+            parse_mode="HTML"
+        )
+
         for cat_name in cat_order:
             slugs = categories[cat_name]
             if not slugs:
                 continue
 
-            # Add Category Header
-            cat_header = f"📂 <b>{cat_name.upper()}</b>\n\n"
-            if len(buffer) + len(cat_header) > 3800: # Safer margin
-                await update.message.reply_text(buffer, parse_mode="HTML")
-                buffer = ""
-            buffer += cat_header
+            buffer = f"📂 <b>{cat_name.upper()}</b>\n\n"
 
             for slug in slugs:
                 info = TEMPLATE_REGISTRY[slug]
@@ -1189,14 +1188,14 @@ class CustomMessagesPlugin(BasePlugin):
                 entry += f"   📝 {info['desc']}\n"
                 entry += f"   💲 Variables: <code>{vars_str}</code>\n\n"
 
-                if len(buffer) + len(entry) > 3800:
+                if len(buffer) + len(entry) > 4000:
                     await update.message.reply_text(buffer, parse_mode="HTML")
-                    buffer = "" # Continuation doesn't need header again
+                    buffer = "" # Continuation
 
                 buffer += entry
 
-        if buffer:
-            await update.message.reply_text(buffer, parse_mode="HTML")
+            if buffer:
+                await update.message.reply_text(buffer, parse_mode="HTML")
 
     async def set_var(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_user.id not in config.ADMIN_USERS:
