@@ -670,7 +670,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             else:
                 # remove block
-                import re
+                # import re removed (globally imported)
 
                 admin_msg = re.sub(
                     r"{{if Alias}}.*?{{endif}}", "", admin_msg, flags=re.DOTALL
