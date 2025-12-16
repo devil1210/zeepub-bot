@@ -20,18 +20,19 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
     async def get_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
         async with self.db.connection() as conn:
             cursor = await conn.execute(
-                "SELECT role, expires_at, custom_status FROM users WHERE telegram_id = ?",
+                "SELECT role, expires_at, custom_status, nickname FROM users WHERE telegram_id = ?",
                 (telegram_id,),
             )
             row = await cursor.fetchone()
             if row:
-                role, expires_at_raw, custom_status = row
+                role, expires_at_raw, custom_status, nickname = row
                 expires_at = self._parse_datetime(expires_at_raw)
                 return {
                     "telegram_id": telegram_id,
                     "role": role,
                     "expires_at": expires_at,
                     "custom_status": custom_status,
+                    "nickname": nickname,
                 }
             return None
 
@@ -64,6 +65,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         expires_at: Optional[datetime] = None,
         custom_status: Optional[str] = None,
         created_by: Optional[int] = None,
+        nickname: Optional[str] = None,
     ):
         async with self.db.connection() as conn:
             # Check existence
@@ -84,13 +86,16 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if created_by is not None:
                     fields.append("created_by = ?")
                     params.append(created_by)
+                if nickname is not None:
+                    fields.append("nickname = ?")
+                    params.append(nickname)
 
                 params.append(telegram_id)
                 sql = f"UPDATE users SET {', '.join(fields)} WHERE telegram_id = ?"
                 await conn.execute(sql, tuple(params))
             else:
                 await conn.execute(
-                    "INSERT INTO users (telegram_id, role, added_at, expires_at, custom_status, created_by) VALUES (?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO users (telegram_id, role, added_at, expires_at, custom_status, created_by, nickname) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (
                         telegram_id,
                         role,
@@ -98,6 +103,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         expires_at,
                         custom_status,
                         created_by,
+                        nickname,
                     ),
                 )
             await conn.commit()

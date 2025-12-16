@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes, CommandHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
-from services.user_service import upsert_user, remove_user, update_user_status_label
+from services.user_service import upsert_user, remove_user, update_user_status_label, update_user_nickname
 from services.settings_service import SettingsService, get_setting
 from utils.download_limiter import save_download
 from core.state_manager import state_manager
@@ -43,6 +43,7 @@ class UserManagerPlugin(BasePlugin):
             app.add_handler(CommandHandler("add_user", self.add_user))
             app.add_handler(CommandHandler("remove_user", self.remove_user))
             app.add_handler(CommandHandler("set_staff_status", self.set_staff_status))
+            app.add_handler(CommandHandler("set_apodo", self.set_apodo))
             app.add_handler(CommandHandler("reset", self.reset_command))
             app.add_handler(CommandHandler("id", self.get_id))
 
@@ -206,6 +207,47 @@ class UserManagerPlugin(BasePlugin):
             )
         except Exception as e:
             logger.error(f"Error set_staff_status: {e}")
+            await msg.reply_text(f"❌ Error: {str(e)}", message_thread_id=thread_id)
+
+    async def set_apodo(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
+        """
+        /set_apodo <id> <apodo>
+        Establece el nickname/apodo de un usuario.
+        """
+        uid = update.effective_user.id
+        msg = update.effective_message
+        thread_id = get_thread_id(update)
+
+        if not self._is_admin(uid):
+            return
+
+        if not context.args or len(context.args) < 2:
+            await msg.reply_text(
+                "❌ Uso: /set_apodo <id> <apodo>\n"
+                "Ejemplo: /set_apodo 123456789 El Charly",
+                message_thread_id=thread_id,
+            )
+            return
+
+        target_id_str = context.args[0]
+        if not target_id_str.isdigit():
+            await msg.reply_text("❌ ID inválido.", message_thread_id=thread_id)
+            return
+        target_id = int(target_id_str)
+
+        new_label = " ".join(context.args[1:])
+
+        try:
+            await update_user_nickname(target_id, new_label)
+            await msg.reply_text(
+                f"✅ Apodo actualizado para <code>{target_id}</code>: <b>{new_label}</b>",
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+        except Exception as e:
+            logger.error(f"Error set_apodo: {e}")
             await msg.reply_text(f"❌ Error: {str(e)}", message_thread_id=thread_id)
 
     async def get_id(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

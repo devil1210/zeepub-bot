@@ -90,41 +90,48 @@ COMMANDS_REGISTRY = {
         "usage": "/reglas",
         "example": "/reglas",
     },
-    # --- Admin ---
+    # --- User Management ---
     "add_user": {
-        "cat": "admin",
+        "cat": "user_mgmt",
         "desc": "Agregar/Editar usuario",
         "long_desc": "Agrega un usuario a la base de datos o actualiza su rol (VIP, Premium, etc.) y duración de beneficios.",
         "usage": "/add_user <user_id> <rol> [dias]",
         "example": "/add_user 123456789 vip 30",
     },
     "remove_user": {
-        "cat": "admin",
+        "cat": "user_mgmt",
         "desc": "Remover usuario",
         "long_desc": "Revoca los privilegios especiales de un usuario, volviéndolo al estado 'Free'.",
         "usage": "/remove_user <user_id>",
         "example": "/remove_user 123456789",
     },
     "set_staff_status": {
-        "cat": "admin",
+        "cat": "user_mgmt",
         "desc": "Gestionar Staff",
-        "long_desc": "Otorga o revoca el estado de 'Staff' a un usuario.",
-        "usage": "/set_staff_status <user_id> <on|off>",
-        "example": "/set_staff_status 123456789 on",
+        "long_desc": "Otorga o revoca el estado de 'Staff' a un usuario. Cambia el [Rol] funcional.",
+        "usage": "/set_staff_status <user_id> <label>",
+        "example": "/set_staff_status 123456789 Editor Jefe",
     },
-    "stats": {
-        "cat": "admin",
-        "desc": "Ver estadísticas",
-        "long_desc": "Muestra estadísticas del bot. Si no se especifican argumentos, muestra resumen general. Si se especifica rol, lista usuarios.",
-        "usage": "/stats [rol]",
-        "example": "/stats vip",
+    "set_apodo": {
+        "cat": "user_mgmt",
+        "desc": "Establecer Apodo",
+        "long_desc": "Establece un apodo personalizado para un usuario, accesible via [Apodo].",
+        "usage": "/set_apodo <user_id> <apodo>",
+        "example": "/set_apodo 123456789 El Charly",
     },
     "reset": {
-        "cat": "admin",
+        "cat": "user_mgmt",
         "desc": "Resetear descargas",
         "long_desc": "Reinicia el contador de descargas diario de un usuario específico a 0.",
         "usage": "/reset <user_id>",
         "example": "/reset 123456789",
+    },
+    "id": {
+        "cat": "user_mgmt",
+        "desc": "Info ID",
+        "long_desc": "Muestra el ID numérico del chat actual y del usuario que envía el mensaje.",
+        "usage": "/id",
+        "example": "/id",
     },
     "setlog": {
         "cat": "admin",
@@ -146,13 +153,6 @@ COMMANDS_REGISTRY = {
         "long_desc": "Muestra el estado interno completo de un usuario: historial de navegación OPDS temporal, buffer de descarga y variables de sesión. Útil para diagnosticar problemas de navegación.",
         "usage": "/debug_state <user_id>",
         "example": "/debug_state 123456789",
-    },
-    "id": {
-        "cat": "admin",
-        "desc": "Info ID",
-        "long_desc": "Muestra el ID numérico del chat actual y del usuario que envía el mensaje.",
-        "usage": "/id",
-        "example": "/id",
     },
     "update_system": {
         "cat": "admin",
@@ -350,6 +350,7 @@ CATEGORIES = {
     "donations": "💸 Donaciones",
     "links": "🔗 Links",
     "group_manager": "👥 Grupos",
+    "user_mgmt": "👥 Usuarios",
 }
 
 
@@ -417,6 +418,7 @@ class HelpPlugin(BasePlugin):
                 visible.append("group_manager")
             if enable_custom:
                 visible.append("plugins")
+            visible.append("user_mgmt")
 
         if enable_maint and (is_admin or is_publisher):
             visible.append("data")

@@ -5,6 +5,19 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.9.0] - 2025-12-16
+
+### Añadido
+- **Gestión de Usuarios**: Nueva categoría en Ayuda para administración de usuarios.
+- **Apodos**: Nuevo comando `/set_apodo <id> <apodo>` y variable `[Apodo]` en plantillas.
+- **Base de Datos**: Migración para soportar nicknames en tabla `users`.
+
+### Cambiado
+- **Variables de Plantilla**: Redefinición de variables:
+    - `[Nivel]`: Ahora muestra el Rol del Sistema (Admin, Staff, Vip, etc.).
+    - `[Rol]`: Ahora muestra la etiqueta personalizada (ej: "Editor Jefe").
+- **Ayuda**: Comandos de administración de usuarios movidos a su propia categoría.
+
 ## [3.8.5] - 2025-12-16
 
 ### Añadido

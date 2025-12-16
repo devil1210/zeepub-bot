@@ -410,14 +410,46 @@ class CustomMessagesPlugin(BasePlugin):
              fmt = "%d/%m/%Y %H:%M" if role_key == "banned" else "%d/%m/%Y"
              expire_str = expires_at.strftime(fmt)
 
-        # Get Internal Role (e.g. 'admin', 'vip') for [Rol]
-        # [Nivel] returns the display label (e.g. 'El Custom')
-        internal_role = (user_data.get("role") or "free").capitalize()
+        # [Nivel] -> External display name for System Role (Admin, Staff, etc.)
+        # [Rol] -> Custom Status Label (functional role)
+        # [Apodo] -> Nickname
+
+        # Mapeo de roles de sistema a nombres "Bonitos" para [Nivel]
+        role_map = {
+            "admin": "Admin",
+            "staff": "Staff",
+            "vip": "VIP",
+            "premium": "Premium",
+            "white": "Patrocinador",
+            "free": "Lector",
+            "banned": "Baneado",
+        }
+        raw_role = user_data.get("role") or "free"
+        system_role_display = role_map.get(raw_role, raw_role.capitalize()) # [Nivel]
+
+        custom_status = user_level # This variable 'user_level' holds status_label from get_effective_user which is custom_status or role.capitalize()
+        # Wait, get_effective_user returns:
+        # role: raw role
+        # status_label: custom_status IF present, ELSE role.capitalize()
+        # So 'user_level' variable currently holds `status_label`.
+        # User wants [Rol] to be the FUNCTION (custom defined).
+        # And [Nivel] to be the SYSTEM role.
+
+        # So:
+        # [Nivel] = system_role_display
+        # [Rol] = user_data.get("status_label") (which is the custom label)
+        # BUT if custom doesn't exist, status_label is role.capitalize().
+        # If user wants [Rol] to be SPECIFICALLY the custom function, we should use that.
+        # However, for consistency, let's use the status_label which defaults to role name if no custom label.
+
+        rol_funcional = user_level # [Rol]
+        apodo = user_data.get("nickname") or "Sin Apodo"
 
         return {
-            "Nivel": user_level, # Keeping user_level as it's already calculated with custom status_label logic
-            "Rol": internal_role,
-            "Descargas": descargas_text, # Keeping descargas_text
+            "Nivel": system_role_display,
+            "Rol": rol_funcional,
+            "Apodo": apodo,
+            "Descargas": descargas_text,
             "ResetTime": reset_time_str,
             "Expires": expire_str,
         }
@@ -476,7 +508,9 @@ class CustomMessagesPlugin(BasePlugin):
 
             # 2.1 Auto-Inject Extended User Stats if needed
             # We check if keys are present in final_text to avoid expensive DB calls
-            needed_keys = {"[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]", "[Rol]"}
+            # 2.1 Auto-Inject Extended User Stats if needed
+            # We check if keys are present in final_text to avoid expensive DB calls
+            needed_keys = {"[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]", "[Rol]", "[Apodo]"}
             # Simple string check (fast)
             if any(k in final_text for k in needed_keys):
                 extended_context = await self._get_extended_user_context(user)

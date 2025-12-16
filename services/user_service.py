@@ -20,6 +20,7 @@ async def upsert_user(
     custom_status: Optional[str] = None,
     created_by: Optional[int] = None,
     duration_days: Optional[int] = None,
+    nickname: Optional[str] = None,
 ):
     """
     Agrega o actualiza un usuario.
@@ -37,7 +38,9 @@ async def upsert_user(
         days = duration_months * 30
         expires_at = now + timedelta(days=days)
 
-    await user_repo.upsert(telegram_id, role, expires_at, custom_status, created_by)
+    await user_repo.upsert(
+        telegram_id, role, expires_at, custom_status, created_by, nickname
+    )
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
@@ -48,6 +51,11 @@ async def remove_user(telegram_id: int):
 
 async def update_user_status_label(telegram_id: int, new_label: str):
     await user_repo.update_status(telegram_id, new_label)
+    await user_cache.invalidate(f"user_effective:{telegram_id}")
+
+
+async def update_user_nickname(telegram_id: int, new_nickname: str):
+    await user_repo.update_nickname(telegram_id, new_nickname)
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
@@ -70,7 +78,12 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
     if cached:
         return cached
 
-    result = {"role": "free", "status_label": "Lector", "expires_at": None}
+    result = {
+        "role": "free",
+        "status_label": "Lector",
+        "expires_at": None,
+        "nickname": None,
+    }
 
     # 1. Check DB (Async)
     info = await get_user_info(uid)
@@ -83,6 +96,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
                 "role": "free",
                 "status_label": "Expirado",
                 "expires_at": expires_at,
+                "nickname": info.get("nickname"),
             }
         else:
             role = info.get("role", "free").lower()
@@ -93,6 +107,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
                 "role": role,
                 "status_label": custom_status or role.capitalize(),
                 "expires_at": expires_at,
+                "nickname": info.get("nickname"),
             }
 
     # 2. Legacy / Config Checks (if not found in DB or if DB says free but config says otherwise?
@@ -102,26 +117,43 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
 
     # Restoring original structure but capturing result for caching
     elif uid in config.ADMIN_USERS:
-        result = {"role": "admin", "status_label": "Admin", "expires_at": None}
+        result = {
+            "role": "admin",
+            "status_label": "Admin",
+            "expires_at": None,
+            "nickname": None,
+        }
 
     elif uid in config.FACEBOOK_PUBLISHERS:
-        result = {"role": "staff", "status_label": "Publisher", "expires_at": None}
+        result = {
+            "role": "staff",
+            "status_label": "Publisher",
+            "expires_at": None,
+            "nickname": None,
+        }
 
     elif uid in config.PREMIUM_LIST:
         result = {
             "role": "premium",
             "status_label": "Premium (Legacy)",
             "expires_at": None,
+            "nickname": None,
         }
 
     elif uid in config.VIP_LIST:
-        result = {"role": "vip", "status_label": "VIP (Legacy)", "expires_at": None}
+        result = {
+            "role": "vip",
+            "status_label": "VIP (Legacy)",
+            "expires_at": None,
+            "nickname": None,
+        }
 
     elif uid in config.WHITELIST:
         result = {
             "role": "white",
             "status_label": "Patrocinador (Legacy)",
             "expires_at": None,
+            "nickname": None,
         }
 
     # Save to cache
