@@ -254,6 +254,13 @@ COMMANDS_REGISTRY = {
         "usage": "/list_msge [slug]",
         "example": "/list_msge bienvenida_v1",
     },
+    "templates": {
+        "cat": "plugins",
+        "desc": "Listar plantillas",
+        "long_desc": "Lista texto por defecto y variables de plantillas editables.",
+        "usage": "/templates",
+        "example": "/templates",
+    },
     "send_msge": {
         "cat": "plugins",
         "desc": "Enviar guardado",
