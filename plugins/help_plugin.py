@@ -125,14 +125,35 @@ COMMANDS_REGISTRY = {
         "usage": "/reset <user_id>",
         "example": "/reset 123456789",
     },
-    "setlog": {
+     "setlog": {
         "cat": "admin",
         "desc": "Nivel de log",
         "long_desc": "Cambia el nivel de verbosidad de los logs del sistema en tiempo real.",
         "usage": "/setlog <INFO|DEBUG|WARNING>",
         "example": "/setlog DEBUG",
     },
-    "update_system": {
+    "set_auto_delete_time": {
+        "cat": "admin",
+        "desc": "Tiempo auto-borrado",
+        "long_desc": "Configura el tiempo (en minutos) antes de que los libros enviados se eliminen automáticamente.",
+        "usage": "/set_auto_delete_time <minutos>",
+        "example": "/set_auto_delete_time 60",
+    },
+    "debug_state": {
+        "cat": "admin",
+        "desc": "Info debug",
+        "long_desc": "Muestra el estado interno de un usuario (buffer de descarga, historial, etc.) para depuración.",
+        "usage": "/debug_state <user_id>",
+        "example": "/debug_state 123456789",
+    },
+    "id": {
+        "cat": "admin",
+        "desc": "Info ID",
+        "long_desc": "Muestra el ID numérico del chat actual y del usuario que envía el mensaje.",
+        "usage": "/id",
+        "example": "/id",
+    },
+     "update_system": {
         "cat": "admin",
         "desc": "Actualizar bot",
         "long_desc": "Ejecuta un 'git pull' y reinicia el contenedor para actualizar el bot. Use 'force' para sobrescribir cambios locales.",
@@ -196,6 +217,14 @@ COMMANDS_REGISTRY = {
         "usage": "/export_db",
         "example": "/export_db",
     },
+    "export_history": {
+        "cat": "data",
+        "desc": "Exportar historial",
+        "long_desc": "Exporta el historial completo de libros publicados a un archivo CSV.",
+        "usage": "/export_history",
+        "example": "/export_history",
+    },
+    
     # --- Custom Messages (Plugins) ---
     "add_msge": {
         "cat": "plugins",
