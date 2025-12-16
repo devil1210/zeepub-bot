@@ -10,6 +10,7 @@ from utils.download_limiter import downloads_left, record_download, can_download
 from services.opds_service import mostrar_colecciones, get_cached_feed
 from config.config_settings import config
 from utils.helpers import get_thread_id, is_command_for_bot, build_search_url
+
 # from utils.http_client import parse_feed_from_url  <-- Removing this
 from utils.decorators import rate_limit
 
@@ -38,10 +39,11 @@ class CommandHandlers:
         uid = update.effective_user.id
         left = await downloads_left(uid)
 
+        first_name = update.effective_user.first_name
         text = (
-            "👋 ¡Hola! Comencemos.\n\n✅ Tienes descargas ilimitadas."
+            f"👋 ¡Hola {first_name}! Comencemos.\n\n✅ Tienes descargas ilimitadas."
             if left == "ilimitadas"
-            else f"👋 ¡Hola! Comencemos.\n\n⚡️ Te quedan {left} descargas hoy."
+            else f"👋 ¡Hola {first_name}! Comencemos.\n\n⚡️ Te quedan {left} descargas hoy."
         )
 
         # Capturar message_thread_id para soporte de topics
