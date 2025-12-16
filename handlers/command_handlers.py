@@ -2,7 +2,9 @@
 
 import logging
 import os
+import html
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ParseMode
 from datetime import datetime, timedelta
 from telegram.ext import ContextTypes, CommandHandler
 from core.state_manager import state_manager
@@ -40,17 +42,42 @@ class CommandHandlers:
         left = await downloads_left(uid)
 
         first_name = update.effective_user.first_name
-        text = (
-            f"👋 ¡Hola {first_name}! Comencemos.\n\n✅ Tienes descargas ilimitadas."
-            if left == "ilimitadas"
-            else f"👋 ¡Hola {first_name}! Comencemos.\n\n⚡️ Te quedan {left} descargas hoy."
-        )
+
+        # Template System
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+        if left == "ilimitadas":
+            base_text = (
+                f"👋 ¡Hola {first_name}! Comencemos.\n\n✅ Tienes descargas ilimitadas."
+            )
+            text = (
+                cms.get_text(
+                    "start_welcome_unlimited", default_text=base_text, Nombre=first_name
+                )
+                if (cms and cms.enabled)
+                else base_text
+            )
+        else:
+            base_text = f"👋 ¡Hola {first_name}! Comencemos.\n\n⚡️ Te quedan {left} descargas hoy."
+            text = (
+                cms.get_text(
+                    "start_welcome_limited",
+                    default_text=base_text,
+                    Nombre=first_name,
+                    Descargas=left,
+                )
+                if (cms and cms.enabled)
+                else base_text
+            )
 
         # Capturar message_thread_id para soporte de topics
         thread_id = get_thread_id(update)
 
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text=text, message_thread_id=thread_id
+            chat_id=update.effective_chat.id,
+            text=text,
+            message_thread_id=thread_id,
+            parse_mode=ParseMode.HTML,
         )
 
         st = state_manager.get_user_state(uid)
@@ -126,11 +153,21 @@ class CommandHandlers:
                 [InlineKeyboardButton("📣 ZeePubs", callback_data="destino|@ZeePubs")],
                 [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
             ]
+
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_txt = "🔧 Modo Evil: ¿Dónde quieres publicar?"
+            text_evil = (
+                cms.get_text("evil_mode_prompt", default_text=base_txt)
+                if (cms and cms.enabled)
+                else base_txt
+            )
+
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text="🔧 Modo Evil: ¿Dónde quieres publicar?",
+                text=text_evil,
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 message_thread_id=thread_id,
+                parse_mode=ParseMode.HTML,
             )
             return
 
@@ -273,10 +310,20 @@ class CommandHandlers:
             logger.debug("No se pudo borrar comando /cancel")
 
         thread_id = get_thread_id(update)
+
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_cancel = "✅ ¡Entendido! Operación cancelada."
+        text_cancel = (
+            cms.get_text("cancel_confirmation", default_text=base_cancel)
+            if (cms and cms.enabled)
+            else base_cancel
+        )
+
         await context.bot.send_message(
             chat_id=chat_id,
-            text="✅ ¡Entendido! Operación cancelada.",
+            text=text_cancel,
             message_thread_id=thread_id,
+            parse_mode=ParseMode.HTML,
         )
 
     async def plugins(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -315,11 +362,23 @@ class CommandHandlers:
         st["opds_root"] = config.OPDS_ROOT_EVIL
         st["historial"] = []
         st["esperando_password"] = True
+        st["historial"] = []
+        st["esperando_password"] = True
         thread_id = get_thread_id(update)
+
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_pwd = "🔒 Modo Privado. Por favor, ingresa la contraseña:"
+        text_pwd = (
+            cms.get_text("evil_password_prompt", default_text=base_pwd)
+            if (cms and cms.enabled)
+            else base_pwd
+        )
+
         message = await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="🔒 Modo Privado. Por favor, ingresa la contraseña:",
+            text=text_pwd,
             message_thread_id=thread_id,
+            parse_mode=ParseMode.HTML,
         )
         st["msg_esperando_pwd"] = message.message_id
 
@@ -342,9 +401,23 @@ class CommandHandlers:
         user_info = await get_effective_user(uid)
         if user_info.get("role") == "banned":
             expires_at = user_info.get("expires_at")
-            msg = "⛔ Estás <b>baneado</b> del bot."
+
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            default_msg = "⛔ Estás <b>baneado</b> del bot."
             if expires_at:
-                msg += f" Hasta: <b>{expires_at.strftime('%Y-%m-%d %H:%M')}</b>"
+                default_msg += f" Hasta: <b>{expires_at.strftime('%Y-%m-%d %H:%M')}</b>"
+
+            msg = default_msg
+            if cms and cms.enabled:
+                exp_str = (
+                    expires_at.strftime("%Y-%m-%d %H:%M")
+                    if expires_at
+                    else "Indefinido"
+                )
+                msg = cms.get_text(
+                    "banned_message", default_text=default_msg, Fecha=exp_str
+                )
+
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=msg,
@@ -376,11 +449,25 @@ class CommandHandlers:
                         )
                     ],
                 ]
+
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_no = f"🔍 Mmm, no encontré nada para: {termino}"
+
+                safe_term = html.escape(termino)
+                text_no = base_no
+                if cms and cms.enabled:
+                    text_no = cms.get_text(
+                        "search_no_results",
+                        default_text=f"🔍 Mmm, no encontré nada para: {safe_term}",
+                        Termino=safe_term,
+                    )
+
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    text=f"🔍 Mmm, no encontré nada para: {termino}",
+                    text=text_no,
                     reply_markup=InlineKeyboardMarkup(keyboard),
                     message_thread_id=thread_id,
+                    parse_mode=ParseMode.HTML,
                 )
             else:
                 logger.debug(f"Encontrados {len(feed.entries)} resultados")
