@@ -15,9 +15,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql import text  # Importar text explícitamente
 from sqlalchemy.orm import declarative_base, sessionmaker
-from telegram import Update, Message
+from telegram import Update, Message, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
-from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler
+from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler, CallbackQueryHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
@@ -486,6 +486,8 @@ class CustomMessagesPlugin(BasePlugin):
             app.add_handler(CommandHandler("vars", self.vars))
             app.add_handler(CommandHandler("set_var", self.set_var))
             app.add_handler(CommandHandler("del_var", self.del_var))
+
+            app.add_handler(CallbackQueryHandler(self.templates_callback, pattern="^templates\|"))
 
             # ChatMemberHandler for welcome message
             # MY_CHAT_MEMBER is triggered when bot is added/promoted/removed
@@ -1118,14 +1120,7 @@ class CustomMessagesPlugin(BasePlugin):
                 parse_mode="HTML",
             )
 
-    async def templates(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Lista todas las plantillas disponibles y sus variables, agrupadas por categoría."""
-        if update.effective_user.id not in config.ADMIN_USERS:
-            return
-
-
-
-        # Define category buckets
+    def _get_template_categories(self) -> Dict[str, List[str]]:
         categories = {
             "Ayuda y Menús": [],
             "Inicio y Bienvenida": [],
@@ -1135,10 +1130,8 @@ class CustomMessagesPlugin(BasePlugin):
             "Sistema y Estado": [],
             "Otros": [],
         }
-
-        # Sort all keys first
+        
         all_keys = sorted(TEMPLATE_REGISTRY.keys())
-
         for slug in all_keys:
             if slug.startswith("help_"):
                 cat = "Ayuda y Menús"
@@ -1154,10 +1147,11 @@ class CustomMessagesPlugin(BasePlugin):
                 cat = "Sistema y Estado"
             else:
                 cat = "Otros"
-            
             categories[cat].append(slug)
+        return categories
 
-        # Iterate categories in specific order
+    def _build_templates_keyboard(self, current_cat: str = None) -> InlineKeyboardMarkup:
+        # Fixed order
         cat_order = [
             "Inicio y Bienvenida",
             "Ayuda y Menús",
@@ -1167,35 +1161,81 @@ class CustomMessagesPlugin(BasePlugin):
             "Modo Evil (Privado)",
             "Otros"
         ]
+        
+        buttons = []
+        if current_cat is None:
+            # Main Menu: Categories
+            for cat in cat_order:
+                # Callback: templates|cat|<cat_name>
+                buttons.append([InlineKeyboardButton(f"📂 {cat}", callback_data=f"templates|cat|{cat}")])
+            buttons.append([InlineKeyboardButton("❌ Cerrar", callback_data="templates|close")])
+        else:
+            # Back Button only
+            buttons.append([InlineKeyboardButton("🔙 Volver a Categorías", callback_data="templates|home")])
+            
+        return InlineKeyboardMarkup(buttons)
 
+    async def templates(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Muestra el menú interactivo de plantillas."""
+        if update.effective_user.id not in config.ADMIN_USERS:
+            return
+
+        keyboard = self._build_templates_keyboard()
         await update.message.reply_text(
-            "📋 <b>Plantillas Disponibles</b>\nUsa <code>/add_msge &lt;slug&gt;</code> para personalizar.",
+            "📋 <b>Gestor de Plantillas</b>\n\nSelecciona una categoría para ver los textos disponibles:",
+            reply_markup=keyboard,
             parse_mode="HTML"
         )
 
-        for cat_name in cat_order:
-            slugs = categories[cat_name]
-            if not slugs:
-                continue
+    async def templates_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        uid = update.effective_user.id
+        
+        if uid not in config.ADMIN_USERS:
+            await query.answer("⛔ No tienes permisos.", show_alert=True)
+            return
 
-            buffer = f"📂 <b>{cat_name.upper()}</b>\n\n"
+        data = query.data.split("|")
+        # templates | action | arg
+        action = data[1]
+        arg = data[2] if len(data) > 2 else None
 
+        if action == "close":
+            await query.message.delete()
+            return
+
+        if action == "home":
+             keyboard = self._build_templates_keyboard()
+             await query.edit_message_text(
+                 "📋 <b>Gestor de Plantillas</b>\n\nSelecciona una categoría para ver los textos disponibles:",
+                 reply_markup=keyboard,
+                 parse_mode="HTML"
+             )
+             return
+
+        if action == "cat":
+            cat_name = arg
+            categories = self._get_template_categories()
+            slugs = categories.get(cat_name, [])
+            
+            text = f"📂 <b>{cat_name.upper()}</b>\n\n"
+            text += "Usa <code>/add_msge &lt;slug&gt;</code> para personalizar.\n\n"
+            
             for slug in slugs:
                 info = TEMPLATE_REGISTRY[slug]
                 vars_str = ", ".join(info["vars"]) if info["vars"] else "Ninguna"
-
                 entry = f"🔹 <b>{slug}</b>\n"
                 entry += f"   📝 {info['desc']}\n"
-                entry += f"   💲 Variables: <code>{vars_str}</code>\n\n"
-
-                if len(buffer) + len(entry) > 4000:
-                    await update.message.reply_text(buffer, parse_mode="HTML")
-                    buffer = "" # Continuation
-
-                buffer += entry
-
-            if buffer:
-                await update.message.reply_text(buffer, parse_mode="HTML")
+                entry += f"   💲 Vars: <code>{vars_str}</code>\n\n"
+                
+                # Check length limit (simple check, if too long cut it)
+                if len(text) + len(entry) > 4000:
+                    text += "<i>... lista truncada por límite de longitud ...</i>"
+                    break
+                text += entry
+            
+            keyboard = self._build_templates_keyboard(current_cat=cat_name)
+            await query.edit_message_text(text, reply_markup=keyboard, parse_mode="HTML")
 
     async def set_var(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_user.id not in config.ADMIN_USERS:
