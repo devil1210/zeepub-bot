@@ -201,6 +201,7 @@ def generar_slug_from_meta(meta: dict) -> str:
         "？",
         "！",
         "；",
+        "?",
         "-",
         "_",
     ):
