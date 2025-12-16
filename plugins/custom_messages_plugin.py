@@ -403,7 +403,7 @@ class CustomMessagesPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.2.0"
+        return "1.2.1"
 
     @property
     def description(self) -> str:

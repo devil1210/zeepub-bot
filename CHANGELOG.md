@@ -5,6 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.9.1] - 2025-12-16
+
+### Añadido
+- **Reset Message**: Nuevo comando `/reset_msge` para revertir personalizaciones de plantillas y volver al valor por defecto.
+- **Help Update**: Documentación automática del comando de reset en el menú de ayuda.
+
+### Corregido
+- **Templates**: Refactorización del comando `/templates` para usar un menú interactivo y evitar mensajes excesivamente largos.
+- **Linting**: Corrección de errores menores de estilo (W293) en handlers.
+- **Test**: Corrección de tests unitarios para adaptarse a la nueva lógica de roles (Publisher).
+
 ## [3.9.0] - 2025-12-16
 
 ### Añadido
