@@ -15,6 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.sql import text  # Importar text explícitamente
 from sqlalchemy.orm import declarative_base, sessionmaker
 from telegram import Update, Message
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
@@ -191,6 +192,34 @@ class CustomMessagesPlugin(BasePlugin):
             s = session.get(PluginSettings, key)
             return s.value if s else None
 
+    # --- Helper Methods for Template System ---
+
+    def get_text(self, slug: str, default_text: str = None, **replacements) -> str:
+        """
+        Recupera el texto de un mensaje guardado por su slug.
+        Si no existe, devuelve default_text.
+        Realiza el reemplazo de variables en el formato [Variable].
+        """
+        msg = self._get_message(slug.lower())
+
+        final_text = default_text
+        if msg and msg.text_content:
+            final_text = msg.text_content
+
+        if not final_text:
+            return ""
+
+        # Variable Replacement
+        for key, value in replacements.items():
+            placeholder = f"[{key}]"
+            # Ensure value is string and HTML safe if needed,
+            # though usually we pass safe strings or we rely on the admin to be careful.
+            # Best practice: escape values if they come from user input.
+            safe_value = str(value)
+            final_text = final_text.replace(placeholder, safe_value)
+
+        return final_text
+
     # --- Handlers ---
 
     async def add_msge(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -275,12 +304,16 @@ class CustomMessagesPlugin(BasePlugin):
 
                     first_name = user.first_name if user else "Usuario"
                     safe_name = html.escape(first_name)
-                    text_to_send = msg.text_content.replace("[Nombre]", safe_name)
+
+                    # Use the new helper!
+                    text_to_send = self.get_text(
+                        slug, default_text=msg.text_content, Nombre=safe_name
+                    )
 
                     await context.bot.send_message(
                         chat_id=update.effective_chat.id,
                         text=text_to_send,
-                        parse_mode="HTML",
+                        parse_mode=ParseMode.HTML,
                         message_thread_id=get_thread_id(update),
                     )
                     return
@@ -313,7 +346,7 @@ class CustomMessagesPlugin(BasePlugin):
             text += f"🔹 <code>{m.slug}</code>\n"
 
         text += "\nUsa <code>/list_msge &lt;id&gt;</code> para ver uno."
-        await update.message.reply_text(text, parse_mode="HTML")
+        await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
     async def send_msge(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_user.id not in config.ADMIN_USERS:
