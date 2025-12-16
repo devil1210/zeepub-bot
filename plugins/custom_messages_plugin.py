@@ -49,74 +49,92 @@ TEMPLATE_REGISTRY = {
     "banned_message": {
         "desc": "Mensaje para usuario baneado",
         "vars": ["[Fecha]"],
+        "default": "⛔ Estás <b>baneado</b> del bot.{{if Fecha}} Hasta: <b>[Fecha]</b>{{endif}}",
     },
     "evil_password_success": {
         "desc": "Contraseña correcta (Modo Evil)",
         "vars": [],
+        "default": "✅ Contraseña correcta. Elige destino:",
     },
     "evil_password_fail": {
         "desc": "Contraseña incorrecta (Modo Evil)",
         "vars": [],
+        "default": "❌ Contraseña incorrecta.",
     },
     "search_no_results": {
         "desc": "Búsqueda sin resultados",
         "vars": ["[Termino]"],
+        "default": "🔍 Mmm, no encontré nada para: [Termino]",
     },
     "private_default_fallback": {
         "desc": "Respuesta por defecto en chat privado",
         "vars": [],
+        "default": "Usa /start para comenzar o selecciona una opción del menú.",
     },
     "start_welcome_unlimited": {
         "desc": "Bienvenida /start (Ilimitado)",
         "vars": ["[Nombre]"],
+        "default": "👋 ¡Hola [Nombre]! Comencemos.\n\n✅ Tienes descargas ilimitadas.",
     },
     "start_welcome_limited": {
         "desc": "Bienvenida /start (Limitado)",
         "vars": ["[Nombre]", "[Descargas]"],
+        "default": "👋 ¡Hola [Nombre]! Comencemos.\n\n⚡️ Te quedan [Descargas] descargas hoy.",
     },
     "evil_mode_prompt": {
         "desc": "Pregunta de destino (Admin -> Evil)",
         "vars": [],
+        "default": "🔧 Modo Evil: ¿Dónde quieres publicar?",
     },
     "evil_password_prompt": {
         "desc": "Solicitud de contraseña",
         "vars": [],
+        "default": "🔒 Modo Privado. Por favor, ingresa la contraseña:",
     },
     "cancel_confirmation": {
         "desc": "Confirmación de cancelación",
         "vars": [],
+        "default": "✅ ¡Entendido! Operación cancelada.",
     },
     "donate_message": {
         "desc": "Mensaje comando /donar",
         "vars": ["[Nombre]", "[DonationUrl]"],
+        "default": "💸 <b>Apoya el Mantenimiento del Bot</b>\n\nHola [Nombre], si te gusta el servicio, considera apoyar con una donación para cubrir los costos del servidor.\n\n<a href='[DonationUrl]'>☕ Invítame un café en Ko-fi</a>\n\n¡Gracias por tu apoyo!",
     },
     "levels_message": {
         "desc": "Mensaje comando /niveles",
         "vars": ["[white]", "[vip]", "[premium]", "[duration]"],
+        "default": "📊 <b>Niveles de Usuario</b>\n\n⬜ <b>White</b>: [white] descargas/día\n⭐ <b>VIP</b>: [vip] descargas/día\n✨ <b>Premium</b>: [premium] descargas/día\n\nDuración Premium: [duration] días por donación.",
     },
     "bot_closing": {
         "desc": "Mensaje al cerrar menú",
         "vars": ["[Nombre]"],
+        "default": "👋 Gracias por usar el bot.",
     },
     "donation_success": {
         "desc": "Confirmación de donación reportada",
         "vars": ["[Nombre]"],
+        "default": "✅ <b>Notificación enviada</b>\n\nUn administrador revisará tu donación pronto y actualizará tu nivel.\n¡Muchas gracias por tu apoyo! ❤️",
     },
     "donation_admin_alert": {
         "desc": "Alerta a adminds sobre donación",
         "vars": ["[Nombre]", "[Alias]", "[ID]"],
+        "default": "💰 <b>Nueva Donación Reportada</b>\n\n👤 <b>Usuario:</b> [Nombre]\n{{if Alias}}🔗 <b>Alias:</b> @[Alias]\n{{endif}}🆔 <b>ID:</b> <code>[ID]</code>\n\nEl usuario ha indicado que realizó una donación en Ko-fi.\nPor favor verifica y usa <code>/nivel</code> (si existiera) o actualiza manualmente.",
     },
     "search_instructions_legacy": {
         "desc": "Instrucciones de búsqueda (Usuario normal)",
         "vars": [],
+        "default": "🔍 Para buscar, usa el comando:\n\n<code>/search término de búsqueda</code>\n\nEjemplo: <code>/search harry potter</code>",
     },
     "help_main_header": {
         "desc": "Encabezado principal de /help",
         "vars": ["[Nombre]"],
+        "default": "👋 <b>Centro de Ayuda</b>\nHola [Nombre], aquí tienes los comandos disponibles:",
     },
     "status_message": {
         "desc": "Mensaje de estado (/status)",
         "vars": ["[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]"],
+        "default": "🤖 <b>ZeePub Bot</b> [VersionBot]\n\n📊 <b>Tu Estado</b>\n\n👤 <b>Usuario:</b> [Nombre]\n🆔 <b>ID:</b> [ID]\n⭐ <b>Nivel:</b> [Nivel]\n{{if Expires}}📅 <b>Vence:</b> [Expires]\n{{endif}}📉 <b>Descargas:</b> [Descargas]\n{{if ResetTime}}⏳ <b>Reinicio en:</b> [ResetTime]\n{{endif}}",
     },
 }
 
@@ -138,7 +156,7 @@ class CustomMessagesPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.0.0"
+        return "1.1.0"
 
     @property
     def description(self) -> str:
@@ -254,7 +272,7 @@ class CustomMessagesPlugin(BasePlugin):
                     source_chat_id=chat_id,
                     source_message_id=message_id,
                     description=description,
-                    text_content=description,  # Usamos description para pasar el texto en add_msge
+                    text_content=description,  # Usamos description para pasar el texto como descripción/contenido
                 )
                 session.add(msg)
 
@@ -290,20 +308,29 @@ class CustomMessagesPlugin(BasePlugin):
     ) -> str:
         """
         Recupera el texto de un mensaje guardado por su slug.
-        Si no existe, devuelve default_text.
-        Realiza el reemplazo de variables en el formato [Variable].
+        Orden de prioridad:
+        1. Base de Datos (Personalizado)
+        2. default_text (Argumento legado, opcional)
+        3. TEMPLATE_REGISTRY explicit default
+        4. Cadena vacía
 
-        Args:
-            slug: Identificador del mensaje.
-            default_text: Texto por defecto si no existe en BD.
-            user: Objeto User de Telegram (opcional) para inyectar variables globales ([Nombre], [Alias], etc).
-            **replacements: Variables adicionales específicas.
+        Realiza el reemplazo de variables en el formato [Variable].
         """
         msg = self._get_message(slug.lower())
 
-        final_text = default_text
+        final_text = None
         if msg and msg.text_content:
             final_text = msg.text_content
+
+        # Fallbacks
+        if not final_text:
+            if default_text:
+                final_text = default_text
+            else:
+                # Look in registry
+                entry = TEMPLATE_REGISTRY.get(slug)
+                if entry and "default" in entry:
+                    final_text = entry["default"]
 
         if not final_text:
             return ""
@@ -337,9 +364,7 @@ class CustomMessagesPlugin(BasePlugin):
             # - None -> False
             # - False -> False
             # - "" -> False
-            # - 0 -> False (maybe? usually we want 0 to show, but in templates 0 downloads might mean show?
-            #   For safety, strict python truthiness is usually fine, but be careful with 0.
-            #   Let's check if it exists and is not None and (is not string empty).
+            # - 0 -> False
             is_true = bool(val)
             # Special case: allow 0 as True if it's an integer/number, usually we want to display "0 variables"
             if val == 0 or val == "0":
@@ -416,8 +441,26 @@ class CustomMessagesPlugin(BasePlugin):
             # Preview mode
             slug = context.args[0].lower()
             msg = self._get_message(slug)
-            if not msg:
-                await update.message.reply_text("❌ Mensaje no encontrado.")
+
+            # Logic to find text to preview:
+            # 1. DB Content
+            # 2. Registry Default
+            text_to_preview = None
+            source = "database"
+
+            if msg and msg.text_content:
+                text_to_preview = msg.text_content
+            else:
+                # Check registry
+                entry = TEMPLATE_REGISTRY.get(slug)
+                if entry and "default" in entry:
+                    text_to_preview = entry["default"]
+                    source = "default"
+
+            if not text_to_preview:
+                await update.message.reply_text(
+                    "❌ Mensaje no encontrado (ni en base de datos ni por defecto)."
+                )
                 return
 
             # Check for optional target_uid for variable replacement testing
@@ -428,65 +471,105 @@ class CustomMessagesPlugin(BasePlugin):
                 except ValueError:
                     pass
 
-            # If text_content exists and we have a target for replacement
-            if target_uid and hasattr(msg, "text_content") and msg.text_content:
+            # If we have text content (either from DB or default) and target for replacement
+            if target_uid:
                 try:
                     # Get user info to replace [Nombre]
-                    # We try to get chat member info from the current chat if possible, or get_chat
                     try:
                         member = await context.bot.get_chat_member(
                             update.effective_chat.id, target_uid
                         )
                         user = member.user
                     except Exception:
-                        # Fallback to get_chat (might fail if bot never met user)
                         chat = await context.bot.get_chat(target_uid)
                         user = chat
 
                     first_name = user.first_name if user else "Usuario"
                     safe_name = html.escape(first_name)
 
-                    # Use the new helper!
-                    text_to_send = self.get_text(
-                        slug, default_text=msg.text_content, Nombre=safe_name
-                    )
+                    # Use get_text. Note: we don't pass default_text because we already resolved it or it's in registry
+                    # But actually get_text will resolve it again if we pass just the slug.
+                    # It's better to rely on get_text's internal resolution to be consistent.
+                    text_sent = self.get_text(slug, user=user)
 
                     await context.bot.send_message(
                         chat_id=update.effective_chat.id,
-                        text=text_to_send,
+                        text=text_sent,
                         parse_mode=ParseMode.HTML,
                         message_thread_id=get_thread_id(update),
                     )
                     return
                 except Exception as e:
                     logger.warning(
-                        f"Failed to test vars in list_msge: {e} - Falling back to copy"
+                        f"Failed to test vars in list_msge: {e} - Falling back to simple preview"
                     )
 
-            try:
-                await context.bot.copy_message(
+            # Simple preview (raw text) or copy if it was a multimedia message in DB
+            # If source is default, we just send message.
+            # If source is DB and has text_content, we send message.
+            # If source is DB and multimedia (no text_content but has IDs), we copy.
+
+            if source == "default" or (msg and msg.text_content):
+                # Send text representation
+                prefix = (
+                    "⚠️ <b>Mensaje por defecto:</b>\n\n"
+                    if source == "default"
+                    else f"📂 <b>Mensaje Personalizado ({slug}):</b>\n\n"
+                )
+
+                # Render keys to show placeholders? Or just raw?
+                # Let's show raw but maybe escaped to not break HTML?
+                # Actually user wants to see the structure.
+                # Use get_text with NO user to see raw placeholders?
+                # get_text replaces global vars always if we don't pass them? No, only if user object passed?
+                # let's just show text_to_preview raw.
+
+                await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    from_chat_id=msg.source_chat_id,
-                    message_id=msg.source_message_id,
+                    text=f"{prefix}{html.escape(text_to_preview)}",
+                    parse_mode=ParseMode.HTML,
                     message_thread_id=get_thread_id(update),
                 )
-            except Exception as e:
-                await update.message.reply_text(
-                    f"❌ Error al previsualizar (¿Mensaje original borrado?): {e}"
-                )
+            elif msg:
+                # Multimedia copy fallback
+                try:
+                    await context.bot.copy_message(
+                        chat_id=update.effective_chat.id,
+                        from_chat_id=msg.source_chat_id,
+                        message_id=msg.source_message_id,
+                        message_thread_id=get_thread_id(update),
+                    )
+                except Exception as e:
+                    await update.message.reply_text(
+                        f"❌ Error al previsualizar (¿Mensaje original borrado?): {e}"
+                    )
             return
 
         # List mode
-        msgs = self._list_messages()
-        if not msgs:
-            await update.message.reply_text("📭 No hay mensajes guardados.")
+        # Show both DB keys and Registry keys
+        msgs_db = self._list_messages()
+        db_slugs = {m.slug for m in msgs_db}
+        registry_slugs = set(TEMPLATE_REGISTRY.keys())
+
+        all_slugs = sorted(db_slugs.union(registry_slugs))
+
+        if not all_slugs:
+            await update.message.reply_text("📭 No hay mensajes disponibles.")
             return
 
-        text = "📂 <b>Mensajes Guardados:</b>\n\n"
-        for m in msgs:
-            text += f"🔹 <code>{m.slug}</code>\n"
+        text = "📂 <b>Mensajes Disponibles:</b>\n\n"
+        for s in all_slugs:
+            icon = "🔹"
+            extra = ""
+            if s in db_slugs:
+                icon = "💾"  # Personalizado
+            elif s in registry_slugs:
+                icon = "📄"  # Por defecto
 
-        text += "\nUsa <code>/list_msge &lt;id&gt;</code> para ver uno."
+            text += f"{icon} <code>{s}</code>{extra}\n"
+
+        text += "\n💾 = Personalizado, 📄 = Por defecto"
+        text += "\nUsa <code>/list_msge &lt;id&gt;</code> para ver contenido."
         await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
     async def send_msge(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -500,17 +583,38 @@ class CustomMessagesPlugin(BasePlugin):
         slug = context.args[0].lower()
         target_chat_id = context.args[1]
 
+        # Try to resolve via get_text first to see if we have text content
+        # But send_msge is often used for multimedia copies...
+        # If we have a DB entry with multimedia, copy it.
+        # If we have only text (default or DB), send it.
+
         msg = self._get_message(slug)
-        if not msg:
-            await update.message.reply_text("❌ ID de mensaje no encontrado.")
+        entry = TEMPLATE_REGISTRY.get(slug)
+
+        has_content = (msg and msg.text_content) or (entry and "default" in entry)
+
+        if not msg and not has_content:
+            await update.message.reply_text("❌ Mensaje no encontrado.")
             return
 
         try:
-            await context.bot.copy_message(
-                chat_id=target_chat_id,
-                from_chat_id=msg.source_chat_id,
-                message_id=msg.source_message_id,
-            )
+            if msg and not msg.text_content:
+                # Pure multimedia copy
+                await context.bot.copy_message(
+                    chat_id=target_chat_id,
+                    from_chat_id=msg.source_chat_id,
+                    message_id=msg.source_message_id,
+                )
+            else:
+                # Text based (Default or DB text)
+                # We can't really "send" a template without variables replaced...
+                # This command is raw. Maybe just send the text?
+                # Or try to render with empty vars?
+                text_to_send = self.get_text(slug)
+                await context.bot.send_message(
+                    chat_id=target_chat_id, text=text_to_send, parse_mode=ParseMode.HTML
+                )
+
             await update.message.reply_text(f"✅ Enviado a {target_chat_id}")
         except Exception as e:
             await update.message.reply_text(f"❌ Error enviando: {e}")
@@ -542,19 +646,36 @@ class CustomMessagesPlugin(BasePlugin):
         target_chat_id = parts[0]
         content = parts[1]
 
-        # Check if content matches a stored slug EXACTLY
-        msg = self._get_message(content.strip().lower())
+        # Check if content matches a slug
+        slug = content.strip().lower()
 
-        if msg:
-            # It IS a stored message
+        # Check if it exists as a template (DB or Default)
+        msg_db = self._get_message(slug)
+        is_template = (slug in TEMPLATE_REGISTRY) or (msg_db is not None)
+
+        if is_template:
+            # It IS a stored message or template
             try:
-                await context.bot.copy_message(
-                    chat_id=target_chat_id,
-                    from_chat_id=msg.source_chat_id,
-                    message_id=msg.source_message_id,
-                )
+                if msg_db and not msg_db.text_content:
+                    # Multimedia copy
+                    await context.bot.copy_message(
+                        chat_id=target_chat_id,
+                        from_chat_id=msg_db.source_chat_id,
+                        message_id=msg_db.source_message_id,
+                    )
+                else:
+                    # Text Message (Template)
+                    # Note: We probably want to replace variables?
+                    # But /saludo is often used for static things or manual sends.
+                    # If it has variables they will remain placeholders unless we inject dummy ones.
+                    # Let's send processed text.
+                    text_to_send = self.get_text(slug)
+                    await context.bot.send_message(
+                        chat_id=target_chat_id, text=text_to_send, parse_mode="HTML"
+                    )
+
                 await update.message.reply_text(
-                    f"✅ Mensaje guardado <code>{msg.slug}</code> enviado a {target_chat_id}",
+                    f"✅ Mensaje <code>{slug}</code> enviado a {target_chat_id}",
                     parse_mode="HTML",
                 )
             except Exception as e:
@@ -589,12 +710,13 @@ class CustomMessagesPlugin(BasePlugin):
             self._set_setting("welcome_msg_id", "")
             await update.message.reply_text("👋 Bienvenida automática desactivada.")
         else:
-            msg = self._get_message(arg)
-            if not msg:
+            # Verify if valid slug
+            if arg not in TEMPLATE_REGISTRY and not self._get_message(arg):
                 await update.message.reply_text(
-                    "❌ ID de mensaje no encontrado. Primero guárdalo con /add_msge"
+                    "❌ ID no encontrado. Usa uno de /list_msge"
                 )
                 return
+
             self._set_setting("welcome_msg_id", arg)
             await update.message.reply_text(
                 f"👋 Bienvenida configurada con mensaje: <code>{arg}</code>",
@@ -659,8 +781,12 @@ class CustomMessagesPlugin(BasePlugin):
                 f"Bot añadido a grupo {chat_id}. Enviando bienvenida si corresponde."
             )
 
+            # Use get_text to support default templates too, not just DB copy
+            # But copy_message is richer for multimedia.
+            # Strategy: Try DB message first (for copy). If not, send text.
+
             msg = self._get_message(current_welcome_id)
-            if msg:
+            if msg and not msg.text_content:
                 try:
                     await context.bot.copy_message(
                         chat_id=chat_id,
@@ -668,6 +794,13 @@ class CustomMessagesPlugin(BasePlugin):
                         message_id=msg.source_message_id,
                     )
                 except Exception as e:
-                    logger.error(
-                        f"Error enviando bienvenida automática a {chat_id}: {e}"
+                    logger.error(f"Error enviando bienvenida (copy): {e}")
+            else:
+                # Text based
+                try:
+                    text = self.get_text(current_welcome_id)
+                    await context.bot.send_message(
+                        chat_id=chat_id, text=text, parse_mode="HTML"
                     )
+                except Exception as e:
+                    logger.error(f"Error enviando bienvenida (text): {e}")

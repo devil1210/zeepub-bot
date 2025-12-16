@@ -102,7 +102,7 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text_instr = base_instr
         if cms and cms.enabled:
             text_instr = cms.get_text(
-                "search_instructions_legacy", default_text=base_instr
+                "search_instructions_legacy"
             )
 
         await query.edit_message_text(
@@ -555,7 +555,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         base_closing = "👋 Gracias por usar el bot."
         text_closing = base_closing
         if cms and cms.enabled:
-            text_closing = cms.get_text("bot_closing", default_text=base_closing)
+            text_closing = cms.get_text("bot_closing")
 
         await query.edit_message_text(text_closing)
         return
@@ -629,7 +629,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text_success = base_success
             if cms and cms.enabled:
                 text_success = cms.get_text(
-                    "donation_success", default_text=base_success, user=user
+                    "donation_success", user=user
                 )
 
             await query.edit_message_text(
@@ -653,7 +653,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if cms and cms.enabled:
             # We pass all potentially useful vars
             admin_msg = cms.get_text(
-                "donation_admin_alert", default_text=base_admin_msg, user=user
+                "donation_admin_alert",
+                user=user
             )
         else:
             # Basic fallback logic for replacement if plugin disabled

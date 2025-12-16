@@ -46,7 +46,6 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if cms and cms.enabled:
                 msg = cms.get_text(
                     "banned_message",
-                    default_text=default_msg_template,
                     user=update.effective_user,
                     Fecha=exp_str,
                 )
@@ -84,7 +83,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_text = "✅ Contraseña correcta. Elige destino:"
             text_success = (
-                cms.get_text("evil_password_success", base_text)
+                cms.get_text("evil_password_success")
                 if (cms and cms.enabled)
                 else base_text
             )
@@ -120,7 +119,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_fail = "❌ Contraseña incorrecta."
             text_fail = (
-                cms.get_text("evil_password_fail", base_fail)
+                cms.get_text("evil_password_fail")
                 if (cms and cms.enabled)
                 else base_fail
             )
@@ -172,7 +171,6 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # We can provide [Termino] as replacement
                 text_no_results = cms.get_text(
                     "search_no_results",
-                    default_text=f"🔍 No se encontraron resultados para: {safe_term}",
                     Termino=safe_term,
                 )
 
@@ -195,7 +193,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_fallback = "Usa /start para comenzar o selecciona una opción del menú."
         text_fallback = (
-            cms.get_text("private_default_fallback", base_fallback)
+            cms.get_text("private_default_fallback")
             if (cms and cms.enabled)
             else base_fallback
         )

@@ -339,7 +339,7 @@ class HelpPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "2.0.0"
+        return "2.0.1"
 
     @property
     def description(self) -> str:
@@ -421,7 +421,7 @@ class HelpPlugin(BasePlugin):
         text = base_text
         if cms and cms.enabled:
             text = cms.get_text(
-                "help_main_header", default_text=base_text, user=update.effective_user
+                "help_main_header", user=update.effective_user
             )
 
         keyboard = self._build_category_keyboard(uid)
@@ -453,7 +453,7 @@ class HelpPlugin(BasePlugin):
             text_closing = base_closing
             if cms and cms.enabled:
                 text_closing = cms.get_text(
-                    "bot_closing", default_text=base_closing, Nombre=first_name
+                    "bot_closing", Nombre=first_name
                 )
 
             await query.edit_message_text(text_closing)
@@ -468,7 +468,7 @@ class HelpPlugin(BasePlugin):
             text = base_text
             if cms and cms.enabled:
                 text = cms.get_text(
-                    "help_main_header", default_text=base_text, Nombre=first_name
+                    "help_main_header", Nombre=first_name
                 )
 
             keyboard = self._build_category_keyboard(uid)

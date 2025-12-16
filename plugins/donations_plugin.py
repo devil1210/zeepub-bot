@@ -21,7 +21,7 @@ class DonationsPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.1.0"
+        return "1.1.1"
 
     @property
     def description(self) -> str:
@@ -94,7 +94,6 @@ class DonationsPlugin(BasePlugin):
             # We pass donation_url as a variable just in case they want to use it
             text = cms.get_text(
                 "donate_message",
-                default_text=base_text,
                 user=update.effective_user,
                 DonationUrl=config.DONATION_URL,
             )
@@ -163,7 +162,6 @@ class DonationsPlugin(BasePlugin):
             # Our variables here are: white, vip, premium, duration
             text = cms.get_text(
                 "levels_message",
-                default_text=base_text,
                 white=p_white,
                 vip=p_vip,
                 premium=p_premium,

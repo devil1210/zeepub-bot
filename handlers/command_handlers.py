@@ -47,27 +47,22 @@ class CommandHandlers:
         cms = context.application.plugin_manager.get_plugin("custom_messages")
 
         if left == "ilimitadas":
-            base_text = (
-                f"👋 ¡Hola {first_name}! Comencemos.\n\n✅ Tienes descargas ilimitadas."
-            )
             text = (
-                cms.get_text(
-                    "start_welcome_unlimited", default_text=base_text, Nombre=first_name
-                )
+                cms.get_text("start_welcome_unlimited", Nombre=first_name)
                 if (cms and cms.enabled)
-                else base_text
+                else "👋 ¡Hola {first_name}! Comencemos.\n\n✅ Tienes descargas ilimitadas.".replace(
+                    "{first_name}", first_name
+                )
             )
         else:
-            base_text = f"👋 ¡Hola {first_name}! Comencemos.\n\n⚡️ Te quedan {left} descargas hoy."
             text = (
                 cms.get_text(
                     "start_welcome_limited",
-                    default_text=base_text,
                     Nombre=first_name,
                     Descargas=left,
                 )
                 if (cms and cms.enabled)
-                else base_text
+                else f"👋 ¡Hola {first_name}! Comencemos.\n\n⚡️ Te quedan {left} descargas hoy."
             )
 
         # Capturar message_thread_id para soporte de topics
@@ -157,9 +152,7 @@ class CommandHandlers:
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_txt = "🔧 Modo Evil: ¿Dónde quieres publicar?"
             text_evil = (
-                cms.get_text("evil_mode_prompt", default_text=base_txt)
-                if (cms and cms.enabled)
-                else base_txt
+                cms.get_text("evil_mode_prompt") if (cms and cms.enabled) else base_txt
             )
 
             await context.bot.send_message(
@@ -285,7 +278,6 @@ class CommandHandlers:
         if cms and cms.enabled:
             final_text = cms.get_text(
                 "status_message",
-                default_text=base_text,
                 user=update.effective_user,
                 Nivel=user_level,
                 Descargas=left_text,
@@ -334,7 +326,6 @@ class CommandHandlers:
         text_cancel = (
             cms.get_text(
                 "cancel_confirmation",
-                default_text=base_cancel,
                 user=update.effective_user,
             )
             if (cms and cms.enabled)
@@ -391,9 +382,7 @@ class CommandHandlers:
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_pwd = "🔒 Modo Privado. Por favor, ingresa la contraseña:"
         text_pwd = (
-            cms.get_text("evil_password_prompt", default_text=base_pwd)
-            if (cms and cms.enabled)
-            else base_pwd
+            cms.get_text("evil_password_prompt") if (cms and cms.enabled) else base_pwd
         )
 
         message = await context.bot.send_message(
@@ -436,9 +425,7 @@ class CommandHandlers:
                     if expires_at
                     else "Indefinido"
                 )
-                msg = cms.get_text(
-                    "banned_message", default_text=default_msg, Fecha=exp_str
-                )
+                msg = cms.get_text("banned_message", Fecha=exp_str)
 
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -480,7 +467,6 @@ class CommandHandlers:
                 if cms and cms.enabled:
                     text_no = cms.get_text(
                         "search_no_results",
-                        default_text=f"🔍 Mmm, no encontré nada para: {safe_term}",
                         Termino=safe_term,
                     )
 

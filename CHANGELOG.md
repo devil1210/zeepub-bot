@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.7.6] - 2025-12-16
+
+### Refactorizado
+- **Mensajes**: Centralización de textos por defecto en `TEMPLATE_REGISTRY`.
+- **Limpieza**: Eliminado argumento `default_text` obsoleto en todos los handlers y plugins.
+- **Comandos**: `/list_msge` ahora distingue entre mensajes personalizados (BD) y por defecto (Registry).
+
+### Actualizado
+- **Plugins**: Custom Messages v1.1.0, Help v2.0.1, Donations v1.1.1.
+
 ## [3.7.5] - 2025-12-16
 
 ### Mejorado
