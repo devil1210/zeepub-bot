@@ -1013,7 +1013,7 @@ async def enviar_libro_directo(
 
             # 8. Registrar descarga y notificar
             record_download(user_id)
-            restantes = downloads_left(user_id)
+            restantes = await downloads_left(user_id)
             if restantes != "ilimitadas":
                 await bot.send_message(
                     chat_id=user_id,

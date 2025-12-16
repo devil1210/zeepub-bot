@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.8.4] - 2025-12-16
+
+### Corregido
+- **Mini App**: Se corrigió un error donde el contador de descargas restantes aparecía como objeto corrutina en lugar del número (`await` faltante en `enviar_libro_directo`).
+
 ## [3.8.3] - 2025-12-16
 
 ### Corregido
