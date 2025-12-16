@@ -142,6 +142,11 @@ TEMPLATE_REGISTRY = {
         "vars": ["[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]"],
         "default": "🤖 <b>ZeePub Bot</b> [VersionBot]\n\n📊 <b>Tu Estado</b>\n\n👤 <b>Usuario:</b> [Nombre]\n🆔 <b>ID:</b> [ID]\n⭐ <b>Nivel:</b> [Nivel]\n{{if Rol}}👨🏻‍💻 <b>Rol:</b> [Rol]\n{{endif}}{{if Apodo}}👨🏻‍💻 <b>Apodo:</b> [Apodo]\n{{endif}}{{if Expires}}📅 <b>Vence:</b> [Expires]\n{{endif}}📉 <b>Descargas:</b> [Descargas]\n{{if ResetTime}}⏳ <b>Reinicio en:</b> [ResetTime]\n{{endif}}",
     },
+    "help_cat_header": {
+        "desc": "Encabezado de categoría en /help",
+        "vars": ["[Categoria]"],
+        "default": "📂 <b>Categoría: [Categoria]</b>\n\nSelecciona un comando para ver detalles:",
+    },
     # --- Help Command Templates ---
     "help_cmd_start": {
         "desc": "Ayuda: /start",

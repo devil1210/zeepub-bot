@@ -589,7 +589,14 @@ class HelpPlugin(BasePlugin):
                 return
 
             cat_name = CATEGORIES.get(cat_key, "Desconocido")
+            
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
             text = f"📂 <b>Categoría: {cat_name}</b>\n\nSelecciona un comando para ver detalles:"
+            
+            if cms and cms.enabled:
+                text = await cms.get_text(
+                   "help_cat_header", user=update.effective_user, Categoria=cat_name
+                )
 
             keyboard = self._build_commands_keyboard(cat_key)
             await query.edit_message_text(
