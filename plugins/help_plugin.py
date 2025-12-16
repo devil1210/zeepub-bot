@@ -125,7 +125,7 @@ COMMANDS_REGISTRY = {
         "usage": "/reset <user_id>",
         "example": "/reset 123456789",
     },
-     "setlog": {
+    "setlog": {
         "cat": "admin",
         "desc": "Nivel de log",
         "long_desc": "Cambia el nivel de verbosidad de los logs del sistema en tiempo real.",
@@ -153,7 +153,7 @@ COMMANDS_REGISTRY = {
         "usage": "/id",
         "example": "/id",
     },
-     "update_system": {
+    "update_system": {
         "cat": "admin",
         "desc": "Actualizar bot",
         "long_desc": "Ejecuta un 'git pull' y reinicia el contenedor para actualizar el bot. Use 'force' para sobrescribir cambios locales.",
@@ -224,7 +224,6 @@ COMMANDS_REGISTRY = {
         "usage": "/export_history",
         "example": "/export_history",
     },
-    
     # --- Custom Messages (Plugins) ---
     "add_msge": {
         "cat": "plugins",
@@ -359,7 +358,7 @@ class HelpPlugin(BasePlugin):
         pass
 
     def _check_permissions(self, uid):
-        is_admin = str(uid) in config.ADMIN_USERS
+        is_admin = uid in config.ADMIN_USERS
         is_publisher = uid in config.FACEBOOK_PUBLISHERS
         return is_admin, is_publisher
 
