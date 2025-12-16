@@ -8,15 +8,23 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ## [3.9.0] - 2025-12-16
 
 ### Añadido
+- **Plantillas de Ayuda**: Todos los textos de ayuda son personalizables vía `help_cmd_*`.
+- **Publisher**: Lógica estricta para rol "Publisher" (Nivel Staff + Rol Custom "Publicador").
 - **Gestión de Usuarios**: Nueva categoría en Ayuda para administración de usuarios.
 - **Apodos**: Nuevo comando `/set_apodo <id> <apodo>` y variable `[Apodo]` en plantillas.
 - **Base de Datos**: Migración para soportar nicknames en tabla `users`.
 
 ### Cambiado
-- **Variables de Plantilla**: Redefinición de variables:
-    - `[Nivel]`: Ahora muestra el Rol del Sistema (Admin, Staff, Vip, etc.).
-    - `[Rol]`: Ahora muestra la etiqueta personalizada (ej: "Editor Jefe").
-- **Ayuda**: Comandos de administración de usuarios movidos a su propia categoría.
+- **Ayuda**: Reestucturación del sistema de ayuda:
+    - `/help`: Lista simple de texto (filtrada por permisos).
+    - `/menu`: Menú interactivo con botones.
+- **Variables de Plantilla**: Redefinición estricta de variables:
+    - `[Nivel]`: Mapeo directo de rol de sistema (Free -> "Lector", White -> "Patrocinador", etc.).
+    - `[Rol]`: Muestra **exclusivamente** el estado personalizado (Custom Status).
+- **Visibilidad**: Comandos `/stats` y `/evil` documentados en ayuda para administradores.
+
+### Corregido
+- **Status**: Error `NameError` al acceder a `expires_at` en el comando `/status`.
 
 ## [3.8.5] - 2025-12-16
 
