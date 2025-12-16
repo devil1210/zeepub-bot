@@ -26,7 +26,8 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     environment:
-      - DATABASE_URL=sqlite:////app/data/zeepub.db
+      - DATABASE_URL=sqlite:////app/data/url_cache.db
+      - URL_CACHE_DB_PATH=data/url_cache.db
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
 
   # db:
