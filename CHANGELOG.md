@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.7.3] - 2025-12-16
+
+### Añadido
+- **Plantillas**: Implementada plantilla `status_message` para el comando `/status`.
+- **Variables**: `[VersionBot]` disponible globalmente y variables específicas `[Nivel]`, `[Descargas]`, `[ResetTime]`, `[Expires]` para el estado.
+
 ## [3.7.2] - 2025-12-16
 
 ### Añadido

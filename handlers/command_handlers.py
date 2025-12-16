@@ -255,30 +255,53 @@ class CommandHandlers:
 
         version = get_version_string()
 
-        text = (
-            f"🤖 <b>ZeePub Bot</b> v{version}\n\n"
+        # Build default text structure for fallback
+        base_text = (
+            f"🤖 <b>ZeePub Bot</b> {version}\n\n"
             "📊 <b>Tu Estado</b>\n\n"
-            f"👤 <b>Usuario:</b> {user_name}\n"
-            f"🆔 <b>ID:</b> {uid}\n"
-            f"⭐ <b>Nivel:</b> {user_level}\n"
+            f"👤 <b>Usuario:</b> [Nombre]\n"
+            f"🆔 <b>ID:</b> [ID]\n"
+            f"⭐ <b>Nivel:</b> [Nivel]\n"
         )
-
         if expires_at:
-            if role_key == "banned":
-                text += f"📅 <b>Castigo hasta:</b> {expires_at.strftime('%d/%m/%Y %H:%M')}\n"
-            else:
-                text += f"📅 <b>Vence:</b> {expires_at.strftime('%d/%m/%Y')}\n"
+            base_text += f"📅 <b>Vence:</b> [Expires]\n"
 
-        text += f"📉 <b>Descargas:</b> {left_text}\n"
+        base_text += f"📉 <b>Descargas:</b> [Descargas]\n"
 
-        # Solo mostrar reinicio si NO es ilimitado y NO está baneado
         if max_dl is not None:
-            text += f"⏳ <b>Reinicio en:</b> {hours}h {minutes}m\n"
+            base_text += f"⏳ <b>Reinicio en:</b> [ResetTime]\n"
+
+        # Prepare variables
+        reset_time_str = f"{hours}h {minutes}m"
+        expires_str = ""
+        if expires_at:
+            fmt = "%d/%m/%Y %H:%M" if role_key == "banned" else "%d/%m/%Y"
+            label = (
+                "Castigo hasta" if role_key == "banned" else "Vence"
+            )  # Label dynamic logic handled in default text??
+            # Actually, standard template might just use [Expires] value.
+            # If expires is None, default template logic skips it?
+            # We'll just pass the formatted string.
+            expires_str = expires_at.strftime(fmt)
+
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+        final_text = base_text
+        if cms and cms.enabled:
+            final_text = cms.get_text(
+                "status_message",
+                default_text=base_text,
+                user=update.effective_user,
+                Nivel=user_level,
+                Descargas=left_text,
+                ResetTime=reset_time_str,
+                Expires=expires_str,
+            )
 
         thread_id = get_thread_id(update)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=text,
+            text=final_text,
             parse_mode="HTML",
             message_thread_id=thread_id,
         )

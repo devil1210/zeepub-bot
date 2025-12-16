@@ -113,6 +113,10 @@ TEMPLATE_REGISTRY = {
         "desc": "Encabezado principal de /help",
         "vars": ["[Nombre]"],
     },
+    "status_message": {
+        "desc": "Mensaje de estado (/status)",
+        "vars": ["[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]"],
+    },
 }
 
 # Global variables available in ALL templates
@@ -122,6 +126,7 @@ GLOBAL_VARIABLES = {
     "ID": "ID numérico del usuario",
     "Fecha": "Fecha actual (YYYY-MM-DD)",
     "Hora": "Hora actual (HH:MM)",
+    "VersionBot": "Versión actual del bot (ej: v3.7.2)",
 }
 
 
@@ -306,9 +311,15 @@ class CustomMessagesPlugin(BasePlugin):
         vars_to_use = replacements.copy()
 
         # Date/Time are always available
+        from datetime import datetime
+
         now = datetime.now()
         vars_to_use["Fecha"] = now.strftime("%Y-%m-%d")
         vars_to_use["Hora"] = now.strftime("%H:%M")
+
+        from utils.helpers import get_version_string
+
+        vars_to_use["VersionBot"] = get_version_string()
 
         if user:
             vars_to_use["Nombre"] = user.first_name or "Usuario"
