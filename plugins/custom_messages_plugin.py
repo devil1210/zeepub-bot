@@ -599,6 +599,8 @@ class CustomMessagesPlugin(BasePlugin):
         }
 
         role_key = user_data.get("role", "free")
+        expires_at = user_data.get("expires_at")
+        
         if isinstance(role_key, str):
             role_key = role_key.strip().lower()
 
