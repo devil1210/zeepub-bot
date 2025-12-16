@@ -73,7 +73,7 @@ class UserManagerPlugin(BasePlugin):
         if not context.args or len(context.args) < 2:
             await update.message.reply_text(
                 "❌ Uso: /add_user <id> <rol> [meses]\n"
-                "Roles: white, vip, premium, staff\n"
+                "Roles: white, vip, premium, staff, admin\n"
                 "Ejemplo: /add_user 123456789 vip 6",
                 message_thread_id=thread_id,
             )
@@ -89,7 +89,7 @@ class UserManagerPlugin(BasePlugin):
             return
         target_id = int(target_id_str)
 
-        valid_roles = ["white", "vip", "premium", "staff", "banned", "free", "user"]
+        valid_roles = ["white", "vip", "premium", "staff", "admin", "banned", "free", "user"]
         if role not in valid_roles:
             await update.message.reply_text(
                 f"❌ Rol inválido. Use: {', '.join(valid_roles)}",
