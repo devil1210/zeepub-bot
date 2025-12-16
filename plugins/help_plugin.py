@@ -261,6 +261,13 @@ COMMANDS_REGISTRY = {
         "usage": "/set_welcome <slug|off>",
         "example": "/set_welcome bienvenida_v1",
     },
+    "templates": {
+        "cat": "plugins",
+        "desc": "Listar plantillas",
+        "long_desc": "Lista todas las plantillas de mensajes disponibles para personalizar, mostrando sus variables y uso.",
+        "usage": "/templates",
+        "example": "/templates",
+    },
     # --- Links ---
     "status_links": {
         "cat": "links",

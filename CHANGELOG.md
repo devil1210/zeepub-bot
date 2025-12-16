@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.7.0] - 2025-12-16
+
+### Añadido
+- **Plantillas**: Nuevo comando `/templates` para listar mensajes personalizables y variables.
+- **Sistema**: Expansión de plantillas a donaciones (`/donar`, `/niveles`), ayuda y mensajes de sistema.
+
+### Arreglado
+- **Stats**: Corregido error `AttributeError` por falta de `await` en `get_daily_stats`.
+- **Formato**: hashtags de `/latest_books` ahora son clickeables (`#slug` en vez de `#️⃣ slug`).
+
 ## [3.6.4] - 2025-12-15
 
 ### Arreglado

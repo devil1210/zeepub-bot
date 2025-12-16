@@ -43,6 +43,79 @@ class PluginSettings(Base):
     value = Column(Text, nullable=True)
 
 
+# Registry for available templates
+TEMPLATE_REGISTRY = {
+    "banned_message": {
+        "desc": "Mensaje para usuario baneado",
+        "vars": ["[Fecha]"],
+    },
+    "evil_password_success": {
+        "desc": "Contraseña correcta (Modo Evil)",
+        "vars": [],
+    },
+    "evil_password_fail": {
+        "desc": "Contraseña incorrecta (Modo Evil)",
+        "vars": [],
+    },
+    "search_no_results": {
+        "desc": "Búsqueda sin resultados",
+        "vars": ["[Termino]"],
+    },
+    "private_default_fallback": {
+        "desc": "Respuesta por defecto en chat privado",
+        "vars": [],
+    },
+    "start_welcome_unlimited": {
+        "desc": "Bienvenida /start (Ilimitado)",
+        "vars": ["[Nombre]"],
+    },
+    "start_welcome_limited": {
+        "desc": "Bienvenida /start (Limitado)",
+        "vars": ["[Nombre]", "[Descargas]"],
+    },
+    "evil_mode_prompt": {
+        "desc": "Pregunta de destino (Admin -> Evil)",
+        "vars": [],
+    },
+    "evil_password_prompt": {
+        "desc": "Solicitud de contraseña",
+        "vars": [],
+    },
+    "cancel_confirmation": {
+        "desc": "Confirmación de cancelación",
+        "vars": [],
+    },
+    "donate_message": {
+        "desc": "Mensaje comando /donar",
+        "vars": ["[Nombre]", "[DonationUrl]"],
+    },
+    "levels_message": {
+        "desc": "Mensaje comando /niveles",
+        "vars": ["[white]", "[vip]", "[premium]", "[duration]"],
+    },
+    "bot_closing": {
+        "desc": "Mensaje al cerrar menú",
+        "vars": [],
+    },
+    "donation_success": {
+        "desc": "Confirmación de donación reportada",
+        "vars": ["[Nombre]"],
+    },
+    "donation_admin_alert": {
+        "desc": "Alerta a adminds sobre donación",
+        "vars": ["[Nombre]", "[Alias]", "[ID]"],
+    },
+    "search_instructions_legacy": {
+        "desc": "Instrucciones de búsqueda (Usuario normal)",
+        "vars": [],
+    },
+    "help_main_header": {
+        "desc": "Encabezado principal de /help",
+        "vars": [],
+    },
+}
+
+
 class CustomMessagesPlugin(BasePlugin):
     @property
     def name(self) -> str:
@@ -128,6 +201,8 @@ class CustomMessagesPlugin(BasePlugin):
             app.add_handler(CommandHandler("send_msge", self.send_msge))
             app.add_handler(CommandHandler("saludo", self.saludo))
             app.add_handler(CommandHandler("set_welcome", self.set_welcome))
+
+            app.add_handler(CommandHandler("templates", self.templates))
 
             # ChatMemberHandler for welcome message
             # MY_CHAT_MEMBER is triggered when bot is added/promoted/removed
@@ -459,6 +534,22 @@ class CustomMessagesPlugin(BasePlugin):
                 f"👋 Bienvenida configurada con mensaje: <code>{arg}</code>",
                 parse_mode="HTML",
             )
+
+    async def templates(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Lista todas las plantillas disponibles y sus variables."""
+        if update.effective_user.id not in config.ADMIN_USERS:
+            return
+
+        text = "📋 <b>Plantillas Disponibles</b>\n\n"
+        text += "Usa <code>/add_msge &lt;slug&gt;</code> para personalizar.\n\n"
+
+        for slug, info in TEMPLATE_REGISTRY.items():
+            vars_str = ", ".join(info["vars"]) if info["vars"] else "Ninguna"
+            text += f"🔹 <b>{slug}</b>\n"
+            text += f"   📝 {info['desc']}\n"
+            text += f"   💲 Variables: <code>{vars_str}</code>\n\n"
+
+        await update.message.reply_text(text, parse_mode="HTML")
 
     async def welcome_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Triggered on MY_CHAT_MEMBER updates
