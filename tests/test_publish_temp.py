@@ -194,8 +194,9 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
     # Also patch get_effective_user because logic now checks role/custom_status
     monkeypatch.setattr(ch, "config", MagicMock(FACEBOOK_PUBLISHERS={uid}, ADMIN_USERS=set(), OPDS_ROOT_START="/opds-start"))
     
+    import services.user_service
     mock_get_user = AsyncMock(return_value={"role": "staff", "custom_status": "Publicador"})
-    monkeypatch.setattr("services.user_service.get_effective_user", mock_get_user)
+    monkeypatch.setattr(services.user_service, "get_effective_user", mock_get_user)
 
     # update/context
     update = MagicMock()
