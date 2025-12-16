@@ -1119,29 +1119,81 @@ class CustomMessagesPlugin(BasePlugin):
             )
 
     async def templates(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Lista todas las plantillas disponibles y sus variables."""
+        """Lista todas las plantillas disponibles y sus variables, agrupadas por categoría."""
         if update.effective_user.id not in config.ADMIN_USERS:
             return
 
         header = "📋 <b>Plantillas Disponibles</b>\n\nUsa <code>/add_msge &lt;slug&gt;</code> para personalizar.\n\n"
         buffer = header
-        
-        # Sort keys for consistent order
-        sorted_keys = sorted(TEMPLATE_REGISTRY.keys())
 
-        for slug in sorted_keys:
-            info = TEMPLATE_REGISTRY[slug]
-            vars_str = ", ".join(info["vars"]) if info["vars"] else "Ninguna"
+        # Define category buckets
+        categories = {
+            "Ayuda y Menús": [],
+            "Inicio y Bienvenida": [],
+            "Donaciones y Niveles": [],
+            "Modo Evil (Privado)": [],
+            "Búsqueda": [],
+            "Sistema y Estado": [],
+            "Otros": [],
+        }
+
+        # Sort all keys first
+        all_keys = sorted(TEMPLATE_REGISTRY.keys())
+
+        for slug in all_keys:
+            if slug.startswith("help_"):
+                cat = "Ayuda y Menús"
+            elif slug.startswith("start_") or slug.startswith("saludo"):
+                cat = "Inicio y Bienvenida"
+            elif "donate" in slug or "donation" in slug or "levels" in slug:
+                cat = "Donaciones y Niveles"
+            elif slug.startswith("evil_"):
+                cat = "Modo Evil (Privado)"
+            elif slug.startswith("search_"):
+                cat = "Búsqueda"
+            elif any(x in slug for x in ["status", "banned", "bot_", "cancel", "private"]):
+                cat = "Sistema y Estado"
+            else:
+                cat = "Otros"
             
-            entry = f"🔹 <b>{slug}</b>\n"
-            entry += f"   📝 {info['desc']}\n"
-            entry += f"   💲 Variables: <code>{vars_str}</code>\n\n"
+            categories[cat].append(slug)
 
-            if len(buffer) + len(entry) > 3500:
+        # Iterate categories in specific order
+        cat_order = [
+            "Inicio y Bienvenida",
+            "Ayuda y Menús",
+            "Sistema y Estado",
+            "Donaciones y Niveles",
+            "Búsqueda",
+            "Modo Evil (Privado)",
+            "Otros"
+        ]
+
+        for cat_name in cat_order:
+            slugs = categories[cat_name]
+            if not slugs:
+                continue
+
+            # Add Category Header
+            cat_header = f"📂 <b>{cat_name.upper()}</b>\n\n"
+            if len(buffer) + len(cat_header) > 3800: # Safer margin
                 await update.message.reply_text(buffer, parse_mode="HTML")
-                buffer = "" # Continuation doesn't need header again
-            
-            buffer += entry
+                buffer = ""
+            buffer += cat_header
+
+            for slug in slugs:
+                info = TEMPLATE_REGISTRY[slug]
+                vars_str = ", ".join(info["vars"]) if info["vars"] else "Ninguna"
+
+                entry = f"🔹 <b>{slug}</b>\n"
+                entry += f"   📝 {info['desc']}\n"
+                entry += f"   💲 Variables: <code>{vars_str}</code>\n\n"
+
+                if len(buffer) + len(entry) > 3800:
+                    await update.message.reply_text(buffer, parse_mode="HTML")
+                    buffer = "" # Continuation doesn't need header again
+
+                buffer += entry
 
         if buffer:
             await update.message.reply_text(buffer, parse_mode="HTML")
