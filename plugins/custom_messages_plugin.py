@@ -248,6 +248,11 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "ℹ️ <b>Comando: /debug_state</b>\n\n📝 <b>Descripción:</b>\nMuestra el estado interno completo de un usuario: historial de navegación OPDS temporal, buffer de descarga y variables de sesión. Útil para diagnosticar problemas de navegación.\n\n⌨️ <b>Uso:</b> <code>/debug_state &lt;user_id&gt;</code>\n💡 <b>Ejemplo:</b> <code>/debug_state 123456789</code>",
     },
+    "help_cmd_reset_msge": {
+        "desc": "Ayuda: /reset_msge",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /reset_msge</b>\n\n📝 <b>Descripción:</b>\nRestablece una plantilla a su valor original por defecto, borrando cualquier personalización hecha con /add_msge.\n\n⌨️ <b>Uso:</b> <code>/reset_msge &lt;slug&gt;</code>\n💡 <b>Ejemplo:</b> <code>/reset_msge search_instructions_legacy</code>",
+    },
     "help_cmd_update_system": {
         "desc": "Ayuda: /update_system",
         "vars": [],

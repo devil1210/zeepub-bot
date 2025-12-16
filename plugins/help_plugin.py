@@ -247,6 +247,13 @@ COMMANDS_REGISTRY = {
         "usage": "Responder con /add_msge <slug>",
         "example": "/add_msge bienvenida_v1",
     },
+    "reset_msge": {
+        "cat": "plugins",
+        "desc": "Resetear mensaje",
+        "long_desc": "Borra un mensaje personalizado y restaura el original. Útil si te equivocaste al editar.",
+        "usage": "/reset_msge <slug>",
+        "example": "/reset_msge start_welcome_unlimited",
+    },
     "list_msge": {
         "cat": "plugins",
         "desc": "Ver mensajes",
