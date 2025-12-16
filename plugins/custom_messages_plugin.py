@@ -581,25 +581,37 @@ class CustomMessagesPlugin(BasePlugin):
         user_data = await get_effective_user(uid)
         st = state_manager.get_user_state(uid)
 
-        # Mapping roles to display names
-        roles_display = {
-            "admin": "Admin 🛠️",
-            "staff": "Staff 🛡️",
-            "premium": "Premium ✨",
-            "vip": "VIP ⭐️",
-            "white": "Patrocinador 🤍",
-            "free": "Lector 📚",
+        # Mapping roles to display names requested by User
+        # free -> Lector
+        # white -> Patrocinador
+        # vip -> VIP
+        # premium -> Premium
+        # staff -> STAFF
+        # admin -> Administrador
+        roles_display_map = {
+            "admin": "Administrador",
+            "staff": "STAFF",
+            "premium": "Premium",
+            "vip": "VIP",
+            "white": "Patrocinador",
+            "free": "Lector",
+            "banned": "Baneado",
         }
 
         role_key = user_data.get("role", "free")
-        status_label = user_data.get("status_label")
-        expires_at = user_data.get("expires_at")
+        if isinstance(role_key, str):
+            role_key = role_key.strip().lower()
 
+        # [Nivel] uses this map directly
+        nivel_display = roles_display_map.get(role_key, "Lector")
+        
+        # [Rol] - Sólo si hay custom status real (user provided label via /set_staff_status)
+        rol_funcional = user_data.get("custom_status")
+
+        # Fallback legacy logic for user_level variable (if used elsewhere, but here we focus on vars)
         user_level = (
-            status_label if status_label else roles_display.get(role_key, "Lector")
+            rol_funcional if rol_funcional else nivel_display
         )
-        if role_key == "banned":
-            user_level = "🚫 Baneado"
 
         # Max Download Logic
         if role_key in ("admin", "staff", "premium", "banned"):
@@ -645,22 +657,7 @@ class CustomMessagesPlugin(BasePlugin):
         # [Rol] -> Custom Status Label (functional role)
         # [Apodo] -> Nickname
 
-        # Mapeo de roles de sistema a nombres "Bonitos" para [Nivel]
-        role_map = {
-            "admin": "Admin",
-            "staff": "Staff",
-            "vip": "VIP",
-            "premium": "Premium",
-            "white": "Patrocinador",
-            "free": "Lector",
-            "user": "Lector",
-            "banned": "Baneado",
-        }
-        raw_role = user_data.get("role") or "free"
-        if isinstance(raw_role, str):
-            raw_role = raw_role.strip().lower()
-            
-        system_role_display = role_map.get(raw_role, raw_role.capitalize()) # [Nivel]
+        system_role_display = nivel_display # [Nivel] uses strict system role map
 
         custom_status = user_level # This variable 'user_level' holds status_label from get_effective_user which is custom_status or role.capitalize()
         # Wait, get_effective_user returns:

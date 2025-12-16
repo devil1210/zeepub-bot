@@ -414,9 +414,19 @@ class HelpPlugin(BasePlugin):
     async def cleanup(self) -> None:
         pass
 
-    def _check_permissions(self, uid):
+    async def _check_permissions(self, uid):
         is_admin = uid in config.ADMIN_USERS
-        is_publisher = uid in config.FACEBOOK_PUBLISHERS
+        
+        # Check DB for publisher: Staff + Publicador
+        from services.user_service import get_effective_user
+        user_data = await get_effective_user(uid)
+        role = user_data.get("role", "free")
+        custom_status = user_data.get("custom_status")
+        
+        is_publisher = (role == "staff" and custom_status == "Publicador")
+        # Legacy/Config fallback if desired, but consistent with /start now:
+        # is_publisher = is_publisher or (uid in config.FACEBOOK_PUBLISHERS)
+        
         return is_admin, is_publisher
 
     def _get_visible_categories(self, is_admin, is_publisher):
@@ -453,7 +463,7 @@ class HelpPlugin(BasePlugin):
         uid = update.effective_user.id
         thread_id = get_thread_id(update)
         
-        is_admin, is_publisher = self._check_permissions(uid)
+        is_admin, is_publisher = await self._check_permissions(uid)
         visible_cats = self._get_visible_categories(is_admin, is_publisher)
         
         text = "🤖 <b>Comandos Disponibles</b>\n\n"
@@ -505,7 +515,9 @@ class HelpPlugin(BasePlugin):
                 "help_main_header", user=update.effective_user
             )
 
-        keyboard = self._build_category_keyboard(uid)
+        # Pre-calc permissions for keyboard builder
+        is_admin, is_publisher = await self._check_permissions(uid)
+        keyboard = self._build_category_keyboard(is_admin, is_publisher)
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -526,6 +538,9 @@ class HelpPlugin(BasePlugin):
         # Format: help | action | arg
         action = data[1]
         arg = data[2] if len(data) > 2 else None
+        
+        # Check permissions early
+        is_admin, is_publisher = await self._check_permissions(uid)
 
         if action == "close":
             cms = context.application.plugin_manager.get_plugin("custom_messages")
@@ -552,12 +567,11 @@ class HelpPlugin(BasePlugin):
                     "help_main_header", Nombre=first_name
                 )
 
-            keyboard = self._build_category_keyboard(uid)
+            keyboard = self._build_category_keyboard(is_admin, is_publisher)
             await query.edit_message_text(
                 text=text, reply_markup=keyboard, parse_mode="HTML"
             )
 
-        is_admin, is_publisher = self._check_permissions(uid)
         visible_cats = self._get_visible_categories(is_admin, is_publisher)
 
         if action == "cat":
@@ -624,8 +638,7 @@ class HelpPlugin(BasePlugin):
 
         await query.answer()
 
-    def _build_category_keyboard(self, uid):
-        is_admin, is_publisher = self._check_permissions(uid)
+    def _build_category_keyboard(self, is_admin, is_publisher):
         visible = self._get_visible_categories(is_admin, is_publisher)
 
         buttons = []

@@ -92,7 +92,24 @@ class CommandHandlers:
         # Publishers (ephemeral choice for next book). Admin-only users (not publishers)
         # will be handled separately (go directly to Evil). For users that are both
         # admin+publisher we still show the ephemeral choice here.
-        if uid in config.FACEBOOK_PUBLISHERS:
+        # Helper: Determine if user is a Publisher
+        # Logic: Nivel Staff AND Rol Publicador
+        from services.user_service import get_effective_user
+        user_data_start = await get_effective_user(uid)
+        role_start = user_data_start.get("role", "free")
+        custom_status_start = user_data_start.get("custom_status")
+        
+        is_publisher = (role_start == "staff" and custom_status_start == "Publicador")
+        
+        # Legacy fallback or Override: Check config list too? 
+        # User said "para esta nueva combinacion es...", implying strict definition.
+        # But let's keep config list as "Super Publishers" just in case, or stick to strict req.
+        # Sticking to strict requirement per user instruction.
+        
+        # Publishers (ephemeral choice for next book). Admin-only users (not publishers)
+        # will be handled separately (go directly to Evil). For users that are both
+        # admin+publisher we still show the ephemeral choice here.
+        if is_publisher:
             keyboard = [
                 [
                     InlineKeyboardButton(
@@ -129,7 +146,7 @@ class CommandHandlers:
         # choice shown above will decide whether to show the destination
         # selection (Telegram) or assume "aquí" (Facebook). If the user is an
         # admin but *not* a publisher, we show the Evil menu immediately.
-        if uid in config.ADMIN_USERS and uid not in config.FACEBOOK_PUBLISHERS:
+        if uid in config.ADMIN_USERS and not is_publisher:
             # Administradores entran directamente en el menú Evil (sin contraseña)
             if uid in config.ADMIN_USERS:
                 root = config.OPDS_ROOT_EVIL
