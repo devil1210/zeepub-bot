@@ -268,6 +268,13 @@ COMMANDS_REGISTRY = {
         "usage": "/templates",
         "example": "/templates",
     },
+    "template_vars": {
+        "cat": "plugins",
+        "desc": "Listar variables",
+        "long_desc": "Lista las variables globales disponibles (como [Nombre], [Fecha]) para usar en cualquier plantilla.",
+        "usage": "/template_vars",
+        "example": "/template_vars",
+    },
     # --- Links ---
     "status_links": {
         "cat": "links",
@@ -414,7 +421,7 @@ class HelpPlugin(BasePlugin):
         text = base_text
         if cms and cms.enabled:
             text = cms.get_text(
-                "help_main_header", default_text=base_text, Nombre=first_name
+                "help_main_header", default_text=base_text, user=update.effective_user
             )
 
         keyboard = self._build_category_keyboard(uid)

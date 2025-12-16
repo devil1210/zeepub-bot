@@ -629,7 +629,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text_success = base_success
             if cms and cms.enabled:
                 text_success = cms.get_text(
-                    "donation_success", default_text=base_success, Nombre=full_name
+                    "donation_success", default_text=base_success, user=user
                 )
 
             await query.edit_message_text(
@@ -654,11 +654,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if cms and cms.enabled:
             # We pass all potentially useful vars
             admin_msg = cms.get_text(
-                "donation_admin_alert",
-                default_text=base_admin_msg,
-                Nombre=full_name,
-                Alias=username,
-                ID=uid,
+                "donation_admin_alert", default_text=base_admin_msg, user=user
             )
 
         for admin_id in config.ADMIN_USERS:

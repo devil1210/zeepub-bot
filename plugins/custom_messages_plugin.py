@@ -115,6 +115,15 @@ TEMPLATE_REGISTRY = {
     },
 }
 
+# Global variables available in ALL templates
+GLOBAL_VARIABLES = {
+    "Nombre": "Nombre del usuario (First Name)",
+    "Alias": "Username del usuario (sin @)",
+    "ID": "ID numérico del usuario",
+    "Fecha": "Fecha actual (YYYY-MM-DD)",
+    "Hora": "Hora actual (HH:MM)",
+}
+
 
 class CustomMessagesPlugin(BasePlugin):
     @property
@@ -203,6 +212,7 @@ class CustomMessagesPlugin(BasePlugin):
             app.add_handler(CommandHandler("set_welcome", self.set_welcome))
 
             app.add_handler(CommandHandler("templates", self.templates))
+            app.add_handler(CommandHandler("template_vars", self.template_vars))
 
             # ChatMemberHandler for welcome message
             # MY_CHAT_MEMBER is triggered when bot is added/promoted/removed
@@ -269,11 +279,19 @@ class CustomMessagesPlugin(BasePlugin):
 
     # --- Helper Methods for Template System ---
 
-    def get_text(self, slug: str, default_text: str = None, **replacements) -> str:
+    def get_text(
+        self, slug: str, default_text: str = None, user=None, **replacements
+    ) -> str:
         """
         Recupera el texto de un mensaje guardado por su slug.
         Si no existe, devuelve default_text.
         Realiza el reemplazo de variables en el formato [Variable].
+
+        Args:
+            slug: Identificador del mensaje.
+            default_text: Texto por defecto si no existe en BD.
+            user: Objeto User de Telegram (opcional) para inyectar variables globales ([Nombre], [Alias], etc).
+            **replacements: Variables adicionales específicas.
         """
         msg = self._get_message(slug.lower())
 
@@ -284,12 +302,22 @@ class CustomMessagesPlugin(BasePlugin):
         if not final_text:
             return ""
 
-        # Variable Replacement
-        for key, value in replacements.items():
+        # 1. Inject Global Variables if user is provided
+        vars_to_use = replacements.copy()
+
+        # Date/Time are always available
+        now = datetime.now()
+        vars_to_use["Fecha"] = now.strftime("%Y-%m-%d")
+        vars_to_use["Hora"] = now.strftime("%H:%M")
+
+        if user:
+            vars_to_use["Nombre"] = user.first_name or "Usuario"
+            vars_to_use["Alias"] = user.username or "Sin Alias"
+            vars_to_use["ID"] = str(user.id)
+
+        # 2. Variable Replacement
+        for key, value in vars_to_use.items():
             placeholder = f"[{key}]"
-            # Ensure value is string and HTML safe if needed,
-            # though usually we pass safe strings or we rely on the admin to be careful.
-            # Best practice: escape values if they come from user input.
             safe_value = str(value)
             final_text = final_text.replace(placeholder, safe_value)
 
@@ -548,6 +576,19 @@ class CustomMessagesPlugin(BasePlugin):
             text += f"🔹 <b>{slug}</b>\n"
             text += f"   📝 {info['desc']}\n"
             text += f"   💲 Variables: <code>{vars_str}</code>\n\n"
+
+        await update.message.reply_text(text, parse_mode="HTML")
+
+    async def template_vars(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Lista las variables globales disponibles."""
+        if update.effective_user.id not in config.ADMIN_USERS:
+            return
+
+        text = "💲 <b>Variables Globales</b>\n\n"
+        text += "Estas variables se pueden usar en <b>cualquier</b> plantilla:\n\n"
+
+        for key, desc in GLOBAL_VARIABLES.items():
+            text += f"🔹 <code>[{key}]</code>: {desc}\n"
 
         await update.message.reply_text(text, parse_mode="HTML")
 

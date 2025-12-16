@@ -95,7 +95,7 @@ class DonationsPlugin(BasePlugin):
             text = cms.get_text(
                 "donate_message",
                 default_text=base_text,
-                Nombre=user_name,
+                user=update.effective_user,
                 DonationUrl=config.DONATION_URL,
             )
 

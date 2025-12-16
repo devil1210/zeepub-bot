@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.7.2] - 2025-12-16
+
+### Añadido
+- **Variables Globales**: Ahora `[Nombre]`, `[Alias]`, `[ID]`, `[Fecha]` y `[Hora]` funcionan en **todas** las plantillas automáticamente.
+- **Comandos**: Nuevo comando `/template_vars` para listar estas variables globales.
+
+### Arreglado
+- **Refactor**: Estandarización interna en la inyección de variables de usuario.
+
 ## [3.7.1] - 2025-12-16
 
 ### Arreglado

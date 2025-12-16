@@ -314,7 +314,11 @@ class CommandHandlers:
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_cancel = "✅ ¡Entendido! Operación cancelada."
         text_cancel = (
-            cms.get_text("cancel_confirmation", default_text=base_cancel)
+            cms.get_text(
+                "cancel_confirmation",
+                default_text=base_cancel,
+                user=update.effective_user,
+            )
             if (cms and cms.enabled)
             else base_cancel
         )

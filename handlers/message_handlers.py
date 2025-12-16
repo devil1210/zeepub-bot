@@ -52,7 +52,10 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     else "Indefinido"
                 )
                 msg = cms.get_text(
-                    "banned_message", default_text=default_msg, Fecha=exp_str
+                    "banned_message",
+                    default_text=default_msg,
+                    user=update.effective_user,
+                    Fecha=exp_str,
                 )
 
             await context.bot.send_message(
