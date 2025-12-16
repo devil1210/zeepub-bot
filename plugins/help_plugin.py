@@ -54,15 +54,15 @@ COMMANDS_REGISTRY = {
     "sugerencia": {
         "cat": "home",
         "desc": "Enviar sugerencia",
-        "long_desc": "Envía un mensaje directo al equipo de staff con tu sugerencia, reporte de error o comentario.",
+        "long_desc": "Envía un mensaje directo al equipo de staff. Úsalo para reportar errores, sugerir nuevas funciones o pedir libros específicos. Adjunta detalles para que podamos ayudarte mejor.",
         "usage": "/sugerencia <texto>",
-        "example": "/sugerencia Me gustaría ver más libros de ciencia ficción.",
+        "example": "/sugerencia Hola, el libro 'Dune' tiene un error en el capítulo 3.",
     },
     # --- Content ---
     "search": {
         "cat": "content",
         "desc": "Buscar libros",
-        "long_desc": "Busca libros en la biblioteca por título o autor. Puedes escribir solo el comando para iniciar un modo de búsqueda.",
+        "long_desc": "Busca libros en la biblioteca. Puedes buscar por Título, Autor o Serie. Los resultados mostrarán un botón para descargar.\n\nTip: Sé específico para mejores resultados.",
         "usage": "/search <término>",
         "example": "/search Brandon Sanderson",
     },
@@ -142,7 +142,7 @@ COMMANDS_REGISTRY = {
     "debug_state": {
         "cat": "admin",
         "desc": "Info debug",
-        "long_desc": "Muestra el estado interno de un usuario (buffer de descarga, historial, etc.) para depuración.",
+        "long_desc": "Muestra el estado interno completo de un usuario: historial de navegación OPDS temporal, buffer de descarga y variables de sesión. Útil para diagnosticar problemas de navegación.",
         "usage": "/debug_state <user_id>",
         "example": "/debug_state 123456789",
     },
@@ -299,9 +299,9 @@ COMMANDS_REGISTRY = {
     "set_group_welcome": {
         "cat": "group_manager",
         "desc": "Bienvenida grupo",
-        "long_desc": "Configura un mensaje de bienvenida específico para el grupo actual.",
+        "long_desc": "Configura un mensaje de bienvenida personalizado para este grupo. Debes crear el mensaje primero con /add_msge.\n\n✨ <b>Personalización:</b> Si el mensaje guardado contiene <code>[Nombre]</code>, será reemplazado por el nombre del usuario nuevo.",
         "usage": "/set_group_welcome <slug>",
-        "example": "/set_group_welcome saludo_grupo",
+        "example": "/set_group_welcome bienvenida_grupo",
     },
 }
 
