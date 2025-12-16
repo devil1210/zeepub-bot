@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.9.2] - 2025-12-16
+
+### Añadido
+- **Topics**: Soporte para Telegram Topics en el comando `/saludo` (argumento opcional `thread_id`).
+- **Comandos**: Actualizada ayuda de `/saludo` indicando cómo enviar mensajes a topics.
+
+### Actualizado
+- **Plugins**: Custom Messages v1.3.0.
+
 ## [3.9.1] - 2025-12-16
 
 ### Añadido

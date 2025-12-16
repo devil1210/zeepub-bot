@@ -17,7 +17,12 @@ from sqlalchemy.sql import text  # Importar text explícitamente
 from sqlalchemy.orm import declarative_base, sessionmaker
 from telegram import Update, Message, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
-from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler, CallbackQueryHandler
+from telegram.ext import (
+    ContextTypes,
+    CommandHandler,
+    ChatMemberHandler,
+    CallbackQueryHandler,
+)
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
@@ -321,7 +326,7 @@ TEMPLATE_REGISTRY = {
     "help_cmd_saludo": {
         "desc": "Ayuda: /saludo",
         "vars": [],
-        "default": "ℹ️ <b>Comando: /saludo</b>\n\n📝 <b>Descripción:</b>\nEnvía un mensaje de texto o un mensaje guardado a un chat.\n\n⌨️ <b>Uso:</b> <code>/saludo &lt;chat_id&gt; &lt;texto|slug&gt;</code>\n💡 <b>Ejemplo:</b> <code>/saludo -100123 Hola!</code>",
+        "default": "ℹ️ <b>Comando: /saludo</b>\n\n📝 <b>Descripción:</b>\nEnvía un mensaje de texto o un mensaje guardado a un chat.\n\n⌨️ <b>Uso:</b> <code>/saludo &lt;chat_id&gt; [thread_id] &lt;texto|slug&gt;</code>\n💡 <b>Ejemplo:</b> <code>/saludo -100123 Hola!</code>\n💡 <b>Ejemplo Topic:</b> <code>/saludo -100123 456 Hola!</code>",
     },
     "help_cmd_set_welcome": {
         "desc": "Ayuda: /set_welcome",
@@ -403,7 +408,7 @@ class CustomMessagesPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.2.1"
+        return "1.3.0"
 
     @property
     def description(self) -> str:
@@ -487,13 +492,17 @@ class CustomMessagesPlugin(BasePlugin):
             app.add_handler(CommandHandler("set_welcome", self.set_welcome))
 
             app.add_handler(CommandHandler("templates", self.templates))
-            app.add_handler(CommandHandler("template", self.templates))  # Alias requested by user
+            app.add_handler(
+                CommandHandler("template", self.templates)
+            )  # Alias requested by user
             app.add_handler(CommandHandler("template_vars", self.vars))  # Legacy alias
             app.add_handler(CommandHandler("vars", self.vars))
             app.add_handler(CommandHandler("set_var", self.set_var))
             app.add_handler(CommandHandler("del_var", self.del_var))
 
-            app.add_handler(CallbackQueryHandler(self.templates_callback, pattern="^templates\|"))
+            app.add_handler(
+                CallbackQueryHandler(self.templates_callback, pattern=r"^templates\|")
+            )
 
             # ChatMemberHandler for welcome message
             # MY_CHAT_MEMBER is triggered when bot is added/promoted/removed
@@ -614,20 +623,18 @@ class CustomMessagesPlugin(BasePlugin):
 
         role_key = user_data.get("role", "free")
         expires_at = user_data.get("expires_at")
-        
+
         if isinstance(role_key, str):
             role_key = role_key.strip().lower()
 
         # [Nivel] uses this map directly
         nivel_display = roles_display_map.get(role_key, "Lector")
-        
+
         # [Rol] - Sólo si hay custom status real (user provided label via /set_staff_status)
         rol_funcional = user_data.get("custom_status")
 
         # Fallback legacy logic for user_level variable (if used elsewhere, but here we focus on vars)
-        user_level = (
-            rol_funcional if rol_funcional else nivel_display
-        )
+        user_level = rol_funcional if rol_funcional else nivel_display
 
         # Max Download Logic
         if role_key in ("admin", "staff", "premium", "banned"):
@@ -641,7 +648,7 @@ class CustomMessagesPlugin(BasePlugin):
 
         # Used / Remaining
         used = st.get("downloads_used", 0)
-        
+
         if max_dl is None:
             if role_key == "banned":
                 descargas_text = "⛔ Acceso denegado"
@@ -649,33 +656,35 @@ class CustomMessagesPlugin(BasePlugin):
                 descargas_text = "✅ Descargas ilimitadas"
         else:
             remaining = max_dl - used
-            descargas_text = f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día"
+            descargas_text = (
+                f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día"
+            )
 
         # Reset Time
         reset_time_str = None
         if max_dl is not None:
-             now = datetime.now()
-             next_midnight = (now + timedelta(days=1)).replace(
-                 hour=0, minute=0, second=0, microsecond=0
-             )
-             time_left = next_midnight - now
-             hours, remainder = divmod(int(time_left.total_seconds()), 3600)
-             minutes, _ = divmod(remainder, 60)
-             reset_time_str = f"{hours}h {minutes}m"
+            now = datetime.now()
+            next_midnight = (now + timedelta(days=1)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            time_left = next_midnight - now
+            hours, remainder = divmod(int(time_left.total_seconds()), 3600)
+            minutes, _ = divmod(remainder, 60)
+            reset_time_str = f"{hours}h {minutes}m"
 
         # Expires
         expire_str = None
         if expires_at:
-             fmt = "%d/%m/%Y %H:%M" if role_key == "banned" else "%d/%m/%Y"
-             expire_str = expires_at.strftime(fmt)
+            fmt = "%d/%m/%Y %H:%M" if role_key == "banned" else "%d/%m/%Y"
+            expire_str = expires_at.strftime(fmt)
 
         # [Nivel] -> External display name for System Role (Admin, Staff, etc.)
         # [Rol] -> Custom Status Label (functional role)
         # [Apodo] -> Nickname
 
-        system_role_display = nivel_display # [Nivel] uses strict system role map
+        system_role_display = nivel_display  # [Nivel] uses strict system role map
 
-        custom_status = user_level # This variable 'user_level' holds status_label from get_effective_user which is custom_status or role.capitalize()
+        custom_status = user_level  # This variable 'user_level' holds status_label from get_effective_user which is custom_status or role.capitalize()
         # Wait, get_effective_user returns:
         # role: raw role
         # status_label: custom_status IF present, ELSE role.capitalize()
@@ -690,8 +699,10 @@ class CustomMessagesPlugin(BasePlugin):
         # If user wants [Rol] to be SPECIFICALLY the custom function, we should use that.
         # However, for consistency, let's use the status_label which defaults to role name if no custom label.
 
-        rol_funcional = user_data.get("custom_status") # [Rol] - Sólo si hay custom status real
-        apodo = user_data.get("nickname") # [Apodo] - None si no existe
+        rol_funcional = user_data.get(
+            "custom_status"
+        )  # [Rol] - Sólo si hay custom status real
+        apodo = user_data.get("nickname")  # [Apodo] - None si no existe
 
         return {
             "Nivel": system_role_display,
@@ -737,15 +748,17 @@ class CustomMessagesPlugin(BasePlugin):
             return ""
 
         # 0. Admin Global Vars (System-wide)
-        vars_to_use = self._global_vars_cache.copy() # Start with admin globals
+        vars_to_use = self._global_vars_cache.copy()  # Start with admin globals
 
         # 1. Inject System Variables (Time/Version)
         from datetime import datetime
+
         now = datetime.now()
         vars_to_use["Fecha"] = now.strftime("%Y-%m-%d")
         vars_to_use["Hora"] = now.strftime("%H:%M")
 
         from utils.helpers import get_version_string
+
         vars_to_use["VersionBot"] = get_version_string()
 
         # 2. Inject User Variables (Context)
@@ -758,7 +771,14 @@ class CustomMessagesPlugin(BasePlugin):
             # We check if keys are present in final_text to avoid expensive DB calls
             # 2.1 Auto-Inject Extended User Stats if needed
             # We check if keys are present in final_text to avoid expensive DB calls
-            needed_keys = {"[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]", "[Rol]", "[Apodo]"}
+            needed_keys = {
+                "[Nivel]",
+                "[Descargas]",
+                "[ResetTime]",
+                "[Expires]",
+                "[Rol]",
+                "[Apodo]",
+            }
             # Simple string check (fast)
             if any(k in final_text for k in needed_keys):
                 extended_context = await self._get_extended_user_context(user)
@@ -1024,30 +1044,59 @@ class CustomMessagesPlugin(BasePlugin):
 
     async def saludo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
-        /saludo <chat_id> <id_guardado | texto libre>
+        /saludo <chat_id> [thread_id] <id_guardado | texto libre>
         """
         if update.effective_user.id not in config.ADMIN_USERS:
             return
 
         # Simple parsing for backward compatibility
         # But we need to support /saludo <chat_id> <slug> vs /saludo <chat_id> <text>
-        # Algorithm:
-        # 1. Split update.message.text to get args.
-        # 2. Arg 0 = /saludo, Arg 1 = chat_id, Arg 2... = content
+        # And now: /saludo <chat_id> <thread_id> <slug|text>
 
-        text_content = update.message.text.replace("/saludo", "", 1).strip()
-        parts = text_content.split(" ", 1)
-
-        if len(parts) < 2:
+        args = context.args
+        if not args or len(args) < 2:
             await update.message.reply_text(
-                "❌ Uso: /saludo <chat_id> <id_mensaje | texto>\n"
+                "❌ Uso: /saludo <chat_id> [thread_id] <id_mensaje | texto>\n"
                 "Ej: /saludo -100123 welcome_v1\n"
-                "Ej: /saludo -100123 Hola amigos"
+                "Ej Topic: /saludo -100123 445 welcome_v1"
             )
             return
 
-        target_chat_id = parts[0]
-        content = parts[1]
+        target_chat_id = args[0]
+
+        # Check if second argument is a thread_id (integer)
+        # Note: Chat IDs usually start with -100... but topic IDs are small positive integers
+        # However, we must be careful not to confuse a slug starting with a number as a thread ID?
+        # Generally thread_ids are integers. Slugs are strings.
+        # But if slug is "123_msg", int("123_msg") fails.
+        # If slug IS "123", then it's ambiguous. But slugs are usually names.
+
+        possible_thread_id = args[1]
+        message_thread_id = None
+        content_start_index = 1
+
+        try:
+            # Try to parse second arg as thread ID if it looks like a positive integer
+            # Negative integers are likely chat IDs (but we already got chat_id).
+            tid = int(possible_thread_id)
+            if tid > 0:
+                message_thread_id = tid
+                content_start_index = 2
+        except ValueError:
+            pass
+
+        # Reconstruct content from the rest of arguments
+        if len(args) <= content_start_index:
+            await update.message.reply_text("❌ Falta el contenido del mensaje.")
+            return
+
+        # Re-join the original text logic is tricky because context.args strips quotes sometimes or we lose spaces.
+        # Ideally we want the raw text after the command and IDs.
+        # update.message.text: "/saludo -100123 445 Hola mundo"
+        # We can reconstruct roughly or try to parse from raw text.
+        # Let's use the args join which is safer than string slicing raw text with variable length params.
+
+        content = " ".join(args[content_start_index:])
 
         # Check if content matches a slug
         slug = content.strip().lower()
@@ -1065,20 +1114,21 @@ class CustomMessagesPlugin(BasePlugin):
                         chat_id=target_chat_id,
                         from_chat_id=msg_db.source_chat_id,
                         message_id=msg_db.source_message_id,
+                        message_thread_id=message_thread_id,
                     )
                 else:
                     # Text Message (Template)
-                    # Note: We probably want to replace variables?
-                    # But /saludo is often used for static things or manual sends.
-                    # If it has variables they will remain placeholders unless we inject dummy ones.
-                    # Let's send processed text.
                     text_to_send = await self.get_text(slug)
                     await context.bot.send_message(
-                        chat_id=target_chat_id, text=text_to_send, parse_mode="HTML"
+                        chat_id=target_chat_id,
+                        text=text_to_send,
+                        parse_mode="HTML",
+                        message_thread_id=message_thread_id,
                     )
 
+                tid_info = f" (Topic: {message_thread_id})" if message_thread_id else ""
                 await update.message.reply_text(
-                    f"✅ Mensaje <code>{slug}</code> enviado a {target_chat_id}",
+                    f"✅ Mensaje <code>{slug}</code> enviado a {target_chat_id}{tid_info}",
                     parse_mode="HTML",
                 )
             except Exception as e:
@@ -1088,9 +1138,14 @@ class CustomMessagesPlugin(BasePlugin):
         else:
             # It is NOT a stored message, send as text (Legacy behavior)
             try:
-                await context.bot.send_message(chat_id=target_chat_id, text=content)
+                await context.bot.send_message(
+                    chat_id=target_chat_id,
+                    text=content,
+                    message_thread_id=message_thread_id,
+                )
+                tid_info = f" (Topic: {message_thread_id})" if message_thread_id else ""
                 await update.message.reply_text(
-                    f"✅ Mensaje de texto enviado a {target_chat_id}"
+                    f"✅ Mensaje de texto enviado a {target_chat_id}{tid_info}"
                 )
             except Exception as e:
                 await update.message.reply_text(f"❌ Error al enviar texto: {e}")
@@ -1148,7 +1203,8 @@ class CustomMessagesPlugin(BasePlugin):
                     )
                 else:
                     await update.message.reply_text(
-                        f"❌ Mensaje <code>{slug}</code> no encontrado.", parse_mode="HTML"
+                        f"❌ Mensaje <code>{slug}</code> no encontrado.",
+                        parse_mode="HTML",
                     )
                 return
 
@@ -1176,7 +1232,7 @@ class CustomMessagesPlugin(BasePlugin):
             "Sistema y Estado": [],
             "Otros": [],
         }
-        
+
         all_keys = sorted(TEMPLATE_REGISTRY.keys())
         for slug in all_keys:
             if slug.startswith("help_"):
@@ -1189,14 +1245,18 @@ class CustomMessagesPlugin(BasePlugin):
                 cat = "Modo Evil (Privado)"
             elif slug.startswith("search_"):
                 cat = "Búsqueda"
-            elif any(x in slug for x in ["status", "banned", "bot_", "cancel", "private"]):
+            elif any(
+                x in slug for x in ["status", "banned", "bot_", "cancel", "private"]
+            ):
                 cat = "Sistema y Estado"
             else:
                 cat = "Otros"
             categories[cat].append(slug)
         return categories
 
-    def _build_templates_keyboard(self, current_cat: str = None) -> InlineKeyboardMarkup:
+    def _build_templates_keyboard(
+        self, current_cat: str = None
+    ) -> InlineKeyboardMarkup:
         # Fixed order
         cat_order = [
             "Inicio y Bienvenida",
@@ -1205,20 +1265,34 @@ class CustomMessagesPlugin(BasePlugin):
             "Donaciones y Niveles",
             "Búsqueda",
             "Modo Evil (Privado)",
-            "Otros"
+            "Otros",
         ]
-        
+
         buttons = []
         if current_cat is None:
             # Main Menu: Categories
             for cat in cat_order:
                 # Callback: templates|cat|<cat_name>
-                buttons.append([InlineKeyboardButton(f"📂 {cat}", callback_data=f"templates|cat|{cat}")])
-            buttons.append([InlineKeyboardButton("❌ Cerrar", callback_data="templates|close")])
+                buttons.append(
+                    [
+                        InlineKeyboardButton(
+                            f"📂 {cat}", callback_data=f"templates|cat|{cat}"
+                        )
+                    ]
+                )
+            buttons.append(
+                [InlineKeyboardButton("❌ Cerrar", callback_data="templates|close")]
+            )
         else:
             # Back Button only
-            buttons.append([InlineKeyboardButton("🔙 Volver a Categorías", callback_data="templates|home")])
-            
+            buttons.append(
+                [
+                    InlineKeyboardButton(
+                        "🔙 Volver a Categorías", callback_data="templates|home"
+                    )
+                ]
+            )
+
         return InlineKeyboardMarkup(buttons)
 
     async def templates(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1230,13 +1304,15 @@ class CustomMessagesPlugin(BasePlugin):
         await update.message.reply_text(
             "📋 <b>Gestor de Plantillas</b>\n\nSelecciona una categoría para ver los textos disponibles:",
             reply_markup=keyboard,
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
 
-    async def templates_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def templates_callback(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         query = update.callback_query
         uid = update.effective_user.id
-        
+
         if uid not in config.ADMIN_USERS:
             await query.answer("⛔ No tienes permisos.", show_alert=True)
             return
@@ -1251,37 +1327,39 @@ class CustomMessagesPlugin(BasePlugin):
             return
 
         if action == "home":
-             keyboard = self._build_templates_keyboard()
-             await query.edit_message_text(
-                 "📋 <b>Gestor de Plantillas</b>\n\nSelecciona una categoría para ver los textos disponibles:",
-                 reply_markup=keyboard,
-                 parse_mode="HTML"
-             )
-             return
+            keyboard = self._build_templates_keyboard()
+            await query.edit_message_text(
+                "📋 <b>Gestor de Plantillas</b>\n\nSelecciona una categoría para ver los textos disponibles:",
+                reply_markup=keyboard,
+                parse_mode="HTML",
+            )
+            return
 
         if action == "cat":
             cat_name = arg
             categories = self._get_template_categories()
             slugs = categories.get(cat_name, [])
-            
+
             text = f"📂 <b>{cat_name.upper()}</b>\n\n"
             text += "Usa <code>/add_msge &lt;slug&gt;</code> para personalizar.\n\n"
-            
+
             for slug in slugs:
                 info = TEMPLATE_REGISTRY[slug]
                 vars_str = ", ".join(info["vars"]) if info["vars"] else "Ninguna"
                 entry = f"🔹 <b>{slug}</b>\n"
                 entry += f"   📝 {info['desc']}\n"
                 entry += f"   💲 Vars: <code>{vars_str}</code>\n\n"
-                
+
                 # Check length limit (simple check, if too long cut it)
                 if len(text) + len(entry) > 4000:
                     text += "<i>... lista truncada por límite de longitud ...</i>"
                     break
                 text += entry
-            
+
             keyboard = self._build_templates_keyboard(current_cat=cat_name)
-            await query.edit_message_text(text, reply_markup=keyboard, parse_mode="HTML")
+            await query.edit_message_text(
+                text, reply_markup=keyboard, parse_mode="HTML"
+            )
 
     async def set_var(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_user.id not in config.ADMIN_USERS:
@@ -1302,7 +1380,7 @@ class CustomMessagesPlugin(BasePlugin):
         self._set_global_var(key, value)
         await update.message.reply_text(
             f"✅ Variable global <code>[{key}]</code> establecida a: <b>{html.escape(value)}</b>",
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
 
     async def del_var(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1315,7 +1393,9 @@ class CustomMessagesPlugin(BasePlugin):
 
         key = context.args[0].replace("[", "").replace("]", "")
         self._del_global_var(key)
-        await update.message.reply_text(f"🗑 Variable global <code>[{key}]</code> eliminada.", parse_mode="HTML")
+        await update.message.reply_text(
+            f"🗑 Variable global <code>[{key}]</code> eliminada.", parse_mode="HTML"
+        )
 
     async def vars(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Lista las variables globales disponibles (Sistema + Admin)."""
@@ -1323,12 +1403,12 @@ class CustomMessagesPlugin(BasePlugin):
             return
 
         text = "💲 <b>Variables Globales</b>\n\n"
-        
+
         # System Vars
         text += "🤖 <b>Sistema (Automáticas):</b>\n"
         for key, desc in GLOBAL_VARIABLES.items():
-             text += f"🔹 <code>[{key}]</code>: {desc}\n"
-        
+            text += f"🔹 <code>[{key}]</code>: {desc}\n"
+
         # Admin Vars
         text += "\n🛠 <b>Personalizadas (Admin):</b>\n"
         if not self._global_vars_cache:
