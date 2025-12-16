@@ -169,7 +169,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if cms and cms.enabled:
                 # We can provide [Termino] as replacement
-                text_no_results = cms.get_text(
+                text_no_results = await cms.get_text(
                     "search_no_results",
                     Termino=safe_term,
                 )
@@ -193,7 +193,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_fallback = "Usa /start para comenzar o selecciona una opción del menú."
         text_fallback = (
-            cms.get_text("private_default_fallback")
+            await cms.get_text("private_default_fallback")
             if (cms and cms.enabled)
             else base_fallback
         )

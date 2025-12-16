@@ -129,6 +129,12 @@ async def test_recibir_texto_private_chat_response():
         
         # Mock context.bot.send_message
         context.bot.send_message = AsyncMock()
+
+        # Mock custom messages plugin
+        mock_cms = MagicMock()
+        mock_cms.enabled = True
+        mock_cms.get_text = AsyncMock(return_value="Usa /start para comenzar")
+        context.application.plugin_manager.get_plugin.return_value = mock_cms
         
         # Run the handler
         await recibir_texto(update, context)

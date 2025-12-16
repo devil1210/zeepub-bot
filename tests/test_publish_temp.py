@@ -203,6 +203,12 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
     context.bot = MagicMock()
     context.bot.send_message = AsyncMock()
 
+    # Mock custom messages plugin
+    mock_cms = MagicMock()
+    mock_cms.enabled = True
+    mock_cms.get_text = AsyncMock(return_value="Bienvenido al bot")
+    context.application.plugin_manager.get_plugin.return_value = mock_cms
+
     dummy_app = MagicMock()
     await ch.CommandHandlers(dummy_app).start(update, context)
 

@@ -4,7 +4,9 @@ import re
 import uuid
 import logging
 from urllib.parse import unquote, urlparse
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+import html
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, CallbackQueryHandler, MessageHandler, filters
 from core.state_manager import state_manager
 from services.opds_service import mostrar_colecciones, buscar_zeepubs_directo
