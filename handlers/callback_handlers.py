@@ -642,19 +642,39 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Notificar a los administradores
         base_admin_msg = (
             "💰 <b>Nueva Donación Reportada</b>\n\n"
-            f"👤 <b>Usuario:</b> {full_name}\n"
-            f"🔗 <b>Alias:</b> @{username}\n"
-            f"🆔 <b>ID:</b> <code>{uid}</code>\n\n"
+            f"👤 <b>Usuario:</b> [Nombre]\n"
+            "{{if Alias}}🔗 <b>Alias:</b> @[Alias]\n{{endif}}"
+            f"🆔 <b>ID:</b> <code>[ID]</code>\n\n"
             "El usuario ha indicado que realizó una donación en Ko-fi.\n"
             "Por favor verifica y usa <code>/nivel</code> (si existiera) o actualiza manualmente."
         )
-        # Note: We can't easily template this admin message fully dynamically if it relies on complex structure,
-        # but we can wrap the text part.
+
         admin_msg = base_admin_msg
         if cms and cms.enabled:
             # We pass all potentially useful vars
             admin_msg = cms.get_text(
                 "donation_admin_alert", default_text=base_admin_msg, user=user
+            )
+        else:
+            # Basic fallback logic for replacement if plugin disabled
+            safe_alias = f"@{username}" if username and username != "Sin alias" else ""
+            # Manually handle the if for fallback (simplified)
+            if safe_alias:
+                admin_msg = (
+                    admin_msg.replace("{{if Alias}}", "")
+                    .replace("{{endif}}", "")
+                    .replace("[Alias]", username)
+                )
+            else:
+                # remove block
+                import re
+
+                admin_msg = re.sub(
+                    r"{{if Alias}}.*?{{endif}}", "", admin_msg, flags=re.DOTALL
+                )
+
+            admin_msg = admin_msg.replace("[Nombre]", full_name).replace(
+                "[ID]", str(uid)
             )
 
         for admin_id in config.ADMIN_USERS:

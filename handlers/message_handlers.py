@@ -39,23 +39,22 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             # Template System
             cms = context.application.plugin_manager.get_plugin("custom_messages")
-            default_msg = "⛔ Estás <b>baneado</b> del bot."
-            if expires_at:
-                default_msg += f" Hasta: <b>{expires_at.strftime('%Y-%m-%d %H:%M')}</b>"
 
-            msg = default_msg
+            exp_str = expires_at.strftime("%Y-%m-%d %H:%B") if expires_at else None
+            default_msg_template = "⛔ Estás <b>baneado</b> del bot.{{if Fecha}} Hasta: <b>[Fecha]</b>{{endif}}"
+
             if cms and cms.enabled:
-                # We can pass formatted date as a variable if we want custom message to use it
-                exp_str = (
-                    expires_at.strftime("%Y-%m-%d %H:%M")
-                    if expires_at
-                    else "Indefinido"
-                )
                 msg = cms.get_text(
                     "banned_message",
-                    default_text=default_msg,
+                    default_text=default_msg_template,
                     user=update.effective_user,
                     Fecha=exp_str,
+                )
+            else:
+                msg = (
+                    default_msg_template.replace("{{if Fecha}}", "")
+                    .replace("{{endif}}", "")
+                    .replace("<b>[Fecha]</b>", f"<b>{exp_str}</b>" if exp_str else "")
                 )
 
             await context.bot.send_message(

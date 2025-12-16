@@ -324,7 +324,7 @@ class CustomMessagesPlugin(BasePlugin):
 
         if user:
             vars_to_use["Nombre"] = user.first_name or "Usuario"
-            vars_to_use["Alias"] = user.username or "Sin Alias"
+            vars_to_use["Alias"] = user.username  # Can be None, works with {{if Alias}}
             vars_to_use["ID"] = str(user.id)
 
         # 2. Conditional Logic: {{if Var}}...{{endif}}
