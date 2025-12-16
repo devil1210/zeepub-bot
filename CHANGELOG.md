@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.8.5] - 2025-12-16
+
+### Añadido
+- **Custom Messages**: Se añadió la variable `[Rol]` para plantillas, que muestra el rol interno del sistema (Admin, Vip, Staff, Free) de forma capitalizada, diferenciándola de `[Nivel]` que muestra la etiqueta personalizada.
+
 ## [3.8.4] - 2025-12-16
 
 ### Corregido

@@ -405,16 +405,21 @@ class CustomMessagesPlugin(BasePlugin):
              reset_time_str = f"{hours}h {minutes}m"
 
         # Expires
-        expires_str = None
+        expire_str = None
         if expires_at:
              fmt = "%d/%m/%Y %H:%M" if role_key == "banned" else "%d/%m/%Y"
-             expires_str = expires_at.strftime(fmt)
+             expire_str = expires_at.strftime(fmt)
+
+        # Get Internal Role (e.g. 'admin', 'vip') for [Rol]
+        # [Nivel] returns the display label (e.g. 'El Custom')
+        internal_role = (user_data.get("role") or "free").capitalize()
 
         return {
-            "Nivel": user_level,
-            "Descargas": descargas_text,
+            "Nivel": user_level, # Keeping user_level as it's already calculated with custom status_label logic
+            "Rol": internal_role,
+            "Descargas": descargas_text, # Keeping descargas_text
             "ResetTime": reset_time_str,
-            "Expires": expires_str,
+            "Expires": expire_str,
         }
 
     # --- Helper Methods for Template System ---
@@ -471,7 +476,7 @@ class CustomMessagesPlugin(BasePlugin):
 
             # 2.1 Auto-Inject Extended User Stats if needed
             # We check if keys are present in final_text to avoid expensive DB calls
-            needed_keys = {"[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]"}
+            needed_keys = {"[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]", "[Rol]"}
             # Simple string check (fast)
             if any(k in final_text for k in needed_keys):
                 extended_context = await self._get_extended_user_context(user)
