@@ -108,6 +108,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
                 "status_label": custom_status or role.capitalize(),
                 "expires_at": expires_at,
                 "nickname": info.get("nickname"),
+                "custom_status": custom_status,
             }
 
     # 2. Legacy / Config Checks (if not found in DB or if DB says free but config says otherwise?

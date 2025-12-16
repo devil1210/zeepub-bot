@@ -422,6 +422,7 @@ class CustomMessagesPlugin(BasePlugin):
             "premium": "Premium",
             "white": "Patrocinador",
             "free": "Lector",
+            "user": "Lector",
             "banned": "Baneado",
         }
         raw_role = user_data.get("role") or "free"
@@ -442,8 +443,8 @@ class CustomMessagesPlugin(BasePlugin):
         # If user wants [Rol] to be SPECIFICALLY the custom function, we should use that.
         # However, for consistency, let's use the status_label which defaults to role name if no custom label.
 
-        rol_funcional = user_level # [Rol]
-        apodo = user_data.get("nickname") or "Sin Apodo"
+        rol_funcional = user_data.get("custom_status") # [Rol] - Sólo si hay custom status real
+        apodo = user_data.get("nickname") # [Apodo] - None si no existe
 
         return {
             "Nivel": system_role_display,
