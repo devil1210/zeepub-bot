@@ -136,6 +136,14 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 )
         return results
 
+    async def update_nickname(self, telegram_id: int, nickname: str):
+        async with self.db.connection() as conn:
+            await conn.execute(
+                "UPDATE users SET nickname = ? WHERE telegram_id = ?",
+                (nickname, telegram_id),
+            )
+            await conn.commit()
+
     def _parse_datetime(self, val: Any) -> Optional[datetime]:
         if not val:
             return None
