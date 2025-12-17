@@ -108,7 +108,7 @@ class GroupManagerPlugin(BasePlugin):
         pass
 
     def _is_admin(self, uid: int) -> bool:
-        return str(uid) in config.ADMIN_USERS
+        return uid in config.ADMIN_USERS
 
     async def authorize_group(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self._is_admin(update.effective_user.id):
