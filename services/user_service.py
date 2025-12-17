@@ -50,12 +50,33 @@ async def remove_user(telegram_id: int):
 
 
 async def update_user_status_label(telegram_id: int, new_label: Optional[str]):
-    await user_repo.update_status(telegram_id, new_label)
+    # Check if user exists first
+    info = await get_user_info(telegram_id)
+    if not info:
+        # User not in DB, retrieve effective role (e.g. from config) and upsert
+        eff = await get_effective_user(telegram_id)
+        role = eff.get("role", "free")
+        # Upsert with new label
+        await upsert_user(telegram_id, role=role, custom_status=new_label)
+    else:
+        # Just update
+        await user_repo.update_status(telegram_id, new_label)
+
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
 async def update_user_nickname(telegram_id: int, new_nickname: Optional[str]):
-    await user_repo.update_nickname(telegram_id, new_nickname)
+    # Check if user exists first
+    info = await get_user_info(telegram_id)
+    if not info:
+        # User not in DB, retrieve effective role and upsert
+        eff = await get_effective_user(telegram_id)
+        role = eff.get("role", "free")
+        # Upsert with new nickname
+        await upsert_user(telegram_id, role=role, nickname=new_nickname)
+    else:
+        await user_repo.update_nickname(telegram_id, new_nickname)
+
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 

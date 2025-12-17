@@ -5,7 +5,7 @@ import os
 import logging
 from typing import Union, Dict
 from config.config_settings import config
-from services.user_service import get_effective_user
+# from services.user_service import get_effective_user  <-- Moved inside function
 
 # from core.state_manager import state_manager (Moved to local scope)
 
@@ -108,6 +108,7 @@ async def downloads_left(uid: int) -> Union[int, str]:
     st = state_manager.get_user_state(uid)
     used = st.get("downloads_used", 0)
 
+    from services.user_service import get_effective_user
     user_data = await get_effective_user(uid)
     role = user_data.get("role", "free")
 
