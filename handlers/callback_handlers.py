@@ -619,7 +619,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             cms = context.application.plugin_manager.get_plugin("custom_messages")
 
-            # Intentar borrar el mensaje original para limpieza
+            # Intentar borrar el mensaje original
             try:
                 await query.message.delete()
             except Exception:
@@ -629,22 +629,32 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if update.effective_chat.type != "private":
                 try:
                     bot_username = context.bot.username
-                    keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", url=f"https://t.me/{bot_username}")]]
+                    # Botón callback para borrar al clickear
+                    # Data: ir_privado|uid
+                    keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", callback_data=f"ir_privado|{uid}")]]
 
                     await query.answer("✅ Solicitud registrada.")
-                    # Usar explicitly el chat_id del mensaje original para asegurar que se envía al mismo grupo
-                    await context.bot.send_message(
+                    prompt_msg = await context.bot.send_message(
                         chat_id=update.effective_chat.id,
                         text=f"👋 Hola {update.effective_user.mention_html()},\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo.",
                         reply_markup=InlineKeyboardMarkup(keyboard),
                         parse_mode="HTML"
                     )
+                    
+                    # Programar auto-borrado en 2 minutos (120s)
+                    if context.job_queue:
+                         context.job_queue.run_once(
+                             delete_message_job, 
+                             120, 
+                             data={"chat_id": update.effective_chat.id, "message_id": prompt_msg.message_id},
+                             name=f"del_donation_prompt_{prompt_msg.message_id}"
+                         )
+
                 except Exception as e:
                     logger.error(f"Error answering query in group: {e}")
                 return
 
-            # 3. Es chat privado - Mostrar instrucciones directamente
-            # Enviamos mensaje nuevo porque borramos el anterior
+            # 3. Es chat privado
             base_request = (
                 "🧾 <b>Comprobante Requerido</b>\n\n"
                 "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
@@ -660,6 +670,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text=text_request,
                 parse_mode="HTML"
             )
+            # No job needed in private chat roughly, or user didn't ask for it there.
         except Exception as e:
             logger.error(f"Error handling notificar_donacion: {e}", exc_info=True)
             try:
@@ -668,6 +679,42 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 pass
         return
 
+    # Nuevo Handler: Ir Privado
+    if data.startswith("ir_privado|"):
+        try:
+            target_uid = int(data.split("|")[1])
+            clicker_uid = update.effective_user.id
+            
+            if clicker_uid != target_uid:
+                try:
+                    await query.answer("⚠️ Este mensaje no es para ti.", show_alert=True)
+                except Exception:
+                    pass
+                return
+            
+            # Es el usuario correcto
+            try:
+                await query.message.delete()
+            except Exception:
+                pass
+            
+            # Redirigir al privado
+            bot_username = context.bot.username
+            await query.answer(url=f"https://t.me/{bot_username}")
+            
+        except Exception as e:
+            logger.error(f"Error handling ir_privado: {e}")
+        return
+
+
+async def delete_message_job(context: ContextTypes.DEFAULT_TYPE):
+    """Trabajo agendado para borrar mensajes."""
+    job = context.job
+    data = job.data
+    try:
+        await context.bot.delete_message(chat_id=data["chat_id"], message_id=data["message_id"])
+    except Exception as e:
+        logger.debug(f"Auto-delete failed (maybe already deleted): {e}")
 
 def register_handlers(app):
     # CallbackQuery handlers
@@ -676,7 +723,7 @@ def register_handlers(app):
     app.add_handler(
         CallbackQueryHandler(
             button_handler,
-            pattern="^(col\\||lib\\||nav\\||subir_nivel|volver_colecciones|volver_ultima|cerrar|descargar_epub|preparar_post_fb|publicar_fb|descartar_fb|publish_target\\||set_publish_temp\\||notificar_donacion)",
+            pattern="^(col\\||lib\\||nav\\||subir_nivel|volver_colecciones|volver_ultima|cerrar|descargar_epub|preparar_post_fb|publicar_fb|descartar_fb|publish_target\\||set_publish_temp\\||notificar_donacion|ir_privado\\|)",
         )
     )
     # Texto libre handlers
