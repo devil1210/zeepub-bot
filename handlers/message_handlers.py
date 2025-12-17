@@ -259,7 +259,6 @@ async def handle_json_upload(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         await status_msg.edit_text(text)
 
-
     except Exception as e:
         logger.error(f"Error processing JSON upload: {e}")
         await status_msg.edit_text(f"❌ Error al procesar el archivo: {e}")
@@ -275,9 +274,9 @@ async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Verificar contenido
     file_obj = None
-    
+
     if update.message.photo:
-        file_obj = update.message.photo[-1] # Mejor calidad
+        file_obj = update.message.photo[-1]  # Mejor calidad
         type_str = "Foto"
     elif update.message.document:
         file_obj = update.message.document

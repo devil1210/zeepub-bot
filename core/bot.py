@@ -70,10 +70,10 @@ class ZeePubBot:
         self.app.add_handler(CallbackQueryHandler(button_handler), group=1)
 
         # Mensajes de texto
+
         self.app.add_handler(
             MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto)
         )
-
 
         # JSON Upload Handler
         from handlers.message_handlers import handle_json_upload, handle_donation_proof
@@ -90,7 +90,6 @@ class ZeePubBot:
             )
         )
 
-
     def start(self):
         """Arranca el bot en polling (bloqueante, modo legacy)."""
         logger.info("Bot iniciado, entrando en polling...")
@@ -100,6 +99,7 @@ class ZeePubBot:
     async def initialize(self):
         """Inicializa la aplicación (para uso con API)."""
         await self.app.initialize()
+
         # Initialize plugins explicitely to ensure they are loaded
         try:
             await self.plugin_manager.initialize(self.app)

@@ -612,21 +612,27 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if data == "notificar_donacion":
         try:
-            # 1. Establecer estado esperando comprobante (globalmente, para que funcione al ir al privado)
+            # 1. Establecer estado esperando comprobante
             uid = update.effective_user.id
             st = state_manager.get_user_state(uid)
             st["waiting_for_donation_proof"] = True
-            
+
             cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+            # Intentar borrar el mensaje original para limpieza
+            try:
+                await query.message.delete()
+            except Exception:
+                pass
 
             # 2. Verificar si es chat privado
             if update.effective_chat.type != "private":
                 try:
                     bot_username = context.bot.username
-                    # Botón deep link al privado
                     keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", url=f"https://t.me/{bot_username}")]]
-                    
+
                     await query.answer("✅ Solicitud registrada.")
+                    # Usar explicitly el chat_id del mensaje original para asegurar que se envía al mismo grupo
                     await context.bot.send_message(
                         chat_id=update.effective_chat.id,
                         text=f"👋 Hola {update.effective_user.mention_html()},\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo.",
@@ -638,6 +644,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
 
             # 3. Es chat privado - Mostrar instrucciones directamente
+            # Enviamos mensaje nuevo porque borramos el anterior
             base_request = (
                 "🧾 <b>Comprobante Requerido</b>\n\n"
                 "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
@@ -645,15 +652,19 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             text_request = base_request
             if cms and cms.enabled:
-                 text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
-            
+                text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+
             await query.answer()
-            await query.edit_message_text(text_request, parse_mode="HTML")
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=text_request,
+                parse_mode="HTML"
+            )
         except Exception as e:
             logger.error(f"Error handling notificar_donacion: {e}", exc_info=True)
             try:
                 await query.answer("❌ Ocurrió un error al procesar tu solicitud.", show_alert=True)
-            except:
+            except Exception:
                 pass
         return
 
