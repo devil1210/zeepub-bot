@@ -46,36 +46,7 @@ class CommandHandlers:
         # Template System
         cms = context.application.plugin_manager.get_plugin("custom_messages")
 
-        # Deep Link Handling: /start donation_{uid}
-        if context.args and context.args[0].startswith("donation_"):
-            try:
-                target_uid = int(context.args[0].split("_")[1])
-                if uid != target_uid:
-                    base_text = "⚠️ Este enlace de donación no es para ti."
-                    text = base_text
-                    if cms and cms.enabled:
-                        text = await cms.get_text("donation_link_unauthorized")
-                    await update.message.reply_text(text)
-                    return
-
-                # Usuario correcto: Activar estado de espera de comprobante
-                st = state_manager.get_user_state(uid)
-                st["waiting_for_donation_proof"] = True
-
-                # Enviar instrucciones (Misma lógica que ir_privado)
-                base_request = (
-                    "🧾 <b>Comprobante Requerido</b>\n\n"
-                    "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
-                    "Lo revisaremos para actualizar tu nivel."
-                )
-                text_request = base_request
-                if cms and cms.enabled:
-                    text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
-
-                await update.message.reply_text(text_request, parse_mode="HTML")
-                return
-            except (IndexError, ValueError):
-                pass
+        # Ya no usamos deep links con parámetros - el estado se maneja proactivamente
 
         if left == "ilimitadas":
             text = (

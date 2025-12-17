@@ -685,9 +685,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         except Exception as e:
                             logger.warning(f"Could not get bot username for URL button: {e}")
 
-                    # Botón URL directo (Redirección 100% fiable) - Deep link con validación de usuario
-                    # URL: https://t.me/Bot?start=donation_UID
-                    url_button = f"https://t.me/{bot_username}?start=donation_{user_to_update}" if bot_username else "https://t.me/ZeePubBot"
+                    # URL simple sin parámetros (no muestra /start en el chat)
+                    url_button = f"https://t.me/{bot_username}" if bot_username else "https://t.me/ZeePubBot"
 
                     keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", url=url_button)]]
 
@@ -709,6 +708,25 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         parse_mode="HTML",
                         message_thread_id=update.effective_message.message_thread_id if update.effective_message.is_topic_message else None
                     )
+
+                    # Enviar instrucciones proactivamente al chat privado
+                    base_request = (
+                        "🧾 <b>Comprobante Requerido</b>\n\n"
+                        "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
+                        "Lo revisaremos para actualizar tu nivel."
+                    )
+                    text_request = base_request
+                    if cms and cms.enabled:
+                        text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+                    
+                    try:
+                        await context.bot.send_message(
+                            chat_id=user_to_update,
+                            text=text_request,
+                            parse_mode="HTML"
+                        )
+                    except Exception as e:
+                        logger.warning(f"No se pudo enviar mensaje al privado: {e}")
 
                     # Programar auto-borrado en 2 minutos (120s)
                     if context.job_queue:
