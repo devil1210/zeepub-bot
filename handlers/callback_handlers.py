@@ -655,9 +655,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         except Exception as e:
                             logger.warning(f"Could not get bot username for URL button: {e}")
 
-                    # Botón URL directo (Redirección 100% fiable)
-                    # No permite borrado instantáneo, pero el JobQueue lo borrará en 2 min
-                    url_button = f"https://t.me/{bot_username}?start=donation_proof" if bot_username else "https://t.me/ZeePubBot"
+                    # Botón URL directo (Redirección 100% fiable) - Deep link con validación de usuario
+                    # URL: https://t.me/Bot?start=donation_UID
+                    url_button = f"https://t.me/{bot_username}?start=donation_{user_to_update}" if bot_username else "https://t.me/ZeePubBot"
                     
                     keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", url=url_button)]]
 
