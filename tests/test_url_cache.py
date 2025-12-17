@@ -17,7 +17,12 @@ def ensure_real_config():
                 del sys.modules[mod_name]
     # Now import the real module
     from config.config_settings import config as real_config
+    # Save original DATABASE_URL and force to None for tests
+    original_db_url = real_config.DATABASE_URL
+    real_config.DATABASE_URL = None
     yield real_config
+    # Restore original value after test
+    real_config.DATABASE_URL = original_db_url
 
 from config.config_settings import config
 
@@ -77,6 +82,9 @@ def test_create_and_get_short_url_sqlalchemy(tmp_path):
     spec = spec_from_file_location("url_cache_sa", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
     sa_mod = module_from_spec(spec)
     spec.loader.exec_module(sa_mod)
+    
+    # Initialize the database with SQLAlchemy
+    sa_mod.init_db()
 
     url = "https://example.org/book2.epub"
     h = sa_mod.create_short_url(url, book_title="SA Test")

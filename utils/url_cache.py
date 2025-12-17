@@ -624,8 +624,10 @@ def get_candidates_for_validation(limit: int = 100, older_than_seconds: int = 36
         conn.close()
 
 
-# Inicializar BD al importar el módulo
-try:
-    init_db()
-except Exception as e:
-    logger.error(f"Could not initialize URL cache DB at {DB_PATH}: {e}")
+# Inicializar BD al importar el módulo (skip in test environments)
+# Tests should call init_db() explicitly after setting up their config
+if not os.getenv("PYTEST_CURRENT_TEST"):
+    try:
+        init_db()
+    except Exception as e:
+        logger.error(f"Could not initialize URL cache DB at {DB_PATH}: {e}")

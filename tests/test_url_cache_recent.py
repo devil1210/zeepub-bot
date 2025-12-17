@@ -13,7 +13,10 @@ def ensure_real_config():
             if isinstance(mod, MagicMock):
                 del sys.modules[mod_name]
     from config.config_settings import config as real_config
+    original_db_url = real_config.DATABASE_URL
+    real_config.DATABASE_URL = None
     yield real_config
+    real_config.DATABASE_URL = original_db_url
 
 from config.config_settings import config
 
