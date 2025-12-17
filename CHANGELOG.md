@@ -5,6 +5,21 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.10.0] - 2025-12-17
+
+### Añadido
+- **Flujo de Donaciones Mejorado**: Eliminado parámetro de deep link, el bot envía instrucciones proactivamente al chat privado
+- **Notificaciones de Donaciones**: Comandos `/approve_donation` y `/reject_donation` para gestión de verificaciones
+- **Sistema de Sugerencias Interactivo**: Botones de Aceptar/Rechazar/Respuesta Personalizada en mensajes de sugerencias
+
+### Cambiado
+- **Donaciones**: URL del botón ahora es simple (`https://t.me/bot`) sin mostrar `/start` en el chat
+- **Mensajes**: 5 nuevos templates añadidos al sistema de plantillas
+
+### Arreglado
+- **Respuestas Personalizadas**: Handler movido a `recibir_texto()` para que funcionen correctamente
+- **Notificación de Actualización**: El bot ahora envía correctamente el mensaje después de `/update_system`
+
 ## [v3.9.5] - 2025-12-17
 
 ### Arreglado
