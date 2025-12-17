@@ -215,13 +215,13 @@ class CommandHandlers:
         status_label = user_data.get("status_label")
         expires_at = user_data.get("expires_at")
 
-        # Override label if custom status exists
-        user_level = (
-            status_label if status_label else roles_display.get(role_key, "Lector")
-        )
-
+        # Custom Status (Apodo/Label) logic
+        # Nivel = System Role (Admin, Staff, etc.)
+        # Rol = Custom Label (Maquetador, etc)
+        
+        system_role_text = roles_display.get(role_key, "Lector")
         if role_key == "banned":
-            user_level = "🚫 Baneado"
+             system_role_text = "🚫 Baneado"
 
         # Max dl logic
         if role_key in ("admin", "staff", "premium", "banned"):
@@ -292,10 +292,17 @@ class CommandHandlers:
 
         final_text = base_text
         if cms and cms.enabled:
+            # Pass explicit variables to override any global default logic
+            # Nivel: System Role (Staff, Admin, VIP)
+            # Rol: Custom Label (Maquetador, etc) -> Only explicit if exists, else same as Nivel/Empty?
+            # Let's fallback to system role if status_label is empty, so [Rol] isn't empty.
+            rol_val = status_label if status_label else system_role_text
+            
             final_text = await cms.get_text(
                 "status_message",
                 user=update.effective_user,
-                Nivel=user_level,
+                Nivel=system_role_text,
+                Rol=rol_val, 
                 Descargas=left_text,
                 ResetTime=reset_time_str,
                 Expires=expires_str,
