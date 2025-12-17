@@ -610,13 +610,32 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.debug("Could not discard FB preview buttons: %s", e)
         return
-    if data == "notificar_donacion":
+    # Handler: Notificar Donación (con protección de usuario)
+    if data.startswith("notificar_donacion") or data == "notificar_donacion":
         try:
-            # 1. Establecer estado esperando comprobante
-            uid = update.effective_user.id
-            st = state_manager.get_user_state(uid)
-            st["waiting_for_donation_proof"] = True
+            # Compatibilidad con formato antiguo sin UID (si existe alguno)
+            target_uid = None
+            if "|" in data:
+                try:
+                     target_uid = int(data.split("|")[1])
+                except (ValueError, IndexError):
+                     pass
+            
+            # Verificar usuario si hay target_uid
+            clicker_uid = update.effective_user.id
+            if target_uid and clicker_uid != target_uid:
+                try:
+                    await query.answer("⚠️ Este botón no es para ti.", show_alert=True)
+                except Exception:
+                    pass
+                return
 
+            # 1. Establecer estado esperando comprobante (globalmente para que funcione al ir al privado)
+            # Usamos target_uid si existe, o el clicker si no (para fallback)
+            user_to_update = target_uid if target_uid else clicker_uid
+            st = state_manager.get_user_state(user_to_update)
+            st["waiting_for_donation_proof"] = True
+            
             cms = context.application.plugin_manager.get_plugin("custom_messages")
 
             # Intentar borrar el mensaje original
@@ -631,7 +650,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     bot_username = context.bot.username
                     # Botón callback para borrar al clickear
                     # Data: ir_privado|uid
-                    keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", callback_data=f"ir_privado|{uid}")]]
+                    keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", callback_data=f"ir_privado|{user_to_update}")]]
 
                     await query.answer("✅ Solicitud registrada.")
                     prompt_msg = await context.bot.send_message(
@@ -678,6 +697,19 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await query.answer("❌ Ocurrió un error al procesar tu solicitud.", show_alert=True)
             except Exception:
                 pass
+        return
+
+    # Handler: Cerrar Donación (con protección de usuario)
+    if data.startswith("cerrar_donacion|"):
+        try:
+            target_uid = int(data.split("|")[1])
+            clicker_uid = update.effective_user.id
+            if clicker_uid != target_uid:
+                await query.answer("⚠️ Este botón no es para ti.", show_alert=True)
+                return
+            await query.message.delete()
+        except Exception:
+            pass
         return
 
     # Nuevo Handler: Ir Privado
@@ -753,7 +785,7 @@ def register_handlers(app):
     app.add_handler(
         CallbackQueryHandler(
             button_handler,
-            pattern="^(col\\||lib\\||nav\\||subir_nivel|volver_colecciones|volver_ultima|cerrar|descargar_epub|preparar_post_fb|publicar_fb|descartar_fb|publish_target\\||set_publish_temp\\||notificar_donacion|ir_privado\\|)",
+            pattern="^(col\\||lib\\||nav\\||subir_nivel|volver_colecciones|volver_ultima|cerrar|cerrar_donacion\\||descargar_epub|preparar_post_fb|publicar_fb|descartar_fb|publish_target\\||set_publish_temp\\||notificar_donacion|ir_privado\\|)",
         )
     )
     # Texto libre handlers

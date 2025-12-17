@@ -98,13 +98,14 @@ class DonationsPlugin(BasePlugin):
                 DonationUrl=config.DONATION_URL,
             )
 
+        uid = update.effective_user.id
         keyboard = [
             [
                 InlineKeyboardButton(
-                    "✅ Ya realicé la donación", callback_data="notificar_donacion"
+                    "✅ Ya realicé la donación", callback_data=f"notificar_donacion|{uid}"
                 )
             ],
-            [InlineKeyboardButton("⏳ Donar más tarde", callback_data="cerrar")],
+            [InlineKeyboardButton("⏳ Donar más tarde", callback_data=f"cerrar_donacion|{uid}")],
         ]
 
         msg = await context.bot.send_message(
