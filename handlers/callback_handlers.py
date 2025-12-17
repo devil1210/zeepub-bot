@@ -701,6 +701,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             # Redirigir al privado Y enviar instrucciones
             bot_username = context.bot.username
+            if not bot_username:
+                try:
+                    me = await context.bot.get_me()
+                    bot_username = me.username
+                except Exception as e:
+                    logger.warning(f"Could not get bot username for redirect: {e}")
+
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             
             # Obtener texto de instrucciones
@@ -718,7 +725,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception as e:
                 logger.warning(f"No se pudo enviar mensaje al privado (usuario no ha iniciado bot?): {e}")
 
-            await query.answer(url=f"https://t.me/{bot_username}")
+            if bot_username:
+                await query.answer(url=f"https://t.me/{bot_username}")
+            else:
+                await query.answer() # Fallback, just close spinner
 
         except Exception as e:
             logger.error(f"Error handling ir_privado: {e}")
