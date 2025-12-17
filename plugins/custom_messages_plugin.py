@@ -567,6 +567,7 @@ class CustomMessagesPlugin(BasePlugin):
             app.add_handler(CommandHandler("add_msge", self.add_msge))
             app.add_handler(CommandHandler("reset_msge", self.reset_msge))
             app.add_handler(CommandHandler("list_msge", self.list_msge))
+            app.add_handler(CommandHandler("view_msge", self.view_msge))
             app.add_handler(CommandHandler("send_msge", self.send_msge))
             app.add_handler(CommandHandler("saludo", self.saludo))
             app.add_handler(CommandHandler("set_welcome", self.set_welcome))
@@ -1074,6 +1075,49 @@ class CustomMessagesPlugin(BasePlugin):
         text += "\n💾 = Personalizado, 📄 = Por defecto"
         text += "\nUsa <code>/list_msge &lt;id&gt;</code> para ver contenido."
         await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+
+    async def view_msge(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Preview template with HTML rendering (not escaped)."""
+        if update.effective_user.id not in config.ADMIN_USERS:
+            return
+
+        if not context.args:
+            await update.message.reply_text(
+                "📖 <b>Uso:</b> <code>/view_msge &lt;slug&gt;</code>\n\n"
+                "Muestra el template renderizado (con HTML procesado).\n"
+                "Usa <code>/list_msge</code> para ver la lista de templates disponibles.",
+                parse_mode=ParseMode.HTML
+            )
+            return
+
+        slug = context.args[0].lower()
+        
+        # Get the rendered text using get_text
+        text_rendered = await self.get_text(slug, user=update.effective_user)
+        
+        # Check if template exists
+        msg = self._get_message(slug)
+        entry = TEMPLATE_REGISTRY.get(slug)
+        
+        if not msg and not entry:
+            await update.message.reply_text(
+                f"❌ Template '{slug}' no encontrado.\n\n"
+                "Usa <code>/list_msge</code> para ver templates disponibles.",
+                parse_mode=ParseMode.HTML
+            )
+            return
+        
+        # Determine source
+        source = "💾 Personalizado" if msg and msg.text_content else "📄 Por defecto"
+        
+        # Send rendered preview
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"🔍 <b>Vista previa de '{slug}'</b> ({source}):\n\n{text_rendered}",
+            parse_mode=ParseMode.HTML,
+            message_thread_id=get_thread_id(update),
+        )
+
 
     async def send_msge(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_user.id not in config.ADMIN_USERS:
