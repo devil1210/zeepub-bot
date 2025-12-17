@@ -563,7 +563,7 @@ class HelpPlugin(BasePlugin):
             text_closing = base_closing
             if cms and cms.enabled:
                 text_closing = await cms.get_text(
-                    "bot_closing", Nombre=first_name
+                    "bot_closing", Nombre=update.effective_user.mention_html()
                 )
 
             await query.edit_message_text(text_closing)
@@ -578,7 +578,7 @@ class HelpPlugin(BasePlugin):
             text = base_text
             if cms and cms.enabled:
                 text = await cms.get_text(
-                    "help_main_header", Nombre=first_name
+                    "help_main_header", Nombre=update.effective_user.mention_html()
                 )
 
             keyboard = self._build_category_keyboard(is_admin, is_publisher)

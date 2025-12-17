@@ -76,7 +76,7 @@ class CommandHandlers:
 
         if left == "ilimitadas":
             text = (
-                await cms.get_text("start_welcome_unlimited", Nombre=first_name)
+                await cms.get_text("start_welcome_unlimited", Nombre=update.effective_user.mention_html())
                 if (cms and cms.enabled)
                 else "👋 ¡Hola {first_name}! Comencemos.\n\n✅ Tienes descargas ilimitadas.".replace(
                     "{first_name}", first_name
@@ -86,7 +86,7 @@ class CommandHandlers:
             text = (
                 await cms.get_text(
                     "start_welcome_limited",
-                    Nombre=first_name,
+                    Nombre=update.effective_user.mention_html(),
                     Descargas=left,
                 )
                 if (cms and cms.enabled)
