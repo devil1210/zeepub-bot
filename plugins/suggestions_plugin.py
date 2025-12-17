@@ -15,7 +15,7 @@ class SuggestionsPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.0.0"
+        return "2.0.0"
 
     @property
     def description(self) -> str:

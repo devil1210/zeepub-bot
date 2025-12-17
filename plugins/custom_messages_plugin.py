@@ -533,7 +533,7 @@ class CustomMessagesPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.3.0"
+        return "1.4.0"
 
     @property
     def description(self) -> str:

@@ -315,7 +315,6 @@ async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TY
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
 
-
     if not st.get("waiting_for_donation_proof"):
         return
 

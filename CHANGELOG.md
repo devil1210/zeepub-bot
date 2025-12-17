@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.10.1] - 2025-12-17
+
+### Arreglado
+- **Linting**: Corregidos errores W293 (whitespace) y E303 (blank lines)
+- **Documentación**: Añadidos `/menu` y `/view_msge` al sistema de ayuda
+
+### Cambiado
+- **Versiones de Plugins**: user_manager (1.2.0), suggestions (2.0.0), custom_messages (1.4.0), help (2.2.0)
+
 ## [v3.10.0] - 2025-12-17
 
 ### Añadido

@@ -93,7 +93,7 @@ class ZeePubBot:
     def start(self):
         """Arranca el bot en polling (bloqueante, modo legacy)."""
         logger.info("Bot iniciado, entrando en polling...")
-        
+
         # Run initialization in background before starting polling
         import asyncio
         loop = asyncio.new_event_loop()
@@ -102,7 +102,7 @@ class ZeePubBot:
         loop.run_until_complete(self.plugin_manager.initialize(self.app))
         loop.run_until_complete(BotInitializer.initialize_schedulers(self.app.bot))
         loop.run_until_complete(BotInitializer.check_update_state(self.app.bot))
-        
+
         self.app.run_polling()
         session_manager.close()
 

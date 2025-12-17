@@ -718,7 +718,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     text_request = base_request
                     if cms and cms.enabled:
                         text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
-                    
+
                     try:
                         await context.bot.send_message(
                             chat_id=user_to_update,
