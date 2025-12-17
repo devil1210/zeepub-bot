@@ -13,6 +13,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Actualizado
 - **Plugins**: Custom Messages v1.3.0.
+- **Config**: `GroupManagerPlugin` habilitado por defecto (`ENABLE_GROUP_MANAGER=True`).
 
 ## [3.9.1] - 2025-12-16
 

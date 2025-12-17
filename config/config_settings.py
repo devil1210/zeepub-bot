@@ -108,7 +108,7 @@ class BotConfig:
 
     # Plugin Group Manager
     ENABLE_GROUP_MANAGER: bool = (
-        os.getenv("ENABLE_GROUP_MANAGER", "False").lower() == "true"
+        os.getenv("ENABLE_GROUP_MANAGER", "True").lower() == "true"
     )
 
     # Plugin System Manager
