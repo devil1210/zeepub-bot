@@ -1,22 +1,29 @@
 import pytest
 import sys
-from unittest.mock import MagicMock, AsyncMock
-
-# Patch dependencies to avoid circular imports during test collection
-sys.modules["utils.download_limiter"] = MagicMock()
-sys.modules["services.user_service"] = MagicMock()
-sys.modules["services.opds_service"] = MagicMock()
-sys.modules["core.state_manager"] = MagicMock()
-sys.modules["config.config_settings"] = MagicMock()
-
-# Now import the plugin
+from unittest.mock import MagicMock, AsyncMock, patch
 from telegram import Update, Message, User
 from telegram.ext import ContextTypes
-from plugins.custom_messages_plugin import CustomMessagesPlugin
 
+# Do not import the plugin here globally if it depends on patched modules
+# from plugins.custom_messages_plugin import CustomMessagesPlugin
+
+@pytest.fixture(autouse=True)
+def mock_dependencies():
+    """Patch dependencies in sys.modules for the duration of the test."""
+    modules_to_patch = {
+        "utils.download_limiter": MagicMock(),
+        "services.user_service": MagicMock(),
+        "services.opds_service": MagicMock(),
+        "core.state_manager": MagicMock(),
+        "config.config_settings": MagicMock(),
+    }
+    with patch.dict(sys.modules, modules_to_patch):
+        yield
 
 @pytest.mark.asyncio
 async def test_saludo_parsing():
+    # Import inside the test after mock_dependencies fixture has run
+    from plugins.custom_messages_plugin import CustomMessagesPlugin
     plugin = CustomMessagesPlugin()
 
     # Mock update and context

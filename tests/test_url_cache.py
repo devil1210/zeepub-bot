@@ -27,14 +27,8 @@ def test_create_and_get_short_url(tmp_path, monkeypatch):
     # Reviewing failure: ValueError: not enough values to unpack (expected 3, got 0) inside create_engine 
     # This implies create_engine IS called.
     # url_cache.py calls create_engine if config.DATABASE_URL and _HAS_SQLALCHEMY
-    # We set DATABASE_URL to None, so it shouldn't be called.
-    # UNLESS config is a MagicMock, so bool(config.DATABASE_URL) is True (a Mock object).
-    
-    # We must explicitly set the property return value to None if config is a Mock
-    if isinstance(config, (MagicMock, AsyncMock)):
-        config.DATABASE_URL = None
-    else:
-        monkeypatch.setattr(config, 'DATABASE_URL', None)
+    # Force SQLite mode by clearing DATABASE_URL
+    monkeypatch.setattr(config, 'DATABASE_URL', None)
 
     url_cache.init_db()
 

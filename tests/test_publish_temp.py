@@ -1,37 +1,52 @@
 import sys
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock, AsyncMock, patch
+import importlib.util
+from pathlib import Path
 
-# Prevent circular imports inside the core/handlers modules during test import
-sys.modules["core"] = MagicMock()
-sys.modules["core.bot"] = MagicMock()
-sys.modules["core.state_manager"] = MagicMock()
-sys.modules["core.session_manager"] = MagicMock()
-# Avoid mocking the callback_handlers module itself; it's the unit under test.
-sys.modules["services.opds_service"] = MagicMock()
-sys.modules["services.telegram_service"] = MagicMock()
-sys.modules["services"] = MagicMock()
-sys.modules["utils.http_client"] = MagicMock()
-sys.modules["utils.helpers"] = MagicMock()
-sys.modules["services.settings_service"] = MagicMock()
-sys.modules["config.config_settings"] = MagicMock()
-sys.modules["services.user_service"] = MagicMock()
-# Explicitly set the async method on the mock
-sys.modules["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
+# Fixture to mock dependencies cleanly
+@pytest.fixture(autouse=True)
+def mock_dependencies():
+    modules_to_patch = {
+        "core": MagicMock(),
+        "core.bot": MagicMock(),
+        "core.state_manager": MagicMock(),
+        "core.session_manager": MagicMock(),
+        "services.opds_service": MagicMock(),
+        "services.telegram_service": MagicMock(),
+        "services": MagicMock(),
+        "utils": MagicMock(),
+        "utils.http_client": MagicMock(),
+        "utils.helpers": MagicMock(),
+        "utils.download_limiter": MagicMock(),
+        "services.settings_service": MagicMock(),
+        "config.config_settings": MagicMock(),
+        "services.user_service": MagicMock(),
+    }
+    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
+    # Ensure utils acts as a package
+    modules_to_patch["utils"].__path__ = []
+    # Add explicit submodules referenced
+    modules_to_patch["utils.decorators"] = MagicMock()
+
+    with patch.dict(sys.modules, modules_to_patch):
+        yield
 
 import importlib.util
 from pathlib import Path
 
-# Load the real callback_handlers module by path to avoid earlier tests stubbing
-# `handlers.callback_handlers` in sys.modules. This keeps this unit test isolated.
-cb_path = Path(__file__).resolve().parents[1] / "handlers" / "callback_handlers.py"
-spec = importlib.util.spec_from_file_location("cb_real", str(cb_path))
-cb = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(cb)
+# Helper to load the module under test with current sys.modules
+def load_callback_handlers():
+    cb_path = Path(__file__).resolve().parents[1] / "handlers" / "callback_handlers.py"
+    spec = importlib.util.spec_from_file_location("cb_real", str(cb_path))
+    cb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cb)
+    return cb
 
 
 @pytest.mark.asyncio
 async def test_set_publish_temp_stores_one_time_choice(monkeypatch):
+    cb = load_callback_handlers()
     uid = 111
 
     # prepare a mutable state dict
@@ -75,6 +90,7 @@ async def test_set_publish_temp_stores_one_time_choice(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch):
+    cb = load_callback_handlers()
     uid = 222
     libro_key = "k1"
     update = MagicMock()
@@ -137,6 +153,7 @@ async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch
 
 @pytest.mark.asyncio
 async def test_admin_publisher_set_publish_temp_fb_enters_evil(monkeypatch):
+    cb = load_callback_handlers()
     uid = 444
 
     st = {}
@@ -228,6 +245,7 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
 
 @pytest.mark.asyncio
 async def test_publish_temp_consumed_on_lib_selection_calls_facebook(monkeypatch):
+    cb = load_callback_handlers()
     uid = 333
     libro_key = "k2"
     update = MagicMock()
@@ -289,6 +307,7 @@ async def test_publish_temp_consumed_on_lib_selection_calls_facebook(monkeypatch
 
 @pytest.mark.asyncio
 async def test_descartar_fb_removes_buttons_not_message(monkeypatch):
+    cb = load_callback_handlers()
     uid = 555
     st = {}
     mock_state = MagicMock()
