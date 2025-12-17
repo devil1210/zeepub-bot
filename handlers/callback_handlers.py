@@ -653,7 +653,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         admin_msg = base_admin_msg
         if cms and cms.enabled:
             # We pass all potentially useful vars
-            admin_msg = cms.get_text(
+            admin_msg = await cms.get_text(
                 "donation_admin_alert",
                 user=user
             )
