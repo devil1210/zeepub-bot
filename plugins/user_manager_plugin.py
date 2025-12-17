@@ -42,7 +42,7 @@ class UserManagerPlugin(BasePlugin):
             # Admin commands
             app.add_handler(CommandHandler("add_user", self.add_user))
             app.add_handler(CommandHandler("remove_user", self.remove_user))
-            app.add_handler(CommandHandler("set_staff_status", self.set_staff_status))
+            app.add_handler(CommandHandler("set_rol", self.set_rol))
             app.add_handler(CommandHandler("set_apodo", self.set_apodo))
             app.add_handler(CommandHandler("reset", self.reset_command))
             app.add_handler(CommandHandler("id", self.get_id))
@@ -208,11 +208,11 @@ class UserManagerPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def set_staff_status(
+    async def set_rol(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ):
         """
-        /set_staff_status <id> <label>
+        /set_rol <id> <label>
         Cambia el 'custom_status' de un usuario (ej: 'El Chambeador', 'Editor Jefe').
         Solo para Admins.
         """
@@ -227,7 +227,7 @@ class UserManagerPlugin(BasePlugin):
 
         if not target_id:
              await msg.reply_text(
-                "❌ Uso: /set_staff_status <id> <label> (o responde a un mensaje).",
+                "❌ Uso: /set_rol <id> <label> (o responde a un mensaje).",
                 message_thread_id=thread_id
             )
              return
@@ -269,7 +269,7 @@ class UserManagerPlugin(BasePlugin):
                 message_thread_id=thread_id,
             )
         except Exception as e:
-            logger.error(f"Error set_staff_status: {e}")
+            logger.error(f"Error set_rol: {e}")
             await msg.reply_text(f"❌ Error: {str(e)}", message_thread_id=thread_id)
 
     async def set_apodo(

@@ -14,7 +14,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ### Actualizado
 - **Plugins**: Custom Messages v1.3.0, UserManager v1.1.0.
 - **Config**: `GroupManagerPlugin` habilitado por defecto (`ENABLE_GROUP_MANAGER=True`).
-- **UserManager**: Ahora soporta asignar roles, niveles y apodos respondiendo a mensajes (`/add_user`, `/set_staff_status`, `/set_apodo`).
+- **UserManager**: Ahora soporta asignar roles, niveles y apodos respondiendo a mensajes (`/add_user`, `/set_rol`, `/set_apodo`). Renombrado `/set_staff_status` a `/set_rol`.
 
 ## [3.9.1] - 2025-12-16
 

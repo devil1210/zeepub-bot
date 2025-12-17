@@ -105,12 +105,12 @@ COMMANDS_REGISTRY = {
         "usage": "/remove_user <user_id>",
         "example": "/remove_user 123456789",
     },
-    "set_staff_status": {
+    "set_rol": {
         "cat": "user_mgmt",
-        "desc": "Gestionar Staff",
+        "desc": "Gestionar Staff/Rol",
         "long_desc": "Otorga o revoca el estado de 'Staff' a un usuario. Cambia el [Rol] funcional.",
-        "usage": "/set_staff_status <user_id> <label>",
-        "example": "/set_staff_status 123456789 Editor Jefe",
+        "usage": "/set_rol <user_id> <label>",
+        "example": "/set_rol 123456789 Editor Jefe",
     },
     "set_apodo": {
         "cat": "user_mgmt",

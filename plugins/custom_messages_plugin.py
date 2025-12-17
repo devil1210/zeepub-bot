@@ -208,10 +208,10 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "ℹ️ <b>Comando: /remove_user</b>\n\n📝 <b>Descripción:</b>\nRevoca los privilegios especiales de un usuario, volviéndolo al estado 'Free'.\n\n⌨️ <b>Uso:</b> <code>/remove_user &lt;user_id&gt;</code>\n💡 <b>Ejemplo:</b> <code>/remove_user 123456789</code>",
     },
-    "help_cmd_set_staff_status": {
-        "desc": "Ayuda: /set_staff_status",
+    "help_cmd_set_rol": {
+        "desc": "Ayuda: /set_rol",
         "vars": [],
-        "default": "ℹ️ <b>Comando: /set_staff_status</b>\n\n📝 <b>Descripción:</b>\nOtorga o revoca el estado de 'Staff' a un usuario. Cambia el [Rol] funcional.\n\n⌨️ <b>Uso:</b> <code>/set_staff_status &lt;user_id&gt; &lt;label&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_staff_status 123456789 Editor Jefe</code>",
+        "default": "ℹ️ <b>Comando: /set_rol</b>\n\n📝 <b>Descripción:</b>\nOtorga o revoca el estado de 'Staff' a un usuario. Cambia el [Rol] funcional.\n\n⌨️ <b>Uso:</b> <code>/set_rol &lt;user_id&gt; &lt;label&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_rol 123456789 Editor Jefe</code>",
     },
     "help_cmd_set_apodo": {
         "desc": "Ayuda: /set_apodo",
@@ -630,7 +630,7 @@ class CustomMessagesPlugin(BasePlugin):
         # [Nivel] uses this map directly
         nivel_display = roles_display_map.get(role_key, "Lector")
 
-        # [Rol] - Sólo si hay custom status real (user provided label via /set_staff_status)
+        # [Rol] - Sólo si hay custom status real (user provided label via /set_rol)
         rol_funcional = user_data.get("custom_status")
 
         # Fallback legacy logic for user_level variable (if used elsewhere, but here we focus on vars)
