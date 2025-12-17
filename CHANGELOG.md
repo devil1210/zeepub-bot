@@ -4,7 +4,18 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+## [v3.9.3] - 2025-12-17
 
+### Added
+- **Mejora Flujo Donaciones:**
+    - Botón "Ya realicé la donación" ahora redirige directamente al chat privado con instrucciones.
+    - Soporte para Topics en grupos (el bot responde en el hilo correcto).
+    - Auto-borrado de mensajes de donación tras 2 minutos o al interactuar.
+    - Restricción de uso de botones: solo el usuario que solicitó el comando puede interactuar.
+
+### Fixed
+- **Deep Links:** Corregido error `Url_invalid` usando deep links con parámetros.
+- **Linting:** Limpieza general de código (indentación, espacios).
 ## [3.9.2] - 2025-12-17
 
 ### Arreglado

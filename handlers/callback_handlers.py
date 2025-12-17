@@ -617,10 +617,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             target_uid = None
             if "|" in data:
                 try:
-                     target_uid = int(data.split("|")[1])
+                    target_uid = int(data.split("|")[1])
                 except (ValueError, IndexError):
-                     pass
-            
+                    pass
+
             # Verificar usuario si hay target_uid
             clicker_uid = update.effective_user.id
             if target_uid and clicker_uid != target_uid:
@@ -660,7 +660,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         parse_mode="HTML",
                         message_thread_id=update.effective_message.message_thread_id if update.effective_message.is_topic_message else None
                     )
-                    
+
                     # Programar auto-borrado en 2 minutos (120s)
                     if context.job_queue:
                         context.job_queue.run_once(
@@ -750,7 +750,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             text_request = base_request
             if cms and cms.enabled:
-                 text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+                text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
             
             try:
                 await context.bot.send_message(chat_id=target_uid, text=text_request, parse_mode="HTML")
