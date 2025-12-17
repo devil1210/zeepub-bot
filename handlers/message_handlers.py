@@ -272,6 +272,10 @@ async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TY
     if not st.get("waiting_for_donation_proof"):
         return
 
+    # Validar que sea chat privado
+    if update.effective_chat.type != "private":
+        return
+
     # Verificar contenido
     file_obj = None
 
