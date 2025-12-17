@@ -225,6 +225,7 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
     update.effective_user.id = uid
     update.effective_chat.id = uid
     update.effective_chat.type = 'private'
+    update.message.reply_text = AsyncMock()  # Needed for donation link validation
     context = MagicMock()
     # Provide an async send_message for the fake bot used in the handler
     context.bot = MagicMock()
