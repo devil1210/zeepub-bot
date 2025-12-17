@@ -611,81 +611,35 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.debug("Could not discard FB preview buttons: %s", e)
         return
     if data == "notificar_donacion":
-        user = update.effective_user
-        uid = user.id
-        username = user.username or "Sin alias"
-        full_name = user.full_name
+        # Verificar si es chat privado
+        if update.effective_chat.type != "private":
+            try:
+                await query.answer("⚠️ Por favor, ve al chat privado con el bot para enviar el comprobante.", show_alert=True)
+            except Exception:
+                pass
+            return
+
+        # Es chat privado - Solicitar comprobante
+        uid = update.effective_user.id
+        st = state_manager.get_user_state(uid)
+        st["waiting_for_donation_proof"] = True
 
         cms = context.application.plugin_manager.get_plugin("custom_messages")
-
-        # Enviar confirmación al usuario
+        
+        base_request = (
+            "🧾 <b>Comprobante Requerido</b>\n\n"
+            "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
+            "Lo revisaremos para actualizar tu nivel."
+        )
+        text_request = base_request
+        if cms and cms.enabled:
+             text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+        
         try:
-            await query.answer("¡Gracias! Hemos notificado a los administradores.")
-
-            base_success = (
-                "✅ <b>Notificación enviada</b>\n\n"
-                "Un administrador revisará tu donación pronto y actualizará tu nivel.\n"
-                "¡Muchas gracias por tu apoyo! ❤️"
-            )
-            text_success = base_success
-            if cms and cms.enabled:
-                text_success = await cms.get_text(
-                    "donation_success", user=user
-                )
-
-            await query.edit_message_text(
-                text_success,
-                parse_mode="HTML",
-            )
+            await query.answer()
+            await query.edit_message_text(text_request, parse_mode="HTML")
         except Exception:
             pass
-
-        # Notificar a los administradores
-        base_admin_msg = (
-            "💰 <b>Nueva Donación Reportada</b>\n\n"
-            f"👤 <b>Usuario:</b> [Nombre]\n"
-            "{{if Alias}}🔗 <b>Alias:</b> @[Alias]\n{{endif}}"
-            f"🆔 <b>ID:</b> <code>[ID]</code>\n\n"
-            "El usuario ha indicado que realizó una donación en Ko-fi.\n"
-            "Por favor verifica y usa <code>/nivel</code> (si existiera) o actualiza manualmente."
-        )
-
-        admin_msg = base_admin_msg
-        if cms and cms.enabled:
-            # We pass all potentially useful vars
-            admin_msg = await cms.get_text(
-                "donation_admin_alert",
-                user=user
-            )
-        else:
-            # Basic fallback logic for replacement if plugin disabled
-            safe_alias = f"@{username}" if username and username != "Sin alias" else ""
-            # Manually handle the if for fallback (simplified)
-            if safe_alias:
-                admin_msg = (
-                    admin_msg.replace("{{if Alias}}", "")
-                    .replace("{{endif}}", "")
-                    .replace("[Alias]", username)
-                )
-            else:
-                # remove block
-                # import re removed (globally imported)
-
-                admin_msg = re.sub(
-                    r"{{if Alias}}.*?{{endif}}", "", admin_msg, flags=re.DOTALL
-                )
-
-            admin_msg = admin_msg.replace("[Nombre]", full_name).replace(
-                "[ID]", str(uid)
-            )
-
-        for admin_id in config.ADMIN_USERS:
-            try:
-                await context.bot.send_message(
-                    chat_id=admin_id, text=admin_msg, parse_mode="HTML"
-                )
-            except Exception as e:
-                logger.error(f"Error notificando admin {admin_id}: {e}")
         return
 
 

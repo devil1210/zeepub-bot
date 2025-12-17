@@ -259,6 +259,74 @@ async def handle_json_upload(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         await status_msg.edit_text(text)
 
+
     except Exception as e:
         logger.error(f"Error processing JSON upload: {e}")
         await status_msg.edit_text(f"❌ Error al procesar el archivo: {e}")
+
+
+async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Maneja la recepción de comprobantes de donación (Foto o Documento)."""
+    uid = update.effective_user.id
+    st = state_manager.get_user_state(uid)
+
+    if not st.get("waiting_for_donation_proof"):
+        return
+
+    # Verificar contenido
+    file_obj = None
+    
+    if update.message.photo:
+        file_obj = update.message.photo[-1] # Mejor calidad
+        type_str = "Foto"
+    elif update.message.document:
+        file_obj = update.message.document
+        type_str = "Documento"
+    
+    if not file_obj:
+        await update.message.reply_text("❌ Por favor envía una imagen o un archivo PDF.")
+        return
+
+    # Limpiar estado
+    st["waiting_for_donation_proof"] = False
+    
+    # Notificar usuario
+    cms = context.application.plugin_manager.get_plugin("custom_messages")
+    base_success = (
+        "✅ <b>Comprobante recibido</b>\n\n"
+        "Hemos enviado tu comprobante a los administradores para su verificación.\n"
+        "Te avisaremos cuando tu nivel sea actualizado.\n"
+        "¡Gracias por tu apoyo! ❤️"
+    )
+    text_success = base_success
+    if cms and cms.enabled:
+        text_success = await cms.get_text("donation_proof_received", user=update.effective_user)
+        
+    await update.message.reply_text(text_success, parse_mode="HTML")
+
+    # Notificar Admins
+    user = update.effective_user
+    username = f"@{user.username}" if user.username else "Sin alias"
+    
+    admin_caption = (
+        f"💰 <b>Nueva Donación (con Comprobante)</b>\n\n"
+        f"👤 <b>Usuario:</b> {user.first_name} ({username})\n"
+        f"🆔 <b>ID:</b> <code>{user.id}</code>\n"
+        f"📎 <b>Tipo:</b> {type_str}\n\n"
+        f"Por favor verifica el documento adjunto."
+    )
+
+    for admin_id in config.ADMIN_USERS:
+        try:
+            # Reenviar el mensaje o enviar una copia?
+            # copy_message es mejor para mantener el contenido
+            await context.bot.copy_message(
+                chat_id=admin_id,
+                from_chat_id=update.effective_chat.id,
+                message_id=update.message.message_id,
+                caption=admin_caption,
+                parse_mode="HTML"
+            )
+        except Exception as e:
+            logger.error(f"Error forwarding proof to admin {admin_id}: {e}")
+
