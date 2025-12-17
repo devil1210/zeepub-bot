@@ -221,7 +221,7 @@ class CommandHandlers:
         
         system_role_text = roles_display.get(role_key, "Lector")
         if role_key == "banned":
-             system_role_text = "🚫 Baneado"
+            system_role_text = "🚫 Baneado"
 
         # Max dl logic
         if role_key in ("admin", "staff", "premium", "banned"):
@@ -297,7 +297,7 @@ class CommandHandlers:
             # Rol: Custom Label (Maquetador, etc) -> Only explicit if exists, else same as Nivel/Empty?
             # Let's fallback to system role if status_label is empty, so [Rol] isn't empty.
             rol_val = status_label if status_label else system_role_text
-            
+
             final_text = await cms.get_text(
                 "status_message",
                 user=update.effective_user,
