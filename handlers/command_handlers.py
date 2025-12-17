@@ -218,7 +218,7 @@ class CommandHandlers:
         # Custom Status (Apodo/Label) logic
         # Nivel = System Role (Admin, Staff, etc.)
         # Rol = Custom Label (Maquetador, etc)
-        
+
         system_role_text = roles_display.get(role_key, "Lector")
         if role_key == "banned":
             system_role_text = "🚫 Baneado"

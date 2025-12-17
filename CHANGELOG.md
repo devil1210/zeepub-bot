@@ -5,7 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [3.9.2] - 2025-12-16
+## [3.9.2] - 2025-12-17
+
+### Arreglado
+- **Persistencia de Status**: Solucionado el problema donde los comandos `/set_rol` y `/set_apodo` no guardaban cambios si el usuario (ej. Admin) no estaba en la base de datos. Ahora se crea el usuario automáticamente.
+- **Dependencias**: Resuelta dependencia circular en `download_limiter.py` que causaba errores en tiempo de ejecución.
+- **Estilo**: Corrección de espacios en blanco en `handlers/command_handlers.py` (W293).
+
+## [3.9.1] - 2025-12-16
 
 ### Añadido
 - **Topics**: Soporte para Telegram Topics en el comando `/saludo` (argumento opcional `thread_id`).
