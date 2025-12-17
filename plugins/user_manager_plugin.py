@@ -46,6 +46,8 @@ class UserManagerPlugin(BasePlugin):
             app.add_handler(CommandHandler("set_apodo", self.set_apodo))
             app.add_handler(CommandHandler("reset", self.reset_command))
             app.add_handler(CommandHandler("id", self.get_id))
+            app.add_handler(CommandHandler("approve_donation", self.approve_donation))
+            app.add_handler(CommandHandler("reject_donation", self.reject_donation))
 
             logger.info("Plugin UserManager: Handlers registrados.")
             return True
@@ -408,4 +410,149 @@ class UserManagerPlugin(BasePlugin):
             f"✅ Contador de descargas reseteado para el usuario {target_uid}.\n"
             f"Descargas usadas anteriormente: {old_count}",
             message_thread_id=thread_id,
+        )
+
+    async def approve_donation(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        /approve_donation <id> <rol> [meses]
+        Aprueba una donación, actualiza el nivel del usuario y le notifica.
+        """
+        uid = update.effective_user.id
+        thread_id = get_thread_id(update)
+
+        if not self._is_admin(uid):
+            return
+
+        target_id, target_name = self._get_target_user(update, context)
+
+        # Parse role and duration similar to add_user
+        role = None
+        duration_arg_idx = -1
+
+        if update.message.reply_to_message:
+            if not context.args or len(context.args) < 1:
+                await update.message.reply_text(
+                    "❌ Al responder, indica al menos el rol.\nEj: /approve_donation vip 30",
+                    message_thread_id=thread_id
+                )
+                return
+            role = context.args[0].lower()
+            if len(context.args) > 1:
+                duration_arg_idx = 1
+        else:
+            if not target_id:
+                await update.message.reply_text(
+                    "❌ Uso: /approve_donation <id> <rol> [meses] (o responde a un mensaje).",
+                    message_thread_id=thread_id,
+                )
+                return
+
+            if len(context.args) < 2:
+                await update.message.reply_text(
+                    "❌ Faltan argumentos. Uso: /approve_donation <id> <rol> [meses]",
+                    message_thread_id=thread_id,
+                )
+                return
+
+            role = context.args[1].lower()
+            if len(context.args) > 2:
+                duration_arg_idx = 2
+
+        valid_roles = ["white", "vip", "premium", "staff", "admin"]
+        if role not in valid_roles:
+            await update.message.reply_text(
+                f"❌ Rol inválido. Use: {', '.join(valid_roles)}",
+                message_thread_id=thread_id,
+            )
+            return
+
+        # Parse duration
+        duration_days = None
+        if duration_arg_idx != -1 and len(context.args) > duration_arg_idx:
+            val_str = context.args[duration_arg_idx]
+            if val_str.isdigit():
+                duration_days = int(val_str) * 30  # meses -> días
+
+        # Update user
+        result = await upsert_user(target_id, role, duration_days)
+
+        # Send notification to user
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        nivel_text = role.capitalize()
+        duracion_text = str(duration_days) if duration_days else None
+
+        base_text = f"✅ Donación Verificada!\n\nNuevo nivel: {nivel_text}"
+        if duration_days:
+            base_text += f"\nDuración: {duration_days} días"
+        text = base_text
+
+        if cms and cms.enabled:
+            text = await cms.get_text(
+                "donation_approved",
+                Nivel=nivel_text,
+                Duración=duracion_text
+            )
+
+        try:
+            await context.bot.send_message(
+                chat_id=target_id,
+                text=text,
+                parse_mode="HTML"
+            )
+        except Exception as e:
+            logger.warning(f"No se pudo notificar al usuario {target_id}: {e}")
+
+        # Clear waiting state
+        st = state_manager.get_user_state(target_id)
+        st.pop("waiting_for_donation_proof", None)
+
+        # Confirm to admin
+        await update.message.reply_text(
+            f"✅ Donación aprobada para {target_id}.\nNivel: {role}\nNotificación enviada.",
+            message_thread_id=thread_id
+        )
+
+    async def reject_donation(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        /reject_donation <id>
+        Rechaza una donación y notifica al usuario.
+        """
+        uid = update.effective_user.id
+        thread_id = get_thread_id(update)
+
+        if not self._is_admin(uid):
+            return
+
+        target_id, target_name = self._get_target_user(update, context)
+        if not target_id:
+            await update.message.reply_text(
+                "❌ Uso: /reject_donation <id> (o responde a un mensaje)",
+                message_thread_id=thread_id
+            )
+            return
+
+        # Send rejection notification
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_text = "⚠️ Comprobante No Válido\n\nLamentablemente, tu comprobante de donación no pudo ser verificado."
+        text = base_text
+
+        if cms and cms.enabled:
+            text = await cms.get_text("donation_rejected")
+
+        try:
+            await context.bot.send_message(
+                chat_id=target_id,
+                text=text,
+                parse_mode="HTML"
+            )
+        except Exception as e:
+            logger.warning(f"No se pudo notificar al usuario {target_id}: {e}")
+
+        # Clear waiting state
+        st = state_manager.get_user_state(target_id)
+        st.pop("waiting_for_donation_proof", None)
+
+        await update.message.reply_text(
+            f"❌ Donación rechazada para {target_id}.\nNotificación enviada.",
+            message_thread_id=thread_id
         )

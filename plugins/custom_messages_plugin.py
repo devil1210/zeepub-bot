@@ -207,6 +207,31 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "❌ Ocurrió un error al procesar tu solicitud.",
     },
+    "donation_approved": {
+        "desc": "Notificación de donación aprobada",
+        "vars": ["[Nivel]", "[Duración]"],
+        "default": "✅ <b>¡Donación Verificada!</b>\n\nTu donación ha sido aprobada.\n<b>Nuevo nivel:</b> [Nivel]{{if Duración}}\n<b>Duración:</b> [Duración] días{{endif}}\n\n¡Gracias por tu apoyo! ❤️",
+    },
+    "donation_rejected": {
+        "desc": "Notificación de donación rechazada",
+        "vars": [],
+        "default": "⚠️ <b>Comprobante No Válido</b>\n\nLamentablemente, tu comprobante de donación no pudo ser verificado.\n\nSi crees que es un error, por favor contacta a un administrador.",
+    },
+    "suggestion_accepted": {
+        "desc": "Sugerencia aceptada",
+        "vars": [],
+        "default": "✅ <b>Sugerencia Aceptada</b>\n\n¡Gracias por tu aporte! Tu sugerencia será tomada en cuenta.",
+    },
+    "suggestion_rejected": {
+        "desc": "Sugerencia rechazada",
+        "vars": [],
+        "default": "❌ <b>Sugerencia Rechazada</b>\n\nGracias por tu interés, pero tu sugerencia no será implementada en este momento.",
+    },
+    "suggestion_custom_response": {
+        "desc": "Respuesta personalizada a sugerencia",
+        "vars": ["[Respuesta]"],
+        "default": "💬 <b>Respuesta a tu Sugerencia</b>\n\n[Respuesta]",
+    },
     "search_instructions_legacy": {
         "desc": "Instrucciones de búsqueda (Usuario normal)",
         "vars": [],
