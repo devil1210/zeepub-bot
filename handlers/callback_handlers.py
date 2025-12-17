@@ -726,7 +726,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.warning(f"No se pudo enviar mensaje al privado (usuario no ha iniciado bot?): {e}")
 
             if bot_username:
-                await query.answer(url=f"https://t.me/{bot_username}")
+                # La API requiere que sea un deep link con parametro (start) para funcionar en answerCallbackQuery
+                await query.answer(url=f"https://t.me/{bot_username}?start=donation_proof")
             else:
                 await query.answer() # Fallback, just close spinner
 
