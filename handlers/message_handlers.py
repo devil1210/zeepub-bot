@@ -287,7 +287,12 @@ async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TY
         type_str = "Documento"
 
     if not file_obj:
-        await update.message.reply_text("❌ Por favor envía una imagen o un archivo PDF.")
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_text = "❌ Por favor envía una imagen o un archivo PDF."
+        text = base_text
+        if cms and cms.enabled:
+            text = await cms.get_text("donation_proof_invalid_format")
+        await update.message.reply_text(text)
         return
 
     # Limpiar estado

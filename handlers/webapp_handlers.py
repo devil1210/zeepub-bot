@@ -27,7 +27,12 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
                 logger.warning(
                     f"⚠️ Invalid initData received from user {update.effective_user.id}"
                 )
-                await update.message.reply_text("❌ Datos de autenticación inválidos.")
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_text = "❌ Datos de autenticación inválidos."
+                text = base_text
+                if cms and cms.enabled:
+                    text = await cms.get_text("webapp_auth_invalid")
+                await update.message.reply_text(text)
                 return
             # If valid, we can proceed (and maybe rely on user_data from initData instead of effective_user if needed)
 
@@ -49,7 +54,12 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
                 return
 
             # Send "Preparing..." message
-            prep_msg = await update.message.reply_text("⏳ Preparando descarga...")
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_text = "⏳ Preparando descarga..."
+            text = base_text
+            if cms and cms.enabled:
+                text = await cms.get_text("download_preparing")
+            prep_msg = await update.message.reply_text(text)
             menu_prep = (update.effective_chat.id, prep_msg.message_id)
 
             # Use the existing publicar_libro function

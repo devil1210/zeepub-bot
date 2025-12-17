@@ -147,6 +147,66 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "✅ <b>Comprobante recibido</b>\n\nHemos enviado tu comprobante a los administradores para su verificación.\nTe avisaremos cuando tu nivel sea actualizado.\n¡Gracias por tu apoyo! ❤️",
     },
+    "donation_link_unauthorized": {
+        "desc": "Enlace de donación no autorizado",
+        "vars": [],
+        "default": "⚠️ Este enlace de donación no es para ti.",
+    },
+    "webapp_auth_invalid": {
+        "desc": "Autenticación webapp inválida",
+        "vars": [],
+        "default": "❌ Datos de autenticación inválidos.",
+    },
+    "download_preparing": {
+        "desc": "Preparando descarga",
+        "vars": [],
+        "default": "⏳ Preparando descarga...",
+    },
+    "donation_proof_invalid_format": {
+        "desc": "Formato de comprobante inválido",
+        "vars": [],
+        "default": "❌ Por favor envía una imagen o un archivo PDF.",
+    },
+    "destination_selected": {
+        "desc": "Destino seleccionado",
+        "vars": [],
+        "default": "✅ Destino seleccionado",
+    },
+    "no_pending_publication": {
+        "desc": "No hay publicación pendiente",
+        "vars": [],
+        "default": "No hay publicación pendiente.",
+    },
+    "invalid_option": {
+        "desc": "Opción inválida",
+        "vars": [],
+        "default": "Opción inválida",
+    },
+    "no_more_pages": {
+        "desc": "No hay más páginas",
+        "vars": [],
+        "default": "🚫 No hay más páginas",
+    },
+    "fb_preview_discarded": {
+        "desc": "Vista previa FB descartada",
+        "vars": [],
+        "default": "🗑️ Descartado",
+    },
+    "button_unauthorized": {
+        "desc": "Botón/mensaje no autorizado",
+        "vars": [],
+        "default": "⚠️ Este botón no es para ti.",
+    },
+    "donation_request_registered": {
+        "desc": "Solicitud de donación registrada",
+        "vars": [],
+        "default": "✅ Solicitud registrada.",
+    },
+    "request_processing_error": {
+        "desc": "Error procesando solicitud",
+        "vars": [],
+        "default": "❌ Ocurrió un error al procesar tu solicitud.",
+    },
     "search_instructions_legacy": {
         "desc": "Instrucciones de búsqueda (Usuario normal)",
         "vars": [],

@@ -51,7 +51,11 @@ class CommandHandlers:
             try:
                 target_uid = int(context.args[0].split("_")[1])
                 if uid != target_uid:
-                    await update.message.reply_text("⚠️ Este enlace de donación no es para ti.")
+                    base_text = "⚠️ Este enlace de donación no es para ti."
+                    text = base_text
+                    if cms and cms.enabled:
+                        text = await cms.get_text("donation_link_unauthorized")
+                    await update.message.reply_text(text)
                     return
                 
                 # Usuario correcto: Activar estado de espera de comprobante

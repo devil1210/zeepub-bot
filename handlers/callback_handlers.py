@@ -32,7 +32,12 @@ async def set_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if destino == "aqui" or destino in ("@ZeePubBotTest", "@ZeePubs"):
         st["destino"] = update.effective_chat.id if destino == "aqui" else destino
         st["titulo"] = "📚 Categorías"
-        await query.answer("✅ Destino seleccionado")
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_text = "✅ Destino seleccionado"
+        text = base_text
+        if cms and cms.enabled:
+            text = await cms.get_text("destination_selected")
+        await query.answer(text)
 
         # Si no es admin, ir directamente a ZeePubs [ES]
         if uid not in config.ADMIN_USERS:
@@ -317,7 +322,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Continue publishing using stored pending data
             pending = st.get("pending_pub_book")
             if not pending:
-                await query.answer("No hay publicación pendiente.")
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_text = "No hay publicación pendiente."
+                text = base_text
+                if cms and cms.enabled:
+                    text = await cms.get_text("no_pending_publication")
+                await query.answer(text)
             else:
                 # use the module-level publicar_libro imported at top
                 # Clear pending flag then call publicar_libro to proceed
@@ -354,7 +364,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         _, choice = data.split("|", 1)
         if choice not in ("telegram", "facebook", "none"):
             try:
-                await query.answer("Opción inválida")
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_text = "Opción inválida"
+                text = base_text
+                if cms and cms.enabled:
+                    text = await cms.get_text("invalid_option")
+                await query.answer(text)
             except Exception:
                 pass
             return
@@ -488,7 +503,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             st["url"] = nav_url
             await mostrar_colecciones(update, context, nav_url, from_collection=False)
         else:
-            await query.answer("🚫 No hay más páginas")
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_text = "🚫 No hay más páginas"
+            text = base_text
+            if cms and cms.enabled:
+                text = await cms.get_text("no_more_pages")
+            await query.answer(text)
         return
 
     # Volver a categorías raíz
@@ -606,7 +626,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await query.edit_message_text(text=query.message.text)
                 except Exception:
                     pass
-            await query.answer("🗑️ Descartado")
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_text = "🗑️ Descartado"
+            text = base_text
+            if cms and cms.enabled:
+                text = await cms.get_text("fb_preview_discarded")
+            await query.answer(text)
         except Exception as e:
             logger.debug("Could not discard FB preview buttons: %s", e)
         return
@@ -625,7 +650,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             clicker_uid = update.effective_user.id
             if target_uid and clicker_uid != target_uid:
                 try:
-                    await query.answer("⚠️ Este botón no es para ti.", show_alert=True)
+                    cms = context.application.plugin_manager.get_plugin("custom_messages")
+                    base_text = "⚠️ Este botón no es para ti."
+                    text = base_text
+                    if cms and cms.enabled:
+                        text = await cms.get_text("button_unauthorized")
+                    await query.answer(text, show_alert=True)
                 except Exception:
                     pass
                 return
@@ -667,7 +697,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     if cms and cms.enabled:
                         text_redirect = await cms.get_text("donation_redirect_prompt", Nombre=update.effective_user.mention_html())
 
-                    await query.answer("✅ Solicitud registrada.")
+                    base_text = "✅ Solicitud registrada."
+                    text_answer = base_text
+                    if cms and cms.enabled:
+                        text_answer = await cms.get_text("donation_request_registered")
+                    await query.answer(text_answer)
                     prompt_msg = await context.bot.send_message(
                         chat_id=update.effective_chat.id,
                         text=text_redirect,
@@ -709,7 +743,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Error handling notificar_donacion: {e}", exc_info=True)
             try:
-                await query.answer("❌ Ocurrió un error al procesar tu solicitud.", show_alert=True)
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_text = "❌ Ocurrió un error al procesar tu solicitud."
+                text = base_text
+                if cms and cms.enabled:
+                    text = await cms.get_text("request_processing_error")
+                await query.answer(text, show_alert=True)
             except Exception:
                 pass
         return
@@ -720,7 +759,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             target_uid = int(data.split("|")[1])
             clicker_uid = update.effective_user.id
             if clicker_uid != target_uid:
-                await query.answer("⚠️ Este botón no es para ti.", show_alert=True)
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_text = "⚠️ Este botón no es para ti."
+                text = base_text
+                if cms and cms.enabled:
+                    text = await cms.get_text("button_unauthorized")
+                await query.answer(text, show_alert=True)
                 return
             await query.message.delete()
         except Exception:
@@ -735,7 +779,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if clicker_uid != target_uid:
                 try:
-                    await query.answer("⚠️ Este mensaje no es para ti.", show_alert=True)
+                    cms = context.application.plugin_manager.get_plugin("custom_messages")
+                    base_text = "⚠️ Este botón no es para ti."
+                    text = base_text
+                    if cms and cms.enabled:
+                        text = await cms.get_text("button_unauthorized")
+                    await query.answer(text, show_alert=True)
                 except Exception:
                     pass
                 return
