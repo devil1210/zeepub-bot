@@ -28,7 +28,7 @@ class GroupManagerPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.0.1"
+        return "1.0.2"
 
     @property
     def description(self) -> str:
@@ -368,12 +368,14 @@ class GroupManagerPlugin(BasePlugin):
         if not msg_data:
             return
 
+        reply_to = update.message.message_id
+
         for user in update.message.new_chat_members:
             if user.is_bot:
                 continue
-            await self._send_welcome(context, chat_id, user, msg_data)
+            await self._send_welcome(context, chat_id, user, msg_data, reply_to_message_id=reply_to)
 
-    async def _send_welcome(self, context, chat_id, user, msg_data):
+    async def _send_welcome(self, context, chat_id, user, msg_data, reply_to_message_id=None):
         """Helper to send the welcome message to a specific user."""
         first_name = user.first_name
         safe_name = html.escape(first_name)
@@ -382,7 +384,10 @@ class GroupManagerPlugin(BasePlugin):
             text_to_send = msg_data.text_content.replace("[Nombre]", safe_name)
             try:
                 await context.bot.send_message(
-                    chat_id=chat_id, text=text_to_send, parse_mode="HTML"
+                    chat_id=chat_id, 
+                    text=text_to_send, 
+                    parse_mode="HTML",
+                    reply_to_message_id=reply_to_message_id
                 )
                 return
             except Exception as e:
@@ -394,6 +399,7 @@ class GroupManagerPlugin(BasePlugin):
                 chat_id=chat_id,
                 from_chat_id=msg_data.source_chat_id,
                 message_id=msg_data.source_message_id,
+                reply_to_message_id=reply_to_message_id
             )
         except Exception as e:
             logger.error(f"Error sending welcome copy: {e}")
