@@ -21,9 +21,18 @@ def mock_dependencies():
         yield
 
 @pytest.mark.asyncio
-async def test_saludo_parsing():
+async def test_saludo_parsing(monkeypatch):
     # Import inside the test after mock_dependencies fixture has run
     from plugins.custom_messages_plugin import CustomMessagesPlugin
+    import plugins.custom_messages_plugin as plugin_mod
+    
+    # Create a mock config with proper ADMIN_USERS
+    mock_config = MagicMock()
+    mock_config.ADMIN_USERS = [123]
+    
+    # Inject it into the plugin module's namespace
+    monkeypatch.setattr(plugin_mod, 'config', mock_config)
+    
     plugin = CustomMessagesPlugin()
 
     # Mock update and context
@@ -37,11 +46,6 @@ async def test_saludo_parsing():
     context.bot = MagicMock()
     context.bot.send_message = AsyncMock()
     context.bot.copy_message = AsyncMock()
-
-    # Mock config
-    # We mocked config.config_settings in sys.modules at the top
-    config_mock = sys.modules["config.config_settings"].config
-    config_mock.ADMIN_USERS = [123]
 
     # Mock DB methods to avoid Session error
     plugin._get_message = MagicMock(return_value=None)

@@ -1,21 +1,33 @@
 import importlib.util
 import os
+import sys
+import pytest
 from unittest.mock import MagicMock, AsyncMock
+
+@pytest.fixture(autouse=True)
+def ensure_real_config():
+    """Remove any mock of config.config_settings left by other tests."""
+    for mod_name in ["config", "config.config_settings"]:
+        if mod_name in sys.modules:
+            mod = sys.modules[mod_name]
+            if isinstance(mod, MagicMock):
+                del sys.modules[mod_name]
+    from config.config_settings import config as real_config
+    yield real_config
 
 from config.config_settings import config
 
 
 def test_get_recent_links(tmp_path):
+    # Force SQLite mode BEFORE module load
+    config.DATABASE_URL = None
+    
     db_file = tmp_path / "url_cache_recent.db"
     config.URL_CACHE_DB_PATH = str(db_file)
 
     spec = importlib.util.spec_from_file_location("uc", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
     uc = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(uc)
-    
-    # Force SQLite mode
-    if isinstance(config, (MagicMock, AsyncMock)):
-        config.DATABASE_URL = None
 
     # Init DB
     uc.init_db()

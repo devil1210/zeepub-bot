@@ -1,21 +1,35 @@
 import importlib
 import os
+import sys
 
 import pytest
 from unittest.mock import MagicMock, AsyncMock
+
+# Ensure we have the real config, not a mock from other tests
+@pytest.fixture(autouse=True)
+def ensure_real_config():
+    """Remove any mock of config.config_settings left by other tests."""
+    # Remove mocks from both config and config.config_settings
+    for mod_name in ["config", "config.config_settings"]:
+        if mod_name in sys.modules:
+            mod = sys.modules[mod_name]
+            if isinstance(mod, MagicMock):
+                del sys.modules[mod_name]
+    # Now import the real module
+    from config.config_settings import config as real_config
+    yield real_config
 
 from config.config_settings import config
 
 
 def test_create_and_get_short_url(tmp_path, monkeypatch):
+    # Force SQLite mode by clearing DATABASE_URL BEFORE module load
+    monkeypatch.setattr(config, 'DATABASE_URL', None)
+    
     # Use a temporary DB path for isolation
     db_file = tmp_path / "url_cache_test.db"
     # Ensure config points to this DB
     config.URL_CACHE_DB_PATH = str(db_file)
-    # Force SQLite mode by clearing DATABASE_URL
-    # We must treat config as the MagicMock it is in some contexts, but here it seems it's the real config object?
-    # No, test_url_cache.py imports config from config.config_settings.
-    monkeypatch.setattr(config, 'DATABASE_URL', None) # mocked config usually handles setattr fine
 
     # Load module directly from file to avoid importing the whole `utils` package
     from importlib.machinery import SourceFileLoader
