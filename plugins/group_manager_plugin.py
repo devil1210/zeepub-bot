@@ -48,13 +48,13 @@ class GroupManagerPlugin(BasePlugin):
             logger.info("Plugin GroupManager desactivado por configuración.")
             return False
 
-        # Initialize Local DB for Group Settings
-        self._init_db()
-
-        # Initialize Connection to CustomMessages DB (read-only purpose)
-        self._init_custom_msg_db()
-
         try:
+            # Initialize Local DB for Group Settings
+            self._init_db()
+
+            # Initialize Connection to CustomMessages DB (read-only purpose)
+            self._init_custom_msg_db()
+
             app = bot_instance
             # Admin commands
             app.add_handler(CommandHandler("authorize_group", self.authorize_group))
