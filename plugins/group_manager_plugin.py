@@ -298,27 +298,49 @@ class GroupManagerPlugin(BasePlugin):
         if not was_member and is_member:
             logger.info(f"Bot added to group {chat_id}")
             
-            # Send introduction message
-            intro_message = (
-                "👋 ¡Hola! Soy ZeepubBot.\n\n"
-                "📚 Ayudo a compartir y gestionar libros en formato EPUB.\n\n"
-                "🔐 <b>Nota importante:</b> Por defecto, necesito que un administrador "
-                "autorice este grupo para que pueda funcionar completamente.\n\n"
-                "📝 <b>Comandos para administradores:</b>\n"
-                "• /authorize_group - Autorizar este grupo\n"
-                "• /set_group_welcome &lt;slug&gt; - Configurar mensaje de bienvenida\n"
-                "• /reglas o /rules - Ver las reglas del grupo\n\n"
-                "¿Necesitas ayuda? Usa /help para ver todos los comandos disponibles."
-            )
+            # Try to fetch custom introduction message
+            msg_data = self._get_stored_message("bot_presentation")
             
-            try:
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text=intro_message,
-                    parse_mode="HTML"
+            if msg_data:
+                # Use custom message
+                try:
+                    if hasattr(msg_data, "text_content") and msg_data.text_content:
+                        await context.bot.send_message(
+                            chat_id=chat_id,
+                            text=msg_data.text_content,
+                            parse_mode="HTML"
+                        )
+                    else:
+                        await context.bot.copy_message(
+                            chat_id=chat_id,
+                            from_chat_id=msg_data.source_chat_id,
+                            message_id=msg_data.source_message_id
+                        )
+                except Exception as e:
+                    logger.error(f"Error sending custom introduction to {chat_id}: {e}")
+            else:
+                # Fallback to default introduction message
+                intro_message = (
+                    "👋 ¡Hola! Soy ZeepubBot.\n\n"
+                    "📚 Ayudo a compartir y gestionar libros en formato EPUB.\n\n"
+                    "🔐 <b>Nota importante:</b> Por defecto, necesito que un administrador "
+                    "autorice este grupo para que pueda funcionar completamente.\n\n"
+                    "📝 <b>Comandos para administradores:</b>\n"
+                    "• /authorize_group - Autorizar este grupo\n"
+                    "• /set_group_welcome &lt;slug&gt; - Configurar mensaje de bienvenida\n"
+                    "• /reglas o /rules - Ver las reglas del grupo\n\n"
+                    "¿Necesitas ayuda? Usa /help para ver todos los comandos disponibles.\n\n"
+                    "<i>Tip: Puedes personalizar este mensaje usando /save_msge bot_presentation</i>"
                 )
-            except Exception as e:
-                logger.error(f"Error sending introduction message to {chat_id}: {e}")
+                
+                try:
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=intro_message,
+                        parse_mode="HTML"
+                    )
+                except Exception as e:
+                    logger.error(f"Error sending default introduction to {chat_id}: {e}")
                 
         # Bot was removed from the group
         elif was_member and not is_member:
