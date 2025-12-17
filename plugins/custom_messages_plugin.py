@@ -152,6 +152,11 @@ TEMPLATE_REGISTRY = {
         "vars": ["[Categoria]"],
         "default": "📂 <b>Categoría: [Categoria]</b>\n\nSelecciona un comando para ver detalles:",
     },
+    "bot_presentation": {
+        "desc": "Presentación Automática al unirse a grupos/canales",
+        "vars": [],
+        "default": "👋 <b>¡Hola! Soy ZeePub Bot.</b>\n\nGracias por añadirme. 📚\nPuedo ayudarte a buscar y descargar libros, gestionar bibliotecas y más.\n\n👤 <b>Admin:</b> Usa /start por privado para configurarme.\n🔍 <b>Usuarios:</b> Usen /search para buscar libros.\n\n¡Espero ser de ayuda!",
+    },
     # --- Help Command Templates ---
     "help_cmd_start": {
         "desc": "Ayuda: /start",
@@ -1426,8 +1431,10 @@ class CustomMessagesPlugin(BasePlugin):
     async def welcome_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Triggered on MY_CHAT_MEMBER updates
         current_welcome_id = self._get_setting("welcome_msg_id")
+        
+        # Fallback to default presentation if configured explicitly or if we want auto-welcome
         if not current_welcome_id:
-            return
+            current_welcome_id = "bot_presentation"
 
         result = update.my_chat_member
         new_state = result.new_chat_member.status
@@ -1469,7 +1476,7 @@ class CustomMessagesPlugin(BasePlugin):
             else:
                 # Text based
                 try:
-                    text = self.get_text(current_welcome_id)
+                    text = await self.get_text(current_welcome_id)
                     await context.bot.send_message(
                         chat_id=chat_id, text=text, parse_mode="HTML"
                     )
