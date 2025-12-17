@@ -428,7 +428,7 @@ class CustomMessagesPlugin(BasePlugin):
     async def initialize(self, bot_instance) -> bool:
         # Check env var directly or via os.environ if not in config object yet
         # Assuming config loads .env but we appended to it, might need reload or just os.getenv
-        self.enabled = os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true"
+        self.enabled = os.getenv("ENABLE_CUSTOM_MESSAGES", "True").lower() == "true"
 
         if not self.enabled:
             logger.info(

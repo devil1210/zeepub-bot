@@ -8,7 +8,6 @@ from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler, Messag
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
-from plugins.custom_messages_plugin import StoredMessage  # To access message model
 
 logger = logging.getLogger(__name__)
 Base = declarative_base()
@@ -262,6 +261,8 @@ class GroupManagerPlugin(BasePlugin):
     def _slug_exists(self, slug):
         if not self.CustomMsgSession:
             return False
+            
+        from plugins.custom_messages_plugin import StoredMessage
         session = self.CustomMsgSession()
         try:
             exists = (
@@ -277,6 +278,8 @@ class GroupManagerPlugin(BasePlugin):
     def _get_stored_message(self, slug):
         if not self.CustomMsgSession:
             return None
+            
+        from plugins.custom_messages_plugin import StoredMessage
         session = self.CustomMsgSession()
         try:
             return session.query(StoredMessage).filter_by(slug=slug).first()
