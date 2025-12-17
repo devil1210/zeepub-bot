@@ -758,10 +758,15 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.warning(f"No se pudo enviar mensaje al privado (usuario no ha iniciado bot?): {e}")
 
             if bot_username:
-                # La API requiere que sea un deep link con parametro (start) para funcionar en answerCallbackQuery
-                await query.answer(url=f"https://t.me/{bot_username}?start=donation_proof")
+                # Sanitizar username
+                bot_username = bot_username.replace("@", "")
+                # Usar protocolo nativo para asegurar que abra la app
+                redirect_url = f"tg://resolve?domain={bot_username}&start=donation_proof"
+                logger.info(f"Redirecting ir_privado to: {redirect_url}")
+                await query.answer(url=redirect_url)
             else:
-                await query.answer() # Fallback, just close spinner
+                logger.warning("No bot_username found, cannot redirect.")
+                await query.answer() # Fallback
 
         except Exception as e:
             logger.error(f"Error handling ir_privado: {e}")
