@@ -286,9 +286,43 @@ class GroupManagerPlugin(BasePlugin):
     async def track_chats(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
-        """Track when bot is added/removed from groups."""
-        # Optional: Auto-create entry in DB disabled by default?
-        pass
+        """Track when bot is added/removed from groups and send introduction."""
+        result = self._extract_status_change(update.my_chat_member)
+        if result is None:
+            return
+
+        was_member, is_member = result
+        chat_id = update.effective_chat.id
+
+        # Bot was just added to the group
+        if not was_member and is_member:
+            logger.info(f"Bot added to group {chat_id}")
+            
+            # Send introduction message
+            intro_message = (
+                "👋 ¡Hola! Soy ZeepubBot.\n\n"
+                "📚 Ayudo a compartir y gestionar libros en formato EPUB.\n\n"
+                "🔐 <b>Nota importante:</b> Por defecto, necesito que un administrador "
+                "autorice este grupo para que pueda funcionar completamente.\n\n"
+                "📝 <b>Comandos para administradores:</b>\n"
+                "• /authorize_group - Autorizar este grupo\n"
+                "• /set_group_welcome &lt;slug&gt; - Configurar mensaje de bienvenida\n"
+                "• /reglas o /rules - Ver las reglas del grupo\n\n"
+                "¿Necesitas ayuda? Usa /help para ver todos los comandos disponibles."
+            )
+            
+            try:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=intro_message,
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logger.error(f"Error sending introduction message to {chat_id}: {e}")
+                
+        # Bot was removed from the group
+        elif was_member and not is_member:
+            logger.info(f"Bot removed from group {chat_id}")
 
     async def welcome_member(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
