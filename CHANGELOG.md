@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.9.5] - 2025-12-17
+
+### Arreglado
+- **Notificación de Actualización**: El bot ahora envía correctamente el mensaje de "Actualización Completada" después de `/update_system`
+- **Inicialización**: Métodos `initialize_schedulers()` y `check_update_state()` ahora se ejecutan en el método `start()` tradicional
+- **Tests**: Corregido `test_start_publisher_does_not_show_collections_immediately` usando `AsyncMock` para `reply_text`
+
 ## [v3.9.4] - 2025-12-17
 
 ### Añadido
