@@ -189,6 +189,20 @@ COMMANDS_REGISTRY = {
         "usage": "/set_price <nivel> <monto>",
         "example": "/set_price vip 10",
     },
+    "approve_donation": {
+        "cat": "admin",
+        "desc": "Aprobar donación",
+        "long_desc": "Aprueba una donación, actualiza el nivel del usuario y envía notificación automática.",
+        "usage": "/approve_donation <id> <rol> [meses]",
+        "example": "/approve_donation 123456 vip 1",
+    },
+    "reject_donation": {
+        "cat": "admin",
+        "desc": "Rechazar donación",
+        "long_desc": "Rechaza una donación y envía notificación automática al usuario.",
+        "usage": "/reject_donation <id>",
+        "example": "/reject_donation 123456",
+    },
     # --- Data / Maintenance ---
     "backup_db": {
         "cat": "data",

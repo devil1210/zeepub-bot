@@ -363,6 +363,16 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "ℹ️ <b>Comando: /reset_msge</b>\n\n📝 <b>Descripción:</b>\nRestablece una plantilla a su valor original por defecto, borrando cualquier personalización hecha con /add_msge.\n\n⌨️ <b>Uso:</b> <code>/reset_msge &lt;slug&gt;</code>\n💡 <b>Ejemplo:</b> <code>/reset_msge search_instructions_legacy</code>",
     },
+    "help_cmd_approve_donation": {
+        "desc": "Ayuda: /approve_donation",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /approve_donation</b>\n\n📝 <b>Descripción:</b>\nAprueba una donación, actualiza el nivel del usuario y envía una notificación automática al chat privado.\n\n⌨️ <b>Uso:</b> <code>/approve_donation &lt;id&gt; &lt;rol&gt; [meses]</code>\n💡 <b>Ejemplo:</b> <code>/approve_donation 123456 vip 1</code>",
+    },
+    "help_cmd_reject_donation": {
+        "desc": "Ayuda: /reject_donation",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /reject_donation</b>\n\n📝 <b>Descripción:</b>\nRechaza una donación y envía una notificación automática al usuario informándole que su comprobante no es válido.\n\n⌨️ <b>Uso:</b> <code>/reject_donation &lt;id&gt;</code>\n💡 <b>Ejemplo:</b> <code>/reject_donation 123456</code>",
+    },
     "help_cmd_update_system": {
         "desc": "Ayuda: /update_system",
         "vars": [],
