@@ -638,17 +638,18 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         chat_id=update.effective_chat.id,
                         text=f"👋 Hola {update.effective_user.mention_html()},\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo.",
                         reply_markup=InlineKeyboardMarkup(keyboard),
-                        parse_mode="HTML"
+                        parse_mode="HTML",
+                        message_thread_id=update.effective_message.message_thread_id if update.effective_message.is_topic_message else None
                     )
                     
                     # Programar auto-borrado en 2 minutos (120s)
                     if context.job_queue:
-                         context.job_queue.run_once(
-                             delete_message_job, 
-                             120, 
-                             data={"chat_id": update.effective_chat.id, "message_id": prompt_msg.message_id},
-                             name=f"del_donation_prompt_{prompt_msg.message_id}"
-                         )
+                        context.job_queue.run_once(
+                            delete_message_job,
+                            120,
+                            data={"chat_id": update.effective_chat.id, "message_id": prompt_msg.message_id},
+                            name=f"del_donation_prompt_{prompt_msg.message_id}"
+                        )
 
                 except Exception as e:
                     logger.error(f"Error answering query in group: {e}")
@@ -684,24 +685,41 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             target_uid = int(data.split("|")[1])
             clicker_uid = update.effective_user.id
-            
+
             if clicker_uid != target_uid:
                 try:
                     await query.answer("⚠️ Este mensaje no es para ti.", show_alert=True)
                 except Exception:
                     pass
                 return
-            
+
             # Es el usuario correcto
             try:
                 await query.message.delete()
             except Exception:
                 pass
-            
-            # Redirigir al privado
+
+            # Redirigir al privado Y enviar instrucciones
             bot_username = context.bot.username
-            await query.answer(url=f"https://t.me/{bot_username}")
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
             
+            # Obtener texto de instrucciones
+            base_request = (
+                "🧾 <b>Comprobante Requerido</b>\n\n"
+                "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación aquí.\n"
+                "Lo revisaremos para actualizar tu nivel."
+            )
+            text_request = base_request
+            if cms and cms.enabled:
+                 text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+            
+            try:
+                await context.bot.send_message(chat_id=target_uid, text=text_request, parse_mode="HTML")
+            except Exception as e:
+                logger.warning(f"No se pudo enviar mensaje al privado (usuario no ha iniciado bot?): {e}")
+
+            await query.answer(url=f"https://t.me/{bot_username}")
+
         except Exception as e:
             logger.error(f"Error handling ir_privado: {e}")
         return
@@ -715,6 +733,7 @@ async def delete_message_job(context: ContextTypes.DEFAULT_TYPE):
         await context.bot.delete_message(chat_id=data["chat_id"], message_id=data["message_id"])
     except Exception as e:
         logger.debug(f"Auto-delete failed (maybe already deleted): {e}")
+
 
 def register_handlers(app):
     # CallbackQuery handlers

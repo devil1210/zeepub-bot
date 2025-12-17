@@ -281,14 +281,14 @@ async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TY
     elif update.message.document:
         file_obj = update.message.document
         type_str = "Documento"
-    
+
     if not file_obj:
         await update.message.reply_text("❌ Por favor envía una imagen o un archivo PDF.")
         return
 
     # Limpiar estado
     st["waiting_for_donation_proof"] = False
-    
+
     # Notificar usuario
     cms = context.application.plugin_manager.get_plugin("custom_messages")
     base_success = (
@@ -300,13 +300,13 @@ async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TY
     text_success = base_success
     if cms and cms.enabled:
         text_success = await cms.get_text("donation_proof_received", user=update.effective_user)
-        
+
     await update.message.reply_text(text_success, parse_mode="HTML")
 
     # Notificar Admins
     user = update.effective_user
     username = f"@{user.username}" if user.username else "Sin alias"
-    
+
     admin_caption = (
         f"💰 <b>Nueva Donación (con Comprobante)</b>\n\n"
         f"👤 <b>Usuario:</b> {user.first_name} ({username})\n"
