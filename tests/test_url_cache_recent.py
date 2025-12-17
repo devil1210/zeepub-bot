@@ -1,5 +1,6 @@
 import importlib.util
 import os
+from unittest.mock import MagicMock, AsyncMock
 
 from config.config_settings import config
 
@@ -11,6 +12,13 @@ def test_get_recent_links(tmp_path):
     spec = importlib.util.spec_from_file_location("uc", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
     uc = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(uc)
+    
+    # Force SQLite mode
+    if isinstance(config, (MagicMock, AsyncMock)):
+        config.DATABASE_URL = None
+
+    # Init DB
+    uc.init_db()
 
     # Create some mappings
     hashes = []

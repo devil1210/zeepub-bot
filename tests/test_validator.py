@@ -3,6 +3,9 @@ import importlib.util
 import os
 import time
 
+import pytest
+from unittest.mock import MagicMock, AsyncMock
+
 from config.config_settings import config
 
 
@@ -12,7 +15,9 @@ def test_get_candidates_and_validator(tmp_path, monkeypatch):
     config.URL_CACHE_DB_PATH = str(db_file)
     # Force SQLite mode by clearing DATABASE_URL
     monkeypatch.setattr(config, 'DATABASE_URL', None)
-
+    if isinstance(config, (MagicMock, AsyncMock)):
+        config.DATABASE_URL = None
+    
     # Load module directly
     spec = importlib.util.spec_from_file_location("url_cache_mod", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
     url_cache = importlib.util.module_from_spec(spec)

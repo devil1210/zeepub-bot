@@ -123,6 +123,17 @@ async def test_recibir_texto_private_chat_response():
         # Patch the import in handlers.message_handlers
         m.setattr("handlers.message_handlers.state_manager", mock_state_manager)
         
+        # Patch get_effective_user in local scope of message_handlers
+        # Since it is imported inside the function, we might need to patch sys.modules or wait until it executes?
+        # Actually in message_handlers.py:
+        # if chat_type == "private":
+        #    from services.user_service import get_effective_user
+        # So we need to ensure sys.modules["services.user_service"] has the mock.
+        
+        # We already set sys.modules["services.user_service"] at top of file, 
+        # but let's ensure the mock is async.
+        sys.modules["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
+
         mock_config = MagicMock()
         mock_config.get_six_hour_password.return_value = "password"
         m.setattr("handlers.message_handlers.config", mock_config)

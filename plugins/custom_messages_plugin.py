@@ -1049,14 +1049,11 @@ class CustomMessagesPlugin(BasePlugin):
 
     async def saludo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
-        /saludo <chat_id> [thread_id] <id_guardado | texto libre>
+        Envía texto 'raw' a un chat.
+        Uso: /saludo <chat_id> [thread_id] <mensaje>
         """
         if update.effective_user.id not in config.ADMIN_USERS:
             return
-
-        # Simple parsing for backward compatibility
-        # But we need to support /saludo <chat_id> <slug> vs /saludo <chat_id> <text>
-        # And now: /saludo <chat_id> <thread_id> <slug|text>
 
         args = context.args
         if not args or len(args) < 2:

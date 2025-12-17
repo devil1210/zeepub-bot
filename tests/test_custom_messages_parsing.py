@@ -32,11 +32,9 @@ async def test_saludo_parsing():
     context.bot.copy_message = AsyncMock()
 
     # Mock config
-    # We need to ensure the user is an admin for the command to work
-    # Since we mocked config.config_settings in sys.modules, we access it directly
-    from config.config_settings import config
-
-    config.ADMIN_USERS = [123]
+    # We mocked config.config_settings in sys.modules at the top
+    config_mock = sys.modules["config.config_settings"].config
+    config_mock.ADMIN_USERS = [123]
 
     # Mock DB methods to avoid Session error
     plugin._get_message = MagicMock(return_value=None)
