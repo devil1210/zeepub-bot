@@ -611,35 +611,39 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.debug("Could not discard FB preview buttons: %s", e)
         return
     if data == "notificar_donacion":
-        # Verificar si es chat privado
-        if update.effective_chat.type != "private":
-            try:
-                await query.answer("⚠️ Por favor, ve al chat privado con el bot para enviar el comprobante.", show_alert=True)
-            except Exception:
-                pass
-            return
-
-        # Es chat privado - Solicitar comprobante
-        uid = update.effective_user.id
-        st = state_manager.get_user_state(uid)
-        st["waiting_for_donation_proof"] = True
-
-        cms = context.application.plugin_manager.get_plugin("custom_messages")
-        
-        base_request = (
-            "🧾 <b>Comprobante Requerido</b>\n\n"
-            "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
-            "Lo revisaremos para actualizar tu nivel."
-        )
-        text_request = base_request
-        if cms and cms.enabled:
-             text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
-        
         try:
+            # Verificar si es chat privado
+            if update.effective_chat.type != "private":
+                try:
+                    await query.answer("⚠️ Por favor, ve al chat privado con el bot para enviar el comprobante.", show_alert=True)
+                except Exception as e:
+                    logger.error(f"Error answering query in group: {e}")
+                return
+
+            # Es chat privado - Solicitar comprobante
+            uid = update.effective_user.id
+            st = state_manager.get_user_state(uid)
+            st["waiting_for_donation_proof"] = True
+
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            
+            base_request = (
+                "🧾 <b>Comprobante Requerido</b>\n\n"
+                "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
+                "Lo revisaremos para actualizar tu nivel."
+            )
+            text_request = base_request
+            if cms and cms.enabled:
+                 text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+            
             await query.answer()
             await query.edit_message_text(text_request, parse_mode="HTML")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Error handling notificar_donacion: {e}", exc_info=True)
+            try:
+                await query.answer("❌ Ocurrió un error al procesar tu solicitud.", show_alert=True)
+            except:
+                pass
         return
 
 
