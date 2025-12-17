@@ -38,6 +38,13 @@ COMMANDS_REGISTRY = {
         "usage": "/help",
         "example": "/help",
     },
+    "menu": {
+        "cat": "home",
+        "desc": "Menú interactivo",
+        "long_desc": "Muestra un menú interactivo con botones para acceder rápidamente a las diferentes funciones del bot organizadas por categorías.",
+        "usage": "/menu",
+        "example": "/menu",
+    },
     "status": {
         "cat": "home",
         "desc": "Ver tu estado",
@@ -274,6 +281,13 @@ COMMANDS_REGISTRY = {
         "long_desc": "Lista todos los mensajes guardados. Si se da un ID, muestra una vista previa de ese mensaje.",
         "usage": "/list_msge [slug]",
         "example": "/list_msge bienvenida_v1",
+    },
+    "view_msge": {
+        "cat": "plugins",
+        "desc": "Previsualizar mensaje",
+        "long_desc": "Muestra cómo se verá un template renderizado con HTML procesado (útil para ver el resultado final del template).",
+        "usage": "/view_msge <slug>",
+        "example": "/view_msge start_welcome_unlimited",
     },
     "templates": {
         "cat": "plugins",

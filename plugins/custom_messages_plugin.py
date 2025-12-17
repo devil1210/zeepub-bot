@@ -268,6 +268,11 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "ℹ️ <b>Comando: /help</b>\n\n📝 <b>Descripción:</b>\nMuestra el menú de ayuda interactivo con categorías y detalles de comandos.\n\n⌨️ <b>Uso:</b> <code>/help</code>\n💡 <b>Ejemplo:</b> <code>/help</code>",
     },
+    "help_cmd_menu": {
+        "desc": "Ayuda: /menu",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /menu</b>\n\n📝 <b>Descripción:</b>\nMuestra un menú interactivo con botones para acceder rápidamente a las diferentes funciones del bot organizadas por categorías.\n\n⌨️ <b>Uso:</b> <code>/menu</code>\n💡 <b>Ejemplo:</b> <code>/menu</code>",
+    },
     "help_cmd_status": {
         "desc": "Ayuda: /status",
         "vars": [],
@@ -432,6 +437,11 @@ TEMPLATE_REGISTRY = {
         "desc": "Ayuda: /list_msge",
         "vars": [],
         "default": "ℹ️ <b>Comando: /list_msge</b>\n\n📝 <b>Descripción:</b>\nLista todos los mensajes guardados. Si se da un ID, muestra una vista previa de ese mensaje.\n\n⌨️ <b>Uso:</b> <code>/list_msge [slug]</code>\n💡 <b>Ejemplo:</b> <code>/list_msge bienvenida_v1</code>",
+    },
+    "help_cmd_view_msge": {
+        "desc": "Ayuda: /view_msge",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /view_msge</b>\n\n📝 <b>Descripción:</b>\nMuestra cómo se verá un template renderizado con HTML procesado (útil para previsualizar el resultado final).\n\n⌨️ <b>Uso:</b> <code>/view_msge &lt;slug&gt;</code>\n💡 <b>Ejemplo:</b> <code>/view_msge start_welcome_unlimited</code>",
     },
     "help_cmd_send_msge": {
         "desc": "Ayuda: /send_msge",
