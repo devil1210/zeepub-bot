@@ -64,6 +64,52 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
 
+    # Handle custom suggestion responses
+    if st.get("waiting_for_suggestion_response"):
+        target_user_id = st.get("waiting_for_suggestion_response")
+        custom_response = text
+        original_msg_id = st.get("suggestion_original_message_id")
+        original_chat_id = st.get("suggestion_original_chat_id")
+        original_text = st.get("suggestion_original_text")
+
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_text = f"💬 Respuesta a tu Sugerencia\n\n{custom_response}"
+        response_text = base_text
+        if cms and cms.enabled:
+            response_text = await cms.get_text("suggestion_custom_response", Respuesta=custom_response)
+
+        try:
+            await context.bot.send_message(
+                chat_id=target_user_id,
+                text=response_text,
+                parse_mode="HTML"
+            )
+
+            # Update original message
+            if original_msg_id and original_chat_id and original_text:
+                try:
+                    # Truncate if too long
+                    response_preview = custom_response[:100] + "..." if len(custom_response) > 100 else custom_response
+                    await context.bot.edit_message_text(
+                        chat_id=original_chat_id,
+                        message_id=original_msg_id,
+                        text=original_text + f"\n\n💬 <b>Respuesta enviada:</b> {response_preview}",
+                        parse_mode="HTML"
+                    )
+                except Exception as e:
+                    logger.warning(f"No se pudo actualizar mensaje original: {e}")
+
+            await update.message.reply_text("✅ Respuesta enviada al usuario.")
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error enviando respuesta: {e}")
+
+        # Clear state
+        st.pop("waiting_for_suggestion_response", None)
+        st.pop("suggestion_original_message_id", None)
+        st.pop("suggestion_original_chat_id", None)
+        st.pop("suggestion_original_text", None)
+        return
+
     # 1) Contraseña para modo 'evil'
     if st.get("esperando_password"):
         st["esperando_password"] = False
@@ -269,51 +315,6 @@ async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TY
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
 
-    # Handle custom suggestion responses first
-    if st.get("waiting_for_suggestion_response"):
-        target_user_id = st.get("waiting_for_suggestion_response")
-        custom_response = update.message.text
-        original_msg_id = st.get("suggestion_original_message_id")
-        original_chat_id = st.get("suggestion_original_chat_id")
-        original_text = st.get("suggestion_original_text")
-
-        cms = context.application.plugin_manager.get_plugin("custom_messages")
-        base_text = f"💬 Respuesta a tu Sugerencia\n\n{custom_response}"
-        text = base_text
-        if cms and cms.enabled:
-            text = await cms.get_text("suggestion_custom_response", Respuesta=custom_response)
-
-        try:
-            await context.bot.send_message(
-                chat_id=target_user_id,
-                text=text,
-                parse_mode="HTML"
-            )
-
-            # Update original message
-            if original_msg_id and original_chat_id and original_text:
-                try:
-                    # Truncate if too long
-                    response_preview = custom_response[:100] + "..." if len(custom_response) > 100 else custom_response
-                    await context.bot.edit_message_text(
-                        chat_id=original_chat_id,
-                        message_id=original_msg_id,
-                        text=original_text + f"\n\n💬 <b>Respuesta enviada:</b> {response_preview}",
-                        parse_mode="HTML"
-                    )
-                except Exception as e:
-                    logger.warning(f"No se pudo actualizar mensaje original: {e}")
-
-            await update.message.reply_text("✅ Respuesta enviada al usuario.")
-        except Exception as e:
-            await update.message.reply_text(f"❌ Error enviando respuesta: {e}")
-
-        # Clear state
-        st.pop("waiting_for_suggestion_response", None)
-        st.pop("suggestion_original_message_id", None)
-        st.pop("suggestion_original_chat_id", None)
-        st.pop("suggestion_original_text", None)
-        return
 
     if not st.get("waiting_for_donation_proof"):
         return
