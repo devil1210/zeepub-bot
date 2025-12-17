@@ -337,4 +337,3 @@ async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TY
             )
         except Exception as e:
             logger.error(f"Error forwarding proof to admin {admin_id}: {e}")
-

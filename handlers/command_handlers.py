@@ -57,11 +57,11 @@ class CommandHandlers:
                         text = await cms.get_text("donation_link_unauthorized")
                     await update.message.reply_text(text)
                     return
-                
+
                 # Usuario correcto: Activar estado de espera de comprobante
                 st = state_manager.get_user_state(uid)
                 st["waiting_for_donation_proof"] = True
-                
+
                 # Enviar instrucciones (Misma lógica que ir_privado)
                 base_request = (
                     "🧾 <b>Comprobante Requerido</b>\n\n"
@@ -71,12 +71,11 @@ class CommandHandlers:
                 text_request = base_request
                 if cms and cms.enabled:
                     text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
-                
+
                 await update.message.reply_text(text_request, parse_mode="HTML")
                 return
             except (IndexError, ValueError):
                 pass
-
 
         if left == "ilimitadas":
             text = (

@@ -4,6 +4,35 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+## [v3.9.4] - 2025-12-17
+
+### Añadido
+- **Sistema de Templates Completo:**
+  - Añadidos 12 nuevos templates editables vía `/set_msge`:
+    - `donation_link_unauthorized` - Enlace de donación no autorizado
+    - `webapp_auth_invalid` - Autenticación webapp inválida
+    - `download_preparing` - Preparando descarga
+    - `donation_proof_invalid_format` - Formato de comprobante inválido
+    - `destination_selected` - Destino seleccionado
+    - `no_pending_publication` - No hay publicación pendiente
+    - `invalid_option` - Opción inválida
+    - `no_more_pages` - No hay más páginas
+    - `fb_preview_discarded` - Vista previa FB descartada
+    - `button_unauthorized` - Botón/mensaje no autorizado
+    - `donation_request_registered` - Solicitud de donación registrada
+    - `request_processing_error` - Error procesando solicitud
+  - Nuevo comando `/view_msge <slug>` para previsualizar templates con HTML renderizado
+  - Todos los mensajes ahora usan fallback a defaults si no hay personalización
+
+### Cambiado
+- **Variable `[Nombre]`**: Ahora usa `mention_html()` en todos los templates para nombres clicables
+- **Mensaje de redirección de donación**: Migrado a template `donation_redirect_prompt`
+
+### Arreglado
+- **Linting**: Corregidos errores de formato (W293, E261, E303, W391) en handlers
+- **Restricción de comprobantes**: Solo se aceptan en chat privado
+
 ## [v3.9.3] - 2025-12-17
 
 ### Added

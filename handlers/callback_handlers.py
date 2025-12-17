@@ -665,7 +665,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             user_to_update = target_uid if target_uid else clicker_uid
             st = state_manager.get_user_state(user_to_update)
             st["waiting_for_donation_proof"] = True
-            
+
             cms = context.application.plugin_manager.get_plugin("custom_messages")
 
             # Intentar borrar el mensaje original
@@ -688,7 +688,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     # Botón URL directo (Redirección 100% fiable) - Deep link con validación de usuario
                     # URL: https://t.me/Bot?start=donation_UID
                     url_button = f"https://t.me/{bot_username}?start=donation_{user_to_update}" if bot_username else "https://t.me/ZeePubBot"
-                    
+
                     keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", url=url_button)]]
 
                     # Obtener mensaje desde template
@@ -805,7 +805,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     logger.warning(f"Could not get bot username for redirect: {e}")
 
             cms = context.application.plugin_manager.get_plugin("custom_messages")
-            
+
             # Obtener texto de instrucciones
             base_request = (
                 "🧾 <b>Comprobante Requerido</b>\n\n"
@@ -815,7 +815,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text_request = base_request
             if cms and cms.enabled:
                 text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
-            
+
             try:
                 await context.bot.send_message(chat_id=target_uid, text=text_request, parse_mode="HTML")
             except Exception as e:
@@ -830,7 +830,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await query.answer(url=redirect_url)
             else:
                 logger.warning("No bot_username found, cannot redirect.")
-                await query.answer() # Fallback
+                await query.answer()  # Fallback
 
         except Exception as e:
             logger.error(f"Error handling ir_privado: {e}")
