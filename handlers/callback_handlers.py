@@ -612,21 +612,32 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if data == "notificar_donacion":
         try:
-            # Verificar si es chat privado
+            # 1. Establecer estado esperando comprobante (globalmente, para que funcione al ir al privado)
+            uid = update.effective_user.id
+            st = state_manager.get_user_state(uid)
+            st["waiting_for_donation_proof"] = True
+            
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+            # 2. Verificar si es chat privado
             if update.effective_chat.type != "private":
                 try:
-                    await query.answer("⚠️ Por favor, ve al chat privado con el bot para enviar el comprobante.", show_alert=True)
+                    bot_username = context.bot.username
+                    # Botón deep link al privado
+                    keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", url=f"https://t.me/{bot_username}")]]
+                    
+                    await query.answer("✅ Solicitud registrada.")
+                    await context.bot.send_message(
+                        chat_id=update.effective_chat.id,
+                        text=f"👋 Hola {update.effective_user.mention_html()},\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo.",
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode="HTML"
+                    )
                 except Exception as e:
                     logger.error(f"Error answering query in group: {e}")
                 return
 
-            # Es chat privado - Solicitar comprobante
-            uid = update.effective_user.id
-            st = state_manager.get_user_state(uid)
-            st["waiting_for_donation_proof"] = True
-
-            cms = context.application.plugin_manager.get_plugin("custom_messages")
-            
+            # 3. Es chat privado - Mostrar instrucciones directamente
             base_request = (
                 "🧾 <b>Comprobante Requerido</b>\n\n"
                 "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
