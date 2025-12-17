@@ -64,11 +64,6 @@ async def test_saludo_parsing():
         chat_id="-100123",
         text="Hola Mundo",
         message_thread_id=445,
-        parse_mode="HTML",  # Check if parse_mode is passed (it is for template or if stored msg, but here it falls back to text)
-        # Wait, the code says:
-        # if is_template: ... parse_mode="HTML"
-        # else: Try send_message(text=content, message_thread_id=...)
-        # It does NOT pass parse_mode for raw text in the else block!
     )
 
     # Let's check call args more loosely if needed or fix expectations

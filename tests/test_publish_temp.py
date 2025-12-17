@@ -16,6 +16,7 @@ sys.modules["utils.helpers"] = MagicMock()
 sys.modules["services.settings_service"] = MagicMock()
 sys.modules["config.config_settings"] = MagicMock()
 sys.modules["services.user_service"] = MagicMock()
+# Explicitly set the async method on the mock
 sys.modules["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
 
 import importlib.util
@@ -38,6 +39,7 @@ async def test_set_publish_temp_stores_one_time_choice(monkeypatch):
     mock_state = MagicMock()
     mock_state.get_user_state.return_value = st
     monkeypatch.setattr(cb, "state_manager", mock_state)
+    monkeypatch.setattr(sys.modules["services.user_service"], "get_effective_user", AsyncMock(return_value={"role": "free"}))
 
     # prepare update/context mocks
     update = MagicMock()
@@ -118,6 +120,7 @@ async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch
     pub = AsyncMock()
     telegram_service_mod.publicar_libro = pub
     monkeypatch.setattr(cb, "publicar_libro", pub)
+    monkeypatch.setattr(sys.modules["services.user_service"], "get_effective_user", AsyncMock(return_value={"role": "free"}))
 
     context = MagicMock()
     context.bot = MagicMock()
@@ -143,6 +146,7 @@ async def test_admin_publisher_set_publish_temp_fb_enters_evil(monkeypatch):
 
     # user is admin and publisher
     monkeypatch.setattr(cb, "config", MagicMock(FACEBOOK_PUBLISHERS={uid}, ADMIN_USERS={uid}, OPDS_ROOT_EVIL="/opds-evil"))
+    monkeypatch.setattr(sys.modules["services.user_service"], "get_effective_user", AsyncMock(return_value={"role": "staff", "custom_status": "Publicador"}))
 
     # intercept mostrar_colecciones
     mc = AsyncMock()
@@ -196,7 +200,8 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
     
     import services.user_service
     mock_get_user = AsyncMock(return_value={"role": "staff", "custom_status": "Publicador"})
-    monkeypatch.setattr(services.user_service, "get_effective_user", mock_get_user)
+    # monkeypatch.setattr(services.user_service, "get_effective_user", mock_get_user) <-- This might be failing if services.user_service is not the one in sys.modules
+    sys.modules["services.user_service"].get_effective_user = mock_get_user
 
     # update/context
     update = MagicMock()
@@ -267,6 +272,7 @@ async def test_publish_temp_consumed_on_lib_selection_calls_facebook(monkeypatch
         sys.modules["services.telegram_service"] = telegram_service_mod
     facebook = AsyncMock()
     telegram_service_mod._publish_choice_facebook = facebook
+    monkeypatch.setattr(sys.modules["services.user_service"], "get_effective_user", AsyncMock(return_value={"role": "free"}))
 
     context = MagicMock()
     context.bot = MagicMock()
