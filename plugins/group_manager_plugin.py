@@ -4,7 +4,7 @@ import html
 from sqlalchemy import create_engine, Column, String, Boolean, Integer, BigInteger
 from sqlalchemy.orm import declarative_base, sessionmaker
 from telegram import Update, ChatMember, ChatMemberUpdated
-from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler
+from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler, MessageHandler, filters
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
@@ -28,7 +28,7 @@ class GroupManagerPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.0.0"
+        return "1.0.1"
 
     @property
     def description(self) -> str:
@@ -71,6 +71,10 @@ class GroupManagerPlugin(BasePlugin):
             )
             app.add_handler(
                 ChatMemberHandler(self.welcome_member, ChatMemberHandler.CHAT_MEMBER)
+            )
+            # Add MessageHandler for service messages (when bot is not admin or update is simple)
+            app.add_handler(
+                MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, self.welcome_new_members_message)
             )
 
             logger.info("Plugin GroupManager: Handlers registrados.")
@@ -316,33 +320,7 @@ class GroupManagerPlugin(BasePlugin):
                 return
 
             new_member = update.chat_member.new_chat_member.user
-            first_name = new_member.first_name
-            # Escape HTML to prevent injection if using manual replacement
-            safe_name = html.escape(first_name)
-
-            # Try to send as new message if text_content is available (supports variables)
-            if hasattr(msg_data, "text_content") and msg_data.text_content:
-                text_to_send = msg_data.text_content.replace("[Nombre]", safe_name)
-
-                try:
-                    await context.bot.send_message(
-                        chat_id=chat_id, text=text_to_send, parse_mode="HTML"
-                    )
-                    return  # Sent successfully
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to send text welcome, falling back to copy: {e}"
-                    )
-
-            # Fallback: Copy original message (No variable replacement)
-            try:
-                await context.bot.copy_message(
-                    chat_id=chat_id,
-                    from_chat_id=msg_data.source_chat_id,
-                    message_id=msg_data.source_message_id,
-                )
-            except Exception as e:
-                logger.error(f"Error sending welcome message (copy): {e}")
+            await self._send_welcome(context, chat_id, new_member, msg_data)
 
     def _extract_status_change(self, chat_member_update: ChatMemberUpdated):
         """Helper to Determine if user joined or left."""
@@ -368,3 +346,54 @@ class GroupManagerPlugin(BasePlugin):
         ] or (new_status == ChatMember.RESTRICTED and new_is_member is True)
 
         return was_member, is_member
+
+    async def welcome_new_members_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle new_chat_members service message."""
+        if not update.message or not update.message.new_chat_members:
+            return
+            
+        chat_id = update.effective_chat.id
+        
+        # Check authorization strictly
+        session = self.Session()
+        try:
+             group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
+             if not group or not group.is_authorized or not group.welcome_msg_slug:
+                 return
+             slug = group.welcome_msg_slug
+        finally:
+             session.close()
+
+        msg_data = self._get_stored_message(slug)
+        if not msg_data:
+            return
+
+        for user in update.message.new_chat_members:
+            if user.is_bot:
+                continue
+            await self._send_welcome(context, chat_id, user, msg_data)
+
+    async def _send_welcome(self, context, chat_id, user, msg_data):
+        """Helper to send the welcome message to a specific user."""
+        first_name = user.first_name
+        safe_name = html.escape(first_name)
+
+        if hasattr(msg_data, "text_content") and msg_data.text_content:
+            text_to_send = msg_data.text_content.replace("[Nombre]", safe_name)
+            try:
+                await context.bot.send_message(
+                    chat_id=chat_id, text=text_to_send, parse_mode="HTML"
+                )
+                return
+            except Exception as e:
+                logger.warning(f"Failed to send text welcome: {e}")
+
+        # Fallback: Copy
+        try:
+            await context.bot.copy_message(
+                chat_id=chat_id,
+                from_chat_id=msg_data.source_chat_id,
+                message_id=msg_data.source_message_id,
+            )
+        except Exception as e:
+            logger.error(f"Error sending welcome copy: {e}")

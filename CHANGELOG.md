@@ -12,9 +12,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Comandos**: Actualizada ayuda de `/saludo` indicando cómo enviar mensajes a topics.
 
 ### Actualizado
-- **Plugins**: Custom Messages v1.3.0, UserManager v1.1.0.
+- **Plugins**: Custom Messages v1.3.0, UserManager v1.1.0, GroupManager v1.0.1.
 - **Config**: `GroupManagerPlugin` habilitado por defecto (`ENABLE_GROUP_MANAGER=True`).
 - **UserManager**: Ahora soporta asignar roles, niveles y apodos respondiendo a mensajes (`/add_user`, `/set_rol`, `/set_apodo`). Renombrado `/set_staff_status` a `/set_rol`.
+- **GroupManager**: Corrección en detección de nuevos usuarios (soporte para mensajes de servicio cuando el bot no es admin).
 
 ## [3.9.1] - 2025-12-16
 
