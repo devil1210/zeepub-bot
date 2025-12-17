@@ -661,10 +661,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     
                     keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", url=url_button)]]
 
+                    # Obtener mensaje desde template
+                    base_redirect = f"👋 Hola {update.effective_user.mention_html()},\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo."
+                    text_redirect = base_redirect
+                    if cms and cms.enabled:
+                        text_redirect = await cms.get_text("donation_redirect_prompt", Nombre=update.effective_user.mention_html())
+
                     await query.answer("✅ Solicitud registrada.")
                     prompt_msg = await context.bot.send_message(
                         chat_id=update.effective_chat.id,
-                        text=f"👋 Hola {update.effective_user.mention_html()},\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo.",
+                        text=text_redirect,
                         reply_markup=InlineKeyboardMarkup(keyboard),
                         parse_mode="HTML",
                         message_thread_id=update.effective_message.message_thread_id if update.effective_message.is_topic_message else None

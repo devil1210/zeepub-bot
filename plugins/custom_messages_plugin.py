@@ -92,6 +92,11 @@ TEMPLATE_REGISTRY = {
         "vars": ["[Nombre]", "[Descargas]"],
         "default": "👋 ¡Hola [Nombre]! Comencemos.\n\n⚡️ Te quedan [Descargas] descargas hoy.",
     },
+    "donation_redirect_prompt": {
+        "desc": "Mensaje de redirección a privado para comprobante",
+        "vars": ["[Nombre]"],
+        "default": "👋 Hola [Nombre],\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo.",
+    },
     "evil_mode_prompt": {
         "desc": "Pregunta de destino (Admin -> Evil)",
         "vars": [],
