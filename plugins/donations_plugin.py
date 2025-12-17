@@ -107,7 +107,7 @@ class DonationsPlugin(BasePlugin):
             [InlineKeyboardButton("⏳ Donar más tarde", callback_data="cerrar")],
         ]
 
-        await context.bot.send_message(
+        msg = await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
             parse_mode="HTML",
@@ -115,6 +115,24 @@ class DonationsPlugin(BasePlugin):
             disable_web_page_preview=False,
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
+
+        # Programar auto-borrado en 2 minutos (120s)
+        if context.job_queue:
+            context.job_queue.run_once(
+                self._delete_message_delayed,
+                120,
+                data={"chat_id": update.effective_chat.id, "message_id": msg.message_id},
+                name=f"del_donate_cmd_{msg.message_id}"
+            )
+
+    async def _delete_message_delayed(self, context: ContextTypes.DEFAULT_TYPE):
+        """Helper para borrar mensajes programados."""
+        job = context.job
+        data = job.data
+        try:
+            await context.bot.delete_message(chat_id=data["chat_id"], message_id=data["message_id"])
+        except Exception as e:
+            logger.debug(f"DonationPlugin: Auto-delete failed: {e}")
 
     async def niveles(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /niveles: explica niveles de usuario y beneficios."""
