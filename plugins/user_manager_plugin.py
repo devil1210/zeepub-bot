@@ -20,7 +20,7 @@ class UserManagerPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.0.0"
+        return "1.1.0"
 
     @property
     def description(self) -> str:
@@ -59,6 +59,23 @@ class UserManagerPlugin(BasePlugin):
     def _is_admin(self, uid: int) -> bool:
         return uid in config.ADMIN_USERS
 
+    def _get_target_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Helper para obtener (user_id, user_first_name) ya sea de argumentos
+        o del mensaje respondido (reply).
+        Retorna (target_id, target_name_or_none) o (None, None) si falla.
+        """
+        # 1. Check Reply
+        if update.message.reply_to_message:
+            r_user = update.message.reply_to_message.from_user
+            return r_user.id, r_user.first_name
+
+        # 2. Check Arguments (first arg is ID)
+        if context.args and len(context.args) > 0 and context.args[0].isdigit():
+            return int(context.args[0]), "Usuario"
+
+        return None, None
+
     async def add_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /add_user <id> <rol> [meses]
@@ -70,24 +87,48 @@ class UserManagerPlugin(BasePlugin):
         if not self._is_admin(uid):
             return
 
-        if not context.args or len(context.args) < 2:
-            await update.message.reply_text(
-                "❌ Uso: /add_user <id> <rol> [meses]\n"
-                "Roles: white, vip, premium, staff, admin\n"
-                "Ejemplo: /add_user 123456789 vip 6",
-                message_thread_id=thread_id,
-            )
-            return
+        target_id, target_name = self._get_target_user(update, context)
+        
+        # Validation Logic adjusted for "reply" usage
+        # If replied, args[0] might be role. If not replied, args[0] is ID, args[1] is role.
+        
+        role = None
+        duration_arg_idx = -1
 
-        target_id_str = context.args[0]
-        role = context.args[1].lower()
-
-        if not target_id_str.isdigit():
-            await update.message.reply_text(
-                "❌ ID inválido.", message_thread_id=thread_id
-            )
-            return
-        target_id = int(target_id_str)
+        if update.message.reply_to_message:
+            # Usage: Reply + /add_user <rol> [meses]
+            if not target_id:
+                 # Should not happen if _get_target_user check passed, but safety first
+                 return
+            
+            if not context.args or len(context.args) < 1:
+                await update.message.reply_text(
+                    "❌ Al responder, indica al menos el rol.\nEj: /add_user vip",
+                    message_thread_id=thread_id
+                )
+                return
+            role = context.args[0].lower()
+            if len(context.args) > 1:
+                duration_arg_idx = 1
+        else:
+            # Usage: /add_user <id> <rol> [meses]
+            if not target_id:
+                await update.message.reply_text(
+                    "❌ Uso: /add_user <id> <rol> [meses] (o responde a un mensaje).",
+                    message_thread_id=thread_id,
+                )
+                return
+            
+            if len(context.args) < 2:
+                 await update.message.reply_text(
+                    "❌ Faltan argumentos. Uso: /add_user <id> <rol> [meses]",
+                    message_thread_id=thread_id,
+                )
+                 return
+            
+            role = context.args[1].lower()
+            if len(context.args) > 2:
+                duration_arg_idx = 2
 
         valid_roles = ["white", "vip", "premium", "staff", "admin", "banned", "free", "user"]
         if role not in valid_roles:
@@ -100,15 +141,15 @@ class UserManagerPlugin(BasePlugin):
         # Determine duration
         duration = None
         duration_days = None
-
-        if len(context.args) >= 3:
-            if context.args[2].isdigit():
-                val = int(context.args[2])
-                # If role is banned, treat duration as days
-                if role == "banned":
-                    duration_days = val
-                else:
-                    duration = val
+        
+        if duration_arg_idx != -1 and len(context.args) > duration_arg_idx:
+             val_str = context.args[duration_arg_idx]
+             if val_str.isdigit():
+                 val = int(val_str)
+                 if role == "banned":
+                     duration_days = val
+                 else:
+                     duration = val
         else:
             # Use default from settings if not provided
             if role != "staff" and role != "banned":
@@ -122,7 +163,7 @@ class UserManagerPlugin(BasePlugin):
             duration_days=duration_days,
         )
 
-        msg = f"✅ Usuario <code>{target_id}</code> agregado como <b>{role.capitalize()}</b>"
+        msg = f"✅ Usuario <code>{target_id}</code> ({target_name}) agregado como <b>{role.capitalize()}</b>"
         if duration_days:
             msg += f" por <b>{duration_days} días</b> (Baneado)."
         elif duration:
@@ -182,28 +223,43 @@ class UserManagerPlugin(BasePlugin):
         if not self._is_admin(uid):
             return
 
-        if not context.args or len(context.args) < 2:
-            await msg.reply_text(
-                "❌ Uso: /set_staff_status <id> <label>\n"
-                "Ejemplo: /set_staff_status 123456789 Editor Jefe",
-                message_thread_id=thread_id,
-            )
-            return
+        target_id, target_name = self._get_target_user(update, context)
 
-        target_id_str = context.args[0]
-        if not target_id_str.isdigit():
-            await msg.reply_text("❌ ID inválido.", message_thread_id=thread_id)
-            return
-        target_id = int(target_id_str)
+        if not target_id:
+             await msg.reply_text(
+                "❌ Uso: /set_staff_status <id> <label> (o responde a un mensaje).",
+                message_thread_id=thread_id
+            )
+             return
+
+        # Parse label
+        # If reply, everything in args is label
+        # If ID arg, args[0] is ID, usage args[1:] is label
+        
+        args_start_idx = 0
+        if not update.message.reply_to_message:
+             # First arg was consumed as ID
+             args_start_idx = 1
+             if len(context.args) < 2:
+                 await msg.reply_text("❌ Indica el label/status.", message_thread_id=thread_id)
+                 return
+        else:
+             if len(context.args) < 1:
+                 await msg.reply_text("❌ Al responder, indica el label/status.", message_thread_id=thread_id)
+                 return
 
         # Check for deletion keywords
         delete_keywords = ["borrar", "eliminar", "none", "null", "remove", "off"]
-        if len(context.args) == 2 and context.args[1].lower() in delete_keywords:
+        
+        first_word = context.args[args_start_idx].lower()
+        
+        # If only one word and it is a delete keyword
+        if len(context.args) == args_start_idx + 1 and first_word in delete_keywords:
             new_label = None
             success_msg = f"✅ Status eliminado para <code>{target_id}</code> (vuelve a default)."
         else:
-            new_label = " ".join(context.args[1:])
-            success_msg = f"✅ Status actualizado para <code>{target_id}</code>: <b>{new_label}</b>"
+            new_label = " ".join(context.args[args_start_idx:])
+            success_msg = f"✅ Status actualizado para <code>{target_id}</code> ({target_name}): <b>{new_label}</b>"
 
         try:
             await update_user_status_label(target_id, new_label)
@@ -230,28 +286,38 @@ class UserManagerPlugin(BasePlugin):
         if not self._is_admin(uid):
             return
 
-        if not context.args or len(context.args) < 2:
+        target_id, target_name = self._get_target_user(update, context)
+
+        if not target_id:
             await msg.reply_text(
-                "❌ Uso: /set_apodo <id> <apodo>\n"
-                "Ejemplo: /set_apodo 123456789 El Charly",
+                "❌ Uso: /set_apodo <id> <apodo> (o responde a un mensaje).",
                 message_thread_id=thread_id,
             )
             return
 
-        target_id_str = context.args[0]
-        if not target_id_str.isdigit():
-            await msg.reply_text("❌ ID inválido.", message_thread_id=thread_id)
-            return
-        target_id = int(target_id_str)
+        # Parse Apodo
+        args_start_idx = 0
+        if not update.message.reply_to_message:
+             args_start_idx = 1
+             if len(context.args) < 2:
+                  await msg.reply_text("❌ Indica el apodo", message_thread_id=thread_id)
+                  return
+        else:
+             if len(context.args) < 1:
+                  await msg.reply_text("❌ Al responder, indica el apodo.", message_thread_id=thread_id)
+                  return
 
+        
         # Check for deletion keywords
         delete_keywords = ["borrar", "eliminar", "none", "null", "remove", "off"]
-        if len(context.args) == 2 and context.args[1].lower() in delete_keywords:
+        first_word = context.args[args_start_idx].lower()
+
+        if len(context.args) == args_start_idx + 1 and first_word in delete_keywords:
             new_label = None
             success_msg = f"✅ Apodo eliminado para <code>{target_id}</code>."
         else:
-            new_label = " ".join(context.args[1:])
-            success_msg = f"✅ Apodo actualizado para <code>{target_id}</code>: <b>{new_label}</b>"
+            new_label = " ".join(context.args[args_start_idx:])
+            success_msg = f"✅ Apodo actualizado para <code>{target_id}</code> ({target_name}): <b>{new_label}</b>"
 
         try:
             await update_user_nickname(target_id, new_label)
