@@ -5,7 +5,9 @@ import os
 import logging
 from typing import Union, Dict
 from config.config_settings import config
-from core.state_manager import state_manager
+# from services.user_service import get_effective_user  <-- Moved inside function
+
+# from core.state_manager import state_manager (Moved to local scope)
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,8 @@ def load_downloads() -> None:
         for uid_str, downloads in data.items():
             try:
                 uid = int(uid_str)
+                from core.state_manager import state_manager
+
                 st = state_manager.get_user_state(uid)
                 st["downloads_used"] = downloads
                 count += 1
@@ -73,6 +77,8 @@ def reset_all_downloads() -> None:
     # 1. Resetear en memoria (state_manager)
     # Nota: state_manager.user_state es un dict {uid: {state...}}
     # Iteramos sobre todos los usuarios cargados en memoria
+    from core.state_manager import state_manager
+
     for uid, state in state_manager.user_state.items():
         if "downloads_used" in state:
             state["downloads_used"] = 0
@@ -88,38 +94,45 @@ def reset_all_downloads() -> None:
         logger.info("No había archivo de descargas diarias para eliminar.")
 
 
-def downloads_left(uid: int) -> Union[int, str]:
+async def downloads_left(uid: int) -> Union[int, str]:
     """
     Devuelve el número de descargas restantes según el nivel de usuario:
-    - PremiumList: ilimitadas
-    - VIPList: 20 descargas diarias
-    - WhiteList: 10 descargas diarias
+    - Staff/Admin: ilimitadas
+    - Premium: ilimitadas
+    - VIP: 20 descargas diarias
+    - WhiteList (Patrocinador): 10 descargas diarias
     - Resto: MAX_DOWNLOADS_PER_DAY por defecto (p.ej. 5)
     """
+    from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
     used = st.get("downloads_used", 0)
 
-    if uid in config.PREMIUM_LIST:
+    from services.user_service import get_effective_user
+    user_data = await get_effective_user(uid)
+    role = user_data.get("role", "free")
+
+    if role in ("admin", "staff", "premium"):
         return "ilimitadas"
 
-    if uid in config.VIP_LIST:
-        max_dl = config.VIP_DOWNLOADS_PER_DAY  # p.ej. 20
-    elif uid in config.WHITELIST:
-        max_dl = config.WHITELIST_DOWNLOADS_PER_DAY  # p.ej. 10
+    if role == "vip":
+        max_dl = config.VIP_DOWNLOADS_PER_DAY
+    elif role == "white":
+        max_dl = config.WHITELIST_DOWNLOADS_PER_DAY
     else:
-        max_dl = config.MAX_DOWNLOADS_PER_DAY  # p.ej. 5
+        max_dl = config.MAX_DOWNLOADS_PER_DAY
 
     remaining = max_dl - used
     return remaining if remaining > 0 else 0
 
 
-def can_download(uid: int) -> bool:
+async def can_download(uid: int) -> bool:
     """
     Comprueba si el usuario aún puede descargar:
     - Siempre True para PremiumList
     - True si quedan descargas para VIPList, WhiteList o usuarios normales
     """
-    left = downloads_left(uid)
+    left = await downloads_left(uid)
     if left == "ilimitadas":
         return True
     return left > 0
@@ -130,9 +143,19 @@ def record_download(uid: int) -> None:
     Incrementa el contador de descargas usadas en el estado del usuario
     y lo persiste en disco.
     """
+    from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
     new_count = st.get("downloads_used", 0) + 1
     st["downloads_used"] = new_count
 
     # Persistir cambio
     save_download(uid, new_count)
+
+    # Registrar estadísticas globales
+    try:
+        from services.stats_service import record_activity
+
+        record_activity(uid, "download")
+    except Exception as e:
+        logger.error(f"Error registrando estadísticas: {e}")

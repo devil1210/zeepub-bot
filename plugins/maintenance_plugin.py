@@ -1,0 +1,547 @@
+import logging
+import os
+import asyncio
+import sqlite3
+import csv
+import io
+import shutil
+from datetime import datetime
+from telegram import Update
+from telegram.ext import ContextTypes, CommandHandler
+from plugins.base_plugin import BasePlugin
+from config.config_settings import config
+from utils.helpers import get_thread_id
+from core.state_manager import state_manager
+from utils.url_cache import DB_PATH  # For usage in export_db/restore_db (SQLite)
+
+logger = logging.getLogger(__name__)
+
+
+class MaintenancePlugin(BasePlugin):
+    @property
+    def name(self) -> str:
+        return "maintenance_plugin"
+
+    @property
+    def version(self) -> str:
+        return "1.0.0"
+
+    @property
+    def description(self) -> str:
+        return "Herramientas de mantenimiento de base de datos e historial."
+
+    async def initialize(self, bot_instance) -> bool:
+        self.enabled = os.getenv("ENABLE_DB_MAINTENANCE", "True").lower() == "true"
+
+        if not self.enabled:
+            logger.info("Plugin Maintenance desactivado por configuración.")
+            return False
+
+        try:
+            app = bot_instance
+            # Admin only commands
+            app.add_handler(CommandHandler("backup_db", self.backup_db))
+            app.add_handler(CommandHandler("restore_db", self.restore_db))
+            app.add_handler(CommandHandler("import_history", self.import_history))
+            app.add_handler(CommandHandler("latest_books", self.latest_books))
+            app.add_handler(CommandHandler("clear_history", self.clear_history))
+
+            # Publisher/Admin commands
+            app.add_handler(CommandHandler("export_db", self.export_db))
+            app.add_handler(CommandHandler("export_history", self.export_history))
+
+            logger.info("Plugin Maintenance: Handlers registrados.")
+            return True
+        except Exception as e:
+            logger.error(f"Error registrando handlers del plugin Maintenance: {e}")
+            return False
+
+    async def cleanup(self) -> None:
+        pass
+
+    async def backup_db(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Realiza un backup de la base de datos (solo admins)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text(
+                "⛔ No tienes permisos para usar este comando."
+            )
+            return
+
+        thread_id = get_thread_id(update)
+        msg = await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="⏳ Generando backup...",
+            message_thread_id=thread_id,
+        )
+
+        try:
+            from services.backup_service import generate_backup_file
+
+            filename = await generate_backup_file()
+
+            # Enviar archivo
+            with open(filename, "rb") as f:
+                await context.bot.send_document(
+                    chat_id=update.effective_chat.id,
+                    document=f,
+                    filename=filename,
+                    caption=f"📦 Backup de base de datos\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                    message_thread_id=thread_id,
+                )
+
+            # Limpiar
+            try:
+                os.remove(filename)
+            except Exception:
+                logger.debug("No se pudo eliminar backup temporal: %s", filename)
+
+            await context.bot.delete_message(
+                chat_id=update.effective_chat.id, message_id=msg.message_id
+            )
+
+        except Exception as e:
+            logger.error(f"Error en backup_db: {e}", exc_info=True)
+            await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                message_id=msg.message_id,
+                text=f"❌ Error al generar backup: {str(e)}",
+            )
+
+    async def restore_db(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Restaura la base de datos desde un archivo (solo admins)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text(
+                "⛔ No tienes permisos para usar este comando."
+            )
+            return
+
+        if (
+            not update.message.reply_to_message
+            or not update.message.reply_to_message.document
+        ):
+            await update.message.reply_text(
+                "⚠️ Debes responder a un mensaje con el archivo .sql de backup para restaurarlo."
+            )
+            return
+
+        doc = update.message.reply_to_message.document
+        thread_id = get_thread_id(update)
+        msg = await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="⏳ Descargando y restaurando backup... (Esto borrará los datos actuales)",
+            message_thread_id=thread_id,
+        )
+
+        try:
+            # Descargar archivo
+            file = await doc.get_file()
+
+            if config.DATABASE_URL:
+                # --- Lógica PostgreSQL ---
+                if not doc.file_name.endswith(".sql"):
+                    await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=msg.message_id,
+                        text="⚠️ Para PostgreSQL, el archivo debe ser un .sql",
+                    )
+                    return
+
+                filename = f"restore_{doc.file_name}"
+                await file.download_to_drive(filename)
+
+                # Obtener credenciales
+                pg_user = os.getenv("POSTGRES_USER")
+                pg_password = os.getenv("POSTGRES_PASSWORD")
+                pg_db = os.getenv("POSTGRES_DB")
+                pg_host = "db"
+
+                if not pg_user:
+                    try:
+                        from sqlalchemy.engine import make_url
+
+                        url = make_url(config.DATABASE_URL)
+                        pg_user = url.username
+                        pg_password = url.password
+                        if url.host:
+                            pg_host = url.host
+                        pg_db = url.database
+                    except Exception:
+                        pass
+
+                if not pg_user or not pg_password:
+                    raise Exception("No se encontraron credenciales de base de datos.")
+
+                # Configurar entorno
+                env = os.environ.copy()
+                env["PGPASSWORD"] = pg_password
+
+                # Comando psql para restaurar
+                cmd = [
+                    "psql",
+                    "-h",
+                    pg_host,
+                    "-U",
+                    pg_user,
+                    "-d",
+                    pg_db,
+                    "-f",
+                    filename,
+                ]
+
+                # Use asyncio subprocess
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    env=env,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                try:
+                    stdout, stderr = await asyncio.wait_for(
+                        proc.communicate(), timeout=180
+                    )
+                except asyncio.TimeoutError:
+                    proc.kill()
+                    await proc.wait()
+                    raise Exception("psql restore timed out")
+                if proc.returncode != 0:
+                    raise Exception(f"Restore failed: {stderr.decode(errors='ignore')}")
+
+                try:
+                    os.remove(filename)
+                except Exception:
+                    logger.debug(
+                        "No se pudo eliminar archivo temporal de restore: %s", filename
+                    )
+
+            else:
+                # --- Lógica SQLite ---
+                if not (
+                    doc.file_name.endswith(".db") or doc.file_name.endswith(".sqlite")
+                ):
+                    await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=msg.message_id,
+                        text="⚠️ Para SQLite, el archivo debe ser .db o .sqlite",
+                    )
+                    return
+
+                # Sobrescribir el archivo de base de datos
+                # Backup de seguridad antes de sobrescribir
+                if os.path.exists(DB_PATH):
+                    backup_path = f"{DB_PATH}.bak"
+                    shutil.copy2(DB_PATH, backup_path)
+
+                await file.download_to_drive(DB_PATH)
+
+            await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                message_id=msg.message_id,
+                text="✅ Base de datos restaurada exitosamente.",
+            )
+            logger.info(f"Admin {uid} restauró la base de datos desde {doc.file_name}")
+
+        except Exception as e:
+            logger.error(f"Error en restore_db: {e}", exc_info=True)
+            await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                message_id=msg.message_id,
+                text=f"❌ Error al restaurar backup: {str(e)}",
+            )
+
+    async def export_db(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Exporta la base de datos a CSV (solo publishers)."""
+        uid = update.effective_user.id
+        if uid not in config.FACEBOOK_PUBLISHERS:
+            await update.message.reply_text(
+                "⛔ No tienes permisos para usar este comando."
+            )
+            return
+
+        thread_id = get_thread_id(update)
+        msg = await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="⏳ Generando CSV de la base de datos...",
+            message_thread_id=thread_id,
+        )
+
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"export_db_{timestamp}.csv"
+
+            # Determinar si usar PostgreSQL o SQLite
+            if config.DATABASE_URL:
+                # PostgreSQL usando SQLAlchemy
+                from sqlalchemy import create_engine, text
+
+                engine = create_engine(config.DATABASE_URL)
+
+                with engine.connect() as conn:
+                    result = conn.execute(
+                        text("SELECT * FROM url_mappings ORDER BY created_at DESC")
+                    )
+                    rows = result.fetchall()
+                    columns = result.keys()
+
+                # Escribir CSV en thread pool
+                def _write_csv(path, columns, rows):
+                    with open(path, "w", newline="", encoding="utf-8") as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerow(columns)
+                        writer.writerows(rows)
+
+                await asyncio.to_thread(_write_csv, filename, columns, rows)
+
+            else:
+                # SQLite
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM url_mappings ORDER BY created_at DESC")
+                rows = cursor.fetchall()
+                columns = [description[0] for description in cursor.description]
+                conn.close()
+
+                # Escribir CSV en thread pool
+                def _write_csv(path, columns, rows):
+                    with open(path, "w", newline="", encoding="utf-8") as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerow(columns)
+                        writer.writerows(rows)
+
+                await asyncio.to_thread(_write_csv, filename, columns, rows)
+
+            # Enviar archivo
+            with open(filename, "rb") as f:
+                await context.bot.send_document(
+                    chat_id=update.effective_chat.id,
+                    document=f,
+                    filename=filename,
+                    caption=f"📊 Exportación de base de datos\n📅 {timestamp}\n📦 {len(rows)} registros",
+                    message_thread_id=thread_id,
+                )
+
+            try:
+                os.remove(filename)
+            except Exception:
+                logger.debug("No se pudo eliminar CSV temporal: %s", filename)
+            await context.bot.delete_message(
+                chat_id=update.effective_chat.id, message_id=msg.message_id
+            )
+
+        except Exception as e:
+            logger.error(f"Error en export_db: {e}", exc_info=True)
+            await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                message_id=msg.message_id,
+                text=f"❌ Error al generar CSV: {str(e)}",
+            )
+
+    async def import_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Activa el modo de importación de historial (solo admins)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text(
+                "⛔ No tienes permisos para usar este comando."
+            )
+            return
+
+        st = state_manager.get_user_state(uid)
+        st["waiting_for_history_json"] = True
+
+        await update.message.reply_text(
+            "📂 <b>Modo de Importación Activado</b>\n\n"
+            "Por favor, envía ahora el archivo <code>result.json</code> exportado de Telegram Desktop.\n"
+            "El bot procesará el archivo y guardará el historial de libros publicados.\n\n"
+            "<i>Este modo se desactivará automáticamente después de recibir el archivo.</i>",
+            parse_mode="HTML",
+        )
+
+    async def latest_books(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Muestra los últimos 10 libros importados/publicados (solo admins)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text(
+                "⛔ No tienes permisos para usar este comando."
+            )
+            return
+
+        try:
+            from services.history_service import get_latest_books
+
+            # Parse argumentos: chat_id opcional
+            channel_filter = None
+            if context.args and len(context.args) > 0:
+                try:
+                    channel_filter = int(context.args[0])
+                except ValueError:
+                    await update.message.reply_text(
+                        "❌ Chat ID inválido. Uso: /latest_books [chat_id]\n"
+                        "Ejemplo: /latest_books -1001234567890"
+                    )
+                    return
+
+            books = get_latest_books(limit=10, channel_id=channel_filter)
+
+            if not books:
+                if channel_filter:
+                    await update.message.reply_text(
+                        f"📚 No hay libros registrados en el chat {channel_filter}."
+                    )
+                else:
+                    await update.message.reply_text(
+                        "📚 No hay libros registrados en el historial."
+                    )
+                return
+
+            if channel_filter:
+                text = f"📚 <b>Últimos 10 Libros en Chat {channel_filter}</b>\n\n"
+            else:
+                text = "📚 <b>Últimos 10 Libros Publicados</b>\n\n"
+
+            for b in books:
+                title = b.title or "Sin título"
+                author = b.author or "Desconocido"
+                series = f" ({b.series})" if b.series else ""
+                date_str = (
+                    b.date_published.strftime("%Y-%m-%d %H:%M")
+                    if b.date_published
+                    else "?"
+                )
+
+                text += f"🔹 <b>{title}</b>{series}\n"
+                text += f"   ✍️ {author}\n"
+                text += f"   📅 {date_str} | #{b.slug}\n"
+
+                if not channel_filter and hasattr(b, "channel_id") and b.channel_id:
+                    text += f"   📍 Chat: {b.channel_id}\n"
+
+                text += "\n"
+
+            await update.message.reply_text(text, parse_mode="HTML")
+
+        except Exception as e:
+            logger.error(f"Error in latest_books: {e}")
+            await update.message.reply_text("❌ Error al obtener el historial.")
+
+    async def clear_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Borra todo el historial de libros publicados (solo admin)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text(
+                "⛔ No tienes permisos para usar este comando."
+            )
+            return
+
+        if not context.args or context.args[0] != "confirm":
+            await update.message.reply_text(
+                "⚠️ <b>¡ATENCIÓN!</b> Esto borrará TODO el historial de libros publicados.\n"
+                "Para confirmar, usa: <code>/clear_history confirm</code>",
+                parse_mode="HTML",
+            )
+            return
+
+        try:
+            from services.history_service import clear_history
+
+            if clear_history():
+                await update.message.reply_text("✅ Historial borrado exitosamente.")
+            else:
+                await update.message.reply_text("❌ Error al borrar el historial.")
+        except Exception as e:
+            logger.error(f"Error en clear_history: {e}")
+            await update.message.reply_text(
+                "❌ Error interno al intentar borrar historial."
+            )
+
+    async def export_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Exporta el historial de libros publicados a CSV."""
+        uid = update.effective_user.id
+        # Allow publishers and admins
+        if uid not in config.ADMIN_USERS and uid not in config.PUBLISHER_USERS:
+            await update.message.reply_text(
+                "⛔ No tienes permisos para usar este comando."
+            )
+            return
+
+        try:
+            from services.history_service import get_latest_books
+
+            books = get_latest_books(limit=10000)
+
+            if not books:
+                await update.message.reply_text(
+                    "📚 No hay libros registrados en el historial."
+                )
+                return
+
+            output = io.StringIO()
+            writer = csv.writer(output)
+
+            # Header
+            writer.writerow(
+                [
+                    "Título",
+                    "Maquetado por",
+                    "Demografía",
+                    "Géneros",
+                    "Autor",
+                    "Serie",
+                    "Slug",
+                    "Ilustrador",
+                    "Traducción",
+                    "Fecha Publicación",
+                    "Tamaño",
+                ]
+            )
+
+            # Data
+            for b in books:
+                file_size_str = ""
+                if hasattr(b, "file_size") and b.file_size:
+                    file_size_mb = b.file_size / (1024 * 1024)
+                    file_size_str = f"{file_size_mb:.2f} MB"
+
+                writer.writerow(
+                    [
+                        b.title or "Unknown",
+                        b.maquetado_por or "" if hasattr(b, "maquetado_por") else "",
+                        b.demografia or "" if hasattr(b, "demografia") else "",
+                        b.generos or "" if hasattr(b, "generos") else "",
+                        b.author or "Desconocido",
+                        b.series or "",
+                        b.slug or "",
+                        b.ilustrador or "" if hasattr(b, "ilustrador") else "",
+                        b.traduccion or "" if hasattr(b, "traduccion") else "",
+                        (
+                            b.date_published.strftime("%Y-%m-%d %H:%M")
+                            if b.date_published
+                            else ""
+                        ),
+                        file_size_str,
+                    ]
+                )
+
+            # Send file
+            output.seek(0)
+            # Encode to bytes
+            csv_bytes = output.getvalue().encode("utf-8")
+
+            # Timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"history_export_{timestamp}.csv"
+
+            thread_id = get_thread_id(update)
+            await context.bot.send_document(
+                chat_id=update.effective_chat.id,
+                document=csv_bytes,
+                filename=filename,
+                caption=f"📊 Exportación de Historial\n📅 {timestamp}\n📚 {len(books)} libros",
+                message_thread_id=thread_id,
+            )
+
+        except Exception as e:
+            logger.error(f"Error en export_history: {e}", exc_info=True)
+            await update.message.reply_text(
+                "❌ Error generando exportación de historial."
+            )

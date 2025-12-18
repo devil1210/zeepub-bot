@@ -6,7 +6,9 @@ import aiohttp
 import feedparser
 import tempfile
 from typing import Union
-from core.session_manager import session_manager
+from typing import Union
+
+# from core.session_manager import session_manager (Moved to local scope)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,7 +26,10 @@ def cleanup_tmp(path):
 
 
 async def fetch_bytes(
-    url: str, session: aiohttp.ClientSession = None, timeout: int = 15, max_retries: int = 3
+    url: str,
+    session: aiohttp.ClientSession = None,
+    timeout: int = 15,
+    max_retries: int = 3,
 ) -> Union[bytes, str, None]:
     """
     Descarga el contenido de `url`. Si supera MAX_IN_MEMORY_BYTES escribe a fichero temporal.
@@ -32,23 +37,39 @@ async def fetch_bytes(
     Incluye lógica de reintento para manejar problemas temporales como Cloudflare.
     """
     retry_delays = [2, 5, 10]  # Delays in seconds for retries
-    
+
     for attempt in range(max_retries):
         try:
+            from core.session_manager import session_manager
+
             sess = session or session_manager.get_session()
-            logger.debug(f"Iniciando descarga de URL OPDS (intento {attempt + 1}/{max_retries}): {url}")
-            async with sess.get(url, timeout=timeout) as resp:
+            logger.debug(
+                f"Iniciando descarga de URL (intento {attempt + 1}/{max_retries}): {url}"
+            )
+
+            # Use smart timeout: total=None implies no total limit (good for large files),
+            # but sock_read enforces liveness.
+            # If timeout is an int, we treat it as sock_read/sock_connect timeout.
+            request_timeout = timeout
+            if isinstance(timeout, int):
+                request_timeout = aiohttp.ClientTimeout(
+                    total=None, sock_connect=timeout, sock_read=timeout
+                )
+
+            async with sess.get(url, timeout=request_timeout) as resp:
                 # Log response status and headers for debugging
-                logger.debug(f"Response status: {resp.status}, headers: {dict(resp.headers)}")
-                
+                logger.debug(
+                    f"Response status: {resp.status}, headers: {dict(resp.headers)}"
+                )
+
                 # Check for Cloudflare errors
                 if resp.status == 403:
                     logger.warning(f"Cloudflare/403 error detected for URL: {url}")
                 elif resp.status == 503:
                     logger.warning(f"Service unavailable (503) for URL: {url}")
-                    
+
                 resp.raise_for_status()
-                
+
                 cl = resp.headers.get("Content-Length")
                 total = None
                 if cl:
@@ -56,7 +77,7 @@ async def fetch_bytes(
                         total = int(cl)
                     except ValueError:
                         total = None
-                        
+
                 # Si sabemos el tamaño y es grande, stream a archivo
                 if total is not None and total > MAX_IN_MEMORY_BYTES:
                     tmp = tempfile.NamedTemporaryFile(delete=False)
@@ -80,11 +101,11 @@ async def fetch_bytes(
                         except Exception:
                             pass
                         raise  # Re-raise to trigger retry
-                        
+
                 # Si es pequeño (o tamaño desconocido), leer todo en memoria
                 data = await resp.read()
                 length = len(data)
-                
+
                 if length > MAX_IN_MEMORY_BYTES:
                     tmp = tempfile.NamedTemporaryFile(delete=False)
                     try:
@@ -106,25 +127,33 @@ async def fetch_bytes(
                         except Exception:
                             pass
                         raise  # Re-raise to trigger retry
-                        
+
                 logger.debug("fetch_bytes devolvió bytes en memoria (%d bytes)", length)
                 return data
-                
+
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            logger.warning(f"Error fetch_bytes (intento {attempt + 1}/{max_retries}) para {url}: {e}")
-            
+            logger.warning(
+                f"Error fetch_bytes (intento {attempt + 1}/{max_retries}) para {url}: {e}"
+            )
+
             # If this is not the last attempt, wait before retrying
             if attempt < max_retries - 1:
-                delay = retry_delays[attempt] if attempt < len(retry_delays) else retry_delays[-1]
+                delay = (
+                    retry_delays[attempt]
+                    if attempt < len(retry_delays)
+                    else retry_delays[-1]
+                )
                 logger.info(f"Reintentando en {delay} segundos...")
                 await asyncio.sleep(delay)
             else:
-                logger.error(f"Error fetch_bytes después de {max_retries} intentos para {url}: {e}")
+                logger.error(
+                    f"Error fetch_bytes después de {max_retries} intentos para {url}: {e}"
+                )
                 return None
         except Exception as e:
             logger.error(f"Error inesperado fetch_bytes para {url}: {e}", exc_info=True)
             return None
-    
+
     return None
 
 

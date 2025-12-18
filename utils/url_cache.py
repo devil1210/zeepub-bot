@@ -363,7 +363,7 @@ async def validate_and_update_url(url_hash: str, url: str) -> bool:
             async with session.get(
                 url,
                 headers=headers,
-                timeout=aiohttp.ClientTimeout(total=30),
+                timeout=aiohttp.ClientTimeout(total=15),
                 allow_redirects=True,
             ) as resp:
                 # Aceptar 200 (OK) o 206 (Partial Content)
@@ -624,8 +624,10 @@ def get_candidates_for_validation(limit: int = 100, older_than_seconds: int = 36
         conn.close()
 
 
-# Inicializar BD al importar el módulo
-try:
-    init_db()
-except Exception as e:
-    logger.error(f"Could not initialize URL cache DB at {DB_PATH}: {e}")
+# Inicializar BD al importar el módulo (skip in test environments)
+# Tests should call init_db() explicitly after setting up their config
+if not os.getenv("PYTEST_CURRENT_TEST"):
+    try:
+        init_db()
+    except Exception as e:
+        logger.error(f"Could not initialize URL cache DB at {DB_PATH}: {e}")

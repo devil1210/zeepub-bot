@@ -1,31 +1,52 @@
 import sys
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock, AsyncMock, patch
+import importlib.util
+from pathlib import Path
 
-# Prevent circular imports inside the core/handlers modules during test import
-sys.modules["core"] = MagicMock()
-sys.modules["core.bot"] = MagicMock()
-sys.modules["core.state_manager"] = MagicMock()
-sys.modules["core.session_manager"] = MagicMock()
-# Avoid mocking the callback_handlers module itself; it's the unit under test.
-sys.modules["services.opds_service"] = MagicMock()
-sys.modules["utils.http_client"] = MagicMock()
-sys.modules["utils.helpers"] = MagicMock()
-sys.modules["config.config_settings"] = MagicMock()
+# Fixture to mock dependencies cleanly
+@pytest.fixture(autouse=True)
+def mock_dependencies():
+    modules_to_patch = {
+        "core": MagicMock(),
+        "core.bot": MagicMock(),
+        "core.state_manager": MagicMock(),
+        "core.session_manager": MagicMock(),
+        "services.opds_service": MagicMock(),
+        "services.telegram_service": MagicMock(),
+        "services": MagicMock(),
+        "utils": MagicMock(),
+        "utils.http_client": MagicMock(),
+        "utils.helpers": MagicMock(),
+        "utils.download_limiter": MagicMock(),
+        "services.settings_service": MagicMock(),
+        "config.config_settings": MagicMock(),
+        "services.user_service": MagicMock(),
+    }
+    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
+    # Ensure utils acts as a package
+    modules_to_patch["utils"].__path__ = []
+    # Add explicit submodules referenced
+    modules_to_patch["utils.decorators"] = MagicMock()
+
+    with patch.dict(sys.modules, modules_to_patch):
+        yield
 
 import importlib.util
 from pathlib import Path
 
-# Load the real callback_handlers module by path to avoid earlier tests stubbing
-# `handlers.callback_handlers` in sys.modules. This keeps this unit test isolated.
-cb_path = Path(__file__).resolve().parents[1] / "handlers" / "callback_handlers.py"
-spec = importlib.util.spec_from_file_location("cb_real", str(cb_path))
-cb = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(cb)
+# Helper to load the module under test with current sys.modules
+def load_callback_handlers():
+    cb_path = Path(__file__).resolve().parents[1] / "handlers" / "callback_handlers.py"
+    spec = importlib.util.spec_from_file_location("cb_real", str(cb_path))
+    cb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cb)
+    return cb
 
 
 @pytest.mark.asyncio
 async def test_set_publish_temp_stores_one_time_choice(monkeypatch):
+    cb = load_callback_handlers()
     uid = 111
 
     # prepare a mutable state dict
@@ -33,6 +54,7 @@ async def test_set_publish_temp_stores_one_time_choice(monkeypatch):
     mock_state = MagicMock()
     mock_state.get_user_state.return_value = st
     monkeypatch.setattr(cb, "state_manager", mock_state)
+    monkeypatch.setattr(sys.modules["services.user_service"], "get_effective_user", AsyncMock(return_value={"role": "free"}))
 
     # prepare update/context mocks
     update = MagicMock()
@@ -68,6 +90,7 @@ async def test_set_publish_temp_stores_one_time_choice(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch):
+    cb = load_callback_handlers()
     uid = 222
     libro_key = "k1"
     update = MagicMock()
@@ -113,6 +136,7 @@ async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch
     pub = AsyncMock()
     telegram_service_mod.publicar_libro = pub
     monkeypatch.setattr(cb, "publicar_libro", pub)
+    monkeypatch.setattr(sys.modules["services.user_service"], "get_effective_user", AsyncMock(return_value={"role": "free"}))
 
     context = MagicMock()
     context.bot = MagicMock()
@@ -129,6 +153,7 @@ async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch
 
 @pytest.mark.asyncio
 async def test_admin_publisher_set_publish_temp_fb_enters_evil(monkeypatch):
+    cb = load_callback_handlers()
     uid = 444
 
     st = {}
@@ -138,6 +163,7 @@ async def test_admin_publisher_set_publish_temp_fb_enters_evil(monkeypatch):
 
     # user is admin and publisher
     monkeypatch.setattr(cb, "config", MagicMock(FACEBOOK_PUBLISHERS={uid}, ADMIN_USERS={uid}, OPDS_ROOT_EVIL="/opds-evil"))
+    monkeypatch.setattr(sys.modules["services.user_service"], "get_effective_user", AsyncMock(return_value={"role": "staff", "custom_status": "Publicador"}))
 
     # intercept mostrar_colecciones
     mc = AsyncMock()
@@ -180,22 +206,36 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
     mock_state.get_user_state.return_value = st
     monkeypatch.setattr(ch, "state_manager", mock_state)
     # avoid downloads_left using core.state_manager/config inside ch
-    monkeypatch.setattr(ch, "downloads_left", lambda uid: "ilimitadas")
+    mock_dl = AsyncMock(return_value="ilimitadas")
+    monkeypatch.setattr(ch, "downloads_left", mock_dl)
     mc = AsyncMock()
     monkeypatch.setattr(ch, "mostrar_colecciones", mc)
 
     # config: user is publisher
+    # Also patch get_effective_user because logic now checks role/custom_status
     monkeypatch.setattr(ch, "config", MagicMock(FACEBOOK_PUBLISHERS={uid}, ADMIN_USERS=set(), OPDS_ROOT_START="/opds-start"))
+    
+    import services.user_service
+    mock_get_user = AsyncMock(return_value={"role": "staff", "custom_status": "Publicador"})
+    # monkeypatch.setattr(services.user_service, "get_effective_user", mock_get_user) <-- This might be failing if services.user_service is not the one in sys.modules
+    sys.modules["services.user_service"].get_effective_user = mock_get_user
 
     # update/context
     update = MagicMock()
     update.effective_user.id = uid
     update.effective_chat.id = uid
     update.effective_chat.type = 'private'
+    update.message.reply_text = AsyncMock()  # Needed for donation link validation
     context = MagicMock()
     # Provide an async send_message for the fake bot used in the handler
     context.bot = MagicMock()
     context.bot.send_message = AsyncMock()
+
+    # Mock custom messages plugin
+    mock_cms = MagicMock()
+    mock_cms.enabled = True
+    mock_cms.get_text = AsyncMock(return_value="Bienvenido al bot")
+    context.application.plugin_manager.get_plugin.return_value = mock_cms
 
     dummy_app = MagicMock()
     await ch.CommandHandlers(dummy_app).start(update, context)
@@ -206,6 +246,7 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
 
 @pytest.mark.asyncio
 async def test_publish_temp_consumed_on_lib_selection_calls_facebook(monkeypatch):
+    cb = load_callback_handlers()
     uid = 333
     libro_key = "k2"
     update = MagicMock()
@@ -250,6 +291,7 @@ async def test_publish_temp_consumed_on_lib_selection_calls_facebook(monkeypatch
         sys.modules["services.telegram_service"] = telegram_service_mod
     facebook = AsyncMock()
     telegram_service_mod._publish_choice_facebook = facebook
+    monkeypatch.setattr(sys.modules["services.user_service"], "get_effective_user", AsyncMock(return_value={"role": "free"}))
 
     context = MagicMock()
     context.bot = MagicMock()
@@ -266,6 +308,7 @@ async def test_publish_temp_consumed_on_lib_selection_calls_facebook(monkeypatch
 
 @pytest.mark.asyncio
 async def test_descartar_fb_removes_buttons_not_message(monkeypatch):
+    cb = load_callback_handlers()
     uid = 555
     st = {}
     mock_state = MagicMock()

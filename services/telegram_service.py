@@ -4,11 +4,12 @@ import io
 import os
 import logging
 from urllib.parse import urlparse, unquote
-from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
-from core.state_manager import state_manager
-from core.session_manager import session_manager
+
+# from core.state_manager import state_manager (Moved to local scope)
+# from core.session_manager import session_manager (Moved to local scope)
 from config.config_settings import config
 from services.metadata_service import (
     obtener_metadatos_opds,
@@ -262,7 +263,12 @@ async def publicar_libro(
 ):
     """Descarga EPUB para metadatos, muestra portada, sinopsis y botones."""
     bot = context.bot
+
+    from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
+    from core.session_manager import session_manager
+
     lock = session_manager.get_publish_lock(uid)
 
     async with lock:
@@ -280,7 +286,7 @@ async def publicar_libro(
         thread_id_destino = thread_id_origen if destino == chat_origen else None
 
         # Verificar límite antes de descargar
-        if not can_download(uid):
+        if not await can_download(uid):
             await bot.send_message(
                 chat_id=destino,
                 text="🚫 Has alcanzado tu límite de descargas por hoy.",
@@ -432,7 +438,10 @@ async def publicar_libro(
                 f"📦 Tamaño: {size_mb:.2f} MB"
             )
 
-            # Enviar mensaje de información separado (siempre en chat_origen con thread_id)
+            slug = generar_slug_from_meta(meta)
+            if slug:
+                info_text += f"\n#{slug}"
+
             # Enviar mensaje de información separado (siempre en chat_origen con thread_id)
             try:
                 msg_info = await bot.send_message(
@@ -487,13 +496,18 @@ async def publicar_libro(
 
 
 async def descargar_epub_pendiente(
-    update, context: ContextTypes.DEFAULT_TYPE, uid: int
+    update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int, job_queue=None
 ):
-    """Envía el EPUB guardado tras confirmación del usuario."""
-    bot = context.bot
+    """
+    Función llamada cuando el usuario presiona "Descargar" en el menú intermedio.
+    """
+    from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
 
     from utils.helpers import get_thread_id
+
+    bot = context.bot
 
     thread_id_origen = user_state.get(
         "message_thread_id"
@@ -511,13 +525,34 @@ async def descargar_epub_pendiente(
     # Solo usar thread_id si destino == chat_origen
     thread_id_destino = thread_id_origen if destino == chat_origen else None
 
-    # Borrar botones y mensaje de info
+    # Identificar si es grupo
+    is_group = update.effective_chat.type in ("group", "supergroup")
+    
+    # Verificar privilegios usando el sistema de roles
+    from services.user_service import get_effective_user
+    user_info = await get_effective_user(uid)
+    role = user_info.get("role", "free")
+    is_privileged = role in ("admin", "staff")
+
+    # Si es grupo y NO es privilegiado, forzar envío al privado
+    if is_group and not is_privileged:
+        destino = uid
+        thread_id_destino = None
+        # Opcional: Avisar en el grupo que se envió al privado?
+        # Por ahora lo hacemos silencioso o asumimos que 'prep' message (line 564) iría al privado.
+        # Pero wait, line 564 usa 'destino'. Si cambiamos destino a uid, el mensaje "Preparando..." va al privado.
+        # Eso es correcto.
+
+    # Borrar botones (siempre)
     if msg_id:
         try:
             await bot.delete_message(chat_id=chat_origen, message_id=msg_id)
         except Exception as e:
             logger.debug("Could not delete msg_id %s: %s", msg_id, e)
-    if msg_info_id:
+
+    # Borrar mensaje de info (SOLO si NO es grupo)
+    # En grupos queremos que persista para contexto
+    if msg_info_id and not is_group:
         try:
             await bot.delete_message(chat_id=chat_origen, message_id=msg_info_id)
         except Exception as e:
@@ -537,7 +572,7 @@ async def descargar_epub_pendiente(
         return
 
     # Verificar cuota nuevamente
-    if not can_download(uid):
+    if not await can_download(uid):
         await bot.send_message(
             chat_id=destino,
             text="🚫 Límite de descargas alcanzado.",
@@ -578,6 +613,28 @@ async def descargar_epub_pendiente(
         if slug:
             caption += f"\n#{slug}"
 
+        # Lógica de auto-borrado para admins en grupos
+        delete_seconds = 0
+        if is_group and is_privileged and str(destino) == str(update.effective_chat.id):
+            from services.settings_service import get_setting
+
+            try:
+                # Default 2 minutos (120s) si no está seteado. 0 = no borrar.
+                delete_minutes_str = get_setting("auto_delete_time", "2")
+                delete_minutes = int(delete_minutes_str)
+                logger.debug(
+                    f"Auto-delete check: group={is_group}, priv={is_privileged}, min={delete_minutes}"
+                )
+                if delete_minutes > 0:
+                    delete_seconds = delete_minutes * 60
+                    caption += f"\n\n🗑️ <i>Se borrará en {delete_minutes} min</i>"
+            except Exception as e:
+                logger.error(f"Error reading auto_delete_time: {e}")
+        else:
+            logger.debug(
+                f"Skipping auto-delete: group={is_group}, priv={is_privileged}"
+            )
+
         sent_doc = await send_doc_bytes(
             bot,
             destino,
@@ -589,12 +646,25 @@ async def descargar_epub_pendiente(
         )
 
         if sent_doc:
+            # Programar auto-borrado si corresponde
+            if delete_seconds > 0:
+                if job_queue:
+                    job_queue.run_once(
+                        lambda ctx: ctx.bot.delete_message(
+                            chat_id=destino, message_id=sent_doc.message_id
+                        ),
+                        when=delete_seconds,
+                    )
+                else:
+                    logger.warning("Auto-delete skipped: No job_queue available")
+
             # Log to history
             from services.history_service import log_published_book
+
             # file_info construction
             file_info = {
                 "file_size": sent_doc.document.file_size,
-                "file_unique_id": sent_doc.document.file_unique_id
+                "file_unique_id": sent_doc.document.file_unique_id,
             }
             # Run in background or await? It's sync db op, maybe run in thread or make it async?
             # The service uses sqlalchemy sync engine. Better to run in thread if possible, or just call it if it's fast.
@@ -604,14 +674,14 @@ async def descargar_epub_pendiente(
                     meta=meta,
                     message_id=sent_doc.message_id,
                     channel_id=sent_doc.chat.id,
-                    file_info=file_info
+                    file_info=file_info,
                 )
             except Exception as e:
                 logger.error(f"Failed to log book history: {e}")
 
         # Registrar descarga
         record_download(uid)
-        restantes = downloads_left(uid)
+        restantes = await downloads_left(uid)
 
         # Mostrar descargas restantes (excepto Premium)
         if restantes != "ilimitadas":
@@ -674,7 +744,7 @@ async def enviar_libro_directo(
     """
     try:
         # 1. Verificar límite
-        if not can_download(user_id):
+        if not await can_download(user_id):
             await bot.send_message(
                 chat_id=user_id, text="🚫 Has alcanzado tu límite de descargas por hoy."
             )
@@ -699,8 +769,10 @@ async def enviar_libro_directo(
                 text=error_msg,
             )
             return False
-        
-        logger.info(f"EPUB descargado exitosamente: {len(epub_bytes) if isinstance(epub_bytes, bytes) else 'archivo temp'} bytes")
+
+        logger.info(
+            f"EPUB descargado exitosamente: {len(epub_bytes) if isinstance(epub_bytes, bytes) else 'archivo temp'} bytes"
+        )
 
         # 4. Parsear metadatos del EPUB
         meta = {
@@ -713,7 +785,9 @@ async def enviar_libro_directo(
 
         logger.debug(f"Iniciando extracción de metadatos para: {title}")
         meta = await enrich_metadata_from_epub(epub_bytes, download_url, meta)
-        logger.debug(f"Metadatos extraídos - titulo_serie: {meta.get('titulo_serie')}, internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}")
+        logger.debug(
+            f"Metadatos extraídos - titulo_serie: {meta.get('titulo_serie')}, internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}"
+        )
 
         # 5. Preparar Portada
         cover_bytes = extract_cover_from_epub(epub_bytes)
@@ -925,23 +999,26 @@ async def enviar_libro_directo(
             # Registrar en historial
             if sent_doc:
                 from services.history_service import log_published_book
+
                 file_info = {
                     "file_size": sent_doc.document.file_size,
-                    "file_unique_id": sent_doc.document.file_unique_id
+                    "file_unique_id": sent_doc.document.file_unique_id,
                 }
                 try:
                     log_published_book(
                         meta=meta,
                         message_id=sent_doc.message_id,
                         channel_id=sent_doc.chat.id,
-                        file_info=file_info
+                        file_info=file_info,
                     )
                 except Exception as e:
-                    logger.error(f"Failed to log book history in enviar_libro_directo: {e}")
+                    logger.error(
+                        f"Failed to log book history in enviar_libro_directo: {e}"
+                    )
 
             # 8. Registrar descarga y notificar
             record_download(user_id)
-            restantes = downloads_left(user_id)
+            restantes = await downloads_left(user_id)
             if restantes != "ilimitadas":
                 await bot.send_message(
                     chat_id=user_id,
@@ -971,6 +1048,9 @@ async def enviar_libro_directo(
 async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid: int):
     """Genera vista previa del post de Facebook."""
     bot = context.bot
+
+    from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
 
     # Recuperar datos del estado
@@ -1105,6 +1185,9 @@ async def _publish_choice_facebook(
 ):
     """Flow when a publisher chooses to publish on Facebook: send cover alone then prepare preview."""
     bot = context.bot
+
+    from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
 
     # Clear awaiting flag (we're handling the choice now)
@@ -1208,6 +1291,9 @@ async def _publish_choice_telegram(
 ):
     """Continue publish flow for Telegram: send portada, sinopsis, info and buttons (omit FB post option)."""
     bot = context.bot
+
+    from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
     st.pop("awaiting_publish_target", None)
     logger.debug(
@@ -1382,6 +1468,9 @@ async def publicar_facebook_action(
 ):
     """Publica el post en Facebook."""
     bot = context.bot
+
+    from core.state_manager import state_manager
+
     user_state = state_manager.get_user_state(uid)
 
     # Validar credenciales antes de proceder

@@ -53,6 +53,9 @@ def extract_internal_title(data_or_path: Union[bytes, str]) -> Optional[str]:
             try:
                 content = zf.read(name).decode("utf-8", errors="ignore")
 
+                # Remove HTML comments first to avoid matching commented-out tags
+                content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
+
                 # 1. Intentar fulltitle
                 match = fulltitle_pattern.search(content)
                 if match:
@@ -75,6 +78,8 @@ def extract_internal_title(data_or_path: Union[bytes, str]) -> Optional[str]:
                     # Si no hay sub-tags claros, limpiar HTML (reemplazando br con espacio)
                     clean = re.sub(r"<br\s*/?>", " ", inner_html, flags=re.IGNORECASE)
                     clean = re.sub(r"<[^>]+>", "", clean).strip()
+                    clean = clean.replace("-->", "").strip()
+                    clean = " ".join(clean.split())
                     if clean:
                         return clean
 
@@ -458,7 +463,7 @@ async def enrich_metadata_from_epub(
 
     logger = logging.getLogger(__name__)
     meta = existing_meta.copy() if existing_meta else {}
-    
+
     logger.debug(f"Starting metadata enrichment for URL: {epub_url}")
 
     try:
@@ -466,7 +471,9 @@ async def enrich_metadata_from_epub(
         logger.debug("Attempting to parse OPF metadata...")
         opf_meta = await parse_opf_from_epub(epub_bytes)
         if opf_meta:
-            logger.debug(f"OPF metadata extracted successfully: titulo_volumen={opf_meta.get('titulo_volumen')}, titulo_serie={opf_meta.get('titulo_serie')}")
+            logger.debug(
+                f"OPF metadata extracted successfully: titulo_volumen={opf_meta.get('titulo_volumen')}, titulo_serie={opf_meta.get('titulo_serie')}"
+            )
             # Merge OPF metadata, preserving existing autores if present
             if opf_meta.get("autores"):
                 meta["autores"] = opf_meta["autores"]
@@ -493,7 +500,9 @@ async def enrich_metadata_from_epub(
                 if opf_meta.get(key):
                     meta[key] = opf_meta[key]
         else:
-            logger.warning("OPF metadata parsing returned None - no metadata extracted from OPF")
+            logger.warning(
+                "OPF metadata parsing returned None - no metadata extracted from OPF"
+            )
     except Exception as e:
         logger.error(f"enrich_metadata_from_epub: OPF parse failed: {e}", exc_info=True)
 
@@ -508,7 +517,8 @@ async def enrich_metadata_from_epub(
             logger.debug("No internal title found in EPUB")
     except Exception as e:
         logger.error(
-            f"enrich_metadata_from_epub: internal title extraction failed: {e}", exc_info=True
+            f"enrich_metadata_from_epub: internal title extraction failed: {e}",
+            exc_info=True,
         )
 
     # Extract filename title from URL
@@ -519,7 +529,9 @@ async def enrich_metadata_from_epub(
         meta["filename_title"] = filename_title
         logger.debug(f"Filename title extracted: {filename_title}")
     except Exception as e:
-        logger.error(f"enrich_metadata_from_epub: filename extraction failed: {e}", exc_info=True)
+        logger.error(
+            f"enrich_metadata_from_epub: filename extraction failed: {e}", exc_info=True
+        )
 
     # Extract publisher URL from HTML (prioritized over OPF)
     try:
@@ -533,7 +545,7 @@ async def enrich_metadata_from_epub(
         logger.debug(
             f"enrich_metadata_from_epub: HTML publisher URL extraction failed: {e}"
         )
-    
+
     logger.info(f"Metadata enrichment completed. Keys present: {list(meta.keys())}")
     return meta
 

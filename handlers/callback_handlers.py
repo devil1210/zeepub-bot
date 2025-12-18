@@ -4,7 +4,9 @@ import re
 import uuid
 import logging
 from urllib.parse import unquote, urlparse
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+import html
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, CallbackQueryHandler, MessageHandler, filters
 from core.state_manager import state_manager
 from services.opds_service import mostrar_colecciones, buscar_zeepubs_directo
@@ -30,7 +32,12 @@ async def set_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if destino == "aqui" or destino in ("@ZeePubBotTest", "@ZeePubs"):
         st["destino"] = update.effective_chat.id if destino == "aqui" else destino
         st["titulo"] = "📚 Categorías"
-        await query.answer("✅ Destino seleccionado")
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_text = "✅ Destino seleccionado"
+        text = base_text
+        if cms and cms.enabled:
+            text = await cms.get_text("destination_selected")
+        await query.answer(text)
 
         # Si no es admin, ir directamente a ZeePubs [ES]
         if uid not in config.ADMIN_USERS:
@@ -92,10 +99,21 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("🔍 Escribe parte del título del EPUB:")
     else:
         # Bot NO es admin: solo recibe comandos
-        await query.edit_message_text(
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+        base_instr = (
             "🔍 Para buscar, usa el comando:\n\n"
             "<code>/search término de búsqueda</code>\n\n"
-            "Ejemplo: <code>/search harry potter</code>",
+            "Ejemplo: <code>/search harry potter</code>"
+        )
+        text_instr = base_instr
+        if cms and cms.enabled:
+            text_instr = await cms.get_text(
+                "search_instructions_legacy"
+            )
+
+        await query.edit_message_text(
+            text_instr,
             parse_mode="HTML",
         )
 
@@ -125,7 +143,24 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pass
     data = query.data
     uid = update.effective_user.id
+
+    # Skip callbacks handled by plugins
+    plugin_prefixes = ("setlog|", "help|", "close")
+    if data and any(data.startswith(prefix) for prefix in plugin_prefixes):
+        return
+
     st = state_manager.get_user_state(uid)
+
+    # Check ban status
+    from services.user_service import get_effective_user
+    user_info = await get_effective_user(uid)
+    if user_info.get("role") == "banned":
+        expires_at = user_info.get("expires_at")
+        msg = "⛔ Estás <b>baneado</b> del bot."
+        if expires_at:
+            msg += f" Hasta: <b>{expires_at.strftime('%Y-%m-%d %H:%M')}</b>"
+        await query.answer(msg.replace("<b>", "").replace("</b>", ""), show_alert=True)
+        return
 
     # Selección de colección
     if data.startswith("col|"):
@@ -287,7 +322,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Continue publishing using stored pending data
             pending = st.get("pending_pub_book")
             if not pending:
-                await query.answer("No hay publicación pendiente.")
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_text = "No hay publicación pendiente."
+                text = base_text
+                if cms and cms.enabled:
+                    text = await cms.get_text("no_pending_publication")
+                await query.answer(text)
             else:
                 # use the module-level publicar_libro imported at top
                 # Clear pending flag then call publicar_libro to proceed
@@ -324,7 +364,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         _, choice = data.split("|", 1)
         if choice not in ("telegram", "facebook", "none"):
             try:
-                await query.answer("Opción inválida")
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_text = "Opción inválida"
+                text = base_text
+                if cms and cms.enabled:
+                    text = await cms.get_text("invalid_option")
+                await query.answer(text)
             except Exception:
                 pass
             return
@@ -458,7 +503,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             st["url"] = nav_url
             await mostrar_colecciones(update, context, nav_url, from_collection=False)
         else:
-            await query.answer("🚫 No hay más páginas")
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_text = "🚫 No hay más páginas"
+            text = base_text
+            if cms and cms.enabled:
+                text = await cms.get_text("no_more_pages")
+            await query.answer(text)
         return
 
     # Volver a categorías raíz
@@ -521,7 +571,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Cerrar menú
     if data == "cerrar":
-        await query.edit_message_text("👋 Gracias por usar el bot.")
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+        base_closing = "👋 Gracias por usar el bot."
+        text_closing = base_closing
+        if cms and cms.enabled:
+            text_closing = await cms.get_text("bot_closing")
+
+        await query.edit_message_text(text_closing)
         return
 
     # Descargar EPUB pendiente
@@ -532,7 +589,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.debug("Could not answer callback for descargar_epub: %s", e)
         from services.telegram_service import descargar_epub_pendiente
 
-        await descargar_epub_pendiente(update, context, uid)
+        await descargar_epub_pendiente(
+            update, context, uid, job_queue=context.job_queue
+        )
         return
 
     # Facebook handlers
@@ -567,10 +626,358 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await query.edit_message_text(text=query.message.text)
                 except Exception:
                     pass
-            await query.answer("🗑️ Descartado")
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_text = "🗑️ Descartado"
+            text = base_text
+            if cms and cms.enabled:
+                text = await cms.get_text("fb_preview_discarded")
+            await query.answer(text)
         except Exception as e:
             logger.debug("Could not discard FB preview buttons: %s", e)
         return
+
+    # Handler: Cancelar Donación
+    if data.startswith("cancelar_donacion|"):
+        await cancelar_donacion(update, context)
+        return
+
+    # Handler: Notificar Donación (con protección de usuario)
+    if data.startswith("notificar_donacion") or data == "notificar_donacion":
+        try:
+            # Compatibilidad con formato antiguo sin UID (si existe alguno)
+            target_uid = None
+            if "|" in data:
+                try:
+                    target_uid = int(data.split("|")[1])
+                except (ValueError, IndexError):
+                    pass
+
+            # Verificar usuario si hay target_uid
+            clicker_uid = update.effective_user.id
+            if target_uid and clicker_uid != target_uid:
+                try:
+                    cms = context.application.plugin_manager.get_plugin("custom_messages")
+                    base_text = "⚠️ Este botón no es para ti."
+                    text = base_text
+                    if cms and cms.enabled:
+                        text = await cms.get_text("button_unauthorized")
+                    await query.answer(text, show_alert=True)
+                except Exception:
+                    pass
+                return
+
+            # 1. Establecer estado esperando comprobante (globalmente para que funcione al ir al privado)
+            # Usamos target_uid si existe, o el clicker si no (para fallback)
+            user_to_update = target_uid if target_uid else clicker_uid
+            st = state_manager.get_user_state(user_to_update)
+            st["waiting_for_donation_proof"] = True
+
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+            # Intentar borrar el mensaje original
+            try:
+                await query.message.delete()
+            except Exception:
+                pass
+
+            # 2. Verificar si es chat privado
+            if update.effective_chat.type != "private":
+                try:
+                    bot_username = context.bot.username
+                    if not bot_username:
+                        try:
+                            me = await context.bot.get_me()
+                            bot_username = me.username
+                        except Exception as e:
+                            logger.warning(f"Could not get bot username for URL button: {e}")
+
+                    # URL simple sin parámetros (no muestra /start en el chat)
+                    url_button = f"https://t.me/{bot_username}" if bot_username else "https://t.me/ZeePubBot"
+
+                    keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", url=url_button)]]
+
+                    # Obtener mensaje desde template
+                    base_redirect = f"👋 Hola {update.effective_user.mention_html()},\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo."
+                    text_redirect = base_redirect
+                    if cms and cms.enabled:
+                        text_redirect = await cms.get_text("donation_redirect_prompt", Nombre=update.effective_user.mention_html())
+
+                    base_text = "✅ Solicitud registrada."
+                    text_answer = base_text
+                    if cms and cms.enabled:
+                        text_answer = await cms.get_text("donation_request_registered")
+                    await query.answer(text_answer)
+                    prompt_msg = await context.bot.send_message(
+                        chat_id=update.effective_chat.id,
+                        text=text_redirect,
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode="HTML",
+                        message_thread_id=update.effective_message.message_thread_id if update.effective_message.is_topic_message else None
+                    )
+
+                    # Enviar instrucciones proactivamente al chat privado
+                    base_request = (
+                        "🧾 <b>Comprobante Requerido</b>\n\n"
+                        "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
+                        "Lo revisaremos para actualizar tu nivel."
+                    )
+                    text_request = base_request
+                    if cms and cms.enabled:
+                        text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+
+                    try:
+                        await context.bot.send_message(
+                            chat_id=user_to_update,
+                            text=text_request,
+                            parse_mode="HTML"
+                        )
+                    except Exception as e:
+                        logger.warning(f"No se pudo enviar mensaje al privado: {e}")
+
+                    # Programar auto-borrado en 2 minutos (120s)
+                    if context.job_queue:
+                        context.job_queue.run_once(
+                            delete_message_job,
+                            120,
+                            data={"chat_id": update.effective_chat.id, "message_id": prompt_msg.message_id},
+                            name=f"del_donation_prompt_{prompt_msg.message_id}"
+                        )
+
+                except Exception as e:
+                    logger.error(f"Error answering query in group: {e}")
+                return
+
+            # 3. Es chat privado
+            # Timeout de 10 minutos (definido por el usuario)
+            timeout_min = 10
+            
+            # Botones: Cancelar
+            keyboard = [[InlineKeyboardButton("❌ Cancelar Registro", callback_data=f"cancelar_donacion|{user_to_update}")]]
+
+            base_request = (
+                "🧾 <b>Comprobante Requerido</b>\n\n"
+                "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
+                "Lo revisaremos para actualizar tu nivel.\n\n"
+                f"⏳ Tienes <b>{timeout_min} minutos</b> para enviar el comprobante."
+            )
+            text_request = base_request
+            if cms and cms.enabled:
+                text_request = await cms.get_text("donation_proof_request", Tiempo=timeout_min)
+
+            await query.answer()
+            prompt_msg = await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=text_request,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode="HTML"
+            )
+
+            # Programar timeout
+            if context.job_queue:
+                job_name = f"donation_timeout_{user_to_update}_{prompt_msg.message_id}"
+                st["donation_timeout_job_name"] = job_name
+                context.job_queue.run_once(
+                    donation_timeout_job,
+                    timeout_min * 60,
+                    data={
+                        "uid": user_to_update,
+                        "msg_id": prompt_msg.message_id,
+                        "user": update.effective_user
+                    },
+                    name=job_name
+                )
+
+        except Exception as e:
+            logger.error(f"Error handling notificar_donacion: {e}", exc_info=True)
+            try:
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_text = "❌ Ocurrió un error al procesar tu solicitud."
+                text = base_text
+                if cms and cms.enabled:
+                    text = await cms.get_text("request_processing_error")
+                await query.answer(text, show_alert=True)
+            except Exception:
+                pass
+        return
+
+    # Handler: Cerrar Donación (con protección de usuario)
+    if data.startswith("cerrar_donacion|"):
+        try:
+            target_uid = int(data.split("|")[1])
+            clicker_uid = update.effective_user.id
+            if clicker_uid != target_uid:
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_text = "⚠️ Este botón no es para ti."
+                text = base_text
+                if cms and cms.enabled:
+                    text = await cms.get_text("button_unauthorized")
+                await query.answer(text, show_alert=True)
+                return
+            await query.message.delete()
+        except Exception:
+            pass
+        return
+
+    # Nuevo Handler: Ir Privado
+    if data.startswith("ir_privado|"):
+        try:
+            target_uid = int(data.split("|")[1])
+            clicker_uid = update.effective_user.id
+
+            if clicker_uid != target_uid:
+                try:
+                    cms = context.application.plugin_manager.get_plugin("custom_messages")
+                    base_text = "⚠️ Este botón no es para ti."
+                    text = base_text
+                    if cms and cms.enabled:
+                        text = await cms.get_text("button_unauthorized")
+                    await query.answer(text, show_alert=True)
+                except Exception:
+                    pass
+                return
+
+            # Es el usuario correcto
+            try:
+                await query.message.delete()
+            except Exception:
+                pass
+
+            # Redirigir al privado Y enviar instrucciones
+            bot_username = context.bot.username
+            if not bot_username:
+                try:
+                    me = await context.bot.get_me()
+                    bot_username = me.username
+                except Exception as e:
+                    logger.warning(f"Could not get bot username for redirect: {e}")
+
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+            # Obtener texto de instrucciones
+            base_request = (
+                "🧾 <b>Comprobante Requerido</b>\n\n"
+                "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación aquí.\n"
+                "Lo revisaremos para actualizar tu nivel."
+            )
+            text_request = base_request
+            if cms and cms.enabled:
+                text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+
+            try:
+                await context.bot.send_message(chat_id=target_uid, text=text_request, parse_mode="HTML")
+            except Exception as e:
+                logger.warning(f"No se pudo enviar mensaje al privado (usuario no ha iniciado bot?): {e}")
+
+            if bot_username:
+                # Sanitizar username
+                bot_username = bot_username.replace("@", "")
+                # Usar protocolo nativo para asegurar que abra la app
+                redirect_url = f"tg://resolve?domain={bot_username}&start=donation_proof"
+                logger.info(f"Redirecting ir_privado to: {redirect_url}")
+                await query.answer(url=redirect_url)
+            else:
+                logger.warning("No bot_username found, cannot redirect.")
+                await query.answer()  # Fallback
+
+        except Exception as e:
+            logger.error(f"Error handling ir_privado: {e}")
+        return
+
+
+async def delete_message_job(context: ContextTypes.DEFAULT_TYPE):
+    """Job que borra un mensaje."""
+    job = context.job
+    data = job.data
+    try:
+        await context.bot.delete_message(
+            chat_id=data["chat_id"], message_id=data["message_id"]
+        )
+    except Exception as e:
+        logger.debug(f"Error deleting message in job: {e}")
+
+
+async def donation_timeout_job(context: ContextTypes.DEFAULT_TYPE):
+    """Job que cancela el registro de donación por inactividad."""
+    job = context.job
+    uid = job.data["uid"]
+    st = state_manager.get_user_state(uid)
+
+    if not st.get("waiting_for_donation_proof"):
+        return
+
+    # Limpiar estado
+    st.pop("waiting_for_donation_proof", None)
+    st.pop("donation_timeout_job_name", None)
+
+    # Notificar al usuario
+    cms = context.application.plugin_manager.get_plugin("custom_messages")
+    user = job.data.get("user")
+
+    base_text = "⚠️ <b>Registro de Donación Cancelado</b>\n\nEl tiempo de espera ha expirado."
+    text = base_text
+    if cms and cms.enabled:
+        text = await cms.get_text("donation_cancelled_timeout", user=user)
+
+    try:
+        await context.bot.send_message(chat_id=uid, text=text, parse_mode="HTML")
+    except Exception as e:
+        logger.warning(f"No se pudo notificar timeout de donación a {uid}: {e}")
+
+    # Borrar el mensaje de solicitud si se envió
+    msg_id = job.data.get("msg_id")
+    if msg_id:
+        try:
+            await context.bot.delete_message(chat_id=uid, message_id=msg_id)
+        except Exception:
+            pass
+
+
+async def cancelar_donacion(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler para el botón 'Cancelar Registro' de donación."""
+    query = update.callback_query
+    uid = update.effective_user.id
+    st = state_manager.get_user_state(uid)
+
+    # Verificar si el botón es del usuario dueño
+    try:
+        target_uid = int(query.data.split("|")[1])
+        if uid != target_uid:
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_text = "⚠️ Este botón no es para ti."
+            text = base_text
+            if cms and cms.enabled:
+                text = await cms.get_text("button_unauthorized")
+            await query.answer(text, show_alert=True)
+            return
+    except (ValueError, IndexError):
+        pass
+
+    # Limpiar estado
+    st.pop("waiting_for_donation_proof", None)
+
+    # Cancelar job de timeout si existe
+    job_name = st.pop("donation_timeout_job_name", None)
+    if job_name and context.job_queue:
+        jobs = context.job_queue.get_jobs_by_name(job_name)
+        for job in jobs:
+            job.schedule_removal()
+
+    # Notificar y borrar mensaje
+    cms = context.application.plugin_manager.get_plugin("custom_messages")
+    base_text = "✅ <b>Registro Cancelado</b>\n\nEl registro de tu donación ha sido cancelado."
+    text = base_text
+    if cms and cms.enabled:
+        text = await cms.get_text("donation_cancelled_user", user=update.effective_user)
+
+    try:
+        await query.answer("Registro cancelado.")
+        await query.edit_message_text(text, parse_mode="HTML")
+    except Exception:
+        try:
+            await context.bot.send_message(chat_id=uid, text=text, parse_mode="HTML")
+            await query.message.delete()
+        except Exception:
+            pass
 
 
 def register_handlers(app):
@@ -580,7 +987,7 @@ def register_handlers(app):
     app.add_handler(
         CallbackQueryHandler(
             button_handler,
-            pattern="^(col\\||lib\\||nav\\||subir_nivel|volver_colecciones|volver_ultima|cerrar|descargar_epub|preparar_post_fb|publicar_fb|descartar_fb|publish_target\\||set_publish_temp\\|)",
+            pattern="^(col\\||lib\\||nav\\||subir_nivel|volver_colecciones|volver_ultima|cerrar|cerrar_donacion\\||cancelar_donacion\\||descargar_epub|preparar_post_fb|publicar_fb|descartar_fb|publish_target\\||set_publish_temp\\||notificar_donacion|ir_privado\\|)",
         )
     )
     # Texto libre handlers

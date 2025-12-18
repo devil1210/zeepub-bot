@@ -181,6 +181,7 @@ def generar_slug_from_meta(meta: dict) -> str:
     base_titulo = titulo_serie.split(":", 1)[0].strip()
     base_titulo = re.sub(r"\[.*?\]", "", base_titulo)
     base_titulo = base_titulo.split("-", 1)[0].strip()
+    base_titulo = base_titulo.replace("×", "x")
     base_titulo = base_titulo.replace(",", " ")
     for ch in (
         "'",
@@ -200,6 +201,7 @@ def generar_slug_from_meta(meta: dict) -> str:
         "？",
         "！",
         "；",
+        "?",
         "-",
         "_",
     ):
@@ -454,3 +456,49 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
         return False, msg
 
     return True, ""
+
+
+CURRENT_VERSION = "3.12.0"
+
+
+def get_current_version() -> str:
+    return CURRENT_VERSION
+
+
+def get_commit_hash() -> str:
+    try:
+        import os
+
+        if os.path.exists("version_hash.txt"):
+            with open("version_hash.txt", "r") as f:
+                return f.read().strip()[:7]
+    except Exception:
+        pass
+    return "unknown"
+
+
+def get_version_string() -> str:
+    v = get_current_version()
+    h = get_commit_hash()
+    if h and h != "unknown":
+        return f"{v} ({h})"
+    return v
+
+
+def get_last_commit_message() -> str:
+    """Obtiene el mensaje del último commit."""
+    try:
+        import subprocess
+
+        # git log -1 --pretty=%B
+        result = subprocess.run(
+            ["git", "log", "-1", "--pretty=%B"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return "Actualización desconocida"

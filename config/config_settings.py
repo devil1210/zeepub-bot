@@ -12,7 +12,7 @@ load_dotenv()
 
 @dataclass
 class BotConfig:
-    TELEGRAM_TOKEN: str = os.getenv("TELEGRAM_TOKEN", "")
+    TELEGRAM_TOKEN: str = field(default_factory=lambda: os.getenv("TELEGRAM_TOKEN", ""))
 
     # Dominio público (ej: zp-dev.sp-core.xyz o zeepub-bot.sp-core.xyz)
     PUBLIC_DOMAIN: str = os.getenv("PUBLIC_DOMAIN", "")
@@ -80,6 +80,12 @@ class BotConfig:
     # Domain for public downloads
     DL_DOMAIN: str = os.getenv("DL_DOMAIN", "dl.zeepubs.com")
 
+    # ZITADEL Actions v2 - Signing Key para validación de webhooks
+    ZITADEL_SIGNING_KEY: str = os.getenv("ZITADEL_SIGNING_KEY", "")
+
+    # Donation URL
+    DONATION_URL: str = os.getenv("DONATION_URL", "")
+
     # Límites por hora
     MAX_DOWNLOADS_PER_DAY: int = int(os.getenv("MAX_DOWNLOADS_PER_DAY", "5"))
     WHITELIST_DOWNLOADS_PER_DAY: int = int(
@@ -94,11 +100,54 @@ class BotConfig:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
     ENABLE_PLUGINS: bool = os.getenv("ENABLE_PLUGINS", "true").lower() == "true"
     PLUGIN_DIRECTORY: str = os.getenv("PLUGIN_DIRECTORY", "plugins")
+
+    # Plugin PostgreSQL
+    ENABLE_POSTGRES_PLUGIN: bool = (
+        os.getenv("ENABLE_POSTGRES_PLUGIN", "False").lower() == "true"
+    )
+
+    # Plugin Group Manager
+    ENABLE_GROUP_MANAGER: bool = (
+        os.getenv("ENABLE_GROUP_MANAGER", "True").lower() == "true"
+    )
+
+    # Plugin System Manager
+    ENABLE_SYSTEM_MANAGER: bool = (
+        os.getenv("ENABLE_SYSTEM_MANAGER", "True").lower() == "true"
+    )
+
+    # Plugin User Manager
+    ENABLE_USER_MANAGER: bool = (
+        os.getenv("ENABLE_USER_MANAGER", "True").lower() == "true"
+    )
+
+    # Plugin Stats
+    ENABLE_STATS_PLUGIN: bool = (
+        os.getenv("ENABLE_STATS_PLUGIN", "True").lower() == "true"
+    )
+
+    # Plugin Help
+    ENABLE_HELP_PLUGIN: bool = os.getenv("ENABLE_HELP_PLUGIN", "True").lower() == "true"
+
     # Ruta para la base de datos de URL acortadas (puede ser absoluta o relativa).
     URL_CACHE_DB_PATH: str = os.getenv("URL_CACHE_DB_PATH", "data/url_cache.db")
-    # Optional SQLAlchemy URL for external DB (Postgres, MySQL etc.). If provided
-    # url_cache will prefer this over the local SQLite file.
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+
+    # Metrics Configuration
+    METRICS_PORT: int = int(os.getenv("METRICS_PORT", "9090"))
+    ENABLE_METRICS: bool = os.getenv("ENABLE_METRICS", "true").lower() == "true"
+
+    # Optional SQLAlchemy URL.
+    # Solo se carga si el plugin está habilitado explícitamente.
+    # Esto asegura que SQLite sea el default incluso si DATABASE_URL existe en el entorno.
+    DATABASE_URL: str = field(init=False)
+
+    def __post_init__(self):
+        # Lógica de inicialización post-construcción para campos dependientes
+        raw_db_url = os.getenv("DATABASE_URL", "")
+        if self.ENABLE_POSTGRES_PLUGIN and raw_db_url:
+            self.DATABASE_URL = raw_db_url
+        else:
+            self.DATABASE_URL = ""
 
     @property
     def OPDS_ROOT_START(self) -> str:
@@ -133,6 +182,8 @@ class BotConfig:
             errors.append("OPDS_ROOT_EVIL")
         if not self.SECRET_SEED:
             errors.append("SECRET_SEED")
+        if not self.DONATION_URL:
+            errors.append("DONATION_URL")
         return (len(errors) == 0, errors)
 
     def get_six_hour_password(self) -> str:

@@ -2,15 +2,19 @@
 
 import logging
 import os
+import html
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ParseMode
 from datetime import datetime, timedelta
 from telegram.ext import ContextTypes, CommandHandler
 from core.state_manager import state_manager
 from utils.download_limiter import downloads_left, record_download, can_download
-from services.opds_service import mostrar_colecciones
+from services.opds_service import mostrar_colecciones, get_cached_feed
 from config.config_settings import config
 from utils.helpers import get_thread_id, is_command_for_bot, build_search_url
-from utils.http_client import parse_feed_from_url
+
+# from utils.http_client import parse_feed_from_url  <-- Removing this
+from utils.decorators import rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -18,51 +22,59 @@ logger = logging.getLogger(__name__)
 class CommandHandlers:
     def __init__(self, app):
         self.app = app
+        from services.settings_service import SettingsService
+
+        self.settings_service = SettingsService()
+
         # Registrar handlers existentes
         app.add_handler(CommandHandler("search", self.search))
         app.add_handler(CommandHandler("start", self.start))
-        app.add_handler(CommandHandler("help", self.help))
+
         app.add_handler(CommandHandler("status", self.status))
         app.add_handler(CommandHandler("cancel", self.cancel))
         app.add_handler(CommandHandler("plugins", self.plugins))
         app.add_handler(CommandHandler("evil", self.evil))
-        # Registrar /reset
-        app.add_handler(CommandHandler("reset", self.reset_command))
-        # Registrar /purge_link (admin only)
-        app.add_handler(CommandHandler("purge_link", self.purge_link))
-        # Registrar /status_links
-        app.add_handler(CommandHandler("status_links", self.status_links))
-        # Registrar /link_list
-        app.add_handler(CommandHandler("link_list", self.link_list))
-        # Debug helper for publishers/admins to inspect their state
-        app.add_handler(CommandHandler("debug_state", self.debug_state))
-        # Registrar /backup_db y /restore_db (publishers only)
-        app.add_handler(CommandHandler("backup_db", self.backup_db))
-        app.add_handler(CommandHandler("restore_db", self.restore_db))
-        # Registrar /export_db (publishers only)
-        app.add_handler(CommandHandler("export_db", self.export_db))
-        # Registrar /import_history (admin only)
-        app.add_handler(CommandHandler("import_history", self.import_history))
-        app.add_handler(CommandHandler("latest_books", self.latest_books))
-        app.add_handler(CommandHandler("clear_history", self.clear_history))
-        app.add_handler(CommandHandler("export_history", self.export_history))
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
 
         uid = update.effective_user.id
-        left = downloads_left(uid)
-        text = (
-            "👋 ¡Hola! Comencemos.\n\n✅ Tienes descargas ilimitadas."
-            if left == "ilimitadas"
-            else f"👋 ¡Hola! Comencemos.\n\n⚡️ Te quedan {left} descargas hoy."
-        )
+        left = await downloads_left(uid)
+
+        first_name = update.effective_user.first_name
+
+        # Template System
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+        # Ya no usamos deep links con parámetros - el estado se maneja proactivamente
+
+        if left == "ilimitadas":
+            text = (
+                await cms.get_text("start_welcome_unlimited", Nombre=update.effective_user.mention_html())
+                if (cms and cms.enabled)
+                else "👋 ¡Hola {first_name}! Comencemos.\n\n✅ Tienes descargas ilimitadas.".replace(
+                    "{first_name}", first_name
+                )
+            )
+        else:
+            text = (
+                await cms.get_text(
+                    "start_welcome_limited",
+                    Nombre=update.effective_user.mention_html(),
+                    Descargas=left,
+                )
+                if (cms and cms.enabled)
+                else f"👋 ¡Hola {first_name}! Comencemos.\n\n⚡️ Te quedan {left} descargas hoy."
+            )
 
         # Capturar message_thread_id para soporte de topics
         thread_id = get_thread_id(update)
 
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text=text, message_thread_id=thread_id
+            chat_id=update.effective_chat.id,
+            text=text,
+            message_thread_id=thread_id,
+            parse_mode=ParseMode.HTML,
         )
 
         st = state_manager.get_user_state(uid)
@@ -82,7 +94,23 @@ class CommandHandlers:
         # Publishers (ephemeral choice for next book). Admin-only users (not publishers)
         # will be handled separately (go directly to Evil). For users that are both
         # admin+publisher we still show the ephemeral choice here.
-        if uid in config.FACEBOOK_PUBLISHERS:
+        # Helper: Determine if user is a Publisher
+        # Logic: Nivel Staff AND Rol Publicador
+        from services.user_service import get_effective_user
+        user_data_start = await get_effective_user(uid)
+        role_start = user_data_start.get("role", "free")
+        custom_status_start = user_data_start.get("custom_status")
+
+        is_publisher = (role_start == "staff" and custom_status_start == "Publicador")
+
+        # Legacy fallback or Override: Check config list too?
+        # User said "para esta nueva combinacion es...", implying strict definition.
+        # But let's keep config list as "Super Publishers" just in case, or stick to strict req.
+        # Sticking to strict requirement per user instruction.
+        # Publishers (ephemeral choice for next book). Admin-only users (not publishers)
+        # will be handled separately (go directly to Evil). For users that are both
+        # admin+publisher we still show the ephemeral choice here.
+        if is_publisher:
             keyboard = [
                 [
                     InlineKeyboardButton(
@@ -119,7 +147,7 @@ class CommandHandlers:
         # choice shown above will decide whether to show the destination
         # selection (Telegram) or assume "aquí" (Facebook). If the user is an
         # admin but *not* a publisher, we show the Evil menu immediately.
-        if uid in config.ADMIN_USERS and uid not in config.FACEBOOK_PUBLISHERS:
+        if uid in config.ADMIN_USERS and not is_publisher:
             # Administradores entran directamente en el menú Evil (sin contraseña)
             if uid in config.ADMIN_USERS:
                 root = config.OPDS_ROOT_EVIL
@@ -138,11 +166,19 @@ class CommandHandlers:
                 [InlineKeyboardButton("📣 ZeePubs", callback_data="destino|@ZeePubs")],
                 [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
             ]
+
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_txt = "🔧 Modo Evil: ¿Dónde quieres publicar?"
+            text_evil = (
+                await cms.get_text("evil_mode_prompt") if (cms and cms.enabled) else base_txt
+            )
+
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text="🔧 Modo Evil: ¿Dónde quieres publicar?",
+                text=text_evil,
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 message_thread_id=thread_id,
+                parse_mode=ParseMode.HTML,
             )
             return
 
@@ -154,63 +190,8 @@ class CommandHandlers:
         st["opds_root_base"] = root
         st["historial"] = []
         st["ultima_pagina"] = root
-        await mostrar_colecciones(update, context, root, from_collection=False)
-
-    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /help: muestra ayuda dinámica según el rol del usuario."""
-        uid = update.effective_user.id
-        thread_id = get_thread_id(update)
-
-        # Comandos básicos para todos
-        commands = [
-            ("🚀 /start", "Iniciar el bot"),
-            ("ℹ️ /help", "Mostrar esta ayuda"),
-            ("📊 /status", "Ver tu estado y descargas"),
-            ("❌ /cancel", "Cancelar acción actual"),
-            ("🔍 /search", "Buscar libros"),
-        ]
-
-        # Comandos para Publishers (y Admins)
-        is_publisher = uid in config.FACEBOOK_PUBLISHERS
-        is_admin = uid in config.ADMIN_USERS
-
-        if is_publisher or is_admin:
-            commands.extend([
-                ("📤 /export_db", "Exportar mapeo de URLs a CSV"),
-                ("📈 /status_links", "Ver estado de links acortados"),
-                ("📋 /link_list", "Listar links acortados recientes"),
-                ("🗑️ /purge_link", "Eliminar un link acortado (uso: /purge_link <hash>)"),
-            ])
-
-        # Comandos exclusivos de Admin
-        if is_admin:
-            commands.extend([
-                ("📦 /backup_db", "Generar backup de la base de datos"),
-                ("♻️ /restore_db", "Restaurar base de datos desde archivo"),
-                ("📚 /import_history", "Importar historial desde archivo JSON de Telegram"),
-                ("🆕 /latest_books", "Ver últimos libros publicados\n"
-                 "   • Sin argumentos: todos los libros con su chat_id\n"
-                 "   • Con chat_id: solo libros de ese chat\n"
-                 "   Ejemplo: /latest_books -1001234567890"),
-                ("📤 /export_history", "Exportar historial a CSV"),
-                ("🗑️ /clear_history", "Borrar todo el historial (Admin)"),
-                ("🔄 /reset", "Resetear descargas de usuario (uso: /reset <id>)"),
-                ("🐞 /debug_state", "Ver estado interno de usuario"),
-            ])
-
-        # Construir mensaje
-        # Construir mensaje
-        text = "🤖 <b>Ayuda de ZeePub Bot</b>\n\nAquí tienes lo que puedo hacer por ti:\n\n"
-        for cmd, desc in commands:
-            # Escape HTML special chars in description (e.g. <hash>, <id>)
-            safe_desc = desc.replace("<", "&lt;").replace(">", "&gt;")
-            text += f"<b>{cmd}</b> - {safe_desc}\n"
-
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=text,
-            parse_mode="HTML",
-            message_thread_id=thread_id,
+        await mostrar_colecciones(
+            update, context, root, from_collection=False, new_message=True
         )
 
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -218,51 +199,121 @@ class CommandHandlers:
         uid = update.effective_user.id
         st = state_manager.get_user_state(uid)
 
-        # Determinar nivel de usuario y máximo de descargas
-        if uid in config.PREMIUM_LIST:
-            user_level = "Premium"
-            max_dl = None  # ilimitadas
-        elif uid in config.VIP_LIST:
-            user_level = "VIP"
+        # Obtener info extendida
+        from services.user_service import get_effective_user
+
+        user_data = await get_effective_user(uid)
+
+        roles_display = {
+            "admin": "Admin 🛠️",
+            "staff": "Staff 🛡️",
+            "premium": "Premium ✨",
+            "vip": "VIP ⭐️",
+            "white": "Patrocinador 🤍",
+            "free": "Lector 📚",
+        }
+
+        role_key = user_data.get("role", "free")
+        status_label = user_data.get("status_label")
+        expires_at = user_data.get("expires_at")
+
+        # Custom Status (Apodo/Label) logic
+        # Nivel = System Role (Admin, Staff, etc.)
+        # Rol = Custom Label (Maquetador, etc)
+
+        system_role_text = roles_display.get(role_key, "Lector")
+        if role_key == "banned":
+            system_role_text = "🚫 Baneado"
+
+        # Max dl logic
+        if role_key in ("admin", "staff", "premium", "banned"):
+            max_dl = None
+        elif role_key == "vip":
             max_dl = config.VIP_DOWNLOADS_PER_DAY
-        elif uid in config.WHITELIST:
-            user_level = "Patrocinador"
+        elif role_key == "white":
             max_dl = config.WHITELIST_DOWNLOADS_PER_DAY
         else:
-            user_level = "Lector"
             max_dl = config.MAX_DOWNLOADS_PER_DAY
 
         # Descargas usadas y restantes
         used = st.get("downloads_used", 0)
+
         if max_dl is None:
-            left_text = "✅ Descargas ilimitadas"
+            if role_key == "banned":
+                left_text = "⛔ Acceso denegado"
+            else:
+                left_text = "✅ Descargas ilimitadas"
         else:
             remaining = max_dl - used
-            left_text = f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día (de {max_dl})"
+            left_text = f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día (de {max_dl}) [Usadas: {used}]"
 
-        # Calcular tiempo para próximo reset (medianoche)
+        # Calcular tiempo para próximo reset
+        from datetime import datetime, timedelta
+
         now = datetime.now()
-        next_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        next_midnight = (now + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         time_left = next_midnight - now
         hours, remainder = divmod(int(time_left.total_seconds()), 3600)
         minutes, _ = divmod(remainder, 60)
 
-        # Escape user name for HTML
-        user_name = update.effective_user.first_name.replace("<", "&lt;").replace(">", "&gt;")
-
-        text = (
-            "📊 <b>Tu Estado</b>\n\n"
-            f"👤 <b>Usuario:</b> {user_name}\n"
-            f"🆔 <b>ID:</b> {uid}\n"
-            f"⭐ <b>Nivel:</b> {user_level}\n"
-            f"📉 <b>Descargas:</b> {left_text}\n"
-            f"⏳ <b>Reinicio en:</b> {hours}h {minutes}m\n"
+        user_name = update.effective_user.first_name.replace("<", "&lt;").replace(
+            ">", "&gt;"
         )
+
+        from utils.helpers import get_version_string
+
+        version = get_version_string()
+
+        if expires_at:
+            fmt = "%d/%m/%Y %H:%M" if role_key == "banned" else "%d/%m/%Y"
+            label = "Castigo hasta" if role_key == "banned" else "Vence"
+            expires_str = expires_at.strftime(fmt)
+        else:
+            expires_str = None  # Ensure it is None so {{if}} sees it as False
+
+        # Reset Time logic
+        reset_time_str = None
+        if max_dl is not None:
+            reset_time_str = f"{hours}h {minutes}m"
+
+        # Build default text structure for fallback with Conditional Syntax
+        base_text = (
+            f"🤖 <b>ZeePub Bot</b> {version}\n\n"
+            "📊 <b>Tu Estado</b>\n\n"
+            f"👤 <b>Usuario:</b> [Nombre]\n"
+            f"🆔 <b>ID:</b> [ID]\n"
+            f"⭐ <b>Nivel:</b> [Nivel]\n"
+            "{{if Expires}}📅 <b>Vence:</b> [Expires]\n{{endif}}"
+            f"📉 <b>Descargas:</b> [Descargas]\n"
+            "{{if ResetTime}}⏳ <b>Reinicio en:</b> [ResetTime]\n{{endif}}"
+        )
+
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+
+        final_text = base_text
+        if cms and cms.enabled:
+            # Pass explicit variables to override any global default logic
+            # Nivel: System Role (Staff, Admin, VIP)
+            # Rol: Custom Label (Maquetador, etc) -> Only explicit if exists, else same as Nivel/Empty?
+            # Let's fallback to system role if status_label is empty, so [Rol] isn't empty.
+            rol_val = status_label if status_label else system_role_text
+
+            final_text = await cms.get_text(
+                "status_message",
+                user=update.effective_user,
+                Nivel=system_role_text,
+                Rol=rol_val, 
+                Descargas=left_text,
+                ResetTime=reset_time_str,
+                Expires=expires_str,
+            )
 
         thread_id = get_thread_id(update)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=text,
+            text=final_text,
             parse_mode="HTML",
             message_thread_id=thread_id,
         )
@@ -294,10 +345,23 @@ class CommandHandlers:
             logger.debug("No se pudo borrar comando /cancel")
 
         thread_id = get_thread_id(update)
+
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_cancel = "✅ ¡Entendido! Operación cancelada."
+        text_cancel = (
+            await cms.get_text(
+                "cancel_confirmation",
+                user=update.effective_user,
+            )
+            if (cms and cms.enabled)
+            else base_cancel
+        )
+
         await context.bot.send_message(
             chat_id=chat_id,
-            text="✅ ¡Entendido! Operación cancelada.",
+            text=text_cancel,
             message_thread_id=thread_id,
+            parse_mode=ParseMode.HTML,
         )
 
     async def plugins(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -323,7 +387,7 @@ class CommandHandlers:
         text = "🔌 <b>Plugins activos:</b>\n\n"
         for name, info in plugins.items():
             safe_name = name.replace("<", "&lt;").replace(">", "&gt;")
-            safe_desc = info['description'].replace("<", "&lt;").replace(">", "&gt;")
+            safe_desc = info["description"].replace("<", "&lt;").replace(">", "&gt;")
             text += f"• <b>{safe_name}</b> v{info['version']} — <i>{safe_desc}</i>\n"
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text=text, parse_mode="HTML"
@@ -336,25 +400,65 @@ class CommandHandlers:
         st["opds_root"] = config.OPDS_ROOT_EVIL
         st["historial"] = []
         st["esperando_password"] = True
+        st["historial"] = []
+        st["esperando_password"] = True
         thread_id = get_thread_id(update)
+
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_pwd = "🔒 Modo Privado. Por favor, ingresa la contraseña:"
+        text_pwd = (
+            cms.get_text("evil_password_prompt") if (cms and cms.enabled) else base_pwd
+        )
+
         message = await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="🔒 Modo Privado. Por favor, ingresa la contraseña:",
+            text=text_pwd,
             message_thread_id=thread_id,
+            parse_mode=ParseMode.HTML,
         )
         st["msg_esperando_pwd"] = message.message_id
 
+    @rate_limit("search", max_requests=30, window_seconds=60)
     async def search(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /search: busca EPUB con término inline o pide uno."""
         # En grupos con múltiples bots, ignorar si el comando no es para este bot
         bot_username = context.bot.username
         if not is_command_for_bot(update, bot_username):
             return
-
+        # Check User Role
         uid = update.effective_user.id
         st = state_manager.get_user_state(uid)
         thread_id = get_thread_id(update)
         st["message_thread_id"] = thread_id  # Guardar para respuestas
+
+        # Check ban status
+        from services.user_service import get_effective_user
+
+        user_info = await get_effective_user(uid)
+        if user_info.get("role") == "banned":
+            expires_at = user_info.get("expires_at")
+
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            default_msg = "⛔ Estás <b>baneado</b> del bot."
+            if expires_at:
+                default_msg += f" Hasta: <b>{expires_at.strftime('%Y-%m-%d %H:%M')}</b>"
+
+            msg = default_msg
+            if cms and cms.enabled:
+                exp_str = (
+                    expires_at.strftime("%Y-%m-%d %H:%M")
+                    if expires_at
+                    else "Indefinido"
+                )
+                msg = cms.get_text("banned_message", Fecha=exp_str)
+
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=msg,
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+            return
 
         # Verificar si hay término de búsqueda en el comando
         if context.args:
@@ -364,7 +468,7 @@ class CommandHandlers:
 
             search_url = build_search_url(termino, uid)
             logger.debug(f"URL de búsqueda: {search_url}")
-            feed = await parse_feed_from_url(search_url)
+            feed = await get_cached_feed(search_url)
 
             if not feed or not getattr(feed, "entries", []):
                 keyboard = [
@@ -379,11 +483,24 @@ class CommandHandlers:
                         )
                     ],
                 ]
+
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_no = f"🔍 Mmm, no encontré nada para: {termino}"
+
+                safe_term = html.escape(termino)
+                text_no = base_no
+                if cms and cms.enabled:
+                    text_no = cms.get_text(
+                        "search_no_results",
+                        Termino=safe_term,
+                    )
+
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    text=f"🔍 Mmm, no encontré nada para: {termino}",
+                    text=text_no,
                     reply_markup=InlineKeyboardMarkup(keyboard),
                     message_thread_id=thread_id,
+                    parse_mode=ParseMode.HTML,
                 )
             else:
                 logger.debug(f"Encontrados {len(feed.entries)} resultados")
@@ -401,887 +518,3 @@ class CommandHandlers:
                 text="🔍 ¿Qué libro buscas? Escribe el título o autor:",
                 message_thread_id=thread_id,
             )
-
-    async def purge_link(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Elimina un link acortado de la caché (solo publishers)."""
-        uid = update.effective_user.id
-
-        # Verificar que sea publisher
-        if uid not in config.FACEBOOK_PUBLISHERS:
-            await update.message.reply_text(
-                "⛔ No tienes permisos para usar este comando."
-            )
-            return
-
-        # Verificar argumentos
-        if not context.args or len(context.args) != 1:
-            await update.message.reply_text(
-                "❌ Uso incorrecto.\n"
-                "Uso: /purge_link <hash>\n"
-                "Ejemplo: /purge_link abcdefg"
-            )
-            return
-
-        hash_to_purge = context.args[0]
-
-        try:
-            # Use the same database-agnostic approach as other url_cache functions
-            if config.DATABASE_URL:
-                # PostgreSQL backend
-                try:
-                    import sqlalchemy as sa
-                    from sqlalchemy import Table, MetaData
-
-                    engine = sa.create_engine(
-                        config.DATABASE_URL, future=True, pool_pre_ping=True
-                    )
-                    metadata = MetaData()
-                    url_mappings = Table("url_mappings", metadata, autoload_with=engine)
-
-                    with engine.begin() as conn:
-                        # Check if exists
-                        sel = sa.select(url_mappings.c.hash).where(
-                            url_mappings.c.hash == hash_to_purge
-                        )
-                        result = conn.execute(sel).first()
-
-                        if result:
-                            # Delete it
-                            delete_stmt = url_mappings.delete().where(
-                                url_mappings.c.hash == hash_to_purge
-                            )
-                            conn.execute(delete_stmt)
-
-                            await update.message.reply_text(
-                                f"✅ Link con hash <code>{hash_to_purge}</code> eliminado de la caché.",
-                                parse_mode="HTML",
-                            )
-                            logger.info(
-                                f"Admin {uid} eliminó link {hash_to_purge} de la caché (PostgreSQL)."
-                            )
-                        else:
-                            await update.message.reply_text(
-                                f"ℹ️ No se encontró ningún link con hash <code>{hash_to_purge}</code> en la caché.",
-                                parse_mode="HTML",
-                            )
-                except Exception as e:
-                    logger.error(
-                        f"PostgreSQL error in purge_link, falling back to SQLite: {e}"
-                    )
-                    raise  # Re-raise to trigger the SQLite fallback below
-            else:
-                # SQLite backend
-                from utils.url_cache import DB_PATH
-                import sqlite3
-
-                conn = sqlite3.connect(DB_PATH)
-                cursor = conn.cursor()
-
-                cursor.execute(
-                    "DELETE FROM url_mappings WHERE hash = ?", (hash_to_purge,)
-                )
-                rows_deleted = cursor.rowcount
-                conn.commit()
-                conn.close()
-
-                if rows_deleted > 0:
-                    await update.message.reply_text(
-                        f"✅ Link con hash <code>{hash_to_purge}</code> eliminado de la caché.",
-                        parse_mode="HTML",
-                    )
-                    logger.info(
-                        f"Admin {uid} eliminó link {hash_to_purge} de la caché (SQLite)."
-                    )
-                else:
-                    await update.message.reply_text(
-                        f"ℹ️ No se encontró ningún link con hash <code>{hash_to_purge}</code> en la caché.",
-                        parse_mode="HTML",
-                    )
-
-        except Exception as e:
-            logger.error(
-                f"Error en purge_link para hash {hash_to_purge}: {e}", exc_info=True
-            )
-            await update.message.reply_text(
-                f"❌ Error al intentar eliminar el link: {str(e)}"
-            )
-
-    async def reset_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        # Existing reset command implementation
-        """Resetea el contador de descargas de un usuario (solo admins)."""
-        uid = update.effective_user.id
-
-        # Verificar que sea admin
-        if uid not in config.ADMIN_USERS:
-            await update.message.reply_text(
-                "⛔ No tienes permisos para usar este comando."
-            )
-            return
-
-        # Verificar argumentos
-        if not context.args or len(context.args) != 1:
-            await update.message.reply_text(
-                "❌ Uso incorrecto.\n"
-                "Uso: /reset <user_id>\n"
-                "Ejemplo: /reset 123456789"
-            )
-            return
-
-        try:
-            target_uid = int(context.args[0])
-        except ValueError:
-            await update.message.reply_text("❌ El ID debe ser un número válido.")
-            return
-
-        # Resetear descargas
-        from utils.download_limiter import save_download
-
-        user_state = state_manager.get_user_state(target_uid)
-        old_count = user_state.get("downloads_used", 0)
-        user_state["downloads_used"] = 0
-
-        # Actualizar persistencia
-        save_download(target_uid, 0)
-
-        await update.message.reply_text(
-            f"✅ Contador de descargas reseteado para el usuario {target_uid}.\n"
-            f"Descargas usadas anteriormente: {old_count}"
-        )
-
-        logger.info(
-            f"Admin {uid} reseteó descargas de usuario {target_uid} (antes: {old_count})"
-        )
-
-    async def status_links(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Muestra estado de los links acortados (solo publishers)."""
-        uid = update.effective_user.id
-
-        # Verificar permisos (solo publishers)
-        if uid not in config.FACEBOOK_PUBLISHERS:
-            await update.message.reply_text(
-                "⛔ No tienes permisos para usar este comando."
-            )
-            return
-
-        thread_id = get_thread_id(update)
-
-        # Enviar mensaje de "procesando"
-        msg = await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="🔄 Obteniendo estadísticas...",
-            message_thread_id=thread_id,
-        )
-
-        try:
-            from utils.url_cache import (
-                get_stats,
-                get_broken_links,
-                validate_and_update_url,
-                get_url_from_hash,
-                get_recent_links,
-                DB_PATH,
-            )
-            import asyncio
-            import sqlite3
-
-            # Validar solo 5 links recientes (reducido de 20 para evitar timeouts)
-            recent_links = get_recent_links(limit=5)
-
-            # Validar con timeout de 10 segundos total para evitar bloquear el bot
-            if recent_links:
-                try:
-                    tasks = [
-                        validate_and_update_url(item[0], item[1])
-                        for item in recent_links
-                    ]
-                    await asyncio.wait_for(
-                        asyncio.gather(*tasks, return_exceptions=True), timeout=10.0
-                    )
-                except asyncio.TimeoutError:
-                    logger.warning("Timeout validating links in status_links")
-
-            # Actualizar estadísticas después de la validación
-            stats = get_stats()
-            broken = get_broken_links(limit=5)
-
-            # Construir reporte
-            success_rate = (
-                (stats["valid"] / stats["total"] * 100) if stats["total"] > 0 else 0
-            )
-
-            report = "🔍 <b>Estado de Links Acortados</b>\n\n"
-            report += "📊 <b>Estadísticas:</b>\n"
-            report += f"  • Total: {stats['total']} links\n"
-            report += f"  ✅ Válidos: {stats['valid']}\n"
-            report += f"  ❌ Rotos: {stats['broken']}\n"
-            report += f"  ⚠️ En riesgo: {stats['at_risk']} (2 fallos)\n"
-            report += f"  📈 Tasa de éxito: {success_rate:.1f}%\n"
-
-            if broken:
-                report += "\n⚠️ <b>Links Rotos (máximo 5):</b>\n"
-                for hash_val, title, failed, last_checked in broken:
-                    title_short = (
-                        (title[:40] + "...")
-                        if title and len(title) > 40
-                        else (title or "Sin título")
-                    )
-
-                    # Obtener fecha de creación
-                    conn = sqlite3.connect(DB_PATH)
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        "SELECT created_at FROM url_mappings WHERE hash = ?",
-                        (hash_val,),
-                    )
-                    created_row = cursor.fetchone()
-                    conn.close()
-                    created_date = created_row[0] if created_row else "Desconocida"
-
-                    report += f"  • {title_short}\n"
-                    report += f"    Hash: <code>{hash_val}</code>\n"
-                    report += f"    Creado: {created_date}\n"
-                    report += f"    Fallos: {failed}/3\n"
-
-            report += "\n📄 <i>Nota: Se validaron los últimos 5 links. Para revisar todos usa el validador automático.</i>"
-
-            await context.bot.edit_message_text(
-                chat_id=update.effective_chat.id,
-                message_id=msg.message_id,
-                text=report,
-                parse_mode="HTML",
-            )
-
-        except Exception as e:
-            logger.error(f"Error en status_links: {e}", exc_info=True)
-            await context.bot.edit_message_text(
-                chat_id=update.effective_chat.id,
-                message_id=msg.message_id,
-                text=f"❌ Error al obtener estado de links: {str(e)}",
-            )
-
-    async def link_list(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Muestra listado de links acortados recientes (solo publishers)."""
-        uid = update.effective_user.id
-
-        # Verificar permisos (solo publishers)
-        if uid not in config.FACEBOOK_PUBLISHERS:
-            await update.message.reply_text(
-                "⛔ No tienes permisos para usar este comando."
-            )
-            return
-
-        thread_id = get_thread_id(update)
-
-        # Determinar límite (argumento opcional)
-        limit = 10  # default
-        if context.args:
-            try:
-                limit = int(context.args[0])
-                limit = min(max(limit, 1), 50)  # Entre 1 y 50
-            except ValueError:
-                await update.message.reply_text(
-                    "❌ El límite debe ser un número. Uso: /link_list [número]"
-                )
-                return
-
-        try:
-            from utils.url_cache import get_recent_links
-
-            recent_links = get_recent_links(limit=limit)
-
-            if not recent_links:
-                await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text="ℹ️ No hay links en la caché.",
-                    message_thread_id=thread_id,
-                )
-                return
-
-            # Construir mensaje
-            report = (
-                f"📋 <b>Links Acortados Recientes</b> (últimos {len(recent_links)})\n\n"
-            )
-
-            for i, (hash_val, url, book_title, created_at) in enumerate(
-                recent_links, 1
-            ):
-                title_display = (
-                    (book_title[:45] + "...")
-                    if book_title and len(book_title) > 45
-                    else (book_title or "Sin título")
-                )
-
-                # Construir link acortado
-                dl_domain = config.DL_DOMAIN.rstrip("/")
-                if not dl_domain.startswith("http"):
-                    dl_domain = f"https://{dl_domain}"
-                short_link = f"{dl_domain}/api/dl/{hash_val}"
-
-                report += f"{i}. <b>{title_display}</b>\n"
-                report += f"   Hash: <code>{hash_val}</code>\n"
-                report += f"   Link: {short_link}\n"
-                report += f"   Creado: {created_at or 'Desconocido'}\n\n"
-
-            report += "<i>💡 Usa /purge_link &lt;hash&gt; para eliminar un link específico.</i>"
-
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=report,
-                parse_mode="HTML",
-                message_thread_id=thread_id,
-            )
-
-        except Exception as e:
-            logger.error(f"Error en link_list: {e}", exc_info=True)
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=f"❌ Error al obtener listado de links: {str(e)}",
-                message_thread_id=thread_id,
-            )
-
-    async def debug_state(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Debug command to show a snapshot of the user's state (admins only)."""
-        uid = update.effective_user.id
-
-        # Only allow admins
-        if uid not in config.ADMIN_USERS:
-            await update.message.reply_text(
-                "⛔ Solo administradores pueden usar /debug_state."
-            )
-            return
-
-        st = state_manager.get_user_state(uid)
-        # Build a compact, safe state summary
-        keys = [
-            "destino",
-            "chat_origen",
-            "message_thread_id",
-            "titulo_pendiente",
-            "portada_pendiente",
-            "pending_pub_book",
-            "pending_pub_menu_prep",
-            "awaiting_publish_target",
-            "publish_command_origin",
-            "publish_command_thread_id",
-            "msg_botones_id",
-            "msg_info_id",
-            "epub_url",
-        ]
-        parts = [
-            f"👤 ID: {uid}",
-            f"⭐ is_admin: {uid in config.ADMIN_USERS}",
-            f"📝 is_publisher: {uid in config.FACEBOOK_PUBLISHERS}",
-        ]
-        for k in keys:
-            v = st.get(k)
-            # Make values short for readability
-            if isinstance(v, (str, int)) or v is None:
-                parts.append(f"{k}: {v}")
-            else:
-                try:
-                    # For dicts/lists show length or keys
-                    if isinstance(v, dict):
-                        parts.append(f"{k}: dict(keys={list(v.keys())})")
-                    elif isinstance(v, list):
-                        parts.append(f"{k}: list(len={len(v)})")
-                    else:
-                        parts.append(f"{k}: {repr(v)[:80]}")
-                except Exception:
-                    parts.append(f"{k}: <unprintable>")
-
-        text = "\n".join(parts)
-        thread_id = get_thread_id(update)
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=f"🧭 Estado (parcial):\n\n{text}",
-            message_thread_id=thread_id,
-        )
-
-    async def backup_db(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Realiza un backup de la base de datos (solo admins)."""
-        uid = update.effective_user.id
-        if uid not in config.ADMIN_USERS:
-            await update.message.reply_text(
-                "⛔ No tienes permisos para usar este comando."
-            )
-            return
-
-        thread_id = get_thread_id(update)
-        msg = await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="⏳ Generando backup...",
-            message_thread_id=thread_id,
-        )
-
-        try:
-            from services.backup_service import generate_backup_file
-
-            filename = await generate_backup_file()
-
-            # Enviar archivo
-            with open(filename, "rb") as f:
-                await context.bot.send_document(
-                    chat_id=update.effective_chat.id,
-                    document=f,
-                    filename=filename,
-                    caption=f"📦 Backup de base de datos\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                    message_thread_id=thread_id,
-                )
-
-            # Limpiar
-            try:
-                os.remove(filename)
-            except Exception:
-                logger.debug("No se pudo eliminar backup temporal: %s", filename)
-
-            await context.bot.delete_message(
-                chat_id=update.effective_chat.id, message_id=msg.message_id
-            )
-
-        except Exception as e:
-            logger.error(f"Error en backup_db: {e}", exc_info=True)
-            await context.bot.edit_message_text(
-                chat_id=update.effective_chat.id,
-                message_id=msg.message_id,
-                text=f"❌ Error al generar backup: {str(e)}",
-            )
-
-    async def restore_db(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Restaura la base de datos desde un archivo (solo admins)."""
-        uid = update.effective_user.id
-        if uid not in config.ADMIN_USERS:
-            await update.message.reply_text(
-                "⛔ No tienes permisos para usar este comando."
-            )
-            return
-
-        if (
-            not update.message.reply_to_message
-            or not update.message.reply_to_message.document
-        ):
-            await update.message.reply_text(
-                "⚠️ Debes responder a un mensaje con el archivo .sql de backup para restaurarlo."
-            )
-            return
-
-        doc = update.message.reply_to_message.document
-        # Validación de extensión movida dentro de la lógica específica de DB
-        # if not doc.file_name.endswith(".sql"):
-        #     await update.message.reply_text("⚠️ El archivo debe tener extensión .sql")
-        #     return
-
-        thread_id = get_thread_id(update)
-        msg = await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="⏳ Descargando y restaurando backup... (Esto borrará los datos actuales)",
-            message_thread_id=thread_id,
-        )
-
-        try:
-
-            # Descargar archivo
-            file = await doc.get_file()
-
-            if config.DATABASE_URL:
-                # --- Lógica PostgreSQL ---
-                if not doc.file_name.endswith(".sql"):
-                    await context.bot.edit_message_text(
-                        chat_id=update.effective_chat.id,
-                        message_id=msg.message_id,
-                        text="⚠️ Para PostgreSQL, el archivo debe ser un .sql",
-                    )
-                    return
-
-                filename = f"restore_{doc.file_name}"
-                await file.download_to_drive(filename)
-
-                # Obtener credenciales (igual que backup)
-                pg_user = os.getenv("POSTGRES_USER")
-                pg_password = os.getenv("POSTGRES_PASSWORD")
-                pg_db = os.getenv("POSTGRES_DB")
-                pg_host = "db"
-
-                if not pg_user:
-                    try:
-                        from sqlalchemy.engine import make_url
-
-                        url = make_url(config.DATABASE_URL)
-                        pg_user = url.username
-                        pg_password = url.password
-                        if url.host:
-                            pg_host = url.host
-                        pg_db = url.database
-                    except Exception:
-                        pass
-
-                if not pg_user or not pg_password:
-                    raise Exception("No se encontraron credenciales de base de datos.")
-
-                # Configurar entorno
-                env = os.environ.copy()
-                env["PGPASSWORD"] = pg_password
-
-                # Comando psql para restaurar
-                cmd = [
-                    "psql",
-                    "-h",
-                    pg_host,
-                    "-U",
-                    pg_user,
-                    "-d",
-                    pg_db,
-                    "-f",
-                    filename,
-                ]
-
-                # Use asyncio subprocess
-                import asyncio as _asyncio
-
-                proc = await _asyncio.create_subprocess_exec(
-                    *cmd,
-                    env=env,
-                    stdout=_asyncio.subprocess.PIPE,
-                    stderr=_asyncio.subprocess.PIPE,
-                )
-                try:
-                    stdout, stderr = await _asyncio.wait_for(
-                        proc.communicate(), timeout=180
-                    )
-                except _asyncio.TimeoutError:
-                    proc.kill()
-                    await proc.wait()
-                    raise Exception("psql restore timed out")
-                if proc.returncode != 0:
-                    raise Exception(f"Restore failed: {stderr.decode(errors='ignore')}")
-
-                try:
-                    os.remove(filename)
-                except Exception:
-                    logger.debug(
-                        "No se pudo eliminar archivo temporal de restore: %s", filename
-                    )
-
-            else:
-                # --- Lógica SQLite ---
-                # Validar extensión (opcional, pero recomendable)
-                if not (
-                    doc.file_name.endswith(".db") or doc.file_name.endswith(".sqlite")
-                ):
-                    await context.bot.edit_message_text(
-                        chat_id=update.effective_chat.id,
-                        message_id=msg.message_id,
-                        text="⚠️ Para SQLite, el archivo debe ser .db o .sqlite",
-                    )
-                    return
-
-                # Sobrescribir el archivo de base de datos
-                db_path = config.URL_CACHE_DB_PATH
-
-                # Backup de seguridad antes de sobrescribir
-                if os.path.exists(db_path):
-                    backup_path = f"{db_path}.bak"
-                    import shutil
-
-                    shutil.copy2(db_path, backup_path)
-
-                await file.download_to_drive(db_path)
-
-            await context.bot.edit_message_text(
-                chat_id=update.effective_chat.id,
-                message_id=msg.message_id,
-                text="✅ Base de datos restaurada exitosamente.",
-            )
-            logger.info(
-                f"Publisher {uid} restauró la base de datos desde {doc.file_name}"
-            )
-
-        except Exception as e:
-            logger.error(f"Error en restore_db: {e}", exc_info=True)
-            await context.bot.edit_message_text(
-                chat_id=update.effective_chat.id,
-                message_id=msg.message_id,
-                text=f"❌ Error al restaurar backup: {str(e)}",
-            )
-
-    async def export_db(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Exporta la base de datos a CSV (solo publishers)."""
-        uid = update.effective_user.id
-        if uid not in config.FACEBOOK_PUBLISHERS:
-            await update.message.reply_text(
-                "⛔ No tienes permisos para usar este comando."
-            )
-            return
-
-        thread_id = get_thread_id(update)
-        msg = await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="⏳ Generando CSV de la base de datos...",
-            message_thread_id=thread_id,
-        )
-
-        try:
-            import csv
-
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"export_db_{timestamp}.csv"
-
-            # Determinar si usar PostgreSQL o SQLite
-            if config.DATABASE_URL:
-                # PostgreSQL usando SQLAlchemy
-                from sqlalchemy import create_engine, text
-
-                engine = create_engine(config.DATABASE_URL)
-
-                with engine.connect() as conn:
-                    result = conn.execute(
-                        text("SELECT * FROM url_mappings ORDER BY created_at DESC")
-                    )
-                    rows = result.fetchall()
-                    columns = result.keys()
-
-                # Escribir CSV en thread pool para no bloquear el loop
-                import asyncio as _asyncio
-
-                def _write_csv(path, columns, rows):
-                    with open(path, "w", newline="", encoding="utf-8") as csvfile:
-                        writer = csv.writer(csvfile)
-                        writer.writerow(columns)
-                        writer.writerows(rows)
-
-                await _asyncio.to_thread(_write_csv, filename, columns, rows)
-
-            else:
-                # SQLite
-                import sqlite3
-                from utils.url_cache import DB_PATH
-
-                conn = sqlite3.connect(DB_PATH)
-                cursor = conn.cursor()
-                cursor.execute("SELECT * FROM url_mappings ORDER BY created_at DESC")
-                rows = cursor.fetchall()
-                columns = [description[0] for description in cursor.description]
-                conn.close()
-
-                # Escribir CSV en thread pool para no bloquear el loop
-                import asyncio as _asyncio
-
-                def _write_csv(path, columns, rows):
-                    with open(path, "w", newline="", encoding="utf-8") as csvfile:
-                        writer = csv.writer(csvfile)
-                        writer.writerow(columns)
-                        writer.writerows(rows)
-
-                await _asyncio.to_thread(_write_csv, filename, columns, rows)
-
-            # Enviar archivo cerrando descriptor cuando termine
-            with open(filename, "rb") as f:
-                await context.bot.send_document(
-                    chat_id=update.effective_chat.id,
-                    document=f,
-                    filename=filename,
-                    caption=f"📊 Exportación de base de datos\n📅 {timestamp}\n📦 {len(rows)} registros",
-                    message_thread_id=thread_id,
-                )
-
-            try:
-                os.remove(filename)
-            except Exception:
-                logger.debug("No se pudo eliminar CSV temporal: %s", filename)
-            await context.bot.delete_message(
-                chat_id=update.effective_chat.id, message_id=msg.message_id
-            )
-
-        except Exception as e:
-            logger.error(f"Error en export_db: {e}", exc_info=True)
-            await context.bot.edit_message_text(
-                chat_id=update.effective_chat.id,
-                message_id=msg.message_id,
-                text=f"❌ Error al generar CSV: {str(e)}",
-            )
-
-    async def import_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Activa el modo de importación de historial (solo admins)."""
-        uid = update.effective_user.id
-        if uid not in config.ADMIN_USERS:
-            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
-            return
-
-        st = state_manager.get_user_state(uid)
-        st["waiting_for_history_json"] = True
-
-        await update.message.reply_text(
-            "📂 <b>Modo de Importación Activado</b>\n\n"
-            "Por favor, envía ahora el archivo <code>result.json</code> exportado de Telegram Desktop.\n"
-            "El bot procesará el archivo y guardará el historial de libros publicados.\n\n"
-            "<i>Este modo se desactivará automáticamente después de recibir el archivo.</i>",
-            parse_mode="HTML"
-        )
-
-    async def latest_books(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Muestra los últimos 10 libros importados/publicados (solo admins).
-
-        Uso:
-            /latest_books              -> Muestra todos los últimos 10 libros
-            /latest_books <chat_id>    -> Filtra por chat_id específico
-        """
-        uid = update.effective_user.id
-
-        # Restricción: solo admins
-        if uid not in config.ADMIN_USERS:
-            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
-            return
-
-        try:
-            from services.history_service import get_latest_books
-
-            # Parse argumentos: chat_id opcional
-            channel_filter = None
-            if context.args and len(context.args) > 0:
-                try:
-                    channel_filter = int(context.args[0])
-                except ValueError:
-                    await update.message.reply_text(
-                        "❌ Chat ID inválido. Uso: /latest_books [chat_id]\n"
-                        "Ejemplo: /latest_books -1001234567890"
-                    )
-                    return
-
-            # Obtener libros con o sin filtro
-            books = get_latest_books(limit=10, channel_id=channel_filter)
-
-            if not books:
-                if channel_filter:
-                    await update.message.reply_text(
-                        f"📚 No hay libros registrados en el chat {channel_filter}."
-                    )
-                else:
-                    await update.message.reply_text("📚 No hay libros registrados en el historial.")
-                return
-
-            # Título del mensaje según modo
-            if channel_filter:
-                text = f"📚 <b>Últimos 10 Libros en Chat {channel_filter}</b>\n\n"
-            else:
-                text = "📚 <b>Últimos 10 Libros Publicados</b>\n\n"
-
-            for b in books:
-                # b is a Row object (title, author, series, slug, date, ..., channel_id)
-                title = b.title or "Sin título"
-                author = b.author or "Desconocido"
-                series = f" ({b.series})" if b.series else ""
-                date_str = b.date_published.strftime("%Y-%m-%d %H:%M") if b.date_published else "?"
-
-                text += f"🔹 <b>{title}</b>{series}\n"
-                text += f"   ✍️ {author}\n"
-                text += f"   📅 {date_str} | #️⃣ {b.slug}\n"
-
-                # Mostrar chat_id si NO estamos filtrando (modo sin argumentos)
-                if not channel_filter and hasattr(b, 'channel_id') and b.channel_id:
-                    text += f"   📍 Chat: {b.channel_id}\n"
-
-                text += "\n"
-
-            await update.message.reply_text(text, parse_mode="HTML")
-
-        except Exception as e:
-            logger.error(f"Error in latest_books: {e}")
-            await update.message.reply_text("❌ Error al obtener el historial.")
-
-    async def clear_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Borra todo el historial de libros publicados (solo admin)."""
-        uid = update.effective_user.id
-        if uid not in config.ADMIN_USERS:
-            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
-            return
-
-        # Confirmación simple (podría ser mejor con botones, pero por ahora texto)
-        if not context.args or context.args[0] != "confirm":
-            await update.message.reply_text(
-                "⚠️ <b>¡ATENCIÓN!</b> Esto borrará TODO el historial de libros publicados.\n"
-                "Para confirmar, usa: <code>/clear_history confirm</code>",
-                parse_mode="HTML"
-            )
-            return
-
-        try:
-            from services.history_service import clear_history
-            if clear_history():
-                await update.message.reply_text("✅ Historial borrado exitosamente.")
-            else:
-                await update.message.reply_text("❌ Error al borrar el historial.")
-        except Exception as e:
-            logger.error(f"Error in clear_history: {e}")
-            await update.message.reply_text("❌ Error inesperado al borrar el historial.")
-
-    async def export_history(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Exporta el historial de libros publicados a CSV."""
-        uid = update.effective_user.id
-        # Allow publishers and admins
-        if uid not in config.ADMIN_USERS and uid not in config.PUBLISHER_USERS:
-            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
-            return
-
-        try:
-            from services.history_service import get_latest_books
-            # Get all books (set a high limit)
-            books = get_latest_books(limit=10000)
-
-            if not books:
-                await update.message.reply_text("📚 No hay libros registrados en el historial.")
-                return
-
-            # Create CSV
-            import csv
-            import io
-            output = io.StringIO()
-            writer = csv.writer(output)
-
-            # Header
-            writer.writerow([
-                'Título', 
-                'Maquetado por', 
-                'Demografía', 
-                'Géneros', 
-                'Autor', 
-                'Serie', 
-                'Slug', 
-                'Ilustrador', 
-                'Traducción', 
-                'Fecha Publicación', 
-                'Tamaño'
-            ])
-
-            # Data
-            for b in books:
-                # Format file size if available
-                file_size_str = ""
-                if hasattr(b, 'file_size') and b.file_size:
-                    # Convert bytes to MB
-                    file_size_mb = b.file_size / (1024 * 1024)
-                    file_size_str = f"{file_size_mb:.2f} MB"
-
-                writer.writerow([
-                    b.title or "Unknown",
-                    b.maquetado_por or "" if hasattr(b, 'maquetado_por') else "",
-                    b.demografia or "" if hasattr(b, 'demografia') else "",
-                    b.generos or "" if hasattr(b, 'generos') else "",
-                    b.author or "Desconocido",
-                    b.series or "",
-                    b.slug or "",
-                    b.ilustrador or "" if hasattr(b, 'ilustrador') else "",
-                    b.traduccion or "" if hasattr(b, 'traduccion') else "",
-                    b.date_published.strftime("%Y-%m-%d %H:%M") if b.date_published else "",
-                    file_size_str
-                ])
-
-            # Send as file
-            csv_bytes = output.getvalue().encode('utf-8')
-            await update.message.reply_document(
-                document=csv_bytes,
-                filename="historial_libros.csv",
-                caption=f"📊 Historial de {len(books)} libros publicados"
-            )
-
-        except Exception as e:
-            logger.error(f"Error in export_history: {e}")
-            await update.message.reply_text("❌ Error al exportar el historial.")

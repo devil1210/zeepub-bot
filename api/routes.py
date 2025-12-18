@@ -2,8 +2,12 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response, Depends,
 from typing import Optional
 import httpx
 import os
+import hmac
+import hashlib
+import json
 from config.config_settings import config
-from utils.http_client import parse_feed_from_url
+from services.opds_service import get_cached_feed
+# from utils.http_client import parse_feed_from_url
 from utils.helpers import build_search_url
 from utils.security import validate_telegram_data
 from utils.http_client import fetch_bytes
@@ -62,20 +66,19 @@ async def get_feed(
     # Verificar permisos si hay UID (y no es anónimo)
     if current_uid > 0:
         allowed = (
-            current_uid in config.WHITELIST
-            or current_uid in config.VIP_LIST
+            current_uid in config.VIP_LIST
             or current_uid in config.PREMIUM_LIST
             or current_uid in config.ADMIN_USERS
         )
         if not allowed:
             raise HTTPException(
                 status_code=403,
-                detail="⛔ Esta función solo está disponible para usuarios VIP, Premium o Patrocinadores por el momento.",
+                detail="⛔ El acceso a la Mini App es exclusivo para usuarios VIP y Premium.\n\nUsa /niveles para más información.",
             )
 
     target_url = url if url else config.OPDS_ROOT_START
     try:
-        feed = await parse_feed_from_url(target_url)
+        feed = await get_cached_feed(target_url)
         if not feed:
             raise HTTPException(status_code=404, detail="No se pudo cargar el feed")
 
@@ -544,3 +547,120 @@ async def download_book(request: Request, current_uid: int = Depends(get_current
     except Exception as e:
         logger.error(f"Error in download endpoint: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/zitadel-action")
+async def zitadel_enrich_token(request: Request):
+    """
+    Endpoint para ZITADEL Actions v2 (Function: preuserinfo).
+    Enriquece el token con roles de Kavita y preferred_username.
+    """
+    try:
+        # Leer body raw
+        body_bytes = await request.body()
+
+        # Validar firma de ZITADEL (opcional)
+        signature = request.headers.get("x-zitadel-signature")
+
+        # Si tenemos signing key configurada, validamos
+        if config.ZITADEL_SIGNING_KEY:
+            if not signature:
+                logger.warning("⚠️ ZITADEL action received without signature header")
+                raise HTTPException(status_code=401, detail="Missing signature")
+            else:
+                # Calcular HMAC SHA256
+                expected_signature = hmac.new(
+                    config.ZITADEL_SIGNING_KEY.encode("utf-8"),
+                    body_bytes,
+                    hashlib.sha256
+                ).hexdigest()
+
+                # Comparación segura contra timing attacks
+                if not hmac.compare_digest(signature, expected_signature):
+                    logger.error(f"⛔ Invalid ZITADEL signature from IP: {request.client.host}")
+                    raise HTTPException(status_code=401, detail="Invalid signature")
+        else:
+            logger.warning("⚠️ ZITADEL_SIGNING_KEY not configured - skipping signature validation")
+
+        # Parsear el JSON que envía ZITADEL
+        try:
+            data = json.loads(body_bytes)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+        logger.debug(f"Payload received: {data}")
+
+        # Helper para validación
+        def safe_str(val):
+            """Extrae string válido o None"""
+            return val.strip() if isinstance(val, str) and val and val.strip() else None
+
+        # Extraer contextos
+        user_data = data.get("user", {})
+        human_data = user_data.get("human", {})
+        claims_list = []
+
+        # Calcular preferred_username
+        preferred_username = None
+        if human_data:
+            # 1. Nickname
+            preferred_username = safe_str(human_data.get("nick_name"))
+
+            # 2. Display Name
+            if not preferred_username:
+                preferred_username = safe_str(human_data.get("display_name"))
+
+            # 3. First + Last Name (concatenación inteligente)
+            if not preferred_username:
+                first = safe_str(human_data.get("first_name"))
+                last = safe_str(human_data.get("last_name"))
+                if first and last:
+                    preferred_username = f"{first} {last}"
+                elif first:
+                    preferred_username = first
+
+        # 4. Username base (fallback)
+        if not preferred_username:
+            preferred_username = safe_str(user_data.get("username"))
+
+        # 5. Email (último recurso)
+        if not preferred_username:
+            preferred_username = safe_str(human_data.get("email")) if human_data else None
+
+        # 1. Agregar preferred_username si se encontró
+        if preferred_username:
+            claims_list.append({
+                "key": "preferred_username",
+                "value": preferred_username
+            })
+
+        # 2. Agregar roles fijos para todos los usuarios de ZeePubs
+        claims_list.append({
+            "key": "https://zeepubs.com/roles",
+            "value": [
+                "Login",
+                "Download",
+                "Change Password",
+                "Bookmark",
+                "library-EpubLibre [ES]",
+                "library-EpubShosetsu [ES]",
+                "library-MiraiK [ES]",
+                "library-WhiteMoon [EN]",
+                "library-ZeePubs [ES]"
+            ]
+        })
+
+        # 3. Respuesta final
+        response = {
+            "append_claims": claims_list
+        }
+
+        logger.info(f"✅ Token enriched for user: {preferred_username}")
+        return response
+
+    except HTTPException:
+        # Re-raise HTTP exceptions (ya tienen logging)
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error processing ZITADEL action: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error processing action")

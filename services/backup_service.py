@@ -25,10 +25,10 @@ async def generate_backup_file() -> str:
         pg_user = os.getenv("POSTGRES_USER")
         pg_password = os.getenv("POSTGRES_PASSWORD")
         pg_db = os.getenv("POSTGRES_DB")
-        pg_host = "db"  # Default docker service name
+        pg_host = os.getenv("POSTGRES_HOST", "db")  # Default to 'db' service in docker
 
         # If not in env, try parsing DATABASE_URL
-        if not pg_user:
+        if not pg_user and config.DATABASE_URL:
             try:
                 url = make_url(config.DATABASE_URL)
                 pg_user = url.username
@@ -40,7 +40,9 @@ async def generate_backup_file() -> str:
                 logger.error(f"Error parsing DATABASE_URL: {e}")
 
         if not pg_user or not pg_password:
-            raise Exception("No se encontraron credenciales de base de datos.")
+            raise Exception(
+                "No se encontraron credenciales de base de datos (POSTGRES_USER/PASSWORD o DATABASE_URL)."
+            )
 
         # Configure env for pg_dump
         env = os.environ.copy()
@@ -48,6 +50,8 @@ async def generate_backup_file() -> str:
 
         # pg_dump command
         cmd = ["pg_dump", "-h", pg_host, "-U", pg_user, "-d", pg_db, "-f", filename]
+
+        logger.info(f"Iniciando backup DB: host={pg_host}, user={pg_user}, db={pg_db}")
 
         # Execute pg_dump
         proc = await asyncio.create_subprocess_exec(
@@ -62,11 +66,20 @@ async def generate_backup_file() -> str:
         except asyncio.TimeoutError:
             proc.kill()
             await proc.wait()
-            raise Exception("pg_dump timed out")
+            raise Exception("pg_dump timed out (120s)")
 
         if proc.returncode != 0:
-            raise Exception(f"pg_dump failed: {stderr.decode(errors='ignore')}")
+            err_msg = stderr.decode(errors="ignore")
+            logger.error(f"pg_dump error: {err_msg}")
+            raise Exception(f"pg_dump failed: {err_msg}")
 
+        # Verify file size
+        if not os.path.exists(filename) or os.path.getsize(filename) == 0:
+            raise Exception("El archivo de backup se creó vacío o no existe.")
+
+        logger.info(
+            f"Backup creado exitosamente: {filename} ({os.path.getsize(filename)} bytes)"
+        )
         return filename
 
     else:
