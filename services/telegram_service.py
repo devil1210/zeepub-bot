@@ -527,7 +527,7 @@ async def descargar_epub_pendiente(
 
     # Identificar si es grupo
     is_group = update.effective_chat.type in ("group", "supergroup")
-    
+
     # Verificar privilegios usando el sistema de roles
     from services.user_service import get_effective_user
     user_info = await get_effective_user(uid)

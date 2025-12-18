@@ -737,7 +737,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             reply_markup=InlineKeyboardMarkup(keyboard_cancel),
                             parse_mode="HTML"
                         )
-                        
+
                         # Programar timeout para el mensaje privado proactivo
                         if context.job_queue:
                             job_name_p = f"donation_timeout_{user_to_update}_{prompt_private.message_id}"
@@ -771,7 +771,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # 3. Es chat privado
             # Timeout de 10 minutos (definido por el usuario)
             timeout_min = 10
-            
+
             # Botones: Cancelar
             keyboard = [[InlineKeyboardButton("❌ Cancelar Registro", callback_data=f"cancelar_donacion|{user_to_update}")]]
 
