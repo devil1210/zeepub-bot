@@ -762,19 +762,7 @@ class HelpPlugin(BasePlugin):
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllGroupChats())
             logger.debug("Comandos básicos registrados en scopes globales.")
 
-            # 2. Comandos para Administradores
-            # Verán estos comandos en cualquier grupo donde sean admins
-            admin_basic_cmds = public_cmds + [
-                BotCommand("approve_donation", "Aprobar donación"),
-                BotCommand("reject_donation", "Rechazar donación"),
-                BotCommand("stats", "Estadísticas"),
-            ]
-            try:
-                await bot.set_my_commands(admin_basic_cmds, scope=BotCommandScopeAllChatAdministrators())
-            except Exception as e:
-                logger.debug(f"Error registrando comandos para AllChatAdministrators: {e}")
-
-            # 3. Menú COMPLETO para Administradores configurados (en su privado)
+            # 2. Menú COMPLETO para Administradores configurados (en su privado)
             all_cmds = []
             for cmd_name in sorted(COMMANDS_REGISTRY.keys()):
                 if len(all_cmds) >= 100: break

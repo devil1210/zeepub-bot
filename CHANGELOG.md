@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.13.2] - 2025-12-18
+
+### Corregido
+- **Menú de Comandos**: Eliminada la elevación automática de comandos para administradores de grupo. Ahora solo ven los comandos por defecto, respetando estrictamente su nivel de usuario configurado.
+
 ## [v3.13.1] - 2025-12-18
 
 ### Corregido
