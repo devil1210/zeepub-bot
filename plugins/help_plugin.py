@@ -742,9 +742,9 @@ class HelpPlugin(BasePlugin):
 
     async def update_bot_commands(self, bot):
         """Registra los comandos en el menú nativo de Telegram (/)."""
-        from telegram import BotCommand, BotCommandScopeDefault, BotCommandScopeChat
+        from telegram import BotCommand, BotCommandScopeDefault, BotCommandScopeChat, BotCommandScopeAllPrivateChats, BotCommandScopeAllGroupChats, BotCommandScopeAllChatAdministrators
         try:
-            # 1. Comandos para TODOS (Scope Default)
+            # 1. Comandos para TODOS (Básicos)
             public_cmds = [
                 BotCommand("start", "Iniciar bot"),
                 BotCommand("help", "Ayuda simple"),
@@ -755,16 +755,29 @@ class HelpPlugin(BasePlugin):
                 BotCommand("status", "Mi estado"),
                 BotCommand("cancel", "Cancelar acción"),
             ]
+            
+            # Forzar visibilidad en todos los contextos posibles para usuarios normales
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeDefault())
-            logger.debug("Comandos default registrados en Telegram.")
+            await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllPrivateChats())
+            await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllGroupChats())
+            logger.debug("Comandos básicos registrados en scopes globales.")
 
-            # 2. Comandos para Administradores (Config)
-            # Solo podemos hacerlo proactivamente para los IDs en config.ADMIN_USERS
+            # 2. Comandos para Administradores
+            # Verán estos comandos en cualquier grupo donde sean admins
+            admin_basic_cmds = public_cmds + [
+                BotCommand("approve_donation", "Aprobar donación"),
+                BotCommand("reject_donation", "Rechazar donación"),
+                BotCommand("stats", "Estadísticas"),
+            ]
+            try:
+                await bot.set_my_commands(admin_basic_cmds, scope=BotCommandScopeAllChatAdministrators())
+            except Exception as e:
+                logger.debug(f"Error registrando comandos para AllChatAdministrators: {e}")
+
+            # 3. Menú COMPLETO para Administradores configurados (en su privado)
             all_cmds = []
             for cmd_name in sorted(COMMANDS_REGISTRY.keys()):
-                # Telegram limita a 100 comandos por scope
-                if len(all_cmds) >= 100:
-                    break
+                if len(all_cmds) >= 100: break
                 data = COMMANDS_REGISTRY[cmd_name]
                 all_cmds.append(BotCommand(cmd_name, data["desc"]))
 
@@ -772,8 +785,8 @@ class HelpPlugin(BasePlugin):
                 try:
                     await bot.set_my_commands(all_cmds, scope=BotCommandScopeChat(chat_id=admin_id))
                 except Exception as e:
-                    logger.debug(f"No se pudieron setear comandos para admin {admin_id}: {e}")
+                    logger.debug(f"No se pudieron setear comandos completos para admin {admin_id}: {e}")
             
-            logger.info("Menú de comandos actualizado en Telegram para admins conocidos.")
+            logger.info("Menú de comandos actualizado con scopes específicos.")
         except Exception as e:
             logger.error(f"Error actualizando menú de comandos en Telegram: {e}")
