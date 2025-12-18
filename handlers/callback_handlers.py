@@ -716,14 +716,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
 
                     # Enviar instrucciones proactivamente al chat privado
+                    timeout_min = 10
                     base_request = (
                         "🧾 <b>Comprobante Requerido</b>\n\n"
                         "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
-                        "Lo revisaremos para actualizar tu nivel."
+                        "Lo revisaremos para actualizar tu nivel.\n\n"
+                        f"⏳ Tienes <b>{timeout_min} minutos</b> para enviar el comprobante."
                     )
                     text_request = base_request
                     if cms and cms.enabled:
-                        text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+                        text_request = await cms.get_text("donation_proof_request", user=update.effective_user, Tiempo=timeout_min)
 
                     try:
                         await context.bot.send_message(
@@ -762,7 +764,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             text_request = base_request
             if cms and cms.enabled:
-                text_request = await cms.get_text("donation_proof_request", Tiempo=timeout_min)
+                text_request = await cms.get_text("donation_proof_request", user=update.effective_user, Tiempo=timeout_min)
 
             await query.answer()
             prompt_msg = await context.bot.send_message(

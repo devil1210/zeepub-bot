@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.12.1] - 2025-12-18
+
+### Corregido
+- **Donaciones**: Se ha corregido el error donde la variable `[Tiempo]` no se reemplazaba correctamente al iniciar el reporte de donación desde un grupo.
+- **Plantillas**: Se ha restaurado la plantilla `donation_proof_received` que se eliminó accidentalmente en la versión anterior.
+
 ## [v3.12.0] - 2025-12-18
 
 ### Añadido

@@ -152,6 +152,11 @@ TEMPLATE_REGISTRY = {
         "vars": ["[Tiempo]"],
         "default": "🧾 <b>Comprobante Requerido</b>\n\nPor favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\nLo revisaremos para actualizar tu nivel.\n\n⏳ Tienes <b>[Tiempo] minutos</b> para enviar el comprobante antes de que el registro se cancele automáticamente.",
     },
+    "donation_proof_received": {
+        "desc": "Confirmación de recepción de comprobante",
+        "vars": [],
+        "default": "✅ <b>Comprobante recibido</b>\n\nHemos enviado tu comprobante a los administradores para su verificación.\nTe avisaremos cuando tu nivel sea actualizado.\n¡Gracias por tu apoyo! ❤️",
+    },
     "donation_link_unauthorized": {
         "desc": "Enlace de donación no autorizado",
         "vars": [],
