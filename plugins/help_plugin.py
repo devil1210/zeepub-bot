@@ -757,10 +757,15 @@ class HelpPlugin(BasePlugin):
             ]
             
             # Forzar visibilidad en todos los contextos posibles para usuarios normales
+            # Registramos el set público en TODOS los scopes globales
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeDefault())
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllPrivateChats())
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllGroupChats())
-            logger.debug("Comandos básicos registrados en scopes globales.")
+            
+            # Los admins de grupo también ven el menú básico por defecto (evita que vean menú vacío)
+            await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllChatAdministrators())
+            
+            logger.info("Comandos básicos registrados en todos los scopes globales.")
 
             # 2. Menú COMPLETO para Administradores configurados (en su privado)
             all_cmds = []
@@ -769,12 +774,15 @@ class HelpPlugin(BasePlugin):
                 data = COMMANDS_REGISTRY[cmd_name]
                 all_cmds.append(BotCommand(cmd_name, data["desc"]))
 
+            count_admins = 0
             for admin_id in config.ADMIN_USERS:
                 try:
+                    # Esto aplica SOLO al chat privado del admin
                     await bot.set_my_commands(all_cmds, scope=BotCommandScopeChat(chat_id=admin_id))
+                    count_admins += 1
                 except Exception as e:
                     logger.debug(f"No se pudieron setear comandos completos para admin {admin_id}: {e}")
             
-            logger.info("Menú de comandos actualizado con scopes específicos.")
+            logger.info(f"Menú de comandos extendido registrado para {count_admins} administradores en privado.")
         except Exception as e:
-            logger.error(f"Error actualizando menú de comandos en Telegram: {e}")
+            logger.error(f"Error actualizando menú de comandos en Telegram: {e}", exc_info=True)
