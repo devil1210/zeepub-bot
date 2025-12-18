@@ -527,7 +527,12 @@ async def descargar_epub_pendiente(
 
     # Identificar si es grupo
     is_group = update.effective_chat.type in ("group", "supergroup")
-    is_privileged = uid in config.ADMIN_USERS or uid in config.FACEBOOK_PUBLISHERS
+    
+    # Verificar privilegios usando el sistema de roles
+    from services.user_service import get_effective_user
+    user_info = await get_effective_user(uid)
+    role = user_info.get("role", "free")
+    is_privileged = role in ("admin", "staff")
 
     # Si es grupo y NO es privilegiado, forzar envío al privado
     if is_group and not is_privileged:

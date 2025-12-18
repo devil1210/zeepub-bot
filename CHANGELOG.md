@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.11.0] - 2025-12-18
+
+### Añadido
+- **Publicación en Grupos**: Todos los miembros del **Staff** (Admins y Publicadores) ahora pueden publicar libros directamente en grupos, temas (topics) y canales.
+- **Auto-borrado**: Los mensajes publicados por el Staff en grupos se eliminan automáticamente tras el tiempo configurado (`auto_delete_time`).
+
+### Cambiado
+- **Seguridad de Publicación**: Los usuarios no Staff (Free, VIP, Premium, etc.) seguirán recibiendo los libros exclusivamente en su chat privado para mantener el orden en los grupos.
+- **Lógica Interna**: Migración de la verificación de privilegios al sistema de roles asíncrono en `telegram_service.py`.
+
 ## [v3.10.1] - 2025-12-17
 
 ### Arreglado
