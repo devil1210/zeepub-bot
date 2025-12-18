@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.12.2] - 2025-12-18
+
+### Corregido
+- **Donaciones**: Se ha añadido el botón **"❌ Cancelar Registro"** y el sistema de **timeout** al flujo de reporte cuando se inicia desde un grupo (mensaje proactivo en privado).
+
 ## [v3.12.1] - 2025-12-18
 
 ### Corregido

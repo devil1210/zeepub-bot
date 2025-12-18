@@ -717,6 +717,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                     # Enviar instrucciones proactivamente al chat privado
                     timeout_min = 10
+                    # Botones: Cancelar
+                    keyboard_cancel = [[InlineKeyboardButton("❌ Cancelar Registro", callback_data=f"cancelar_donacion|{user_to_update}")]]
+
                     base_request = (
                         "🧾 <b>Comprobante Requerido</b>\n\n"
                         "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
@@ -728,15 +731,31 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         text_request = await cms.get_text("donation_proof_request", user=update.effective_user, Tiempo=timeout_min)
 
                     try:
-                        await context.bot.send_message(
+                        prompt_private = await context.bot.send_message(
                             chat_id=user_to_update,
                             text=text_request,
+                            reply_markup=InlineKeyboardMarkup(keyboard_cancel),
                             parse_mode="HTML"
                         )
+                        
+                        # Programar timeout para el mensaje privado proactivo
+                        if context.job_queue:
+                            job_name_p = f"donation_timeout_{user_to_update}_{prompt_private.message_id}"
+                            st["donation_timeout_job_name"] = job_name_p
+                            context.job_queue.run_once(
+                                donation_timeout_job,
+                                timeout_min * 60,
+                                data={
+                                    "uid": user_to_update,
+                                    "msg_id": prompt_private.message_id,
+                                    "user": update.effective_user
+                                },
+                                name=job_name_p
+                            )
                     except Exception as e:
                         logger.warning(f"No se pudo enviar mensaje al privado: {e}")
 
-                    # Programar auto-borrado en 2 minutos (120s)
+                    # Programar auto-borrado del prompt del grupo en 2 minutos (120s)
                     if context.job_queue:
                         context.job_queue.run_once(
                             delete_message_job,
