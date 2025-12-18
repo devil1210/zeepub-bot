@@ -289,13 +289,6 @@ COMMANDS_REGISTRY = {
         "usage": "/view_msge <slug>",
         "example": "/view_msge start_welcome_unlimited",
     },
-    "templates": {
-        "cat": "plugins",
-        "desc": "Listar plantillas",
-        "long_desc": "Lista texto por defecto y variables de plantillas editables.",
-        "usage": "/templates",
-        "example": "/templates",
-    },
     "send_msge": {
         "cat": "plugins",
         "desc": "Enviar guardado",
@@ -346,7 +339,7 @@ COMMANDS_REGISTRY = {
         "example": "/vars",
     },
     "template_vars": {
-        "cat": "plugins",
+        "cat": "admin",
         "desc": "Listar variables",
         "long_desc": "Lista las variables globales disponibles (como [Nombre], [Fecha]) para usar en cualquier plantilla.",
         "usage": "/template_vars",
@@ -417,7 +410,7 @@ class HelpPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "2.2.0"
+        return "2.3.0"
 
     @property
     def description(self) -> str:
@@ -448,6 +441,15 @@ class HelpPlugin(BasePlugin):
             )
 
             logger.info("Plugin Help: Handlers registrados.")
+            
+            # Register Bot Commands Menu
+            try:
+                # We do this in a background task to not block initialization if many admins
+                import asyncio
+                asyncio.create_task(self.update_bot_commands(app.bot))
+            except Exception as e:
+                logger.warning(f"Error scheduling bot commands update: {e}")
+
             return True
         except Exception as e:
             logger.error(f"Error registrando handlers del plugin Help: {e}")
@@ -457,17 +459,14 @@ class HelpPlugin(BasePlugin):
         pass
 
     async def _check_permissions(self, uid):
-        is_admin = uid in config.ADMIN_USERS
-        
-        # Check DB for publisher: Staff + Publicador
+        # Check DB for role
         from services.user_service import get_effective_user
         user_data = await get_effective_user(uid)
         role = user_data.get("role", "free")
         custom_status = user_data.get("custom_status")
-        
+
+        is_admin = (role == "admin") or (uid in config.ADMIN_USERS)
         is_publisher = (role == "staff" and custom_status == "Publicador")
-        # Legacy/Config fallback if desired, but consistent with /start now:
-        # is_publisher = is_publisher or (uid in config.FACEBOOK_PUBLISHERS)
         
         return is_admin, is_publisher
 
@@ -478,7 +477,7 @@ class HelpPlugin(BasePlugin):
         enable_donations = os.getenv("ENABLE_DONATIONS", "True").lower() == "true"
         enable_links = os.getenv("ENABLE_LINKS_MANAGER", "True").lower() == "true"
         enable_maint = os.getenv("ENABLE_DB_MAINTENANCE", "True").lower() == "true"
-        enable_custom = os.getenv("ENABLE_CUSTOM_MESSAGES", "False").lower() == "true"
+        enable_custom = os.getenv("ENABLE_CUSTOM_MESSAGES", "True").lower() == "true"
         enable_group = config.ENABLE_GROUP_MANAGER
 
         if enable_donations:
@@ -740,3 +739,41 @@ class HelpPlugin(BasePlugin):
             ]
         ]
         return InlineKeyboardMarkup(buttons)
+
+    async def update_bot_commands(self, bot):
+        """Registra los comandos en el menú nativo de Telegram (/)."""
+        from telegram import BotCommand, BotCommandScopeDefault, BotCommandScopeChat
+        try:
+            # 1. Comandos para TODOS (Scope Default)
+            public_cmds = [
+                BotCommand("start", "Iniciar bot"),
+                BotCommand("help", "Ayuda simple"),
+                BotCommand("menu", "Menú interactivo"),
+                BotCommand("search", "Buscar libros"),
+                BotCommand("donar", "Link donación"),
+                BotCommand("niveles", "Info niveles"),
+                BotCommand("status", "Mi estado"),
+                BotCommand("cancel", "Cancelar acción"),
+            ]
+            await bot.set_my_commands(public_cmds, scope=BotCommandScopeDefault())
+            logger.debug("Comandos default registrados en Telegram.")
+
+            # 2. Comandos para Administradores (Config)
+            # Solo podemos hacerlo proactivamente para los IDs en config.ADMIN_USERS
+            all_cmds = []
+            for cmd_name in sorted(COMMANDS_REGISTRY.keys()):
+                # Telegram limita a 100 comandos por scope
+                if len(all_cmds) >= 100:
+                    break
+                data = COMMANDS_REGISTRY[cmd_name]
+                all_cmds.append(BotCommand(cmd_name, data["desc"]))
+
+            for admin_id in config.ADMIN_USERS:
+                try:
+                    await bot.set_my_commands(all_cmds, scope=BotCommandScopeChat(chat_id=admin_id))
+                except Exception as e:
+                    logger.debug(f"No se pudieron setear comandos para admin {admin_id}: {e}")
+            
+            logger.info("Menú de comandos actualizado en Telegram para admins conocidos.")
+        except Exception as e:
+            logger.error(f"Error actualizando menú de comandos en Telegram: {e}")

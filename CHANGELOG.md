@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.13.0] - 2025-12-18
+
+### Añadido
+- **Menú de Comandos**: Implementada la sincronización automática de comandos en el menú nativo de Telegram (`/`).
+- **Ayuda**: Los administradores ahora pueden ver todos los comandos de gestión, incluso si no están definidos en el `.env`, gracias a la integración con el sistema de roles en base de datos.
+- **Ayuda**: Categoría de "Mensajes" (🧩) ahora visible por defecto si el plugin está activo.
+
+### Corregido
+- **Ayuda**: Eliminados comandos duplicados en el registro.
+
 ## [v3.12.3] - 2025-12-18
 
 ### Corregido
