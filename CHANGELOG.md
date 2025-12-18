@@ -5,6 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.12.0] - 2025-12-18
+
+### Añadido
+- **Mejoras en Donaciones**:
+    - Se ha añadido un botón de **"❌ Cancelar Registro"** al solicitar el comprobante de donación.
+    - Se ha implementado un sistema de **tiempo de espera (timeout)** de 10 minutos. Si no se recibe el comprobante en ese tiempo, el registro se cancela automáticamente.
+    - Nuevas plantillas de mensajes para cancelación manual y por tiempo de espera.
+
+### Cambiado
+- **Flujo de Recepción**: El bot ahora detiene correctamente el cronómetro de espera cuando se recibe un comprobante válido.
+
 ## [v3.11.0] - 2025-12-18
 
 ### Añadido

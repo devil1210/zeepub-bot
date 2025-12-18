@@ -342,7 +342,15 @@ async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     # Limpiar estado
-    st["waiting_for_donation_proof"] = False
+    st.pop("waiting_for_donation_proof", None)
+
+    # Cancelar job de timeout si existe
+    job_name = st.pop("donation_timeout_job_name", None)
+    if job_name and context.job_queue:
+        jobs = context.job_queue.get_jobs_by_name(job_name)
+        for job in jobs:
+            job.schedule_removal()
+            logger.debug(f"Donation timeout job {job_name} cancelled (proof received).")
 
     # Notificar usuario
     cms = context.application.plugin_manager.get_plugin("custom_messages")

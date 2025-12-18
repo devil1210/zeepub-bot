@@ -635,6 +635,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.debug("Could not discard FB preview buttons: %s", e)
         return
+
+    # Handler: Cancelar Donación
+    if data.startswith("cancelar_donacion|"):
+        await cancelar_donacion(update, context)
+        return
+
     # Handler: Notificar Donación (con protección de usuario)
     if data.startswith("notificar_donacion") or data == "notificar_donacion":
         try:
@@ -742,22 +748,45 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
 
             # 3. Es chat privado
+            # Timeout de 10 minutos (definido por el usuario)
+            timeout_min = 10
+            
+            # Botones: Cancelar
+            keyboard = [[InlineKeyboardButton("❌ Cancelar Registro", callback_data=f"cancelar_donacion|{user_to_update}")]]
+
             base_request = (
                 "🧾 <b>Comprobante Requerido</b>\n\n"
                 "Por favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\n"
-                "Lo revisaremos para actualizar tu nivel."
+                "Lo revisaremos para actualizar tu nivel.\n\n"
+                f"⏳ Tienes <b>{timeout_min} minutos</b> para enviar el comprobante."
             )
             text_request = base_request
             if cms and cms.enabled:
-                text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+                text_request = await cms.get_text("donation_proof_request", Tiempo=timeout_min)
 
             await query.answer()
-            await context.bot.send_message(
+            prompt_msg = await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=text_request,
+                reply_markup=InlineKeyboardMarkup(keyboard),
                 parse_mode="HTML"
             )
-            # No job needed in private chat roughly, or user didn't ask for it there.
+
+            # Programar timeout
+            if context.job_queue:
+                job_name = f"donation_timeout_{user_to_update}_{prompt_msg.message_id}"
+                st["donation_timeout_job_name"] = job_name
+                context.job_queue.run_once(
+                    donation_timeout_job,
+                    timeout_min * 60,
+                    data={
+                        "uid": user_to_update,
+                        "msg_id": prompt_msg.message_id,
+                        "user": update.effective_user
+                    },
+                    name=job_name
+                )
+
         except Exception as e:
             logger.error(f"Error handling notificar_donacion: {e}", exc_info=True)
             try:
@@ -856,13 +885,99 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def delete_message_job(context: ContextTypes.DEFAULT_TYPE):
-    """Trabajo agendado para borrar mensajes."""
+    """Job que borra un mensaje."""
     job = context.job
     data = job.data
     try:
-        await context.bot.delete_message(chat_id=data["chat_id"], message_id=data["message_id"])
+        await context.bot.delete_message(
+            chat_id=data["chat_id"], message_id=data["message_id"]
+        )
     except Exception as e:
-        logger.debug(f"Auto-delete failed (maybe already deleted): {e}")
+        logger.debug(f"Error deleting message in job: {e}")
+
+
+async def donation_timeout_job(context: ContextTypes.DEFAULT_TYPE):
+    """Job que cancela el registro de donación por inactividad."""
+    job = context.job
+    uid = job.data["uid"]
+    st = state_manager.get_user_state(uid)
+
+    if not st.get("waiting_for_donation_proof"):
+        return
+
+    # Limpiar estado
+    st.pop("waiting_for_donation_proof", None)
+    st.pop("donation_timeout_job_name", None)
+
+    # Notificar al usuario
+    cms = context.application.plugin_manager.get_plugin("custom_messages")
+    user = job.data.get("user")
+
+    base_text = "⚠️ <b>Registro de Donación Cancelado</b>\n\nEl tiempo de espera ha expirado."
+    text = base_text
+    if cms and cms.enabled:
+        text = await cms.get_text("donation_cancelled_timeout", user=user)
+
+    try:
+        await context.bot.send_message(chat_id=uid, text=text, parse_mode="HTML")
+    except Exception as e:
+        logger.warning(f"No se pudo notificar timeout de donación a {uid}: {e}")
+
+    # Borrar el mensaje de solicitud si se envió
+    msg_id = job.data.get("msg_id")
+    if msg_id:
+        try:
+            await context.bot.delete_message(chat_id=uid, message_id=msg_id)
+        except Exception:
+            pass
+
+
+async def cancelar_donacion(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler para el botón 'Cancelar Registro' de donación."""
+    query = update.callback_query
+    uid = update.effective_user.id
+    st = state_manager.get_user_state(uid)
+
+    # Verificar si el botón es del usuario dueño
+    try:
+        target_uid = int(query.data.split("|")[1])
+        if uid != target_uid:
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_text = "⚠️ Este botón no es para ti."
+            text = base_text
+            if cms and cms.enabled:
+                text = await cms.get_text("button_unauthorized")
+            await query.answer(text, show_alert=True)
+            return
+    except (ValueError, IndexError):
+        pass
+
+    # Limpiar estado
+    st.pop("waiting_for_donation_proof", None)
+
+    # Cancelar job de timeout si existe
+    job_name = st.pop("donation_timeout_job_name", None)
+    if job_name and context.job_queue:
+        jobs = context.job_queue.get_jobs_by_name(job_name)
+        for job in jobs:
+            job.schedule_removal()
+
+    # Notificar y borrar mensaje
+    cms = context.application.plugin_manager.get_plugin("custom_messages")
+    base_text = "✅ <b>Registro Cancelado</b>\n\nEl registro de tu donación ha sido cancelado."
+    text = base_text
+    if cms and cms.enabled:
+        text = await cms.get_text("donation_cancelled_user", user=update.effective_user)
+
+    try:
+        await query.answer("Registro cancelado.")
+        await query.edit_message_text(text, parse_mode="HTML")
+    except Exception:
+        try:
+            await context.bot.send_message(chat_id=uid, text=text, parse_mode="HTML")
+            await query.message.delete()
+        except Exception:
+            pass
 
 
 def register_handlers(app):
@@ -872,7 +987,7 @@ def register_handlers(app):
     app.add_handler(
         CallbackQueryHandler(
             button_handler,
-            pattern="^(col\\||lib\\||nav\\||subir_nivel|volver_colecciones|volver_ultima|cerrar|cerrar_donacion\\||descargar_epub|preparar_post_fb|publicar_fb|descartar_fb|publish_target\\||set_publish_temp\\||notificar_donacion|ir_privado\\|)",
+            pattern="^(col\\||lib\\||nav\\||subir_nivel|volver_colecciones|volver_ultima|cerrar|cerrar_donacion\\||cancelar_donacion\\||descargar_epub|preparar_post_fb|publicar_fb|descartar_fb|publish_target\\||set_publish_temp\\||notificar_donacion|ir_privado\\|)",
         )
     )
     # Texto libre handlers

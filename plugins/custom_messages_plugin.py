@@ -137,15 +137,20 @@ TEMPLATE_REGISTRY = {
         "vars": ["[Nombre]", "[Alias]", "[ID]"],
         "default": "💰 <b>Nueva Donación Reportada</b>\n\n👤 <b>Usuario:</b> [Nombre]\n{{if Alias}}🔗 <b>Alias:</b> @[Alias]\n{{endif}}🆔 <b>ID:</b> <code>[ID]</code>\n\nEl usuario ha indicado que realizó una donación en Ko-fi.\nPor favor verifica y usa <code>/nivel</code> (si existiera) o actualiza manualmente.",
     },
+    "donation_cancelled_timeout": {
+        "desc": "Mensaje de registro cancelado por inactividad",
+        "vars": ["[Nombre]"],
+        "default": "⚠️ <b>Registro de Donación Cancelado</b>\n\nHola [Nombre], el tiempo de espera para enviar el comprobante (10 min) ha expirado. Si aún deseas registrar tu donación, por favor usa /donar nuevamente.",
+    },
+    "donation_cancelled_user": {
+        "desc": "Mensaje de registro cancelado por el usuario",
+        "vars": ["[Nombre]"],
+        "default": "✅ <b>Registro Cancelado</b>\n\nHola [Nombre], el registro de tu donación ha sido cancelado exitosamente.",
+    },
     "donation_proof_request": {
         "desc": "Solicitud de comprobante de donación",
-        "vars": [],
-        "default": "🧾 <b>Comprobante Requerido</b>\n\nPor favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\nLo revisaremos para actualizar tu nivel.",
-    },
-    "donation_proof_received": {
-        "desc": "Confirmación de recepción de comprobante",
-        "vars": [],
-        "default": "✅ <b>Comprobante recibido</b>\n\nHemos enviado tu comprobante a los administradores para su verificación.\nTe avisaremos cuando tu nivel sea actualizado.\n¡Gracias por tu apoyo! ❤️",
+        "vars": ["[Tiempo]"],
+        "default": "🧾 <b>Comprobante Requerido</b>\n\nPor favor, envía una <b>captura de pantalla</b> o <b>archivo PDF</b> de tu comprobante de donación.\nLo revisaremos para actualizar tu nivel.\n\n⏳ Tienes <b>[Tiempo] minutos</b> para enviar el comprobante antes de que el registro se cancele automáticamente.",
     },
     "donation_link_unauthorized": {
         "desc": "Enlace de donación no autorizado",
