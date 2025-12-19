@@ -773,7 +773,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     base_redirect = f"👋 Hola {update.effective_user.mention_html()},\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo."
                     text_redirect = base_redirect
                     if cms and cms.enabled:
-                        text_redirect = await cms.get_text("donation_redirect_prompt", Nombre=update.effective_user.mention_html())
+                        text_redirect = await cms.get_text("donation_redirect_prompt", user=update.effective_user)
 
                     base_text = "✅ Solicitud registrada."
                     text_answer = base_text

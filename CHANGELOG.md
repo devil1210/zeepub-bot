@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.13.7] - 2025-12-19
+
+### Añadido
+- **Mensajes**: Unificada la lógica de menciones. Ahora el placeholder `[Nombre]` es clickeable por defecto en todas las plantillas (Status, Ayuda, Bienvenida, etc.) usando `mention_html()`.
+
+### Cambiado
+- **Refactorización**: Eliminadas conversiones manuales a HTML en los controladores de comandos y callbacks, centralizando la lógica en el plugin de mensajes.
+- **Versiones**: Plugin `custom_messages` actualizado a v1.4.1.
+
 ## [v3.13.6] - 2025-12-19
 
 ### Corregido

@@ -665,7 +665,7 @@ class CustomMessagesPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.4.0"
+        return "1.4.1"
 
     @property
     def description(self) -> str:
@@ -1021,7 +1021,11 @@ class CustomMessagesPlugin(BasePlugin):
 
         # 2. Inject User Variables (Context)
         if user:
-            vars_to_use["Nombre"] = user.first_name or "Usuario"
+            vars_to_use["Nombre"] = (
+                user.mention_html()
+                if hasattr(user, "mention_html")
+                else (user.first_name or "Usuario")
+            )
             vars_to_use["Alias"] = user.username
             vars_to_use["ID"] = str(user.id)
 
