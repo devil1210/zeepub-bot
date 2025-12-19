@@ -7,6 +7,8 @@ from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
+from services.settings_service import get_setting, set_setting
+from services.user_service import get_effective_user
 
 logger = logging.getLogger(__name__)
 
@@ -410,7 +412,7 @@ class HelpPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "2.3.0"
+        return "3.13.4"
 
     @property
     def description(self) -> str:
@@ -431,21 +433,28 @@ class HelpPlugin(BasePlugin):
             # New mapping
             app.add_handler(CommandHandler("help", self.help_simple))
             app.add_handler(CommandHandler("ayuda", self.help_simple))
-            
+
             # Interactive mode
             app.add_handler(CommandHandler("menu", self.help_interactive))
             app.add_handler(CommandHandler("help_full", self.help_interactive))
-            
+
             app.add_handler(
                 CallbackQueryHandler(self.help_navigation_callback, pattern=r"^help\|")
             )
 
+            # Dynamic Menu Management (Admin Only)
+            app.add_handler(CommandHandler("add_menu_cmd", self.add_menu_cmd))
+            app.add_handler(CommandHandler("del_menu_cmd", self.del_menu_cmd))
+            app.add_handler(CommandHandler("list_menu_cmd", self.list_menu_cmd))
+            app.add_handler(CommandHandler("refresh_menu", self.refresh_menu))
+
             logger.info("Plugin Help: Handlers registrados.")
-            
+
             # Register Bot Commands Menu
             try:
                 # We do this in a background task to not block initialization if many admins
                 import asyncio
+
                 asyncio.create_task(self.update_bot_commands(app.bot))
             except Exception as e:
                 logger.warning(f"Error scheduling bot commands update: {e}")
@@ -461,13 +470,14 @@ class HelpPlugin(BasePlugin):
     async def _check_permissions(self, uid):
         # Check DB for role
         from services.user_service import get_effective_user
+
         user_data = await get_effective_user(uid)
         role = user_data.get("role", "free")
         custom_status = user_data.get("custom_status")
 
         is_admin = (role == "admin") or (uid in config.ADMIN_USERS)
-        is_publisher = (role == "staff" and custom_status == "Publicador")
-        
+        is_publisher = role == "staff" and custom_status == "Publicador"
+
         return is_admin, is_publisher
 
     def _get_visible_categories(self, is_admin, is_publisher):
@@ -503,33 +513,33 @@ class HelpPlugin(BasePlugin):
         """Muestra una lista simple de comandos disponibles."""
         uid = update.effective_user.id
         thread_id = get_thread_id(update)
-        
+
         is_admin, is_publisher = await self._check_permissions(uid)
         visible_cats = self._get_visible_categories(is_admin, is_publisher)
-        
+
         text = "🤖 <b>Comandos Disponibles</b>\n\n"
-        
+
         # Iterar categorias en orden deseado (definido en CATEGORIES o visible_cats order)
         # visible_cats tiene un orden basico
-        
+
         for cat_key in visible_cats:
             cat_name = CATEGORIES.get(cat_key, cat_key)
-            
+
             # Get commands for this cat
             cmds = [k for k, v in COMMANDS_REGISTRY.items() if v["cat"] == cat_key]
             cmds.sort()
-            
+
             if not cmds:
                 continue
-                
+
             text += f"<b>{cat_name}</b>\n"
             for cmd in cmds:
                 desc = COMMANDS_REGISTRY[cmd]["desc"]
                 text += f"/{cmd} - {desc}\n"
             text += "\n"
-            
+
         text += "💡 <i>Usa /menu para ver la ayuda interactiva.</i>"
-        
+
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
@@ -537,7 +547,9 @@ class HelpPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def help_interactive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def help_interactive(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """Muestra el menú principal de ayuda (Interactivo)."""
         uid = update.effective_user.id
         first_name = update.effective_user.first_name
@@ -552,9 +564,7 @@ class HelpPlugin(BasePlugin):
         )
         text = base_text
         if cms and cms.enabled:
-            text = await cms.get_text(
-                "help_main_header", user=update.effective_user
-            )
+            text = await cms.get_text("help_main_header", user=update.effective_user)
 
         # Pre-calc permissions for keyboard builder
         is_admin, is_publisher = await self._check_permissions(uid)
@@ -579,7 +589,7 @@ class HelpPlugin(BasePlugin):
         # Format: help | action | arg
         action = data[1]
         arg = data[2] if len(data) > 2 else None
-        
+
         # Check permissions early
         is_admin, is_publisher = await self._check_permissions(uid)
 
@@ -623,13 +633,13 @@ class HelpPlugin(BasePlugin):
                 return
 
             cat_name = CATEGORIES.get(cat_key, "Desconocido")
-            
+
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             text = f"📂 <b>Categoría: {cat_name}</b>\n\nSelecciona un comando para ver detalles:"
-            
+
             if cms and cms.enabled:
                 text = await cms.get_text(
-                   "help_cat_header", user=update.effective_user, Categoria=cat_name
+                    "help_cat_header", user=update.effective_user, Categoria=cat_name
                 )
 
             keyboard = self._build_commands_keyboard(cat_key)
@@ -742,35 +752,54 @@ class HelpPlugin(BasePlugin):
 
     async def update_bot_commands(self, bot):
         """Registra los comandos en el menú nativo de Telegram (/)."""
-        from telegram import BotCommand, BotCommandScopeDefault, BotCommandScopeChat, BotCommandScopeAllPrivateChats, BotCommandScopeAllGroupChats, BotCommandScopeAllChatAdministrators
+        from telegram import (
+            BotCommand,
+            BotCommandScopeDefault,
+            BotCommandScopeChat,
+            BotCommandScopeAllPrivateChats,
+            BotCommandScopeAllGroupChats,
+            BotCommandScopeAllChatAdministrators,
+        )
+
         try:
             # 1. Comandos para TODOS (Básicos)
-            public_cmds = [
-                BotCommand("start", "Iniciar bot"),
-                BotCommand("help", "Ayuda simple"),
-                BotCommand("menu", "Menú interactivo"),
-                BotCommand("search", "Buscar libros"),
-                BotCommand("donar", "Link donación"),
-                BotCommand("niveles", "Info niveles"),
-                BotCommand("status", "Mi estado"),
-                BotCommand("cancel", "Cancelar acción"),
-            ]
-            
+            # Intentar cargar desde DB
+            raw_cmds = get_setting("menu_public_commands")
+            if raw_cmds:
+                try:
+                    cmd_list = [c.strip() for c in raw_cmds.split(",") if c.strip()]
+                    public_cmds = []
+                    for c_name in cmd_list:
+                        desc = COMMANDS_REGISTRY.get(c_name, {}).get(
+                            "desc", "Comando bot"
+                        )
+                        public_cmds.append(BotCommand(c_name, desc))
+                except Exception as ex:
+                    logger.error(f"Error parseando menu_public_commands: {ex}")
+                    public_cmds = self._get_default_public_cmds()
+            else:
+                public_cmds = self._get_default_public_cmds()
+
             # Forzar visibilidad en todos los contextos posibles para usuarios normales
             # Registramos el set público en TODOS los scopes globales
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeDefault())
-            await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllPrivateChats())
+            await bot.set_my_commands(
+                public_cmds, scope=BotCommandScopeAllPrivateChats()
+            )
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllGroupChats())
-            
+
             # Los admins de grupo también ven el menú básico por defecto (evita que vean menú vacío)
-            await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllChatAdministrators())
-            
+            await bot.set_my_commands(
+                public_cmds, scope=BotCommandScopeAllChatAdministrators()
+            )
+
             logger.info("Comandos básicos registrados en todos los scopes globales.")
 
             # 2. Menú COMPLETO para Administradores configurados (en su privado)
             all_cmds = []
             for cmd_name in sorted(COMMANDS_REGISTRY.keys()):
-                if len(all_cmds) >= 100: break
+                if len(all_cmds) >= 100:
+                    break
                 data = COMMANDS_REGISTRY[cmd_name]
                 all_cmds.append(BotCommand(cmd_name, data["desc"]))
 
@@ -778,11 +807,130 @@ class HelpPlugin(BasePlugin):
             for admin_id in config.ADMIN_USERS:
                 try:
                     # Esto aplica SOLO al chat privado del admin
-                    await bot.set_my_commands(all_cmds, scope=BotCommandScopeChat(chat_id=admin_id))
+                    await bot.set_my_commands(
+                        all_cmds, scope=BotCommandScopeChat(chat_id=admin_id)
+                    )
                     count_admins += 1
                 except Exception as e:
-                    logger.debug(f"No se pudieron setear comandos completos para admin {admin_id}: {e}")
-            
-            logger.info(f"Menú de comandos extendido registrado para {count_admins} administradores en privado.")
+                    logger.debug(
+                        f"No se pudieron setear comandos completos para admin {admin_id}: {e}"
+                    )
+
+            logger.info(
+                f"Menú de comandos extendido registrado para {count_admins} administradores en privado."
+            )
         except Exception as e:
-            logger.error(f"Error actualizando menú de comandos en Telegram: {e}", exc_info=True)
+            logger.error(
+                f"Error actualizando menú de comandos en Telegram: {e}", exc_info=True
+            )
+
+    def _get_default_public_cmds(self):
+        from telegram import BotCommand
+
+        return [
+            BotCommand("start", "Iniciar bot"),
+            BotCommand("help", "Ayuda simple"),
+            BotCommand("menu", "Menú interactivo"),
+            BotCommand("search", "Buscar libros"),
+            BotCommand("donar", "Link donación"),
+            BotCommand("niveles", "Info niveles"),
+            BotCommand("status", "Mi estado"),
+            BotCommand("cancel", "Cancelar acción"),
+        ]
+
+    async def add_menu_cmd(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await self._is_bot_admin(update.effective_user.id):
+            return
+
+        cmd = context.args[0].lower().replace("/", "") if context.args else None
+        if not cmd:
+            await update.message.reply_text("❌ Uso: /add_menu_cmd <comando>")
+            return
+
+        if cmd not in COMMANDS_REGISTRY:
+            await update.message.reply_text(
+                f"❌ El comando <code>/{cmd}</code> no existe en el registro.",
+                parse_mode="HTML",
+            )
+            return
+
+        current = get_setting("menu_public_commands", "")
+        cmds = [c.strip() for c in current.split(",") if c.strip()]
+
+        if cmd in cmds:
+            await update.message.reply_text(
+                f"ℹ️ El comando <code>/{cmd}</code> ya está en el menú público.",
+                parse_mode="HTML",
+            )
+            return
+
+        cmds.append(cmd)
+        set_setting("menu_public_commands", ",".join(cmds))
+
+        await update.message.reply_text(
+            f"✅ Comando <code>/{cmd}</code> añadido al menú público. Actualizando...",
+            parse_mode="HTML",
+        )
+        await self.update_bot_commands(context.bot)
+
+    async def del_menu_cmd(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await self._is_bot_admin(update.effective_user.id):
+            return
+
+        cmd = context.args[0].lower().replace("/", "") if context.args else None
+        if not cmd:
+            await update.message.reply_text("❌ Uso: /del_menu_cmd <comando>")
+            return
+
+        current = get_setting("menu_public_commands", "")
+        cmds = [c.strip() for c in current.split(",") if c.strip()]
+
+        if cmd not in cmds:
+            await update.message.reply_text(
+                f"❌ El comando <code>/{cmd}</code> no está en el menú público.",
+                parse_mode="HTML",
+            )
+            return
+
+        cmds.remove(cmd)
+        set_setting("menu_public_commands", ",".join(cmds))
+
+        await update.message.reply_text(
+            f"✅ Comando <code>/{cmd}</code> eliminado del menú público. Actualizando...",
+            parse_mode="HTML",
+        )
+        await self.update_bot_commands(context.bot)
+
+    async def list_menu_cmd(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await self._is_bot_admin(update.effective_user.id):
+            return
+
+        current = get_setting("menu_public_commands", "")
+        if not current:
+            # Load defaults if empty to show what's currently active
+            cmds = [c.command for c in self._get_default_public_cmds()]
+            text = "📋 <b>Menú Público (Por Defecto):</b>\n\n"
+        else:
+            cmds = [c.strip() for c in current.split(",") if c.strip()]
+            text = "📋 <b>Menú Público Personalizado:</b>\n\n"
+
+        for c in cmds:
+            text += f"• <code>/{c}</code>\n"
+
+        await update.message.reply_text(text, parse_mode="HTML")
+
+    async def refresh_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await self._is_bot_admin(update.effective_user.id):
+            return
+
+        await update.message.reply_text(
+            "🔄 Refrescando menú de comandos en Telegram..."
+        )
+        await self.update_bot_commands(context.bot)
+        await update.message.reply_text("✅ Menú refrescado.")
+
+    async def _is_bot_admin(self, user_id: int) -> bool:
+        if user_id in config.ADMIN_USERS:
+            return True
+        user = await get_effective_user(user_id)
+        return user and user.get("role") == "admin"

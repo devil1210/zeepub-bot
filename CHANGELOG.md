@@ -5,10 +5,18 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.13.4] - 2025-12-18
+
+### Añadido
+- **Menú de Comandos**: Gestión dinámica del menú de comandos (Admin).
+  - Comandos para añadir/quitar comandos del menú público sin reiniciar.
+  - Persistencia de configuración en base de datos.
+  - Refuerzo de validación y limpieza del registro de ayuda.
+
 ## [v3.13.3] - 2025-12-18
 
 ### Corregido
-- **Menú de Comandos**: Forzada la visibilidad en grupos y topics (supergrupos con foros) mediante el registro exhaustivo en todos los ámbitos globales (`Default`, `AllGroupChats`, `AllChatAdministrators`).
+- **Menú de Comandos**: Registro exhaustivo de scopes para menú de comandos en grupos y tópicos globales (`Default`, `AllGroupChats`, `AllChatAdministrators`).
 
 ## [v3.13.2] - 2025-12-18
 
