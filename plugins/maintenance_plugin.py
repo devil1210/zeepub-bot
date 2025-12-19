@@ -69,9 +69,16 @@ class MaintenancePlugin(BasePlugin):
             return
 
         thread_id = get_thread_id(update)
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_prep = "⏳ Generando backup..."
+        text_prep = (
+            await cms.get_text("maint_backup_preparing")
+            if (cms and cms.enabled)
+            else base_prep
+        )
         msg = await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="⏳ Generando backup...",
+            text=text_prep,
             message_thread_id=thread_id,
         )
 
@@ -81,12 +88,18 @@ class MaintenancePlugin(BasePlugin):
             filename = await generate_backup_file()
 
             # Enviar archivo
+            base_caption = f"📦 Backup de base de datos\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            caption = (
+                await cms.get_text("maint_backup_caption", Fecha=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                if (cms and cms.enabled)
+                else base_caption
+            )
             with open(filename, "rb") as f:
                 await context.bot.send_document(
                     chat_id=update.effective_chat.id,
                     document=f,
                     filename=filename,
-                    caption=f"📦 Backup de base de datos\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                    caption=caption,
                     message_thread_id=thread_id,
                 )
 
@@ -121,16 +134,28 @@ class MaintenancePlugin(BasePlugin):
             not update.message.reply_to_message
             or not update.message.reply_to_message.document
         ):
-            await update.message.reply_text(
-                "⚠️ Debes responder a un mensaje con el archivo .sql de backup para restaurarlo."
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_err = "⚠️ Debes responder a un mensaje con el archivo .sql de backup para restaurarlo."
+            text_err = (
+                await cms.get_text("maint_restore_error_no_doc")
+                if (cms and cms.enabled)
+                else base_err
             )
+            await update.message.reply_text(text_err)
             return
 
         doc = update.message.reply_to_message.document
         thread_id = get_thread_id(update)
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_prep = "⏳ Descargando y restaurando backup... (Esto borrará los datos actuales)"
+        text_prep = (
+            await cms.get_text("maint_restore_preparing")
+            if (cms and cms.enabled)
+            else base_prep
+        )
         msg = await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="⏳ Descargando y restaurando backup... (Esto borrará los datos actuales)",
+            text=text_prep,
             message_thread_id=thread_id,
         )
 
@@ -235,10 +260,16 @@ class MaintenancePlugin(BasePlugin):
 
                 await file.download_to_drive(DB_PATH)
 
+            base_success = "✅ Base de datos restaurada exitosamente."
+            text_success = (
+                await cms.get_text("maint_restore_success")
+                if (cms and cms.enabled)
+                else base_success
+            )
             await context.bot.edit_message_text(
                 chat_id=update.effective_chat.id,
                 message_id=msg.message_id,
-                text="✅ Base de datos restaurada exitosamente.",
+                text=text_success,
             )
             logger.info(f"Admin {uid} restauró la base de datos desde {doc.file_name}")
 
@@ -260,9 +291,16 @@ class MaintenancePlugin(BasePlugin):
             return
 
         thread_id = get_thread_id(update)
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_prep = "⏳ Generando CSV de la base de datos..."
+        text_prep = (
+            await cms.get_text("maint_export_preparing")
+            if (cms and cms.enabled)
+            else base_prep
+        )
         msg = await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="⏳ Generando CSV de la base de datos...",
+            text=text_prep,
             message_thread_id=thread_id,
         )
 
@@ -312,12 +350,18 @@ class MaintenancePlugin(BasePlugin):
                 await asyncio.to_thread(_write_csv, filename, columns, rows)
 
             # Enviar archivo
+            base_caption = f"📊 Exportación de base de datos\n📅 {timestamp}\n📦 {len(rows)} registros"
+            caption = (
+                await cms.get_text("maint_export_caption", Fecha=timestamp, Registros=len(rows))
+                if (cms and cms.enabled)
+                else base_caption
+            )
             with open(filename, "rb") as f:
                 await context.bot.send_document(
                     chat_id=update.effective_chat.id,
                     document=f,
                     filename=filename,
-                    caption=f"📊 Exportación de base de datos\n📅 {timestamp}\n📦 {len(rows)} registros",
+                    caption=caption,
                     message_thread_id=thread_id,
                 )
 
@@ -348,12 +392,21 @@ class MaintenancePlugin(BasePlugin):
 
         st = state_manager.get_user_state(uid)
         st["waiting_for_history_json"] = True
-
-        await update.message.reply_text(
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_instr = (
             "📂 <b>Modo de Importación Activado</b>\n\n"
             "Por favor, envía ahora el archivo <code>result.json</code> exportado de Telegram Desktop.\n"
             "El bot procesará el archivo y guardará el historial de libros publicados.\n\n"
-            "<i>Este modo se desactivará automáticamente después de recibir el archivo.</i>",
+            "<i>Este modo se desactivará automáticamente después de recibir el archivo.</i>"
+        )
+        text_instr = (
+            await cms.get_text("maint_import_instructions")
+            if (cms and cms.enabled)
+            else base_instr
+        )
+
+        await update.message.reply_text(
+            text_instr,
             parse_mode="HTML",
         )
 
@@ -434,9 +487,18 @@ class MaintenancePlugin(BasePlugin):
             return
 
         if not context.args or context.args[0] != "confirm":
-            await update.message.reply_text(
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_confirm = (
                 "⚠️ <b>¡ATENCIÓN!</b> Esto borrará TODO el historial de libros publicados.\n"
-                "Para confirmar, usa: <code>/clear_history confirm</code>",
+                "Para confirmar, usa: <code>/clear_history confirm</code>"
+            )
+            text_confirm = (
+                await cms.get_text("maint_history_clear_confirm")
+                if (cms and cms.enabled)
+                else base_confirm
+            )
+            await update.message.reply_text(
+                text_confirm,
                 parse_mode="HTML",
             )
             return
@@ -445,7 +507,14 @@ class MaintenancePlugin(BasePlugin):
             from services.history_service import clear_history
 
             if clear_history():
-                await update.message.reply_text("✅ Historial borrado exitosamente.")
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_success = "✅ Historial borrado exitosamente."
+                text_success = (
+                    await cms.get_text("maint_history_cleared")
+                    if (cms and cms.enabled)
+                    else base_success
+                )
+                await update.message.reply_text(text_success)
             else:
                 await update.message.reply_text("❌ Error al borrar el historial.")
         except Exception as e:

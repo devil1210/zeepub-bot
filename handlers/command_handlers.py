@@ -130,9 +130,16 @@ class CommandHandlers:
                     )
                 ],
             ]
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_txt = "🔧 Eres publisher — ¿dónde quieres publicar la próxima vez que selecciones un libro?"
+            text_pub = (
+                await cms.get_text("publisher_target_prompt")
+                if (cms and cms.enabled)
+                else base_txt
+            )
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text="🔧 Eres publisher — ¿dónde quieres publicar la próxima vez que selecciones un libro?",
+                text=text_pub,
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 message_thread_id=thread_id,
             )
@@ -511,10 +518,16 @@ class CommandHandlers:
                     update, context, search_url, from_collection=False, new_message=True
                 )
         else:
-            # Sin término: pedir uno
             st["esperando_busqueda"] = True
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_search = "🔍 ¿Qué libro buscas? Escribe el título o autor:"
+            text_search = (
+                await cms.get_text("search_prompt")
+                if (cms and cms.enabled)
+                else base_search
+            )
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text="🔍 ¿Qué libro buscas? Escribe el título o autor:",
+                text=text_search,
                 message_thread_id=thread_id,
             )

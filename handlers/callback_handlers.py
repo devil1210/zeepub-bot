@@ -51,7 +51,14 @@ async def set_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Destino manual
     if destino == "otro":
         st["esperando_destino_manual"] = True
-        await query.edit_message_text("✏️ Escribe @usuario o chat_id para publicar:")
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_manual = "✏️ Escribe @usuario o chat_id para publicar:"
+        text_manual = (
+            await cms.get_text("manual_destination_prompt")
+            if (cms and cms.enabled)
+            else base_manual
+        )
+        await query.edit_message_text(text_manual)
         return
 
 
@@ -80,10 +87,16 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
     st = state_manager.get_user_state(uid)
     chat = update.effective_chat
 
-    # En chats privados, siempre usar texto libre
     if chat.type == "private":
         st["esperando_busqueda"] = True
-        await query.edit_message_text("🔍 Escribe parte del título del EPUB:")
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_search = "🔍 Escribe parte del título del EPUB:"
+        text_search = (
+            await cms.get_text("search_prompt_inline")
+            if (cms and cms.enabled)
+            else base_search
+        )
+        await query.edit_message_text(text_search)
         return
 
     # En grupos, verificar si el bot es administrador
@@ -96,7 +109,14 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if is_admin:
         # Bot es admin: puede recibir mensajes normales
         st["esperando_busqueda"] = True
-        await query.edit_message_text("🔍 Escribe parte del título del EPUB:")
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_search = "🔍 Escribe parte del título del EPUB:"
+        text_search = (
+            await cms.get_text("search_prompt_inline")
+            if (cms and cms.enabled)
+            else base_search
+        )
+        await query.edit_message_text(text_search)
     else:
         # Bot NO es admin: solo recibe comandos
         cms = context.application.plugin_manager.get_plugin("custom_messages")
@@ -277,9 +297,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 if actual_destino != chat_origen:
                     try:
-                        await query.edit_message_text(
-                            f"✅ Publicado: {libro['titulo']}"
+                        cms = context.application.plugin_manager.get_plugin("custom_messages")
+                        base_success = f"✅ Publicado: {libro['titulo']}"
+                        text_success = (
+                            await cms.get_text("publish_success_telegram", Titulo=libro['titulo'])
+                            if (cms and cms.enabled)
+                            else base_success
                         )
+                        await query.edit_message_text(text_success)
                     except Exception:
                         logger.debug("Error al editar confirmación")
                 return
@@ -297,7 +322,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         if actual_destino != chat_origen:
             try:
-                await query.edit_message_text(f"✅ Publicado: {libro['titulo']}")
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_success = f"✅ Publicado: {libro['titulo']}"
+                text_success = (
+                    await cms.get_text("publish_success_telegram", Titulo=libro['titulo'])
+                    if (cms and cms.enabled)
+                    else base_success
+                )
+                await query.edit_message_text(text_success)
             except Exception:
                 logger.debug("Error al editar confirmación")
         return
@@ -350,7 +382,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             st.pop("publish_command_origin", None)
             st.pop("publish_command_thread_id", None)
             try:
-                await query.edit_message_text("⛔ Publicación cancelada.")
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_cancel = "⛔ Publicación cancelada."
+                text_cancel = (
+                    await cms.get_text("publish_cancelled")
+                    if (cms and cms.enabled)
+                    else base_cancel
+                )
+                await query.edit_message_text(text_cancel)
             except Exception:
                 pass
         try:
@@ -375,12 +414,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         if choice == "none":
             st.pop("publish_target_temp", None)
-            text = "⚪ Preferencia temporal de publicación descartada."
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_cleared = "⚪ Preferencia temporal de publicación descartada."
+            text = (
+                await cms.get_text("publish_preference_cleared")
+                if (cms and cms.enabled)
+                else base_cleared
+            )
         else:
             # Set one-time publish target that will be popped at next selection
             st["publish_target_temp"] = choice
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_set = f"✅ Publicación temporal establecida para el próximo libro: {choice}."
             text = (
-                f"✅ Publicación temporal establecida para el próximo libro: {choice}."
+                await cms.get_text("publish_preference_set", Destino=choice)
+                if (cms and cms.enabled)
+                else base_set
             )
 
         # For non-admin publishers, proceed to show the normal collections
@@ -426,13 +475,27 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
                 ]
                 try:
+                    cms = context.application.plugin_manager.get_plugin("custom_messages")
+                    base_evil_tg = "🔧 Modo Evil: ¿Dónde quieres publicar?"
+                    text_evil_tg = (
+                        await cms.get_text("evil_mode_prompt")
+                        if (cms and cms.enabled)
+                        else base_evil_tg
+                    )
                     await query.edit_message_text(
-                        text="🔧 Modo Evil: ¿Dónde quieres publicar?",
+                        text=text_evil_tg,
                         reply_markup=InlineKeyboardMarkup(keyboard),
                     )
                 except Exception:
                     try:
-                        await query.answer("🔧 Modo Evil: ¿Dónde quieres publicar?")
+                        cms = context.application.plugin_manager.get_plugin("custom_messages")
+                        base_evil_tg = "🔧 Modo Evil: ¿Dónde quieres publicar?"
+                        text_evil_tg = (
+                            await cms.get_text("evil_mode_prompt")
+                            if (cms and cms.enabled)
+                            else base_evil_tg
+                        )
+                        await query.answer(text_evil_tg)
                     except Exception:
                         pass
                 return
@@ -446,14 +509,24 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 st["destino"] = update.effective_chat.id
                 st["chat_origen"] = update.effective_chat.id
                 try:
-                    await query.edit_message_text(
-                        "✅ Publicación temporal en Facebook seleccionada — entrando a Evil (publicación en este chat)."
+                    cms = context.application.plugin_manager.get_plugin("custom_messages")
+                    base_evil_fb = "✅ Publicación temporal en Facebook seleccionada — entrando a Evil (publicación en este chat)."
+                    text_evil_fb = (
+                        await cms.get_text("evil_facebook_selected")
+                        if (cms and cms.enabled)
+                        else base_evil_fb
                     )
+                    await query.edit_message_text(text_evil_fb)
                 except Exception:
                     try:
-                        await query.answer(
-                            "🔧 Publicación temporal en Facebook seleccionada — entrando a Evil"
+                        cms = context.application.plugin_manager.get_plugin("custom_messages")
+                        base_evil_fb = "🔧 Publicación temporal en Facebook seleccionada — entrando a Evil"
+                        text_evil_fb = (
+                            await cms.get_text("evil_facebook_selected")
+                            if (cms and cms.enabled)
+                            else base_evil_fb
                         )
+                        await query.answer(text_evil_fb)
                     except Exception:
                         pass
                 # show evil collections directly

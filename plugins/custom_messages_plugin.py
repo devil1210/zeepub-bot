@@ -187,6 +187,61 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "No hay publicación pendiente.",
     },
+    "search_prompt": {
+        "desc": "Solicitud de búsqueda (sin término)",
+        "vars": [],
+        "default": "🔍 ¿Qué libro buscas? Escribe el título o autor:",
+    },
+    "search_prompt_inline": {
+        "desc": "Solicitud de búsqueda (inline)",
+        "vars": [],
+        "default": "🔍 Escribe parte del título del EPUB:",
+    },
+    "manual_destination_prompt": {
+        "desc": "Solicitud de destino manual",
+        "vars": [],
+        "default": "✏️ Escribe @usuario o chat_id para publicar:",
+    },
+    "publisher_target_prompt": {
+        "desc": "Pregunta de destino para publisher (/start)",
+        "vars": [],
+        "default": "🔧 Eres publisher — ¿dónde quieres publicar la próxima vez que selecciones un libro?",
+    },
+    "evil_telegram_selected": {
+        "desc": "Aviso: Publicación temporal en Telegram",
+        "vars": [],
+        "default": "✅ Publicación temporal en Telegram seleccionada — configurando destino.",
+    },
+    "evil_facebook_selected": {
+        "desc": "Aviso: Publicación temporal en Facebook",
+        "vars": [],
+        "default": "✅ Publicación temporal en Facebook seleccionada — entrando a Evil (publicación en este chat).",
+    },
+    "evil_selected_generic": {
+        "desc": "Aviso: Modo Evil seleccionado",
+        "vars": [],
+        "default": "✅ Modo Evil seleccionado.",
+    },
+    "publish_cancelled": {
+        "desc": "Publicación cancelada",
+        "vars": [],
+        "default": "⛔ Publicación cancelada.",
+    },
+    "publish_success_telegram": {
+        "desc": "Publicación exitosa (Telegram)",
+        "vars": ["[Titulo]"],
+        "default": "✅ Publicado: [Titulo]",
+    },
+    "publish_preference_cleared": {
+        "desc": "Preferencia de publicación borrada",
+        "vars": [],
+        "default": "⚪ Preferencia temporal de publicación descartada.",
+    },
+    "publish_preference_set": {
+        "desc": "Preferencia de publicación establecida",
+        "vars": ["[Destino]"],
+        "default": "✅ Publicación temporal establecida para el próximo libro: [Destino].",
+    },
     "invalid_option": {
         "desc": "Opción inválida",
         "vars": [],
@@ -522,6 +577,73 @@ TEMPLATE_REGISTRY = {
         "desc": "Ayuda: /set_group_welcome",
         "vars": [],
         "default": "ℹ️ <b>Comando: /set_group_welcome</b>\n\n📝 <b>Descripción:</b>\nConfigura un mensaje de bienvenida personalizado para este grupo. Debes crear el mensaje primero con /add_msge.\n\n✨ <b>Personalización:</b> Si el mensaje guardado contiene <code>[Nombre]</code>, será reemplazado por el nombre del usuario nuevo.\n\n⌨️ <b>Uso:</b> <code>/set_group_welcome &lt;slug&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_group_welcome bienvenida_grupo</code>",
+    },
+    # --- Stats Plugin ---
+    "stats_no_users": {
+        "desc": "Stats: No se encontraron usuarios",
+        "vars": ["[Rol]"],
+        "default": "ℹ️ No se encontraron usuarios con el rol <b>[Rol]</b> en base de datos.",
+    },
+    "stats_list_header": {
+        "desc": "Stats: Encabezado de lista de usuarios",
+        "vars": ["[Rol]", "[Cantidad]"],
+        "default": "📋 <b>Usuarios con rol: [Rol]</b> ([Cantidad])\n\n",
+    },
+    "stats_daily_summary": {
+        "desc": "Stats: Resumen diario",
+        "vars": ["[UniqueUsers]", "[TotalDownloads]", "[RolesBreakdown]"],
+        "default": "📊 <b>Estadísticas Diarias (Hoy)</b>\n\n👥 <b>Usuarios Únicos:</b> [UniqueUsers]\n⬇️ <b>Descargas Totales:</b> [TotalDownloads]\n[RolesBreakdown]",
+    },
+    # --- Maintenance Plugin ---
+    "maint_backup_preparing": {
+        "desc": "Maint: Generando backup",
+        "vars": [],
+        "default": "⏳ Generando backup...",
+    },
+    "maint_backup_caption": {
+        "desc": "Maint: Pie de backup",
+        "vars": ["[Fecha]"],
+        "default": "📦 Backup de base de datos\n📅 [Fecha]",
+    },
+    "maint_restore_preparing": {
+        "desc": "Maint: Restaurando",
+        "vars": [],
+        "default": "⏳ Descargando y restaurando backup... (Esto borrará los datos actuales)",
+    },
+    "maint_restore_success": {
+        "desc": "Maint: Restauración exitosa",
+        "vars": [],
+        "default": "✅ Base de datos restaurada exitosamente.",
+    },
+    "maint_restore_error_no_doc": {
+        "desc": "Maint: Error falta archivo",
+        "vars": [],
+        "default": "⚠️ Debes responder a un mensaje con el archivo .sql de backup para restaurarlo.",
+    },
+    "maint_export_preparing": {
+        "desc": "Maint: Generando CSV",
+        "vars": [],
+        "default": "⏳ Generando CSV de la base de datos...",
+    },
+    "maint_export_caption": {
+        "desc": "Maint: Pie de exportación",
+        "vars": ["[Fecha]", "[Registros]"],
+        "default": "📊 Exportación de base de datos\n📅 [Fecha]\n📦 [Registros] registros",
+    },
+    "maint_import_instructions": {
+        "desc": "Maint: Instrucciones de importación",
+        "vars": [],
+        "default": "📂 <b>Modo de Importación Activado</b>\n\nPor favor, envía ahora el archivo <code>result.json</code> exportado de Telegram Desktop.\nEl bot procesará el archivo y guardará el historial de libros publicados.\n\n<i>Este modo se desactivará automáticamente después de recibir el archivo.</i>",
+    },
+    "maint_history_cleared": {
+        "desc": "Maint: Historial borrado",
+        "vars": [],
+        "default": "✅ Historial borrado exitosamente.",
+    },
+    "maint_history_clear_confirm": {
+        "desc": "Maint: Confirmación borrar historial",
+        "vars": [],
+        "default": "⚠️ <b>¡ATENCIÓN!</b> Esto borrará TODO el historial de libros publicados.\nPara confirmar, usa: <code>/clear_history confirm</code>",
     },
 }
 

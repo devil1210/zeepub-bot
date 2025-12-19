@@ -72,15 +72,28 @@ class StatsPlugin(BasePlugin):
             users_list = get_users_by_role(target_role)
 
             if not users_list:
+                cms = context.application.plugin_manager.get_plugin("custom_messages")
+                base_no = f"ℹ️ No se encontraron usuarios con el rol <b>{target_role}</b> en base de datos."
+                text_no = (
+                    await cms.get_text("stats_no_users", Rol=target_role)
+                    if (cms and cms.enabled)
+                    else base_no
+                )
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    text=f"ℹ️ No se encontraron usuarios con el rol <b>{target_role}</b> en base de datos.",
+                    text=text_no,
                     parse_mode="HTML",
                     message_thread_id=thread_id,
                 )
                 return
 
-            msg = f"📋 <b>Usuarios con rol: {target_role.capitalize()}</b> ({len(users_list)})\n\n"
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_header = f"📋 <b>Usuarios con rol: {target_role.capitalize()}</b> ({len(users_list)})\n\n"
+            msg = (
+                await cms.get_text("stats_list_header", Rol=target_role.capitalize(), Cantidad=len(users_list))
+                if (cms and cms.enabled)
+                else base_header
+            )
             count = 0
             for u in users_list:
                 count += 1
@@ -130,11 +143,22 @@ class StatsPlugin(BasePlugin):
             for r, count in by_role.items():
                 roles_txt += f"  • {r.capitalize()}: {count}\n"
 
-        text = (
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_summary = (
             "📊 <b>Estadísticas Diarias (Hoy)</b>\n\n"
             f"👥 <b>Usuarios Únicos:</b> {data['unique_users']}\n"
             f"⬇️ <b>Descargas Totales:</b> {data['total_downloads']}\n"
             f"{roles_txt}"
+        )
+        text = (
+            await cms.get_text(
+                "stats_daily_summary",
+                UniqueUsers=data['unique_users'],
+                TotalDownloads=data['total_downloads'],
+                RolesBreakdown=roles_txt
+            )
+            if (cms and cms.enabled)
+            else base_summary
         )
 
         await context.bot.send_message(
