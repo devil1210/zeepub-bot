@@ -5,6 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.13.5] - 2025-12-19
+
+### Añadido
+- **Menú de Comandos**: Soporte para reordenar comandos dinámicamente.
+  - Nuevo comando `/move_menu_cmd <comando> <posición>` para admins.
+  - Documentación detallada de comandos de gestión en el registro interno (`/help` y `/menu`).
+  - Refuerzo de validaciones para posiciones de comandos.
+
 ## [v3.13.4] - 2025-12-18
 
 ### Añadido

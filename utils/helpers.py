@@ -213,7 +213,7 @@ def generar_slug_from_meta(meta: dict) -> str:
 
 def parse_title_string(title_str: str) -> tuple[str, str]:
     """
-    Parsea un título completo (ej: "Serie - Volumen 01 [Tag]")
+    Parsea un título completo (ej: "Serie - Volumen 01 [Tag]").
     Retorna (titulo_serie, volumen).
     """
     if not title_str:
@@ -458,7 +458,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v3.13.4"
+CURRENT_VERSION = "v3.13.5"
 
 
 def get_current_version() -> str:

@@ -66,3 +66,24 @@ async def test_list_menu_cmd():
             args, kwargs = update.message.reply_text.call_args
             assert "/start" in args[0]
             assert "/help" in args[0]
+
+@pytest.mark.asyncio
+async def test_move_menu_cmd_success():
+    plugin = HelpPlugin()
+    
+    with patch.object(HelpPlugin, "_is_bot_admin", return_value=True):
+        update = MagicMock(spec=Update)
+        update.message = AsyncMock()
+        
+        context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+        context.args = ["search", "1"]
+        context.bot = AsyncMock()
+        
+        with patch("plugins.help_plugin.get_setting", return_value="start,help,search"), \
+             patch("plugins.help_plugin.set_setting") as mock_set:
+            
+            await plugin.move_menu_cmd(update, context)
+            
+            # search should be at index 0 now (pos 1)
+            mock_set.assert_called_with("menu_public_commands", "search,start,help")
+            update.message.reply_text.assert_called()

@@ -390,6 +390,42 @@ COMMANDS_REGISTRY = {
         "usage": "/set_group_welcome <slug>",
         "example": "/set_group_welcome bienvenida_grupo",
     },
+    # --- Menu Management ---
+    "add_menu_cmd": {
+        "cat": "admin",
+        "desc": "Añadir comando al menú",
+        "long_desc": "Agrega un comando existente al menú público de Telegram.",
+        "usage": "/add_menu_cmd <comando>",
+        "example": "/add_menu_cmd search",
+    },
+    "del_menu_cmd": {
+        "cat": "admin",
+        "desc": "Quitar comando del menú",
+        "long_desc": "Elimina un comando del menú público de Telegram.",
+        "usage": "/del_menu_cmd <comando>",
+        "example": "/del_menu_cmd status",
+    },
+    "list_menu_cmd": {
+        "cat": "admin",
+        "desc": "Listar comandos menú",
+        "long_desc": "Muestra la lista actual de comandos en el menú público.",
+        "usage": "/list_menu_cmd",
+        "example": "/list_menu_cmd",
+    },
+    "move_menu_cmd": {
+        "cat": "admin",
+        "desc": "Reordenar menú",
+        "long_desc": "Cambia la posición de un comando en el menú público (1-indexado).",
+        "usage": "/move_menu_cmd <comando> <posición>",
+        "example": "/move_menu_cmd search 1",
+    },
+    "refresh_menu": {
+        "cat": "admin",
+        "desc": "Refrescar menú Telegram",
+        "long_desc": "Fuerza la actualización inmediata del menú de comandos en Telegram.",
+        "usage": "/refresh_menu",
+        "example": "/refresh_menu",
+    },
 }
 
 CATEGORIES = {
@@ -412,7 +448,7 @@ class HelpPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "3.13.4"
+        return "3.13.5"
 
     @property
     def description(self) -> str:
@@ -446,6 +482,7 @@ class HelpPlugin(BasePlugin):
             app.add_handler(CommandHandler("add_menu_cmd", self.add_menu_cmd))
             app.add_handler(CommandHandler("del_menu_cmd", self.del_menu_cmd))
             app.add_handler(CommandHandler("list_menu_cmd", self.list_menu_cmd))
+            app.add_handler(CommandHandler("move_menu_cmd", self.move_menu_cmd))
             app.add_handler(CommandHandler("refresh_menu", self.refresh_menu))
 
             logger.info("Plugin Help: Handlers registrados.")
@@ -918,6 +955,55 @@ class HelpPlugin(BasePlugin):
             text += f"• <code>/{c}</code>\n"
 
         await update.message.reply_text(text, parse_mode="HTML")
+
+    async def move_menu_cmd(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await self._is_bot_admin(update.effective_user.id):
+            return
+
+        if len(context.args) < 2:
+            await update.message.reply_text(
+                "❌ Uso: /move_menu_cmd <comando> <posición>"
+            )
+            return
+
+        cmd = context.args[0].lower().replace("/", "")
+        try:
+            pos = int(context.args[1]) - 1  # 0-indexed internal
+        except ValueError:
+            await update.message.reply_text("❌ La posición debe ser un número.")
+            return
+
+        current = get_setting("menu_public_commands", "")
+        if not current:
+            # If empty, we load defaults as a starting point to allow moving
+            cmds = [c.command for c in self._get_default_public_cmds()]
+        else:
+            cmds = [c.strip() for c in current.split(",") if c.strip()]
+
+        if cmd not in cmds:
+            await update.message.reply_text(
+                f"❌ El comando <code>/{cmd}</code> no está en el menú público.",
+                parse_mode="HTML",
+            )
+            return
+
+        if pos < 0 or pos >= len(cmds):
+            await update.message.reply_text(
+                f"❌ Posición fuera de rango (1-{len(cmds)})."
+            )
+            return
+
+        # Move logic
+        cmds.remove(cmd)
+        cmds.insert(pos, cmd)
+
+        set_setting("menu_public_commands", ",".join(cmds))
+
+        await update.message.reply_text(
+            f"✅ Comando <code>/{cmd}</code> movido a la posición {pos+1}. Actualizando...",
+            parse_mode="HTML",
+        )
+        await self.update_bot_commands(context.bot)
 
     async def refresh_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not await self._is_bot_admin(update.effective_user.id):
