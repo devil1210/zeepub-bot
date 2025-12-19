@@ -68,18 +68,12 @@ async def test_set_publish_temp_stores_one_time_choice(monkeypatch):
     # ensure mostrar_colecciones is a coroutine so await works
     monkeypatch.setattr(cb, "mostrar_colecciones", AsyncMock())
     context = MagicMock()
-    context.bot = MagicMock()
-    context.bot.send_message = AsyncMock()
-    context.bot = MagicMock()
-    context.bot.send_message = AsyncMock()
-    context.bot = MagicMock()
-    context.bot.send_message = AsyncMock()
-    context.bot = MagicMock()
-    context.bot.send_message = AsyncMock()
-    context.bot = MagicMock()
-    context.bot.send_message = AsyncMock()
-    context.bot = MagicMock()
-    context.bot.send_message = AsyncMock()
+    # Mock custom messages plugin
+    mock_cms = MagicMock()
+    mock_cms.enabled = True
+    mock_cms.get_text = AsyncMock(return_value="Preferencia establecida")
+    context.application.plugin_manager.get_plugin.return_value = mock_cms
+
     context.bot = MagicMock()
     context.bot.send_message = AsyncMock()
 
@@ -139,6 +133,12 @@ async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch
     monkeypatch.setattr(sys.modules["services.user_service"], "get_effective_user", AsyncMock(return_value={"role": "free"}))
 
     context = MagicMock()
+    # Mock custom messages plugin
+    mock_cms = MagicMock()
+    mock_cms.enabled = True
+    mock_cms.get_text = AsyncMock(return_value="Publicado con éxito")
+    context.application.plugin_manager.get_plugin.return_value = mock_cms
+
     context.bot = MagicMock()
     context.bot.delete_message = AsyncMock()
     send_msg = MagicMock()
@@ -179,6 +179,11 @@ async def test_admin_publisher_set_publish_temp_fb_enters_evil(monkeypatch):
     update.effective_chat.id = uid
 
     context = MagicMock()
+    # Mock custom messages plugin
+    mock_cms = MagicMock()
+    mock_cms.enabled = True
+    mock_cms.get_text = AsyncMock(return_value="Modo Evil")
+    context.application.plugin_manager.get_plugin.return_value = mock_cms
 
     await cb.button_handler(update, context)
 
@@ -294,6 +299,12 @@ async def test_publish_temp_consumed_on_lib_selection_calls_facebook(monkeypatch
     monkeypatch.setattr(sys.modules["services.user_service"], "get_effective_user", AsyncMock(return_value={"role": "free"}))
 
     context = MagicMock()
+    # Mock custom messages plugin
+    mock_cms = MagicMock()
+    mock_cms.enabled = True
+    mock_cms.get_text = AsyncMock(return_value="Publicado con éxito")
+    context.application.plugin_manager.get_plugin.return_value = mock_cms
+
     context.bot = MagicMock()
     context.bot.delete_message = AsyncMock()
     send_msg = MagicMock()

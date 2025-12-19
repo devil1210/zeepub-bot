@@ -448,7 +448,7 @@ class HelpPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "3.13.5"
+        return "3.13.6"
 
     @property
     def description(self) -> str:

@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.13.6] - 2025-12-19
+
+### Corregido
+- **Pruebas**: Corregido `TypeError` en `tests/test_publish_temp.py` al mockear incorrectamente el plugin `custom_messages`.
+- **Pruebas**: Corregida definición de `context` en pruebas unitarias para evitar `NameError`.
+
 ## [v3.13.5] - 2025-12-19
 
 ### Añadido
