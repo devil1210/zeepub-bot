@@ -15,6 +15,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
     - Mejora de la navegación inferior con efecto blur y botones circulares.
     - Adición de divisores internos sutiles en las listas.
 
+## [v4.0.1] - 2025-12-20
+### Corregido
+- **Base de Datos**: Implementada la creación automática de la tabla `users` en el arranque. Corrige el error `no such table: users` en instalaciones limpias.
+- **Resiliencia**: Refuerzo de la inicialización de la base de datos antes de registrar el bot.
+
 ## [v4.0.0] - 2025-12-20
 ### Added
 - **Nuevo Diseño Premium (V0.dev):** Interfaz completamente rediseñada desde cero utilizando un sistema de diseño moderno basado en tarjetas, colores profundos (`oklch`) y glassmorphism.

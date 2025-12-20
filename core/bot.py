@@ -123,6 +123,14 @@ class ZeePubBot:
 
     async def initialize(self):
         """Inicializa la aplicación (para uso con API)."""
+        # 0. Inicializar Base de Datos primero
+        from core.db_manager import db_manager
+        try:
+            await db_manager.initialize()
+        except Exception as e:
+            logger.error(f"Error inicializando base de datos: {e}")
+            # Continuamos, pero es probable que fallen cosas después
+
         max_retries = 5
         retry_delay = 5
         

@@ -18,11 +18,25 @@ class DatabaseManager:
         self._active_connections = 0
 
     async def initialize(self):
-        """Inicializa la base de datos (WAL mode)."""
+        """Inicializa la base de datos (WAL mode y esquemas básicos)."""
         async with self.connection() as conn:
             await conn.execute("PRAGMA journal_mode=WAL")
             await conn.execute("PRAGMA synchronous=NORMAL")
-            logger.info(f"Database initialized at {self.db_path} (WAL mode enabled)")
+
+            # Crear tabla de usuarios si no existe
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    telegram_id INTEGER PRIMARY KEY,
+                    role TEXT NOT NULL DEFAULT 'free',
+                    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMP,
+                    custom_status TEXT,
+                    created_by INTEGER,
+                    nickname TEXT
+                )
+            """)
+            await conn.commit()
+            logger.info(f"Database initialized and schema verified at {self.db_path}")
 
     @asynccontextmanager
     async def connection(self):
