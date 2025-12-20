@@ -45,6 +45,7 @@ class ZeePubBot:
 
     def __init__(self):
         token = config.TELEGRAM_TOKEN
+        self._initialized = False  # Track successful initialization
 
         # Inicializar la aplicación con config de red optimizada pero segura
         # El default de 5s connect provoca Timeouts en redes lentas/VPN
@@ -133,22 +134,37 @@ class ZeePubBot:
 
         max_retries = 5
         retry_delay = 5
+        bot_initialized = False
         
         for attempt in range(max_retries):
             try:
                 logger.info(f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})...")
                 await self.app.initialize()
                 logger.info("Bot inicializado exitosamente.")
+                bot_initialized = True
                 break
             except Exception as e:
+                # Check if it's already initialized (happens on retry)
+                if "already initialized" in str(e).lower():
+                    logger.info("Bot ya estaba inicializado, continuando...")
+                    bot_initialized = True
+                    break
+                    
                 if attempt < max_retries - 1:
                     wait = retry_delay * (attempt + 1)
                     logger.warning(f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s...")
                     await asyncio.sleep(wait)
                 else:
                     logger.error(f"Error crítico: No se pudo inicializar el bot tras {max_retries} intentos: {e}")
-                    # No relanzamos aquí para evitar que muera la API, pero el bot no funcionará
+                    self._initialized = False
                     return
+
+        if not bot_initialized:
+            logger.error("Bot no se pudo inicializar correctamente")
+            self._initialized = False
+            return
+            
+        self._initialized = True
 
         # Initialize plugins explicitely to ensure they are loaded
         try:

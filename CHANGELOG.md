@@ -15,6 +15,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
     - Mejora de la navegación inferior con efecto blur y botones circulares.
     - Adición de divisores internos sutiles en las listas.
 
+## [v4.0.2] - 2025-12-20
+### Corregido
+- **Inicialización**: Corregida condición de carrera donde `start_async()` se llamaba incluso si la inicialización del bot fallaba parcialmente, causando `RuntimeError: ExtBot is not properly initialized`.
+- **Resiliencia**: Añadido flag `_initialized` para rastrear el estado de inicialización y prevenir llamadas a métodos del bot cuando no está listo.
+
 ## [v4.0.1] - 2025-12-20
 ### Corregido
 - **Base de Datos**: Implementada la creación automática de la tabla `users` en el arranque. Corrige el error `no such table: users` en instalaciones limpias.

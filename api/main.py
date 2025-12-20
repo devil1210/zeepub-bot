@@ -28,7 +28,12 @@ async def lifespan(app: FastAPI):
     logger.info("Iniciando ZeePub Bot junto con la API...")
     try:
         await bot.initialize()
-        await bot.start_async()
+        
+        # Only start the bot if initialization was successful
+        if bot._initialized:
+            await bot.start_async()
+        else:
+            logger.error("Bot no se pudo inicializar correctamente. El bot NO estará disponible.")
     except Exception as e:
         logger.error(f"Fallo crítico al iniciar el bot: {e}", exc_info=True)
         # No relanzamos para que la API pueda al menos responder con su estado de error
@@ -39,7 +44,8 @@ async def lifespan(app: FastAPI):
     # Run validator every hour by default (can be tuned via environment)
     start_background_validator()
     # Guardar el bot en app_state para acceso desde rutas
-    app_state["bot"] = bot.app.bot
+    if bot._initialized:
+        app_state["bot"] = bot.app.bot
     yield
     # Shutdown: Detener el bot
     logger.info("Deteniendo ZeePub Bot...")
