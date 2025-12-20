@@ -86,8 +86,8 @@ __pycache__/
 !repositories/
 !repositories/*.py
 
-!vo/
-!vo/**
+!v0/
+!v0/**
 
 !bolt/
 !bolt/**
