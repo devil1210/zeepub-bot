@@ -38,6 +38,7 @@ async def mostrar_colecciones(
 ):
     """Mostrar colecciones o libros basados en un feed OPDS."""
     uid = update.effective_user.id
+    from core.state_manager import state_manager
     st = state_manager.get_user_state(uid)
 
     # Inicializar historial si no existe
@@ -204,6 +205,7 @@ async def mostrar_colecciones(
 
 async def buscar_zeepubs_directo(update, context, uid: int):
     """Acceso directo a ZeePubs [ES] detectándolo en el feed."""
+    from core.state_manager import state_manager
     st = state_manager.get_user_state(uid)
     url = st.get("opds_root")
     logger.debug("Intentando acceso directo a ZeePubs desde %s", url)
