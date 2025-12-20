@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.0.0] - 2025-12-20
+
+### Añadido
+- **Mini App Overhaul**: Rediseño total de la interfaz de usuario inspirado en BotFather.
+    - Nuevo tema oscuro nativo de Telegram (`#17212b`).
+    - Cabecera de perfil con logo circular y descripción.
+    - Buscador minimalista integrado.
+    - Sistema de listas limpio con avatares circulares y navegación mejorada.
+- **Versiones**: Salto de versión mayor (v4.0.0) marcando el inicio de una nueva era para la aplicación web integrada.
+
 ## [v3.13.8] - 2025-12-19
 
 ### Añadido

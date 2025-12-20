@@ -291,86 +291,87 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-transparent text-white overflow-hidden font-sans">
-      <header className="flex-none bg-slate-900/80 backdrop-blur-md border-b border-white/10 shadow-lg z-10 p-4 sticky top-0">
+    <div className="flex flex-col h-screen bg-[#17212b] text-white overflow-hidden font-sans">
+
+      <header className="flex-none flex flex-col items-center pt-8 pb-4 bg-[#17212b]">
+        {/* Profile Avatar */}
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-4xl shadow-xl mb-4 overflow-hidden border-2 border-white/10">
+          <span className="animate-pulse">📚</span>
+        </div>
+
+        {/* Title & Subtitle */}
+        <h1 className="text-2xl font-bold mb-1">ZeePub</h1>
+        <p className="text-[#7f8c99] text-sm text-center px-8 mb-6 leading-relaxed">
+          ZeePub es el bot definitivo para gestionar y leer tus libros favoritos directamente en Telegram.
+          <br />
+          <span className="text-blue-400 font-medium cursor-pointer hover:underline text-xs mt-2 block">Saber más ˃</span>
+        </p>
+
         <SearchBar onSearch={debouncedSearch} />
 
-        {/* Admin Controls */}
+        {/* Admin Controls - Estilo Integrado */}
         {(isAdmin || isFacebookPublisher) && (
-          <div className="mt-3 p-2 bg-blue-800/50 rounded-lg text-sm flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-yellow-300">Modo Avanzado</span>
-              <button
-                onClick={() => {
-                  const newMode = !adminMode;
-                  setAdminMode(newMode);
-                  // Reload feed with new mode (resetting stack)
-                  setNavigationStack([]);
-                  WebApp.BackButton.hide();
-                  // We need to trigger loadFeed with null url but updated state
-                  // Since setState is async, we can't just call loadFeed() immediately with state reliance
-                  // So we pass the mode explicitly or use effect. 
-                  // Better: force reload with explicit param logic in loadFeed or just reload page?
-                  // Let's just call loadFeed(null) and let it read state? 
-                  // Actually loadFeed reads state 'adminMode' which might not be updated yet closure-wise.
-                  // Let's use a timeout or better, pass the mode to loadFeed if we refactor it.
-                  // For now, simple hack: reload after short delay or use a ref for mode.
-                  // Or just pass the URL directly:
-                  const url = newMode && adminConfig ? adminConfig.admin_root_url : null;
-                  loadFeed(url);
-                }}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${adminMode ? 'bg-red-500 text-white' : 'bg-gray-600 text-gray-300'}`}
-              >
-                {adminMode ? 'ACTIVADO' : 'DESACTIVADO'}
-              </button>
-            </div>
-
-            {adminMode && adminConfig?.destinations && (
-              <div className="flex items-center gap-2">
-                <span className="whitespace-nowrap">Destino:</span>
-                <select
-                  value={selectedDestination || 'me'}
-                  onChange={(e) => setSelectedDestination(e.target.value)}
-                  className="bg-blue-900 text-white border border-blue-700 rounded px-2 py-1 text-xs w-full outline-none focus:border-yellow-400"
+          <div className="w-full max-w-sm px-4 mb-4">
+            <div className="bg-[#242f3d]/50 rounded-2xl p-3 border border-white/5 flex flex-col gap-2">
+              <div className="flex items-center justify-between px-2">
+                <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Modo Avanzado</span>
+                <button
+                  onClick={() => {
+                    const newMode = !adminMode;
+                    setAdminMode(newMode);
+                    setNavigationStack([]);
+                    WebApp.BackButton.hide();
+                    const url = newMode && adminConfig ? adminConfig.admin_root_url : null;
+                    loadFeed(url);
+                  }}
+                  className={`w-10 h-5 rounded-full relative transition-colors duration-200 focus:outline-none ${adminMode ? 'bg-blue-500' : 'bg-gray-600'}`}
                 >
-                  {adminConfig.destinations.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${adminMode ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
               </div>
-            )}
+
+              {adminMode && adminConfig?.destinations && (
+                <div className="flex items-center gap-3 px-2 py-1 bg-[#17212b]/50 rounded-xl">
+                  <span className="text-[10px] text-gray-500 uppercase font-bold">Destino:</span>
+                  <select
+                    value={selectedDestination || 'me'}
+                    onChange={(e) => setSelectedDestination(e.target.value)}
+                    className="bg-transparent text-white text-xs w-full outline-none appearance-none cursor-pointer"
+                  >
+                    {adminConfig.destinations.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </header>
 
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-2 py-3">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-[#1c2733] rounded-t-[30px] border-t border-white/5">
+        <div className="px-4 pt-6 pb-2">
+          <h2 className="text-[#2481cc] text-xs font-bold uppercase tracking-widest mb-4 ml-1">
+            {navigationStack.length > 0 ? 'Contenido' : 'Mis Colecciones'}
+          </h2>
+        </div>
+
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="flex justify-center items-center h-48">
+            <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
           </div>
         ) : error === 'ACCESS_DENIED' ? (
-          <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-6">
-            <div className="p-4 bg-red-500/10 rounded-full">
-              <div className="text-6xl animate-pulse">🔒</div>
-            </div>
-            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
-              Acceso Exclusivo
-            </h2>
-            <p className="text-gray-300 max-w-xs leading-relaxed">
-              Esta sección está reservada para usuarios <span className="text-yellow-400 font-bold">VIP</span>.
-            </p>
-            <div className="bg-white/5 p-4 rounded-lg border border-white/10">
-              <p className="text-xs text-gray-400">
-                Si crees que esto es un error, intenta recargar o contacta soporte con tu ID: <code>{WebApp.initDataUnsafe?.user?.id}</code>
-              </p>
-            </div>
+          <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
+            <div className="text-5xl">🔒</div>
+            <h2 className="text-xl font-bold">Acceso Exclusivo</h2>
+            <p className="text-gray-400 text-sm">Esta sección es para usuarios VIP.</p>
           </div>
         ) : error ? (
-          <div className="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">
+          <div className="mx-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-2xl text-center">
             {error}
           </div>
         ) : (
-          <div className="space-y-3 pb-4">
+          <div className="pb-24">
             {currentItems.map((item, index) => {
               if (isNavigationItem(item)) {
                 return (
@@ -395,78 +396,43 @@ function App() {
             })}
 
             {items.length === 0 && (
-              <div className="text-center text-gray-500 mt-10">
-                No se encontraron elementos.
+              <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                <span className="text-4xl mb-2">🔍</span>
+                <p className="text-sm">No se encontró nada</p>
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Barra de Navegación (Flex Item) - Alto 5% de la pantalla */}
-      <div className="flex-none bg-gray-800 border-t border-gray-700 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)] h-[5vh] min-h-[40px]">
-        <div className="flex items-center justify-between w-full h-full">
+      {/* Minimal Navigation Bar (Floating/Sticky) */}
+      <div className="flex-none bg-[#1c2733] border-t border-white/5 px-6 py-4 flex items-center justify-between">
+        <button
+          onClick={goToPrevPage}
+          disabled={loading || (currentPage === 1 && !prevPageUrl)}
+          className="p-2 bg-[#242f3d] rounded-full disabled:opacity-20 text-gray-300 hover:text-white transition-all shadow-lg active:scale-95"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
 
-          {/* Botón Atrás (Página Anterior) */}
-          <button
-            onClick={goToPrevPage}
-            disabled={loading || (currentPage === 1 && !prevPageUrl)}
-            className="flex-1 h-full flex flex-col items-center justify-center bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-700 active:bg-gray-600 transition-colors border-r border-gray-700 last:border-r-0"
-            title="Página Anterior"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
-          {/* Botón Subir (Nivel Superior) */}
-          <button
-            onClick={handleBack}
-            disabled={loading || navigationStack.length === 0}
-            className="flex-1 h-full flex flex-col items-center justify-center bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-700 active:bg-gray-600 transition-colors border-r border-gray-700 last:border-r-0"
-            title="Subir / Volver"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-            </svg>
-          </button>
-
-          {/* Botón Adelante (Página Siguiente) */}
-          <button
-            onClick={goToNextPage}
-            disabled={loading || (currentPage >= totalPages && !nextPageUrl)}
-            className="flex-1 h-full flex flex-col items-center justify-center bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-700 active:bg-gray-600 transition-colors border-r border-gray-700 last:border-r-0"
-            title="Página Siguiente"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-
-          {/* Botón Salir */}
-          <button
-            onClick={() => WebApp.close()}
-            className="flex-1 h-full flex flex-col items-center justify-center bg-red-900/20 text-red-200 hover:bg-red-900/40 active:bg-red-900/60 transition-colors"
-            title="Cerrar Mini App"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-
+        <div className="flex items-center gap-4">
+          {/* Center Status Info */}
+          <div className="px-4 py-2 bg-[#242f3d] rounded-2xl text-[10px] font-bold text-gray-400 shadow-lg border border-white/5 uppercase tracking-widest">
+            {currentPage} / {totalPages}
+          </div>
         </div>
 
-        {/* Info de paginación pequeña */}
-        {!loading && items.length > 0 && (
-          <div className="absolute bottom-full left-0 right-0 bg-gray-800/90 text-center py-0.5 border-t border-gray-700 backdrop-blur-sm">
-            <span className="text-[9px] text-gray-400">
-              Pág {currentPage}/{totalPages} • {items.length} items
-              {nextPageUrl && " • +"}
-              {/* Debug info */}
-              <span className="text-yellow-500 ml-2">Next: {nextPageUrl ? 'Yes' : 'No'}</span>
-            </span>
-          </div>
-        )}
+        <button
+          onClick={goToNextPage}
+          disabled={loading || (currentPage >= totalPages && !nextPageUrl)}
+          className="p-2 bg-[#242f3d] rounded-full disabled:opacity-20 text-gray-300 hover:text-white transition-all shadow-lg active:scale-95"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
     </div>
   );
