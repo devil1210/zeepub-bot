@@ -3,7 +3,7 @@ import logging
 from urllib.parse import urlparse, unquote
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from core.state_manager import state_manager
+# from core.state_manager import state_manager (Moved to local scope)
 from config.config_settings import config
 from utils.http_client import parse_feed_from_url
 from utils.helpers import abs_url, find_zeepubs_destino
