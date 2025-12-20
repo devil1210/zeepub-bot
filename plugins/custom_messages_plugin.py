@@ -648,13 +648,32 @@ TEMPLATE_REGISTRY = {
 }
 
 # Global variables available in ALL templates
+# Global variables documentation (used for /vars)
 GLOBAL_VARIABLES = {
-    "Nombre": "Nombre del usuario (First Name)",
-    "Alias": "Username del usuario (sin @)",
-    "ID": "ID numérico del usuario",
-    "Fecha": "Fecha actual (YYYY-MM-DD)",
-    "Hora": "Hora actual (HH:MM)",
-    "VersionBot": "Versión actual del bot (ej: v3.7.2)",
+    "Usuario": {
+        "Nombre": "Nombre del usuario (First Name) - Clickeable",
+        "Alias": "Username del usuario (sin @)",
+        "ID": "ID numérico del usuario",
+        "Apodo": "Apodo personalizado (si tiene)",
+    },
+    "Estado": {
+        "Nivel": "Rango oficial (Lector, VIP, etc.)",
+        "Rol": "Función personalizada (Editor, etc.)",
+        "Descargas": "Estado de descargas diarias",
+        "ResetTime": "Tiempo para reinicio de cuota",
+        "Expires": "Fecha de vencimiento de beneficios",
+    },
+    "Sistema": {
+        "Fecha": "Fecha actual (YYYY-MM-DD)",
+        "Hora": "Hora actual (HH:MM)",
+        "VersionBot": "Versión del bot y hash commit",
+        "BotNombre": "Nombre configurado del bot",
+        "BotAlias": "Username del bot (@...)",
+    },
+    "Chat": {
+        "ChatID": "ID del chat actual (Grupo/Canal/Privado)",
+        "ChatTitulo": "Nombre del grupo o canal actual",
+    },
 }
 
 
@@ -665,7 +684,7 @@ class CustomMessagesPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.4.1"
+        return "1.4.2"
 
     @property
     def description(self) -> str:
@@ -676,8 +695,12 @@ class CustomMessagesPlugin(BasePlugin):
         self.Session = None
         self.enabled = False
         self._global_vars_cache = {}
+        self.app = None
+        self.bot = None
 
     async def initialize(self, bot_instance) -> bool:
+        self.app = bot_instance
+        self.bot = bot_instance.bot
         # Check env var directly or via os.environ if not in config object yet
         # Assuming config loads .env but we appended to it, might need reload or just os.getenv
         self.enabled = os.getenv("ENABLE_CUSTOM_MESSAGES", "True").lower() == "true"
@@ -1019,6 +1042,15 @@ class CustomMessagesPlugin(BasePlugin):
 
         vars_to_use["VersionBot"] = get_version_string()
 
+        # 1.1 Inject Bot Info (if available)
+        if self.bot:
+            vars_to_use["BotNombre"] = self.bot.first_name
+            vars_to_use["BotAlias"] = f"@{self.bot.username}" if self.bot.username else "Bot"
+
+        # 1.2 Inject Chat context if replacements has it or try to infer?
+        # Often 'chat_id' is passed as extra or available in update
+        # If no explicit chat passed, we might not have it in background tasks
+
         # 2. Inject User Variables (Context)
         if user:
             vars_to_use["Nombre"] = (
@@ -1045,6 +1077,13 @@ class CustomMessagesPlugin(BasePlugin):
             if any(k in final_text for k in needed_keys):
                 extended_context = await self._get_extended_user_context(user)
                 vars_to_use.update(extended_context)
+
+        # 1.3 Inject Chat Info if passed via replacements or update
+        # Check if caller passed 'update' as kwarg
+        upd = replacements.get("update")
+        if upd and upd.effective_chat:
+            vars_to_use["ChatID"] = str(upd.effective_chat.id)
+            vars_to_use["ChatTitulo"] = upd.effective_chat.title or "Chat Privado"
 
         # 3. Explicit Replacements (Arguments) - Override everything
         vars_to_use.update(replacements)
@@ -1298,7 +1337,6 @@ class CustomMessagesPlugin(BasePlugin):
             parse_mode=ParseMode.HTML,
             message_thread_id=get_thread_id(update),
         )
-
 
     async def send_msge(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_user.id not in config.ADMIN_USERS:
@@ -1700,21 +1738,23 @@ class CustomMessagesPlugin(BasePlugin):
         )
 
     async def vars(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Lista las variables globales disponibles (Sistema + Admin)."""
+        """Lista las variables globales disponibles organizadas por categorías."""
         if update.effective_user.id not in config.ADMIN_USERS:
             return
 
-        text = "💲 <b>Variables Globales</b>\n\n"
+        text = "💲 <b>Variables de Plantillas</b>\n\n"
+        text += "Puedes usar cualquiera de estas variables encerrándola entre corchetes, ej: <code>[Nombre]</code>\n\n"
 
-        # System Vars
-        text += "🤖 <b>Sistema (Automáticas):</b>\n"
-        for key, desc in GLOBAL_VARIABLES.items():
-            text += f"🔹 <code>[{key}]</code>: {desc}\n"
+        for cat, variables in GLOBAL_VARIABLES.items():
+            text += f"📂 <b>{cat}:</b>\n"
+            for key, desc in variables.items():
+                text += f"🔹 <code>[{key}]</code>: {desc}\n"
+            text += "\n"
 
         # Admin Vars
-        text += "\n🛠 <b>Personalizadas (Admin):</b>\n"
+        text += "🛠 <b>Personalizadas (Admin /set_var):</b>\n"
         if not self._global_vars_cache:
-            text += "<i>(Ninguna definida, usa /set_var)</i>\n"
+            text += "<i>(Ninguna definida)</i>\n"
         else:
             for k, v in self._global_vars_cache.items():
                 text += f"🔸 <code>[{k}]</code>: {html.escape(v)}\n"

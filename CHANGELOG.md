@@ -5,6 +5,18 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v3.13.8] - 2025-12-19
+
+### Añadido
+- **Variables de Plantilla**: Sistema de variables expandido y categorizado.
+  - Nuevas variables automáticas para el Bot: `[BotNombre]`, `[BotAlias]`.
+  - Nuevas variables contextuales para el Chat: `[ChatID]`, `[ChatTitulo]`.
+  - Categorización en el comando `/vars`: Usuario, Estado, Sistema y Chat para una mejor gestión.
+- **Documentación**: Mejora en las descripciones de todas las variables globales y dinámicas.
+
+### Cambiado
+- **Versiones**: Plugin `custom_messages` actualizado a v1.4.2.
+
 ## [v3.13.7] - 2025-12-19
 
 ### Añadido
