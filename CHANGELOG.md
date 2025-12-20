@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.1.0] - 2025-12-20
+
+### Cambiado
+- **Refinamiento UI (BotFather Style Exacto)**:
+    - Ajuste de proporciones en el encabezado (título más sutil, descripción compacta).
+    - Agrupación de ítems en un contenedor de lista redondeado único, eliminando el estilo de tarjetas separadas.
+    - Integración discreta del Modo Avanzado como una píldora translúcida.
+    - Mejora de la navegación inferior con efecto blur y botones circulares.
+    - Adición de divisores internos sutiles en las listas.
+
 ## [v4.0.0] - 2025-12-20
 
 ### Añadido

@@ -293,28 +293,28 @@ function App() {
   return (
     <div className="flex flex-col h-screen bg-[#17212b] text-white overflow-hidden font-sans">
 
-      <header className="flex-none flex flex-col items-center pt-8 pb-4 bg-[#17212b]">
+      <header className="flex-none flex flex-col items-center pt-10 pb-6 bg-[#17212b]">
         {/* Profile Avatar */}
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-4xl shadow-xl mb-4 overflow-hidden border-2 border-white/10">
-          <span className="animate-pulse">📚</span>
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-3xl shadow-lg mb-4 overflow-hidden border border-white/5">
+          <span>📚</span>
         </div>
 
         {/* Title & Subtitle */}
-        <h1 className="text-2xl font-bold mb-1">ZeePub</h1>
-        <p className="text-[#7f8c99] text-sm text-center px-8 mb-6 leading-relaxed">
+        <h1 className="text-xl font-bold mb-1 tracking-tight">ZeePub</h1>
+        <p className="text-[#7f8c99] text-[13px] text-center px-10 mb-6 leading-tight">
           ZeePub es el bot definitivo para gestionar y leer tus libros favoritos directamente en Telegram.
           <br />
-          <span className="text-blue-400 font-medium cursor-pointer hover:underline text-xs mt-2 block">Saber más ˃</span>
+          <span className="text-[#2481cc] font-medium cursor-pointer hover:underline text-[11px] mt-2 block">Learn more ˃</span>
         </p>
 
         <SearchBar onSearch={debouncedSearch} />
 
-        {/* Admin Controls - Estilo Integrado */}
+        {/* Admin Controls - Estilo Integrado y Sutil */}
         {(isAdmin || isFacebookPublisher) && (
-          <div className="w-full max-w-sm px-4 mb-4">
-            <div className="bg-[#242f3d]/50 rounded-2xl p-3 border border-white/5 flex flex-col gap-2">
-              <div className="flex items-center justify-between px-2">
-                <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Modo Avanzado</span>
+          <div className="w-full max-w-sm px-6 mb-2">
+            <div className="bg-[#242f3d]/40 rounded-full py-1.5 px-4 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[#7f8c99] uppercase tracking-widest">Modo Avanzado</span>
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => {
                     const newMode = !adminMode;
@@ -324,110 +324,108 @@ function App() {
                     const url = newMode && adminConfig ? adminConfig.admin_root_url : null;
                     loadFeed(url);
                   }}
-                  className={`w-10 h-5 rounded-full relative transition-colors duration-200 focus:outline-none ${adminMode ? 'bg-blue-500' : 'bg-gray-600'}`}
+                  className={`w-8 h-4 rounded-full relative transition-colors duration-200 focus:outline-none ${adminMode ? 'bg-[#2481cc]' : 'bg-[#17212b]'}`}
                 >
-                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${adminMode ? 'translate-x-5' : 'translate-x-0'}`} />
+                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-200 transform ${adminMode ? 'translate-x-4' : 'translate-x-0'}`} />
                 </button>
-              </div>
-
-              {adminMode && adminConfig?.destinations && (
-                <div className="flex items-center gap-3 px-2 py-1 bg-[#17212b]/50 rounded-xl">
-                  <span className="text-[10px] text-gray-500 uppercase font-bold">Destino:</span>
+                {adminMode && adminConfig?.destinations && (
                   <select
                     value={selectedDestination || 'me'}
                     onChange={(e) => setSelectedDestination(e.target.value)}
-                    className="bg-transparent text-white text-xs w-full outline-none appearance-none cursor-pointer"
+                    className="bg-transparent text-white text-[10px] font-bold outline-none cursor-pointer border-l border-white/10 pl-3 ml-1"
                   >
                     {adminConfig.destinations.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
+                      <option key={d.id} value={d.id} className="bg-[#17212b]">{d.name}</option>
                     ))}
                   </select>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
       </header>
 
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-[#1c2733] rounded-t-[30px] border-t border-white/5">
-        <div className="px-4 pt-6 pb-2">
-          <h2 className="text-[#2481cc] text-xs font-bold uppercase tracking-widest mb-4 ml-1">
-            {navigationStack.length > 0 ? 'Contenido' : 'Mis Colecciones'}
-          </h2>
-        </div>
-
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-[#17212b]">
         {loading ? (
           <div className="flex justify-center items-center h-48">
-            <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+            <div className="w-6 h-6 border-2 border-blue-500/10 border-t-[#2481cc] rounded-full animate-spin"></div>
           </div>
         ) : error === 'ACCESS_DENIED' ? (
           <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
             <div className="text-5xl">🔒</div>
-            <h2 className="text-xl font-bold">Acceso Exclusivo</h2>
-            <p className="text-gray-400 text-sm">Esta sección es para usuarios VIP.</p>
+            <h2 className="text-lg font-bold">Acceso Exclusivo</h2>
+            <p className="text-[#7f8c99] text-xs">Esta sección es para usuarios VIP.</p>
           </div>
         ) : error ? (
-          <div className="mx-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-2xl text-center">
+          <div className="mx-6 p-4 bg-red-500/5 text-red-400 text-xs rounded-xl text-center">
             {error}
           </div>
         ) : (
           <div className="pb-24">
-            {currentItems.map((item, index) => {
-              if (isNavigationItem(item)) {
-                return (
-                  <NavigationListItem
-                    key={item.id || index}
-                    item={item}
-                    onNavigate={handleNavigate}
-                  />
-                );
-              } else if (isBook(item)) {
-                return (
-                  <BookListItem
-                    key={item.id || index}
-                    book={item}
-                    onDownload={handleDownload}
-                    isFacebookPublisher={isFacebookPublisher}
-                    onFacebookPost={handleFacebookPost}
-                  />
-                );
-              }
-              return null;
-            })}
+            <div className="px-6 py-4">
+              <h2 className="text-white text-[15px] font-bold">
+                {navigationStack.length > 0 ? (currentTitle === 'ZeePub Mini' ? 'Contenido' : currentTitle) : 'Mis colecciones'}
+              </h2>
+            </div>
 
-            {items.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-                <span className="text-4xl mb-2">🔍</span>
-                <p className="text-sm">No se encontró nada</p>
-              </div>
-            )}
+            <div className="mx-4 bg-[#212d3b] rounded-2xl overflow-hidden shadow-xl border border-white/5">
+              {currentItems.map((item, index) => {
+                const isLast = index === currentItems.length - 1;
+                if (isNavigationItem(item)) {
+                  return (
+                    <NavigationListItem
+                      key={item.id || index}
+                      item={item}
+                      onNavigate={handleNavigate}
+                      isLast={isLast}
+                    />
+                  );
+                } else if (isBook(item)) {
+                  return (
+                    <BookListItem
+                      key={item.id || index}
+                      book={item}
+                      onDownload={handleDownload}
+                      isFacebookPublisher={isFacebookPublisher}
+                      onFacebookPost={handleFacebookPost}
+                      isLast={isLast}
+                    />
+                  );
+                }
+                return null;
+              })}
+
+              {items.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 text-[#7f8c99]">
+                  <span className="text-4xl mb-2 opacity-20">🔍</span>
+                  <p className="text-xs">No se encontró nada</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Minimal Navigation Bar (Floating/Sticky) */}
-      <div className="flex-none bg-[#1c2733] border-t border-white/5 px-6 py-4 flex items-center justify-between">
+      {/* Modern Mini App Navigation - Sutil y translúcida */}
+      <div className="flex-none bg-[#17212b]/80 backdrop-blur-md px-8 py-4 flex items-center justify-between border-t border-white/5">
         <button
           onClick={goToPrevPage}
           disabled={loading || (currentPage === 1 && !prevPageUrl)}
-          className="p-2 bg-[#242f3d] rounded-full disabled:opacity-20 text-gray-300 hover:text-white transition-all shadow-lg active:scale-95"
+          className="p-2.5 bg-[#242f3d]/60 rounded-full disabled:opacity-20 text-gray-400 hover:text-white transition-all active:scale-95"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
-        <div className="flex items-center gap-4">
-          {/* Center Status Info */}
-          <div className="px-4 py-2 bg-[#242f3d] rounded-2xl text-[10px] font-bold text-gray-400 shadow-lg border border-white/5 uppercase tracking-widest">
-            {currentPage} / {totalPages}
-          </div>
+        <div className="px-5 py-2 bg-[#242f3d]/60 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest border border-white/5">
+          {currentPage} / {totalPages}
         </div>
 
         <button
           onClick={goToNextPage}
           disabled={loading || (currentPage >= totalPages && !nextPageUrl)}
-          className="p-2 bg-[#242f3d] rounded-full disabled:opacity-20 text-gray-300 hover:text-white transition-all shadow-lg active:scale-95"
+          className="p-2.5 bg-[#242f3d]/60 rounded-full disabled:opacity-20 text-gray-400 hover:text-white transition-all active:scale-95"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />

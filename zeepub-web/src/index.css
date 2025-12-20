@@ -3,13 +3,20 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Inter', system-ui, sans-serif;
+  --tg-theme-bg-color: #17212b;
+  --tg-theme-secondary-bg-color: #0e1621;
+  --tg-theme-text-color: #ffffff;
+  --tg-theme-hint-color: #7f8c99;
+  --tg-theme-link-color: #2481cc;
+  --tg-theme-button-color: #2481cc;
+  --tg-theme-button-text-color: #ffffff;
+
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
-  color: #ffffff;
-  background-color: #17212b;
-  /* Fondo oficial Telegram Dark */
+  color: var(--tg-theme-text-color);
+  background-color: var(--tg-theme-bg-color);
 }
 
 body {
