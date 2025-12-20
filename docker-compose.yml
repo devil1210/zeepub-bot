@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   zeepubs_bot:
-    # build: .
+    build: .
     # image: devil1210/zeepub-bot:latest
     image: ghcr.io/devil1210/zeepub-bot:latest
     container_name: zeepubs_bot
