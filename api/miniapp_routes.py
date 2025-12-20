@@ -1,49 +1,40 @@
 from fastapi import APIRouter, HTTPException, Header, Depends, Request
 from utils.security import validate_telegram_data, verify_telegram_user
-from services.opds_service import OPDSHandler
-from core.bot import ZeePubBot
+from services.opds_service import get_cached_feed
+from services.telegram_service import enviar_libro_directo
+from utils.helpers import build_search_url, abs_url
+from config.config_settings import config
 import os
 import logging
 
-# Prefix is empty because the route is /api/bot
 router = APIRouter(tags=["miniapp"])
 logger = logging.getLogger(__name__)
-
-async def get_opds_handler():
-    # Instantiate or retrieve OPDSHandler
-    config = {"root_path": os.getenv("OPDS_ROOT", "./books")}
-    return OPDSHandler(config)
-
 
 
 @router.post("/api/bot")
 async def handle_bot_request(
     request: Request,
-    x_telegram_init_data: str = Header(None, alias="x-telegram-init-data")
+    x_telegram_init_data: str = Header(None, alias="x-telegram-init-data"),
 ):
     """
     Main endpoint for Mini App requests.
     Dispatches actions: search, download, status, etc.
     """
-    # 1. Validate Init Data
     bot_token = os.getenv("TELEGRAM_TOKEN")
-    if not bot_token:
-        # Fallback or error if token not configured
-        logger.warning("TELEGRAM_TOKEN not set")
-
-    # Validate if header is present
     user_data = None
+
     if x_telegram_init_data and bot_token:
         user_data = validate_telegram_data(x_telegram_init_data, bot_token)
         if not user_data:
             raise HTTPException(status_code=401, detail="Invalid Telegram data")
     else:
-        # Allow dev/skip if needed, or strict 401
-        # For now strict
-        pass
-        # raise HTTPException(status_code=401, detail="Missing auth header")
+        # For development or if header is missing, we might want to fail or allow.
+        # Strict mode:
+        if not os.getenv("DEV_MODE"):
+            raise HTTPException(status_code=401, detail="Missing auth header")
 
-    # 2. Parse Body
+    user_id = user_data.get("user", {}).get("id") if user_data else 0
+
     try:
         body = await request.json()
     except Exception:
@@ -52,7 +43,7 @@ async def handle_bot_request(
     action = body.get("action")
     data = body.get("data", {})
 
-    logger.info(f"Miniapp action: {action} User: {user_data.get('user', {}).get('id') if user_data else 'unknown'}")
+    logger.info(f"Miniapp action: {action} User: {user_id}")
 
     try:
         if action == "search":
@@ -60,26 +51,66 @@ async def handle_bot_request(
             if not query:
                 return {"results": []}
 
-            # Use OPDS Service
-            handler = await get_opds_handler()
-            # results = await handler.search(query)
-            # Placeholder implementation
+            search_url = build_search_url(query, uid=user_id)
+            feed = await get_cached_feed(search_url)
+
             results = []
+            for entry in getattr(feed, "entries", []):
+                # Map OPDS entry to frontend Book structure
+                # id, title, author, year, size, cover
+                book_id = entry.get("id", "")
+                title = entry.get("title", "Sin título")
+                author = entry.get("author", "Desconocido")
+
+                # Find download link and cover
+                download_url = None
+                cover_url = None
+                for link in getattr(entry, "links", []):
+                    rel = link.get("rel", "")
+                    href = abs_url(config.BASE_URL, link.get("href", ""))
+                    if "acquisition" in rel or "epub" in link.get("type", ""):
+                        download_url = href
+                    elif "image" in rel or "cover" in rel:
+                        cover_url = href
+
+                results.append(
+                    {
+                        "id": download_url
+                        or book_id,  # Use download_url as ID for the frontend to send it back
+                        "title": title,
+                        "author": author,
+                        "cover": cover_url,
+                        # Add year/size if available in entry
+                    }
+                )
+
             return {"results": results}
 
         elif action == "status":
-            return {
-                "status": "online",
-                "version": os.getenv("BOT_VERSION", "4.0.0")
-            }
+            return {"status": "online", "version": os.getenv("BOT_VERSION", "4.0.0")}
 
         elif action == "download":
-            # Implement download logic
-            return {"success": True, "message": "Download started"}
+            book_id = data.get("bookId")  # Frontend sends bookId which we set as download_url
+            title = data.get("title", "Libro") # Optional from frontend if we update it, or we can fetch it?
+            
+            # If fronted doesn't send title/cover, we only have book_id (which is the url)
+            if not book_id:
+                raise HTTPException(status_code=400, detail="Missing bookId")
+
+            from api.main import bot
+
+            success = await enviar_libro_directo(
+                bot=bot.app.bot,
+                user_id=user_id,
+                title=title,
+                download_url=book_id,
+                 # cover_url=... we don't have it easily here unless we pass it from frontend
+            )
+            return {"success": success}
 
         else:
             raise HTTPException(status_code=400, detail=f"Unknown action: {action}")
 
     except Exception as e:
-        logger.error(f"Error handling action {action}: {e}")
+        logger.error(f"Error handling action {action}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
