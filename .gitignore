@@ -89,5 +89,8 @@ __pycache__/
 !v0/
 !v0/**
 
+!zeepub-miniapp/
+!zeepub-miniapp/**
+
 !bolt/
 !bolt/**

@@ -74,8 +74,10 @@ enable_miniapp = os.getenv("ENABLE_MINI_APP", "True").lower() == "true"
 if enable_miniapp:
     # Importar rutas solo si está activo
     from api.routes import router
+    from api.miniapp_routes import router as miniapp_router
 
     app.include_router(router)
+    app.include_router(miniapp_router)
 
     # Montar archivos estáticos del frontend
     from fastapi.staticfiles import StaticFiles

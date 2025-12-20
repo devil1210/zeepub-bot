@@ -4,6 +4,8 @@ import json
 from urllib.parse import parse_qsl
 from typing import Dict, Any, Optional
 import time
+from fastapi import HTTPException, Header, Depends
+import os
 
 
 def validate_telegram_data(
@@ -56,3 +58,23 @@ def validate_telegram_data(
             pass
 
     return user_data
+
+
+async def verify_telegram_user(
+    x_telegram_init_data: str = Header(..., alias="x-telegram-init-data")
+):
+    """
+    FastAPI Dependency to verify Telegram WebApp data.
+    Returns the user dict if valid, or raises 401.
+    """
+    bot_token = os.getenv("TELEGRAM_TOKEN")
+    if not bot_token:
+        # For development/testing without token, you might want to bypass or fail
+        # raise HTTPException(status_code=500, detail="Bot token not configured")
+        pass
+
+    user_data = validate_telegram_data(x_telegram_init_data, bot_token)
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid Telegram Auth")
+
+    return user_data.get("user", {})
