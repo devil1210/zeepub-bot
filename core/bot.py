@@ -3,6 +3,7 @@
 import logging
 from telegram import Update
 from telegram.ext import (
+    Application,
     ApplicationBuilder,
     CallbackQueryHandler,
     MessageHandler,
@@ -10,6 +11,7 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
+
 from config.config_settings import config
 from core.session_manager import session_manager
 from core.bot_initializer import BotInitializer
@@ -29,6 +31,14 @@ from telegram.request import HTTPXRequest
 logger = logging.getLogger(__name__)
 
 
+class ZeePubApplication(Application):
+    """Subclase de Application para permitir atributos personalizados."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.plugin_manager = None
+
+
 class ZeePubBot:
     """Clase principal del bot."""
 
@@ -45,7 +55,13 @@ class ZeePubBot:
             pool_timeout=30.0,
         )
 
-        self.app = ApplicationBuilder().token(token).request(trequest).build()
+        self.app = (
+            ApplicationBuilder()
+            .application_class(ZeePubApplication)
+            .token(token)
+            .request(trequest)
+            .build()
+        )
 
         self.plugin_manager = PluginManager()
 
@@ -53,7 +69,7 @@ class ZeePubBot:
         self.app.add_error_handler(ErrorHandler.handle_error)
 
         # attach plugin manager to app so handlers can access it
-        setattr(self.app, "plugin_manager", self.plugin_manager)
+        self.app.plugin_manager = self.plugin_manager
 
         # Metrics Middleware (Group -1 to run first)
         self.app.add_handler(TypeHandler(Update, self._metrics_middleware), group=-1)

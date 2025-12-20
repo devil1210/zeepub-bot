@@ -89,11 +89,23 @@ if enable_miniapp:
     )
 
     if os.path.exists(frontend_dist):
-        app.mount(
-            "/assets",
-            StaticFiles(directory=os.path.join(frontend_dist, "assets")),
-            name="assets",
-        )
+        # Mount assets folder if it exists (for compatibility)
+        assets_dir = os.path.join(frontend_dist, "assets")
+        if os.path.exists(assets_dir):
+            app.mount(
+                "/assets",
+                StaticFiles(directory=assets_dir),
+                name="assets",
+            )
+        
+        # Mount _next folder for Next.js static files
+        next_dir = os.path.join(frontend_dist, "_next")
+        if os.path.exists(next_dir):
+            app.mount(
+                "/_next",
+                StaticFiles(directory=next_dir),
+                name="next_static",
+            )
 
         @app.get("/{full_path:path}")
         async def serve_spa(full_path: str):
