@@ -1,5 +1,5 @@
 # Etapa 1: Construcción del Frontend
-FROM node:18-alpine as frontend-build
+FROM node:20-alpine as frontend-build
 WORKDIR /app/frontend
 COPY zeepub-web/package*.json ./
 RUN npm install
