@@ -1,6 +1,7 @@
 # core/bot.py
 
 import logging
+import asyncio
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -49,7 +50,7 @@ class ZeePubBot:
         # El default de 5s connect provoca Timeouts en redes lentas/VPN
         trequest = HTTPXRequest(
             connection_pool_size=20,
-            connect_timeout=15.0,  # Aumentado de default 5.0s -> 15.0s
+            connect_timeout=30.0,  # Aumentado de default 5.0s -> 30.0s
             read_timeout=30.0,
             write_timeout=30.0,
             pool_timeout=30.0,
@@ -86,7 +87,6 @@ class ZeePubBot:
         self.app.add_handler(CallbackQueryHandler(button_handler), group=1)
 
         # Mensajes de texto
-
         self.app.add_handler(
             MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto)
         )
@@ -111,20 +111,36 @@ class ZeePubBot:
         logger.info("Bot iniciado, entrando en polling...")
 
         # Run initialization in background before starting polling
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.app.initialize())
-        loop.run_until_complete(self.plugin_manager.initialize(self.app))
-        loop.run_until_complete(BotInitializer.initialize_schedulers(self.app.bot))
-        loop.run_until_complete(BotInitializer.check_update_state(self.app.bot))
-
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        loop.run_until_complete(self.initialize())
         self.app.run_polling()
         session_manager.close()
 
     async def initialize(self):
         """Inicializa la aplicación (para uso con API)."""
-        await self.app.initialize()
+        max_retries = 5
+        retry_delay = 5
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})...")
+                await self.app.initialize()
+                logger.info("Bot inicializado exitosamente.")
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait = retry_delay * (attempt + 1)
+                    logger.warning(f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s...")
+                    await asyncio.sleep(wait)
+                else:
+                    logger.error(f"Error crítico: No se pudo inicializar el bot tras {max_retries} intentos: {e}")
+                    # No relanzamos aquí para evitar que muera la API, pero el bot no funcionará
+                    return
 
         # Initialize plugins explicitely to ensure they are loaded
         try:
@@ -134,11 +150,6 @@ class ZeePubBot:
             # Safe Mode: Register emergency update handler
             try:
                 from telegram.ext import CommandHandler
-                from plugins.system_manager_plugin import SystemManagerPlugin
-
-                # Instantiate a temporary SystemManager to access its update logic
-                # or define a minimal standalone fallback function.
-                # Using a standalone function is safer to avoid recursive dependency errors.
 
                 async def emergency_update_handler(update, context):
                     uid = update.effective_user.id
@@ -151,11 +162,6 @@ class ZeePubBot:
                         parse_mode="HTML"
                     )
 
-                    # Glue code to trigger update
-                    # Reusing the existing update logic from SystemManager might be risky if imports failed.
-                    # But typically SystemManagerPlugin is fine, passing a class method should work if the file parses.
-
-                    # Let's try to manually trigger the same logic sequence
                     try:
                         from services.maintenance_service import trigger_watchtower_update
                         success, msg = await trigger_watchtower_update()
@@ -190,7 +196,8 @@ class ZeePubBot:
 
     async def stop_async(self):
         """Detiene el bot de forma asíncrona."""
-        await self.app.updater.stop()
+        if self.app.updater:
+            await self.app.updater.stop()
         await self.app.stop()
         await self.app.shutdown()
         session_manager.close()

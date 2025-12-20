@@ -26,8 +26,13 @@ app_state = {}
 async def lifespan(app: FastAPI):
     # Startup: Iniciar el bot
     logger.info("Iniciando ZeePub Bot junto con la API...")
-    await bot.initialize()
-    await bot.start_async()
+    try:
+        await bot.initialize()
+        await bot.start_async()
+    except Exception as e:
+        logger.error(f"Fallo crítico al iniciar el bot: {e}", exc_info=True)
+        # No relanzamos para que la API pueda al menos responder con su estado de error
+        # o permitir administración remota si es posible.
     # Start background URL validator (only if enabled by config)
     from utils.url_validator import start_background_validator
 
