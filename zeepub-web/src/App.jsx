@@ -293,59 +293,59 @@ function App() {
   return (
     <div className="flex flex-col h-screen bg-telegram-dark text-white overflow-hidden font-sans">
 
-      <header className="flex-none flex flex-col items-center pt-8 pb-4 bg-telegram-dark">
-        {/* Profile Avatar */}
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-3xl shadow-lg mb-4 overflow-hidden border border-white/5">
-          <span>📚</span>
+      <header className="flex-none flex flex-col items-center pt-10 pb-6 bg-telegram-dark">
+        {/* Profile Avatar Centrado */}
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#2a394a] to-[#1c2732] flex items-center justify-center text-5xl shadow-2xl mb-6 overflow-hidden border border-white/10 relative group">
+          <img
+            src="https://raw.githubusercontent.com/devil1210/zeepub-bot/main/zeepub-web/public/logo.png"
+            alt="ZeePub Logo"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "https://ui-avatars.com/api/?name=ZeePub&background=2481cc&color=fff";
+            }}
+          />
         </div>
 
-        {/* Title & Subtitle */}
-        <h1 className="text-[20px] font-bold mb-1 tracking-tight">ZeePub</h1>
-        <p className="text-telegram-hint text-[13px] text-center px-10 mb-6 leading-tight opacity-90">
-          ZeePub es el bot definitivo para gestionar y leer tus libros favoritos directamente en Telegram.
-          <br />
-          <span className="text-telegram-link font-medium cursor-pointer hover:underline text-[11px] mt-2 block">Learn more ˃</span>
-        </p>
+        {/* Title & Subtitle Centrados al estilo BotFather */}
+        <h1 className="text-[22px] font-bold mb-1 tracking-tight text-white">ZeePubBot</h1>
+        <p className="text-telegram-hint text-[14px] font-medium mb-1">@ZeePubBot</p>
 
-        <SearchBar onSearch={debouncedSearch} />
+        <div className="flex flex-col items-center mt-6 w-full max-w-sm px-6">
+          <SearchBar onSearch={debouncedSearch} />
+        </div>
 
-        {/* Admin Controls - Estilo Integrado y Sutil */}
+        {/* Admin Controls - Estilo más integrado */}
         {(isAdmin || isFacebookPublisher) && (
-          <div className="w-full max-w-sm px-6 mt-1 mb-2">
-            <div className="bg-[#242f3d]/60 rounded-xl py-2 px-4 flex items-center justify-between border border-white/5">
-              <span className="text-[10px] font-bold text-telegram-hint uppercase tracking-widest">Modo Avanzado</span>
+          <div className="w-full max-w-sm px-6 mt-2 mb-2">
+            <div
+              onClick={() => {
+                const newMode = !adminMode;
+                setAdminMode(newMode);
+                setNavigationStack([]);
+                WebApp.BackButton.hide();
+                const url = newMode && adminConfig ? adminConfig.admin_root_url : null;
+                loadFeed(url);
+              }}
+              className="bg-telegram-list rounded-xl py-3 px-5 flex items-center justify-between border border-white/5 cursor-pointer active:scale-[0.98] transition-all"
+            >
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    const newMode = !adminMode;
-                    setAdminMode(newMode);
-                    setNavigationStack([]);
-                    WebApp.BackButton.hide();
-                    const url = newMode && adminConfig ? adminConfig.admin_root_url : null;
-                    loadFeed(url);
-                  }}
-                  className={`w-8 h-4 rounded-full relative transition-colors duration-200 focus:outline-none ${adminMode ? 'bg-[#2481cc]' : 'bg-[#17212b]'}`}
-                >
-                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-200 transform ${adminMode ? 'translate-x-4' : 'translate-x-0'}`} />
-                </button>
-                {adminMode && adminConfig?.destinations && (
-                  <select
-                    value={selectedDestination || 'me'}
-                    onChange={(e) => setSelectedDestination(e.target.value)}
-                    className="bg-transparent text-white text-[10px] font-bold outline-none cursor-pointer border-l border-white/10 pl-3 ml-1"
-                  >
-                    {adminConfig.destinations.map(d => (
-                      <option key={d.id} value={d.id} className="bg-[#17212b]">{d.name}</option>
-                    ))}
-                  </select>
-                )}
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-telegram-link">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                </div>
+                <span className="text-[14px] font-semibold text-white">Modo Avanzado</span>
+              </div>
+              <div className={`w-8 h-4 rounded-full relative transition-colors duration-200 ${adminMode ? 'bg-[#2481cc]' : 'bg-[#17212b]'}`}>
+                <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-200 transform ${adminMode ? 'translate-x-4' : 'translate-x-0'}`} />
               </div>
             </div>
           </div>
         )}
       </header>
 
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-telegram-dark">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-telegram-dark px-4">
         {loading ? (
           <div className="flex justify-center items-center h-48">
             <div className="w-6 h-6 border-2 border-blue-500/10 border-t-[#2481cc] rounded-full animate-spin"></div>
@@ -357,18 +357,18 @@ function App() {
             <p className="text-telegram-hint text-xs">Esta sección es para usuarios VIP.</p>
           </div>
         ) : error ? (
-          <div className="mx-6 p-4 bg-red-500/5 text-red-400 text-xs rounded-xl text-center">
+          <div className="p-4 bg-red-500/5 text-red-400 text-xs rounded-xl text-center mb-4">
             {error}
           </div>
         ) : (
-          <div className="pb-24">
-            <div className="px-6 py-3">
-              <h2 className="text-telegram-hint text-[13px] font-bold uppercase tracking-wider">
+          <div className="pb-32">
+            <div className="py-4">
+              <h2 className="text-white text-[17px] font-bold px-2">
                 {navigationStack.length > 0 ? (currentTitle === 'ZeePub Mini' ? 'Contenido' : currentTitle) : 'Mis colecciones'}
               </h2>
             </div>
 
-            <div className="mx-4 bg-telegram-list rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+            <div className="bg-telegram-list rounded-xl overflow-hidden border border-white/5">
               {currentItems.map((item, index) => {
                 const isLast = index === currentItems.length - 1;
                 if (isNavigationItem(item)) {
@@ -402,30 +402,38 @@ function App() {
                 </div>
               )}
             </div>
+
+            {/* Descriptive text for BotFather style */}
+            <div className="mt-4 px-2">
+              <p className="text-telegram-hint text-[12px] leading-relaxed opacity-80">
+                Gestiona tus libros y colecciones de forma sencilla. Haz clic en un ítem para ver opciones o navegar por las subcategorías.
+              </p>
+              <span className="text-telegram-link text-[12px] font-medium mt-1 cursor-pointer hover:underline block">Soporte técnico ›</span>
+            </div>
           </div>
         )}
       </div>
 
       {/* Modern Mini App Navigation - Sutil y translúcida */}
-      <div className="flex-none bg-[#17212b]/95 backdrop-blur-xl px-8 py-5 flex items-center justify-between border-t border-white/5">
+      <div className="flex-none bg-[#17212b]/95 backdrop-blur-xl px-8 py-5 flex items-center justify-between border-t border-white/5 shadow-2xl">
         <button
           onClick={goToPrevPage}
           disabled={loading || (currentPage === 1 && !prevPageUrl)}
-          className="p-3 bg-[#242f3d]/80 rounded-full disabled:opacity-20 text-gray-400 hover:text-white transition-all active:scale-95 shadow-lg"
+          className="p-3 bg-[#242f3d]/80 rounded-full disabled:opacity-20 text-gray-400 hover:text-white transition-all active:scale-95"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
-        <div className="px-6 py-2 bg-[#242f3d]/80 rounded-full text-[11px] font-bold text-telegram-hint uppercase tracking-widest border border-white/10 shadow-sm">
+        <div className="px-6 py-2 bg-[#242f3d]/80 rounded-full text-[11px] font-bold text-telegram-hint uppercase tracking-widest border border-white/10">
           {currentPage} / {totalPages}
         </div>
 
         <button
           onClick={goToNextPage}
           disabled={loading || (currentPage >= totalPages && !nextPageUrl)}
-          className="p-3 bg-[#242f3d]/80 rounded-full disabled:opacity-20 text-gray-400 hover:text-white transition-all active:scale-95 shadow-lg"
+          className="p-3 bg-[#242f3d]/80 rounded-full disabled:opacity-20 text-gray-400 hover:text-white transition-all active:scale-95"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
