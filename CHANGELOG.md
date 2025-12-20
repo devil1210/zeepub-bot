@@ -16,14 +16,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
     - Adición de divisores internos sutiles en las listas.
 
 ## [v4.0.0] - 2025-12-20
+### Added
+- **Nuevo Diseño Premium (V0.dev):** Interfaz completamente rediseñada desde cero utilizando un sistema de diseño moderno basado en tarjetas, colores profundos (`oklch`) y glassmorphism.
+- **Header Stick:** Encabezado con efecto de desenfoque y navegación persistente.
+- **Perfil Hero:** Nueva sección de presentación del bot más prominente y centrada.
 
-### Añadido
-- **Mini App Overhaul**: Rediseño total de la interfaz de usuario inspirado en BotFather.
-    - Nuevo tema oscuro nativo de Telegram (`#17212b`).
-    - Cabecera de perfil con logo circular y descripción.
-    - Buscador minimalista integrado.
-    - Sistema de listas limpio con avatares circulares y navegación mejorada.
-- **Versiones**: Salto de versión mayor (v4.0.0) marcando el inicio de una nueva era para la aplicación web integrada.
+### Changed
+- **Renovación Visual Total:** Se abandona la imitación estricta de BotFather en favor de una identidad visual propia, más moderna y pulida.
+- **Optimización de Componentes:** Migración a una arquitectura de componentes visuales simplificada y directa en `App.jsx`.
 
 ## [v3.13.8] - 2025-12-19
 
