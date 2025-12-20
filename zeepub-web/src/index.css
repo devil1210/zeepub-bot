@@ -10,29 +10,27 @@
   --tg-theme-link-color: #2481cc;
   --tg-theme-button-color: #2481cc;
   --tg-theme-button-text-color: #ffffff;
+  --tg-list-bg: #1c2733;
 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
   color-scheme: dark;
-  color: var(--tg-theme-text-color);
-  background-color: var(--tg-theme-bg-color);
 }
 
 body {
   margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: #17212b;
-  @apply antialiased;
+  background-color: var(--tg-theme-bg-color);
+  color: var(--tg-theme-text-color);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
+
+.bg-telegram-dark { background-color: #17212b !important; }
+.bg-telegram-list { background-color: #1c2733 !important; }
+.text-telegram-hint { color: #7f8c99 !important; }
+.text-telegram-link { color: #2481cc !important; }
 
 ::-webkit-scrollbar {
   width: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -40,7 +38,6 @@ body {
   border-radius: 10px;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+h1, h2, h3, p {
+  margin: 0;
 }
