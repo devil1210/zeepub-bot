@@ -291,155 +291,169 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-telegram-dark text-white overflow-hidden font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          <button onClick={handleBack} className={`${navigationStack.length > 0 ? 'text-primary' : 'text-muted-foreground/40 pointer-events-none'}`}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
 
-      <header className="flex-none flex flex-col items-center pt-10 pb-6 bg-telegram-dark">
-        {/* Profile Avatar Centrado */}
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#2a394a] to-[#1c2732] flex items-center justify-center text-5xl shadow-2xl mb-6 overflow-hidden border border-white/10 relative group">
-          <img
-            src="https://raw.githubusercontent.com/devil1210/zeepub-bot/main/zeepub-web/public/logo.png"
-            alt="ZeePub Logo"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "https://ui-avatars.com/api/?name=ZeePub&background=2481cc&color=fff";
-            }}
-          />
-        </div>
+          <h1 className="text-lg font-semibold tracking-tight">ZeePubBot</h1>
 
-        {/* Title & Subtitle Centrados al estilo BotFather */}
-        <h1 className="text-[22px] font-bold mb-1 tracking-tight text-white">ZeePubBot</h1>
-        <p className="text-telegram-hint text-[14px] font-medium mb-1">@ZeePubBot</p>
-
-        <div className="flex flex-col items-center mt-6 w-full max-w-sm px-6">
-          <SearchBar onSearch={debouncedSearch} />
-        </div>
-
-        {/* Admin Controls - Estilo más integrado */}
-        {(isAdmin || isFacebookPublisher) && (
-          <div className="w-full max-w-sm px-6 mt-2 mb-2">
-            <div
-              onClick={() => {
+          <button
+            onClick={() => {
+              if (isAdmin || isFacebookPublisher) {
                 const newMode = !adminMode;
                 setAdminMode(newMode);
                 setNavigationStack([]);
                 WebApp.BackButton.hide();
                 const url = newMode && adminConfig ? adminConfig.admin_root_url : null;
                 loadFeed(url);
-              }}
-              className="bg-telegram-list rounded-xl py-3 px-5 flex items-center justify-between border border-white/5 cursor-pointer active:scale-[0.98] transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-telegram-link">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                </div>
-                <span className="text-[14px] font-semibold text-white">Modo Avanzado</span>
-              </div>
-              <div className={`w-8 h-4 rounded-full relative transition-colors duration-200 ${adminMode ? 'bg-[#2481cc]' : 'bg-[#17212b]'}`}>
-                <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-200 transform ${adminMode ? 'translate-x-4' : 'translate-x-0'}`} />
-              </div>
-            </div>
-          </div>
-        )}
+              }
+            }}
+            className={`transition-colors ${adminMode ? 'text-primary' : 'text-muted-foreground'}`}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {adminMode ? <path d="M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20z" /> : <circle cx="12" cy="12" r="1" />}
+              {adminMode && <path d="M12 8v8" />}
+              {adminMode && <path d="M8 12h8" />}
+              {!adminMode && <circle cx="12" cy="5" r="1" />}
+              {!adminMode && <circle cx="12" cy="19" r="1" />}
+            </svg>
+          </button>
+        </div>
       </header>
 
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-telegram-dark px-4">
-        {loading ? (
-          <div className="flex justify-center items-center h-48">
-            <div className="w-6 h-6 border-2 border-blue-500/10 border-t-[#2481cc] rounded-full animate-spin"></div>
+      {/* Bot Profile Section - Solo visible en Home */}
+      {navigationStack.length === 0 && !loading && (
+        <div className="max-w-2xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="w-24 h-24 mb-4 rounded-full border-2 border-primary/20 overflow-hidden shadow-xl bg-card">
+              <img
+                src="https://raw.githubusercontent.com/devil1210/zeepub-bot/main/zeepub-web/public/logo.png"
+                alt="ZeePubBot"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://ui-avatars.com/api/?name=ZeePub&background=2481cc&color=fff";
+                }}
+              />
+            </div>
+            <h2 className="text-3xl font-bold mb-2 tracking-tight">ZeePubBot</h2>
+            <p className="text-muted-foreground mb-4 font-medium">@ZeePubBot</p>
+            <p className="text-sm text-foreground/80 leading-relaxed max-w-md">
+              Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚
+            </p>
+            <button className="text-primary text-sm mt-3 font-medium hover:underline transition-all">Leer más →</button>
           </div>
-        ) : error === 'ACCESS_DENIED' ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
-            <div className="text-5xl">🔒</div>
-            <h2 className="text-lg font-bold">Acceso Exclusivo</h2>
-            <p className="text-telegram-hint text-xs">Esta sección es para usuarios VIP.</p>
+
+          {/* Search */}
+          <div className="mb-8">
+            <div className="relative group">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-focus-within:text-primary transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar libros..."
+                onChange={(e) => debouncedSearch(e.target.value)}
+                className="w-full h-12 pl-12 pr-4 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm placeholder:text-muted-foreground/50"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content List */}
+      <div ref={scrollContainerRef} className="max-w-2xl mx-auto px-4 pb-32">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+            <p className="text-sm text-muted-foreground animate-pulse">Cargando biblioteca...</p>
           </div>
         ) : error ? (
-          <div className="p-4 bg-red-500/5 text-red-400 text-xs rounded-xl text-center mb-4">
-            {error}
+          <div className="p-4 bg-destructive/10 text-destructive text-sm rounded-xl text-center border border-destructive/20">
+            <p className="font-semibold">Error</p>
+            <p>{error}</p>
           </div>
         ) : (
-          <div className="pb-32">
-            <div className="py-4">
-              <h2 className="text-white text-[17px] font-bold px-2">
-                {navigationStack.length > 0 ? (currentTitle === 'ZeePub Mini' ? 'Contenido' : currentTitle) : 'Mis colecciones'}
-              </h2>
-            </div>
+          <div className="space-y-3">
+            {items.length > 0 && <h3 className="text-xl font-bold mb-4 px-1">{navigationStack.length > 0 ? (currentTitle === 'ZeePub Mini' ? 'Contenido' : currentTitle) : 'Funciones'}</h3>}
 
-            <div className="bg-telegram-list rounded-xl overflow-hidden border border-white/5">
-              {currentItems.map((item, index) => {
-                const isLast = index === currentItems.length - 1;
-                if (isNavigationItem(item)) {
-                  return (
-                    <NavigationListItem
-                      key={item.id || index}
-                      item={item}
-                      onNavigate={handleNavigate}
-                      isLast={isLast}
+            {items.map((item, index) => (
+              <div
+                key={item.id || index}
+                onClick={() => {
+                  if (isNavigationItem(item)) handleNavigate(item);
+                  else if (isBook(item)) handleDownload(item);
+                }}
+                className="group bg-card p-4 rounded-xl border border-border hover:bg-secondary/50 active:scale-[0.98] transition-all cursor-pointer shadow-sm flex items-center gap-4"
+              >
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden text-primary">
+                  {item.links?.find(l => l.rel?.includes('cover') || l.rel?.includes('image'))?.href ? (
+                    <img
+                      src={item.links.find(l => l.rel?.includes('cover') || l.rel?.includes('image')).href}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
                     />
-                  );
-                } else if (isBook(item)) {
-                  return (
-                    <BookListItem
-                      key={item.id || index}
-                      book={item}
-                      onDownload={handleDownload}
-                      isFacebookPublisher={isFacebookPublisher}
-                      onFacebookPost={handleFacebookPost}
-                      isLast={isLast}
-                    />
-                  );
-                }
-                return null;
-              })}
-
-              {items.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 text-telegram-hint">
-                  <span className="text-4xl mb-2 opacity-20">🔍</span>
-                  <p className="text-xs">No se encontró nada</p>
+                  ) : (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      {isNavigationItem(item) ? <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /> : <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />}
+                      {isBook(item) && <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />}
+                    </svg>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Descriptive text for BotFather style */}
-            <div className="mt-4 px-2">
-              <p className="text-telegram-hint text-[12px] leading-relaxed opacity-80">
-                Gestiona tus libros y colecciones de forma sencilla. Haz clic en un ítem para ver opciones o navegar por las subcategorías.
-              </p>
-              <span className="text-telegram-link text-[12px] font-medium mt-1 cursor-pointer hover:underline block">Soporte técnico ›</span>
-            </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-foreground mb-1 truncate leading-tight">{item.title}</h4>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {isBook(item) ? (item.author ? item.author.name : 'Libro') : (item.content ? item.content.text : 'Colección')}
+                  </p>
+                </div>
+
+                <div className="text-muted-foreground group-hover:text-primary transition-colors">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+            ))}
+
+            {items.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>No se encontraron resultados.</p>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Modern Mini App Navigation - Sutil y translúcida */}
-      <div className="flex-none bg-[#17212b]/95 backdrop-blur-xl px-8 py-5 flex items-center justify-between border-t border-white/5 shadow-2xl">
-        <button
-          onClick={goToPrevPage}
-          disabled={loading || (currentPage === 1 && !prevPageUrl)}
-          className="p-3 bg-[#242f3d]/80 rounded-full disabled:opacity-20 text-gray-400 hover:text-white transition-all active:scale-95"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-
-        <div className="px-6 py-2 bg-[#242f3d]/80 rounded-full text-[11px] font-bold text-telegram-hint uppercase tracking-widest border border-white/10">
-          {currentPage} / {totalPages}
+      {/* Pagination - Solo si es necesaria */}
+      {(items.length > 0 || prevPageUrl) && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border flex justify-between items-center z-20">
+          <button
+            onClick={goToPrevPage}
+            disabled={loading || (currentPage === 1 && !prevPageUrl)}
+            className="p-3 rounded-full bg-card border border-border disabled:opacity-30 hover:bg-secondary transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          </button>
+          <span className="text-sm font-medium text-muted-foreground">Página {currentPage}</span>
+          <button
+            onClick={goToNextPage}
+            disabled={loading || (currentPage >= totalPages && !nextPageUrl)}
+            className="p-3 rounded-full bg-card border border-border disabled:opacity-30 hover:bg-secondary transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+          </button>
         </div>
-
-        <button
-          onClick={goToNextPage}
-          disabled={loading || (currentPage >= totalPages && !nextPageUrl)}
-          className="p-3 bg-[#242f3d]/80 rounded-full disabled:opacity-20 text-gray-400 hover:text-white transition-all active:scale-95"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
+      )}
     </div>
   );
 }
