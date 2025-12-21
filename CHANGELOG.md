@@ -5,6 +5,10 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.1.5] - 2025-12-20
+### Corregido
+- **CRÍTICO - Mini App Routing**: Corregido FastAPI para servir archivos HTML individuales generados por Next.js static export (`search.html`, `donate.html`, etc.) en lugar de siempre servir `index.html`. Esto permite que la navegación funcione correctamente.
+
 ## [v4.1.4] - 2025-12-20
 ### Corregido
 - **Mini App - Navegación Completa**: Reemplazados TODOS los Next.js Link con anchor tags estándar en main page, status page, y BottomNav para garantizar navegación funcional en modo export estático dentro de Telegram WebApp.

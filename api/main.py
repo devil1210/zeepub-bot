@@ -125,10 +125,23 @@ if enable_miniapp:
                 # Si llegamos aquí y no matcheó api routes, es 404
                 return {"error": "Not found"}
 
-            # Servir index.html para cualquier otra ruta (SPA routing)
-            index_path = os.path.join(frontend_dist, "index.html")
-            if os.path.exists(index_path):
-                return FileResponse(index_path)
+            # Next.js static export generates individual HTML files for each page
+            # Try to serve the specific HTML file first
+            if full_path == "":
+                # Root path
+                html_path = os.path.join(frontend_dist, "index.html")
+            else:
+                # Try exact match first (e.g., search.html for /search)
+                html_path = os.path.join(frontend_dist, f"{full_path}.html")
+                if not os.path.exists(html_path):
+                    # Try as directory with index (e.g., search/index.html)
+                    html_path = os.path.join(frontend_dist, full_path, "index.html")
+                if not os.path.exists(html_path):
+                    # Fallback to root index.html for client-side routing
+                    html_path = os.path.join(frontend_dist, "index.html")
+            
+            if os.path.exists(html_path):
+                return FileResponse(html_path)
             return {"error": "Frontend not built"}
 
     else:
