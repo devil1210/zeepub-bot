@@ -56,6 +56,13 @@ async def handle_bot_request(
             target_url = page_url if page_url else build_search_url(query, uid=user_id)
             feed = await get_cached_feed(target_url)
 
+            # Determine the best base URL for relative links
+            feed_base_url = target_url
+            for link in getattr(feed.feed, "links", []):
+                if link.get("rel") == "self":
+                    feed_base_url = abs_url(target_url, link.get("href"))
+                    break
+
             results = []
             entries = getattr(feed, "entries", [])
             
@@ -67,7 +74,7 @@ async def handle_bot_request(
             
             for link in getattr(feed.feed, "links", []):
                 rel = link.get("rel", "")
-                href = abs_url(config.BASE_URL, link.get("href", ""))
+                href = abs_url(feed_base_url, link.get("href", ""))
                 if rel == "next":
                     next_page = href
                 elif rel == "previous" or rel == "prev":
@@ -115,7 +122,7 @@ async def handle_bot_request(
                 isbn = None
                 identifier = entry.get("identifier")
                 if identifier and "isbn" in identifier.lower():
-                    isbn = identifier.split(":")[-1]
+                    isbn = identifier.split(":")[-1].strip()
 
                 download_url = None
                 cover_url = None
@@ -126,11 +133,12 @@ async def handle_bot_request(
 
                 for link in getattr(entry, "links", []):
                     rel = link.get("rel", "")
-                    href = abs_url(config.BASE_URL, link.get("href", ""))
+                    href = abs_url(feed_base_url, link.get("href", ""))
                     if rel == "subsection":
                         subsection_url = href
-                    elif rel == "self":
-                        detail_url = href
+                    elif rel == "self" or rel == "alternate":
+                        if not detail_url or rel == "self":
+                            detail_url = href
                     elif "acquisition" in rel or "epub" in link.get("type", ""):
                         download_url = href
                         file_type = link.get("type")
@@ -197,11 +205,17 @@ async def handle_bot_request(
                 raise HTTPException(status_code=400, detail="Missing bookId (URL)")
 
             feed = await get_cached_feed(book_id_url)
+            
+            # OPDS entries can be at the top level or in feed.entries
             entries = getattr(feed, "entries", [])
             if not entries:
-                raise HTTPException(status_code=404, detail="Book detail not found")
-
-            entry = entries[0]
+                # Some servers return the entry as the main feed element
+                if getattr(feed, "feed", None) and feed.feed.get("title"):
+                    entry = feed.feed
+                else:
+                    raise HTTPException(status_code=404, detail="Book detail not found")
+            else:
+                entry = entries[0]
             
             # Extract metadata (same logic as search)
             publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
@@ -212,16 +226,19 @@ async def handle_bot_request(
             isbn = None
             identifier = entry.get("identifier")
             if identifier and "isbn" in identifier.lower():
-                isbn = identifier.split(":")[-1]
+                isbn = identifier.split(":")[-1].strip()
 
             download_url = None
             cover_url = None
             size = None
             file_type = None
 
+            # Base URL for this entry's links
+            entry_base_url = book_id_url
+
             for link in getattr(entry, "links", []):
                 rel = link.get("rel", "")
-                href = abs_url(config.BASE_URL, link.get("href", ""))
+                href = abs_url(entry_base_url, link.get("href", ""))
                 if "acquisition" in rel or "epub" in link.get("type", ""):
                     download_url = href
                     file_type = link.get("type")

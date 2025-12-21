@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, BookOpen, ChevronRight } from "lucide-react"
+import { Search, BookOpen, ChevronRight, Download } from "lucide-react"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { Pagination } from "@/components/pagination"
@@ -68,6 +68,28 @@ export default function SearchPage() {
     }
   }
 
+  const handleDownload = async (e: React.MouseEvent, book: Book) => {
+    e.stopPropagation()
+    if (!book.download_url) {
+      webApp?.showAlert?.("No hay link de descarga")
+      return
+    }
+
+    try {
+      webApp?.showPopup?.({
+        title: "Descargando",
+        message: `Se está enviando "${book.title}" a tu chat...`,
+      })
+      await callBotAPI("download", {
+        bookId: book.download_url,
+        title: book.title
+      })
+    } catch (error) {
+      console.error("[v0] Download error:", error)
+      webApp?.showAlert?.("Error al procesar la descarga")
+    }
+  }
+
   const handleBookClick = (book: Book) => {
     if (book.is_folder && book.subsection_url) {
       // Use window.location.href to avoid history issues with deep links in catalog
@@ -126,7 +148,7 @@ export default function SearchPage() {
                     <img src="/placeholder.svg" alt={book.title} className="w-full h-full object-cover" />
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                       {book.title}
@@ -138,9 +160,20 @@ export default function SearchPage() {
                     )}
                   </div>
                   <p className="text-sm text-primary font-medium mb-1 truncate">{book.author}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-2 italic">
-                    {book.is_folder ? "Ver esta colección..." : "Toca para ver detalles..."}
+                  <p className="text-xs text-muted-foreground line-clamp-2 italic mb-2">
+                    {book.is_folder ? "Ver esta colección..." : "Toca para detalles..."}
                   </p>
+
+                  {!book.is_folder && book.download_url && (
+                    <Button
+                      size="sm"
+                      onClick={(e) => handleDownload(e, book)}
+                      className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
+                    >
+                      <Download className="w-3 h-3 mr-1.5" />
+                      Descargar
+                    </Button>
+                  )}
                 </div>
                 <div className="flex items-center">
                   <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />

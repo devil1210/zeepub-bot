@@ -82,6 +82,8 @@ async def get_feed(
         if not feed:
             raise HTTPException(status_code=404, detail="No se pudo cargar el feed")
 
+        from urllib.parse import urljoin
+        
         # Helper para normalizar URLs
         def normalize_url(href):
             if not href:
@@ -89,10 +91,8 @@ async def get_feed(
             if href.startswith("http"):
                 return href
 
-            base = (config.BASE_URL or "https://zeepubs.com").rstrip("/")
-            if href.startswith("/"):
-                return f"{base}{href}"
-            return f"{base}/{href}"
+            # Use the actual feed URL as base for relative links
+            return urljoin(target_url, href)
 
         # Convertir feedparser object a dict serializable
         entries = []
@@ -143,8 +143,9 @@ async def get_feed(
 
             for link in getattr(entry, "links", []):
                 rel = link.get("rel", "")
-                if rel == "self":
-                    detail_url = normalize_url(link.get("href"))
+                if rel == "self" or rel == "alternate":
+                    if not detail_url or rel == "self":
+                        detail_url = normalize_url(link.get("href"))
                 elif "acquisition" in rel or "epub" in link.get("type", ""):
                     file_type = link.get("type")
                     size = link.get("contentlength") or link.get("length")

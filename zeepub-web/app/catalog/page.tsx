@@ -11,6 +11,7 @@ import {
     ChevronLeft,
     Loader2,
     BookOpen,
+    Download,
 } from "lucide-react"
 import { fetchBotFeed, callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
@@ -89,6 +90,32 @@ function CatalogContent() {
         const newHistory = history.slice(0, -1)
         setHistory(newHistory)
         loadFeed(prevUrl || undefined)
+    }
+
+    const handleDownload = async (e: React.MouseEvent, book: OPDSEntry) => {
+        e.stopPropagation()
+        const downloadLink = book.links.find(
+            (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
+        )
+
+        if (!downloadLink) {
+            webApp?.showAlert?.("No se encontró link de descarga para este libro")
+            return
+        }
+
+        try {
+            webApp?.showPopup?.({
+                title: "Descargando",
+                message: `Se está enviando "${book.title}" a tu chat...`,
+            })
+            await callBotAPI("download", {
+                bookId: downloadLink.href,
+                title: book.title,
+            })
+        } catch (error) {
+            console.error("[v0] Download error:", error)
+            webApp?.showAlert?.("Error al procesar la descarga")
+        }
     }
 
     const handleBookClick = (entry: OPDSEntry) => {
@@ -189,7 +216,7 @@ function CatalogContent() {
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 flex flex-col">
                                         <h3 className="font-semibold text-foreground mb-0.5 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                                             {entry.title}
                                         </h3>
@@ -199,6 +226,14 @@ function CatalogContent() {
                                         <p className="text-xs text-muted-foreground line-clamp-2 mb-2 italic flex-1">
                                             {entry.summary || "Toca para ver detalles..."}
                                         </p>
+                                        <Button
+                                            size="sm"
+                                            onClick={(e) => handleDownload(e, entry)}
+                                            className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
+                                        >
+                                            <Download className="w-3 h-3 mr-1.5" />
+                                            Descargar
+                                        </Button>
                                     </div>
                                     <div className="flex items-center">
                                         <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
