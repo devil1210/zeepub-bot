@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, Search, Settings, BarChart3 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -24,7 +23,7 @@ export function BottomNav() {
             const Icon = item.icon
 
             return (
-              <Link
+              <a
                 key={item.href}
                 href={item.href}
                 className={cn(
@@ -36,7 +35,7 @@ export function BottomNav() {
               >
                 <Icon className={cn("w-5 h-5", isActive && "text-primary")} />
                 <span className={cn("text-xs font-medium", isActive && "text-primary")}>{item.label}</span>
-              </Link>
+              </a>
             )
           })}
         </div>
