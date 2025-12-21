@@ -96,7 +96,13 @@ async def get_feed(
 
         # Convertir feedparser object a dict serializable
         entries = []
+        titles_to_exclude = {"en el puente", "listas de lectura", "deseo leer", "todas las colecciones"}
+        
         for entry in getattr(feed, "entries", []):
+            title = entry.get("title", "Sin título")
+            if title.lower() in titles_to_exclude:
+                continue
+                
             cover_url = None
             subsection_url = None
 
