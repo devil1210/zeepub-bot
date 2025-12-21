@@ -140,15 +140,35 @@ class ZeePubBot:
             try:
                 logger.info(f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})...")
                 await self.app.initialize()
-                logger.info("Bot inicializado exitosamente.")
-                bot_initialized = True
-                break
+                
+                # Verify bot is actually ready by accessing bot.id
+                try:
+                    _ = self.app.bot.id
+                    logger.info(f"Bot inicializado exitosamente (ID: {self.app.bot.id}).")
+                    bot_initialized = True
+                    break
+                except RuntimeError as e:
+                    if "not properly initialized" in str(e):
+                        logger.warning(f"Bot marcado como initialized pero ExtBot no está listo. Reintentando...")
+                        # Force a new initialization attempt
+                        await asyncio.sleep(retry_delay)
+                        continue
+                    raise
+                    
             except Exception as e:
                 # Check if it's already initialized (happens on retry)
                 if "already initialized" in str(e).lower():
-                    logger.info("Bot ya estaba inicializado, continuando...")
-                    bot_initialized = True
-                    break
+                    logger.info("Bot ya estaba marcado como inicializado, verificando estado...")
+                    # Try to access bot.id to verify it's really ready
+                    try:
+                        _ = self.app.bot.id
+                        logger.info(f"Bot verificado correctamente (ID: {self.app.bot.id}).")
+                        bot_initialized = True
+                        break
+                    except RuntimeError:
+                        logger.warning("Bot marcado como initialized pero ExtBot no está listo. Continuando con error original...")
+                        # Can't reinitialize, but bot isn't ready
+                        pass
                     
                 if attempt < max_retries - 1:
                     wait = retry_delay * (attempt + 1)
