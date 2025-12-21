@@ -5,6 +5,10 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.3.1] - 2025-12-21
+### Añadido
+- **Mini App - UX**: Implementado el modo de pantalla completa mediante `requestFullscreen` y desactivación de gestos verticales para evitar el cierre accidental al deslizar hacia abajo.
+
 ## [v4.3.0] - 2025-12-21
 ### Añadido
 - **Mini App - Paginación**: Restaurada la funcionalidad de paginación en Búsqueda y Catálogo (basada en v3.13.8).

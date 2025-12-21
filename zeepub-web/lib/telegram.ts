@@ -11,6 +11,20 @@ export function initTelegramWebApp() {
   // Expand to full height
   webApp.expand()
 
+  // requestFullscreen is available in newer versions of Telegram API
+  if (webApp.requestFullscreen) {
+    try {
+      webApp.requestFullscreen()
+    } catch (e) {
+      console.log("requestFullscreen not supported or failed", e)
+    }
+  }
+
+  // Disable vertical swipes to prevent accidental dismissal
+  if (webApp.isVerticalSwipesEnabled) {
+    webApp.disableVerticalSwipes()
+  }
+
   // Set header color to match theme
   webApp.setHeaderColor("#1C2733")
 
