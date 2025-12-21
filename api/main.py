@@ -28,12 +28,14 @@ async def lifespan(app: FastAPI):
     logger.info("Iniciando ZeePub Bot junto con la API...")
     try:
         await bot.initialize()
-        
+
         # Only start the bot if initialization was successful
         if bot._initialized:
             await bot.start_async()
         else:
-            logger.error("Bot no se pudo inicializar correctamente. El bot NO estará disponible.")
+            logger.error(
+                "Bot no se pudo inicializar correctamente. El bot NO estará disponible."
+            )
     except Exception as e:
         logger.error(f"Fallo crítico al iniciar el bot: {e}", exc_info=True)
         # No relanzamos para que la API pueda al menos responder con su estado de error
@@ -108,7 +110,7 @@ if enable_miniapp:
                 StaticFiles(directory=assets_dir),
                 name="assets",
             )
-        
+
         # Mount _next folder for Next.js static files
         next_dir = os.path.join(frontend_dist, "_next")
         if os.path.exists(next_dir):
@@ -139,7 +141,7 @@ if enable_miniapp:
                 if not os.path.exists(html_path):
                     # Fallback to root index.html for client-side routing
                     html_path = os.path.join(frontend_dist, "index.html")
-            
+
             if os.path.exists(html_path):
                 return FileResponse(html_path)
             return {"error": "Frontend not built"}

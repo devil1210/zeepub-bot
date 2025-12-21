@@ -223,8 +223,8 @@ class ZeePubBot:
                             text=f"🚨 <b>ALERTA CRÍTICA</b>\nEl bot inició en <b>MODO SEGURO</b> debido a un error en los plugins:\n\n<pre>{str(e)}</pre>\n\nUsa /update_system para intentar reparar.",
                             parse_mode="HTML"
                         )
-                    except Exception:
-                        pass
+                    except Exception as ex:
+                        logger.warning(f"Could not notify admin {admin_id} of safe mode: {ex}")
             except Exception as e2:
                 logger.error(f"FATAL: Could not register emergency handler: {e2}")
 
@@ -259,5 +259,5 @@ class ZeePubBot:
             try:
                 cmd = update.message.text.split()[0].split("@")[0]
                 metrics.inc_command(cmd)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Error in metrics middleware: {e}")

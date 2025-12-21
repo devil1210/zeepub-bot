@@ -7,14 +7,17 @@ import hashlib
 import json
 from config.config_settings import config
 from services.opds_service import get_cached_feed
+
 # from utils.http_client import parse_feed_from_url
-from utils.helpers import build_search_url
+from utils.helpers import build_search_url, formatear_mensaje_portada
 from utils.security import validate_telegram_data
 from utils.http_client import fetch_bytes
-from services.epub_service import parse_opf_from_epub, extract_cover_from_epub, extract_internal_title
-from utils.helpers import (
-    formatear_mensaje_portada,
+from services.epub_service import (
+    parse_opf_from_epub,
+    extract_cover_from_epub,
+    extract_internal_title,
 )
+from services.user_service import get_effective_user, get_user_info
 import logging
 
 
@@ -65,20 +68,23 @@ async def get_feed(
     """
     logger.info(f"Feed request - UID: {current_uid}, URL: {url}")
 
-    # Determinar si es Admin o Staff (VIP/Premium/Whitelist/Publisher)
-    is_admin = current_uid in config.ADMIN_USERS
-    is_staff = (
-        current_uid in config.VIP_LIST
-        or current_uid in config.PREMIUM_LIST
-        or current_uid in config.WHITELIST
-        or current_uid in config.FACEBOOK_PUBLISHERS
-    )
+    # Determinar rol efectivo (DB + Config)
+    user_data = await get_effective_user(current_uid)
+    role = user_data.get("role", "free")
+    
+    is_admin = role == "admin"
+    is_staff = role in ["admin", "staff", "vip", "premium", "white"]
 
-    logger.info(f"Permissions for UID {current_uid}: Admin={is_admin}, Staff={is_staff}")
+    logger.info(f"Permissions for UID {current_uid}: Role={role}, Admin={is_admin}, Staff={is_staff}")
 
     # Si no tiene permisos, denegar
     if not is_admin and not is_staff:
-        logger.warning(f"Access denied for UID: {current_uid}. Roles: Admin={config.ADMIN_USERS}, VIP={config.VIP_LIST}, Premium={config.PREMIUM_LIST}, Whitelist={config.WHITELIST}, Pub={config.FACEBOOK_PUBLISHERS}")
+        logger.warning(
+            f"Access denied for UID: {current_uid}. Effective Role: {role}. "
+            f"Admin List: {config.ADMIN_USERS}, VIP List: {config.VIP_LIST}, "
+            f"Premium List: {config.PREMIUM_LIST}, Whitelist: {config.WHITELIST}, "
+            f"Pub List: {config.FACEBOOK_PUBLISHERS}"
+        )
         raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios.",
@@ -93,7 +99,7 @@ async def get_feed(
             target_url = config.OPDS_ROOT_START
     else:
         target_url = url
-    
+
     logger.info(f"Fetching feed from target_url: {target_url}")
     try:
         feed = await get_cached_feed(target_url)
@@ -101,7 +107,7 @@ async def get_feed(
             raise HTTPException(status_code=404, detail="No se pudo cargar el feed")
 
         from urllib.parse import urljoin
-        
+
         # Helper para normalizar URLs
         def normalize_url(href):
             if not href:
@@ -114,13 +120,18 @@ async def get_feed(
 
         # Convertir feedparser object a dict serializable
         entries = []
-        titles_to_exclude = {"en el puente", "listas de lectura", "deseo leer", "todas las colecciones"}
-        
+        titles_to_exclude = {
+            "en el puente",
+            "listas de lectura",
+            "deseo leer",
+            "todas las colecciones",
+        }
+
         for entry in getattr(feed, "entries", []):
             title = entry.get("title", "Sin título")
             if title.lower() in titles_to_exclude:
                 continue
-                
+
             cover_url = None
             subsection_url = None
 
@@ -149,7 +160,7 @@ async def get_feed(
             language = entry.get("dc_language") or entry.get("dcterms_language")
             published = entry.get("published") or entry.get("issued")
             year = published[:4] if published and len(published) >= 4 else None
-            
+
             isbn = None
             identifier = entry.get("identifier")
             if identifier and "isbn" in identifier.lower():
@@ -196,6 +207,7 @@ async def get_feed(
 
         # Second pass: fetch covers for folders that don't have one
         import asyncio
+
         async def fetch_folder_cover(res):
             if res["subsection_url"] and not res["cover_url"]:
                 try:
@@ -206,13 +218,25 @@ async def get_feed(
                         for l in getattr(first_book, "links", []):
                             l_type = l.get("type", "")
                             l_rel = l.get("rel", "")
-                            if "image" in l_type or "cover" in l_rel or l_rel == "http://opds-spec.org/image":
+                            if (
+                                "image" in l_type
+                                or "cover" in l_rel
+                                or l_rel == "http://opds-spec.org/image"
+                            ):
                                 res["cover_url"] = normalize_url(l.get("href"))
                                 break
-                except Exception:
-                    pass
+                except httpx.HTTPStatusError as e:
+                    logger.warning(f"HTTP error fetching sub-feed {res['subsection_url']}: {e}")
+                except httpx.RequestError as e:
+                    logger.warning(f"Request error fetching sub-feed {res['subsection_url']}: {e}")
+                except Exception as e:
+                    logger.warning(f"Unexpected error fetching sub-feed {res['subsection_url']}: {e}")
 
-        folder_tasks = [fetch_folder_cover(e) for e in entries if e["subsection_url"] and not e["cover_url"]]
+        folder_tasks = [
+            fetch_folder_cover(e)
+            for e in entries
+            if e["subsection_url"] and not e["cover_url"]
+        ]
         if folder_tasks:
             # We process sequential for the main feed to avoid overloading the OPDS server
             # but we use a small concurrency limit
@@ -223,7 +247,7 @@ async def get_feed(
         prev_page = None
         first_page = None
         last_page = None
-        
+
         for link in getattr(feed.feed, "links", []):
             rel = link.get("rel", "")
             href = normalize_url(link.get("href"))
@@ -240,12 +264,16 @@ async def get_feed(
         current_page = 1
         if url and "page=" in url:
             import urllib.parse
+
             parsed = urllib.parse.urlparse(url)
             params = urllib.parse.parse_qs(parsed.query)
             try:
                 current_page = int(params.get("page", [1])[0])
-            except:
-                pass
+            except ValueError:
+                logger.debug(f"Could not parse page number from URL: {url}")
+            except Exception as e:
+                logger.warning(f"Unexpected error parsing page number from URL: {e}")
+
 
         # Total pages
         total_pages = None
@@ -253,9 +281,14 @@ async def get_feed(
         items_per_page = feed.feed.get("opensearch_itemsperpage")
         if total_results and items_per_page:
             try:
-                total_pages = (int(total_results) + int(items_per_page) - 1) // int(items_per_page)
-            except:
-                pass
+                total_pages = (int(total_results) + int(items_per_page) - 1) // int(
+                    items_per_page
+                )
+            except ValueError:
+                logger.debug(f"Could not calculate total pages from results={total_results}, items_per_page={items_per_page}")
+            except Exception as e:
+                logger.warning(f"Unexpected error calculating total pages: {e}")
+
 
         processed_links = [
             {
@@ -275,10 +308,16 @@ async def get_feed(
             "firstPage": first_page,
             "lastPage": last_page,
             "currentPage": current_page,
-            "totalPages": total_pages
+            "totalPages": total_pages,
         }
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error fetching feed: {e}")
+        raise HTTPException(status_code=e.response.status_code, detail=f"Error fetching feed: {e.response.text}")
+    except httpx.RequestError as e:
+        logger.error(f"Request error fetching feed: {e}")
+        raise HTTPException(status_code=500, detail=f"Network error fetching feed: {e}")
     except Exception as e:
-        logger.error(f"Error fetching feed: {e}")
+        logger.error(f"Unexpected error fetching feed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -315,8 +354,14 @@ async def proxy_image(rest_of_path: str, request: Request):
                 media_type=response.headers.get("content-type", "image/jpeg"),
                 headers={"Cache-Control": "public, max-age=86400"},
             )
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error proxying image: {e}")
+        raise HTTPException(status_code=e.response.status_code, detail="Image not found or upstream error")
+    except httpx.RequestError as e:
+        logger.error(f"Request error proxying image: {e}")
+        raise HTTPException(status_code=500, detail="Network error proxying image")
     except Exception as e:
-        logger.error(f"Error proxying image: {e}")
+        logger.error(f"Unexpected error proxying image: {e}")
         raise HTTPException(status_code=404, detail="Image not found")
 
 
@@ -700,15 +745,19 @@ async def zitadel_enrich_token(request: Request):
                 expected_signature = hmac.new(
                     config.ZITADEL_SIGNING_KEY.encode("utf-8"),
                     body_bytes,
-                    hashlib.sha256
+                    hashlib.sha256,
                 ).hexdigest()
 
                 # Comparación segura contra timing attacks
                 if not hmac.compare_digest(signature, expected_signature):
-                    logger.error(f"⛔ Invalid ZITADEL signature from IP: {request.client.host}")
+                    logger.error(
+                        f"⛔ Invalid ZITADEL signature from IP: {request.client.host}"
+                    )
                     raise HTTPException(status_code=401, detail="Invalid signature")
         else:
-            logger.warning("⚠️ ZITADEL_SIGNING_KEY not configured - skipping signature validation")
+            logger.warning(
+                "⚠️ ZITADEL_SIGNING_KEY not configured - skipping signature validation"
+            )
 
         # Parsear el JSON que envía ZITADEL
         try:
@@ -753,35 +802,36 @@ async def zitadel_enrich_token(request: Request):
 
         # 5. Email (último recurso)
         if not preferred_username:
-            preferred_username = safe_str(human_data.get("email")) if human_data else None
+            preferred_username = (
+                safe_str(human_data.get("email")) if human_data else None
+            )
 
         # 1. Agregar preferred_username si se encontró
         if preferred_username:
-            claims_list.append({
-                "key": "preferred_username",
-                "value": preferred_username
-            })
+            claims_list.append(
+                {"key": "preferred_username", "value": preferred_username}
+            )
 
         # 2. Agregar roles fijos para todos los usuarios de ZeePubs
-        claims_list.append({
-            "key": "https://zeepubs.com/roles",
-            "value": [
-                "Login",
-                "Download",
-                "Change Password",
-                "Bookmark",
-                "library-EpubLibre [ES]",
-                "library-EpubShosetsu [ES]",
-                "library-MiraiK [ES]",
-                "library-WhiteMoon [EN]",
-                "library-ZeePubs [ES]"
-            ]
-        })
+        claims_list.append(
+            {
+                "key": "https://zeepubs.com/roles",
+                "value": [
+                    "Login",
+                    "Download",
+                    "Change Password",
+                    "Bookmark",
+                    "library-EpubLibre [ES]",
+                    "library-EpubShosetsu [ES]",
+                    "library-MiraiK [ES]",
+                    "library-WhiteMoon [EN]",
+                    "library-ZeePubs [ES]",
+                ],
+            }
+        )
 
         # 3. Respuesta final
-        response = {
-            "append_claims": claims_list
-        }
+        response = {"append_claims": claims_list}
 
         logger.info(f"✅ Token enriched for user: {preferred_username}")
         return response

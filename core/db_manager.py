@@ -85,13 +85,14 @@ class DatabaseManager:
 
         try:
             yield conn
-        except Exception:
+        except Exception as e:
             # Si ocurre un error con la conexión, intentamos cerrarla
             # y no la devolvemos al pool para evitar estados corruptos
+            logger.error(f"Error in DB connection context: {e}")
             try:
                 await conn.close()
-            except Exception:
-                pass
+            except Exception as close_error:
+                logger.debug(f"Error closing corrupted connection: {close_error}")
             async with self._lock:
                 self._active_connections -= 1
             raise
@@ -104,8 +105,9 @@ class DatabaseManager:
                     try:
                         await conn.rollback()  # Reset state
                         self._pool.append(conn)
-                    except Exception:
+                    except Exception as e:
                         # Si falla el rollback, descartar conexión
+                        logger.warning(f"Rollback failed, discarding connection: {e}")
                         await conn.close()
                         self._active_connections -= 1
                 else:

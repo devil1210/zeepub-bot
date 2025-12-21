@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.3.5] - 2025-12-21
+### Fixed
+- **Mini App - Roles**: Integrado `get_effective_user` para leer roles directamente de la base de datos (resolviendo el problema de acceso para Admins/Staff manuales).
+- **Código - Calidad**: Corregidos numerosos errores de linting (bare excepts, undefined names, blank lines) en `api/` y `core/`.
+
 ## [v4.3.4] - 2025-12-21
 ### Fixed
 - **Mini App - Roles**: Corregida la definición de Staff para incluir `WHITELIST` y `FACEBOOK_PUBLISHERS`, resolviendo el error de carga de catálogo para estos usuarios.

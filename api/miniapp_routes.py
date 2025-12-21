@@ -1,11 +1,20 @@
-from fastapi import APIRouter, HTTPException, Header, Depends, Request
+import json
+import logging
+import os
+
+import hashlib
+import hmac
+from typing import Optional
+
+import httpx
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+
+from config.config_settings import config
+from services.user_service import get_effective_user
 from utils.security import validate_telegram_data, verify_telegram_user
 from services.opds_service import get_cached_feed
 from services.telegram_service import enviar_libro_directo
 from utils.helpers import build_search_url, abs_url
-from config.config_settings import config
-import os
-import logging
 
 router = APIRouter(tags=["miniapp"])
 logger = logging.getLogger(__name__)
@@ -34,26 +43,33 @@ async def handle_bot_request(
             raise HTTPException(status_code=401, detail="Missing auth header")
 
     user_id = user_data.get("user", {}).get("id") if user_data else 0
+    # Fetch effective role for permissions
+    user_effective = await get_effective_user(user_id)
+    user_role = user_effective.get("role", "free")
 
     try:
         body = await request.json()
-    except Exception:
+    except json.JSONDecodeError: # Changed from bare Exception
         raise HTTPException(status_code=400, detail="Invalid JSON")
 
     action = body.get("action")
     data = body.get("data", {})
 
-    logger.info(f"Miniapp action: {action} User: {user_id}")
+    logger.info(f"Miniapp action: {action} User: {user_id} Role: {user_role}")
 
     try:
         if action == "search":
             query = data.get("query")
             page_url = data.get("pageUrl")
-            
+
             if not query and not page_url:
                 return {"results": []}
 
-            target_url = page_url if page_url else build_search_url(query, uid=user_id)
+            target_url = (
+                page_url
+                if page_url
+                else build_search_url(query, uid=user_id, role=user_role)
+            )
             feed = await get_cached_feed(target_url)
 
             # Determine the best base URL for relative links
@@ -65,13 +81,13 @@ async def handle_bot_request(
 
             results = []
             entries = getattr(feed, "entries", [])
-            
+
             # Extract pagination links from feed.links
             next_page = None
             prev_page = None
             first_page = None
             last_page = None
-            
+
             for link in getattr(feed.feed, "links", []):
                 rel = link.get("rel", "")
                 href = abs_url(feed_base_url, link.get("href", ""))
@@ -89,6 +105,7 @@ async def handle_bot_request(
             current_page = 1
             if page_url and "page=" in page_url:
                 import urllib.parse
+
                 parsed = urllib.parse.urlparse(page_url)
                 params = urllib.parse.parse_qs(parsed.query)
                 current_page = int(params.get("page", [1])[0])
@@ -101,8 +118,10 @@ async def handle_bot_request(
             items_per_page = feed.feed.get("opensearch_itemsperpage")
             if total_results and items_per_page:
                 try:
-                    total_pages = (int(total_results) + int(items_per_page) - 1) // int(items_per_page)
-                except:
+                    total_pages = (int(total_results) + int(items_per_page) - 1) // int(
+                        items_per_page
+                    )
+                except Exception: # Changed from bare except
                     pass
 
             # First pass: collect all data
@@ -111,13 +130,13 @@ async def handle_bot_request(
                 title = entry.get("title", "Sin título")
                 author = entry.get("author", "Desconocido")
                 summary = entry.get("summary", "")
-                
+
                 # Extra metadata
                 publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
                 language = entry.get("dc_language") or entry.get("dcterms_language")
                 published = entry.get("published") or entry.get("issued")
                 year = published[:4] if published and len(published) >= 4 else None
-                
+
                 # Try to find ISBN
                 isbn = None
                 identifier = entry.get("identifier")
@@ -163,12 +182,13 @@ async def handle_bot_request(
                         "year": year,
                         "size": size,
                         "file_type": file_type,
-                        "is_folder": subsection_url is not None
+                        "is_folder": subsection_url is not None,
                     }
                 )
 
             # Second pass: fetch covers for folders that don't have one
             import asyncio
+
             async def fetch_folder_cover(res):
                 if res["is_folder"] and not res["cover"]:
                     try:
@@ -178,16 +198,26 @@ async def handle_bot_request(
                         if sub_entries:
                             first_book = sub_entries[0]
                             for l in getattr(first_book, "links", []):
-                                if "image" in l.get("rel", "") or "cover" in l.get("rel", ""):
-                                    res["cover"] = abs_url(config.BASE_URL, l.get("href", ""))
+                                if "image" in l.get("rel", "") or "cover" in l.get(
+                                    "rel", ""
+                                ):
+                                    res["cover"] = abs_url(
+                                        config.BASE_URL, l.get("href", "")
+                                    )
                                     break
                     except Exception:
                         pass
 
             # Only fetch for the first N folders to avoid massive delays if search is huge
-            folder_tasks = [fetch_folder_cover(r) for r in results if r["is_folder"] and not r["cover"]]
+            folder_tasks = [
+                fetch_folder_cover(r)
+                for r in results
+                if r["is_folder"] and not r["cover"]
+            ]
             if folder_tasks:
-                await asyncio.gather(*folder_tasks[:10]) # Limit to 10 concurrent sub-fetches
+                await asyncio.gather(
+                    *folder_tasks[:10]
+                )  # Limit to 10 concurrent sub-fetches
 
             return {
                 "results": results,
@@ -196,50 +226,60 @@ async def handle_bot_request(
                 "firstPage": first_page,
                 "lastPage": last_page,
                 "currentPage": current_page,
-                "totalPages": total_pages
+                "totalPages": total_pages,
             }
 
         elif action == "book-detail":
             book_id_url = data.get("bookId")
             logger.info(f"[book-detail] Request received - bookId: {book_id_url}")
-            
+
             if not book_id_url:
                 logger.error("[book-detail] Missing bookId parameter")
                 raise HTTPException(status_code=400, detail="Missing bookId (URL)")
 
             # Ensure we have a valid URL (sometimes frontend might pass raw ID)
             if not book_id_url.startswith("http"):
-                logger.warning(f"[book-detail] bookId {book_id_url} is not a URL. Attempting to build one.")
+                logger.warning(
+                    f"[book-detail] bookId {book_id_url} is not a URL. Attempting to build one."
+                )
                 # Fallback: if it's just an id, we might need a search or a direct link
                 # but for simplicity, let's assume it MUST be a URL for now as per search logic.
                 pass
 
             logger.info(f"[book-detail] Fetching feed from: {book_id_url}")
             feed = await get_cached_feed(book_id_url)
-            
+
             if not feed:
                 logger.error(f"[book-detail] Failed to fetch feed from {book_id_url}")
                 raise HTTPException(status_code=404, detail="Could not fetch book feed")
-            
+
             # OPDS entries can be at the top level or in feed.entries
             entries = getattr(feed, "entries", [])
             logger.info(f"[book-detail] Feed has {len(entries)} entries")
-            
+
             entry = None
             if entries:
                 # Try to find exact match by ID if possible, otherwise use first
                 entry = entries[0]
-                logger.info(f"[book-detail] Using first entry: {entry.get('title', 'Unknown')}")
+                logger.info(
+                    f"[book-detail] Using first entry: {entry.get('title', 'Unknown')}"
+                )
             else:
                 # Some servers return the entry as the main feed element
-                if getattr(feed, "feed", None) and (feed.feed.get("title") or feed.feed.get("links")):
-                    logger.info("[book-detail] Using feed.feed as entry (single-entry feed)")
+                if getattr(feed, "feed", None) and (
+                    feed.feed.get("title") or feed.feed.get("links")
+                ):
+                    logger.info(
+                        "[book-detail] Using feed.feed as entry (single-entry feed)"
+                    )
                     entry = feed.feed
-            
+
             if not entry:
-                logger.error(f"[book-detail] No entry or feed info found in {book_id_url}")
+                logger.error(
+                    f"[book-detail] No entry or feed info found in {book_id_url}"
+                )
                 raise HTTPException(status_code=404, detail="Book detail not found")
-            
+
             # Determine base URL for relative links
             # We try to find a 'self' link in the entry or use the fetching URL
             entry_base_url = book_id_url
@@ -253,7 +293,7 @@ async def handle_bot_request(
             language = entry.get("dc_language") or entry.get("dcterms_language")
             published = entry.get("published") or entry.get("issued")
             year = published[:4] if published and len(published) >= 4 else None
-            
+
             isbn = None
             identifier = entry.get("identifier")
             if identifier and "isbn" in identifier.lower():
@@ -267,13 +307,15 @@ async def handle_bot_request(
             file_type = None
 
             links = getattr(entry, "links", [])
-            logger.info(f"[book-detail] Entry has {len(links)} links. Base URL: {entry_base_url}")
-            
+            logger.info(
+                f"[book-detail] Entry has {len(links)} links. Base URL: {entry_base_url}"
+            )
+
             for link in links:
                 rel = link.get("rel", "")
                 l_type = link.get("type", "")
                 href = abs_url(entry_base_url, link.get("href", ""))
-                
+
                 # Check for acquisition (download)
                 if "acquisition" in rel or "epub" in l_type.lower():
                     # Prioritize epub if multiple types exist
@@ -281,10 +323,12 @@ async def handle_bot_request(
                         download_url = href
                         file_type = l_type
                         size = link.get("contentlength") or link.get("length")
-                
+
                 # Check for image (cover)
                 elif "image" in rel or "cover" in rel or "thumbnail" in rel:
-                    if not cover_url or "image" in rel: # Prioritize rel="image" over others
+                    if (
+                        not cover_url or "image" in rel
+                    ):  # Prioritize rel="image" over others
                         cover_url = href
 
             # Fallback for cover if not found in links but exists in content
@@ -306,19 +350,25 @@ async def handle_bot_request(
                 "isbn": isbn,
                 "year": year,
                 "size": size,
-                "fileType": file_type
+                "fileType": file_type,
             }
-            
-            logger.info(f"[book-detail] Returning result: {result['title']} (Cover: {result['cover']}, DL: {result['downloadUrl']})")
+
+            logger.info(
+                f"[book-detail] Returning result: {result['title']} (Cover: {result['cover']}, DL: {result['downloadUrl']})"
+            )
             return result
 
         elif action == "status":
             return {"status": "online", "version": os.getenv("BOT_VERSION", "4.0.0")}
 
         elif action == "download":
-            book_id = data.get("bookId")  # Frontend sends bookId which we set as download_url
-            title = data.get("title", "Libro") # Optional from frontend if we update it, or we can fetch it?
-            
+            book_id = data.get(
+                "bookId"
+            )  # Frontend sends bookId which we set as download_url
+            title = data.get(
+                "title", "Libro"
+            )  # Optional from frontend if we update it, or we can fetch it?
+
             # If fronted doesn't send title/cover, we only have book_id (which is the url)
             if not book_id:
                 raise HTTPException(status_code=400, detail="Missing bookId")
@@ -330,7 +380,7 @@ async def handle_bot_request(
                 user_id=user_id,
                 title=title,
                 download_url=book_id,
-                 # cover_url=... we don't have it easily here unless we pass it from frontend
+                # cover_url=... we don't have it easily here unless we pass it from frontend
             )
             return {"success": success}
 

@@ -87,20 +87,24 @@ def limpiar_html_basico(texto_html: str) -> str:
     )
 
 
-def build_search_url(query: str, uid: int = None) -> str:
+def build_search_url(query: str, uid: int = None, role: str = None) -> str:
     from core.state_manager import state_manager
 
     # Default to START
     root = config.OPDS_ROOT_START
 
-    if uid:
-        # Check permissions for roles
+    # If role is provided, use it for root determination
+    if role:
+        if role == "admin":
+            root = config.OPDS_ROOT_EVIL
+        else:
+            root = config.OPDS_ROOT_START
+    elif uid:
+        # Fallback to legacy config check if role not provided
         is_admin = uid in config.ADMIN_USERS
-        # If admin, use EVIL root
         if is_admin:
             root = config.OPDS_ROOT_EVIL
         else:
-            # For Search, we use START as default for everyone else authorized
             root = config.OPDS_ROOT_START
 
     if "/series" in root:
@@ -467,7 +471,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v4.3.4"
+CURRENT_VERSION = "v4.3.5"
 
 
 def get_current_version() -> str:
