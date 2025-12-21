@@ -18,3 +18,21 @@ export async function callBotAPI(action: string, data?: any) {
 
   return response.json()
 }
+
+export async function fetchBotFeed(url?: string) {
+  const initData = getTelegramInitData()
+  const queryParam = url ? `?url=${encodeURIComponent(url)}` : ""
+
+  const response = await fetch(`/api/feed${queryParam}`, {
+    method: "GET",
+    headers: {
+      "X-Telegram-Data": initData,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.statusText}`)
+  }
+
+  return response.json()
+}

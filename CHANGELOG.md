@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.2.1] - 2025-12-20
+### Añadido
+- **Mini App - Navegación OPDS Dinámica**: Implementada navegación completa por carpetas y bibliotecas OPDS dentro de la Mini App.
+- **Mini App - Botón Retroceder**: Soporte para historial de navegación ("Subir nivel") en el catálogo.
+- **Mini App - Bottom Nav**: Agregado acceso directo a "Catálogo" en la barra de navegación inferior.
+
 ## [v4.2.0] - 2025-12-20
 ### Añadido
 - **Mini App - Mi Catálogo**: Nueva página para acceder a bibliotecas OPDS (Biblioteca Principal, Novedades, Más Descargados). Agregado botón en el menú principal entre "Buscar Libros" y "Mis Descargas".
