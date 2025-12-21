@@ -3,7 +3,6 @@
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Download, Clock, TrendingUp } from "lucide-react"
-import Link from "next/link"
 
 export default function StatusPage() {
   const userStats = {
@@ -96,11 +95,11 @@ export default function StatusPage() {
           </div>
         </Card>
 
-        <Link href="/donate">
+        <a href="/donate">
           <Button className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">
             Aumentar Límite de Descargas
           </Button>
-        </Link>
+        </a>
       </div>
     </div>
   )

@@ -5,6 +5,10 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.1.4] - 2025-12-20
+### Corregido
+- **Mini App - Navegación Completa**: Reemplazados TODOS los Next.js Link con anchor tags estándar en main page, status page, y BottomNav para garantizar navegación funcional en modo export estático dentro de Telegram WebApp.
+
 ## [v4.1.3] - 2025-12-20
 ### Corregido
 - **Mini App - Navegación**: Corregida navegación en BottomNav usando enlaces HTML estándar en lugar de Next.js Link para mejor compatibilidad con export estático en Telegram WebApp.

@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight } from "lucide-react"
-import Link from "next/link"
 import { useTelegramContext } from "@/components/telegram-provider"
 
 interface BotInfo {
@@ -62,7 +61,7 @@ export default function HomePage() {
 
         {/* Search */}
         <div className="mb-8">
-          <Link href="/search">
+          <a href="/search">
             <div className="relative cursor-pointer">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
               <Input
@@ -74,7 +73,7 @@ export default function HomePage() {
                 className="pl-12 h-12 bg-card border-border rounded-xl cursor-pointer"
               />
             </div>
-          </Link>
+          </a>
         </div>
 
         {/* Menu Items */}
@@ -82,7 +81,7 @@ export default function HomePage() {
           <h3 className="text-xl font-bold mb-4">Funciones</h3>
 
           {menuItems.map((item, index) => (
-            <Link key={index} href={item.href}>
+            <a key={index} href={item.href}>
               <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -95,7 +94,7 @@ export default function HomePage() {
                   <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                 </div>
               </Card>
-            </Link>
+            </a>
           ))}
         </div>
       </div>
