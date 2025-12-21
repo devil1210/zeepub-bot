@@ -40,8 +40,10 @@ async def get_current_user(
         # Extraer ID del usuario validado
         validated_uid = user_data.get("user", {}).get("id")
         if not validated_uid:
+            logger.error(f"User ID not found in validated user_data: {user_data}")
             raise HTTPException(status_code=401, detail="User ID not found in data")
 
+        logger.info(f"Authenticated user via initData: {validated_uid}")
         return validated_uid
 
     # Fallback para desarrollo o si no se envía header (opcional, se puede quitar para mayor seguridad)
@@ -63,16 +65,20 @@ async def get_feed(
     """
     logger.info(f"Feed request - UID: {current_uid}, URL: {url}")
 
-    # Determinar si es Admin o Staff (VIP/Premium)
+    # Determinar si es Admin o Staff (VIP/Premium/Whitelist/Publisher)
     is_admin = current_uid in config.ADMIN_USERS
     is_staff = (
         current_uid in config.VIP_LIST
         or current_uid in config.PREMIUM_LIST
+        or current_uid in config.WHITELIST
+        or current_uid in config.FACEBOOK_PUBLISHERS
     )
 
-    # Si no tiene permisos, denegar (excepto acceso anónimo si uid=0, pero aquí forzamos roles)
+    logger.info(f"Permissions for UID {current_uid}: Admin={is_admin}, Staff={is_staff}")
+
+    # Si no tiene permisos, denegar
     if not is_admin and not is_staff:
-        logger.warning(f"Access denied for UID: {current_uid}")
+        logger.warning(f"Access denied for UID: {current_uid}. Roles: Admin={config.ADMIN_USERS}, VIP={config.VIP_LIST}, Premium={config.PREMIUM_LIST}, Whitelist={config.WHITELIST}, Pub={config.FACEBOOK_PUBLISHERS}")
         raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios.",
@@ -87,6 +93,8 @@ async def get_feed(
             target_url = config.OPDS_ROOT_START
     else:
         target_url = url
+    
+    logger.info(f"Fetching feed from target_url: {target_url}")
     try:
         feed = await get_cached_feed(target_url)
         if not feed:

@@ -27,6 +27,7 @@ def mock_opds_roots(monkeypatch):
     monkeypatch.setattr(config, "ADMIN_USERS", {123})
     monkeypatch.setattr(config, "VIP_LIST", {456})
     monkeypatch.setattr(config, "PREMIUM_LIST", {789})
+    monkeypatch.setattr(config, "WHITELIST", {111})
 
 def test_role_based_access_admin(mock_opds_roots, monkeypatch):
     mock_feed = AsyncMock()
@@ -50,6 +51,19 @@ def test_role_based_access_vip(mock_opds_roots, monkeypatch):
     monkeypatch.setattr("api.routes.get_cached_feed", mock_feed)
 
     response = client.get("/api/feed?uid=456")
+    assert response.status_code == 200
+    assert response.json()["title"] == "Start Root"
+    mock_feed.assert_called_with("http://opds.test/start")
+
+def test_role_based_access_whitelist(mock_opds_roots, monkeypatch):
+    mock_feed = AsyncMock()
+    mock_feed_obj = MagicMock()
+    mock_feed_obj.feed.title = "Start Root"
+    mock_feed_obj.entries = []
+    mock_feed.return_value = mock_feed_obj
+    monkeypatch.setattr("api.routes.get_cached_feed", mock_feed)
+
+    response = client.get("/api/feed?uid=111")
     assert response.status_code == 200
     assert response.json()["title"] == "Start Root"
     mock_feed.assert_called_with("http://opds.test/start")
