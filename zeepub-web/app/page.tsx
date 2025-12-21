@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight } from "lucide-react"
+import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library } from "lucide-react"
 import { useTelegramContext } from "@/components/telegram-provider"
 
 interface BotInfo {
@@ -32,6 +32,7 @@ export default function HomePage() {
 
   const menuItems = [
     { icon: BookOpen, label: "Buscar Libros", href: "/search", description: "Encuentra ePubs en el catálogo" },
+    { icon: Library, label: "Mi Catálogo", href: "/catalog", description: "Accede a bibliotecas OPDS" },
     { icon: Download, label: "Mis Descargas", href: "/downloads", description: "Historial y límites de descarga" },
     { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados" },
     { icon: Heart, label: "Donar", href: "/donate", description: "Apoya el proyecto" },
