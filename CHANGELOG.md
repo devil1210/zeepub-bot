@@ -5,6 +5,10 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.2.2] - 2025-12-20
+### Corregido
+- **Mini App - Búsqueda de Series**: Ahora los resultados de búsqueda identifican correctamente las series/colecciones. Al pulsar en una serie, se abre la vista de catálogo para ver los libros de esa serie (comportamiento similar a v3.13.8).
+
 ## [v4.2.1] - 2025-12-20
 ### Añadido
 - **Mini App - Navegación OPDS Dinámica**: Implementada navegación completa por carpetas y bibliotecas OPDS dentro de la Mini App.

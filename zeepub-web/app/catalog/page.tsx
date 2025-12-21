@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,11 +38,12 @@ interface OPDSFeed {
     entries: OPDSEntry[]
 }
 
-export default function CatalogPage() {
+function CatalogContent() {
     const [currentFeed, setCurrentFeed] = useState<OPDSFeed | null>(null)
     const [history, setHistory] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const { webApp } = useTelegramContext()
+    const searchParams = useSearchParams()
 
     const loadFeed = async (url?: string) => {
         setIsLoading(true)
@@ -57,8 +59,15 @@ export default function CatalogPage() {
     }
 
     useEffect(() => {
-        loadFeed()
-    }, [])
+        const feedUrl = searchParams.get("feed_url")
+        if (feedUrl) {
+            loadFeed(feedUrl)
+            // If we deep-link, we might want to allow going back to root
+            // But for now let's just load the specific feed
+        } else {
+            loadFeed()
+        }
+    }, [searchParams])
 
     const handleNavigate = (url: string) => {
         if (!url) return
@@ -215,5 +224,13 @@ export default function CatalogPage() {
                 )}
             </main>
         </div>
+    )
+}
+
+export default function CatalogPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>}>
+            <CatalogContent />
+        </Suspense>
     )
 }

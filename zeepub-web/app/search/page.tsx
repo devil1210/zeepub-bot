@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, BookOpen, Download } from "lucide-react"
+import { Search, BookOpen, Download, ChevronRight } from "lucide-react"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
 
@@ -12,9 +12,11 @@ interface Book {
   id: string
   title: string
   author: string
-  year?: string
-  size?: string
+  summary?: string
   cover?: string
+  download_url?: string
+  subsection_url?: string
+  is_folder: boolean
 }
 
 export default function SearchPage() {
@@ -38,17 +40,23 @@ export default function SearchPage() {
     }
   }
 
-  const handleDownload = async (bookId: string) => {
+  const handleDownload = async (book: Book) => {
+    if (!book.download_url) return
     try {
       webApp?.showPopup?.({
         title: "Descargando",
-        message: "Se está enviando el libro...",
+        message: `Se está enviando "${book.title}"...`,
       })
-      await callBotAPI("download", { bookId })
+      await callBotAPI("download", { bookId: book.download_url, title: book.title })
     } catch (error) {
       console.error("[v0] Download error:", error)
       webApp?.showAlert?.("Error al descargar el libro")
     }
+  }
+
+  const handleNavigateToSeries = (url: string) => {
+    // Navigate to catalog with the specific feed URL
+    window.location.href = `/catalog?feed_url=${encodeURIComponent(url)}`
   }
 
   return (
@@ -67,7 +75,7 @@ export default function SearchPage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Buscar por título, autor..."
+                placeholder="Buscar por título, autor o serie..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -85,24 +93,55 @@ export default function SearchPage() {
           {books.map((book) => (
             <Card key={book.id} className="p-4 border-border">
               <div className="flex gap-4">
-                <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden">
-                  <img src={book.cover || "/placeholder.svg"} alt={book.title} className="w-full h-full object-cover" />
+                <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                  {book.is_folder ? (
+                    <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                      <BookOpen className="w-8 h-8 text-primary" />
+                    </div>
+                  ) : (
+                    <img src={book.cover || "/placeholder.svg"} alt={book.title} className="w-full h-full object-cover" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground mb-1 line-clamp-2">{book.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">{book.author}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    {book.year && <span>{book.year}</span>}
-                    {book.size && <span>• {book.size}</span>}
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-semibold text-foreground line-clamp-2 leading-tight">{book.title}</h3>
+                    {book.is_folder && (
+                      <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider">
+                        Serie
+                      </span>
+                    )}
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleDownload(book.id)}
-                    className="mt-3 bg-primary hover:bg-primary/90 h-8 text-xs"
-                  >
-                    <Download className="w-3 h-3 mr-1" />
-                    Descargar
-                  </Button>
+                  <p className="text-sm text-primary font-medium mb-1 truncate">{book.author}</p>
+
+                  {book.is_folder ? (
+                    <>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                        {book.summary || "Ver los libros de esta colección"}
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() => book.subsection_url && handleNavigateToSeries(book.subsection_url)}
+                        className="bg-primary hover:bg-primary/90 h-8 text-xs"
+                      >
+                        <ChevronRight className="w-3 h-3 mr-1" />
+                        Ver serie
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                        {book.summary}
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() => handleDownload(book)}
+                        className="bg-primary hover:bg-primary/90 h-8 text-xs"
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        Descargar
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>

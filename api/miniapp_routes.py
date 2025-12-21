@@ -56,31 +56,36 @@ async def handle_bot_request(
 
             results = []
             for entry in getattr(feed, "entries", []):
-                # Map OPDS entry to frontend Book structure
-                # id, title, author, year, size, cover
                 book_id = entry.get("id", "")
                 title = entry.get("title", "Sin título")
                 author = entry.get("author", "Desconocido")
+                summary = entry.get("summary", "")
 
-                # Find download link and cover
+                # Find download link, cover and subsections (series)
                 download_url = None
                 cover_url = None
+                subsection_url = None
+
                 for link in getattr(entry, "links", []):
                     rel = link.get("rel", "")
                     href = abs_url(config.BASE_URL, link.get("href", ""))
-                    if "acquisition" in rel or "epub" in link.get("type", ""):
+                    if rel == "subsection":
+                        subsection_url = href
+                    elif "acquisition" in rel or "epub" in link.get("type", ""):
                         download_url = href
                     elif "image" in rel or "cover" in rel:
                         cover_url = href
 
                 results.append(
                     {
-                        "id": download_url
-                        or book_id,  # Use download_url as ID for the frontend to send it back
+                        "id": book_id,
                         "title": title,
                         "author": author,
+                        "summary": summary,
                         "cover": cover_url,
-                        # Add year/size if available in entry
+                        "download_url": download_url,
+                        "subsection_url": subsection_url,
+                        "is_folder": subsection_url is not None
                     }
                 )
 
