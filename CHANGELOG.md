@@ -15,6 +15,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
     - Mejora de la navegación inferior con efecto blur y botones circulares.
     - Adición de divisores internos sutiles en las listas.
 
+## [v4.0.3] - 2025-12-20
+### Corregido
+- **Mini App**: Eliminada la confirmación de cierre que mostraba el mensaje "Changes that you made may not be saved" al cerrar la aplicación, mejorando la experiencia de usuario.
+
 ## [v4.0.2] - 2025-12-20
 ### Corregido
 - **Inicialización**: Corregida condición de carrera donde `start_async()` se llamaba incluso si la inicialización del bot fallaba parcialmente, causando `RuntimeError: ExtBot is not properly initialized`.
