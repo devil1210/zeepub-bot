@@ -35,6 +35,20 @@ class DatabaseManager:
                     nickname TEXT
                 )
             """)
+            
+            # Migración: Agregar columna nickname si no existe (para DBs existentes)
+            try:
+                # Intentar agregar la columna. Si ya existe, SQLite arrojará un error
+                await conn.execute("ALTER TABLE users ADD COLUMN nickname TEXT")
+                logger.info("Migración: Agregada columna 'nickname' a tabla users")
+            except Exception as e:
+                if "duplicate column" in str(e).lower():
+                    # La columna ya existe, está bien
+                    pass
+                else:
+                    # Otro error, loguearlo pero no fallar
+                    logger.debug(f"Notice during migration: {e}")
+            
             await conn.commit()
             logger.info(f"Database initialized and schema verified at {self.db_path}")
 

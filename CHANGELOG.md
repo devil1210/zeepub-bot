@@ -5,6 +5,10 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.1.2] - 2025-12-20
+### Corregido
+- **CRÍTICO - Database Migration**: Agregada migración automática para añadir columna `nickname` a tablas `users` existentes. Resuelve error "no such column: nickname" que impedía comandos.
+
 ## [v4.1.1] - 2025-12-20
 ### Corregido
 - **CRÍTICO - Bot Polling**: Corregida verificación de inicialización de ExtBot que impedía que el bot iniciara el polling y respondiera a comandos. Ahora se verifica que `bot.id` sea accesible antes de marcar el bot como inicializado.
