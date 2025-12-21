@@ -63,20 +63,30 @@ async def get_feed(
     """
     logger.info(f"Feed request - UID: {current_uid}, URL: {url}")
 
-    # Verificar permisos si hay UID (y no es anónimo)
-    if current_uid > 0:
-        allowed = (
-            current_uid in config.VIP_LIST
-            or current_uid in config.PREMIUM_LIST
-            or current_uid in config.ADMIN_USERS
-        )
-        if not allowed:
-            raise HTTPException(
-                status_code=403,
-                detail="⛔ El acceso a la Mini App es exclusivo para usuarios VIP y Premium.\n\nUsa /niveles para más información.",
-            )
+    # Determinar si es Admin o Staff (VIP/Premium)
+    is_admin = current_uid in config.ADMIN_USERS
+    is_staff = (
+        current_uid in config.VIP_LIST
+        or current_uid in config.PREMIUM_LIST
+    )
 
-    target_url = url if url else config.OPDS_ROOT_START
+    # Si no tiene permisos, denegar (excepto acceso anónimo si uid=0, pero aquí forzamos roles)
+    if not is_admin and not is_staff:
+        logger.warning(f"Access denied for UID: {current_uid}")
+        raise HTTPException(
+            status_code=403,
+            detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios.",
+        )
+
+    # Determinar URL base si no se proporciona
+    if not url:
+        if is_admin:
+            target_url = config.OPDS_ROOT_EVIL
+        else:
+            # is_staff is guaranteed if we reached here
+            target_url = config.OPDS_ROOT_START
+    else:
+        target_url = url
     try:
         feed = await get_cached_feed(target_url)
         if not feed:

@@ -201,22 +201,53 @@ async def handle_bot_request(
 
         elif action == "book-detail":
             book_id_url = data.get("bookId")
+            logger.info(f"[book-detail] Request received - bookId: {book_id_url}")
+            
             if not book_id_url:
+                logger.error("[book-detail] Missing bookId parameter")
                 raise HTTPException(status_code=400, detail="Missing bookId (URL)")
 
+            # Ensure we have a valid URL (sometimes frontend might pass raw ID)
+            if not book_id_url.startswith("http"):
+                logger.warning(f"[book-detail] bookId {book_id_url} is not a URL. Attempting to build one.")
+                # Fallback: if it's just an id, we might need a search or a direct link
+                # but for simplicity, let's assume it MUST be a URL for now as per search logic.
+                pass
+
+            logger.info(f"[book-detail] Fetching feed from: {book_id_url}")
             feed = await get_cached_feed(book_id_url)
+            
+            if not feed:
+                logger.error(f"[book-detail] Failed to fetch feed from {book_id_url}")
+                raise HTTPException(status_code=404, detail="Could not fetch book feed")
             
             # OPDS entries can be at the top level or in feed.entries
             entries = getattr(feed, "entries", [])
-            if not entries:
-                # Some servers return the entry as the main feed element
-                if getattr(feed, "feed", None) and feed.feed.get("title"):
-                    entry = feed.feed
-                else:
-                    raise HTTPException(status_code=404, detail="Book detail not found")
-            else:
-                entry = entries[0]
+            logger.info(f"[book-detail] Feed has {len(entries)} entries")
             
+            entry = None
+            if entries:
+                # Try to find exact match by ID if possible, otherwise use first
+                entry = entries[0]
+                logger.info(f"[book-detail] Using first entry: {entry.get('title', 'Unknown')}")
+            else:
+                # Some servers return the entry as the main feed element
+                if getattr(feed, "feed", None) and (feed.feed.get("title") or feed.feed.get("links")):
+                    logger.info("[book-detail] Using feed.feed as entry (single-entry feed)")
+                    entry = feed.feed
+            
+            if not entry:
+                logger.error(f"[book-detail] No entry or feed info found in {book_id_url}")
+                raise HTTPException(status_code=404, detail="Book detail not found")
+            
+            # Determine base URL for relative links
+            # We try to find a 'self' link in the entry or use the fetching URL
+            entry_base_url = book_id_url
+            for link in getattr(entry, "links", []):
+                if link.get("rel") == "self":
+                    entry_base_url = abs_url(book_id_url, link.get("href"))
+                    break
+
             # Extract metadata (same logic as search)
             publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
             language = entry.get("dc_language") or entry.get("dcterms_language")
@@ -226,27 +257,44 @@ async def handle_bot_request(
             isbn = None
             identifier = entry.get("identifier")
             if identifier and "isbn" in identifier.lower():
-                isbn = identifier.split(":")[-1].strip()
+                # Handle urn:isbn:978...
+                parts = identifier.split(":")
+                isbn = parts[-1].strip()
 
             download_url = None
             cover_url = None
             size = None
             file_type = None
 
-            # Base URL for this entry's links
-            entry_base_url = book_id_url
-
-            for link in getattr(entry, "links", []):
+            links = getattr(entry, "links", [])
+            logger.info(f"[book-detail] Entry has {len(links)} links. Base URL: {entry_base_url}")
+            
+            for link in links:
                 rel = link.get("rel", "")
+                l_type = link.get("type", "")
                 href = abs_url(entry_base_url, link.get("href", ""))
-                if "acquisition" in rel or "epub" in link.get("type", ""):
-                    download_url = href
-                    file_type = link.get("type")
-                    size = link.get("contentlength") or link.get("length")
-                elif "image" in rel or "cover" in rel:
-                    cover_url = href
+                
+                # Check for acquisition (download)
+                if "acquisition" in rel or "epub" in l_type.lower():
+                    # Prioritize epub if multiple types exist
+                    if not download_url or "epub" in l_type.lower():
+                        download_url = href
+                        file_type = l_type
+                        size = link.get("contentlength") or link.get("length")
+                
+                # Check for image (cover)
+                elif "image" in rel or "cover" in rel or "thumbnail" in rel:
+                    if not cover_url or "image" in rel: # Prioritize rel="image" over others
+                        cover_url = href
 
-            return {
+            # Fallback for cover if not found in links but exists in content
+            if not cover_url and "content" in entry:
+                for content in entry.get("content", []):
+                    if "image" in content.get("type", ""):
+                        cover_url = abs_url(entry_base_url, content.get("value", ""))
+                        break
+
+            result = {
                 "id": entry.get("id", ""),
                 "title": entry.get("title", "Sin título"),
                 "author": entry.get("author", "Desconocido"),
@@ -260,6 +308,9 @@ async def handle_bot_request(
                 "size": size,
                 "fileType": file_type
             }
+            
+            logger.info(f"[book-detail] Returning result: {result['title']} (Cover: {result['cover']}, DL: {result['downloadUrl']})")
+            return result
 
         elif action == "status":
             return {"status": "online", "version": os.getenv("BOT_VERSION", "4.0.0")}

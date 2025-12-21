@@ -41,7 +41,9 @@ function BookDetailContent() {
             }
             try {
                 setIsLoading(true)
+                console.log("[v0] Fetching book detail for ID:", bookId)
                 const result = await callBotAPI("book-detail", { bookId: bookId })
+                console.log("[v0] Book detail result:", result)
                 setBook(result)
             } catch (error) {
                 console.error("[v0] Error fetching book details:", error)

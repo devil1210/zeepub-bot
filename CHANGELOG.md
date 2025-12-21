@@ -5,6 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.3.3] - 2025-12-21
+### Added
+- **Mini App - Roles**: Implementado acceso dinámico al catálogo basado en roles (Admin -> Evil, Staff -> Start, Otros -> Denegado).
+- **Mini App - UX**: Restaurados los botones de descarga inline en los resultados de Búsqueda y Catálogo.
+- **Pruebas**: Suite de pruebas `tests/test_refinement.py` para validar lógica de roles y detalle de libros.
+### Changed
+- **Mini App - Detalle**: Mejorada la robustez del parseo OPDS para la página de detalle, soportando feeds de una sola entrada y diferentes tipos de metadatos.
+
 ## [v4.3.2] - 2025-12-21
 ### Added
 - Nueva página de detalle de libro con información ampliada (Editorial, Idioma, ISBN, Año, Tamaño).
