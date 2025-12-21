@@ -94,12 +94,14 @@ export default function SearchPage() {
             <Card key={book.id} className="p-4 border-border">
               <div className="flex gap-4">
                 <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                  {book.is_folder ? (
+                  {book.cover ? (
+                    <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                  ) : book.is_folder ? (
                     <div className="w-full h-full flex items-center justify-center bg-primary/10">
                       <BookOpen className="w-8 h-8 text-primary" />
                     </div>
                   ) : (
-                    <img src={book.cover || "/placeholder.svg"} alt={book.title} className="w-full h-full object-cover" />
+                    <img src="/placeholder.svg" alt={book.title} className="w-full h-full object-cover" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

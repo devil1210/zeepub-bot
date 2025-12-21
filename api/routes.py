@@ -98,7 +98,9 @@ async def get_feed(
         entries = []
         for entry in getattr(feed, "entries", []):
             cover_url = None
-            # Buscar cover en links
+            subsection_url = None
+
+            # Buscar cover y subsection en links
             for link in getattr(entry, "links", []):
                 link_type = link.get("type", "")
                 link_rel = link.get("rel", "")
@@ -108,7 +110,8 @@ async def get_feed(
                     or link_rel == "http://opds-spec.org/image"
                 ):
                     cover_url = normalize_url(link.get("href"))
-                    break
+                elif link_rel == "subsection":
+                    subsection_url = normalize_url(link.get("href"))
 
             # Buscar cover en content
             if not cover_url and hasattr(entry, "content"):
@@ -124,6 +127,7 @@ async def get_feed(
                     "summary": entry.get("summary", ""),
                     "id": entry.get("id", ""),
                     "cover_url": cover_url,
+                    "subsection_url": subsection_url,
                     "links": [
                         {
                             "href": normalize_url(l.get("href")),
@@ -134,6 +138,30 @@ async def get_feed(
                     ],
                 }
             )
+
+        # Second pass: fetch covers for folders that don't have one
+        import asyncio
+        async def fetch_folder_cover(res):
+            if res["subsection_url"] and not res["cover_url"]:
+                try:
+                    sub_feed = await get_cached_feed(res["subsection_url"])
+                    sub_entries = getattr(sub_feed, "entries", [])
+                    if sub_entries:
+                        first_book = sub_entries[0]
+                        for l in getattr(first_book, "links", []):
+                            l_type = l.get("type", "")
+                            l_rel = l.get("rel", "")
+                            if "image" in l_type or "cover" in l_rel or l_rel == "http://opds-spec.org/image":
+                                res["cover_url"] = normalize_url(l.get("href"))
+                                break
+                except Exception:
+                    pass
+
+        folder_tasks = [fetch_folder_cover(e) for e in entries if e["subsection_url"] and not e["cover_url"]]
+        if folder_tasks:
+            # We process sequential for the main feed to avoid overloading the OPDS server
+            # but we use a small concurrency limit
+            await asyncio.gather(*folder_tasks[:10])
 
         processed_links = [
             {

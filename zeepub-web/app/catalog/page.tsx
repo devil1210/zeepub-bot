@@ -159,8 +159,12 @@ function CatalogContent() {
                                 className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                        <Folder className="w-6 h-6 text-primary" />
+                                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden">
+                                        {entry.cover_url ? (
+                                            <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Folder className="w-6 h-6 text-primary" />
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-semibold text-foreground truncate">

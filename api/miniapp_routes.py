@@ -55,13 +55,15 @@ async def handle_bot_request(
             feed = await get_cached_feed(search_url)
 
             results = []
-            for entry in getattr(feed, "entries", []):
+            entries = getattr(feed, "entries", [])
+            
+            # First pass: collect all data
+            for entry in entries:
                 book_id = entry.get("id", "")
                 title = entry.get("title", "Sin título")
                 author = entry.get("author", "Desconocido")
                 summary = entry.get("summary", "")
 
-                # Find download link, cover and subsections (series)
                 download_url = None
                 cover_url = None
                 subsection_url = None
@@ -88,6 +90,28 @@ async def handle_bot_request(
                         "is_folder": subsection_url is not None
                     }
                 )
+
+            # Second pass: fetch covers for folders that don't have one
+            import asyncio
+            async def fetch_folder_cover(res):
+                if res["is_folder"] and not res["cover"]:
+                    try:
+                        # Fetch the subsection feed to find the first book's cover
+                        sub_feed = await get_cached_feed(res["subsection_url"])
+                        sub_entries = getattr(sub_feed, "entries", [])
+                        if sub_entries:
+                            first_book = sub_entries[0]
+                            for l in getattr(first_book, "links", []):
+                                if "image" in l.get("rel", "") or "cover" in l.get("rel", ""):
+                                    res["cover"] = abs_url(config.BASE_URL, l.get("href", ""))
+                                    break
+                    except Exception:
+                        pass
+
+            # Only fetch for the first N folders to avoid massive delays if search is huge
+            folder_tasks = [fetch_folder_cover(r) for r in results if r["is_folder"] and not r["cover"]]
+            if folder_tasks:
+                await asyncio.gather(*folder_tasks[:10]) # Limit to 10 concurrent sub-fetches
 
             return {"results": results}
 
