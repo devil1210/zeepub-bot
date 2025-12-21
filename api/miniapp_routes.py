@@ -48,15 +48,56 @@ async def handle_bot_request(
     try:
         if action == "search":
             query = data.get("query")
-            if not query:
+            page_url = data.get("pageUrl")
+            
+            if not query and not page_url:
                 return {"results": []}
 
-            search_url = build_search_url(query, uid=user_id)
-            feed = await get_cached_feed(search_url)
+            target_url = page_url if page_url else build_search_url(query, uid=user_id)
+            feed = await get_cached_feed(target_url)
 
             results = []
             entries = getattr(feed, "entries", [])
             
+            # Extract pagination links from feed.links
+            next_page = None
+            prev_page = None
+            first_page = None
+            last_page = None
+            
+            for link in getattr(feed.feed, "links", []):
+                rel = link.get("rel", "")
+                href = abs_url(config.BASE_URL, link.get("href", ""))
+                if rel == "next":
+                    next_page = href
+                elif rel == "previous" or rel == "prev":
+                    prev_page = href
+                elif rel == "first":
+                    first_page = href
+                elif rel == "last":
+                    last_page = href
+
+            # Try to guess current page from URL or feed metadata
+            # (This part depends on the OPDS server implementation)
+            current_page = 1
+            if page_url and "page=" in page_url:
+                import urllib.parse
+                parsed = urllib.parse.urlparse(page_url)
+                params = urllib.parse.parse_qs(parsed.query)
+                current_page = int(params.get("page", [1])[0])
+
+            # Total results/pages if available
+            total_pages = None
+            # Some feeds provide opensearch:totalResults and opensearch:itemsPerPage
+            # feedparser might put them in feed.feed
+            total_results = feed.feed.get("opensearch_totalresults")
+            items_per_page = feed.feed.get("opensearch_itemsperpage")
+            if total_results and items_per_page:
+                try:
+                    total_pages = (int(total_results) + int(items_per_page) - 1) // int(items_per_page)
+                except:
+                    pass
+
             # First pass: collect all data
             for entry in entries:
                 book_id = entry.get("id", "")
@@ -113,7 +154,15 @@ async def handle_bot_request(
             if folder_tasks:
                 await asyncio.gather(*folder_tasks[:10]) # Limit to 10 concurrent sub-fetches
 
-            return {"results": results}
+            return {
+                "results": results,
+                "nextPage": next_page,
+                "prevPage": prev_page,
+                "firstPage": first_page,
+                "lastPage": last_page,
+                "currentPage": current_page,
+                "totalPages": total_pages
+            }
 
         elif action == "status":
             return {"status": "online", "version": os.getenv("BOT_VERSION", "4.0.0")}

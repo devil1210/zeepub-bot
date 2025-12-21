@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Search, BookOpen, Download, ChevronRight } from "lucide-react"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
+import { Pagination } from "@/components/pagination"
 
 interface Book {
   id: string
@@ -19,19 +20,43 @@ interface Book {
   is_folder: boolean
 }
 
+interface PaginationState {
+  nextPage?: string | null
+  prevPage?: string | null
+  currentPage: number
+  totalPages?: number | null
+}
+
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [books, setBooks] = useState<Book[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [pagination, setPagination] = useState<PaginationState>({
+    currentPage: 1,
+  })
   const { webApp } = useTelegramContext()
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return
+  const handleSearch = async (pageUrl?: string) => {
+    if (!searchQuery.trim() && !pageUrl) return
 
     setIsLoading(true)
     try {
-      const result = await callBotAPI("search", { query: searchQuery })
+      const result = await callBotAPI("search", {
+        query: searchQuery,
+        pageUrl: pageUrl
+      })
       setBooks(result.results || [])
+      setPagination({
+        nextPage: result.nextPage,
+        prevPage: result.prevPage,
+        currentPage: result.currentPage || 1,
+        totalPages: result.totalPages
+      })
+
+      // If navigating pages, scroll to top
+      if (pageUrl) {
+        window.scrollTo(0, 0)
+      }
     } catch (error) {
       console.error("[v0] Search error:", error)
       webApp?.showAlert?.("Error al buscar libros")
@@ -67,7 +92,7 @@ export default function SearchPage() {
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="max-w-2xl mx-auto px-4 py-6 text-foreground">
         {/* Search */}
         <div className="mb-6">
           <div className="relative flex gap-2">
@@ -82,7 +107,7 @@ export default function SearchPage() {
                 className="pl-12 h-12 bg-card border-border rounded-xl"
               />
             </div>
-            <Button onClick={handleSearch} disabled={isLoading} className="h-12 px-6 bg-primary hover:bg-primary/90">
+            <Button onClick={() => handleSearch()} disabled={isLoading} className="h-12 px-6 bg-primary hover:bg-primary/90">
               {isLoading ? "Buscando..." : "Buscar"}
             </Button>
           </div>
@@ -149,6 +174,19 @@ export default function SearchPage() {
             </Card>
           ))}
         </div>
+
+        {/* Pagination Component */}
+        {books.length > 0 && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            hasNextPage={!!pagination.nextPage}
+            hasPrevPage={!!pagination.prevPage}
+            onNextPage={() => pagination.nextPage && handleSearch(pagination.nextPage)}
+            onPrevPage={() => pagination.prevPage && handleSearch(pagination.prevPage)}
+            isLoading={isLoading}
+          />
+        )}
 
         {/* Empty State */}
         {books.length === 0 && !isLoading && (

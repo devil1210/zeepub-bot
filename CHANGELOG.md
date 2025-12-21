@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.3.0] - 2025-12-21
+### Añadido
+- **Mini App - Paginación**: Restaurada la funcionalidad de paginación en Búsqueda y Catálogo (basada en v3.13.8).
+- **Mini App - Diseño**: Implementado un nuevo componente de paginación con diseño premium (v0 style) que incluye información de página actual y total de páginas.
+- **Mini App - UX**: Autoscroll al inicio de la página al cambiar de página para una mejor experiencia de usuario.
+
 ## [v4.2.4] - 2025-12-20
 ### Cambiado
 - **Mini App - Limpieza de Catálogo**: Eliminadas las secciones innecesarias ("En el puente", "Listas de lectura", "Deseo leer", "Todas las colecciones") del feed principal del catálogo.

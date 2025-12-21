@@ -17,6 +17,8 @@ import {
 import { fetchBotFeed, callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
 
+import { Pagination } from "@/components/pagination"
+
 interface OPDSLink {
     href: string
     rel: string
@@ -36,6 +38,10 @@ interface OPDSFeed {
     title: string
     links: OPDSLink[]
     entries: OPDSEntry[]
+    nextPage?: string | null
+    prevPage?: string | null
+    currentPage: number
+    totalPages?: number | null
 }
 
 function CatalogContent() {
@@ -45,11 +51,14 @@ function CatalogContent() {
     const { webApp } = useTelegramContext()
     const searchParams = useSearchParams()
 
-    const loadFeed = async (url?: string) => {
+    const loadFeed = async (url?: string, isPagination = false) => {
         setIsLoading(true)
         try {
             const data = await fetchBotFeed(url)
             setCurrentFeed(data)
+            if (isPagination) {
+                window.scrollTo(0, 0)
+            }
         } catch (error) {
             console.error("[v0] Catalog load error:", error)
             webApp?.showAlert?.("Error al cargar el catálogo")
@@ -62,8 +71,6 @@ function CatalogContent() {
         const feedUrl = searchParams.get("feed_url")
         if (feedUrl) {
             loadFeed(feedUrl)
-            // If we deep-link, we might want to allow going back to root
-            // But for now let's just load the specific feed
         } else {
             loadFeed()
         }
@@ -71,7 +78,7 @@ function CatalogContent() {
 
     const handleNavigate = (url: string) => {
         if (!url) return
-        const currentUrl = history.length > 0 ? history[history.length - 1] : ""
+        const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href || history[history.length - 1] || ""
         setHistory([...history, currentUrl])
         loadFeed(url)
     }
@@ -137,7 +144,7 @@ function CatalogContent() {
                 </div>
             </header>
 
-            <main className="max-w-2xl mx-auto px-4 py-6 space-y-2">
+            <main className="max-w-2xl mx-auto px-4 py-6 space-y-2 text-foreground">
                 {isLoading && (
                     <div className="flex justify-center py-4">
                         <Loader2 className="w-6 h-6 text-primary animate-spin" />
@@ -219,6 +226,18 @@ function CatalogContent() {
 
                     return null
                 })}
+
+                {currentFeed && currentFeed.entries.length > 0 && (
+                    <Pagination
+                        currentPage={currentFeed.currentPage}
+                        totalPages={currentFeed.totalPages}
+                        hasNextPage={!!currentFeed.nextPage}
+                        hasPrevPage={!!currentFeed.prevPage}
+                        onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
+                        onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
+                        isLoading={isLoading}
+                    />
+                )}
 
                 {currentFeed && currentFeed.entries.length === 0 && !isLoading && (
                     <div className="text-center py-16">

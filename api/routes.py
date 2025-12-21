@@ -169,6 +169,45 @@ async def get_feed(
             # but we use a small concurrency limit
             await asyncio.gather(*folder_tasks[:10])
 
+        # Extract pagination links from feed.links
+        next_page = None
+        prev_page = None
+        first_page = None
+        last_page = None
+        
+        for link in getattr(feed.feed, "links", []):
+            rel = link.get("rel", "")
+            href = normalize_url(link.get("href"))
+            if rel == "next":
+                next_page = href
+            elif rel == "previous" or rel == "prev":
+                prev_page = href
+            elif rel == "first":
+                first_page = href
+            elif rel == "last":
+                last_page = href
+
+        # Try to guess current page
+        current_page = 1
+        if url and "page=" in url:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(url)
+            params = urllib.parse.parse_qs(parsed.query)
+            try:
+                current_page = int(params.get("page", [1])[0])
+            except:
+                pass
+
+        # Total pages
+        total_pages = None
+        total_results = feed.feed.get("opensearch_totalresults")
+        items_per_page = feed.feed.get("opensearch_itemsperpage")
+        if total_results and items_per_page:
+            try:
+                total_pages = (int(total_results) + int(items_per_page) - 1) // int(items_per_page)
+            except:
+                pass
+
         processed_links = [
             {
                 "href": normalize_url(l.get("href")),
@@ -182,6 +221,12 @@ async def get_feed(
             "title": getattr(feed.feed, "title", "ZeePub Feed"),
             "links": processed_links,
             "entries": entries,
+            "nextPage": next_page,
+            "prevPage": prev_page,
+            "firstPage": first_page,
+            "lastPage": last_page,
+            "currentPage": current_page,
+            "totalPages": total_pages
         }
     except Exception as e:
         logger.error(f"Error fetching feed: {e}")
