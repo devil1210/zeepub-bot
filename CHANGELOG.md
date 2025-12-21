@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.3.2] - 2025-12-21
+### Added
+- Nueva página de detalle de libro con información ampliada (Editorial, Idioma, ISBN, Año, Tamaño).
+- Acción de backend `book-detail` para obtener metadatos completos de un libro.
+### Changed
+- Actualizada la búsqueda y el catálogo para navegar a la nueva página de detalle.
+- Eliminado botón de descarga inline en búsqueda y catálogo para una interfaz más limpia.
+- Optimizada la navegación para compatibilidad con exportación estática de Next.js.
+
 ## [v4.3.1] - 2025-12-21
 ### Añadido
 - **Mini App - UX**: Implementado el modo de pantalla completa mediante `requestFullscreen` y desactivación de gestos verticales para evitar el cierre accidental al deslizar hacia abajo.

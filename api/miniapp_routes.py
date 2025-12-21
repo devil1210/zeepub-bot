@@ -104,18 +104,38 @@ async def handle_bot_request(
                 title = entry.get("title", "Sin título")
                 author = entry.get("author", "Desconocido")
                 summary = entry.get("summary", "")
+                
+                # Extra metadata
+                publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
+                language = entry.get("dc_language") or entry.get("dcterms_language")
+                published = entry.get("published") or entry.get("issued")
+                year = published[:4] if published and len(published) >= 4 else None
+                
+                # Try to find ISBN
+                isbn = None
+                identifier = entry.get("identifier")
+                if identifier and "isbn" in identifier.lower():
+                    isbn = identifier.split(":")[-1]
 
                 download_url = None
                 cover_url = None
                 subsection_url = None
+                detail_url = None
+                size = None
+                file_type = None
 
                 for link in getattr(entry, "links", []):
                     rel = link.get("rel", "")
                     href = abs_url(config.BASE_URL, link.get("href", ""))
                     if rel == "subsection":
                         subsection_url = href
+                    elif rel == "self":
+                        detail_url = href
                     elif "acquisition" in rel or "epub" in link.get("type", ""):
                         download_url = href
+                        file_type = link.get("type")
+                        # Try to get size from link attributes if available
+                        size = link.get("contentlength") or link.get("length")
                     elif "image" in rel or "cover" in rel:
                         cover_url = href
 
@@ -128,6 +148,13 @@ async def handle_bot_request(
                         "cover": cover_url,
                         "download_url": download_url,
                         "subsection_url": subsection_url,
+                        "detail_url": detail_url,
+                        "publisher": publisher,
+                        "language": language,
+                        "isbn": isbn,
+                        "year": year,
+                        "size": size,
+                        "file_type": file_type,
                         "is_folder": subsection_url is not None
                     }
                 )
@@ -162,6 +189,59 @@ async def handle_bot_request(
                 "lastPage": last_page,
                 "currentPage": current_page,
                 "totalPages": total_pages
+            }
+
+        elif action == "book-detail":
+            book_id_url = data.get("bookId")
+            if not book_id_url:
+                raise HTTPException(status_code=400, detail="Missing bookId (URL)")
+
+            feed = await get_cached_feed(book_id_url)
+            entries = getattr(feed, "entries", [])
+            if not entries:
+                raise HTTPException(status_code=404, detail="Book detail not found")
+
+            entry = entries[0]
+            
+            # Extract metadata (same logic as search)
+            publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
+            language = entry.get("dc_language") or entry.get("dcterms_language")
+            published = entry.get("published") or entry.get("issued")
+            year = published[:4] if published and len(published) >= 4 else None
+            
+            isbn = None
+            identifier = entry.get("identifier")
+            if identifier and "isbn" in identifier.lower():
+                isbn = identifier.split(":")[-1]
+
+            download_url = None
+            cover_url = None
+            size = None
+            file_type = None
+
+            for link in getattr(entry, "links", []):
+                rel = link.get("rel", "")
+                href = abs_url(config.BASE_URL, link.get("href", ""))
+                if "acquisition" in rel or "epub" in link.get("type", ""):
+                    download_url = href
+                    file_type = link.get("type")
+                    size = link.get("contentlength") or link.get("length")
+                elif "image" in rel or "cover" in rel:
+                    cover_url = href
+
+            return {
+                "id": entry.get("id", ""),
+                "title": entry.get("title", "Sin título"),
+                "author": entry.get("author", "Desconocido"),
+                "summary": entry.get("summary", ""),
+                "cover": cover_url,
+                "downloadUrl": download_url,
+                "publisher": publisher,
+                "language": language,
+                "isbn": isbn,
+                "year": year,
+                "size": size,
+                "fileType": file_type
             }
 
         elif action == "status":

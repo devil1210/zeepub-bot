@@ -1,14 +1,12 @@
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
     Library,
     Folder,
-    Book,
-    Download,
     ChevronRight,
     ChevronLeft,
     Loader2,
@@ -31,6 +29,7 @@ interface OPDSEntry {
     author: string
     summary: string
     cover_url?: string
+    detail_url?: string
     links: OPDSLink[]
 }
 
@@ -50,6 +49,7 @@ function CatalogContent() {
     const [isLoading, setIsLoading] = useState(true)
     const { webApp } = useTelegramContext()
     const searchParams = useSearchParams()
+    const router = useRouter()
 
     const loadFeed = async (url?: string, isPagination = false) => {
         setIsLoading(true)
@@ -91,28 +91,14 @@ function CatalogContent() {
         loadFeed(prevUrl || undefined)
     }
 
-    const handleDownload = async (book: OPDSEntry) => {
-        const downloadLink = book.links.find(
-            (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
-        )
+    const handleBookClick = (entry: OPDSEntry) => {
+        const subsectionLink = entry.links.find((l) => l.rel === "subsection")
+        const detailUrl = entry.detail_url || entry.links.find(l => l.rel === "self")?.href
 
-        if (!downloadLink) {
-            webApp?.showAlert?.("No se encontró link de descarga para este libro")
-            return
-        }
-
-        try {
-            webApp?.showPopup?.({
-                title: "Descargando",
-                message: `Se está enviando "${book.title}" a tu chat...`,
-            })
-            await callBotAPI("download", {
-                bookId: downloadLink.href,
-                title: book.title,
-            })
-        } catch (error) {
-            console.error("[v0] Download error:", error)
-            webApp?.showAlert?.("Error al procesar la descarga")
+        if (subsectionLink) {
+            handleNavigate(subsectionLink.href)
+        } else if (detailUrl) {
+            router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
         }
     }
 
@@ -156,14 +142,13 @@ function CatalogContent() {
                     const isBook = entry.links.some(
                         (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
                     )
-                    const subsectionLink = entry.links.find((l) => l.rel === "subsection")
 
                     if (isFolder) {
                         return (
                             <Card
                                 key={entry.id}
-                                onClick={() => subsectionLink && handleNavigate(subsectionLink.href)}
-                                className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group"
+                                onClick={() => handleBookClick(entry)}
+                                className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98]"
                             >
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden">
@@ -174,16 +159,16 @@ function CatalogContent() {
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-foreground truncate">
+                                        <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                                             {entry.title}
                                         </h3>
                                         {entry.summary && (
-                                            <p className="text-xs text-muted-foreground line-clamp-1">
+                                            <p className="text-xs text-muted-foreground line-clamp-1 italic">
                                                 {entry.summary}
                                             </p>
                                         )}
                                     </div>
-                                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                                    <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                                 </div>
                             </Card>
                         )
@@ -191,7 +176,11 @@ function CatalogContent() {
 
                     if (isBook) {
                         return (
-                            <Card key={entry.id} className="p-4 border-border">
+                            <Card
+                                key={entry.id}
+                                onClick={() => handleBookClick(entry)}
+                                className="p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98]"
+                            >
                                 <div className="flex gap-4">
                                     <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
                                         <img
@@ -200,24 +189,19 @@ function CatalogContent() {
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <div className="flex-1 min-w-0 flex flex-col">
-                                        <h3 className="font-semibold text-foreground mb-0.5 line-clamp-2 leading-tight">
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-foreground mb-0.5 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                                             {entry.title}
                                         </h3>
                                         <p className="text-sm text-primary font-medium mb-1 truncate">
                                             {entry.author}
                                         </p>
-                                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-1">
-                                            {entry.summary}
+                                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 italic flex-1">
+                                            {entry.summary || "Toca para ver detalles..."}
                                         </p>
-                                        <Button
-                                            size="sm"
-                                            onClick={() => handleDownload(entry)}
-                                            className="bg-primary hover:bg-primary/90 h-8 text-xs self-start"
-                                        >
-                                            <Download className="w-3 h-3 mr-1.5" />
-                                            Descargar
-                                        </Button>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                                     </div>
                                 </div>
                             </Card>

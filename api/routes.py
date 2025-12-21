@@ -126,6 +126,29 @@ async def get_feed(
                         cover_url = normalize_url(content.get("value"))
                         break
 
+            # Extra metadata
+            publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
+            language = entry.get("dc_language") or entry.get("dcterms_language")
+            published = entry.get("published") or entry.get("issued")
+            year = published[:4] if published and len(published) >= 4 else None
+            
+            isbn = None
+            identifier = entry.get("identifier")
+            if identifier and "isbn" in identifier.lower():
+                isbn = identifier.split(":")[-1]
+
+            detail_url = None
+            size = None
+            file_type = None
+
+            for link in getattr(entry, "links", []):
+                rel = link.get("rel", "")
+                if rel == "self":
+                    detail_url = normalize_url(link.get("href"))
+                elif "acquisition" in rel or "epub" in link.get("type", ""):
+                    file_type = link.get("type")
+                    size = link.get("contentlength") or link.get("length")
+
             entries.append(
                 {
                     "title": entry.get("title", "Sin título"),
@@ -134,6 +157,13 @@ async def get_feed(
                     "id": entry.get("id", ""),
                     "cover_url": cover_url,
                     "subsection_url": subsection_url,
+                    "detail_url": detail_url,
+                    "publisher": publisher,
+                    "language": language,
+                    "isbn": isbn,
+                    "year": year,
+                    "size": size,
+                    "file_type": file_type,
                     "links": [
                         {
                             "href": normalize_url(l.get("href")),
