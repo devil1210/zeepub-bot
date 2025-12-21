@@ -4,8 +4,7 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Search, BookOpen, Download } from "lucide-react"
-import Link from "next/link"
+import { Search, BookOpen, Download } from "lucide-react"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
 
@@ -54,15 +53,9 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-4">
-          <Link href="/">
-            <button className="text-foreground/60 hover:text-foreground">
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-          </Link>
-          <h1 className="text-lg font-semibold">Buscar Libros</h1>
+        <div className="max-w-2xl mx-auto px-4 py-3">
+          <h1 className="text-lg font-semibold text-center">Buscar Libros</h1>
         </div>
       </header>
 

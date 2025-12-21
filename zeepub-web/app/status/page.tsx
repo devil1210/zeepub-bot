@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Download, Clock, TrendingUp } from "lucide-react"
+import { Download, Clock, TrendingUp } from "lucide-react"
 import Link from "next/link"
 
 export default function StatusPage() {
@@ -15,15 +15,9 @@ export default function StatusPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-4">
-          <Link href="/">
-            <button className="text-foreground/60 hover:text-foreground">
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-          </Link>
-          <h1 className="text-lg font-semibold">Estado del Bot</h1>
+        <div className="max-w-2xl mx-auto px-4 py-3">
+          <h1 className="text-lg font-semibold text-center">Estado del Bot</h1>
         </div>
       </header>
 

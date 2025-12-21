@@ -7,13 +7,22 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [v4.1.0] - 2025-12-20
 
-### Cambiado
-- **Refinamiento UI (BotFather Style Exacto)**:
-    - Ajuste de proporciones en el encabezado (título más sutil, descripción compacta).
-    - Agrupación de ítems en un contenedor de lista redondeado único, eliminando el estilo de tarjetas separadas.
-    - Integración discreta del Modo Avanzado como una píldora translúcida.
-    - Mejora de la navegación inferior con efecto blur y botones circulares.
-    - Adición de divisores internos sutiles en las listas.
+### Añadido
+- **Mini App - Navegación Completa (v0.dev)**: Integrada actualización de v0.dev con 4 nuevas páginas:
+  - `/donate` - Sistema de donaciones con tiers y detalles
+  - `/downloads` - Historial de descargas del usuario
+  - `/help` - Centro de ayuda y FAQ
+  - `/links` - Enlaces útiles y recursos
+- **Componente BottomNav**: Barra de navegación inferior fija con acceso rápido a las 4 secciones principales
+- **Safe Area Support**: Soporte para notch en dispositivos iOS
+
+### Corregido
+- **Configuración crítica**: Restaurado `output: 'export'` y `distDir: 'dist'` en `next.config.mjs` que fueron eliminados por v0.dev (necesarios para integración con FastAPI)
+- **UX**: Eliminada la confirmación de cierre (`enableClosingConfirmation()`) que v0.dev re-agregó
+
+### Mejorado
+- **UI Consistente**: Headers unificados en todas las páginas con diseño coherente
+- **Navegación**: Experiencia de usuario mejorada con navegación bottom responsive
 
 ## [v4.0.3] - 2025-12-20
 ### Corregido

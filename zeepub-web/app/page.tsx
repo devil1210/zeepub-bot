@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, BookOpen, Settings, Info, Download, Heart, LinkIcon, ChevronRight } from "lucide-react"
+import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useTelegramContext } from "@/components/telegram-provider"
 
@@ -18,8 +17,8 @@ interface BotInfo {
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { user, isReady } = useTelegramContext()
-  const [botInfo, setBotInfo] = useState<BotInfo>({
+  const { user } = useTelegramContext()
+  const [botInfo] = useState<BotInfo>({
     name: "ZeePubBot",
     username: "@ZeePubBot",
     description: "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
@@ -35,7 +34,6 @@ export default function HomePage() {
   const menuItems = [
     { icon: BookOpen, label: "Buscar Libros", href: "/search", description: "Encuentra ePubs en el catálogo" },
     { icon: Download, label: "Mis Descargas", href: "/downloads", description: "Historial y límites de descarga" },
-    { icon: Settings, label: "Configuración", href: "/settings", description: "Preferencias del bot" },
     { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados" },
     { icon: Heart, label: "Donar", href: "/donate", description: "Apoya el proyecto" },
     { icon: Info, label: "Ayuda", href: "/help", description: "Comandos y soporte" },
@@ -43,25 +41,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <button className="text-foreground/60">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          <h1 className="text-lg font-semibold">ZeePubBot</h1>
-          {user && <span className="text-xs text-muted-foreground">{user.first_name}</span>}
-          {!user && (
-            <button className="text-foreground/60">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="1" />
-                <circle cx="12" cy="5" r="1" />
-                <circle cx="12" cy="19" r="1" />
-              </svg>
-            </button>
-          )}
+        <div className="max-w-2xl mx-auto px-4 py-3">
+          <h1 className="text-lg font-semibold text-center">ZeePubBot</h1>
+          {user && <p className="text-xs text-center text-muted-foreground mt-0.5">Hola, {user.first_name}</p>}
         </div>
       </header>
 
@@ -75,21 +58,23 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold mb-2">{botInfo.name}</h2>
           <p className="text-muted-foreground mb-4">{botInfo.username}</p>
           <p className="text-sm text-foreground/80 leading-relaxed max-w-md">{botInfo.description}</p>
-          <button className="text-primary text-sm mt-2 hover:underline">Leer más →</button>
         </div>
 
         {/* Search */}
         <div className="mb-8">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Buscar"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-12 bg-card border-border rounded-xl"
-            />
-          </div>
+          <Link href="/search">
+            <div className="relative cursor-pointer">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="text"
+                placeholder="Buscar libros..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                readOnly
+                className="pl-12 h-12 bg-card border-border rounded-xl cursor-pointer"
+              />
+            </div>
+          </Link>
         </div>
 
         {/* Menu Items */}
@@ -112,16 +97,6 @@ export default function HomePage() {
               </Card>
             </Link>
           ))}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-8 space-y-3">
-          <h3 className="text-xl font-bold mb-4">Acceso Rápido</h3>
-          <Link href="/status">
-            <Button className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-base font-medium">
-              Ver Estado del Bot
-            </Button>
-          </Link>
         </div>
       </div>
     </div>
