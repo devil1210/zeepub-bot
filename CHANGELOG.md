@@ -15,6 +15,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Changed
 - Status page now fetches real data from the backend instead of using static values.
+- Downloads page now displays real user download statistics from the database.
 - Added support for unlimited downloads display for premium users.
 - Access control cache now expires after 5 minutes, ensuring fresh data on level changes.
 
