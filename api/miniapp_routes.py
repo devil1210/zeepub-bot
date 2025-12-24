@@ -508,7 +508,7 @@ async def handle_bot_request(
             hours, remainder = divmod(int(time_left.total_seconds()), 3600)
             minutes, _ = divmod(remainder, 60)
             
-            return {
+            result = {
                 "level": system_role_text,
                 "downloadsUsed": used,
                 "downloadsLimit": max_dl,
@@ -516,6 +516,10 @@ async def handle_bot_request(
                 "hasUnlimitedDownloads": max_dl is None and role_key != "banned",
                 "isBanned": role_key == "banned"
             }
+            
+            logger.info(f"[user_status] User {user_id} - Role: {role_key}, Level: {system_role_text}, Used: {used}, Limit: {max_dl}, Reset: {hours}h {minutes}m")
+            
+            return result
 
         elif action == "status":
             return {"status": "online", "version": os.getenv("BOT_VERSION", "4.0.0")}

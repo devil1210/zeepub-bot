@@ -23,7 +23,9 @@ export default function StatusPage() {
   useEffect(() => {
     async function fetchUserStatus() {
       try {
+        console.log("[Status] Fetching user status...")
         const response = await callBotAPI("user_status")
+        console.log("[Status] Received response:", response)
         setUserStats({
           level: response.level || "Lector",
           downloadsUsed: response.downloadsUsed || 0,
