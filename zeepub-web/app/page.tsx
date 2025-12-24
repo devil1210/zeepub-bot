@@ -42,7 +42,7 @@ export default function HomePage() {
     { icon: BookOpen, label: "Buscar Libros", href: "/search", description: "Encuentra ePubs en el catálogo" },
     { icon: Library, label: "Mi Catálogo", href: "/catalog", description: "Accede a bibliotecas OPDS" },
     { icon: Download, label: "Mis Descargas", href: "/downloads", description: "Historial y límites de descarga" },
-    { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados" },
+    { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados", adminOnly: true },
     { icon: Heart, label: "Donar", href: "/donate", description: "Apoya el proyecto" },
     { icon: Info, label: "Ayuda", href: "/help", description: "Comandos y soporte" },
     { icon: ShieldCheck, label: "Gestión Accesos", href: "/admin/levels", description: "Configura niveles y permisos", adminOnly: true },
@@ -145,6 +145,22 @@ export default function HomePage() {
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-foreground mb-1">Gestión Accesos</h4>
                           <p className="text-sm text-muted-foreground">Configura niveles y permisos</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                      </div>
+                    </Card>
+                  </a>
+
+                  {/* Links Management */}
+                  <a href="/links">
+                    <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <LinkIcon className="w-6 h-6 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-foreground mb-1">Mis Enlaces</h4>
+                          <p className="text-sm text-muted-foreground">Gestión de links acortados</p>
                         </div>
                         <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                       </div>

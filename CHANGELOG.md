@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.10] - 2025-12-24
+
+### Changed
+- Moved "Mis Enlaces" from the main functions menu to the Admin Panel for better organization.
+- All link management tools are now centralized in the Admin Panel alongside other administrative features.
+
 ## [v4.4.9] - 2025-12-24
 
 ### Changed
