@@ -58,6 +58,7 @@ async def verify_admin(
     """
     bot_token = os.getenv("TELEGRAM_TOKEN")
     if not x_telegram_init_data or not bot_token:
+        logger.warning(f"[verify_admin] Missing data: init={bool(x_telegram_init_data)} token={bool(bot_token)}")
         # Fallback para desarrollo si se requiere
         if os.getenv("DEV_MODE") == "true":
             return True
@@ -69,15 +70,19 @@ async def verify_admin(
         
     user_id = user_data.get("user", {}).get("id")
     if not user_id:
+        logger.warning("[verify_admin] No user_id in telegram data")
         return False
         
     # Check config
     if user_id in config.ADMIN_USERS:
+        logger.info(f"[verify_admin] User {user_id} found in config.ADMIN_USERS")
         return True
         
     # Check DB
     from services.user_service import user_repo
-    return await user_repo.is_admin(user_id)
+    is_admin_db = await user_repo.is_admin(user_id)
+    logger.info(f"[verify_admin] User {user_id} DB check: {is_admin_db}")
+    return is_admin_db
 
 def require_mini_app_access(func):
     """

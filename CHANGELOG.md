@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.5.2] - 2025-12-24
+### Added
+- **Mini App - Navegación**: Restaurado el acceso al "Catálogo" en la barra de navegación inferior.
+- **Backend - Depuración**: Agregados logs detallados en el sistema de verificación de administradores para diagnosticar problemas de acceso.
+
+### Fixed
+- **Backend - Logs**: Aplicado silenciamiento profundo (incluyendo sub-loggers) para `telegram`, `httpcore` y `httpx`.
+- **Mini App - UX**: Asegurada la desactivación total de la confirmación al salir.
+
 ## [v4.5.1] - 2025-12-24
 ### Fixed
 - **Admin - UX**: Restaurado el listado de niveles de usuario en el Panel de Administración corrigiendo la falta de cabeceras de seguridad.

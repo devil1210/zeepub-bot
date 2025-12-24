@@ -8,11 +8,12 @@ logging.basicConfig(
     level=getattr(logging, config.LOG_LEVEL.upper(), logging.INFO),
 )
 # Silenciar bibliotecas ruidosas
-logging.getLogger("aiosqlite").setLevel(logging.INFO)
-logging.getLogger("httpcore").setLevel(logging.INFO)
-logging.getLogger("httpx").setLevel(logging.INFO)
-logging.getLogger("telegram").setLevel(logging.INFO)
-logging.getLogger("apscheduler").setLevel(logging.INFO)
+for logger_name in ["aiosqlite", "httpcore", "httpx", "telegram", "apscheduler"]:
+    logging.getLogger(logger_name).setLevel(logging.INFO)
+    # También silenciamos sub-loggers
+    for sub in ["http11", "connection", "ext"]:
+        logging.getLogger(f"{logger_name}.{sub}").setLevel(logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 
