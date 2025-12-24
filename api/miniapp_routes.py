@@ -521,6 +521,22 @@ async def handle_bot_request(
             
             return result
 
+        elif action == "user_downloads_history":
+            # Return user's recent download history
+            try:
+                from repositories.download_repository import download_repo
+                
+                downloads = await download_repo.get_user_downloads(user_id, limit=10)
+                
+                logger.info(f"[user_downloads_history] User {user_id} - Retrieved {len(downloads)} downloads")
+                
+                return {
+                    "downloads": downloads
+                }
+            except Exception as e:
+                logger.error(f"Error fetching download history for user {user_id}: {e}")
+                return {"downloads": []}
+
         elif action == "status":
             return {"status": "online", "version": os.getenv("BOT_VERSION", "4.0.0")}
 

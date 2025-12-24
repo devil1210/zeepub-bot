@@ -25,14 +25,16 @@ export default function DownloadsPage() {
     remaining: 5,
     hasUnlimitedDownloads: false,
   })
+  const [downloads, setDownloads] = useState<DownloadItem[]>([])
 
   useEffect(() => {
-    async function fetchDownloadStats() {
+    async function fetchData() {
       try {
-        const response = await callBotAPI("user_status")
-        const used = response.downloadsUsed || 0
-        const limit = response.downloadsLimit || 5
-        const remaining = response.hasUnlimitedDownloads
+        // Fetch stats
+        const statusResponse = await callBotAPI("user_status")
+        const used = statusResponse.downloadsUsed || 0
+        const limit = statusResponse.downloadsLimit || 5
+        const remaining = statusResponse.hasUnlimitedDownloads
           ? Infinity
           : Math.max(0, limit - used)
 
@@ -40,21 +42,48 @@ export default function DownloadsPage() {
           today: used,
           limit: limit || 0,
           remaining: remaining,
-          hasUnlimitedDownloads: response.hasUnlimitedDownloads || false,
+          hasUnlimitedDownloads: statusResponse.hasUnlimitedDownloads || false,
         })
+
+        // Fetch download history
+        const historyResponse = await callBotAPI("user_downloads_history")
+        if (historyResponse.downloads && Array.isArray(historyResponse.downloads)) {
+          const formattedDownloads: DownloadItem[] = historyResponse.downloads.map((item: any) => {
+            // Format date
+            const date = new Date(item.downloaded_at)
+            const formattedDate = date.toLocaleDateString('es-ES', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            })
+
+            // Format file size
+            const sizeMB = item.file_size ? (item.file_size / (1024 * 1024)).toFixed(1) : '?'
+
+            return {
+              id: item.id.toString(),
+              title: item.title,
+              author: item.author || "Desconocido",
+              date: formattedDate,
+              size: `${sizeMB} MB`,
+              status: "completed" as const,
+            }
+          })
+          setDownloads(formattedDownloads)
+        }
       } catch (error) {
-        console.error("Error fetching download stats:", error)
+        console.error("Error fetching download data:", error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchDownloadStats()
+    fetchData()
   }, [])
 
   // Note: No hay historial de descargas por usuario en la BD
   // Solo mostramos las estadísticas de hoy
-  const downloads: DownloadItem[] = []
+
 
   if (loading) {
     return (

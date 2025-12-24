@@ -5,6 +5,18 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.12] - 2025-12-24
+
+### Added
+- Per-user download history tracking: New `download_history` table stores each download.
+- Download history display on Downloads page showing last 10 downloads with title, author, date, and file size.
+- `DownloadRepository` for managing download history records.
+- `user_downloads_history` API endpoint to retrieve download history.
+
+### Changed
+- Downloads page now displays actual download history instead of being empty.
+- Download logic automatically records each successful download in the history.
+
 ## [v4.4.11] - 2025-12-24
 
 ### Added

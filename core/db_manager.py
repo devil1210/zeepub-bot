@@ -79,6 +79,26 @@ class DatabaseManager:
                 )
             """)
 
+            # Crear tabla de historial de descargas si no existe
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS download_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    title TEXT NOT NULL,
+                    author TEXT,
+                    download_url TEXT,
+                    file_size INTEGER,
+                    downloaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(telegram_id)
+                )
+            """)
+            
+            # Crear índice para búsquedas rápidas por usuario
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_download_history_user_id 
+                ON download_history(user_id, downloaded_at DESC)
+            """)
+
             # Migración: Agregar columna nickname si no existe
             try:
                 await conn.execute("ALTER TABLE users ADD COLUMN nickname TEXT")

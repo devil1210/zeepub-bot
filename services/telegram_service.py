@@ -681,6 +681,21 @@ async def descargar_epub_pendiente(
 
         # Registrar descarga
         record_download(uid)
+        
+        # Registrar en historial de descargas
+        try:
+            from repositories.download_repository import download_repo
+            author = meta.get("autor", "Desconocido")
+            await download_repo.add_download(
+                user_id=uid,
+                title=titulo_vol,
+                author=author,
+                download_url=epub_url,
+                file_size=int(size_mb * 1024 * 1024) if size_mb else None
+            )
+        except Exception as e:
+            logger.error(f"Error saving download history: {e}")
+        
         restantes = await downloads_left(uid)
 
         # Mostrar descargas restantes (excepto Premium)
@@ -1018,6 +1033,21 @@ async def enviar_libro_directo(
 
             # 8. Registrar descarga y notificar
             record_download(user_id)
+            
+            # Registrar en historial de descargas
+            try:
+                from repositories.download_repository import download_repo
+                author = meta.get("autor", "Desconocido")
+                await download_repo.add_download(
+                    user_id=user_id,
+                    title=titulo_vol,
+                    author=author,
+                    download_url=download_url,
+                    file_size=int(size_mb * 1024 * 1024) if size_mb else None
+                )
+            except Exception as e:
+                logger.error(f"Error saving download history: {e}")
+            
             restantes = await downloads_left(user_id)
             if restantes != "ilimitadas":
                 await bot.send_message(
