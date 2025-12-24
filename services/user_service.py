@@ -132,6 +132,21 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
                 "custom_status": custom_status,
             }
 
+    # 1.1 Check Level and Admin status (New system)
+    access_info = await user_repo.get_access_info(uid)
+    if access_info:
+        result["has_mini_app_access"] = access_info["hasAccess"]
+        result["is_admin_db"] = access_info["isAdmin"]
+        result["level_info"] = access_info["level"]
+        # Priority: level name as status label if no custom status
+        if not info or not info.get("custom_status"):
+            result["status_label"] = access_info["level"]["name"]
+        
+        # Admin override
+        if access_info["isAdmin"]:
+            result["role"] = "admin"
+            result["has_mini_app_access"] = True
+
     # 2. Legacy / Config Checks (if not found in DB or if DB says free but config says otherwise?
     # Logic in v3.1.3 favored DB if present, but here we fallback if DB absent OR if we want to override?
     # Keeping original logic structure: if info found, we returned.
@@ -188,6 +203,23 @@ async def get_users_by_role(role: str) -> list[Dict[str, Any]]:
     Retorna lista de usuarios con un rol específico desde la DB.
     """
     return await user_repo.get_by_role(role)
+
+
+async def upgrade_user_level(telegram_id: int, new_level_name: str):
+    """
+    Actualiza el nivel de un usuario buscando por nombre de nivel.
+    """
+    async with user_repo.db.connection() as conn:
+        await conn.execute(
+            """
+            UPDATE users
+            SET level_id = (SELECT id FROM user_levels WHERE name = ?)
+            WHERE telegram_id = ?
+            """,
+            (new_level_name, telegram_id)
+        )
+        await conn.commit()
+    await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
 # Init DB is handled by DatabaseManager/UserRepository instantiation

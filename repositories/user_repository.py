@@ -144,6 +144,88 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             )
             await conn.commit()
 
+    async def get_access_info(self, telegram_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Obtiene información de nivel y privilegios de admin para un usuario.
+        """
+        query = """
+            SELECT 
+                ul.id,
+                ul.name,
+                ul.priority,
+                ul.color,
+                ul.has_mini_app_access,
+                EXISTS(SELECT 1 FROM admins WHERE user_id = ?) as is_admin
+            FROM users u
+            INNER JOIN user_levels ul ON u.level_id = ul.id
+            WHERE u.telegram_id = ?
+        """
+        async with self.db.connection() as conn:
+            cursor = await conn.execute(query, (telegram_id, telegram_id))
+            row = await cursor.fetchone()
+            if row:
+                return {
+                    "level": {
+                        "id": str(row[0]),
+                        "name": row[1],
+                        "priority": row[2],
+                        "color": row[3],
+                        "hasAccess": bool(row[4])
+                    },
+                    "hasAccess": bool(row[4]),
+                    "isAdmin": bool(row[5])
+                }
+            return None
+
+    async def create_minimal_user(self, telegram_id: int, level_id: int = 6):
+        """
+        Crea un registro básico de usuario si no existe.
+        """
+        async with self.db.connection() as conn:
+            await conn.execute(
+                "INSERT OR IGNORE INTO users (telegram_id, level_id, added_at) VALUES (?, ?, ?)",
+                (telegram_id, level_id, datetime.utcnow())
+            )
+            await conn.commit()
+
+    async def get_all_levels(self) -> list[Dict[str, Any]]:
+        """
+        Retorna todos los niveles configurados.
+        """
+        query = "SELECT id, name, priority, color, has_mini_app_access FROM user_levels ORDER BY priority DESC"
+        async with self.db.connection() as conn:
+            cursor = await conn.execute(query)
+            rows = await cursor.fetchall()
+            return [
+                {
+                    "id": str(row[0]),
+                    "name": row[1],
+                    "priority": row[2],
+                    "color": row[3],
+                    "hasAccess": bool(row[4])
+                }
+                for row in rows
+            ]
+
+    async def update_level_access(self, level_id: int, has_access: bool):
+        """
+        Actualiza el permiso de acceso a Mini App para un nivel.
+        """
+        query = "UPDATE user_levels SET has_mini_app_access = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        async with self.db.connection() as conn:
+            await conn.execute(query, (1 if has_access else 0, level_id))
+            await conn.commit()
+
+    async def is_admin(self, telegram_id: int) -> bool:
+        """
+        Verifica si un usuario está en la tabla de admins.
+        """
+        async with self.db.connection() as conn:
+            cursor = await conn.execute(
+                "SELECT 1 FROM admins WHERE user_id = ?", (telegram_id,)
+            )
+            return await cursor.fetchone() is not None
+
     def _parse_datetime(self, val: Any) -> Optional[datetime]:
         if not val:
             return None

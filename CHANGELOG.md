@@ -5,7 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [v4.3.5] - 2025-12-21
+## [v4.3.6] - 2025-12-24
+### Added
+- **Acceso - Niveles**: Implementado sistema de control de acceso por niveles (Tiered Access Control) en base de datos.
+- **Niveles Predefinidos**: Administrador, Staff, Premium, VIP, Patrocinador y Lector (con prioridades y permisos específicos).
+- **API - Seguridad**: Nuevos endpoints `/api/user/access` y `/api/admin/levels` (GET/PUT) para gestión remota de permisos.
+- **Seguridad**: Decorador `require_mini_app_access` y validación automática en cada petición según el nivel del usuario.
 ### Fixed
 - **Mini App - Roles**: Integrado `get_effective_user` para leer roles directamente de la base de datos (resolviendo el problema de acceso para Admins/Staff manuales).
 - **Código - Calidad**: Corregidos numerosos errores de linting (bare excepts, undefined names, blank lines) en `api/` y `core/`.
