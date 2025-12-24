@@ -159,6 +159,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
             "status_label": "Admin",
             "expires_at": None,
             "nickname": None,
+            "has_mini_app_access": True,
         }
 
     elif uid in config.FACEBOOK_PUBLISHERS:
@@ -167,6 +168,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
             "status_label": "Publisher",
             "expires_at": None,
             "nickname": None,
+            "has_mini_app_access": True,
         }
 
     elif uid in config.PREMIUM_LIST:
@@ -175,6 +177,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
             "status_label": "Premium (Legacy)",
             "expires_at": None,
             "nickname": None,
+            "has_mini_app_access": True,
         }
 
     elif uid in config.VIP_LIST:
@@ -183,6 +186,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
             "status_label": "VIP (Legacy)",
             "expires_at": None,
             "nickname": None,
+            "has_mini_app_access": True,
         }
 
     elif uid in config.WHITELIST:
@@ -191,6 +195,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
             "status_label": "Patrocinador (Legacy)",
             "expires_at": None,
             "nickname": None,
+            "has_mini_app_access": True,
         }
 
     # Save to cache

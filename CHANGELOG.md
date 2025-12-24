@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.0] - 2025-12-24
+### Fixed
+- **Seguridad - Core**: Corregido fallo que bloqueaba el acceso a administradores definidos vía `/add_user` o `config.ADMIN_USERS`.
+- **DB - Sincronización**: Ahora el comando `/add_user admin` sincroniza automáticamente el nivel de usuario (`level_id`) y la tabla de administradores corporativa.
+- **API - Acceso**: Unificada la lógica de privilegios entre el bot y la Mini App mediante `get_effective_user`.
+- **Servicio**: Asegurado que todos los roles de sistema (Admin, Staff, Premium) tengan acceso por defecto a la Mini App.
+
 ## [v4.3.9] - 2025-12-24
 ### Added
 - **Mini App - UX**: Rediseño de la página de "Acceso Restringido" con mejores opciones de contacto.

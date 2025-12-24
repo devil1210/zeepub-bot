@@ -498,28 +498,34 @@ async def check_user_access(
     request: AccessCheckRequest,
     user_data: dict = Depends(verify_telegram_user)
 ):
-    from services.user_service import user_repo
+    from services.user_service import get_effective_user, user_repo
     
-    # El ID del usuario verificado por Telegram debe coincidir con el solicitado
-    # (O simplemente usar el del token verificado para mayor seguridad)
-    user_id = user_data.get("id") or request.user_id
+    # Priorizar el ID verificado por Telegram
+    uid = user_data.get("id") or request.user_id
     
-    # Obtener información del usuario y su nivel
-    access_info = await user_repo.get_access_info(user_id)
+    # 1. Obtener información efectiva (Roles config, expiración, etc)
+    eff = await get_effective_user(uid)
     
-    if not access_info:
-        # Usuario no existe, crear con nivel básico - Lector (id=6)
-        await user_repo.create_minimal_user(request.user_id, level_id=6)
-        # Obtener nivel básico recien creado
-        access_info = await user_repo.get_access_info(request.user_id)
+    # 2. Obtener información de niveles de la base de datos
+    access_info = await user_repo.get_access_info(uid)
     
     if not access_info:
-        raise HTTPException(status_code=500, detail="Error al procesar acceso del usuario")
+        # Si no existe en la tabla de niveles, creamos registro con nivel básico
+        await user_repo.create_minimal_user(uid, level_id=6) # Lector
+        access_info = await user_repo.get_access_info(uid)
         
+    if not access_info:
+        raise HTTPException(status_code=500, detail="Error al recuperar nivel de usuario")
+
+    # 3. Determinar flags finales mezclando ambos sistemas
+    # El usuario tiene acceso si su nivel de DB lo permite O si su rol efectivo tiene el flag activo
+    is_admin = (eff.get("role") == "admin") or access_info.get("isAdmin", False)
+    has_access = eff.get("has_mini_app_access", False) or access_info.get("hasAccess", False) or is_admin
+
     return AccessResponse(
         level=UserLevelModel(**access_info["level"]),
-        hasAccess=access_info["hasAccess"],
-        isAdmin=access_info["isAdmin"]
+        hasAccess=has_access,
+        isAdmin=is_admin
     )
 
 @router.get("/api/admin/levels")

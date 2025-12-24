@@ -74,9 +74,21 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             )
             exists = await cursor.fetchone()
 
+            # Mapping role to level_id
+            role_to_level = {
+                'admin': 1,
+                'staff': 2,
+                'premium': 3,
+                'vip': 4,
+                'white': 5,
+                'free': 6,
+                'user': 6
+            }
+            level_id = role_to_level.get(role.lower(), 6)
+
             if exists:
-                fields = ["role = ?"]
-                params = [role]
+                fields = ["role = ?", "level_id = ?"]
+                params = [role, level_id]
                 if expires_at is not None:
                     fields.append("expires_at = ?")
                     params.append(expires_at)
@@ -95,10 +107,11 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 await conn.execute(sql, tuple(params))
             else:
                 await conn.execute(
-                    "INSERT INTO users (telegram_id, role, added_at, expires_at, custom_status, created_by, nickname) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO users (telegram_id, role, level_id, added_at, expires_at, custom_status, created_by, nickname) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         telegram_id,
                         role,
+                        level_id,
                         datetime.utcnow(),
                         expires_at,
                         custom_status,
@@ -106,6 +119,17 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         nickname,
                     ),
                 )
+            
+            # Sync with admins table
+            if role.lower() == 'admin':
+                await conn.execute(
+                    "INSERT OR IGNORE INTO admins (user_id, granted_by) VALUES (?, ?)",
+                    (telegram_id, created_by)
+                )
+            elif exists:
+                # If it was an admin and now it's not
+                await conn.execute("DELETE FROM admins WHERE user_id = ?", (telegram_id,))
+
             await conn.commit()
             return {"telegram_id": telegram_id, "role": role}
 
@@ -155,7 +179,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.priority,
                 ul.color,
                 ul.has_mini_app_access,
-                EXISTS(SELECT 1 FROM admins WHERE user_id = ?) as is_admin
+                (EXISTS(SELECT 1 FROM admins WHERE user_id = ?) OR u.role = 'admin') as is_admin
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -172,7 +196,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "color": row[3],
                         "hasAccess": bool(row[4])
                     },
-                    "hasAccess": bool(row[4]),
+                    "hasAccess": bool(row[4]) or bool(row[5]), # Access if level allowed OR if admin
                     "isAdmin": bool(row[5])
                 }
             return None
