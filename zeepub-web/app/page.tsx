@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library } from "lucide-react"
+import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck } from "lucide-react"
 import { useTelegramContext } from "@/components/telegram-provider"
 
 interface BotInfo {
@@ -16,7 +16,7 @@ interface BotInfo {
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { user } = useTelegramContext()
+  const { user, hasAccess } = useTelegramContext()
   const [botInfo] = useState<BotInfo>({
     name: "ZeePubBot",
     username: "@ZeePubBot",
@@ -37,6 +37,7 @@ export default function HomePage() {
     { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados" },
     { icon: Heart, label: "Donar", href: "/donate", description: "Apoya el proyecto" },
     { icon: Info, label: "Ayuda", href: "/help", description: "Comandos y soporte" },
+    { icon: ShieldCheck, label: "Gestión Accesos", href: "/admin/levels", description: "Configura niveles y permisos", adminOnly: true },
   ]
 
   return (
@@ -81,22 +82,24 @@ export default function HomePage() {
         <div className="space-y-3">
           <h3 className="text-xl font-bold mb-4">Funciones</h3>
 
-          {menuItems.map((item, index) => (
-            <a key={index} href={item.href}>
-              <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-6 h-6 text-primary" />
+          {menuItems
+            .filter(item => !item.adminOnly || hasAccess) // Un chequeo básico, en la página de niveles hay uno riguroso
+            .map((item, index) => (
+              <a key={index} href={item.href}>
+                <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-foreground mb-1">{item.label}</h4>
+                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-foreground mb-1">{item.label}</h4>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                </div>
-              </Card>
-            </a>
-          ))}
+                </Card>
+              </a>
+            ))}
         </div>
       </div>
     </div>

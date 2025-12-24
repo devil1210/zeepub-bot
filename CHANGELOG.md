@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.3.8] - 2025-12-24
+### Added
+- **Admin - UX**: Nueva página de "Gestión de Accesos" (`/admin/levels`) exclusiva para administradores.
+- **Admin - Funcionalidad**: Interfaz para activar/desactivar permisos del Mini App por nivel de usuario con guardado persistente.
+- **Home**: Agregado acceso directo a la gestión de niveles en el menú principal para administradores.
+
 ## [v4.3.7] - 2025-12-24
 ### Added
 - **Mini App - Seguridad**: Implementada página de "Acceso Denegado" (`/no-access`) para usuarios sin permisos.
