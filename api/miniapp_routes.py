@@ -502,7 +502,7 @@ async def check_user_access(
     
     # Priorizar el ID verificado por Telegram
     uid = user_data.get("id") or request.user_id
-    
+    logger.info(f"Access check for UID: {uid}")
     # 1. Obtener información efectiva (Roles config, expiración, etc)
     eff = await get_effective_user(uid)
     
@@ -511,10 +511,12 @@ async def check_user_access(
     
     if not access_info:
         # Si no existe en la tabla de niveles, creamos registro con nivel básico
+        logger.info(f"User {uid} not found in user_levels, creating minimal entry.")
         await user_repo.create_minimal_user(uid, level_id=6) # Lector
         access_info = await user_repo.get_access_info(uid)
         
     if not access_info:
+        logger.error(f"Failed to retrieve access info for user {uid}")
         raise HTTPException(status_code=500, detail="Error al recuperar nivel de usuario")
 
     # 3. Determinar flags finales mezclando ambos sistemas
@@ -522,6 +524,7 @@ async def check_user_access(
     is_admin = (eff.get("role") == "admin") or access_info.get("isAdmin", False)
     has_access = eff.get("has_mini_app_access", False) or access_info.get("hasAccess", False) or is_admin
 
+    logger.info(f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}")
     return AccessResponse(
         level=UserLevelModel(**access_info["level"]),
         hasAccess=has_access,
@@ -536,9 +539,11 @@ async def get_levels(
     if not is_admin:
         raise HTTPException(status_code=403, detail="Forbidden")
     
+    logger.info("Fetching all access levels")
     from services.user_service import user_repo
     levels = await user_repo.get_all_levels()
     
+    logger.info(f"Found {len(levels)} access levels")
     return {"levels": [UserLevelModel(**l) for l in levels]}
 
 @router.put("/api/admin/levels")

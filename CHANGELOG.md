@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.2] - 2025-12-24
+### Fixed
+- **Infraestructura**: Detenida instancia duplicada del bot en el host que causaba conflictos (error 409) con la instancia de Docker. Desactivado el servicio `zeepub-bot.service`.
+- **Frontend - Seguridad**: Solucionada condición de carrera en `useAccessControl` que causaba redirecciones inapropiadas o cuelgues al cargar la página de "Control de Acceso".
+- **Backend - Logging**: Agregados logs diagnósticos en los endpoints de verificación de acceso para mejor trazabilidad.
+
 ## [v4.4.1] - 2025-12-24
 ### Fixed
 - **Admin - UX**: Corregido fallo que impedía listar niveles en el Panel de Administración debido a falta de cabeceras de autenticación.

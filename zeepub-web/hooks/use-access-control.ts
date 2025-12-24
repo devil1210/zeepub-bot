@@ -11,11 +11,11 @@ export type UserLevel = {
 }
 
 export function useAccessControl() {
-    const { user, isAdmin, isReady } = useTelegramContext()
+    const { user, isAdmin, hasAccess, isReady } = useTelegramContext()
 
     return {
         isAdmin: !!isAdmin,
-        loading: !isReady,
+        loading: !isReady || isAdmin === null || hasAccess === null,
         user
     }
 }
