@@ -15,15 +15,22 @@ interface BotInfo {
   avatar: string
 }
 
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { user, hasAccess } = useTelegramContext()
+  const { user, isAdmin, isAdminMode, setIsAdminMode } = useTelegramContext()
   const [botInfo] = useState<BotInfo>({
     name: "ZeePubBot",
     username: "@ZeePubBot",
     description: "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
     avatar: "/robot-librarian.jpg",
   })
+
+  const [businessMode, setBusinessMode] = useState(true)
+  const [allowGroups, setAllowGroups] = useState(true)
+  const [groupPrivacy, setGroupPrivacy] = useState(true)
 
   useEffect(() => {
     if (user) {
@@ -45,14 +52,32 @@ export default function HomePage() {
     <AccessGuard>
       <div className="min-h-screen bg-background">
         <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-          <div className="max-w-2xl mx-auto px-4 py-3">
-            <h1 className="text-lg font-semibold text-center">ZeePubBot</h1>
-            {user && <p className="text-xs text-center text-muted-foreground mt-0.5">Hola, {user.first_name}</p>}
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex-1" />
+            <h1 className="text-lg font-semibold text-center flex-1">ZeePubBot</h1>
+            <div className="flex-1 flex justify-end">
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Admin</span>
+                  <Switch
+                    checked={isAdminMode}
+                    onCheckedChange={setIsAdminMode}
+                    className="scale-75"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
         {/* Bot Profile Section */}
         <div className="max-w-2xl mx-auto px-4 py-8">
+          {user && (
+            <div className="text-center mb-4">
+              <p className="text-xs text-muted-foreground">Hola, {user.first_name}</p>
+            </div>
+          )}
+
           <div className="flex flex-col items-center text-center mb-8">
             <Avatar className="w-24 h-24 mb-4 border-2 border-primary/20">
               <AvatarImage src={botInfo.avatar || "/placeholder.svg"} alt={botInfo.name} />
@@ -64,44 +89,78 @@ export default function HomePage() {
           </div>
 
           {/* Search */}
-          <div className="mb-8">
-            <a href="/search">
-              <div className="relative cursor-pointer">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="text"
-                  placeholder="Buscar libros..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  readOnly
-                  className="pl-12 h-12 bg-card border-border rounded-xl cursor-pointer"
-                />
+          {!isAdminMode && (
+            <div className="mb-8">
+              <a href="/search">
+                <div className="relative cursor-pointer">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar libros..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    readOnly
+                    className="pl-12 h-12 bg-card border-border rounded-xl cursor-pointer"
+                  />
+                </div>
+              </a>
+            </div>
+          )}
+
+          {/* Menu Items / Admin Panel */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold">
+              {isAdminMode ? "Panel Administrador" : "Funciones"}
+            </h3>
+
+            {isAdminMode && (
+              <div className="space-y-4 mb-6">
+                <Card className="p-4 border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="business-mode" className="font-semibold">Business Mode</Label>
+                    <Switch id="business-mode" checked={businessMode} onCheckedChange={setBusinessMode} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Manejo automático de mensajes en cuentas de usuario</p>
+                </Card>
+
+                <Card className="p-4 border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="allow-groups" className="font-semibold">Permitir Grupos</Label>
+                    <Switch id="allow-groups" checked={allowGroups} onCheckedChange={setAllowGroups} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Habilitar el bot en chats grupales</p>
+                </Card>
+
+                <Card className="p-4 border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="group-privacy" className="font-semibold">Privacidad</Label>
+                    <Switch id="group-privacy" checked={groupPrivacy} onCheckedChange={setGroupPrivacy} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Limitar mensajes leídos en grupos</p>
+                </Card>
               </div>
-            </a>
-          </div>
+            )}
 
-          {/* Menu Items */}
-          <div className="space-y-3">
-            <h3 className="text-xl font-bold mb-4">Funciones</h3>
-
-            {menuItems
-              .filter(item => !item.adminOnly || hasAccess)
-              .map((item, index) => (
-                <a key={index} href={item.href}>
-                  <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <item.icon className="w-6 h-6 text-primary" />
+            <div className="space-y-3">
+              {menuItems
+                .filter(item => !item.adminOnly || isAdminMode)
+                .map((item, index) => (
+                  <a key={index} href={item.href}>
+                    <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <item.icon className="w-6 h-6 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-foreground mb-1">{item.label}</h4>
+                          <p className="text-sm text-muted-foreground">{item.description}</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-foreground mb-1">{item.label}</h4>
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                    </div>
-                  </Card>
-                </a>
-              ))}
+                    </Card>
+                  </a>
+                ))}
+            </div>
           </div>
         </div>
       </div>

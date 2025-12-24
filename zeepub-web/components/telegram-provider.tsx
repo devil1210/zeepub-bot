@@ -11,6 +11,8 @@ interface TelegramContextType {
   isReady: boolean
   hasAccess: boolean | null
   isAdmin: boolean | null
+  isAdminMode: boolean
+  setIsAdminMode: (val: boolean) => void
 }
 
 const TelegramContext = createContext<TelegramContextType>({
@@ -19,14 +21,40 @@ const TelegramContext = createContext<TelegramContextType>({
   isReady: false,
   hasAccess: null,
   isAdmin: null,
+  isAdminMode: false,
+  setIsAdminMode: () => { },
 })
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
   const telegram = useTelegram()
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null)
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+  const [hasAccess, setHasAccess] = useState<boolean | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('access_status')
+      return cached ? JSON.parse(cached).hasAccess : null
+    }
+    return null
+  })
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('access_status')
+      return cached ? JSON.parse(cached).isAdmin : null
+    }
+    return null
+  })
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('admin_mode') === 'true'
+    }
+    return false
+  })
+
   const router = useRouter()
   const pathname = usePathname()
+
+  const toggleAdminMode = (val: boolean) => {
+    setIsAdminMode(val)
+    localStorage.setItem('admin_mode', val.toString())
+  }
 
   useEffect(() => {
     async function verify() {
@@ -34,19 +62,22 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         try {
           const result = await checkAccess(telegram.user.id)
           const accessValue = result.hasAccess || result.isAdmin
+
           setHasAccess(accessValue)
           setIsAdmin(result.isAdmin)
 
+          localStorage.setItem('access_status', JSON.stringify({
+            hasAccess: accessValue,
+            isAdmin: result.isAdmin,
+            timestamp: Date.now()
+          }))
+
           if (!accessValue && pathname !== "/no-access") {
-            console.log("[AccessControl] Denied, redirecting to /no-access")
             router.push("/no-access")
-          } else if (accessValue && pathname === "/no-access") {
-            router.push("/")
           }
         } catch (error) {
           console.error("Failed to check access:", error)
-          // Si falla la API de acceso, por seguridad denegamos si no estamos ya en la página de error
-          if (pathname !== "/no-access") {
+          if (pathname !== "/no-access" && hasAccess === null) {
             router.push("/no-access")
           }
         }
@@ -59,7 +90,9 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const value = {
     ...telegram,
     hasAccess,
-    isAdmin
+    isAdmin,
+    isAdminMode,
+    setIsAdminMode: toggleAdminMode
   }
 
   return <TelegramContext.Provider value={value}>{children}</TelegramContext.Provider>

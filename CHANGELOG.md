@@ -5,6 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.7] - 2025-12-24
+
+### Added
+- New "Admin Mode" switch in Home Page for administrators.
+- Instant access verification using local caching (`localStorage`).
+- Integrated essential bot settings (Business Mode, Privacy) into the Admin Mode view.
+
+### Changed
+- Removed the separate Settings page to simplify navigation.
+- Removed "Ajustes" from the bottom navigation bar.
+
 ## [v4.4.6] - 2025-12-24
 
 ### Changed
