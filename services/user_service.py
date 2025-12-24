@@ -106,7 +106,19 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         "nickname": None,
     }
 
-    # 1. Check DB (Async)
+    # 1. Config Admins always have top precedence
+    if uid in config.ADMIN_USERS:
+        result = {
+            "role": "admin",
+            "status_label": "Admin",
+            "expires_at": None,
+            "nickname": None,
+            "has_mini_app_access": True,
+        }
+        await user_cache.set(cache_key, result)
+        return result
+
+    # 2. Check DB (Async)
     info = await get_user_info(uid)
     if info:
         # Check expiration
@@ -132,7 +144,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
                 "custom_status": custom_status,
             }
 
-    # 1.1 Check Level and Admin status (New system)
+    # 3. Check Level and Admin status (New system - DB based admins)
     access_info = await user_repo.get_access_info(uid)
     if access_info:
         result["has_mini_app_access"] = access_info["hasAccess"]
@@ -142,21 +154,43 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         if not info or not info.get("custom_status"):
             result["status_label"] = access_info["level"]["name"]
 
-        # Admin override
+        # Admin override from DB
         if access_info["isAdmin"]:
             result["role"] = "admin"
             result["has_mini_app_access"] = True
 
-    # 2. Legacy / Config Checks (if not found in DB or if DB says free but config says otherwise?
-    # Logic in v3.1.3 favored DB if present, but here we fallback if DB absent OR if we want to override?
-    # Keeping original logic structure: if info found, we returned.
-    # Wait, the original code had multiple returns. I must preserve PRECEDENCE.
-
-    # Restoring original structure but capturing result for caching
-    elif uid in config.ADMIN_USERS:
+    # 4. Legacy Config Fallbacks (non-admins)
+    elif uid in config.FACEBOOK_PUBLISHERS:
         result = {
-            "role": "admin",
-            "status_label": "Admin",
+            "role": "staff",
+            "status_label": "Publisher",
+            "expires_at": None,
+            "nickname": None,
+            "has_mini_app_access": True,
+        }
+
+    elif uid in config.PREMIUM_LIST:
+        result = {
+            "role": "premium",
+            "status_label": "Premium (Legacy)",
+            "expires_at": None,
+            "nickname": None,
+            "has_mini_app_access": True,
+        }
+
+    elif uid in config.VIP_LIST:
+        result = {
+            "role": "vip",
+            "status_label": "VIP (Legacy)",
+            "expires_at": None,
+            "nickname": None,
+            "has_mini_app_access": True,
+        }
+
+    elif uid in config.WHITELIST:
+        result = {
+            "role": "white",
+            "status_label": "Patrocinador (Legacy)",
             "expires_at": None,
             "nickname": None,
             "has_mini_app_access": True,

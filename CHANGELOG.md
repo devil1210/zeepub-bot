@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.4] - 2025-12-24
+### Fixed
+- **Pruebas - Estabilidad**: Refactorización profunda de la suite de pruebas para eliminar la contaminación de estado global y errores de tipo (`TypeError`).
+- **Pruebas - Aislamiento**: Migración de mocks a nivel de módulo a fixtures aislados de pytest, garantizando un entorno limpio para cada prueba.
+- **Backend - Seguridad**: Corregida precedencia en `get_effective_user` para asegurar que los administradores definidos en `config.ADMIN_USERS` tengan prioridad sobre la base de datos.
+- **Core - Estabilidad**: Implementado sistema de limpieza automática de `sys.modules` en la suite de pruebas para evitar conflictos entre mocks de diferentes archivos.
+
 ## [v4.4.3] - 2025-12-24
 ### Fixed
 - **Código - Calidad**: Corregidos numerosos errores de linting y estilo (E302, W293, E303, E261) para cumplir con PEP 8.
