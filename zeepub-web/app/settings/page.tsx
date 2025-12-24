@@ -4,8 +4,12 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
+import { Shield, ChevronRight } from "lucide-react"
+import { useAccessControl } from "@/hooks/use-access-control"
+import Link from "next/link"
 
 export default function SettingsPage() {
+  const { isAdmin } = useAccessControl()
   const [businessMode, setBusinessMode] = useState(true)
   const [allowGroups, setAllowGroups] = useState(true)
   const [groupPrivacy, setGroupPrivacy] = useState(true)
@@ -19,6 +23,27 @@ export default function SettingsPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {/* Admin Settings */}
+        {isAdmin && (
+          <div>
+            <h2 className="text-xl font-bold mb-4">Administración</h2>
+            <Link href="/admin/levels">
+              <Card className="p-4 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-primary" />
+                    <div>
+                      <h3 className="font-semibold text-foreground">Control de Acceso</h3>
+                      <p className="text-xs text-muted-foreground">Gestionar niveles y permisos</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </Card>
+            </Link>
+          </div>
+        )}
+
         {/* Mode Settings */}
         <div>
           <h2 className="text-xl font-bold mb-4">Configuración de Modo</h2>

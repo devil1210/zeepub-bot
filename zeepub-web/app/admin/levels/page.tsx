@@ -1,178 +1,156 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, Save, ShieldCheck, Loader2 } from "lucide-react"
-import { useTelegramContext } from "@/components/telegram-provider"
+import { Shield, Save, Loader2, CheckCircle } from "lucide-react"
+import { useAccessControl, type UserLevel } from "@/hooks/use-access-control"
 import { useRouter } from "next/navigation"
 
-interface UserLevel {
-    id: string | number
-    name: string
-    priority: number
-    color: string
-    hasAccess: boolean
-}
-
-export default function AdminLevelsPage() {
-    const { isReady, hasAccess } = useTelegramContext()
+export default function AccessControlPage() {
+    const { isAdmin, loading: authLoading } = useAccessControl()
+    const router = useRouter()
     const [levels, setLevels] = useState<UserLevel[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const router = useRouter()
+    const [saved, setSaved] = useState(false)
+
+    useEffect(() => {
+        if (!authLoading && !isAdmin) {
+            router.push("/")
+        }
+    }, [isAdmin, authLoading, router])
 
     useEffect(() => {
         async function fetchLevels() {
-            if (!isReady) return
-
             try {
-                const response = await fetch("/api/admin/levels", {
-                    headers: {
-                        "x-telegram-init-data": (window as any).Telegram?.WebApp?.initData || ""
-                    }
-                })
-
-                if (!response.ok) {
-                    if (response.status === 403) throw new Error("No tienes permisos de administrador")
-                    throw new Error("Fallo al cargar niveles")
+                const response = await fetch("/api/admin/access-levels")
+                if (response.ok) {
+                    const data = await response.json()
+                    setLevels(data.levels)
                 }
-
-                const data = await response.json()
-                setLevels(data.levels)
-            } catch (err: any) {
-                setError(err.message)
+            } catch (error) {
+                console.error("[v0] Error fetching levels:", error)
             } finally {
                 setLoading(false)
             }
         }
 
-        fetchLevels()
-    }, [isReady])
+        if (isAdmin) {
+            fetchLevels()
+        }
+    }, [isAdmin])
 
-    const handleToggleAccess = (id: string | number, currentAccess: boolean) => {
-        setLevels(prev => prev.map(level =>
-            level.id === id ? { ...level, hasAccess: !currentAccess } : level
-        ))
+    const toggleAccess = (levelId: string) => {
+        setLevels((prev) => prev.map((level) => (level.id === levelId ? { ...level, hasAccess: !level.hasAccess } : level)))
+        setSaved(false)
     }
 
     const handleSave = async () => {
         setSaving(true)
-        setError(null)
-
         try {
-            const response = await fetch("/api/admin/levels", {
-                method: "PUT",
+            const response = await fetch("/api/admin/access-levels", {
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-telegram-init-data": (window as any).Telegram?.WebApp?.initData || ""
                 },
-                body: JSON.stringify({ levels })
+                body: JSON.stringify({
+                    levels: levels.map((l) => ({ id: l.id, hasAccess: l.hasAccess })),
+                    initData: (window as any).Telegram?.WebApp?.initData,
+                }),
             })
 
-            if (!response.ok) throw new Error("Fallo al guardar cambios")
-
-            // Feedback visual (podría usarse sonner/toast si estuviera configurado)
-            alert("Configuración guardada correctamente")
-        } catch (err: any) {
-            setError(err.message)
+            if (response.ok) {
+                setSaved(true)
+                setTimeout(() => setSaved(false), 3000)
+            }
+        } catch (error) {
+            console.error("[v0] Error saving levels:", error)
         } finally {
             setSaving(false)
         }
     }
 
-    if (loading) {
+    if (authLoading || loading) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         )
     }
 
-    if (error) {
-        return (
-            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
-                <Card className="p-6 border-destructive/20 bg-destructive/5 max-w-sm">
-                    <h2 className="text-xl font-bold text-destructive mb-2">Error</h2>
-                    <p className="text-muted-foreground mb-4">{error}</p>
-                    <Button onClick={() => window.location.reload()}>Reintentar</Button>
-                </Card>
-            </div>
-        )
+    if (!isAdmin) {
+        return null
     }
 
     return (
         <div className="min-h-screen bg-background">
             <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-                <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-                    <button onClick={() => router.back()} className="text-foreground/60 p-1 hover:bg-secondary/50 rounded-lg">
-                        <ChevronLeft className="w-6 h-6" />
-                    </button>
-                    <h1 className="text-lg font-semibold flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-primary" /> Gestión de Accesos
-                    </h1>
-                    <div className="w-8" /> {/* Spacer */}
+                <div className="max-w-2xl mx-auto px-4 py-3">
+                    <h1 className="text-lg font-semibold text-center">Control de Acceso</h1>
                 </div>
             </header>
 
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-                <div className="space-y-2">
-                    <h2 className="text-xl font-bold">Niveles de Usuario</h2>
-                    <p className="text-sm text-muted-foreground">
-                        Configura qué rangos tienen permiso para abrir esta Mini App.
-                    </p>
+                <div className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                    <Shield className="w-6 h-6 text-primary flex-shrink-0" />
+                    <div>
+                        <h3 className="font-semibold text-foreground text-sm">Panel de Administrador</h3>
+                        <p className="text-xs text-muted-foreground">
+                            Configura qué niveles de usuario pueden acceder a la Mini App
+                        </p>
+                    </div>
                 </div>
 
-                <div className="space-y-3">
-                    {levels.sort((a, b) => b.priority - a.priority).map((level) => (
-                        <Card key={level.id} className="border-border overflow-hidden">
-                            <div className="flex items-center justify-between p-4">
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]"
-                                        style={{ color: level.color }}
-                                    />
-                                    <div>
-                                        <div className="flex items-center gap-2">
+                <div>
+                    <h2 className="text-xl font-bold mb-4">Niveles de Usuario</h2>
+                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                        Activa o desactiva el acceso a la Mini App para cada nivel de usuario. Los cambios se aplicarán
+                        inmediatamente después de guardar.
+                    </p>
+
+                    <div className="space-y-3">
+                        {levels.map((level) => (
+                            <Card key={level.id} className="p-4 border-border">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: level.color }} />
+                                        <div>
                                             <h3 className="font-semibold text-foreground">{level.name}</h3>
-                                            <Badge variant="outline" className="text-[10px] py-0 border-border text-muted-foreground">
-                                                Prio {level.priority}
-                                            </Badge>
+                                            <p className="text-xs text-muted-foreground">Prioridad: {level.priority}</p>
                                         </div>
-                                        {level.priority >= 9 && (
-                                            <p className="text-[11px] text-primary/70 font-medium">Nivel de Staff</p>
-                                        )}
                                     </div>
+                                    <Switch
+                                        checked={level.hasAccess}
+                                        onCheckedChange={() => toggleAccess(level.id.toString())}
+                                        className={level.hasAccess ? "" : "data-[state=checked]:bg-destructive"}
+                                    />
                                 </div>
-                                <Switch
-                                    checked={level.hasAccess}
-                                    onCheckedChange={() => handleToggleAccess(level.id, level.hasAccess)}
-                                    disabled={level.priority >= 10} // Admin siempre tiene acceso
-                                />
-                            </div>
-                        </Card>
-                    ))}
+                            </Card>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="pt-4">
-                    <Button
-                        className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/20"
-                        onClick={handleSave}
-                        disabled={saving}
-                    >
+                <div className="sticky bottom-20 pt-4">
+                    <Button onClick={handleSave} disabled={saving || saved} className="w-full" size="lg">
                         {saving ? (
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                            <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Guardando...
+                            </>
+                        ) : saved ? (
+                            <>
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Guardado
+                            </>
                         ) : (
-                            <Save className="w-5 h-5 mr-2" />
+                            <>
+                                <Save className="w-4 h-4 mr-2" />
+                                Guardar Configuración
+                            </>
                         )}
-                        Guardar Cambios
                     </Button>
-                    <p className="text-[11px] text-center text-muted-foreground mt-3">
-                        Los cambios se aplicarán instantáneamente a todos los usuarios de ese nivel.
-                    </p>
                 </div>
             </div>
         </div>

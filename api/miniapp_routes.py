@@ -523,6 +523,7 @@ async def check_user_access(
     )
 
 @router.get("/api/admin/levels")
+@router.get("/api/admin/access-levels")
 async def get_levels(
     is_admin: bool = Depends(verify_admin)
 ):
@@ -535,6 +536,7 @@ async def get_levels(
     return {"levels": [UserLevelModel(**l) for l in levels]}
 
 @router.put("/api/admin/levels")
+@router.post("/api/admin/access-levels")
 async def update_levels(
     request: UpdateLevelsRequest,
     is_admin: bool = Depends(verify_admin)

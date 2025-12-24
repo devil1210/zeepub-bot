@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.3.9] - 2025-12-24
+### Added
+- **Mini App - UX**: Rediseño de la página de "Acceso Restringido" con mejores opciones de contacto.
+- **Admin - UX**: El "Control de Acceso" ahora está integrado dentro de la página de **Ajustes** para mayor coherencia.
+- **Admin - Funcionalidad**: Nueva interfaz de control de niveles con indicadores visuales de estado (Activo/Inactivo).
+- **Backend**: Agregados alias de rutas para compatibilidad con el nuevo sistema de guardado de niveles.
+
 ## [v4.3.8] - 2025-12-24
 ### Added
 - **Admin - UX**: Nueva página de "Gestión de Accesos" (`/admin/levels`) exclusiva para administradores.

@@ -1,55 +1,62 @@
 "use client"
 
-import { ShieldAlert, MessageCircle, Heart } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ShieldX, MessageCircle, UserX } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { closeTelegramWebApp } from "@/lib/telegram"
+import { Button } from "@/components/ui/button"
 
 export default function NoAccessPage() {
+    const handleContactAdmin = () => {
+        if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
+            (window as any).Telegram.WebApp.close()
+        }
+    }
+
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-            <Card className="max-w-md w-full p-8 text-center space-y-6 border-border bg-card/50 backdrop-blur-sm shadow-xl">
-                <div className="flex justify-center">
-                    <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center">
-                        <ShieldAlert className="w-10 h-10 text-destructive" />
+        <div className="min-h-screen bg-background flex items-center justify-center px-4">
+            <div className="max-w-md w-full">
+                <Card className="p-8 border-border text-center">
+                    <div className="mb-6">
+                        <div className="w-20 h-20 mx-auto bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+                            <ShieldX className="w-10 h-10 text-destructive" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-foreground mb-2">Acceso Restringido</h1>
+                        <p className="text-muted-foreground leading-relaxed">
+                            Tu nivel de usuario actual no tiene permisos para acceder a esta Mini App.
+                        </p>
                     </div>
-                </div>
 
-                <div className="space-y-2">
-                    <h1 className="text-2xl font-bold text-foreground">Acceso Denegado</h1>
-                    <p className="text-muted-foreground">
-                        Tu nivel de usuario actual no tiene permiso para acceder a la Mini App.
-                    </p>
-                </div>
+                    <div className="bg-card-hover border border-border rounded-lg p-4 mb-6">
+                        <div className="flex items-start gap-3 mb-3">
+                            <UserX className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div className="text-left">
+                                <h3 className="font-semibold text-foreground text-sm mb-1">Nivel de Usuario</h3>
+                                <p className="text-xs text-muted-foreground">
+                                    Solo usuarios con niveles autorizados pueden usar esta aplicación.
+                                </p>
+                            </div>
+                        </div>
 
-                <div className="p-4 bg-secondary/30 rounded-lg text-sm text-left space-y-3">
-                    <p className="font-medium flex items-center gap-2">
-                        <Heart className="w-4 h-4 text-primary" /> ¿Cómo obtener acceso?
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 text-muted-foreground text-xs leading-relaxed">
-                        <li>Apoya el proyecto realizando una donación.</li>
-                        <li>Sigue las instrucciones en el chat del bot enviando /donar.</li>
-                        <li>Contacta con un administrador si crees que es un error.</li>
-                    </ul>
-                </div>
+                        <div className="flex items-start gap-3">
+                            <MessageCircle className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div className="text-left">
+                                <h3 className="font-semibold text-foreground text-sm mb-1">¿Cómo obtener acceso?</h3>
+                                <p className="text-xs text-muted-foreground">
+                                    Contacta al administrador del bot para solicitar permisos o mejorar tu nivel de usuario.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
-                <div className="pt-4 space-y-3">
-                    <Button
-                        variant="default"
-                        className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
-                        onClick={() => window.location.href = "https://t.me/ZeePubBot"}
-                    >
-                        <MessageCircle className="w-4 h-4 mr-2" /> Ir al Bot
+                    <Button onClick={handleContactAdmin} className="w-full" variant="default">
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Contactar Administrador
                     </Button>
-                    <Button
-                        variant="outline"
-                        className="w-full h-12 rounded-xl border-border bg-background hover:bg-accent"
-                        onClick={() => closeTelegramWebApp()}
-                    >
-                        Cerrar Aplicación
-                    </Button>
-                </div>
-            </Card>
+
+                    <p className="text-xs text-muted-foreground mt-4">
+                        Si crees que esto es un error, por favor contacta al soporte.
+                    </p>
+                </Card>
+            </div>
         </div>
     )
 }
