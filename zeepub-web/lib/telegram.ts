@@ -11,8 +11,8 @@ export function initTelegramWebApp() {
   // Expand to full height
   webApp.expand()
 
-  // Enable closing confirmation
-  webApp.enableClosingConfirmation()
+  // Disable closing confirmation
+  webApp.disableClosingConfirmation()
 
   // Set header color to match theme
   webApp.setHeaderColor("#1C2733")

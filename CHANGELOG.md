@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.5.1] - 2025-12-24
+### Fixed
+- **Admin - UX**: Restaurado el listado de niveles de usuario en el Panel de Administración corrigiendo la falta de cabeceras de seguridad.
+- **Mini App - UX**: Desactivado el mensaje de "confirmación de cierre" al salir del bot para una navegación más fluida.
+- **Backend - Logs**: Silenciados logs adicionales de `telegram` y `apscheduler`.
+
 ## [v4.5.0] - 2025-12-24
 ### Added
 - **Mini App - UI/UX**: Rediseño total basado en la estética premium de v0.

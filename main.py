@@ -11,6 +11,8 @@ logging.basicConfig(
 logging.getLogger("aiosqlite").setLevel(logging.INFO)
 logging.getLogger("httpcore").setLevel(logging.INFO)
 logging.getLogger("httpx").setLevel(logging.INFO)
+logging.getLogger("telegram").setLevel(logging.INFO)
+logging.getLogger("apscheduler").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 
