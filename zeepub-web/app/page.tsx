@@ -108,40 +108,9 @@ export default function HomePage() {
           )}
 
           {/* Menu Items / Admin Panel */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold">
-              {isAdminMode ? "Panel Administrador" : "Funciones"}
-            </h3>
-
-            {isAdminMode && (
-              <div className="space-y-4 mb-6">
-                <Card className="p-4 border-border">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="business-mode" className="font-semibold">Business Mode</Label>
-                    <Switch id="business-mode" checked={businessMode} onCheckedChange={setBusinessMode} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Manejo automático de mensajes en cuentas de usuario</p>
-                </Card>
-
-                <Card className="p-4 border-border">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="allow-groups" className="font-semibold">Permitir Grupos</Label>
-                    <Switch id="allow-groups" checked={allowGroups} onCheckedChange={setAllowGroups} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Habilitar el bot en chats grupales</p>
-                </Card>
-
-                <Card className="p-4 border-border">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="group-privacy" className="font-semibold">Privacidad</Label>
-                    <Switch id="group-privacy" checked={groupPrivacy} onCheckedChange={setGroupPrivacy} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Limitar mensajes leídos en grupos</p>
-                </Card>
-              </div>
-            )}
-
+          <div className="space-y-6">
             <div className="space-y-3">
+              <h3 className="text-xl font-bold mb-4">Funciones</h3>
               {menuItems
                 .filter(item => !item.adminOnly || isAdminMode)
                 .map((item, index) => (
@@ -161,6 +130,37 @@ export default function HomePage() {
                   </a>
                 ))}
             </div>
+
+            {isAdminMode && (
+              <div className="space-y-4 pt-4 border-t border-border">
+                <h3 className="text-xl font-bold">Panel Administrador</h3>
+                <div className="space-y-4">
+                  <Card className="p-4 border-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="business-mode" className="font-semibold">Business Mode</Label>
+                      <Switch id="business-mode" checked={businessMode} onCheckedChange={setBusinessMode} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Manejo automático de mensajes en cuentas de usuario</p>
+                  </Card>
+
+                  <Card className="p-4 border-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="allow-groups" className="font-semibold">Permitir Grupos</Label>
+                      <Switch id="allow-groups" checked={allowGroups} onCheckedChange={setAllowGroups} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Habilitar el bot en chats grupales</p>
+                  </Card>
+
+                  <Card className="p-4 border-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="group-privacy" className="font-semibold">Privacidad</Label>
+                      <Switch id="group-privacy" checked={groupPrivacy} onCheckedChange={setGroupPrivacy} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Limitar mensajes leídos en grupos</p>
+                  </Card>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

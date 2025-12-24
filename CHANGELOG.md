@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.8] - 2025-12-24
+
+### Changed
+- Refined Home Page layout: Moved "Panel Administrador" to the bottom of the page to prioritize functional menu items.
+
 ## [v4.4.7] - 2025-12-24
 
 ### Added
