@@ -10,10 +10,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ### Added
 - Real user status data display: Status page now shows actual user level and download information from the database.
 - New `user_status` API action that returns user level, downloads used/remaining, and time until reset.
+- 5-minute cache expiration for access control data: Level changes now automatically reflect within 5 minutes.
+- Debug logging for user status data flow.
 
 ### Changed
 - Status page now fetches real data from the backend instead of using static values.
 - Added support for unlimited downloads display for premium users.
+- Access control cache now expires after 5 minutes, ensuring fresh data on level changes.
 
 ## [v4.4.10] - 2025-12-24
 
