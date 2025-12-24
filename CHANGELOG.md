@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.9] - 2025-12-24
+
+### Changed
+- Moved "Gestión Accesos" from the main functions menu to the top of the Admin Panel for better organization.
+- All administrative tools are now centralized in the Admin Panel when Admin Mode is enabled.
+
 ## [v4.4.8] - 2025-12-24
 
 ### Changed

@@ -112,7 +112,7 @@ export default function HomePage() {
             <div className="space-y-3">
               <h3 className="text-xl font-bold mb-4">Funciones</h3>
               {menuItems
-                .filter(item => !item.adminOnly || isAdminMode)
+                .filter(item => !item.adminOnly)
                 .map((item, index) => (
                   <a key={index} href={item.href}>
                     <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
@@ -135,6 +135,23 @@ export default function HomePage() {
               <div className="space-y-4 pt-4 border-t border-border">
                 <h3 className="text-xl font-bold">Panel Administrador</h3>
                 <div className="space-y-4">
+                  {/* Access Management */}
+                  <a href="/admin/levels">
+                    <Card className="p-4 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer border-border">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <ShieldCheck className="w-6 h-6 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-foreground mb-1">Gestión Accesos</h4>
+                          <p className="text-sm text-muted-foreground">Configura niveles y permisos</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                      </div>
+                    </Card>
+                  </a>
+
+                  {/* Settings Cards */}
                   <Card className="p-4 border-border">
                     <div className="flex items-center justify-between mb-2">
                       <Label htmlFor="business-mode" className="font-semibold">Business Mode</Label>
