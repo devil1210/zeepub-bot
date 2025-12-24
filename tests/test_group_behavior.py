@@ -37,21 +37,21 @@ async def test_recibir_texto_group_chat_suppression():
     # Mock Update and Context
     update = MagicMock()
     context = MagicMock()
-    
+
     # Setup effective user and chat
     update.effective_user.id = 123
     update.effective_chat.id = 456
     update.effective_chat.type = 'group' # Simulate group chat
     update.message.text = "some random text"
-    
+
     with pytest.MonkeyPatch.context() as m:
         # Mock the state manager where it is used in message_handlers
         mock_state_manager = MagicMock()
         mock_state_manager.get_user_state.return_value = {} # Empty state
-        
+
         # Patch the import in handlers.message_handlers
         m.setattr("handlers.message_handlers.state_manager", mock_state_manager)
-        
+
         # Also need to mock config
         mock_config = MagicMock()
         mock_config.get_six_hour_password.return_value = "password"
@@ -59,10 +59,10 @@ async def test_recibir_texto_group_chat_suppression():
 
         # Mock context.bot.send_message
         context.bot.send_message = AsyncMock()
-        
+
         # Run the handler
         await recibir_texto(update, context)
-        
+
         # Assert that send_message was NOT called
         context.bot.send_message.assert_not_called()
 
@@ -71,22 +71,22 @@ async def test_recibir_texto_group_chat_with_active_state():
     # Mock Update and Context
     update = MagicMock()
     context = MagicMock()
-    
+
     # Setup effective user and chat
     update.effective_user.id = 123
     update.effective_chat.id = 456
     update.effective_chat.type = 'group' # Simulate group chat
     update.message.text = "password" # Correct password text
-    
+
     with pytest.MonkeyPatch.context() as m:
         # Mock the state manager to simulate active state
         mock_state_manager = MagicMock()
         # Simulate user waiting for password
-        mock_state_manager.get_user_state.return_value = {"esperando_password": True} 
-        
+        mock_state_manager.get_user_state.return_value = {"esperando_password": True}
+
         # Patch the import in handlers.message_handlers
         m.setattr("handlers.message_handlers.state_manager", mock_state_manager)
-        
+
         # Mock config
         mock_config = MagicMock()
         mock_config.get_six_hour_password.return_value = "password"
@@ -98,7 +98,7 @@ async def test_recibir_texto_group_chat_with_active_state():
 
         # Run the handler
         await recibir_texto(update, context)
-        
+
         # Assert that response WAS sent, because user is interacting with the bot (password)
         # The bot should respond to direct interactions even in groups
         context.bot.send_message.assert_called()
@@ -108,36 +108,36 @@ async def test_recibir_texto_private_chat_response():
     # Mock Update and Context
     update = MagicMock()
     context = MagicMock()
-    
+
     # Setup effective user and chat
     update.effective_user.id = 123
     update.effective_chat.id = 456
     update.effective_chat.type = 'private' # Simulate private chat
     update.message.text = "some random text"
-    
+
     with pytest.MonkeyPatch.context() as m:
         # Mock the state manager
         mock_state_manager = MagicMock()
         mock_state_manager.get_user_state.return_value = {} # Empty state
-        
+
         # Patch the import in handlers.message_handlers
         m.setattr("handlers.message_handlers.state_manager", mock_state_manager)
-        
+
         # Patch get_effective_user in local scope of message_handlers
         # Since it is imported inside the function, we might need to patch sys.modules or wait until it executes?
         # Actually in message_handlers.py:
         # if chat_type == "private":
         #    from services.user_service import get_effective_user
         # So we need to ensure sys.modules["services.user_service"] has the mock.
-        
-        # We already set sys.modules["services.user_service"] at top of file, 
+
+        # We already set sys.modules["services.user_service"] at top of file,
         # but let's ensure the mock is async.
         sys.modules["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
 
         mock_config = MagicMock()
         mock_config.get_six_hour_password.return_value = "password"
         m.setattr("handlers.message_handlers.config", mock_config)
-        
+
         # Mock context.bot.send_message
         context.bot.send_message = AsyncMock()
 
@@ -146,10 +146,10 @@ async def test_recibir_texto_private_chat_response():
         mock_cms.enabled = True
         mock_cms.get_text = AsyncMock(return_value="Usa /start para comenzar")
         context.application.plugin_manager.get_plugin.return_value = mock_cms
-        
+
         # Run the handler
         await recibir_texto(update, context)
-        
+
         # Assert that send_message WAS called
         context.bot.send_message.assert_called_once()
         args, kwargs = context.bot.send_message.call_args

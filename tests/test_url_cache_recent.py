@@ -24,7 +24,7 @@ from config.config_settings import config
 def test_get_recent_links(tmp_path):
     # Force SQLite mode BEFORE module load
     config.DATABASE_URL = None
-    
+
     db_file = tmp_path / "url_cache_recent.db"
     config.URL_CACHE_DB_PATH = str(db_file)
 

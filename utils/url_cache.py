@@ -528,10 +528,10 @@ def get_broken_links(limit: int = 10):
 
     try:
         cursor.execute(
-            """SELECT hash, book_title, failed_checks, last_checked 
-               FROM url_mappings 
-               WHERE is_valid = 0 
-               ORDER BY failed_checks DESC, last_checked DESC 
+            """SELECT hash, book_title, failed_checks, last_checked
+               FROM url_mappings
+               WHERE is_valid = 0
+               ORDER BY failed_checks DESC, last_checked DESC
                LIMIT ?""",
             (limit,),
         )

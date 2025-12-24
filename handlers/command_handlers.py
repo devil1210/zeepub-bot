@@ -311,7 +311,7 @@ class CommandHandlers:
                 "status_message",
                 user=update.effective_user,
                 Nivel=system_role_text,
-                Rol=rol_val, 
+                Rol=rol_val,
                 Descargas=left_text,
                 ResetTime=reset_time_str,
                 Expires=expires_str,

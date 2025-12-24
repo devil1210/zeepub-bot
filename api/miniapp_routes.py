@@ -24,8 +24,10 @@ logger = logging.getLogger(__name__)
 
 # --- Modelos Pydantic ---
 
+
 class AccessCheckRequest(BaseModel):
     user_id: int
+
 
 class UserLevelModel(BaseModel):
     id: str
@@ -34,19 +36,23 @@ class UserLevelModel(BaseModel):
     color: str
     hasAccess: bool
 
+
 class AccessResponse(BaseModel):
     level: UserLevelModel
     hasAccess: bool
     isAdmin: bool
 
+
 class LevelUpdate(BaseModel):
     id: str
     hasAccess: bool
+
 
 class UpdateLevelsRequest(BaseModel):
     levels: List[LevelUpdate]
 
 # --- Dependencias y Decoradores ---
+
 
 async def verify_admin(
     x_telegram_init_data: str = Header(None, alias="x-telegram-init-data")
@@ -60,22 +66,23 @@ async def verify_admin(
         if os.getenv("DEV_MODE") == "true":
             return True
         return False
-    
+
     user_data = validate_telegram_data(x_telegram_init_data, bot_token)
     if not user_data:
         return False
-        
+
     user_id = user_data.get("user", {}).get("id")
     if not user_id:
         return False
-        
+
     # Check config
     if user_id in config.ADMIN_USERS:
         return True
-        
+
     # Check DB
     from services.user_service import user_repo
     return await user_repo.is_admin(user_id)
+
 
 def require_mini_app_access(func):
     """
@@ -86,27 +93,27 @@ def require_mini_app_access(func):
         # Intentar obtener user_id de los argumentos o el request meta
         request = kwargs.get('request')
         user_id = None
-        
+
         if hasattr(request, "state") and hasattr(request.state, "user_id"):
             user_id = request.state.user_id
-            
+
         if not user_id:
             # Si no está en el state, buscar en el body del request si es posible
-            # pero esto es específico para cada ruta. 
+            # pero esto es específico para cada ruta.
             # Por simplicidad en este bot, asumimos que se inyecta o se valida antes.
             pass
-            
+
         if user_id:
             from services.user_service import user_repo
             access_info = await user_repo.get_access_info(user_id)
             if access_info and not access_info.get("hasAccess") and not access_info.get("isAdmin"):
                 raise HTTPException(
-                    status_code=403, 
+                    status_code=403,
                     detail="Tu nivel de usuario no tiene acceso a la Mini App"
                 )
-        
+
         return await func(*args, **kwargs)
-    
+
     return wrapper
 
 
@@ -136,23 +143,23 @@ async def handle_bot_request(
     # Fetch effective role for permissions
     user_effective = await get_effective_user(user_id)
     user_role = user_effective.get("role", "free")
-    
-    # --- Control de Acceso por Niveles ---
-    # Los administradores siempre tienen acceso. 
-    # El resto depende de su nivel (has_mini_app_access).
-    if user_effective.get("has_mini_app_access") is False and action != "status":
-        raise HTTPException(
-            status_code=403, 
-            detail="Tu nivel de usuario no tiene acceso a la Mini App"
-        )
 
     try:
         body = await request.json()
-    except json.JSONDecodeError: # Changed from bare Exception
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+    except Exception:
+        body = {}
 
     action = body.get("action")
     data = body.get("data", {})
+
+    # --- Control de Acceso por Niveles ---
+    # Los administradores siempre tienen acceso.
+    # El resto depende de su nivel (has_mini_app_access).
+    if user_effective.get("has_mini_app_access") is False and action != "status":
+        raise HTTPException(
+            status_code=403,
+            detail="Tu nivel de usuario no tiene acceso a la Mini App"
+        )
 
     logger.info(f"Miniapp action: {action} User: {user_id} Role: {user_role}")
 
@@ -499,22 +506,22 @@ async def check_user_access(
     user_data: dict = Depends(verify_telegram_user)
 ):
     from services.user_service import get_effective_user, user_repo
-    
+
     # Priorizar el ID verificado por Telegram
     uid = user_data.get("id") or request.user_id
     logger.info(f"Access check for UID: {uid}")
     # 1. Obtener información efectiva (Roles config, expiración, etc)
     eff = await get_effective_user(uid)
-    
+
     # 2. Obtener información de niveles de la base de datos
     access_info = await user_repo.get_access_info(uid)
-    
+
     if not access_info:
         # Si no existe en la tabla de niveles, creamos registro con nivel básico
         logger.info(f"User {uid} not found in user_levels, creating minimal entry.")
-        await user_repo.create_minimal_user(uid, level_id=6) # Lector
+        await user_repo.create_minimal_user(uid, level_id=6)  # Lector
         access_info = await user_repo.get_access_info(uid)
-        
+
     if not access_info:
         logger.error(f"Failed to retrieve access info for user {uid}")
         raise HTTPException(status_code=500, detail="Error al recuperar nivel de usuario")
@@ -531,6 +538,7 @@ async def check_user_access(
         isAdmin=is_admin
     )
 
+
 @router.get("/api/admin/levels")
 @router.get("/api/admin/access-levels")
 async def get_levels(
@@ -538,13 +546,14 @@ async def get_levels(
 ):
     if not is_admin:
         raise HTTPException(status_code=403, detail="Forbidden")
-    
+
     logger.info("Fetching all access levels")
     from services.user_service import user_repo
     levels = await user_repo.get_all_levels()
-    
+
     logger.info(f"Found {len(levels)} access levels")
     return {"levels": [UserLevelModel(**l) for l in levels]}
+
 
 @router.put("/api/admin/levels")
 @router.post("/api/admin/access-levels")
@@ -554,11 +563,11 @@ async def update_levels(
 ):
     if not is_admin:
         raise HTTPException(status_code=403, detail="Forbidden")
-    
+
     from services.user_service import user_repo
     for level in request.levels:
         await user_repo.update_level_access(int(level.id), level.hasAccess)
-    
+
     return {
         "success": True,
         "message": "Niveles actualizados correctamente"

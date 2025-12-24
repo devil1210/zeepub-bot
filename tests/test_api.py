@@ -38,18 +38,18 @@ def test_get_feed_no_url():
         entry.summary = "Summary"
         entry.links = [{"href": "http://cover.jpg", "rel": "http://opds-spec.org/image", "type": "image/jpeg"}]
         # feedparser entries allow dict access too, but getattr is used in code
-        # To support entry.get(), we need to mock __getitem__? 
+        # To support entry.get(), we need to mock __getitem__?
         # The code uses entry.get("title") AND getattr(entry, "links").
         # Let's make it support both or fix the code to be consistent.
         # Actually, code uses: entry.get("title") ... getattr(entry, "links")
         # So entry needs to be an object with attributes AND a get method.
         entry.get = lambda k, d=None: getattr(entry, k, d)
-        
+
         mock_feed.entries = [entry]
         mock_parse.return_value = mock_feed
-        
+
         m.setattr("api.routes.get_cached_feed", mock_parse)
-        
+
         response = client.get("/api/feed")
         assert response.status_code == 200
         data = response.json()
@@ -65,9 +65,9 @@ def test_search_books():
         mock_feed.feed.title = "Search Results"
         mock_feed.entries = []
         mock_parse.return_value = mock_feed
-        
+
         m.setattr("api.routes.get_cached_feed", mock_parse)
-        
+
         response = client.get("/api/search?q=harry")
         assert response.status_code == 200
         data = response.json()

@@ -75,7 +75,7 @@ def test_role_based_access_denied(mock_opds_roots):
 
 def test_book_detail_parsing(monkeypatch):
     mock_feed = AsyncMock()
-    
+
     # Mock single-entry feed (where entry is in feed.feed)
     mock_feed_obj = MagicMock()
     mock_feed_obj.entries = []
@@ -87,7 +87,7 @@ def test_book_detail_parsing(monkeypatch):
     ]
     # support entry.get()
     mock_feed_obj.feed.get = lambda k, d=None: getattr(mock_feed_obj.feed, k, d)
-    
+
     mock_feed.return_value = mock_feed_obj
     monkeypatch.setattr("api.miniapp_routes.get_cached_feed", mock_feed)
     monkeypatch.setenv("DEV_MODE", "True")

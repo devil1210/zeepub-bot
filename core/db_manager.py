@@ -78,7 +78,7 @@ class DatabaseManager:
                     FOREIGN KEY (granted_by) REFERENCES users(telegram_id)
                 )
             """)
-            
+
             # Migración: Agregar columna nickname si no existe
             try:
                 await conn.execute("ALTER TABLE users ADD COLUMN nickname TEXT")
@@ -95,7 +95,7 @@ class DatabaseManager:
             except Exception as e:
                 if "duplicate column" not in str(e).lower():
                     logger.debug(f"Notice during migration (level_id): {e}")
-            
+
             await conn.commit()
             logger.info(f"Database initialized and schema verified at {self.db_path}")
 

@@ -30,7 +30,7 @@ from config.config_settings import config
 def test_create_and_get_short_url(tmp_path, monkeypatch):
     # Force SQLite mode by clearing DATABASE_URL BEFORE module load
     monkeypatch.setattr(config, 'DATABASE_URL', None)
-    
+
     # Use a temporary DB path for isolation
     db_file = tmp_path / "url_cache_test.db"
     # Ensure config points to this DB
@@ -40,10 +40,10 @@ def test_create_and_get_short_url(tmp_path, monkeypatch):
     from importlib.machinery import SourceFileLoader
     loader = SourceFileLoader("url_cache_test", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
     url_cache = loader.load_module()
-    
+
     # Initialize the database
     # If config.DATABASE_URL is a Mock/MagicMock, sqlalchemy.create_engine might fail even if passed None?
-    # Reviewing failure: ValueError: not enough values to unpack (expected 3, got 0) inside create_engine 
+    # Reviewing failure: ValueError: not enough values to unpack (expected 3, got 0) inside create_engine
     # This implies create_engine IS called.
     # url_cache.py calls create_engine if config.DATABASE_URL and _HAS_SQLALCHEMY
     # Force SQLite mode by clearing DATABASE_URL
@@ -75,10 +75,10 @@ def test_create_and_get_short_url_sqlalchemy(tmp_path):
     pytest.importorskip("sqlalchemy")
     # Test using DATABASE_URL (SQLAlchemy) pointing to an sqlite file
     db_file = tmp_path / "url_cache_sa.db"
-    
+
     # Save original DATABASE_URL to restore after test
     original_db_url = config.DATABASE_URL
-    
+
     try:
         # Set both DATABASE_URL and URL_CACHE_DB_PATH to ensure complete isolation
         config.DATABASE_URL = f"sqlite:///{db_file}"  # use absolute path
@@ -89,7 +89,7 @@ def test_create_and_get_short_url_sqlalchemy(tmp_path):
         spec = spec_from_file_location("url_cache_sa", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
         sa_mod = module_from_spec(spec)
         spec.loader.exec_module(sa_mod)
-        
+
         # Initialize the database with SQLAlchemy
         sa_mod.init_db()
 

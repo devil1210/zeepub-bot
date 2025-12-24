@@ -18,39 +18,39 @@ from plugins.custom_messages_plugin import CustomMessagesPlugin
 @pytest.mark.asyncio
 async def test_welcome_handler_uses_fallback():
     plugin = CustomMessagesPlugin()
-    
+
     # Mock _get_setting to return None (no custom welcome set)
     plugin._get_setting = MagicMock(return_value=None)
     # Mock _get_message to return None (not in DB)
     plugin._get_message = MagicMock(return_value=None)
-    
+
     # Mock context
     context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
     context.bot = MagicMock()
     context.bot.send_message = AsyncMock()
     context.bot.copy_message = AsyncMock()
-    
+
     # Mock update: MY_CHAT_MEMBER
     update = MagicMock(spec=Update)
     update.effective_chat = MagicMock(spec=Chat)
     update.effective_chat.id = -1001
-    
+
     # Simulate adding bot: Left -> Administrator (Channel scenario)
     old_member = MagicMock(spec=ChatMember)
     old_member.status = ChatMemberStatus.LEFT
-    
+
     new_member = MagicMock(spec=ChatMember)
     new_member.status = ChatMemberStatus.ADMINISTRATOR
-    
+
     my_chat_member = MagicMock(spec=ChatMemberUpdated)
     my_chat_member.old_chat_member = old_member
     my_chat_member.new_chat_member = new_member
-    
+
     update.my_chat_member = my_chat_member
-    
+
     # Run handler
     await plugin.welcome_handler(update, context)
-    
+
     # Assert
     # Should have called send_message with default text for "bot_presentation"
     assert context.bot.send_message.called

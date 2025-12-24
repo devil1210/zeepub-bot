@@ -82,7 +82,7 @@ async def test_state_cleanup_on_new_book(monkeypatch):
     send_msg = MagicMock()
     send_msg.message_id = 101
     context.bot.send_message = AsyncMock(return_value=send_msg)
-    
+
     # Call handler
     try:
         await cb.button_handler(update, context)

@@ -79,8 +79,7 @@ class ZeePubBot:
         # Comandos
         self.command_handlers = CommandHandlers(self.app)
         # Handlers are registered in CommandHandlers.__init__
-
-        # Callbacks
+        # Total pages
         self.app.add_handler(CallbackQueryHandler(set_destino, pattern="^destino"))
         self.app.add_handler(CallbackQueryHandler(buscar_epub, pattern="^buscar"))
         self.app.add_handler(CallbackQueryHandler(abrir_zeepubs, pattern="^abrir"))
@@ -117,7 +116,7 @@ class ZeePubBot:
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         loop.run_until_complete(self.initialize())
         self.app.run_polling()
         session_manager.close()
@@ -135,16 +134,19 @@ class ZeePubBot:
         max_retries = 5
         retry_delay = 5
         bot_initialized = False
-        
         for attempt in range(max_retries):
             try:
-                logger.info(f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})...")
+                logger.info(
+                    f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})..."
+                )
                 await self.app.initialize()
-                
+
                 # Verify bot is actually ready by accessing bot.id
                 try:
                     _ = self.app.bot.id
-                    logger.info(f"Bot inicializado exitosamente (ID: {self.app.bot.id}).")
+                    logger.info(
+                        f"Bot inicializado exitosamente (ID: {self.app.bot.id})."
+                    )
                     bot_initialized = True
                     break
                 except RuntimeError as e:
@@ -154,7 +156,7 @@ class ZeePubBot:
                         await asyncio.sleep(retry_delay)
                         continue
                     raise
-                    
+
             except Exception as e:
                 # Check if it's already initialized (happens on retry)
                 if "already initialized" in str(e).lower():
@@ -169,7 +171,7 @@ class ZeePubBot:
                         logger.warning("Bot marcado como initialized pero ExtBot no está listo. Continuando con error original...")
                         # Can't reinitialize, but bot isn't ready
                         pass
-                    
+
                 if attempt < max_retries - 1:
                     wait = retry_delay * (attempt + 1)
                     logger.warning(f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s...")
@@ -183,7 +185,7 @@ class ZeePubBot:
             logger.error("Bot no se pudo inicializar correctamente")
             self._initialized = False
             return
-            
+
         self._initialized = True
 
         # Initialize plugins explicitely to ensure they are loaded

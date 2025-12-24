@@ -1311,14 +1311,14 @@ class CustomMessagesPlugin(BasePlugin):
             return
 
         slug = context.args[0].lower()
-        
+
         # Get the rendered text using get_text
         text_rendered = await self.get_text(slug, user=update.effective_user)
-        
+
         # Check if template exists
         msg = self._get_message(slug)
         entry = TEMPLATE_REGISTRY.get(slug)
-        
+
         if not msg and not entry:
             await update.message.reply_text(
                 f"❌ Template '{slug}' no encontrado.\n\n"
@@ -1326,10 +1326,10 @@ class CustomMessagesPlugin(BasePlugin):
                 parse_mode=ParseMode.HTML
             )
             return
-        
+
         # Determine source
         source = "💾 Personalizado" if msg and msg.text_content else "📄 Por defecto"
-        
+
         # Send rendered preview
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -1768,7 +1768,7 @@ class CustomMessagesPlugin(BasePlugin):
     async def welcome_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Triggered on MY_CHAT_MEMBER updates
         current_welcome_id = self._get_setting("welcome_msg_id")
-        
+
         # Fallback to default presentation if configured explicitly or if we want auto-welcome
         if not current_welcome_id:
             current_welcome_id = "bot_presentation"

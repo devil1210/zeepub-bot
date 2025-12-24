@@ -90,10 +90,10 @@ class UserManagerPlugin(BasePlugin):
             return
 
         target_id, target_name = self._get_target_user(update, context)
-        
+
         # Validation Logic adjusted for "reply" usage
         # If replied, args[0] might be role. If not replied, args[0] is ID, args[1] is role.
-        
+
         role = None
         duration_arg_idx = -1
 
@@ -102,7 +102,7 @@ class UserManagerPlugin(BasePlugin):
             if not target_id:
                  # Should not happen if _get_target_user check passed, but safety first
                  return
-            
+
             if not context.args or len(context.args) < 1:
                 await update.message.reply_text(
                     "❌ Al responder, indica al menos el rol.\nEj: /add_user vip",
@@ -120,14 +120,14 @@ class UserManagerPlugin(BasePlugin):
                     message_thread_id=thread_id,
                 )
                 return
-            
+
             if len(context.args) < 2:
                  await update.message.reply_text(
                     "❌ Faltan argumentos. Uso: /add_user <id> <rol> [meses]",
                     message_thread_id=thread_id,
                 )
                  return
-            
+
             role = context.args[1].lower()
             if len(context.args) > 2:
                 duration_arg_idx = 2
@@ -143,7 +143,7 @@ class UserManagerPlugin(BasePlugin):
         # Determine duration
         duration = None
         duration_days = None
-        
+
         if duration_arg_idx != -1 and len(context.args) > duration_arg_idx:
              val_str = context.args[duration_arg_idx]
              if val_str.isdigit():
@@ -237,7 +237,7 @@ class UserManagerPlugin(BasePlugin):
         # Parse label
         # If reply, everything in args is label
         # If ID arg, args[0] is ID, usage args[1:] is label
-        
+
         args_start_idx = 0
         if not update.message.reply_to_message:
              # First arg was consumed as ID
@@ -252,9 +252,9 @@ class UserManagerPlugin(BasePlugin):
 
         # Check for deletion keywords
         delete_keywords = ["borrar", "eliminar", "none", "null", "remove", "off"]
-        
+
         first_word = context.args[args_start_idx].lower()
-        
+
         # If only one word and it is a delete keyword
         if len(context.args) == args_start_idx + 1 and first_word in delete_keywords:
             new_label = None
@@ -309,7 +309,7 @@ class UserManagerPlugin(BasePlugin):
                   await msg.reply_text("❌ Al responder, indica el apodo.", message_thread_id=thread_id)
                   return
 
-        
+
         # Check for deletion keywords
         delete_keywords = ["borrar", "eliminar", "none", "null", "remove", "off"]
         first_word = context.args[args_start_idx].lower()

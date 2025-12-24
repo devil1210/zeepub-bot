@@ -261,7 +261,7 @@ class GroupManagerPlugin(BasePlugin):
     def _slug_exists(self, slug):
         if not self.CustomMsgSession:
             return False
-            
+
         from plugins.custom_messages_plugin import StoredMessage
         session = self.CustomMsgSession()
         try:
@@ -278,7 +278,7 @@ class GroupManagerPlugin(BasePlugin):
     def _get_stored_message(self, slug):
         if not self.CustomMsgSession:
             return None
-            
+
         from plugins.custom_messages_plugin import StoredMessage
         session = self.CustomMsgSession()
         try:
@@ -300,10 +300,10 @@ class GroupManagerPlugin(BasePlugin):
         # Bot was just added to the group
         if not was_member and is_member:
             logger.info(f"Bot added to group {chat_id}")
-            
+
             # Try to fetch custom introduction message
             msg_data = self._get_stored_message("bot_presentation")
-            
+
             if msg_data:
                 # Use custom message
                 try:
@@ -335,7 +335,7 @@ class GroupManagerPlugin(BasePlugin):
                     "¿Necesitas ayuda? Usa /help para ver todos los comandos disponibles.\n\n"
                     "<i>Tip: Puedes personalizar este mensaje usando /save_msge bot_presentation</i>"
                 )
-                
+
                 try:
                     await context.bot.send_message(
                         chat_id=chat_id,
@@ -344,7 +344,7 @@ class GroupManagerPlugin(BasePlugin):
                     )
                 except Exception as e:
                     logger.error(f"Error sending default introduction to {chat_id}: {e}")
-                
+
         # Bot was removed from the group
         elif was_member and not is_member:
             logger.info(f"Bot removed from group {chat_id}")
@@ -410,9 +410,9 @@ class GroupManagerPlugin(BasePlugin):
         """Handle new_chat_members service message."""
         if not update.message or not update.message.new_chat_members:
             return
-            
+
         chat_id = update.effective_chat.id
-        
+
         # Check authorization strictly
         session = self.Session()
         try:
@@ -443,8 +443,8 @@ class GroupManagerPlugin(BasePlugin):
             text_to_send = msg_data.text_content.replace("[Nombre]", safe_name)
             try:
                 await context.bot.send_message(
-                    chat_id=chat_id, 
-                    text=text_to_send, 
+                    chat_id=chat_id,
+                    text=text_to_send,
                     parse_mode="HTML",
                     reply_to_message_id=reply_to_message_id
                 )

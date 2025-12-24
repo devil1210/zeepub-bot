@@ -71,7 +71,7 @@ async def get_feed(
     # Determinar rol efectivo (DB + Config)
     user_data = await get_effective_user(current_uid)
     role = user_data.get("role", "free")
-    
+
     is_admin = role == "admin"
     is_staff = role in ["admin", "staff", "vip", "premium", "white"]
 
@@ -274,7 +274,6 @@ async def get_feed(
             except Exception as e:
                 logger.warning(f"Unexpected error parsing page number from URL: {e}")
 
-
         # Total pages
         total_pages = None
         total_results = feed.feed.get("opensearch_totalresults")
@@ -288,8 +287,6 @@ async def get_feed(
                 logger.debug(f"Could not calculate total pages from results={total_results}, items_per_page={items_per_page}")
             except Exception as e:
                 logger.warning(f"Unexpected error calculating total pages: {e}")
-
-
         processed_links = [
             {
                 "href": normalize_url(l.get("href")),

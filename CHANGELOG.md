@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.3] - 2025-12-24
+### Fixed
+- **Código - Calidad**: Corregidos numerosos errores de linting y estilo (E302, W293, E303, E261) para cumplir con PEP 8.
+- **Backend - Bug**: Corregido error `F821` (undefined name 'action') en el controlador de la Mini App que podía causar fallos en la verificación de acceso.
+- **Core**: Limpieza de espacios en blanco y optimización de inicialización en `core/bot.py`.
+
 ## [v4.4.2] - 2025-12-24
 ### Fixed
 - **Infraestructura**: Detenida instancia duplicada del bot en el host que causaba conflictos (error 409) con la instancia de Docker. Desactivado el servicio `zeepub-bot.service`.

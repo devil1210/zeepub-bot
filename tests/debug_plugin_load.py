@@ -26,16 +26,16 @@ async def test_load():
         print("Importing CustomMessagesPlugin...")
         from plugins.custom_messages_plugin import CustomMessagesPlugin
         plugin = CustomMessagesPlugin()
-        
+
         # Real config mock
         from config.config_settings import config
         # config might define enablement for custom messages?
-        
+
         print("Initializing CustomMessagesPlugin...")
         bot_instance = MagicMock()
         success = await plugin.initialize(bot_instance)
         print(f"Initialization result: {success}")
-        
+
     except Exception as e:
         print(f"FAILED: {e}")
         import traceback

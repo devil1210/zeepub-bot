@@ -71,22 +71,22 @@ class SystemManagerPlugin(BasePlugin):
         """Tarea programada para revisar actualizaciones."""
         try:
             local_hash, remote_hash = await self._get_git_hashes()
-            
+
             if local_hash == "Desconocido" or remote_hash == "Desconocido":
                 return
 
             if local_hash != remote_hash:
-                # Check if we already notified recently? 
+                # Check if we already notified recently?
                 # For now simplify: Just notify. The interval is 6 hours, so it's not too spammy.
                 # Maybe checking a stored state would be better, but let's start simple.
-                
+
                 msg = (
                     f"🔔 <b>Actualización Disponible</b>\n\n"
                     f"Actual: <code>{local_hash}</code>\n"
                     f"Nueva: <code>{remote_hash}</code>\n\n"
                     f"Usa /update_system para aplicar cambios."
                 )
-                
+
                 for admin_id in config.ADMIN_USERS:
                     try:
                         await context.bot.send_message(chat_id=admin_id, text=msg, parse_mode="HTML")
@@ -127,7 +127,7 @@ class SystemManagerPlugin(BasePlugin):
                     remote_hash = data.get("sha", "")[:7]
         except Exception as e:
             logger.error(f"Error checking remote git via API: {e}")
-            
+
         return local_hash, remote_hash
 
     def _is_admin(self, uid: int) -> bool:

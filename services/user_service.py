@@ -141,7 +141,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         # Priority: level name as status label if no custom status
         if not info or not info.get("custom_status"):
             result["status_label"] = access_info["level"]["name"]
-        
+
         # Admin override
         if access_info["isAdmin"]:
             result["role"] = "admin"

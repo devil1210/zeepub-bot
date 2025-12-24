@@ -27,16 +27,16 @@ from config.config_settings import config
 def test_get_candidates_and_validator(tmp_path, monkeypatch):
     # Force SQLite mode by clearing DATABASE_URL BEFORE module load
     monkeypatch.setattr(config, 'DATABASE_URL', None)
-    
+
     # Use a fresh DB
     db_file = tmp_path / "url_cache_validator.db"
     config.URL_CACHE_DB_PATH = str(db_file)
-    
+
     # Load module directly
     spec = importlib.util.spec_from_file_location("url_cache_mod", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
     url_cache = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(url_cache)
-    
+
     # Initialize the database
     url_cache.init_db()
 

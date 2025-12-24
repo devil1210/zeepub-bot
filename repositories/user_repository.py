@@ -119,7 +119,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         nickname,
                     ),
                 )
-            
+
             # Sync with admins table
             if role.lower() == 'admin':
                 await conn.execute(
@@ -173,7 +173,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         Obtiene información de nivel y privilegios de admin para un usuario.
         """
         query = """
-            SELECT 
+            SELECT
                 ul.id,
                 ul.name,
                 ul.priority,
@@ -196,7 +196,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "color": row[3],
                         "hasAccess": bool(row[4])
                     },
-                    "hasAccess": bool(row[4]) or bool(row[5]), # Access if level allowed OR if admin
+                    "hasAccess": bool(row[4]) or bool(row[5]),  # Access if level allowed OR if admin
                     "isAdmin": bool(row[5])
                 }
             return None

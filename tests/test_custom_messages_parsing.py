@@ -25,14 +25,14 @@ async def test_saludo_parsing(monkeypatch):
     # Import inside the test after mock_dependencies fixture has run
     from plugins.custom_messages_plugin import CustomMessagesPlugin
     import plugins.custom_messages_plugin as plugin_mod
-    
+
     # Create a mock config with proper ADMIN_USERS
     mock_config = MagicMock()
     mock_config.ADMIN_USERS = [123]
-    
+
     # Inject it into the plugin module's namespace
     monkeypatch.setattr(plugin_mod, 'config', mock_config)
-    
+
     plugin = CustomMessagesPlugin()
 
     # Mock update and context

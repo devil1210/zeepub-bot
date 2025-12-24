@@ -1,7 +1,7 @@
 """Create url_mappings table
 
 Revision ID: 0001_create_url_mappings
-Revises: 
+Revises:
 Create Date: 2025-11-26 00:00:00.000000
 """
 from alembic import op

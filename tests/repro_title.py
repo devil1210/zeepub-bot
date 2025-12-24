@@ -6,28 +6,28 @@ def extract_title_logic(content):
     # Capture the tag name to match the closing tag
     fulltitle_pattern = re.compile(r'<(\w+)[^>]*epub:type="fulltitle"[^>]*>(.*?)</\1>', re.IGNORECASE | re.DOTALL)
     match = fulltitle_pattern.search(content)
-    
+
     if match:
         inner_html = match.group(2)
         print(f"Found fulltitle inner: {inner_html.strip()}")
-        
+
         # Try to find title and subtitle specifically
         title_pat = re.compile(r'epub:type="title"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
         subtitle_pat = re.compile(r'epub:type="subtitle"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
-        
+
         t_match = title_pat.search(inner_html)
         s_match = subtitle_pat.search(inner_html)
-        
+
         if t_match and s_match:
             t_text = re.sub(r'<[^>]+>', '', t_match.group(1)).strip()
             s_text = re.sub(r'<[^>]+>', '', s_match.group(1)).strip()
-            
+
             # Check for punctuation
             if t_text and s_text:
                 if not t_text.endswith(':') and not t_text.endswith('-'):
                     return f"{t_text}: {s_text}"
                 return f"{t_text} {s_text}"
-        
+
         # If no specific sub-tags, just clean HTML
         # Replace <br> with space
         clean = re.sub(r'<br\s*/?>', ' ', inner_html, flags=re.IGNORECASE)
