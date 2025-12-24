@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.6] - 2025-12-24
+
+### Changed
+- Restricted access to the Settings page to admin users only.
+- Hidden the "Ajustes" navigation item for non-admin users in the bottom navigation.
+
 ## [v4.4.5] - 2025-12-24
 
 ### Added

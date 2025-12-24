@@ -10,11 +10,31 @@ import Link from "next/link"
 
 import { AccessGuard } from "@/components/access-guard"
 
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
+
 export default function SettingsPage() {
-  const { isAdmin } = useAccessControl()
+  const { isAdmin, loading } = useAccessControl()
+  const router = useRouter()
   const [businessMode, setBusinessMode] = useState(true)
   const [allowGroups, setAllowGroups] = useState(true)
   const [groupPrivacy, setGroupPrivacy] = useState(true)
+
+  useEffect(() => {
+    if (!loading && !isAdmin) {
+      router.push("/no-access")
+    }
+  }, [isAdmin, loading, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (!isAdmin) return null
 
   return (
     <AccessGuard>

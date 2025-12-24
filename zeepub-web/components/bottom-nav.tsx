@@ -5,22 +5,27 @@ import { usePathname } from "next/navigation"
 import { Home, Search, Settings, BarChart3, Library } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+import { useAccessControl } from "@/hooks/use-access-control"
+
 const navItems = [
   { icon: Home, label: "Inicio", href: "/" },
   { icon: Search, label: "Buscar", href: "/search" },
   { icon: Library, label: "Catálogo", href: "/catalog" },
   { icon: BarChart3, label: "Estado", href: "/status" },
-  { icon: Settings, label: "Ajustes", href: "/settings" },
+  { icon: Settings, label: "Ajustes", href: "/settings", adminOnly: true },
 ]
 
 export function BottomNav() {
   const pathname = usePathname()
+  const { isAdmin } = useAccessControl()
+
+  const filteredNavItems = navItems.filter(item => !item.adminOnly || isAdmin)
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-inset-bottom">
       <div className="max-w-2xl mx-auto px-2 py-2">
         <div className="flex items-center justify-around gap-1">
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
 
