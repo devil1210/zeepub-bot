@@ -76,13 +76,13 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
             # Mapping role to level_id
             role_to_level = {
-                'admin': 1,
-                'staff': 2,
-                'premium': 3,
-                'vip': 4,
-                'white': 5,
-                'free': 6,
-                'user': 6
+                "admin": 1,
+                "staff": 2,
+                "premium": 3,
+                "vip": 4,
+                "white": 5,
+                "free": 6,
+                "user": 6,
             }
             level_id = role_to_level.get(role.lower(), 6)
 
@@ -119,16 +119,18 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         nickname,
                     ),
                 )
-            
+
             # Sync with admins table
-            if role.lower() == 'admin':
+            if role.lower() == "admin":
                 await conn.execute(
                     "INSERT OR IGNORE INTO admins (user_id, granted_by) VALUES (?, ?)",
-                    (telegram_id, created_by)
+                    (telegram_id, created_by),
                 )
             elif exists:
                 # If it was an admin and now it's not
-                await conn.execute("DELETE FROM admins WHERE user_id = ?", (telegram_id,))
+                await conn.execute(
+                    "DELETE FROM admins WHERE user_id = ?", (telegram_id,)
+                )
 
             await conn.commit()
             return {"telegram_id": telegram_id, "role": role}
@@ -173,7 +175,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         Obtiene información de nivel y privilegios de admin para un usuario.
         """
         query = """
-            SELECT 
+            SELECT
                 ul.id,
                 ul.name,
                 ul.priority,
@@ -194,10 +196,11 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "name": row[1],
                         "priority": row[2],
                         "color": row[3],
-                        "hasAccess": bool(row[4])
+                        "hasAccess": bool(row[4]),
                     },
-                    "hasAccess": bool(row[4]) or bool(row[5]), # Access if level allowed OR if admin
-                    "isAdmin": bool(row[5])
+                    "hasAccess": bool(row[4])
+                    or bool(row[5]),  # Access if level allowed OR if admin
+                    "isAdmin": bool(row[5]),
                 }
             return None
 
@@ -208,7 +211,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         async with self.db.connection() as conn:
             await conn.execute(
                 "INSERT OR IGNORE INTO users (telegram_id, level_id, added_at) VALUES (?, ?, ?)",
-                (telegram_id, level_id, datetime.utcnow())
+                (telegram_id, level_id, datetime.utcnow()),
             )
             await conn.commit()
 
@@ -226,7 +229,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "name": row[1],
                     "priority": row[2],
                     "color": row[3],
-                    "hasAccess": bool(row[4])
+                    "hasAccess": bool(row[4]),
                 }
                 for row in rows
             ]

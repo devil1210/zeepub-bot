@@ -141,7 +141,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         # Priority: level name as status label if no custom status
         if not info or not info.get("custom_status"):
             result["status_label"] = access_info["level"]["name"]
-        
+
         # Admin override
         if access_info["isAdmin"]:
             result["role"] = "admin"
@@ -221,7 +221,7 @@ async def upgrade_user_level(telegram_id: int, new_level_name: str):
             SET level_id = (SELECT id FROM user_levels WHERE name = ?)
             WHERE telegram_id = ?
             """,
-            (new_level_name, telegram_id)
+            (new_level_name, telegram_id),
         )
         await conn.commit()
     await user_cache.invalidate(f"user_effective:{telegram_id}")

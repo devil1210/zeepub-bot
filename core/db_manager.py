@@ -24,7 +24,8 @@ class DatabaseManager:
             await conn.execute("PRAGMA synchronous=NORMAL")
 
             # Crear tabla de niveles si no existe
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS user_levels (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL UNIQUE,
@@ -34,27 +35,29 @@ class DatabaseManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Insertar niveles iniciales si la tabla está vacía
             cursor = await conn.execute("SELECT COUNT(*) FROM user_levels")
             count = (await cursor.fetchone())[0]
             if count == 0:
                 levels = [
-                    ('Administrador', 10, '#FF6B6B', 1),
-                    ('Staff', 9, '#FF9800', 1),
-                    ('Premium', 5, '#4CAF50', 1),
-                    ('VIP', 4, '#9C27B0', 1),
-                    ('Patrocinador', 3, '#2196F3', 1),
-                    ('Lector', 1, '#9E9E9E', 0)
+                    ("Administrador", 10, "#FF6B6B", 1),
+                    ("Staff", 9, "#FF9800", 1),
+                    ("Premium", 5, "#4CAF50", 1),
+                    ("VIP", 4, "#9C27B0", 1),
+                    ("Patrocinador", 3, "#2196F3", 1),
+                    ("Lector", 1, "#9E9E9E", 0),
                 ]
                 await conn.executemany(
                     "INSERT INTO user_levels (name, priority, color, has_mini_app_access) VALUES (?, ?, ?, ?)",
-                    levels
+                    levels,
                 )
 
             # Crear tabla de usuarios si no existe
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS users (
                     telegram_id INTEGER PRIMARY KEY,
                     role TEXT NOT NULL DEFAULT 'free',
@@ -66,10 +69,12 @@ class DatabaseManager:
                     nickname TEXT,
                     FOREIGN KEY (level_id) REFERENCES user_levels(id)
                 )
-            """)
+            """
+            )
 
             # Crear tabla de admins si no existe
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS admins (
                     user_id INTEGER PRIMARY KEY,
                     granted_by INTEGER,
@@ -77,8 +82,9 @@ class DatabaseManager:
                     FOREIGN KEY (user_id) REFERENCES users(telegram_id),
                     FOREIGN KEY (granted_by) REFERENCES users(telegram_id)
                 )
-            """)
-            
+            """
+            )
+
             # Migración: Agregar columna nickname si no existe
             try:
                 await conn.execute("ALTER TABLE users ADD COLUMN nickname TEXT")
@@ -89,13 +95,17 @@ class DatabaseManager:
 
             # Migración: Agregar columna level_id si no existe
             try:
-                await conn.execute("ALTER TABLE users ADD COLUMN level_id INTEGER DEFAULT 6")
-                await conn.execute("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id)")
+                await conn.execute(
+                    "ALTER TABLE users ADD COLUMN level_id INTEGER DEFAULT 6"
+                )
+                await conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id)"
+                )
                 logger.info("Migración: Agregada columna 'level_id' a tabla users")
             except Exception as e:
                 if "duplicate column" not in str(e).lower():
                     logger.debug(f"Notice during migration (level_id): {e}")
-            
+
             await conn.commit()
             logger.info(f"Database initialized and schema verified at {self.db_path}")
 
@@ -128,6 +138,7 @@ class DatabaseManager:
 
             # Esperar un poco antes de reintentar (optimizado 10ms vs 100ms)
             from asyncio import sleep
+
             await sleep(0.005)
 
         try:

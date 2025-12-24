@@ -71,11 +71,13 @@ async def get_feed(
     # Determinar rol efectivo (DB + Config)
     user_data = await get_effective_user(current_uid)
     role = user_data.get("role", "free")
-    
+
     is_admin = role == "admin"
     is_staff = role in ["admin", "staff", "vip", "premium", "white"]
 
-    logger.info(f"Permissions for UID {current_uid}: Role={role}, Admin={is_admin}, Staff={is_staff}")
+    logger.info(
+        f"Permissions for UID {current_uid}: Role={role}, Admin={is_admin}, Staff={is_staff}"
+    )
 
     # Si no tiene permisos, denegar
     if not is_admin and not is_staff:
@@ -226,11 +228,17 @@ async def get_feed(
                                 res["cover_url"] = normalize_url(l.get("href"))
                                 break
                 except httpx.HTTPStatusError as e:
-                    logger.warning(f"HTTP error fetching sub-feed {res['subsection_url']}: {e}")
+                    logger.warning(
+                        f"HTTP error fetching sub-feed {res['subsection_url']}: {e}"
+                    )
                 except httpx.RequestError as e:
-                    logger.warning(f"Request error fetching sub-feed {res['subsection_url']}: {e}")
+                    logger.warning(
+                        f"Request error fetching sub-feed {res['subsection_url']}: {e}"
+                    )
                 except Exception as e:
-                    logger.warning(f"Unexpected error fetching sub-feed {res['subsection_url']}: {e}")
+                    logger.warning(
+                        f"Unexpected error fetching sub-feed {res['subsection_url']}: {e}"
+                    )
 
         folder_tasks = [
             fetch_folder_cover(e)
@@ -274,7 +282,6 @@ async def get_feed(
             except Exception as e:
                 logger.warning(f"Unexpected error parsing page number from URL: {e}")
 
-
         # Total pages
         total_pages = None
         total_results = feed.feed.get("opensearch_totalresults")
@@ -285,10 +292,11 @@ async def get_feed(
                     items_per_page
                 )
             except ValueError:
-                logger.debug(f"Could not calculate total pages from results={total_results}, items_per_page={items_per_page}")
+                logger.debug(
+                    f"Could not calculate total pages from results={total_results}, items_per_page={items_per_page}"
+                )
             except Exception as e:
                 logger.warning(f"Unexpected error calculating total pages: {e}")
-
 
         processed_links = [
             {
@@ -312,7 +320,10 @@ async def get_feed(
         }
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error fetching feed: {e}")
-        raise HTTPException(status_code=e.response.status_code, detail=f"Error fetching feed: {e.response.text}")
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"Error fetching feed: {e.response.text}",
+        )
     except httpx.RequestError as e:
         logger.error(f"Request error fetching feed: {e}")
         raise HTTPException(status_code=500, detail=f"Network error fetching feed: {e}")
@@ -356,7 +367,10 @@ async def proxy_image(rest_of_path: str, request: Request):
             )
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error proxying image: {e}")
-        raise HTTPException(status_code=e.response.status_code, detail="Image not found or upstream error")
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail="Image not found or upstream error",
+        )
     except httpx.RequestError as e:
         logger.error(f"Request error proxying image: {e}")
         raise HTTPException(status_code=500, detail="Network error proxying image")
