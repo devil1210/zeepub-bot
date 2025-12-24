@@ -36,3 +36,21 @@ export async function fetchBotFeed(url?: string) {
 
   return response.json()
 }
+export async function checkAccess(userId: number) {
+  const initData = getTelegramInitData()
+
+  const response = await fetch("/api/user/access", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-telegram-init-data": initData,
+    },
+    body: JSON.stringify({ user_id: userId }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Access check error: ${response.statusText}`)
+  }
+
+  return response.json()
+}

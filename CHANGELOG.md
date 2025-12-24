@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.3.7] - 2025-12-24
+### Added
+- **Mini App - Seguridad**: Implementada página de "Acceso Denegado" (`/no-access`) para usuarios sin permisos.
+- **Mini App - UX**: Guard de acceso global que detecta automáticamente si el usuario tiene permiso y redirige según corresponda.
+- **Frontend**: Reconstrucción total de la Mini App con las últimas protecciones de seguridad.
+
 ## [v4.3.6] - 2025-12-24
 ### Added
 - **Acceso - Niveles**: Implementado sistema de control de acceso por niveles (Tiered Access Control) en base de datos.

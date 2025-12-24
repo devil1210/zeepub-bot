@@ -496,11 +496,16 @@ async def handle_bot_request(
 @router.post("/api/user/access", response_model=AccessResponse)
 async def check_user_access(
     request: AccessCheckRequest,
+    user_data: dict = Depends(verify_telegram_user)
 ):
     from services.user_service import user_repo
     
+    # El ID del usuario verificado por Telegram debe coincidir con el solicitado
+    # (O simplemente usar el del token verificado para mayor seguridad)
+    user_id = user_data.get("id") or request.user_id
+    
     # Obtener información del usuario y su nivel
-    access_info = await user_repo.get_access_info(request.user_id)
+    access_info = await user_repo.get_access_info(user_id)
     
     if not access_info:
         # Usuario no existe, crear con nivel básico - Lector (id=6)
