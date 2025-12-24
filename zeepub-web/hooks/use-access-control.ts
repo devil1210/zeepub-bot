@@ -1,9 +1,10 @@
 "use client"
 
-import { useTelegramContext } from "@/components/telegram-provider"
+import { useEffect, useState } from "react"
+import { useTelegram } from "./use-telegram"
 
-export type UserLevel = {
-    id: string | number
+export interface UserLevel {
+    id: string
     name: string
     priority: number
     color: string
@@ -11,11 +12,50 @@ export type UserLevel = {
 }
 
 export function useAccessControl() {
-    const { user, isAdmin, isReady } = useTelegramContext()
+    const { user, isReady } = useTelegram()
+    const [userLevel, setUserLevel] = useState<UserLevel | null>(null)
+    const [hasAccess, setHasAccess] = useState<boolean | null>(null)
+    const [isAdmin, setIsAdmin] = useState(false)
+    const [loading, setLoading] = useState(true)
 
-    return {
-        isAdmin: !!isAdmin,
-        loading: !isReady,
-        user
-    }
+    useEffect(() => {
+        async function checkAccess() {
+            if (!isReady || !user) {
+                setLoading(false)
+                return
+            }
+
+            try {
+                const response = await fetch("/api/user/access", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-telegram-init-data": (window as any).Telegram?.WebApp?.initData || ""
+                    },
+                    body: JSON.stringify({
+                        userId: user.id,
+                        initData: (window as any).Telegram?.WebApp?.initData,
+                    }),
+                })
+
+                if (response.ok) {
+                    const data = await response.json()
+                    setUserLevel(data.level)
+                    setHasAccess(data.hasAccess)
+                    setIsAdmin(data.isAdmin)
+                } else {
+                    setHasAccess(false)
+                }
+            } catch (error) {
+                console.error("[v0] Error checking access:", error)
+                setHasAccess(false)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        checkAccess()
+    }, [user, isReady])
+
+    return { userLevel, hasAccess, isAdmin, loading }
 }

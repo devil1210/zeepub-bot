@@ -25,7 +25,9 @@ logger = logging.getLogger(__name__)
 # --- Modelos Pydantic ---
 
 class AccessCheckRequest(BaseModel):
-    user_id: int
+    user_id: Optional[int] = None
+    userId: Optional[int] = None # Support v0 camelCase
+    initData: Optional[str] = None # Support initData in body
 
 class UserLevelModel(BaseModel):
     id: str
@@ -496,12 +498,26 @@ async def handle_bot_request(
 @router.post("/api/user/access", response_model=AccessResponse)
 async def check_user_access(
     request: AccessCheckRequest,
-    user_data: dict = Depends(verify_telegram_user)
+    x_telegram_init_data: Optional[str] = Header(None, alias="x-telegram-init-data")
 ):
     from services.user_service import get_effective_user, user_repo
+    from utils.security import validate_telegram_data
+    
+    # 1. Validar autenticación de Telegram (Cabecera o Body)
+    init_data = x_telegram_init_data or request.initData
+    if not init_data:
+        raise HTTPException(status_code=401, detail="Missing Telegram Auth")
+    
+    bot_token = os.getenv("TELEGRAM_TOKEN")
+    user_data = validate_telegram_data(init_data, bot_token)
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid Telegram Auth")
     
     # Priorizar el ID verificado por Telegram
-    uid = user_data.get("id") or request.user_id
+    uid = user_data.get("user", {}).get("id") or request.userId or request.user_id
+    
+    if not uid:
+        raise HTTPException(status_code=400, detail="Missing user ID")
     
     # 1. Obtener información efectiva (Roles config, expiración, etc)
     eff = await get_effective_user(uid)

@@ -25,11 +25,7 @@ export default function AccessControlPage() {
     useEffect(() => {
         async function fetchLevels() {
             try {
-                const response = await fetch("/api/admin/access-levels", {
-                    headers: {
-                        "x-telegram-init-data": (window as any).Telegram?.WebApp?.initData || ""
-                    }
-                })
+                const response = await fetch("/api/admin/access-levels")
                 if (response.ok) {
                     const data = await response.json()
                     setLevels(data.levels)
@@ -58,7 +54,6 @@ export default function AccessControlPage() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-telegram-init-data": (window as any).Telegram?.WebApp?.initData || ""
                 },
                 body: JSON.stringify({
                     levels: levels.map((l) => ({ id: l.id, hasAccess: l.hasAccess })),
@@ -128,7 +123,7 @@ export default function AccessControlPage() {
                                     </div>
                                     <Switch
                                         checked={level.hasAccess}
-                                        onCheckedChange={() => toggleAccess(level.id.toString())}
+                                        onCheckedChange={() => toggleAccess(level.id)}
                                         className={level.hasAccess ? "" : "data-[state=checked]:bg-destructive"}
                                     />
                                 </div>

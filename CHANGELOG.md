@@ -5,6 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.5.0] - 2025-12-24
+### Added
+- **Mini App - UI/UX**: Rediseño total basado en la estética premium de v0.
+- **Navegación**: Implementada barra de navegación inferior (Bottom Nav) para acceso rápido a Inicio, Buscar, Estado y Ajustes.
+- **Detalle de Libro**: Nueva página de detalles con sinopsis, portadas grandes y metadatos extendidos.
+- **Global**: Integrada la nueva estructura de navegación "Buscar -> Detalle -> Descarga".
+
+### Fixed
+- **Build**: Corregidos errores de exportación estática de Next.js mediante la conversión de rutas dinámicas a parámetros de consulta.
+- **Backend - Compatibilidad**: Ajustados los endpoints para soportar el flujo de datos de la nueva interfaz.
+
 ## [v4.4.1] - 2025-12-24
 ### Fixed
 - **Admin - UX**: Corregido fallo que impedía listar niveles en el Panel de Administración debido a falta de cabeceras de autenticación.

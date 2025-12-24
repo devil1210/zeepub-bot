@@ -13,7 +13,7 @@ import {
     BookOpen,
     Download,
 } from "lucide-react"
-import { fetchBotFeed, callBotAPI } from "@/lib/api"
+import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
 
 import { Pagination } from "@/components/pagination"
@@ -55,7 +55,7 @@ function CatalogContent() {
     const loadFeed = async (url?: string, isPagination = false) => {
         setIsLoading(true)
         try {
-            const data = await fetchBotFeed(url)
+            const data = await callBotAPI("search", { pageUrl: url })
             setCurrentFeed(data)
             if (isPagination) {
                 window.scrollTo(0, 0)
@@ -249,7 +249,7 @@ function CatalogContent() {
                 {currentFeed && currentFeed.entries.length > 0 && (
                     <Pagination
                         currentPage={currentFeed.currentPage}
-                        totalPages={currentFeed.totalPages}
+                        totalPages={currentFeed.totalPages ?? undefined}
                         hasNextPage={!!currentFeed.nextPage}
                         hasPrevPage={!!currentFeed.prevPage}
                         onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}

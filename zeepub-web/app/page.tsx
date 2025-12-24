@@ -4,8 +4,10 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck } from "lucide-react"
+import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight } from "lucide-react"
+import Link from "next/link"
 import { useTelegramContext } from "@/components/telegram-provider"
+import { AccessGuard } from "@/components/access-guard"
 
 interface BotInfo {
   name: string
@@ -16,7 +18,7 @@ interface BotInfo {
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { user, hasAccess } = useTelegramContext()
+  const { user } = useTelegramContext()
   const [botInfo] = useState<BotInfo>({
     name: "ZeePubBot",
     username: "@ZeePubBot",
@@ -32,60 +34,57 @@ export default function HomePage() {
 
   const menuItems = [
     { icon: BookOpen, label: "Buscar Libros", href: "/search", description: "Encuentra ePubs en el catálogo" },
-    { icon: Library, label: "Mi Catálogo", href: "/catalog", description: "Accede a bibliotecas OPDS" },
     { icon: Download, label: "Mis Descargas", href: "/downloads", description: "Historial y límites de descarga" },
     { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados" },
     { icon: Heart, label: "Donar", href: "/donate", description: "Apoya el proyecto" },
     { icon: Info, label: "Ayuda", href: "/help", description: "Comandos y soporte" },
-    { icon: ShieldCheck, label: "Gestión Accesos", href: "/admin/levels", description: "Configura niveles y permisos", adminOnly: true },
   ]
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <h1 className="text-lg font-semibold text-center">ZeePubBot</h1>
-          {user && <p className="text-xs text-center text-muted-foreground mt-0.5">Hola, {user.first_name}</p>}
-        </div>
-      </header>
+    <AccessGuard>
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
+          <div className="max-w-2xl mx-auto px-4 py-3">
+            <h1 className="text-lg font-semibold text-center">ZeePubBot</h1>
+            {user && <p className="text-xs text-center text-muted-foreground mt-0.5">Hola, {user.first_name}</p>}
+          </div>
+        </header>
 
-      {/* Bot Profile Section */}
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="flex flex-col items-center text-center mb-8">
-          <Avatar className="w-24 h-24 mb-4 border-2 border-primary/20">
-            <AvatarImage src={botInfo.avatar || "/placeholder.svg"} alt={botInfo.name} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-2xl">ZP</AvatarFallback>
-          </Avatar>
-          <h2 className="text-3xl font-bold mb-2">{botInfo.name}</h2>
-          <p className="text-muted-foreground mb-4">{botInfo.username}</p>
-          <p className="text-sm text-foreground/80 leading-relaxed max-w-md">{botInfo.description}</p>
-        </div>
+        {/* Bot Profile Section */}
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <div className="flex flex-col items-center text-center mb-8">
+            <Avatar className="w-24 h-24 mb-4 border-2 border-primary/20">
+              <AvatarImage src={botInfo.avatar || "/placeholder.svg"} alt={botInfo.name} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">ZP</AvatarFallback>
+            </Avatar>
+            <h2 className="text-3xl font-bold mb-2">{botInfo.name}</h2>
+            <p className="text-muted-foreground mb-4">{botInfo.username}</p>
+            <p className="text-sm text-foreground/80 leading-relaxed max-w-md">{botInfo.description}</p>
+          </div>
 
-        {/* Search */}
-        <div className="mb-8">
-          <a href="/search">
-            <div className="relative cursor-pointer">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-              <Input
-                type="text"
-                placeholder="Buscar libros..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                readOnly
-                className="pl-12 h-12 bg-card border-border rounded-xl cursor-pointer"
-              />
-            </div>
-          </a>
-        </div>
+          {/* Search */}
+          <div className="mb-8">
+            <Link href="/search">
+              <div className="relative cursor-pointer">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="text"
+                  placeholder="Buscar libros..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  readOnly
+                  className="pl-12 h-12 bg-card border-border rounded-xl cursor-pointer"
+                />
+              </div>
+            </Link>
+          </div>
 
-        {/* Menu Items */}
-        <div className="space-y-3">
-          <h3 className="text-xl font-bold mb-4">Funciones</h3>
+          {/* Menu Items */}
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold mb-4">Funciones</h3>
 
-          {menuItems
-            .filter(item => !item.adminOnly || hasAccess) // Un chequeo básico, en la página de niveles hay uno riguroso
-            .map((item, index) => (
-              <a key={index} href={item.href}>
+            {menuItems.map((item, index) => (
+              <Link key={index} href={item.href}>
                 <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -98,10 +97,11 @@ export default function HomePage() {
                     <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                   </div>
                 </Card>
-              </a>
+              </Link>
             ))}
+          </div>
         </div>
       </div>
-    </div>
+    </AccessGuard>
   )
 }

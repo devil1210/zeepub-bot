@@ -121,4 +121,8 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Añadiendo soporte para safe-area de iOS/Telegram */
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
