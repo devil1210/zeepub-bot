@@ -24,12 +24,8 @@ logger = logging.getLogger(__name__)
 
 # --- Modelos Pydantic ---
 
-
 class AccessCheckRequest(BaseModel):
-    user_id: Optional[int] = None
-    userId: Optional[int] = None  # Support v0 camelCase
-    initData: Optional[str] = None  # Support initData in body
-
+    user_id: int
 
 class UserLevelModel(BaseModel):
     id: str
@@ -38,24 +34,19 @@ class UserLevelModel(BaseModel):
     color: str
     hasAccess: bool
 
-
 class AccessResponse(BaseModel):
     level: UserLevelModel
     hasAccess: bool
     isAdmin: bool
 
-
 class LevelUpdate(BaseModel):
     id: str
     hasAccess: bool
 
-
 class UpdateLevelsRequest(BaseModel):
     levels: List[LevelUpdate]
 
-
 # --- Dependencias y Decoradores ---
-
 
 async def verify_admin(
     x_telegram_init_data: str = Header(None, alias="x-telegram-init-data")
@@ -63,79 +54,59 @@ async def verify_admin(
     """
     Verifica si el usuario es administrador (desde config o tabla admins).
     """
-    logger.info(f"[verify_admin] Called with header present: {bool(x_telegram_init_data)}")
     bot_token = os.getenv("TELEGRAM_TOKEN")
     if not x_telegram_init_data or not bot_token:
-        logger.warning(
-            f"[verify_admin] Missing data: init={bool(x_telegram_init_data)} token={bool(bot_token)}"
-        )
         # Fallback para desarrollo si se requiere
         if os.getenv("DEV_MODE") == "true":
-            logger.info("[verify_admin] DEV_MODE enabled, allowing access")
             return True
         return False
-
+    
     user_data = validate_telegram_data(x_telegram_init_data, bot_token)
     if not user_data:
-        logger.error("[verify_admin] Telegram data validation FAILED")
         return False
-
+        
     user_id = user_data.get("user", {}).get("id")
     if not user_id:
-        logger.warning("[verify_admin] No user_id in telegram data")
         return False
-
-    logger.info(f"[verify_admin] Checking permissions for user_id: {user_id}")
-
+        
     # Check config
     if user_id in config.ADMIN_USERS:
-        logger.info(f"[verify_admin] ✅ User {user_id} found in config.ADMIN_USERS")
         return True
-
+        
     # Check DB
     from services.user_service import user_repo
-
-    is_admin_db = await user_repo.is_admin(user_id)
-    logger.info(f"[verify_admin] User {user_id} DB check: {is_admin_db}")
-    return is_admin_db
-
+    return await user_repo.is_admin(user_id)
 
 def require_mini_app_access(func):
     """
     Decorador para requerir acceso a Mini App.
     """
-
     @wraps(func)
     async def wrapper(*args, **kwargs):
         # Intentar obtener user_id de los argumentos o el request meta
-        request = kwargs.get("request")
+        request = kwargs.get('request')
         user_id = None
-
+        
         if hasattr(request, "state") and hasattr(request.state, "user_id"):
             user_id = request.state.user_id
-
+            
         if not user_id:
             # Si no está en el state, buscar en el body del request si es posible
-            # pero esto es específico para cada ruta.
+            # pero esto es específico para cada ruta. 
             # Por simplicidad en este bot, asumimos que se inyecta o se valida antes.
             pass
-
+            
         if user_id:
             from services.user_service import user_repo
-
             access_info = await user_repo.get_access_info(user_id)
-            if (
-                access_info
-                and not access_info.get("hasAccess")
-                and not access_info.get("isAdmin")
-            ):
+            if access_info and not access_info.get("hasAccess") and not access_info.get("isAdmin"):
                 raise HTTPException(
-                    status_code=403,
-                    detail="Tu nivel de usuario no tiene acceso a la Mini App",
+                    status_code=403, 
+                    detail="Tu nivel de usuario no tiene acceso a la Mini App"
                 )
-
+        
         return await func(*args, **kwargs)
-
+    
     return wrapper
 
 
@@ -165,22 +136,23 @@ async def handle_bot_request(
     # Fetch effective role for permissions
     user_effective = await get_effective_user(user_id)
     user_role = user_effective.get("role", "free")
+    
+    # --- Control de Acceso por Niveles ---
+    # Los administradores siempre tienen acceso. 
+    # El resto depende de su nivel (has_mini_app_access).
+    if user_effective.get("has_mini_app_access") is False and action != "status":
+        raise HTTPException(
+            status_code=403, 
+            detail="Tu nivel de usuario no tiene acceso a la Mini App"
+        )
 
     try:
         body = await request.json()
-    except json.JSONDecodeError:
+    except json.JSONDecodeError: # Changed from bare Exception
         raise HTTPException(status_code=400, detail="Invalid JSON")
 
     action = body.get("action")
     data = body.get("data", {})
-
-    # --- Control de Acceso por Niveles ---
-    # Los administradores siempre tienen acceso.
-    # El resto depende de su nivel (has_mini_app_access).
-    if user_effective.get("has_mini_app_access") is False and action != "status":
-        raise HTTPException(
-            status_code=403, detail="Tu nivel de usuario no tiene acceso a la Mini App"
-        )
 
     logger.info(f"Miniapp action: {action} User: {user_id} Role: {user_role}")
 
@@ -248,7 +220,7 @@ async def handle_bot_request(
                     total_pages = (int(total_results) + int(items_per_page) - 1) // int(
                         items_per_page
                     )
-                except Exception:  # Changed from bare except
+                except Exception: # Changed from bare except
                     pass
 
             # First pass: collect all data
@@ -521,90 +493,68 @@ async def handle_bot_request(
 
 # --- Nuevos Endpoints de Control de Acceso ---
 
-
 @router.post("/api/user/access", response_model=AccessResponse)
 async def check_user_access(
     request: AccessCheckRequest,
-    x_telegram_init_data: Optional[str] = Header(None, alias="x-telegram-init-data"),
+    user_data: dict = Depends(verify_telegram_user)
 ):
     from services.user_service import get_effective_user, user_repo
-    from utils.security import validate_telegram_data
-
-    # 1. Validar autenticación de Telegram (Cabecera o Body)
-    init_data = x_telegram_init_data or request.initData
-    if not init_data:
-        raise HTTPException(status_code=401, detail="Missing Telegram Auth")
-
-    bot_token = os.getenv("TELEGRAM_TOKEN")
-    user_data = validate_telegram_data(init_data, bot_token)
-    if not user_data:
-        raise HTTPException(status_code=401, detail="Invalid Telegram Auth")
-
+    
     # Priorizar el ID verificado por Telegram
-    uid = user_data.get("user", {}).get("id") or request.userId or request.user_id
-
-    if not uid:
-        raise HTTPException(status_code=400, detail="Missing user ID")
-
+    uid = user_data.get("id") or request.user_id
+    
     # 1. Obtener información efectiva (Roles config, expiración, etc)
     eff = await get_effective_user(uid)
-
+    
     # 2. Obtener información de niveles de la base de datos
     access_info = await user_repo.get_access_info(uid)
-
+    
     if not access_info:
         # Si no existe en la tabla de niveles, creamos registro con nivel básico
-        await user_repo.create_minimal_user(uid, level_id=6)  # Lector
+        await user_repo.create_minimal_user(uid, level_id=6) # Lector
         access_info = await user_repo.get_access_info(uid)
-
+        
     if not access_info:
-        raise HTTPException(
-            status_code=500, detail="Error al recuperar nivel de usuario"
-        )
+        raise HTTPException(status_code=500, detail="Error al recuperar nivel de usuario")
 
     # 3. Determinar flags finales mezclando ambos sistemas
     # El usuario tiene acceso si su nivel de DB lo permite O si su rol efectivo tiene el flag activo
     is_admin = (eff.get("role") == "admin") or access_info.get("isAdmin", False)
-    has_access = (
-        eff.get("has_mini_app_access", False)
-        or access_info.get("hasAccess", False)
-        or is_admin
-    )
+    has_access = eff.get("has_mini_app_access", False) or access_info.get("hasAccess", False) or is_admin
 
     return AccessResponse(
         level=UserLevelModel(**access_info["level"]),
         hasAccess=has_access,
-        isAdmin=is_admin,
+        isAdmin=is_admin
     )
-
 
 @router.get("/api/admin/levels")
 @router.get("/api/admin/access-levels")
-async def get_levels(is_admin: bool = Depends(verify_admin)):
-    logger.info(f"[get_levels] Called with is_admin={is_admin}")
+async def get_levels(
+    is_admin: bool = Depends(verify_admin)
+):
     if not is_admin:
-        logger.warning("[get_levels] Access DENIED - user is not admin")
         raise HTTPException(status_code=403, detail="Forbidden")
-
+    
     from services.user_service import user_repo
-
     levels = await user_repo.get_all_levels()
-    logger.info(f"[get_levels] Returning {len(levels)} levels")
-
+    
     return {"levels": [UserLevelModel(**l) for l in levels]}
-
 
 @router.put("/api/admin/levels")
 @router.post("/api/admin/access-levels")
 async def update_levels(
-    request: UpdateLevelsRequest, is_admin: bool = Depends(verify_admin)
+    request: UpdateLevelsRequest,
+    is_admin: bool = Depends(verify_admin)
 ):
     if not is_admin:
         raise HTTPException(status_code=403, detail="Forbidden")
-
+    
     from services.user_service import user_repo
-
     for level in request.levels:
         await user_repo.update_level_access(int(level.id), level.hasAccess)
-
-    return {"success": True, "message": "Niveles actualizados correctamente"}
+    
+    return {
+        "success": True,
+        "message": "Niveles actualizados correctamente"
+    }

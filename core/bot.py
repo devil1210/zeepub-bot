@@ -102,7 +102,9 @@ class ZeePubBot:
         )
         # Donation Proof Handler (Photo or Document)
         self.app.add_handler(
-            MessageHandler(filters.PHOTO | filters.Document.ALL, handle_donation_proof)
+            MessageHandler(
+                filters.PHOTO | filters.Document.ALL, handle_donation_proof
+            )
         )
 
     def start(self):
@@ -115,7 +117,7 @@ class ZeePubBot:
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-
+        
         loop.run_until_complete(self.initialize())
         self.app.run_polling()
         session_manager.close()
@@ -124,7 +126,6 @@ class ZeePubBot:
         """Inicializa la aplicación (para uso con API)."""
         # 0. Inicializar Base de Datos primero
         from core.db_manager import db_manager
-
         try:
             await db_manager.initialize()
         except Exception as e:
@@ -134,63 +135,47 @@ class ZeePubBot:
         max_retries = 5
         retry_delay = 5
         bot_initialized = False
-
+        
         for attempt in range(max_retries):
             try:
-                logger.info(
-                    f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})..."
-                )
+                logger.info(f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})...")
                 await self.app.initialize()
-
+                
                 # Verify bot is actually ready by accessing bot.id
                 try:
                     _ = self.app.bot.id
-                    logger.info(
-                        f"Bot inicializado exitosamente (ID: {self.app.bot.id})."
-                    )
+                    logger.info(f"Bot inicializado exitosamente (ID: {self.app.bot.id}).")
                     bot_initialized = True
                     break
                 except RuntimeError as e:
                     if "not properly initialized" in str(e):
-                        logger.warning(
-                            f"Bot marcado como initialized pero ExtBot no está listo. Reintentando..."
-                        )
+                        logger.warning(f"Bot marcado como initialized pero ExtBot no está listo. Reintentando...")
                         # Force a new initialization attempt
                         await asyncio.sleep(retry_delay)
                         continue
                     raise
-
+                    
             except Exception as e:
                 # Check if it's already initialized (happens on retry)
                 if "already initialized" in str(e).lower():
-                    logger.info(
-                        "Bot ya estaba marcado como inicializado, verificando estado..."
-                    )
+                    logger.info("Bot ya estaba marcado como inicializado, verificando estado...")
                     # Try to access bot.id to verify it's really ready
                     try:
                         _ = self.app.bot.id
-                        logger.info(
-                            f"Bot verificado correctamente (ID: {self.app.bot.id})."
-                        )
+                        logger.info(f"Bot verificado correctamente (ID: {self.app.bot.id}).")
                         bot_initialized = True
                         break
                     except RuntimeError:
-                        logger.warning(
-                            "Bot marcado como initialized pero ExtBot no está listo. Continuando con error original..."
-                        )
+                        logger.warning("Bot marcado como initialized pero ExtBot no está listo. Continuando con error original...")
                         # Can't reinitialize, but bot isn't ready
                         pass
-
+                    
                 if attempt < max_retries - 1:
                     wait = retry_delay * (attempt + 1)
-                    logger.warning(
-                        f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s..."
-                    )
+                    logger.warning(f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s...")
                     await asyncio.sleep(wait)
                 else:
-                    logger.error(
-                        f"Error crítico: No se pudo inicializar el bot tras {max_retries} intentos: {e}"
-                    )
+                    logger.error(f"Error crítico: No se pudo inicializar el bot tras {max_retries} intentos: {e}")
                     self._initialized = False
                     return
 
@@ -198,7 +183,7 @@ class ZeePubBot:
             logger.error("Bot no se pudo inicializar correctamente")
             self._initialized = False
             return
-
+            
         self._initialized = True
 
         # Initialize plugins explicitely to ensure they are loaded
@@ -218,29 +203,17 @@ class ZeePubBot:
                     await context.bot.send_message(
                         chat_id=update.effective_chat.id,
                         text="⚠️ <b>MODO SEGURO ACTIVADO</b>\n\nEl sistema de plugins falló al iniciar. Intentando actualización de emergencia...",
-                        parse_mode="HTML",
+                        parse_mode="HTML"
                     )
 
                     try:
-                        from services.maintenance_service import (
-                            trigger_watchtower_update,
-                        )
-
+                        from services.maintenance_service import trigger_watchtower_update
                         success, msg = await trigger_watchtower_update()
-                        await context.bot.send_message(
-                            chat_id=update.effective_chat.id,
-                            text=msg,
-                            parse_mode="HTML",
-                        )
+                        await context.bot.send_message(chat_id=update.effective_chat.id, text=msg, parse_mode="HTML")
                     except Exception as ex:
-                        await context.bot.send_message(
-                            chat_id=update.effective_chat.id,
-                            text=f"❌ Error crítico en update: {ex}",
-                        )
+                        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Error crítico en update: {ex}")
 
-                self.app.add_handler(
-                    CommandHandler("update_system", emergency_update_handler)
-                )
+                self.app.add_handler(CommandHandler("update_system", emergency_update_handler))
 
                 # Notify admins of Safe Mode
                 for admin_id in config.ADMIN_USERS:
@@ -248,12 +221,10 @@ class ZeePubBot:
                         await self.app.bot.send_message(
                             chat_id=admin_id,
                             text=f"🚨 <b>ALERTA CRÍTICA</b>\nEl bot inició en <b>MODO SEGURO</b> debido a un error en los plugins:\n\n<pre>{str(e)}</pre>\n\nUsa /update_system para intentar reparar.",
-                            parse_mode="HTML",
+                            parse_mode="HTML"
                         )
                     except Exception as ex:
-                        logger.warning(
-                            f"Could not notify admin {admin_id} of safe mode: {ex}"
-                        )
+                        logger.warning(f"Could not notify admin {admin_id} of safe mode: {ex}")
             except Exception as e2:
                 logger.error(f"FATAL: Could not register emergency handler: {e2}")
 

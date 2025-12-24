@@ -141,22 +141,26 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         # Priority: level name as status label if no custom status
         if not info or not info.get("custom_status"):
             result["status_label"] = access_info["level"]["name"]
-
+        
         # Admin override
         if access_info["isAdmin"]:
             result["role"] = "admin"
             result["has_mini_app_access"] = True
 
-    # 2. ALWAYS check config.ADMIN_USERS - they have priority over DB
-    # This must be 'if' not 'elif' to check even when user exists in DB
-    if uid in config.ADMIN_USERS:
-        result.update({
+    # 2. Legacy / Config Checks (if not found in DB or if DB says free but config says otherwise?
+    # Logic in v3.1.3 favored DB if present, but here we fallback if DB absent OR if we want to override?
+    # Keeping original logic structure: if info found, we returned.
+    # Wait, the original code had multiple returns. I must preserve PRECEDENCE.
+
+    # Restoring original structure but capturing result for caching
+    elif uid in config.ADMIN_USERS:
+        result = {
             "role": "admin",
             "status_label": "Admin",
             "expires_at": None,
             "nickname": None,
             "has_mini_app_access": True,
-        })
+        }
 
     elif uid in config.FACEBOOK_PUBLISHERS:
         result = {
@@ -217,7 +221,7 @@ async def upgrade_user_level(telegram_id: int, new_level_name: str):
             SET level_id = (SELECT id FROM user_levels WHERE name = ?)
             WHERE telegram_id = ?
             """,
-            (new_level_name, telegram_id),
+            (new_level_name, telegram_id)
         )
         await conn.commit()
     await user_cache.invalidate(f"user_effective:{telegram_id}")
