@@ -32,6 +32,7 @@ flake8==7.0.0
 # API (Mini App Backend)
 fastapi==0.111.0
 uvicorn==0.30.1
+python-multipart==0.0.9
 
 # Optional DB backend via SQLAlchemy (supports external DBs like Postgres)
 SQLAlchemy==2.0.20

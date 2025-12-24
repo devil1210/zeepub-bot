@@ -37,9 +37,10 @@ def test_create_and_get_short_url(tmp_path, monkeypatch):
     config.URL_CACHE_DB_PATH = str(db_file)
 
     # Load module directly from file to avoid importing the whole `utils` package
-    from importlib.machinery import SourceFileLoader
-    loader = SourceFileLoader("url_cache_test", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
-    url_cache = loader.load_module()
+    from importlib.util import spec_from_file_location, module_from_spec
+    spec = spec_from_file_location("url_cache_test", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
+    url_cache = module_from_spec(spec)
+    spec.loader.exec_module(url_cache)
 
     # Initialize the database
     # If config.DATABASE_URL is a Mock/MagicMock, sqlalchemy.create_engine might fail even if passed None?

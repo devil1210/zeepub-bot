@@ -11,6 +11,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Pruebas - Aislamiento**: Migración de mocks a nivel de módulo a fixtures aislados de pytest, garantizando un entorno limpio para cada prueba.
 - **Backend - Seguridad**: Corregida precedencia en `get_effective_user` para asegurar que los administradores definidos en `config.ADMIN_USERS` tengan prioridad sobre la base de datos.
 - **Core - Estabilidad**: Implementado sistema de limpieza automática de `sys.modules` en la suite de pruebas para evitar conflictos entre mocks de diferentes archivos.
+- **Core - Versión**: Corregido desajuste de versión (v4.4.4) y formato del mensaje de inicio (eliminado "v" duplicado).
+- **CI/CD**: Resueltas advertencias de deprecación (`utcnow`, `load_module`) y añadida dependencia `python-multipart`.
 
 ## [v4.4.3] - 2025-12-24
 ### Fixed

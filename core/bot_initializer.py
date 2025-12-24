@@ -69,7 +69,7 @@ class BotInitializer:
                     chat_id=chat_id,
                     text=(
                         f"✅ <b>¡Actualización Completada!</b>\n"
-                        f"🤖 ZeePub Bot v{v} está en línea. 🚀\n\n"
+                        f"🤖 ZeePub Bot {v} está en línea. 🚀\n\n"
                         f"📝 <i>Cambios:</i> {commit_msg}"
                     ),
                     parse_mode="HTML",

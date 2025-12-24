@@ -583,10 +583,9 @@ def get_candidates_for_validation(limit: int = 100, older_than_seconds: int = 36
     Criteria (sqlite path): last_checked IS NULL OR last_checked older than threshold
     or is_valid == 0.
     """
-    from datetime import datetime, timedelta
-
+    from datetime import datetime, timedelta, UTC
     # Compute cutoff datetime in Python (UTC) so comparisons work in both SQLite and Postgres
-    cutoff = datetime.utcnow() - timedelta(seconds=older_than_seconds)
+    cutoff = datetime.now(UTC) - timedelta(seconds=older_than_seconds)
 
     if config.DATABASE_URL and _HAS_SQLALCHEMY:
         engine = _get_sa_engine()
