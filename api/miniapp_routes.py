@@ -227,7 +227,7 @@ async def handle_bot_request(
                     total_pages = (int(total_results) + int(items_per_page) - 1) // int(
                         items_per_page
                     )
-                except Exception: # Changed from bare except
+                except Exception:  # Changed from bare except
                     pass
 
             # First pass: collect all data
