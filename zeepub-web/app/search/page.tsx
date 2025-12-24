@@ -29,6 +29,8 @@ interface PaginationState {
   totalPages?: number | null
 }
 
+import { AccessGuard } from "@/components/access-guard"
+
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [books, setBooks] = useState<Book[]>([])
@@ -100,112 +102,114 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <h1 className="text-lg font-semibold text-center">Buscar Libros</h1>
-        </div>
-      </header>
-
-      <div className="max-w-2xl mx-auto px-4 py-6 text-foreground">
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Buscar por título, autor o serie..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="pl-12 h-12 bg-card border-border rounded-xl"
-              />
-            </div>
-            <Button onClick={() => handleSearch()} disabled={isLoading} className="h-12 px-6 bg-primary hover:bg-primary/90">
-              {isLoading ? "Buscando..." : "Buscar"}
-            </Button>
+    <AccessGuard>
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
+          <div className="max-w-2xl mx-auto px-4 py-3">
+            <h1 className="text-lg font-semibold text-center">Buscar Libros</h1>
           </div>
-        </div>
+        </header>
 
-        {/* Results */}
-        <div className="space-y-3">
-          {books.map((book) => (
-            <Card
-              key={book.id}
-              onClick={() => handleBookClick(book)}
-              className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
-            >
-              <div className="flex gap-4">
-                <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                  {book.cover ? (
-                    <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
-                  ) : book.is_folder ? (
-                    <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                      <BookOpen className="w-8 h-8 text-primary" />
-                    </div>
-                  ) : (
-                    <img src="/placeholder.svg" alt={book.title} className="w-full h-full object-cover" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                      {book.title}
-                    </h3>
-                    {book.is_folder && (
-                      <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
-                        Serie
-                      </span>
+        <div className="max-w-2xl mx-auto px-4 py-6 text-foreground">
+          {/* Search */}
+          <div className="mb-6">
+            <div className="relative flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Buscar por título, autor o serie..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="pl-12 h-12 bg-card border-border rounded-xl"
+                />
+              </div>
+              <Button onClick={() => handleSearch()} disabled={isLoading} className="h-12 px-6 bg-primary hover:bg-primary/90">
+                {isLoading ? "Buscando..." : "Buscar"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Results */}
+          <div className="space-y-3">
+            {books.map((book) => (
+              <Card
+                key={book.id}
+                onClick={() => handleBookClick(book)}
+                className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
+              >
+                <div className="flex gap-4">
+                  <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                    {book.cover ? (
+                      <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                    ) : book.is_folder ? (
+                      <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                        <BookOpen className="w-8 h-8 text-primary" />
+                      </div>
+                    ) : (
+                      <img src="/placeholder.svg" alt={book.title} className="w-full h-full object-cover" />
                     )}
                   </div>
-                  <p className="text-sm text-primary font-medium mb-1 truncate">{book.author}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-2 italic mb-2">
-                    {book.is_folder ? "Ver esta colección..." : "Toca para detalles..."}
-                  </p>
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                        {book.title}
+                      </h3>
+                      {book.is_folder && (
+                        <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
+                          Serie
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-primary font-medium mb-1 truncate">{book.author}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 italic mb-2">
+                      {book.is_folder ? "Ver esta colección..." : "Toca para detalles..."}
+                    </p>
 
-                  {!book.is_folder && book.download_url && (
-                    <Button
-                      size="sm"
-                      onClick={(e) => handleDownload(e, book)}
-                      className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
-                    >
-                      <Download className="w-3 h-3 mr-1.5" />
-                      Descargar
-                    </Button>
-                  )}
+                    {!book.is_folder && book.download_url && (
+                      <Button
+                        size="sm"
+                        onClick={(e) => handleDownload(e, book)}
+                        className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
+                      >
+                        <Download className="w-3 h-3 mr-1.5" />
+                        Descargar
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex items-center">
+                    <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {/* Pagination Component */}
-        {books.length > 0 && (
-          <Pagination
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            hasNextPage={!!pagination.nextPage}
-            hasPrevPage={!!pagination.prevPage}
-            onNextPage={() => pagination.nextPage && handleSearch(pagination.nextPage)}
-            onPrevPage={() => pagination.prevPage && handleSearch(pagination.prevPage)}
-            isLoading={isLoading}
-          />
-        )}
-
-        {/* Empty State */}
-        {books.length === 0 && !isLoading && (
-          <div className="text-center py-12">
-            <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <p className="text-muted-foreground">
-              {searchQuery ? "No se encontraron resultados" : "Busca libros por título o autor"}
-            </p>
+              </Card>
+            ))}
           </div>
-        )}
+
+          {/* Pagination Component */}
+          {books.length > 0 && (
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              hasNextPage={!!pagination.nextPage}
+              hasPrevPage={!!pagination.prevPage}
+              onNextPage={() => pagination.nextPage && handleSearch(pagination.nextPage)}
+              onPrevPage={() => pagination.prevPage && handleSearch(pagination.prevPage)}
+              isLoading={isLoading}
+            />
+          )}
+
+          {/* Empty State */}
+          {books.length === 0 && !isLoading && (
+            <div className="text-center py-12">
+              <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground">
+                {searchQuery ? "No se encontraron resultados" : "Busca libros por título o autor"}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </AccessGuard>
   )
 }

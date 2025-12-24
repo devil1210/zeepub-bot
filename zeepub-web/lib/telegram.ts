@@ -8,8 +8,12 @@ export function initTelegramWebApp() {
   const webApp = getTelegramWebApp()
   if (!webApp) return null
 
+  // Expand to full height
+  webApp.expand()
+
   // Set header color to match theme
   webApp.setHeaderColor("#1C2733")
+  webApp.setBackgroundColor("#0E1621")
 
   return webApp
 }

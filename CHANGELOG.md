@@ -5,6 +5,22 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.5] - 2025-12-24
+
+### Added
+- Integrated new `v0` interface update across the entire Mini App.
+- Implemented `AccessGuard` component for unified access control on all pages.
+- Added smooth theme-aware loading states during access verification.
+
+### Fixed
+- Improved Telegram WebApp initialization (expand and background colors).
+- Optimized navigation by switching to Next.js `Link` components.
+
+### Changed
+- Refined Home Page design with a modern card-based menu.
+- Updated `BottomNav` with refreshed icons and styling.
+- Preserved and unified "Mi Catálogo" and "Gestión Accesos" into the new design.
+
 ## [v4.4.4] - 2025-12-24
 ### Fixed
 - **Pruebas - Estabilidad**: Refactorización profunda de la suite de pruebas para eliminar la contaminación de estado global y errores de tipo (`TypeError`).
