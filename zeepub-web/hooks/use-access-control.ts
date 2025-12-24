@@ -11,15 +11,10 @@ export type UserLevel = {
 }
 
 export function useAccessControl() {
-    const { user, hasAccess, isReady } = useTelegramContext()
-
-    // En esta implementación, hasAccess indica si el usuario tiene permiso para entrar.
-    // Pero necesitamos saber si específicamente es Admin para el panel.
-    // Reutilizamos la lógica del backend: si tiene acceso y es admin.
-    // Nota: hasAccess en el context actual es (result.hasAccess || result.isAdmin).
+    const { user, isAdmin, isReady } = useTelegramContext()
 
     return {
-        isAdmin: hasAccess, // Simplificación: si tiene acceso total es admin para este contexto
+        isAdmin: !!isAdmin,
         loading: !isReady,
         user
     }

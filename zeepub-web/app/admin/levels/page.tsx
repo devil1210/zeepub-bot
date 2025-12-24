@@ -25,7 +25,11 @@ export default function AccessControlPage() {
     useEffect(() => {
         async function fetchLevels() {
             try {
-                const response = await fetch("/api/admin/access-levels")
+                const response = await fetch("/api/admin/access-levels", {
+                    headers: {
+                        "x-telegram-init-data": (window as any).Telegram?.WebApp?.initData || ""
+                    }
+                })
                 if (response.ok) {
                     const data = await response.json()
                     setLevels(data.levels)
@@ -54,6 +58,7 @@ export default function AccessControlPage() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "x-telegram-init-data": (window as any).Telegram?.WebApp?.initData || ""
                 },
                 body: JSON.stringify({
                     levels: levels.map((l) => ({ id: l.id, hasAccess: l.hasAccess })),

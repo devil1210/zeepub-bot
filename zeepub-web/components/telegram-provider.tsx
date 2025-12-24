@@ -10,6 +10,7 @@ interface TelegramContextType {
   user: any
   isReady: boolean
   hasAccess: boolean | null
+  isAdmin: boolean | null
 }
 
 const TelegramContext = createContext<TelegramContextType>({
@@ -17,11 +18,13 @@ const TelegramContext = createContext<TelegramContextType>({
   user: null,
   isReady: false,
   hasAccess: null,
+  isAdmin: null,
 })
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
   const telegram = useTelegram()
   const [hasAccess, setHasAccess] = useState<boolean | null>(null)
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -32,6 +35,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
           const result = await checkAccess(telegram.user.id)
           const accessValue = result.hasAccess || result.isAdmin
           setHasAccess(accessValue)
+          setIsAdmin(result.isAdmin)
 
           if (!accessValue && pathname !== "/no-access") {
             console.log("[AccessControl] Denied, redirecting to /no-access")
@@ -54,7 +58,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
 
   const value = {
     ...telegram,
-    hasAccess
+    hasAccess,
+    isAdmin
   }
 
   return <TelegramContext.Provider value={value}>{children}</TelegramContext.Provider>

@@ -7,6 +7,10 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     level=getattr(logging, config.LOG_LEVEL.upper(), logging.INFO),
 )
+# Silenciar bibliotecas ruidosas
+logging.getLogger("aiosqlite").setLevel(logging.INFO)
+logging.getLogger("httpcore").setLevel(logging.INFO)
+logging.getLogger("httpx").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 

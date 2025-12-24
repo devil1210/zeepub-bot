@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.4.1] - 2025-12-24
+### Fixed
+- **Admin - UX**: Corregido fallo que impedía listar niveles en el Panel de Administración debido a falta de cabeceras de autenticación.
+- **Frontend - Core**: Expuesto el estado `isAdmin` en el contexto global de la Mini App para verificaciones de permisos más seguras.
+- **Backend - Logging**: Silenciados logs excesivamente ruidosos de `aiosqlite` y `httpcore` en modo debug.
+
 ## [v4.4.0] - 2025-12-24
 ### Fixed
 - **Seguridad - Core**: Corregido fallo que bloqueaba el acceso a administradores definidos vía `/add_user` o `config.ADMIN_USERS`.
