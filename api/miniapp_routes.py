@@ -464,6 +464,59 @@ async def handle_bot_request(
             )
             return result
 
+        elif action == "user_status":
+            # Return user level and download information
+            from core.state_manager import state_manager
+            from datetime import datetime, timedelta
+            
+            st = state_manager.get_user_state(user_id)
+            
+            # Role display mapping
+            roles_display = {
+                "admin": "Admin 🛠️",
+                "staff": "Staff 🛡️",
+                "premium": "Premium ✨",
+                "vip": "VIP ⭐️",
+                "white": "Patrocinador 🤍",
+                "free": "Lector 📚",
+            }
+            
+            role_key = user_effective.get("role", "free")
+            system_role_text = roles_display.get(role_key, "Lector")
+            if role_key == "banned":
+                system_role_text = "🚫 Baneado"
+            
+            # Determine max downloads
+            if role_key in ("admin", "staff", "premium", "banned"):
+                max_dl = None
+            elif role_key == "vip":
+                max_dl = config.VIP_DOWNLOADS_PER_DAY
+            elif role_key == "white":
+                max_dl = config.WHITELIST_DOWNLOADS_PER_DAY
+            else:
+                max_dl = config.MAX_DOWNLOADS_PER_DAY
+            
+            # Downloads used
+            used = st.get("downloads_used", 0)
+            
+            # Calculate time until next reset (midnight)
+            now = datetime.now()
+            next_midnight = (now + timedelta(days=1)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            time_left = next_midnight - now
+            hours, remainder = divmod(int(time_left.total_seconds()), 3600)
+            minutes, _ = divmod(remainder, 60)
+            
+            return {
+                "level": system_role_text,
+                "downloadsUsed": used,
+                "downloadsLimit": max_dl,
+                "timeUntilReset": f"{hours}h {minutes}m",
+                "hasUnlimitedDownloads": max_dl is None and role_key != "banned",
+                "isBanned": role_key == "banned"
+            }
+
         elif action == "status":
             return {"status": "online", "version": os.getenv("BOT_VERSION", "4.0.0")}
 
