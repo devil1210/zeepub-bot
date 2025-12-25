@@ -68,14 +68,14 @@ export default function HomePage() {
             </div>
           )}
 
-          <div className="flex flex-col items-center text-center mb-8">
-            <Avatar className="w-24 h-24 mb-4 border-2 border-primary/20">
+          <div className="flex flex-col items-center text-center mb-5">
+            <Avatar className="w-14 h-14 mb-2 border border-primary/20">
               <AvatarImage src={botInfo.avatar || "/placeholder.svg"} alt={botInfo.name} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">ZP</AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground text-sm">ZP</AvatarFallback>
             </Avatar>
             {/* Admin toggle oculto en el nombre del bot */}
             <h2
-              className={`text-3xl font-bold mb-2 ${typeof isAdmin === 'boolean' && isAdmin ? 'cursor-pointer select-none' : ''}`}
+              className={`text-xl font-bold mb-1 ${typeof isAdmin === 'boolean' && isAdmin ? 'cursor-pointer select-none' : ''}`}
               onClick={() => {
                 if (typeof isAdmin === 'boolean' && isAdmin) {
                   setIsAdminMode(!isAdminMode)
@@ -84,8 +84,8 @@ export default function HomePage() {
             >
               {botInfo.name}
             </h2>
-            <p className="text-muted-foreground mb-4">{botInfo.username}</p>
-            <p className="text-sm text-foreground/80 leading-relaxed max-w-md">{botInfo.description}</p>
+            <p className="text-xs text-muted-foreground mb-2">{botInfo.username}</p>
+            <p className="text-xs text-foreground/80 leading-relaxed max-w-xs">{botInfo.description}</p>
           </div>
 
           {/* Search */}
