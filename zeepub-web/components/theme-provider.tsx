@@ -9,6 +9,8 @@ interface ThemeContextType {
   setPrimaryColor: (val: string) => void
   uiScale: number
   setUiScale: (val: number) => void
+  avatarScale: number
+  setAvatarScale: (val: number) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -18,6 +20,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setPrimaryColor: () => { },
   uiScale: 1,
   setUiScale: () => { },
+  avatarScale: 1,
+  setAvatarScale: () => { },
 })
 
 export function useTheme() {
@@ -81,6 +85,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [primaryColor, setPrimaryColor] = useState("#3b82f6")
   const [uiScale, setUiScale] = useState(1)
+  const [avatarScale, setAvatarScale] = useState(1)
   const [isLoaded, setIsLoaded] = useState(false)
 
   // Load saved settings from localStorage on mount
@@ -90,6 +95,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedTheme = localStorage.getItem("ui-theme")
     const savedColor = localStorage.getItem("ui-primary-color")
     const savedScale = localStorage.getItem("ui-scale")
+    const savedAvatarScale = localStorage.getItem("ui-avatar-scale")
 
     if (savedTheme) {
       setIsDarkMode(savedTheme === "dark")
@@ -99,6 +105,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     if (savedScale) {
       setUiScale(parseFloat(savedScale))
+    }
+    if (savedAvatarScale) {
+      setAvatarScale(parseFloat(savedAvatarScale))
     }
 
     setIsLoaded(true)
@@ -164,6 +173,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("ui-scale", uiScale.toString())
   }, [uiScale, isLoaded])
 
+  // Save avatar scale
+  useEffect(() => {
+    if (!isLoaded) return
+    localStorage.setItem("ui-avatar-scale", avatarScale.toString())
+  }, [avatarScale, isLoaded])
+
   return (
     <ThemeContext.Provider
       value={{
@@ -173,6 +188,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setPrimaryColor,
         uiScale,
         setUiScale,
+        avatarScale,
+        setAvatarScale,
       }}
     >
       {children}

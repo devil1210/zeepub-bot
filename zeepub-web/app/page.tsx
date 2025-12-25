@@ -19,9 +19,11 @@ interface BotInfo {
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { TransparentHeader } from "@/components/transparent-header"
+import { useTheme } from "@/components/theme-provider"
 
 export default function HomePage() {
   const { user, isAdmin, isAdminMode, setIsAdminMode } = useTelegramContext()
+  const { avatarScale } = useTheme()
   const [botInfo, setBotInfo] = useState<BotInfo>({
     name: "ZeePubBot",
     username: "@ZeePubBot",
@@ -83,7 +85,10 @@ export default function HomePage() {
           )}
 
           <div className="flex flex-col items-center text-center mb-5">
-            <Avatar className="w-14 h-14 mb-2 border border-primary/20">
+            <Avatar
+              className="mb-2 border border-primary/20"
+              style={{ width: `${56 * avatarScale}px`, height: `${56 * avatarScale}px` }}
+            >
               <AvatarImage src={botInfo.avatar || "/placeholder.svg"} alt={botInfo.name} />
               <AvatarFallback className="bg-primary text-primary-foreground text-sm">ZP</AvatarFallback>
             </Avatar>

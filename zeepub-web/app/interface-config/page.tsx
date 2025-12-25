@@ -21,7 +21,7 @@ const colorPresets = [
 
 export default function InterfaceConfigPage() {
     // Use global theme context
-    const { isDarkMode, setIsDarkMode, primaryColor, setPrimaryColor, uiScale, setUiScale } = useTheme()
+    const { isDarkMode, setIsDarkMode, primaryColor, setPrimaryColor, uiScale, setUiScale, avatarScale, setAvatarScale } = useTheme()
 
     return (
         <AccessGuard>
@@ -111,6 +111,47 @@ export default function InterfaceConfigPage() {
 
                         <div className="mt-3 text-sm text-muted-foreground text-center">
                             {colorPresets.find((c) => c.value === primaryColor || c.dark === primaryColor)?.name || "Personalizado"}
+                        </div>
+                    </Card>
+
+                    {/* Slider de Tamaño de Avatar */}
+                    <Card className="p-6 border-border">
+                        <div className="mb-6">
+                            <Label className="text-base font-semibold">Tamaño del Avatar</Label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Ajusta el tamaño del avatar del bot en la página principal
+                            </p>
+                        </div>
+                        <div className="space-y-4">
+                            <Slider
+                                value={[avatarScale]}
+                                onValueChange={(value) => setAvatarScale(value[0])}
+                                min={0.6}
+                                max={1.4}
+                                step={0.1}
+                                className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Pequeño (60%)</span>
+                                <span className="font-semibold text-foreground">
+                                    {Math.round(avatarScale * 100)}%
+                                </span>
+                                <span>Grande (140%)</span>
+                            </div>
+                            {/* Avatar preview */}
+                            <div className="flex justify-center mt-4">
+                                <div
+                                    className="rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center transition-all"
+                                    style={{
+                                        width: `${80 * avatarScale}px`,
+                                        height: `${80 * avatarScale}px`
+                                    }}
+                                >
+                                    <span className="text-primary font-bold" style={{ fontSize: `${24 * avatarScale}px` }}>
+                                        Z
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </Card>
 

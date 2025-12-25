@@ -69,8 +69,39 @@ function CatalogContent() {
     useEffect(() => {
         if (history.length > 0) {
             sessionStorage.setItem("catalog-history", JSON.stringify(history))
+        } else {
+            sessionStorage.removeItem("catalog-history")
         }
     }, [history])
+
+    // Integrate with Telegram BackButton
+    useEffect(() => {
+        if (!webApp?.BackButton) return
+
+        const handleBackButtonClick = () => {
+            if (history.length > 0) {
+                handleGoBack()
+            } else {
+                // No more history, use default navigation
+                webApp.BackButton.hide()
+                window.history.back()
+            }
+        }
+
+        if (history.length > 0) {
+            webApp.BackButton.show()
+            webApp.BackButton.onClick(handleBackButtonClick)
+        } else {
+            // Check if we're deep in a catalog (not at root)
+            if (currentFeed && !currentFeed.links.some(l => l.rel === "start")) {
+                webApp.BackButton.show()
+            }
+        }
+
+        return () => {
+            webApp.BackButton.offClick(handleBackButtonClick)
+        }
+    }, [history, webApp, currentFeed])
 
     const loadFeed = async (url?: string, isPagination = false) => {
         setIsLoading(true)
