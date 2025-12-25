@@ -132,27 +132,27 @@ export default function AccessControlPage() {
                             </Card>
                         ))}
                     </div>
-                </div>
 
-                <div className="sticky bottom-20 pt-4">
-                    <Button onClick={handleSave} disabled={saving || saved} className="w-full" size="lg">
-                        {saving ? (
-                            <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Guardando...
-                            </>
-                        ) : saved ? (
-                            <>
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                Guardado
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-4 h-4 mr-2" />
-                                Guardar Configuración
-                            </>
-                        )}
-                    </Button>
+                    <div className="pt-4">
+                        <Button onClick={handleSave} disabled={saving || saved} className="w-full" size="lg">
+                            {saving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Guardando...
+                                </>
+                            ) : saved ? (
+                                <>
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Guardado
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Guardar Configuración
+                                </>
+                            )}
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>

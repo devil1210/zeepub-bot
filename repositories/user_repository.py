@@ -204,11 +204,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
     async def create_minimal_user(self, telegram_id: int, level_id: int = 6):
         """
         Crea un registro básico de usuario si no existe.
+        Level 6 = Lector (default), role = 'free'
         """
         async with self.db.connection() as conn:
             await conn.execute(
-                "INSERT OR IGNORE INTO users (telegram_id, level_id, added_at) VALUES (?, ?, ?)",
-                (telegram_id, level_id, datetime.utcnow())
+                "INSERT OR IGNORE INTO users (telegram_id, level_id, role, added_at) VALUES (?, ?, ?, ?)",
+                (telegram_id, level_id, 'free', datetime.utcnow())
             )
             await conn.commit()
 

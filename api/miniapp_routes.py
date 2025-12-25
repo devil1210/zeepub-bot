@@ -608,6 +608,16 @@ async def check_user_access(
 
     if not access_info:
         logger.error(f"Failed to retrieve access info for user {uid}")
+        # Fallback: Check if Lector level (id=6) has access directly
+        levels = await user_repo.get_all_levels()
+        lector_level = next((l for l in levels if l["name"] == "Lector" or l["id"] == "6"), None)
+        if lector_level:
+            logger.info(f"Using fallback Lector level for user {uid}")
+            return AccessResponse(
+                level=UserLevelModel(**lector_level),
+                hasAccess=lector_level.get("hasAccess", True),  # Default to True for Lector
+                isAdmin=False
+            )
         raise HTTPException(status_code=500, detail="Error al recuperar nivel de usuario")
 
     # 3. Determinar flags finales mezclando ambos sistemas
