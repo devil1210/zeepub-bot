@@ -3,7 +3,6 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { TelegramProvider } from "@/components/telegram-provider"
-import { BottomNav } from "@/components/bottom-nav"
 import Script from "next/script"
 import "./globals.css"
 
@@ -45,8 +44,7 @@ export default function RootLayout({
       </head>
       <body className={`font-sans antialiased`}>
         <TelegramProvider>
-          <div className="pb-20">{children}</div>
-          <BottomNav />
+          <div className="pb-4">{children}</div>
         </TelegramProvider>
         <Analytics />
       </body>
