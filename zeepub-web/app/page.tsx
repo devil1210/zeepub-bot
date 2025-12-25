@@ -53,12 +53,12 @@ export default function HomePage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border pt-safe">
           <div className="max-w-2xl mx-auto px-4 py-2 flex items-center justify-between">
             <div className="flex-1" />
             <h1 className="text-base font-semibold text-center flex-1">ZeePubBot</h1>
             <div className="flex-1 flex justify-end">
-              {isAdmin === true && (
+              {typeof isAdmin === 'boolean' && isAdmin && (
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Admin</span>
                   <Switch
@@ -158,7 +158,7 @@ export default function HomePage() {
 
                   {/* Access Management */}
                   <a href="/admin/levels">
-                    <Card className="p-3 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer border-border">
+                    <Card className="p-3 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <ShieldCheck className="w-5 h-5 text-primary" />

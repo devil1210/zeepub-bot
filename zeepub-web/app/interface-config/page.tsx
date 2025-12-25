@@ -65,8 +65,7 @@ export default function InterfaceConfigPage() {
         // Aplicar color según el modo
         const colorToUse = isDarkMode ? darkColor : lightColor
 
-        // Convertir color hex a oklch aproximado para mantener consistencia
-        // Por simplicidad, inyectamos directamente con RGB ya que Tailwind lo soporta
+        // Convertir color hex a RGB (sin prefijo rgb())
         const hexToRgb = (hex: string) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
             return result
@@ -76,7 +75,10 @@ export default function InterfaceConfigPage() {
 
         const rgbValue = hexToRgb(colorToUse)
         if (rgbValue) {
-            html.style.setProperty("--primary", rgbValue)
+            // Aplicar a todas las variables relacionadas con primary
+            html.style.setProperty("--color-primary", rgbValue)
+            html.style.setProperty("--color-accent", rgbValue)
+            html.style.setProperty("--color-ring", rgbValue)
         }
 
         localStorage.setItem("ui-primary-color", colorToUse)
