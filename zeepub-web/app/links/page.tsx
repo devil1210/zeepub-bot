@@ -60,12 +60,7 @@ export default function LinksPage() {
   const activeLinks = links.filter((link) => link.status === "active").length
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <h1 className="text-lg font-semibold text-center">Mis Enlaces</h1>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background pt-safe">
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Stats Cards */}

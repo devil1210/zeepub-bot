@@ -131,31 +131,14 @@ function CatalogContent() {
 
     if (isLoading && !currentFeed) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="min-h-screen bg-background pt-safe flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-background pb-20">
-            <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-                <div className="max-w-2xl mx-auto px-4 py-3 flex items-center">
-                    {history.length > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={handleGoBack}
-                            className="mr-2 -ml-2"
-                        >
-                            <ChevronLeft className="w-5 h-5" />
-                        </Button>
-                    )}
-                    <h1 className="text-lg font-semibold flex-1 text-center truncate pr-8">
-                        {currentFeed?.title || "Catálogo"}
-                    </h1>
-                </div>
-            </header>
+        <div className="min-h-screen bg-background pt-safe pb-20">
 
             <main className="max-w-2xl mx-auto px-4 py-6 space-y-2 text-foreground">
                 {isLoading && (
@@ -271,7 +254,7 @@ function CatalogContent() {
 
 export default function CatalogPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>}>
+        <Suspense fallback={<div className="min-h-screen bg-background pt-safe flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>}>
             <CatalogContent />
         </Suspense>
     )

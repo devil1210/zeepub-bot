@@ -52,7 +52,7 @@ export default function HomePage() {
 
   return (
     <AccessGuard>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pt-safe">
 
         {/* Bot Profile Section */}
         <div className="max-w-2xl mx-auto px-4 py-8">
@@ -148,9 +148,9 @@ export default function HomePage() {
                     </Card>
                   </a>
 
-                  {/* Access Management */}
-                  <a href="/admin/levels">
-                    <Card className="p-3 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
+                  {/* Access Management - First Item (Rounded Top) */}
+                  <a href="/admin/levels" className="block">
+                    <Card className="p-3 bg-card hover:bg-secondary/50 transition-colors cursor-pointer border-border rounded-none rounded-t-xl border-b-0">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <ShieldCheck className="w-5 h-5 text-primary" />
@@ -164,9 +164,9 @@ export default function HomePage() {
                     </Card>
                   </a>
 
-                  {/* Links Management */}
-                  <a href="/links">
-                    <Card className="p-3 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
+                  {/* Links Management - Middle Item (No border radius) */}
+                  <a href="/links" className="block -mt-px">
+                    <Card className="p-3 bg-card hover:bg-secondary/50 transition-colors cursor-pointer border-border rounded-none border-b-0">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <LinkIcon className="w-5 h-5 text-primary" />
@@ -180,24 +180,25 @@ export default function HomePage() {
                     </Card>
                   </a>
 
-                  {/* Settings Cards - Altura reducida */}
-                  <Card className="p-2.5 border-border">
+                  {/* Settings Cards - Middle Items (No border radius) */}
+                  <Card className="p-3 bg-card border-border rounded-none border-b-0 -mt-px">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="business-mode" className="text-xs font-medium">Business Mode</Label>
+                      <Label htmlFor="business-mode" className="text-sm font-medium">Business Mode</Label>
                       <Switch id="business-mode" checked={businessMode} onCheckedChange={setBusinessMode} className="scale-75" />
                     </div>
                   </Card>
 
-                  <Card className="p-2.5 border-border">
+                  <Card className="p-3 bg-card border-border rounded-none border-b-0 -mt-px">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="allow-groups" className="text-xs font-medium">Permitir Grupos</Label>
+                      <Label htmlFor="allow-groups" className="text-sm font-medium">Permitir Grupos</Label>
                       <Switch id="allow-groups" checked={allowGroups} onCheckedChange={setAllowGroups} className="scale-75" />
                     </div>
                   </Card>
 
-                  <Card className="p-2.5 border-border">
+                  {/* Privacy - Last Item (Rounded Bottom) */}
+                  <Card className="p-3 bg-card border-border rounded-none rounded-b-xl -mt-px">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="group-privacy" className="text-xs font-medium">Privacidad</Label>
+                      <Label htmlFor="group-privacy" className="text-sm font-medium">Privacidad</Label>
                       <Switch id="group-privacy" checked={groupPrivacy} onCheckedChange={setGroupPrivacy} className="scale-75" />
                     </div>
                   </Card>

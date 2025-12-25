@@ -80,17 +80,17 @@ export default function InterfaceConfigPage() {
             document.head.appendChild(styleTag)
         }
 
-        // Inyectar CSS directamente con el color hex
+        // Inyectar CSS directamente con el color hex overrides
         styleTag.textContent = `
       :root {
-        --color-primary: ${colorToUse};
-        --color-accent: ${colorToUse};
-        --color-ring: ${colorToUse};
+        --primary: ${colorToUse};
+        --ring: ${colorToUse};
+        --chart-1: ${colorToUse};
       }
       .dark {
-        --color-primary: ${colorToUse};
-        --color-accent: ${colorToUse};
-        --color-ring: ${colorToUse};
+        --primary: ${colorToUse};
+        --ring: ${colorToUse};
+        --chart-1: ${colorToUse};
       }
     `
 
@@ -99,7 +99,7 @@ export default function InterfaceConfigPage() {
 
     return (
         <AccessGuard>
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen bg-background pt-safe">
                 <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
                     {/* Selector de Tema */}
                     <Card className="p-6 border-border">
