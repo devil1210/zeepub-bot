@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { TelegramProvider } from "@/components/telegram-provider"
+import { ThemeProvider } from "@/components/theme-provider"
 import Script from "next/script"
 import "./globals.css"
 
@@ -38,14 +39,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es" className="dark" suppressHydrationWarning>
       <head>
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
       </head>
       <body className={`font-sans antialiased`}>
-        <TelegramProvider>
-          <div className="pb-4">{children}</div>
-        </TelegramProvider>
+        <ThemeProvider>
+          <TelegramProvider>
+            <div className="pb-4">{children}</div>
+          </TelegramProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

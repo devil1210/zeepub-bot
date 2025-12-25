@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
@@ -8,147 +7,21 @@ import { Slider } from "@/components/ui/slider"
 import { Sun, Moon, Palette } from "lucide-react"
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
+import { useTheme } from "@/components/theme-provider"
 
 // Paleta de colores predefinidos
 const colorPresets = [
     { name: "Azul", value: "#3b82f6", dark: "#60a5fa" },
-    { name: "Verde", value: "#10b981", dark: "#34d399" },
-    { name: "Púrpura", value: "#8b5cf6", dark: "#a78bfa" },
+    { name: "Verde", value: "#22c55e", dark: "#4ade80" },
+    { name: "Púrpura", value: "#a855f7", dark: "#c084fc" },
     { name: "Rosa", value: "#ec4899", dark: "#f472b6" },
-    { name: "Naranja", value: "#f59e0b", dark: "#fbbf24" },
+    { name: "Naranja", value: "#f97316", dark: "#fb923c" },
     { name: "Rojo", value: "#ef4444", dark: "#f87171" },
 ]
 
 export default function InterfaceConfigPage() {
-    const [isDarkMode, setIsDarkMode] = useState(true)
-    const [uiScale, setUiScale] = useState(1.0)
-    const [primaryColor, setPrimaryColor] = useState("#3b82f6")
-
-    // Cargar configuración guardada
-    useEffect(() => {
-        const savedTheme = localStorage.getItem("ui-theme")
-        const savedScale = localStorage.getItem("ui-scale")
-        const savedColor = localStorage.getItem("ui-primary-color")
-
-        if (savedTheme) setIsDarkMode(savedTheme === "dark")
-        if (savedScale) setUiScale(parseFloat(savedScale))
-        if (savedColor) setPrimaryColor(savedColor)
-    }, [])
-
-    // Aplicar tema - forzar recarga de estilos
-    useEffect(() => {
-        const html = document.documentElement
-
-        // Remover y agregar la clase para forzar actualización
-        html.classList.remove("dark", "light")
-
-        if (isDarkMode) {
-            html.classList.add("dark")
-            html.setAttribute("data-theme", "dark")
-        } else {
-            html.classList.add("light")
-            html.setAttribute("data-theme", "light")
-        }
-
-        localStorage.setItem("ui-theme", isDarkMode ? "dark" : "light")
-    }, [isDarkMode])
-
-    // Aplicar escala de UI
-    useEffect(() => {
-        const html = document.documentElement
-        html.style.setProperty("--font-scale", uiScale.toString())
-        html.style.setProperty("--spacing-scale", uiScale.toString())
-        localStorage.setItem("ui-scale", uiScale.toString())
-    }, [uiScale])
-
-    // Aplicar color principal - convertir hex a OKLCH
-    useEffect(() => {
-        const html = document.documentElement
-        const selectedPreset = colorPresets.find(
-            (c) => c.value === primaryColor || c.dark === primaryColor
-        )
-        const lightColor = selectedPreset?.value || primaryColor
-        const darkColor = selectedPreset?.dark || primaryColor
-
-        // Aplicar color según el modo
-        const colorToUse = isDarkMode ? darkColor : lightColor
-
-        // Convertir hex a OKLCH
-        const hexToOklch = (hex: string): string => {
-            // Remove # if present
-            hex = hex.replace('#', '')
-
-            // Parse RGB
-            const r = parseInt(hex.substring(0, 2), 16) / 255
-            const g = parseInt(hex.substring(2, 4), 16) / 255
-            const b = parseInt(hex.substring(4, 6), 16) / 255
-
-            // Convert RGB to linear RGB
-            const toLinear = (c: number) => {
-                return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
-            }
-
-            const rL = toLinear(r)
-            const gL = toLinear(g)
-            const bL = toLinear(b)
-
-            // Convert to XYZ (D65 illuminant)
-            const x = 0.4124564 * rL + 0.3575761 * gL + 0.1804375 * bL
-            const y = 0.2126729 * rL + 0.7151522 * gL + 0.0721750 * bL
-            const z = 0.0193339 * rL + 0.1191920 * gL + 0.9503041 * bL
-
-            // Convert to Lab
-            const xn = 0.95047
-            const yn = 1.00000
-            const zn = 1.08883
-
-            const fx = x / xn > 0.008856 ? Math.pow(x / xn, 1 / 3) : (903.3 * x / xn + 16) / 116
-            const fy = y / yn > 0.008856 ? Math.pow(y / yn, 1 / 3) : (903.3 * y / yn + 16) / 116
-            const fz = z / zn > 0.008856 ? Math.pow(z / zn, 1 / 3) : (903.3 * z / zn + 16) / 116
-
-            const L = 116 * fy - 16
-            const a = 500 * (fx - fy)
-            const bVal = 200 * (fy - fz)
-
-            // Convert Lab to LCH
-            const C = Math.sqrt(a * a + bVal * bVal)
-            let H = Math.atan2(bVal, a) * 180 / Math.PI
-            if (H < 0) H += 360
-
-            // Approximate OKLCH (simplified conversion)
-            const l = L / 100
-            const c = C / 150
-            const h = H
-
-            return `${l.toFixed(3)} ${c.toFixed(3)} ${h.toFixed(1)}`
-        }
-
-        // Crear un style tag dinámico para inyectar los colores
-        let styleTag = document.getElementById("dynamic-theme-colors")
-        if (!styleTag) {
-            styleTag = document.createElement("style")
-            styleTag.id = "dynamic-theme-colors"
-            document.head.appendChild(styleTag)
-        }
-
-        const oklchValue = hexToOklch(colorToUse)
-
-        // Inyectar CSS con valores OKLCH
-        styleTag.textContent = `
-      :root {
-        --primary: oklch(${oklchValue}) !important;
-        --ring: oklch(${oklchValue}) !important;
-        --accent: oklch(${oklchValue}) !important;
-      }
-      .dark {
-        --primary: oklch(${oklchValue}) !important;
-        --ring: oklch(${oklchValue}) !important;
-        --accent: oklch(${oklchValue}) !important;
-      }
-    `
-
-        localStorage.setItem("ui-primary-color", colorToUse)
-    }, [primaryColor, isDarkMode])
+    // Use global theme context
+    const { isDarkMode, setIsDarkMode, primaryColor, setPrimaryColor, uiScale, setUiScale } = useTheme()
 
     return (
         <AccessGuard>
