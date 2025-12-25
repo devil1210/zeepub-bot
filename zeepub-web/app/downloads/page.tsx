@@ -90,7 +90,7 @@ export default function DownloadsPage() {
     return (
       <AccessGuard>
         <div className="min-h-screen bg-background flex items-center justify-center">
-        <TransparentHeader />
+          <TransparentHeader />
 
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
@@ -101,7 +101,7 @@ export default function DownloadsPage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background pt-safe">
-
+        <TransparentHeader />
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
           {/* Stats Card */}
           <Card className="p-6 border-border bg-gradient-to-br from-primary/10 to-primary/5">

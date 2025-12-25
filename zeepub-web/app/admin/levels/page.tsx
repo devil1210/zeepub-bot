@@ -81,7 +81,7 @@ export default function AccessControlPage() {
     if (authLoading || loading) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
-              <TransparentHeader />
+                <TransparentHeader />
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         )
@@ -93,7 +93,7 @@ export default function AccessControlPage() {
 
     return (
         <div className="min-h-screen bg-background pt-safe">
-
+            <TransparentHeader />
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
                 <div className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/20 rounded-lg">
                     <Shield className="w-6 h-6 text-primary flex-shrink-0" />
