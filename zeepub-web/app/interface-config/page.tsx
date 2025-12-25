@@ -36,26 +36,26 @@ export default function InterfaceConfigPage() {
 
     // Aplicar tema
     useEffect(() => {
-        const root = document.documentElement
+        const html = document.documentElement
         if (isDarkMode) {
-            root.classList.add("dark")
+            html.classList.add("dark")
         } else {
-            root.classList.remove("dark")
+            html.classList.remove("dark")
         }
         localStorage.setItem("ui-theme", isDarkMode ? "dark" : "light")
     }, [isDarkMode])
 
     // Aplicar escala de UI
     useEffect(() => {
-        const root = document.documentElement
-        root.style.setProperty("--font-scale", uiScale.toString())
-        root.style.setProperty("--spacing-scale", uiScale.toString())
+        const html = document.documentElement
+        html.style.setProperty("--font-scale", uiScale.toString())
+        html.style.setProperty("--spacing-scale", uiScale.toString())
         localStorage.setItem("ui-scale", uiScale.toString())
     }, [uiScale])
 
     // Aplicar color principal
     useEffect(() => {
-        const root = document.documentElement
+        const html = document.documentElement
         const selectedPreset = colorPresets.find(
             (c) => c.value === primaryColor || c.dark === primaryColor
         )
@@ -64,7 +64,21 @@ export default function InterfaceConfigPage() {
 
         // Aplicar color según el modo
         const colorToUse = isDarkMode ? darkColor : lightColor
-        root.style.setProperty("--primary", colorToUse)
+
+        // Convertir color hex a oklch aproximado para mantener consistencia
+        // Por simplicidad, inyectamos directamente con RGB ya que Tailwind lo soporta
+        const hexToRgb = (hex: string) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+            return result
+                ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}`
+                : null
+        }
+
+        const rgbValue = hexToRgb(colorToUse)
+        if (rgbValue) {
+            html.style.setProperty("--primary", rgbValue)
+        }
+
         localStorage.setItem("ui-primary-color", colorToUse)
     }, [primaryColor, isDarkMode])
 

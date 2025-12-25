@@ -44,7 +44,6 @@ export default function HomePage() {
     { icon: Library, label: "Mi Catálogo", href: "/catalog", description: "Accede a bibliotecas OPDS" },
     { icon: Download, label: "Mis Descargas", href: "/downloads", description: "Historial y límites de descarga" },
     { icon: BarChart3, label: "Estado", href: "/status", description: "Ver estado del bot y estadísticas" },
-    { icon: Settings, label: "Apariencia", href: "/interface-config", description: "Personaliza tema, colores y tamaño" },
     { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados", adminOnly: true },
     { icon: Heart, label: "Donar", href: "/donate", description: "Apoya el proyecto" },
     { icon: Info, label: "Ayuda", href: "/help", description: "Comandos y soporte" },
@@ -54,14 +53,14 @@ export default function HomePage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <div className="max-w-2xl mx-auto px-4 py-2 flex items-center justify-between">
             <div className="flex-1" />
-            <h1 className="text-lg font-semibold text-center flex-1">ZeePubBot</h1>
+            <h1 className="text-base font-semibold text-center flex-1">ZeePubBot</h1>
             <div className="flex-1 flex justify-end">
-              {isAdmin && (
+              {isAdmin === true && (
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Admin</span>
+                  <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Admin</span>
                   <Switch
                     checked={isAdminMode}
                     onCheckedChange={setIsAdminMode}
@@ -121,16 +120,16 @@ export default function HomePage() {
                 .filter(item => !item.adminOnly)
                 .map((item, index) => (
                   <a key={index} href={item.href}>
-                    <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <item.icon className="w-6 h-6 text-primary" />
+                    <Card className="p-3 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <item.icon className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-foreground mb-1">{item.label}</h4>
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
+                          <h4 className="text-sm font-medium text-foreground">{item.label}</h4>
+                          <p className="text-xs text-muted-foreground">{item.description}</p>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
                       </div>
                     </Card>
                   </a>
@@ -138,62 +137,78 @@ export default function HomePage() {
             </div>
 
             {isAdminMode && (
-              <div className="space-y-4 pt-4 border-t border-border">
-                <h3 className="text-xl font-bold">Panel Administrador</h3>
-                <div className="space-y-4">
-                  {/* Access Management */}
-                  <a href="/admin/levels">
-                    <Card className="p-4 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer border-border">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <ShieldCheck className="w-6 h-6 text-primary" />
+              <div className="space-y-3 pt-4 border-t border-border">
+                <h3 className="text-lg font-bold">Panel Administrador</h3>
+                <div className="space-y-2">
+                  {/* Apariencia - Solo en Admin Panel */}
+                  <a href="/interface-config">
+                    <Card className="p-3 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Settings className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-foreground mb-1">Gestión Accesos</h4>
-                          <p className="text-sm text-muted-foreground">Configura niveles y permisos</p>
+                          <h4 className="text-sm font-medium text-foreground">Apariencia</h4>
+                          <p className="text-xs text-muted-foreground">Personaliza tema, colores y tamaño</p>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
+                      </div>
+                    </Card>
+                  </a>
+
+                  {/* Access Management */}
+                  <a href="/admin/levels">
+                    <Card className="p-3 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer border-border">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <ShieldCheck className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-foreground">Gestión Accesos</h4>
+                          <p className="text-xs text-muted-foreground">Configura niveles y permisos</p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
                       </div>
                     </Card>
                   </a>
 
                   {/* Links Management */}
                   <a href="/links">
-                    <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <LinkIcon className="w-6 h-6 text-primary" />
+                    <Card className="p-3 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <LinkIcon className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-foreground mb-1">Mis Enlaces</h4>
-                          <p className="text-sm text-muted-foreground">Gestión de links acortados</p>
+                          <h4 className="text-sm font-medium text-foreground">Mis Enlaces</h4>
+                          <p className="text-xs text-muted-foreground">Gestión de links acortados</p>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
                       </div>
                     </Card>
                   </a>
 
                   {/* Settings Cards */}
-                  <Card className="p-4 border-border">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor="business-mode" className="font-semibold">Business Mode</Label>
-                      <Switch id="business-mode" checked={businessMode} onCheckedChange={setBusinessMode} />
+                  <Card className="p-3 border-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <Label htmlFor="business-mode" className="text-sm font-medium">Business Mode</Label>
+                      <Switch id="business-mode" checked={businessMode} onCheckedChange={setBusinessMode} className="scale-90" />
                     </div>
                     <p className="text-xs text-muted-foreground">Manejo automático de mensajes en cuentas de usuario</p>
                   </Card>
 
-                  <Card className="p-4 border-border">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor="allow-groups" className="font-semibold">Permitir Grupos</Label>
-                      <Switch id="allow-groups" checked={allowGroups} onCheckedChange={setAllowGroups} />
+                  <Card className="p-3 border-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <Label htmlFor="allow-groups" className="text-sm font-medium">Permitir Grupos</Label>
+                      <Switch id="allow-groups" checked={allowGroups} onCheckedChange={setAllowGroups} className="scale-90" />
                     </div>
                     <p className="text-xs text-muted-foreground">Habilitar el bot en chats grupales</p>
                   </Card>
 
-                  <Card className="p-4 border-border">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor="group-privacy" className="font-semibold">Privacidad</Label>
-                      <Switch id="group-privacy" checked={groupPrivacy} onCheckedChange={setGroupPrivacy} />
+                  <Card className="p-3 border-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <Label htmlFor="group-privacy" className="text-sm font-medium">Privacidad</Label>
+                      <Switch id="group-privacy" checked={groupPrivacy} onCheckedChange={setGroupPrivacy} className="scale-90" />
                     </div>
                     <p className="text-xs text-muted-foreground">Limitar mensajes leídos en grupos</p>
                   </Card>
