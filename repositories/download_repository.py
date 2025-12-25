@@ -22,14 +22,14 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
     ) -> int:
         """
         Record a download in the history.
-        
+
         Args:
             user_id: Telegram user ID
             title: Book title
             author: Book author (optional)
             download_url: URL of the downloaded file (optional)
             file_size: File size in bytes (optional)
-            
+
         Returns:
             ID of the created record
         """
@@ -52,11 +52,11 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
     ) -> List[Dict[str, Any]]:
         """
         Get recent downloads for a specific user.
-        
+
         Args:
             user_id: Telegram user ID
             limit: Maximum number of downloads to return
-            
+
         Returns:
             List of download records
         """
@@ -72,7 +72,7 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
                 (user_id, limit)
             )
             rows = await cursor.fetchall()
-            
+
             return [
                 {
                     "id": row[0],
@@ -91,11 +91,11 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
     ) -> int:
         """
         Count downloads for a user, optionally since a specific date.
-        
+
         Args:
             user_id: Telegram user ID
             since: Optional datetime to count from
-            
+
         Returns:
             Number of downloads
         """
@@ -118,7 +118,7 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
                     """,
                     (user_id,)
                 )
-            
+
             row = await cursor.fetchone()
             return row[0] if row else 0
 

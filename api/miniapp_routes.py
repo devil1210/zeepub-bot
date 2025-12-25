@@ -468,9 +468,9 @@ async def handle_bot_request(
             # Return user level and download information
             from core.state_manager import state_manager
             from datetime import datetime, timedelta
-            
+
             st = state_manager.get_user_state(user_id)
-            
+
             # Role display mapping
             roles_display = {
                 "admin": "Admin 🛠️",
@@ -480,12 +480,12 @@ async def handle_bot_request(
                 "white": "Patrocinador 🤍",
                 "free": "Lector 📚",
             }
-            
+
             role_key = user_effective.get("role", "free")
             system_role_text = roles_display.get(role_key, "Lector")
             if role_key == "banned":
                 system_role_text = "🚫 Baneado"
-            
+
             # Determine max downloads
             if role_key in ("admin", "staff", "premium", "banned"):
                 max_dl = None
@@ -495,10 +495,10 @@ async def handle_bot_request(
                 max_dl = config.WHITELIST_DOWNLOADS_PER_DAY
             else:
                 max_dl = config.MAX_DOWNLOADS_PER_DAY
-            
+
             # Downloads used
             used = st.get("downloads_used", 0)
-            
+
             # Calculate time until next reset (midnight)
             now = datetime.now()
             next_midnight = (now + timedelta(days=1)).replace(
@@ -507,7 +507,7 @@ async def handle_bot_request(
             time_left = next_midnight - now
             hours, remainder = divmod(int(time_left.total_seconds()), 3600)
             minutes, _ = divmod(remainder, 60)
-            
+
             result = {
                 "level": system_role_text,
                 "downloadsUsed": used,
@@ -516,20 +516,20 @@ async def handle_bot_request(
                 "hasUnlimitedDownloads": max_dl is None and role_key != "banned",
                 "isBanned": role_key == "banned"
             }
-            
+
             logger.info(f"[user_status] User {user_id} - Role: {role_key}, Level: {system_role_text}, Used: {used}, Limit: {max_dl}, Reset: {hours}h {minutes}m")
-            
+
             return result
 
         elif action == "user_downloads_history":
             # Return user's recent download history
             try:
                 from repositories.download_repository import download_repo
-                
+
                 downloads = await download_repo.get_user_downloads(user_id, limit=10)
-                
+
                 logger.info(f"[user_downloads_history] User {user_id} - Retrieved {len(downloads)} downloads")
-                
+
                 return {
                     "downloads": downloads
                 }

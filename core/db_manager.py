@@ -92,7 +92,7 @@ class DatabaseManager:
                     FOREIGN KEY (user_id) REFERENCES users(telegram_id)
                 )
             """)
-            
+
             # Crear índice para búsquedas rápidas por usuario
             await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_download_history_user_id 
