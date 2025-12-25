@@ -61,7 +61,7 @@ export default function InterfaceConfigPage() {
         localStorage.setItem("ui-scale", uiScale.toString())
     }, [uiScale])
 
-    // Aplicar color principal - inyectar directamente en style
+    // Aplicar color principal - convertir hex a OKLCH
     useEffect(() => {
         const html = document.documentElement
         const selectedPreset = colorPresets.find(
@@ -73,6 +73,56 @@ export default function InterfaceConfigPage() {
         // Aplicar color según el modo
         const colorToUse = isDarkMode ? darkColor : lightColor
 
+        // Convertir hex a OKLCH
+        const hexToOklch = (hex: string): string => {
+            // Remove # if present
+            hex = hex.replace('#', '')
+
+            // Parse RGB
+            const r = parseInt(hex.substring(0, 2), 16) / 255
+            const g = parseInt(hex.substring(2, 4), 16) / 255
+            const b = parseInt(hex.substring(4, 6), 16) / 255
+
+            // Convert RGB to linear RGB
+            const toLinear = (c: number) => {
+                return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+            }
+
+            const rL = toLinear(r)
+            const gL = toLinear(g)
+            const bL = toLinear(b)
+
+            // Convert to XYZ (D65 illuminant)
+            const x = 0.4124564 * rL + 0.3575761 * gL + 0.1804375 * bL
+            const y = 0.2126729 * rL + 0.7151522 * gL + 0.0721750 * bL
+            const z = 0.0193339 * rL + 0.1191920 * gL + 0.9503041 * bL
+
+            // Convert to Lab
+            const xn = 0.95047
+            const yn = 1.00000
+            const zn = 1.08883
+
+            const fx = x / xn > 0.008856 ? Math.pow(x / xn, 1 / 3) : (903.3 * x / xn + 16) / 116
+            const fy = y / yn > 0.008856 ? Math.pow(y / yn, 1 / 3) : (903.3 * y / yn + 16) / 116
+            const fz = z / zn > 0.008856 ? Math.pow(z / zn, 1 / 3) : (903.3 * z / zn + 16) / 116
+
+            const L = 116 * fy - 16
+            const a = 500 * (fx - fy)
+            const bVal = 200 * (fy - fz)
+
+            // Convert Lab to LCH
+            const C = Math.sqrt(a * a + bVal * bVal)
+            let H = Math.atan2(bVal, a) * 180 / Math.PI
+            if (H < 0) H += 360
+
+            // Approximate OKLCH (simplified conversion)
+            const l = L / 100
+            const c = C / 150
+            const h = H
+
+            return `${l.toFixed(3)} ${c.toFixed(3)} ${h.toFixed(1)}`
+        }
+
         // Crear un style tag dinámico para inyectar los colores
         let styleTag = document.getElementById("dynamic-theme-colors")
         if (!styleTag) {
@@ -81,17 +131,19 @@ export default function InterfaceConfigPage() {
             document.head.appendChild(styleTag)
         }
 
-        // Inyectar CSS con !important para forzar override de OKLCH
+        const oklchValue = hexToOklch(colorToUse)
+
+        // Inyectar CSS con valores OKLCH
         styleTag.textContent = `
       :root {
-        --primary: ${colorToUse} !important;
-        --ring: ${colorToUse} !important;
-        --accent: ${colorToUse} !important;
+        --primary: oklch(${oklchValue}) !important;
+        --ring: oklch(${oklchValue}) !important;
+        --accent: oklch(${oklchValue}) !important;
       }
       .dark {
-        --primary: ${colorToUse} !important;
-        --ring: ${colorToUse} !important;
-        --accent: ${colorToUse} !important;
+        --primary: oklch(${oklchValue}) !important;
+        --ring: oklch(${oklchValue}) !important;
+        --accent: oklch(${oklchValue}) !important;
       }
     `
 

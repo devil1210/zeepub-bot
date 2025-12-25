@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3, Settings } from "lucide-react"
+import { BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3, Settings } from "lucide-react"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { AccessGuard } from "@/components/access-guard"
 import { UserLevelBadge } from "@/components/user-level-badge"
@@ -88,24 +87,6 @@ export default function HomePage() {
             <p className="text-xs text-foreground/80 leading-relaxed max-w-xs">{botInfo.description}</p>
           </div>
 
-          {/* Search */}
-          {!isAdminMode && (
-            <div className="mb-8">
-              <a href="/search">
-                <div className="relative cursor-pointer">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                  <Input
-                    type="text"
-                    placeholder="Buscar libros..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    readOnly
-                    className="pl-12 h-12 bg-card border-border rounded-xl cursor-pointer"
-                  />
-                </div>
-              </a>
-            </div>
-          )}
 
           {/* Menu Items / Admin Panel */}
           <div className="space-y-6">
