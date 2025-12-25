@@ -34,14 +34,21 @@ export default function InterfaceConfigPage() {
         if (savedColor) setPrimaryColor(savedColor)
     }, [])
 
-    // Aplicar tema
+    // Aplicar tema - forzar recarga de estilos
     useEffect(() => {
         const html = document.documentElement
+
+        // Remover y agregar la clase para forzar actualización
+        html.classList.remove("dark", "light")
+
         if (isDarkMode) {
             html.classList.add("dark")
+            html.setAttribute("data-theme", "dark")
         } else {
-            html.classList.remove("dark")
+            html.classList.add("light")
+            html.setAttribute("data-theme", "light")
         }
+
         localStorage.setItem("ui-theme", isDarkMode ? "dark" : "light")
     }, [isDarkMode])
 
@@ -53,7 +60,7 @@ export default function InterfaceConfigPage() {
         localStorage.setItem("ui-scale", uiScale.toString())
     }, [uiScale])
 
-    // Aplicar color principal
+    // Aplicar color principal - inyectar directamente en style
     useEffect(() => {
         const html = document.documentElement
         const selectedPreset = colorPresets.find(
@@ -65,21 +72,27 @@ export default function InterfaceConfigPage() {
         // Aplicar color según el modo
         const colorToUse = isDarkMode ? darkColor : lightColor
 
-        // Convertir color hex a RGB (sin prefijo rgb())
-        const hexToRgb = (hex: string) => {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-            return result
-                ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}`
-                : null
+        // Crear un style tag dinámico para inyectar los colores
+        let styleTag = document.getElementById("dynamic-theme-colors")
+        if (!styleTag) {
+            styleTag = document.createElement("style")
+            styleTag.id = "dynamic-theme-colors"
+            document.head.appendChild(styleTag)
         }
 
-        const rgbValue = hexToRgb(colorToUse)
-        if (rgbValue) {
-            // Aplicar a todas las variables relacionadas con primary
-            html.style.setProperty("--color-primary", rgbValue)
-            html.style.setProperty("--color-accent", rgbValue)
-            html.style.setProperty("--color-ring", rgbValue)
-        }
+        // Inyectar CSS directamente con el color hex
+        styleTag.textContent = `
+      :root {
+        --color-primary: ${colorToUse};
+        --color-accent: ${colorToUse};
+        --color-ring: ${colorToUse};
+      }
+      .dark {
+        --color-primary: ${colorToUse};
+        --color-accent: ${colorToUse};
+        --color-ring: ${colorToUse};
+      }
+    `
 
         localStorage.setItem("ui-primary-color", colorToUse)
     }, [primaryColor, isDarkMode])
@@ -87,12 +100,6 @@ export default function InterfaceConfigPage() {
     return (
         <AccessGuard>
             <div className="min-h-screen bg-background">
-                <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
-                    <div className="max-w-2xl mx-auto px-4 py-3">
-                        <h1 className="text-lg font-semibold text-center">Apariencia</h1>
-                    </div>
-                </header>
-
                 <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
                     {/* Selector de Tema */}
                     <Card className="p-6 border-border">

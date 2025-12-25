@@ -53,24 +53,6 @@ export default function HomePage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border pt-safe">
-          <div className="max-w-2xl mx-auto px-4 py-2 flex items-center justify-between">
-            <div className="flex-1" />
-            <h1 className="text-base font-semibold text-center flex-1">ZeePubBot</h1>
-            <div className="flex-1 flex justify-end">
-              {typeof isAdmin === 'boolean' && isAdmin && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Admin</span>
-                  <Switch
-                    checked={isAdminMode}
-                    onCheckedChange={setIsAdminMode}
-                    className="scale-75"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
 
         {/* Bot Profile Section */}
         <div className="max-w-2xl mx-auto px-4 py-8">
@@ -88,7 +70,17 @@ export default function HomePage() {
               <AvatarImage src={botInfo.avatar || "/placeholder.svg"} alt={botInfo.name} />
               <AvatarFallback className="bg-primary text-primary-foreground text-2xl">ZP</AvatarFallback>
             </Avatar>
-            <h2 className="text-3xl font-bold mb-2">{botInfo.name}</h2>
+            {/* Admin toggle oculto en el nombre del bot */}
+            <h2
+              className={`text-3xl font-bold mb-2 ${typeof isAdmin === 'boolean' && isAdmin ? 'cursor-pointer select-none' : ''}`}
+              onClick={() => {
+                if (typeof isAdmin === 'boolean' && isAdmin) {
+                  setIsAdminMode(!isAdminMode)
+                }
+              }}
+            >
+              {botInfo.name}
+            </h2>
             <p className="text-muted-foreground mb-4">{botInfo.username}</p>
             <p className="text-sm text-foreground/80 leading-relaxed max-w-md">{botInfo.description}</p>
           </div>
@@ -188,29 +180,26 @@ export default function HomePage() {
                     </Card>
                   </a>
 
-                  {/* Settings Cards */}
-                  <Card className="p-3 border-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <Label htmlFor="business-mode" className="text-sm font-medium">Business Mode</Label>
-                      <Switch id="business-mode" checked={businessMode} onCheckedChange={setBusinessMode} className="scale-90" />
+                  {/* Settings Cards - Altura reducida */}
+                  <Card className="p-2.5 border-border">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="business-mode" className="text-xs font-medium">Business Mode</Label>
+                      <Switch id="business-mode" checked={businessMode} onCheckedChange={setBusinessMode} className="scale-75" />
                     </div>
-                    <p className="text-xs text-muted-foreground">Manejo automático de mensajes en cuentas de usuario</p>
                   </Card>
 
-                  <Card className="p-3 border-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <Label htmlFor="allow-groups" className="text-sm font-medium">Permitir Grupos</Label>
-                      <Switch id="allow-groups" checked={allowGroups} onCheckedChange={setAllowGroups} className="scale-90" />
+                  <Card className="p-2.5 border-border">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="allow-groups" className="text-xs font-medium">Permitir Grupos</Label>
+                      <Switch id="allow-groups" checked={allowGroups} onCheckedChange={setAllowGroups} className="scale-75" />
                     </div>
-                    <p className="text-xs text-muted-foreground">Habilitar el bot en chats grupales</p>
                   </Card>
 
-                  <Card className="p-3 border-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <Label htmlFor="group-privacy" className="text-sm font-medium">Privacidad</Label>
-                      <Switch id="group-privacy" checked={groupPrivacy} onCheckedChange={setGroupPrivacy} className="scale-90" />
+                  <Card className="p-2.5 border-border">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="group-privacy" className="text-xs font-medium">Privacidad</Label>
+                      <Switch id="group-privacy" checked={groupPrivacy} onCheckedChange={setGroupPrivacy} className="scale-75" />
                     </div>
-                    <p className="text-xs text-muted-foreground">Limitar mensajes leídos en grupos</p>
                   </Card>
                 </div>
               </div>
