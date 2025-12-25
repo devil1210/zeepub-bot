@@ -126,7 +126,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("ui-theme", isDarkMode ? "dark" : "light")
   }, [isDarkMode, isLoaded])
 
-  // Apply primary color as CSS variables
+  // Apply primary color as CSS variables - use hex directly for accuracy
   useEffect(() => {
     if (!isLoaded) return
 
@@ -138,7 +138,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       ? (selectedPreset?.dark || primaryColor)
       : (selectedPreset?.value || primaryColor)
 
-    // Create or update dynamic style tag
+    // Create or update dynamic style tag - use hex directly for accurate colors
     let styleTag = document.getElementById("dynamic-theme-colors")
     if (!styleTag) {
       styleTag = document.createElement("style")
@@ -146,22 +146,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       document.head.appendChild(styleTag)
     }
 
-    const oklchValue = hexToOklch(colorToUse)
-
+    // Use color() function for wide gamut support or fallback to hex
     styleTag.textContent = `
       :root {
-        --primary: oklch(${oklchValue}) !important;
-        --ring: oklch(${oklchValue}) !important;
-        --accent: oklch(${oklchValue}) !important;
+        --primary: ${colorToUse} !important;
+        --ring: ${colorToUse} !important;
+        --accent: ${colorToUse} !important;
       }
       .dark {
-        --primary: oklch(${oklchValue}) !important;
-        --ring: oklch(${oklchValue}) !important;
-        --accent: oklch(${oklchValue}) !important;
+        --primary: ${colorToUse} !important;
+        --ring: ${colorToUse} !important;
+        --accent: ${colorToUse} !important;
       }
+      /* Ensure button and link colors use the primary */
+      .bg-primary { background-color: ${colorToUse} !important; }
+      .text-primary { color: ${colorToUse} !important; }
+      .border-primary { border-color: ${colorToUse} !important; }
     `
 
-    localStorage.setItem("ui-primary-color", colorToUse)
+    localStorage.setItem("ui-primary-color", primaryColor)
   }, [primaryColor, isDarkMode, isLoaded])
 
   // Apply UI scale

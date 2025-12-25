@@ -74,85 +74,92 @@ function CatalogContent() {
         }
     }, [history])
 
-    // Integrate with Telegram BackButton
-    useEffect(() => {
-        if (!webApp?.BackButton) return
-
-        const handleBackButtonClick = () => {
-            if (history.length > 0) {
-                handleGoBack()
-            } else {
-                // No more history, use default navigation
-                webApp.BackButton.hide()
-                window.history.back()
-            }
-        }
-
-        if (history.length > 0) {
-            webApp.BackButton.show()
-            webApp.BackButton.onClick(handleBackButtonClick)
-        } else {
-            // Check if we're deep in a catalog (not at root)
-            if (currentFeed && !currentFeed.links.some(l => l.rel === "start")) {
-                webApp.BackButton.show()
-            }
-        }
-
-        return () => {
-            webApp.BackButton.offClick(handleBackButtonClick)
-        }
-    }, [history, webApp, currentFeed])
-
     const loadFeed = async (url?: string, isPagination = false) => {
         setIsLoading(true)
         try {
             const data = await fetchBotFeed(url)
+            if (!data) {
+                console.error("[Catalog] No data received from feed")
+                return
+            }
             setCurrentFeed(data)
             // Save current feed URL to sessionStorage for back navigation
-            if (data) {
-                const selfLink = data.links?.find((l: OPDSLink) => l.rel === "self")?.href || url
-                if (selfLink) {
-                    sessionStorage.setItem("catalog-last-url", selfLink)
-                }
+            const selfLink = data.links?.find((l: OPDSLink) => l.rel === "self")?.href || url
+            if (selfLink) {
+                sessionStorage.setItem("catalog-last-url", selfLink)
             }
             if (isPagination) {
                 window.scrollTo(0, 0)
             }
         } catch (error) {
             console.error("[v0] Catalog load error:", error)
-            webApp?.showAlert?.("Error al cargar el catálogo")
+            // Don't show alert for navigation errors, just log
         } finally {
             setIsLoading(false)
         }
     }
+
+    const goBackInternal = () => {
+        if (history.length === 0) return false
+        const prevUrl = history[history.length - 1]
+        const newHistory = history.slice(0, -1)
+        setHistory(newHistory)
+        loadFeed(prevUrl || undefined)
+        return true
+    }
+
+    // Integrate with Telegram BackButton
+    useEffect(() => {
+        if (!webApp?.BackButton) return
+
+        const handleBackButtonClick = () => {
+            if (history.length > 0) {
+                goBackInternal()
+            } else {
+                // No more internal history, just go back in browser
+                window.history.back()
+            }
+        }
+
+        // Show back button if we have history
+        if (history.length > 0) {
+            webApp.BackButton.show()
+        }
+
+        webApp.BackButton.onClick(handleBackButtonClick)
+
+        return () => {
+            webApp.BackButton.offClick(handleBackButtonClick)
+        }
+    }, [history.length, webApp])
 
     useEffect(() => {
         const feedUrl = searchParams.get("feed_url")
         const lastUrl = sessionStorage.getItem("catalog-last-url")
 
         if (feedUrl) {
+            // Clear history when starting from search with a specific URL
+            setHistory([])
             loadFeed(feedUrl)
         } else if (lastUrl && !currentFeed) {
             // Restore last position when coming back
             loadFeed(lastUrl)
-        } else {
+        } else if (!currentFeed) {
             loadFeed()
         }
     }, [searchParams])
 
     const handleNavigate = (url: string) => {
         if (!url) return
-        const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href || history[history.length - 1] || ""
-        setHistory([...history, currentUrl])
+        const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href || ""
+        if (currentUrl) {
+            setHistory([...history, currentUrl])
+        }
         loadFeed(url)
     }
 
     const handleGoBack = () => {
-        if (history.length === 0) return
-        const prevUrl = history[history.length - 1]
-        const newHistory = history.slice(0, -1)
-        setHistory(newHistory)
-        loadFeed(prevUrl || undefined)
+        goBackInternal()
     }
 
     const handleDownload = async (e: React.MouseEvent, book: OPDSEntry) => {

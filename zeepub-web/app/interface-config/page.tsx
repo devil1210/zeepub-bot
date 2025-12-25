@@ -93,20 +93,36 @@ export default function InterfaceConfigPage() {
                         </div>
 
                         {/* Custom Color Picker */}
-                        <div className="mt-4 flex items-center gap-3">
+                        <div className="mt-4 flex items-center gap-3 flex-wrap">
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                     type="color"
-                                    value={primaryColor}
+                                    value={primaryColor.startsWith('#') ? primaryColor : `#${primaryColor}`}
                                     onChange={(e) => setPrimaryColor(e.target.value)}
                                     className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer bg-transparent"
                                     style={{ padding: 0 }}
                                 />
-                                <span className="text-sm text-muted-foreground">Color personalizado</span>
+                                <span className="text-sm text-muted-foreground">Personalizado</span>
                             </label>
-                            <span className="text-xs font-mono text-muted-foreground bg-secondary px-2 py-1 rounded">
-                                {primaryColor.toUpperCase()}
-                            </span>
+                            <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">#</span>
+                                <input
+                                    type="text"
+                                    value={primaryColor.replace('#', '').toUpperCase()}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6)
+                                        if (val.length === 6 || val.length === 3) {
+                                            setPrimaryColor(`#${val}`)
+                                        } else if (val.length > 0) {
+                                            // Allow partial input while typing
+                                            setPrimaryColor(`#${val}`)
+                                        }
+                                    }}
+                                    placeholder="3B82F6"
+                                    className="w-20 px-2 py-1 text-xs font-mono bg-secondary border border-border rounded text-foreground uppercase"
+                                    maxLength={6}
+                                />
+                            </div>
                         </div>
 
                         <div className="mt-3 text-sm text-muted-foreground text-center">
