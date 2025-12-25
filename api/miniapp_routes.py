@@ -563,6 +563,17 @@ async def handle_bot_request(
             )
             return {"success": success}
 
+        elif action == "bot_info":
+            # Return bot information including avatar from settings
+            from services.settings_service import get_setting
+            avatar_url = get_setting("bot_avatar", "/robot-librarian.jpg")
+            return {
+                "name": "ZeePubBot",
+                "username": "@ZeePubBot",
+                "description": "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
+                "avatar": avatar_url
+            }
+
         else:
             raise HTTPException(status_code=400, detail=f"Unknown action: {action}")
 

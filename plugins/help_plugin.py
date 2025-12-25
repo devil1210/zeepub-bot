@@ -484,6 +484,7 @@ class HelpPlugin(BasePlugin):
             app.add_handler(CommandHandler("list_menu_cmd", self.list_menu_cmd))
             app.add_handler(CommandHandler("move_menu_cmd", self.move_menu_cmd))
             app.add_handler(CommandHandler("refresh_menu", self.refresh_menu))
+            app.add_handler(CommandHandler("set_bot_avatar", self.set_bot_avatar))
 
             logger.info("Plugin Help: Handlers registrados.")
 
@@ -1020,3 +1021,45 @@ class HelpPlugin(BasePlugin):
             return True
         user = await get_effective_user(user_id)
         return user and user.get("role") == "admin"
+
+    async def set_bot_avatar(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        /set_bot_avatar - Configura el avatar del bot para la Mini App.
+        Responde a una foto o proporciona una URL.
+        """
+        uid = update.effective_user.id
+        if not await self._is_bot_admin(uid):
+            await update.message.reply_text("⛔ Solo administradores pueden usar este comando.")
+            return
+
+        thread_id = get_thread_id(update)
+        avatar_url = None
+
+        # Check if replying to a photo
+        if update.message.reply_to_message and update.message.reply_to_message.photo:
+            # Get the largest photo (last in array)
+            photo = update.message.reply_to_message.photo[-1]
+            file = await context.bot.get_file(photo.file_id)
+            avatar_url = file.file_path
+        elif context.args:
+            # URL provided as argument
+            avatar_url = " ".join(context.args).strip()
+        else:
+            await update.message.reply_text(
+                "📸 <b>Uso:</b> Responde a una foto con /set_bot_avatar, "
+                "o proporciona una URL:\n"
+                "<code>/set_bot_avatar https://example.com/avatar.jpg</code>",
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+            return
+
+        # Save to settings
+        set_setting("bot_avatar", avatar_url)
+
+        await update.message.reply_text(
+            f"✅ Avatar del bot actualizado.\n\n"
+            f"🔗 URL: <code>{avatar_url}</code>",
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )

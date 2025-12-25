@@ -7,6 +7,7 @@ import { BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, Shiel
 import { useTelegramContext } from "@/components/telegram-provider"
 import { AccessGuard } from "@/components/access-guard"
 import { UserLevelBadge } from "@/components/user-level-badge"
+import { callBotAPI } from "@/lib/api"
 
 interface BotInfo {
   name: string
@@ -20,9 +21,8 @@ import { Label } from "@/components/ui/label"
 import { TransparentHeader } from "@/components/transparent-header"
 
 export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState("")
   const { user, isAdmin, isAdminMode, setIsAdminMode } = useTelegramContext()
-  const [botInfo] = useState<BotInfo>({
+  const [botInfo, setBotInfo] = useState<BotInfo>({
     name: "ZeePubBot",
     username: "@ZeePubBot",
     description: "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
@@ -32,6 +32,21 @@ export default function HomePage() {
   const [businessMode, setBusinessMode] = useState(true)
   const [allowGroups, setAllowGroups] = useState(true)
   const [groupPrivacy, setGroupPrivacy] = useState(true)
+
+  useEffect(() => {
+    // Fetch bot info from API
+    async function fetchBotInfo() {
+      try {
+        const info = await callBotAPI("bot_info")
+        if (info && info.name) {
+          setBotInfo(info)
+        }
+      } catch (error) {
+        console.log("[HomePage] Using default bot info")
+      }
+    }
+    fetchBotInfo()
+  }, [])
 
   useEffect(() => {
     if (user) {
