@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3 } from "lucide-react"
+import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3, Settings } from "lucide-react"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { AccessGuard } from "@/components/access-guard"
 import { UserLevelBadge } from "@/components/user-level-badge"
@@ -44,6 +44,7 @@ export default function HomePage() {
     { icon: Library, label: "Mi Catálogo", href: "/catalog", description: "Accede a bibliotecas OPDS" },
     { icon: Download, label: "Mis Descargas", href: "/downloads", description: "Historial y límites de descarga" },
     { icon: BarChart3, label: "Estado", href: "/status", description: "Ver estado del bot y estadísticas" },
+    { icon: Settings, label: "Apariencia", href: "/interface-config", description: "Personaliza tema, colores y tamaño" },
     { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados", adminOnly: true },
     { icon: Heart, label: "Donar", href: "/donate", description: "Apoya el proyecto" },
     { icon: Info, label: "Ayuda", href: "/help", description: "Comandos y soporte" },
