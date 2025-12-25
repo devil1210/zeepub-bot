@@ -76,6 +76,35 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('admin_mode', val.toString())
   }
 
+  // Configurar botón de retroceso nativo de Telegram
+  useEffect(() => {
+    if (telegram.webApp && telegram.isReady) {
+      const webApp = telegram.webApp
+
+      // Configurar el handler del botón de retroceso
+      const handleBackButton = () => {
+        router.back()
+      }
+
+      // Mostrar u ocultar el botón según la ruta
+      if (pathname === '/') {
+        // Ocultar en la página principal
+        webApp.BackButton.hide()
+      } else {
+        // Mostrar en páginas secundarias
+        webApp.BackButton.show()
+      }
+
+      // Configurar el evento click
+      webApp.BackButton.onClick(handleBackButton)
+
+      // Cleanup: remover el listener al desmontar
+      return () => {
+        webApp.BackButton.offClick(handleBackButton)
+      }
+    }
+  }, [telegram.webApp, telegram.isReady, pathname, router])
+
   useEffect(() => {
     async function verify() {
       if (telegram.isReady && telegram.user) {
