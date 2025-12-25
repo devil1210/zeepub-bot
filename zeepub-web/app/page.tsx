@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3 } from "lucide-react"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { AccessGuard } from "@/components/access-guard"
+import { UserLevelBadge } from "@/components/user-level-badge"
 
 interface BotInfo {
   name: string
@@ -76,6 +77,9 @@ export default function HomePage() {
           {user && (
             <div className="text-center mb-4">
               <p className="text-xs text-muted-foreground">Hola, {user.first_name}</p>
+              <div className="mt-1 flex justify-center">
+                <UserLevelBadge userId={user.id} />
+              </div>
             </div>
           )}
 
