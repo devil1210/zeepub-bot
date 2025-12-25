@@ -5,6 +5,30 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.5.0] - 2025-12-25
+
+### Added
+- **Mini App - Navegación Nativa**: Implementado botón de retroceso nativo de Telegram que se muestra automáticamente en páginas secundarias.
+- **Mini App - Nivel de Usuario**: Nuevo badge que muestra el nivel del usuario (Lector, Premium, Admin, etc.) con colores personalizados en la página principal.
+- **Mini App - Configuración de Interfaz**: Nueva página `/interface-config` con controles completos de personalización:
+  - Selector de tema (modo claro/oscuro)
+  - Paleta de 6 colores predefinidos para tema principal
+  - Slider de escala UI (80% - 120%) para ajustar tamaño de fuente y elementos
+  - Todas las configuraciones persisten en localStorage
+- **Mini App - Menú Estado**: Agregado acceso directo a "Estado" en el menú principal de funciones.
+- **API - User Level**: Nueva función `getUserLevel()` para obtener información del nivel de usuario desde el endpoint `/api/user/access`.
+- **Componente - UserLevelBadge**: Componente reutilizable para mostrar nivel de usuario con ícono Shield y estilos color-coded.
+
+### Changed
+- **Mini App - Navegación**: Eliminada la barra de navegación inferior (BottomNav). La navegación ahora se realiza mediante el botón nativo de Telegram y enlaces directos.
+- **Mini App - Layout**: Reducido padding inferior de `pb-20` a `pb-4` al eliminar la barra de navegación.
+
+### Technical
+- Agregadas variables CSS `--font-scale` y `--spacing-scale` en `globals.css` para soporte de escalado dinámico.
+- Configuración del botón BackButton nativo con show/hide automático según la ruta actual.
+- Todo el código y comentarios en español.
+- Commits separados para cada funcionalidad permitiendo reversión puntual.
+
 ## [v4.4.12] - 2025-12-24
 
 ### Added
