@@ -59,6 +59,13 @@ export default function SearchPage() {
         totalPages: result.totalPages
       })
 
+      // Save search state to sessionStorage
+      sessionStorage.setItem("search-state", JSON.stringify({
+        query: searchQuery,
+        pageUrl: pageUrl,
+        currentPage: result.currentPage || 1
+      }))
+
       // If navigating pages, scroll to top
       if (pageUrl) {
         window.scrollTo(0, 0)
@@ -98,6 +105,13 @@ export default function SearchPage() {
       // Use window.location.href to avoid history issues with deep links in catalog
       window.location.href = `/catalog?feed_url=${encodeURIComponent(book.subsection_url)}`
     } else if (book.detail_url) {
+      // Save current search state before navigating
+      sessionStorage.setItem("search-state", JSON.stringify({
+        query: searchQuery,
+        currentPage: pagination.currentPage,
+        nextPage: pagination.nextPage,
+        prevPage: pagination.prevPage
+      }))
       router.push(`/book?id=${encodeURIComponent(book.detail_url)}`)
     }
   }

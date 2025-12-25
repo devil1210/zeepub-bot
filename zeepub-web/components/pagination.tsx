@@ -25,15 +25,7 @@ export function Pagination({
     if (!hasNextPage && !hasPrevPage) return null
 
     return (
-        <div className="mt-6 space-y-3">
-            {/* Page Info */}
-            <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                    Página {currentPage}
-                    {totalPages && totalPages > 1 && ` de ${totalPages}`}
-                </p>
-            </div>
-
+        <div className="mt-6">
             {/* Navigation Buttons */}
             <div className="flex items-center justify-center gap-3">
                 <Button
@@ -45,10 +37,6 @@ export function Pagination({
                     <ChevronLeft className="w-5 h-5 mr-1" />
                     Anterior
                 </Button>
-
-                <div className="px-4 py-2 bg-card border border-border rounded-lg min-w-[60px] text-center">
-                    <span className="text-sm font-medium text-foreground">{currentPage}</span>
-                </div>
 
                 <Button
                     variant="outline"

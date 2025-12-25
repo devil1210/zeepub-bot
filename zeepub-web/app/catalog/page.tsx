@@ -53,11 +53,37 @@ function CatalogContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
 
+    // Load history from sessionStorage on mount
+    useEffect(() => {
+        const savedHistory = sessionStorage.getItem("catalog-history")
+        if (savedHistory) {
+            try {
+                setHistory(JSON.parse(savedHistory))
+            } catch (e) {
+                console.log("[Catalog] Could not parse saved history")
+            }
+        }
+    }, [])
+
+    // Save history to sessionStorage whenever it changes
+    useEffect(() => {
+        if (history.length > 0) {
+            sessionStorage.setItem("catalog-history", JSON.stringify(history))
+        }
+    }, [history])
+
     const loadFeed = async (url?: string, isPagination = false) => {
         setIsLoading(true)
         try {
             const data = await fetchBotFeed(url)
             setCurrentFeed(data)
+            // Save current feed URL to sessionStorage for back navigation
+            if (data) {
+                const selfLink = data.links?.find((l: OPDSLink) => l.rel === "self")?.href || url
+                if (selfLink) {
+                    sessionStorage.setItem("catalog-last-url", selfLink)
+                }
+            }
             if (isPagination) {
                 window.scrollTo(0, 0)
             }
@@ -71,8 +97,13 @@ function CatalogContent() {
 
     useEffect(() => {
         const feedUrl = searchParams.get("feed_url")
+        const lastUrl = sessionStorage.getItem("catalog-last-url")
+
         if (feedUrl) {
             loadFeed(feedUrl)
+        } else if (lastUrl && !currentFeed) {
+            // Restore last position when coming back
+            loadFeed(lastUrl)
         } else {
             loadFeed()
         }
@@ -126,6 +157,11 @@ function CatalogContent() {
         if (subsectionLink) {
             handleNavigate(subsectionLink.href)
         } else if (detailUrl) {
+            // Save current position before navigating to book details
+            const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href
+            if (currentUrl) {
+                sessionStorage.setItem("catalog-last-url", currentUrl)
+            }
             router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
         }
     }

@@ -91,6 +91,24 @@ export default function InterfaceConfigPage() {
                                 )
                             })}
                         </div>
+
+                        {/* Custom Color Picker */}
+                        <div className="mt-4 flex items-center gap-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="color"
+                                    value={primaryColor}
+                                    onChange={(e) => setPrimaryColor(e.target.value)}
+                                    className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer bg-transparent"
+                                    style={{ padding: 0 }}
+                                />
+                                <span className="text-sm text-muted-foreground">Color personalizado</span>
+                            </label>
+                            <span className="text-xs font-mono text-muted-foreground bg-secondary px-2 py-1 rounded">
+                                {primaryColor.toUpperCase()}
+                            </span>
+                        </div>
+
                         <div className="mt-3 text-sm text-muted-foreground text-center">
                             {colorPresets.find((c) => c.value === primaryColor || c.dark === primaryColor)?.name || "Personalizado"}
                         </div>
