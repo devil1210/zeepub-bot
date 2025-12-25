@@ -18,6 +18,7 @@ interface BotInfo {
 
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { TransparentHeader } from "@/components/transparent-header"
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -53,6 +54,8 @@ export default function HomePage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background pt-safe">
+        <TransparentHeader />
+
 
         {/* Bot Profile Section */}
         <div className="max-w-2xl mx-auto px-4 py-8">

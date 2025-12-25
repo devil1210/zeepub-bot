@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Sun, Moon, Palette } from "lucide-react"
 import { AccessGuard } from "@/components/access-guard"
+import { TransparentHeader } from "@/components/transparent-header"
 
 // Paleta de colores predefinidos
 const colorPresets = [
@@ -80,17 +81,17 @@ export default function InterfaceConfigPage() {
             document.head.appendChild(styleTag)
         }
 
-        // Inyectar CSS directamente con el color hex overrides
+        // Inyectar CSS con !important para forzar override de OKLCH
         styleTag.textContent = `
       :root {
-        --primary: ${colorToUse};
-        --ring: ${colorToUse};
-        --chart-1: ${colorToUse};
+        --primary: ${colorToUse} !important;
+        --ring: ${colorToUse} !important;
+        --accent: ${colorToUse} !important;
       }
       .dark {
-        --primary: ${colorToUse};
-        --ring: ${colorToUse};
-        --chart-1: ${colorToUse};
+        --primary: ${colorToUse} !important;
+        --ring: ${colorToUse} !important;
+        --accent: ${colorToUse} !important;
       }
     `
 
@@ -100,6 +101,8 @@ export default function InterfaceConfigPage() {
     return (
         <AccessGuard>
             <div className="min-h-screen bg-background pt-safe">
+                <TransparentHeader />
+
                 <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
                     {/* Selector de Tema */}
                     <Card className="p-6 border-border">

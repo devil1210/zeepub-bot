@@ -15,6 +15,7 @@ interface Tier {
 }
 
 import { AccessGuard } from "@/components/access-guard"
+import { TransparentHeader } from "@/components/transparent-header"
 
 export default function DonatePage() {
   const tiers: Tier[] = [
@@ -54,6 +55,8 @@ export default function DonatePage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background pt-safe">
+        <TransparentHeader />
+
 
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
           {/* Hero Section */}

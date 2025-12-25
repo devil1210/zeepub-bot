@@ -17,6 +17,7 @@ import { fetchBotFeed, callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
 
 import { Pagination } from "@/components/pagination"
+import { TransparentHeader } from "@/components/transparent-header"
 
 interface OPDSLink {
     href: string
@@ -132,6 +133,7 @@ function CatalogContent() {
     if (isLoading && !currentFeed) {
         return (
             <div className="min-h-screen bg-background pt-safe flex items-center justify-center">
+              <TransparentHeader />
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
         )

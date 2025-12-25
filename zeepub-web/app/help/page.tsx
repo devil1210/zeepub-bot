@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card"
 import { HelpCircle, BookOpen, Download, Settings, Link2, MessageCircle } from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
+import { TransparentHeader } from "@/components/transparent-header"
 
 interface Command {
   command: string
@@ -53,6 +54,7 @@ export default function HelpPage() {
 
   return (
     <div className="min-h-screen bg-background pt-safe">
+      <TransparentHeader />
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Welcome Card */}

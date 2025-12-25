@@ -8,6 +8,7 @@ import { Download, Clock, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { AccessGuard } from "@/components/access-guard"
 import { callBotAPI } from "@/lib/api"
+import { TransparentHeader } from "@/components/transparent-header"
 
 export default function StatusPage() {
   const [loading, setLoading] = useState(true)
@@ -48,6 +49,8 @@ export default function StatusPage() {
     return (
       <AccessGuard>
         <div className="min-h-screen bg-background flex items-center justify-center">
+        <TransparentHeader />
+
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       </AccessGuard>

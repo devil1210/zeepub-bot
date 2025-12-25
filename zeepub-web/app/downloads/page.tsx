@@ -16,6 +16,7 @@ interface DownloadItem {
 }
 
 import { AccessGuard } from "@/components/access-guard"
+import { TransparentHeader } from "@/components/transparent-header"
 
 export default function DownloadsPage() {
   const [loading, setLoading] = useState(true)
@@ -89,6 +90,8 @@ export default function DownloadsPage() {
     return (
       <AccessGuard>
         <div className="min-h-screen bg-background flex items-center justify-center">
+        <TransparentHeader />
+
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       </AccessGuard>

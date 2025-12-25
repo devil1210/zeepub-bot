@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { LinkIcon, Copy, ExternalLink, Trash2, CheckCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useState } from "react"
+import { TransparentHeader } from "@/components/transparent-header"
 
 interface ShortLink {
   id: string
@@ -61,6 +62,7 @@ export default function LinksPage() {
 
   return (
     <div className="min-h-screen bg-background pt-safe">
+      <TransparentHeader />
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Stats Cards */}

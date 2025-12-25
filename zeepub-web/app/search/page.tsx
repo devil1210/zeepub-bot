@@ -30,6 +30,7 @@ interface PaginationState {
 }
 
 import { AccessGuard } from "@/components/access-guard"
+import { TransparentHeader } from "@/components/transparent-header"
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -104,6 +105,8 @@ export default function SearchPage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background pt-safe">
+        <TransparentHeader />
+
 
         <div className="max-w-2xl mx-auto px-4 py-6 text-foreground">
           {/* Search */}

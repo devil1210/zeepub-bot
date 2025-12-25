@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Shield, Save, Loader2, CheckCircle } from "lucide-react"
 import { useAccessControl, type UserLevel } from "@/hooks/use-access-control"
 import { useRouter } from "next/navigation"
+import { TransparentHeader } from "@/components/transparent-header"
 
 export default function AccessControlPage() {
     const { isAdmin, loading: authLoading } = useAccessControl()
@@ -80,6 +81,7 @@ export default function AccessControlPage() {
     if (authLoading || loading) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
+              <TransparentHeader />
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         )
