@@ -7,9 +7,7 @@ import hashlib
 import json
 from config.config_settings import config
 from services.opds_service import get_cached_feed
-
-# from utils.http_client import parse_feed_from_url
-from utils.helpers import build_search_url, formatear_mensaje_portada
+from utils.helpers import build_search_url, formatear_mensaje_portada, find_zeepubs_destino, abs_url
 from utils.security import validate_telegram_data
 from utils.http_client import fetch_bytes
 from services.epub_service import (
@@ -83,12 +81,14 @@ async def get_feed(
             f"Access denied for UID: {current_uid}. Effective Role: {role}. "
             f"Admin List: {config.ADMIN_USERS}, VIP List: {config.VIP_LIST}, "
             f"Premium List: {config.PREMIUM_LIST}, Whitelist: {config.WHITELIST}, "
-            f"Pub List: {config.FACEBOOK_PUBLISHERS}"
+            f"Pub List: {config.FACEBOOK_PUBLISHERS}, HasAccess: {user_data.get('has_mini_app_access')}"
         )
-        raise HTTPException(
-            status_code=403,
-            detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios.",
-        )
+        # Check specific flag from ZITADEL/DB
+        if not user_data.get("has_mini_app_access"):
+             raise HTTPException(
+                status_code=403,
+                detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios.",
+            )
 
     # Determinar URL base si no se proporciona
     if not url:
@@ -132,6 +132,41 @@ async def get_feed(
             if title.lower() in titles_to_exclude:
                 continue
 
+            # Special handling for "Todas las bibliotecas" for non-admins
+            if not is_admin and (title == "Todas las bibliotecas" or title == "All libraries"):
+                title = "Biblioteca Zeepubs"
+                # Try to find direct link to ZeePubs ES
+                try:
+                    # We might need to fetch the subsection to find the direct link if it's not immediate
+                    # But find_zeepubs_destino works on a FEED object.
+                    # Here 'feed' is the current feed we are iterating.
+                    # check if this entry is the one pointing to libraries
+                    libraries_url = None
+                    for link in getattr(entry, "links", []):
+                        if link.get("rel") == "subsection":
+                            libraries_url = normalize_url(link.get("href"))
+                            break
+                    
+                    if libraries_url:
+                        # Fetch that feed to find ZeePubs
+                        lib_feed = await get_cached_feed(libraries_url)
+                        direct_url = find_zeepubs_destino(lib_feed, prefer_libraries=True)
+                        if direct_url:
+                             # Inject direct URL as the subsection URL for this entry
+                             # We need to update the entry's links in our processed list later
+                             # For now, we store it to use in the loop below
+                             entry_override_url = direct_url
+                        else:
+                             entry_override_url = None
+                    else:
+                        entry_override_url = None
+
+                except Exception as e:
+                    logger.warning(f"Error resolving direct link for ZeePubs: {e}")
+                    entry_override_url = None
+            else:
+                entry_override_url = None
+
             cover_url = None
             subsection_url = None
 
@@ -146,7 +181,11 @@ async def get_feed(
                 ):
                     cover_url = normalize_url(link.get("href"))
                 elif link_rel == "subsection":
-                    subsection_url = normalize_url(link.get("href"))
+                    # Use override if available
+                    if entry_override_url:
+                        subsection_url = entry_override_url
+                    else:
+                        subsection_url = normalize_url(link.get("href"))
 
             # Buscar cover en content
             if not cover_url and hasattr(entry, "content"):
@@ -181,7 +220,7 @@ async def get_feed(
 
             entries.append(
                 {
-                    "title": entry.get("title", "Sin título"),
+                    "title": title,
                     "author": entry.get("author", "Desconocido"),
                     "summary": entry.get("summary", ""),
                     "id": entry.get("id", ""),

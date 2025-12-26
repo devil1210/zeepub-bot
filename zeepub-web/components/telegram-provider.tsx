@@ -153,6 +153,16 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     verify()
   }, [telegram.isReady, telegram.user, pathname, router])
 
+  // Security: If user is strictly NOT admin, force admin mode off
+  useEffect(() => {
+    if (isAdmin === false && isAdminMode) {
+      setIsAdminMode(false)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('admin_mode', 'false')
+      }
+    }
+  }, [isAdmin, isAdminMode])
+
   const value = {
     ...telegram,
     hasAccess,

@@ -426,6 +426,13 @@ COMMANDS_REGISTRY = {
         "usage": "/refresh_menu",
         "example": "/refresh_menu",
     },
+    "set_bot_avatar": {
+        "cat": "admin",
+        "desc": "Set bot avatar",
+        "long_desc": "Establece el avatar del bot en la Mini App usando una foto enviada o URL.",
+        "usage": "Responder a una foto con /set_bot_avatar",
+        "example": "/set_bot_avatar",
+    },
 }
 
 CATEGORIES = {

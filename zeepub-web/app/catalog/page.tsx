@@ -71,7 +71,7 @@ function CatalogContent() {
             }
             setCurrentFeed(data)
             // Track the URL we loaded
-            const selfLink = data.links?.find(l => l.rel === "self")?.href
+            const selfLink = data.links?.find((l: OPDSLink) => l.rel === "self")?.href
             setCurrentFeedUrl(selfLink || url || "")
             console.log("[Catalog] Loaded feed, URL:", selfLink || url || "root")
 
@@ -271,8 +271,8 @@ function CatalogContent() {
                 )}
 
                 {isLoading && (
-                    <div className="flex justify-center py-4">
-                        <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                    <div className="flex justify-center items-center py-8">
+                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
                     </div>
                 )}
 

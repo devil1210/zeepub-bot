@@ -5,6 +5,18 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.5.1] - 2025-12-26
+
+### Fixed
+- **API - Feed**: Corregido bug en la lógica de renombrado de "Todas las bibliotecas" donde el título modificado no se reflejaba en la respuesta final.
+- **Acceso - Mini App**: Modificada la API `/feed` para permitir acceso a usuarios con `has_mini_app_access` (User Level), no solo a Admin/Staff, corrigiendo el error de acceso denegado.
+- **UI - Mini App**: Centrado correcto de los indicadores de carga (Spinners) en Catálogo, Búsqueda y Detalle de Libro.
+- **UI - Admin Mode**: Corregida fuga de estado donde usuarios no administradores podían quedar atrapados en "Admin Mode" en la interfaz.
+
+### Added
+- **Comandos**: Agregado `/set_bot_avatar` (Admin) al menú de ayuda para facilitar la personalización de la Mini App.
+- **UX - Navegación**: Implementado enlace directo ("Biblioteca Zeepubs") para usuarios no administradores, saltando la carpeta intermedia "Todas las bibliotecas" en el catálogo OPDS.
+
 ## [v4.5.0] - 2025-12-25
 
 ### Added
