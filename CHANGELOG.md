@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.5.7] - 2025-12-26
+
+**Maintenance:**
+- **Versioning:** Synchronized bot internal version reporting with the actual release tag (`v4.5.7`).
+- **Fixes:** Consolidated fixes from v4.5.6 (Catalog Access), v4.5.5 (Download History, Security).
+
 ## [v4.5.6] - 2025-12-26
 
 **Critical Fixes:**
