@@ -425,7 +425,10 @@ async def tunnel_opds(
 
     # Normalize URL: support root fallback and relative paths
     if not url or url == "/":
-        target_url = config.OPDS_ROOT_START
+        if user_data.get("role") == "admin":
+             target_url = config.OPDS_ROOT_EVIL
+        else:
+             target_url = config.OPDS_ROOT_START
     elif not url.startswith("http"):
         base = config.OPDS_SERVER_URL.rstrip("/")
         if url.startswith("/"):
@@ -451,19 +454,54 @@ async def tunnel_opds(
                  return Response(content=f"Error upstream: {r.status_code}", status_code=r.status_code)
 
             content_type = r.headers.get("content-type", "")
-            
+
             # If it's XML, we might want to modify it (renaming, relinking)
-            if "xml" in content_type:
+            if "xml" in content_type and user_data.get("role") != "admin":
+                import re
                 xml_text = r.text
                 
-                # Global transformations for standard users
-                # Rename the generic libraries list to a more branded one
+                # 1. Rename and Relink "Todas las bibliotecas" -> "Biblioteca Zeepubs"
                 if "Todas las bibliotecas" in xml_text:
                     xml_text = xml_text.replace("Todas las bibliotecas", "Biblioteca Zeepubs")
-                    # Redirect "All libraries" link direct to ZeePubs ES (libraryId 1)
-                    xml_text = xml_text.replace("/libraries\"", "/libraries/1\"")
-                    xml_text = xml_text.replace("/libraries/", "/libraries/1/")
+                    # Relink /libraries -> /libraries/1 for direct library access
+                    xml_text = re.sub(r'/libraries(?=["\s/])(?!/1)', '/libraries/1', xml_text)
                 
+                # 2. Hide unwanted sections from the ROOT feed (Mi Catálogo)
+                if "<id>root</id>" in xml_text or "<id>libraries</id>" in xml_text:
+                    to_hide = [
+                        "En el puente", 
+                        "Listas de lectura", 
+                        "Deseo leer", 
+                        "Todas las colecciones", 
+                        "Actualizado recientemente", 
+                        "Añadido recientemente"
+                    ]
+                    for title in to_hide:
+                        # Refined pattern: ensure we don't cross <entry> boundaries
+                        pattern = rf'<entry>(?:(?!</entry>)[\s\S])*?<title>{re.escape(title)}</title>[\s\S]*?</entry>'
+                        xml_text = re.sub(pattern, '', xml_text)
+                
+                # 3. Add "Todas las colecciones" to specific sub-feeds as requested
+                sub_feeds = ["/on-deck", "/reading-list", "/want-to-read"]
+                if any(sub in target_url for sub in sub_feeds) and "</feed>" in xml_text:
+                     # Find base OPDS URL to point collections link correctly
+                     base_opds = target_url
+                     for sub in sub_feeds:
+                         if sub in base_opds:
+                             base_opds = base_opds.split(sub)[0]
+                             break
+                     
+                     extra_entry = f"""
+  <entry>
+    <updated>2025-12-26T12:00:00</updated>
+    <id>allCollections-injected</id>
+    <title>Todas las colecciones</title>
+    <content type="text">Navegar por colecciones</content>
+    <link rel="subsection" type="application/atom+xml;profile=opds-catalog;kind=navigation" href="{base_opds}/collections" />
+  </entry>
+"""
+                     xml_text = xml_text.replace("</feed>", extra_entry + "</feed>")
+
                 return Response(
                     content=xml_text.encode("utf-8"),
                     media_type=content_type

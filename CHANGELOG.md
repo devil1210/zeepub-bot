@@ -5,13 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [v4.5.9] - 2025-12-26
-### Fixed
-- Improved `tunnel_opds` and `proxy_image` robustness with proper `Accept` and `User-Agent` headers.
-- Simplified XML hijacking logic to ensure "Biblioteca Zeepubs" renaming works for all users (including admins) for easier verification.
-- Fixed regression tests to match the new `client.get` based tunneling implementation.
+## [v4.6.0] - 2025-12-26
+### Added
+- Personalized OPDS Catalog views: standard users see a streamlined "Biblioteca Zeepubs" view, while Admins see the full "Evil" catalog.
+- "Todas las colecciones" injected into "En el puente", "Listas de lectura", and "Deseo leer" sections for non-admins as requested.
 
-## [v4.5.8] - 2025-12-26
+### Fixed
+- Fixed double-replacement bug in library relinking (`/libraries/1/1`).
+- Robust entry hiding logic for non-admin root feed.
+
+## [v4.5.9] - 2025-12-26
 
 ## [v4.5.7] - 2025-12-26
 **Maintenance:**
