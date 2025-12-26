@@ -167,11 +167,17 @@ async def test_tunnel_opds_slash_url_defaults():
         # Mock httpx client
         mock_client = AsyncMock()
         mock_client_class.return_value = mock_client
+        mock_client.__aenter__.return_value = mock_client
         
+        # Use a simple mock with explicit status_code
         mock_response = AsyncMock()
         mock_response.status_code = 200
         mock_response.headers = {"content-type": "application/atom+xml"}
-        mock_response.aiter_bytes.return_value = [] # Async iterator
+        mock_response.aread.return_value = b"<feed><title>Kavita</title></feed>"
+        # For StreamingResponse
+        async def mock_iter():
+            yield b"<feed><title>Kavita</title></feed>"
+        mock_response.aiter_bytes.return_value = mock_iter()
         
         mock_client.send.return_value = mock_response
         

@@ -378,14 +378,37 @@ async def proxy_image(rest_of_path: str, request: Request):
     Proxies image requests to the upstream OPDS server.
     """
     try:
-        base_url_cleaned = config.BASE_URL.rstrip("/")
-        full_url = f"{base_url_cleaned}/{rest_of_path}"
+        # Use OPDS_SERVER_URL as the upstream source
+        upstream_base = config.OPDS_SERVER_URL.rstrip("/")
+        # Kavita images are usually under /api/image/...
+        # The router match for /image/{path} gives us everything after /image
+        full_url = f"{upstream_base}/api/image/{rest_of_path}"
         query_params = dict(request.query_params)
 
+        logger.info(f"Proxying image request: {full_url}")
+
         async with httpx.AsyncClient() as client:
+            # Send request with OPDS authentication if available
             response = await client.get(
-                full_url, params=query_params, follow_redirects=True
+                full_url, 
+                params=query_params, 
+                auth=config.OPDS_AUTH,
+                follow_redirects=True,
+                timeout=30.0
             )
+            
+            if response.status_code == 404:
+                # Fallback: maybe it's not under /api/image but directly?
+                # Sometimes images are handled differently.
+                logger.debug(f"Image not found at {full_url}, trying direct path")
+                direct_url = f"{upstream_base}/{rest_of_path}"
+                response = await client.get(
+                    direct_url, 
+                    params=query_params, 
+                    auth=config.OPDS_AUTH,
+                    follow_redirects=True
+                )
+
             response.raise_for_status()
 
             return Response(
@@ -394,13 +417,13 @@ async def proxy_image(rest_of_path: str, request: Request):
                 headers={"Cache-Control": "public, max-age=86400"},
             )
     except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP error proxying image: {e}")
+        logger.error(f"HTTP error proxying image from {full_url}: {e}")
         raise HTTPException(status_code=e.response.status_code, detail="Image not found or upstream error")
     except httpx.RequestError as e:
         logger.error(f"Request error proxying image: {e}")
         raise HTTPException(status_code=500, detail="Network error proxying image")
     except Exception as e:
-        logger.error(f"Unexpected error proxying image: {e}")
+        logger.info(f"Falling back to default for image proxy error: {e}")
         raise HTTPException(status_code=404, detail="Image not found")
 
 
@@ -443,21 +466,44 @@ async def tunnel_opds(
     logger.info(f"Tunneling OPDS: {target_url} for {current_uid}")
 
     try:
-        client = httpx.AsyncClient(timeout=30.0)
-        
-        # Build Request
-        req = client.build_request("GET", target_url, auth=config.OPDS_AUTH)
-        r = await client.send(req, stream=True)
-        
-        if r.status_code >= 400:
-             await r.aclose()
-             return Response(content=f"Upstream Error: {r.status_code}", status_code=r.status_code)
+        # Use a single client with follow_redirects
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            # Build Request
+            req = client.build_request("GET", target_url, auth=config.OPDS_AUTH)
+            r = await client.send(req, stream=True)
+            
+            if r.status_code >= 400:
+                 await r.aclose()
+                 return Response(content=f"Upstream Error: {r.status_code}", status_code=r.status_code)
 
-        return StreamingResponse(
-            r.aiter_bytes(),
-            media_type=r.headers.get("content-type", "application/atom+xml"),
-            background=None # No background task needed
-        )
+            # Check if we should intercept and modify the XML
+            # For simplicity and performance, we only intercept if it's likely a root or navigation feed
+            # that needs "Todas las bibliotecas" renaming
+            content_type = r.headers.get("content-type", "")
+            if "xml" in content_type and not user_data.get("is_admin_db"):
+                # Read full content to modify
+                body = await r.aread()
+                xml_text = body.decode("utf-8", errors="ignore")
+                
+                # Check for "Todas las bibliotecas" and rename/relink
+                if "Todas las bibliotecas" in xml_text:
+                    xml_text = xml_text.replace("Todas las bibliotecas", "Biblioteca Zeepubs")
+                    # Relink /libraries to /libraries/1 for "direct open" of standard library
+                    # We look for the libraries link within the "allLibraries" entry context
+                    # Simplistic replacement for now, as libraries/1 is the target
+                    xml_text = xml_text.replace("/libraries\"", "/libraries/1\"")
+                    xml_text = xml_text.replace("/libraries/", "/libraries/1/")
+                
+                return Response(
+                    content=xml_text.encode("utf-8"),
+                    media_type=content_type
+                )
+
+            return StreamingResponse(
+                r.aiter_bytes(),
+                media_type=content_type,
+                background=None
+            )
 
     except Exception as e:
         logger.error(f"Tunnel Error: {e}")

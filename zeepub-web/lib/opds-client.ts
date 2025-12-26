@@ -14,16 +14,13 @@ export class OpdsClient {
 
         let targetUrl = `/api/tunnel/opds`
         if (url) {
+            // If absolute URL, pass it as is. If relative, backend handles it.
             targetUrl += `?url=${encodeURIComponent(url)}`
         } else {
-            // If no URL provided, we want the root. 
-            // However, /api/tunnel/opds requires a 'url' param or defaults?
-            // The backend logic expects a 'url' param.
-            // If we want root (start), we should pass "/" or allow backend to handle empty.
-            // But backend routes.py: `url: str = Query(...)`. It's required.
-            // So we default to "/" if not provided, assuming backend handles "/" as "root".
             targetUrl += `?url=%2F`
         }
+
+        console.log(`[OpdsClient] Fetching: ${targetUrl} (Original: ${url || 'root'})`)
 
         try {
             const response = await fetch(targetUrl, {
@@ -34,18 +31,27 @@ export class OpdsClient {
             })
 
             if (!response.ok) {
-                console.error("Tunnel error:", response.statusText)
+                const text = await response.text().catch(() => "No error body")
+                console.error(`[OpdsClient] Tunnel error (${response.status}):`, text)
                 return null
             }
 
             const xmlText = await response.text()
+            if (!xmlText || xmlText.trim().length === 0) {
+                console.error("[OpdsClient] Empty XML response")
+                return null
+            }
+
             const result = parser.parse(xmlText)
 
-            if (!result.feed) return null
+            if (!result.feed) {
+                console.error("[OpdsClient] Invalid feed structure:", result)
+                return null
+            }
 
             return this.mapFeed(result.feed, url)
         } catch (e) {
-            console.error("OPDS Parse Error:", e)
+            console.error("[OpdsClient] Unexpected Error:", e)
             return null
         }
     }
