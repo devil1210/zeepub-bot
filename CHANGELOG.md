@@ -5,7 +5,7 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [v4.6.0] - 2025-12-26
+## [v4.6.1] - 2025-12-26
 ### Added
 - Personalized OPDS Catalog views: standard users see a streamlined "Biblioteca Zeepubs" view, while Admins see the full "Evil" catalog.
 - "Todas las colecciones" injected into "En el puente", "Listas de lectura", and "Deseo leer" sections for non-admins as requested.
