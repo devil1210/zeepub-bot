@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -53,28 +53,12 @@ function CatalogContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
 
-    // Load history from sessionStorage on mount
-    useEffect(() => {
-        const savedHistory = sessionStorage.getItem("catalog-history")
-        if (savedHistory) {
-            try {
-                setHistory(JSON.parse(savedHistory))
-            } catch (e) {
-                console.log("[Catalog] Could not parse saved history")
-            }
-        }
-    }, [])
+    // Use ref to always have current history value in callbacks
+    const historyRef = useRef<string[]>(history)
+    historyRef.current = history
 
-    // Save history to sessionStorage whenever it changes
-    useEffect(() => {
-        if (history.length > 0) {
-            sessionStorage.setItem("catalog-history", JSON.stringify(history))
-        } else {
-            sessionStorage.removeItem("catalog-history")
-        }
-    }, [history])
-
-    const loadFeed = async (url?: string, isPagination = false) => {
+    // Load feed function
+    const loadFeed = useCallback(async (url?: string, isPagination = false) => {
         setIsLoading(true)
         try {
             const data = await fetchBotFeed(url)
@@ -83,83 +67,115 @@ function CatalogContent() {
                 return
             }
             setCurrentFeed(data)
-            // Save current feed URL to sessionStorage for back navigation
-            const selfLink = data.links?.find((l: OPDSLink) => l.rel === "self")?.href || url
-            if (selfLink) {
-                sessionStorage.setItem("catalog-last-url", selfLink)
-            }
             if (isPagination) {
                 window.scrollTo(0, 0)
             }
         } catch (error) {
             console.error("[v0] Catalog load error:", error)
-            // Don't show alert for navigation errors, just log
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [])
 
-    const goBackInternal = () => {
-        if (history.length === 0) return false
-        const prevUrl = history[history.length - 1]
-        const newHistory = history.slice(0, -1)
+    // Go back in internal history
+    const goBack = useCallback(() => {
+        const currentHistory = historyRef.current
+        console.log("[Catalog] goBack called, history length:", currentHistory.length)
+
+        if (currentHistory.length === 0) {
+            console.log("[Catalog] No history, doing browser back")
+            // Clear session storage when exiting catalog
+            sessionStorage.removeItem("catalog-history")
+            window.history.back()
+            return
+        }
+
+        const prevUrl = currentHistory[currentHistory.length - 1]
+        const newHistory = currentHistory.slice(0, -1)
+
+        console.log("[Catalog] Going back to:", prevUrl)
+        console.log("[Catalog] New history length:", newHistory.length)
+
         setHistory(newHistory)
+        // Save updated history
+        if (newHistory.length > 0) {
+            sessionStorage.setItem("catalog-history", JSON.stringify(newHistory))
+        } else {
+            sessionStorage.removeItem("catalog-history")
+        }
+
         loadFeed(prevUrl || undefined)
-        return true
-    }
+    }, [loadFeed])
+
+    // Navigate into a subsection
+    const handleNavigate = useCallback((url: string) => {
+        if (!url) return
+        const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href || ""
+
+        if (currentUrl) {
+            const newHistory = [...historyRef.current, currentUrl]
+            console.log("[Catalog] Navigating, saving to history:", currentUrl)
+            console.log("[Catalog] New history:", newHistory)
+            setHistory(newHistory)
+            sessionStorage.setItem("catalog-history", JSON.stringify(newHistory))
+        }
+
+        loadFeed(url)
+    }, [currentFeed, loadFeed])
+
+    // Load initial history from sessionStorage
+    useEffect(() => {
+        const savedHistory = sessionStorage.getItem("catalog-history")
+        if (savedHistory) {
+            try {
+                const parsed = JSON.parse(savedHistory)
+                console.log("[Catalog] Loaded history from storage:", parsed)
+                setHistory(parsed)
+            } catch (e) {
+                console.log("[Catalog] Could not parse saved history")
+            }
+        }
+    }, [])
 
     // Integrate with Telegram BackButton
     useEffect(() => {
         if (!webApp?.BackButton) return
 
-        const handleBackButtonClick = () => {
-            if (history.length > 0) {
-                goBackInternal()
-            } else {
-                // No more internal history, just go back in browser
-                window.history.back()
-            }
+        console.log("[Catalog] Setting up BackButton, history length:", history.length)
+
+        // Always show back button in catalog (user can always go back to main menu)
+        webApp.BackButton.show()
+
+        const handleBackClick = () => {
+            console.log("[Catalog] BackButton clicked")
+            goBack()
         }
 
-        // Show back button if we have history
-        if (history.length > 0) {
-            webApp.BackButton.show()
-        }
-
-        webApp.BackButton.onClick(handleBackButtonClick)
+        webApp.BackButton.onClick(handleBackClick)
 
         return () => {
-            webApp.BackButton.offClick(handleBackButtonClick)
+            webApp.BackButton.offClick(handleBackClick)
         }
-    }, [history.length, webApp])
+    }, [webApp, goBack])
 
+    // Initial feed load
     useEffect(() => {
         const feedUrl = searchParams.get("feed_url")
-        const lastUrl = sessionStorage.getItem("catalog-last-url")
 
         if (feedUrl) {
-            // Clear history when starting from search with a specific URL
+            // Starting from a specific URL (e.g., from search)
+            // Clear history for fresh navigation
             setHistory([])
+            sessionStorage.removeItem("catalog-history")
             loadFeed(feedUrl)
-        } else if (lastUrl && !currentFeed) {
-            // Restore last position when coming back
-            loadFeed(lastUrl)
-        } else if (!currentFeed) {
+        } else {
+            // Normal catalog entry - load root
             loadFeed()
         }
-    }, [searchParams])
-
-    const handleNavigate = (url: string) => {
-        if (!url) return
-        const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href || ""
-        if (currentUrl) {
-            setHistory([...history, currentUrl])
-        }
-        loadFeed(url)
-    }
+    }, [searchParams, loadFeed])
 
     const handleGoBack = () => {
-        goBackInternal()
+        goBack()
     }
 
     const handleDownload = async (e: React.MouseEvent, book: OPDSEntry) => {
