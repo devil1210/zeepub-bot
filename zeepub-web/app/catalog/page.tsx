@@ -25,7 +25,7 @@ function CatalogContent() {
     const [currentFeed, setCurrentFeed] = useState<OPDSFeed | null>(null)
     const [history, setHistory] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(true)
-    const { webApp } = useTelegramContext()
+    const { webApp, isAdminMode } = useTelegramContext()
     const searchParams = useSearchParams()
     const router = useRouter()
 
@@ -40,7 +40,7 @@ function CatalogContent() {
     const loadFeed = useCallback(async (url?: string, isPagination = false) => {
         setIsLoading(true)
         try {
-            const data = await OpdsClient.fetchFeed(url)
+            const data = await OpdsClient.fetchFeed(url, isAdminMode)
             if (!data) {
                 console.error("[Catalog] No data received from feed")
                 return
@@ -49,7 +49,7 @@ function CatalogContent() {
             // Track the URL we loaded
             const selfLink = data.links?.find((l: OPDSLink) => l.rel === "self")?.href
             setCurrentFeedUrl(selfLink || url || "")
-            console.log("[Catalog] Loaded feed, URL:", selfLink || url || "root")
+            console.log("[Catalog] Loaded feed (adminMode:", isAdminMode, "), URL:", selfLink || url || "root")
 
             if (isPagination) {
                 window.scrollTo(0, 0)
@@ -59,7 +59,14 @@ function CatalogContent() {
         } finally {
             setIsLoading(false)
         }
-    }, [])
+    }, [isAdminMode])
+
+    // Load feed when isAdminMode changes if we are at root
+    useEffect(() => {
+        // Only auto-reload if we are at root (no history) or if we want to force refresh the view
+        // To be safe and meet user expectation of "switch mode -> see change", we reload current URL
+        loadFeed(currentFeedUrl || undefined)
+    }, [isAdminMode, loadFeed])
 
     // Go back in internal history or via OPDS hierarchy
     const goBack = useCallback(() => {

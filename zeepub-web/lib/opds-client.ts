@@ -9,16 +9,23 @@ const parser = new XMLParser({
 })
 
 export class OpdsClient {
-    static async fetchFeed(url?: string): Promise<OPDSFeed | null> {
+    static async fetchFeed(url?: string, adminMode: boolean = false): Promise<OPDSFeed | null> {
         const initData = getTelegramInitData()
 
         let targetUrl = `/api/tunnel/opds`
+        const queryParams = new URLSearchParams()
+
         if (url) {
-            // If absolute URL, pass it as is. If relative, backend handles it.
-            targetUrl += `?url=${encodeURIComponent(url)}`
+            queryParams.append("url", url)
         } else {
-            targetUrl += `?url=%2F`
+            queryParams.append("url", "/")
         }
+
+        if (adminMode) {
+            queryParams.append("admin_mode", "true")
+        }
+
+        targetUrl += `?${queryParams.toString()}`
 
         console.log(`[OpdsClient] Fetching: ${targetUrl} (Original: ${url || 'root'})`)
 

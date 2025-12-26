@@ -413,6 +413,7 @@ async def proxy_image(rest_of_path: str, request: Request):
 @router.get("/tunnel/opds")
 async def tunnel_opds(
     url: str = Query(..., description="Target OPDS URL"),
+    admin_mode: bool = Query(False, description="Whether to show full admin catalog"),
     current_uid: int = Depends(get_current_user)
 ):
     """
@@ -425,7 +426,7 @@ async def tunnel_opds(
 
     # Normalize URL: support root fallback and relative paths
     if not url or url == "/":
-        if user_data.get("role") == "admin":
+        if user_data.get("role") == "admin" and admin_mode:
              target_url = config.OPDS_ROOT_EVIL
         else:
              target_url = config.OPDS_ROOT_START
@@ -438,7 +439,7 @@ async def tunnel_opds(
     else:
         target_url = url
 
-    logger.info(f"Tunneling OPDS -> {target_url} for user {current_uid}")
+    logger.info(f"Tunneling OPDS -> {target_url} for user {current_uid} (admin_mode={admin_mode})")
 
     headers = {
         "User-Agent": "ZeePubBot/4.5 (OPDS Tunnel)",
@@ -456,7 +457,7 @@ async def tunnel_opds(
             content_type = r.headers.get("content-type", "")
 
             # If it's XML, we might want to modify it (renaming, relinking)
-            if "xml" in content_type and user_data.get("role") != "admin":
+            if "xml" in content_type and (user_data.get("role") != "admin" or not admin_mode):
                 import re
                 xml_text = r.text
                 
