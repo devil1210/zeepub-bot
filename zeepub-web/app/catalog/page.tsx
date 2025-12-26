@@ -83,10 +83,11 @@ function CatalogContent() {
         console.log("[Catalog] goBack called, history length:", currentHistory.length)
 
         if (currentHistory.length === 0) {
-            console.log("[Catalog] No history, doing browser back")
-            // Clear session storage when exiting catalog
+            console.log("[Catalog] No history, reloading catalog root")
+            // No history - reload the root catalog instead of browser back
             sessionStorage.removeItem("catalog-history")
-            window.history.back()
+            loadFeed()  // Load root catalog
+            window.scrollTo(0, 0)
             return
         }
 
@@ -105,6 +106,7 @@ function CatalogContent() {
         }
 
         loadFeed(prevUrl || undefined)
+        window.scrollTo(0, 0)
     }, [loadFeed])
 
     // Navigate into a subsection
@@ -121,6 +123,8 @@ function CatalogContent() {
         }
 
         loadFeed(url)
+        // Scroll to top when entering a new section
+        window.scrollTo(0, 0)
     }, [currentFeed, loadFeed])
 
     // Load initial history from sessionStorage

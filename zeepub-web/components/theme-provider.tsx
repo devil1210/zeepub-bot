@@ -138,6 +138,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       ? (selectedPreset?.dark || primaryColor)
       : (selectedPreset?.value || primaryColor)
 
+    // Calculate if color is light or dark to set contrasting text
+    const getContrastColor = (hex: string): string => {
+      const cleanHex = hex.replace('#', '')
+      const r = parseInt(cleanHex.substring(0, 2), 16)
+      const g = parseInt(cleanHex.substring(2, 4), 16)
+      const b = parseInt(cleanHex.substring(4, 6), 16)
+      // Calculate relative luminance
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+      return luminance > 0.5 ? '#000000' : '#ffffff'
+    }
+
+    const contrastColor = getContrastColor(colorToUse)
+
     // Create or update dynamic style tag - use hex directly for accurate colors
     let styleTag = document.getElementById("dynamic-theme-colors")
     if (!styleTag) {
@@ -146,20 +159,24 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       document.head.appendChild(styleTag)
     }
 
-    // Use color() function for wide gamut support or fallback to hex
+    // Apply primary color and contrasting text color
     styleTag.textContent = `
       :root {
         --primary: ${colorToUse} !important;
+        --primary-foreground: ${contrastColor} !important;
         --ring: ${colorToUse} !important;
         --accent: ${colorToUse} !important;
+        --accent-foreground: ${contrastColor} !important;
       }
       .dark {
         --primary: ${colorToUse} !important;
+        --primary-foreground: ${contrastColor} !important;
         --ring: ${colorToUse} !important;
         --accent: ${colorToUse} !important;
+        --accent-foreground: ${contrastColor} !important;
       }
-      /* Ensure button and link colors use the primary */
-      .bg-primary { background-color: ${colorToUse} !important; }
+      /* Ensure button and link colors use the primary with contrast text */
+      .bg-primary { background-color: ${colorToUse} !important; color: ${contrastColor} !important; }
       .text-primary { color: ${colorToUse} !important; }
       .border-primary { border-color: ${colorToUse} !important; }
     `
