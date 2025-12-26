@@ -57,6 +57,9 @@ function CatalogContent() {
     const historyRef = useRef<string[]>(history)
     historyRef.current = history
 
+    // Track current feed URL for reliable history
+    const [currentFeedUrl, setCurrentFeedUrl] = useState<string>("")
+
     // Load feed function
     const loadFeed = useCallback(async (url?: string, isPagination = false) => {
         setIsLoading(true)
@@ -67,6 +70,11 @@ function CatalogContent() {
                 return
             }
             setCurrentFeed(data)
+            // Track the URL we loaded
+            const selfLink = data.links?.find(l => l.rel === "self")?.href
+            setCurrentFeedUrl(selfLink || url || "")
+            console.log("[Catalog] Loaded feed, URL:", selfLink || url || "root")
+
             if (isPagination) {
                 window.scrollTo(0, 0)
             }
@@ -86,6 +94,7 @@ function CatalogContent() {
             console.log("[Catalog] No history, reloading catalog root")
             // No history - reload the root catalog instead of browser back
             sessionStorage.removeItem("catalog-history")
+            setCurrentFeedUrl("")
             loadFeed()  // Load root catalog
             window.scrollTo(0, 0)
             return
@@ -112,20 +121,24 @@ function CatalogContent() {
     // Navigate into a subsection
     const handleNavigate = useCallback((url: string) => {
         if (!url) return
-        const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href || ""
 
-        if (currentUrl) {
-            const newHistory = [...historyRef.current, currentUrl]
-            console.log("[Catalog] Navigating, saving to history:", currentUrl)
+        // Use currentFeedUrl as fallback if self link not found
+        const urlToSave = currentFeedUrl || ""
+
+        if (urlToSave) {
+            const newHistory = [...historyRef.current, urlToSave]
+            console.log("[Catalog] Navigating, saving to history:", urlToSave)
             console.log("[Catalog] New history:", newHistory)
             setHistory(newHistory)
             sessionStorage.setItem("catalog-history", JSON.stringify(newHistory))
+        } else {
+            console.log("[Catalog] No URL to save, navigating from root")
         }
 
         loadFeed(url)
         // Scroll to top when entering a new section
         window.scrollTo(0, 0)
-    }, [currentFeed, loadFeed])
+    }, [currentFeedUrl, loadFeed])
 
     // Load initial history from sessionStorage
     useEffect(() => {
@@ -240,10 +253,10 @@ function CatalogContent() {
                 {/* Visible back button when there's history */}
                 {history.length > 0 && (
                     <Button
-                        variant="outline"
+                        variant="default"
                         size="sm"
                         onClick={handleGoBack}
-                        className="mb-4 border-border hover:bg-secondary/50"
+                        className="mb-4 bg-primary hover:bg-primary/90"
                     >
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         Subir nivel
