@@ -5,8 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [v4.5.7] - 2025-12-26
+## [v4.5.8] - 2025-12-26
+### Fixed
+- Fixed critical bug in `proxy_image` where the `/api/image` prefix was lost, causing broken covers in the Mini App.
+- Fixed `tunnel_opds` to follow redirects, improving compatibility with upstream servers.
+- Added "Biblioteca Zeepubs" renaming and relinking logic to the tunnel for non-admins (parity with legacy API).
+- Improved `OpdsClient` error logging in the frontend.
 
+## [v4.5.7] - 2025-12-26
 **Maintenance:**
 - **Versioning:** Synchronized bot internal version reporting with the actual release tag (`v4.5.7`).
 - **Fixes:** Consolidated fixes from v4.5.6 (Catalog Access), v4.5.5 (Download History, Security).
