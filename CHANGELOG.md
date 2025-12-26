@@ -5,17 +5,21 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [v4.5.1] - 2025-12-26
-
-### Fixed
-- **API - Feed**: Corregido bug en la lógica de renombrado de "Todas las bibliotecas" donde el título modificado no se reflejaba en la respuesta final.
-- **Acceso - Mini App**: Modificada la API `/feed` para permitir acceso a usuarios con `has_mini_app_access` (User Level), no solo a Admin/Staff, corrigiendo el error de acceso denegado.
-- **UI - Mini App**: Centrado correcto de los indicadores de carga (Spinners) en Catálogo, Búsqueda y Detalle de Libro.
-- **UI - Admin Mode**: Corregida fuga de estado donde usuarios no administradores podían quedar atrapados en "Admin Mode" en la interfaz.
+## [v4.5.2] - 2025-12-26
 
 ### Added
-- **Comandos**: Agregado `/set_bot_avatar` (Admin) al menú de ayuda para facilitar la personalización de la Mini App.
-- **UX - Navegación**: Implementado enlace directo ("Biblioteca Zeepubs") para usuarios no administradores, saltando la carpeta intermedia "Todas las bibliotecas" en el catálogo OPDS.
+- **Performance - Tunneling**: Implementado "Modo Túnel" para navegación OPDS. Nuevo endpoint `/api/tunnel/opds` que streamea XML directamente evitando el procesamiento pesado del bot.
+- **Frontend - Cliente OPDS**: Integrado parser XML ligero (`fast-xml-parser`) en la Mini App para consumo directo del túnel.
+
+### Fixed
+- **Acceso - New Users**: Corregida lógica crítica en `user_service` que impedía el acceso al catálogo a usuarios nuevos (no registrados en DB). Ahora tienen acceso "Lector" por defecto.
+- **API - Feed**: Corregido bug en la lógica de renombrado de "Todas las bibliotecas" donde el título modificado no se reflejaba en la respuesta final.
+- **Acceso - Mini App**: Modificada la API `/feed` para permitir acceso a usuarios con `has_mini_app_access` (User Level).
+- **UI - Mini App**: Centrado correcto de los indicadores de carga (Spinners) en Catálogo, Búsqueda y Detalle de Libro.
+- **UI - Admin Mode**: Corregida fuga de estado donde usuarios no administradores podían quedar atrapados en "Admin Mode".
+
+## [v4.5.1] - 2025-12-26 (Internal)
+- *Release consolidado en v4.5.2 debido a mejoras inmediatas de rendimiento.*
 
 ## [v4.5.0] - 2025-12-25
 

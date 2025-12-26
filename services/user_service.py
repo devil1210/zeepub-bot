@@ -144,7 +144,13 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
                 "custom_status": custom_status,
             }
 
-    # 3. Check Level and Admin status (New system - DB based admins)
+    # 3. Check Level and Admin status
+    # First, let's establish defaults for non-DB users (Lector level equivalent)
+    if "has_mini_app_access" not in result:
+        # Default policy: Allow access for everyone unless explicitly banned/restricted
+        # Or fetch default level from DB if possible, but for performance, we hardcode Lector policy here
+        result["has_mini_app_access"] = True
+        
     access_info = await user_repo.get_access_info(uid)
     if access_info:
         result["has_mini_app_access"] = access_info["hasAccess"]
@@ -158,6 +164,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         if access_info["isAdmin"]:
             result["role"] = "admin"
             result["has_mini_app_access"] = True
+
 
     # 4. Legacy Config Fallbacks (non-admins)
     elif uid in config.FACEBOOK_PUBLISHERS:

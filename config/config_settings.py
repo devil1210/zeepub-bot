@@ -160,6 +160,19 @@ class BotConfig:
         base = self.OPDS_SERVER_URL if self.OPDS_SERVER_URL else self.BASE_URL
         return f"{base}{self.OPDS_ROOT_EVIL_SUFFIX}"
 
+    @property
+    def OPDS_AUTH(self) -> Tuple[str, str]:
+        """
+        Retorna las credenciales OPDS (usuario, pass) para autenticación.
+        Asumimos que están en variables de entorno OPDS_USER y OPDS_PASS.
+        Si no están, retorna None o tupla vacía.
+        """
+        user = os.getenv("OPDS_USER", "")
+        password = os.getenv("OPDS_PASS", "")
+        if user and password:
+            return (user, password)
+        return None
+
     def validate(self) -> Tuple[bool, List[str]]:
         errors: List[str] = []
         if not self.TELEGRAM_TOKEN:

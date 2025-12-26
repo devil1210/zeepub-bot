@@ -13,37 +13,13 @@ import {
     BookOpen,
     Download,
 } from "lucide-react"
-import { fetchBotFeed, callBotAPI } from "@/lib/api"
+import { OpdsClient } from "@/lib/opds-client"
+import { OPDSFeed, OPDSEntry, OPDSLink } from "@/lib/opds-types"
+import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
 
 import { Pagination } from "@/components/pagination"
 import { TransparentHeader } from "@/components/transparent-header"
-
-interface OPDSLink {
-    href: string
-    rel: string
-    type?: string
-}
-
-interface OPDSEntry {
-    id: string
-    title: string
-    author: string
-    summary: string
-    cover_url?: string
-    detail_url?: string
-    links: OPDSLink[]
-}
-
-interface OPDSFeed {
-    title: string
-    links: OPDSLink[]
-    entries: OPDSEntry[]
-    nextPage?: string | null
-    prevPage?: string | null
-    currentPage: number
-    totalPages?: number | null
-}
 
 function CatalogContent() {
     const [currentFeed, setCurrentFeed] = useState<OPDSFeed | null>(null)
@@ -64,7 +40,7 @@ function CatalogContent() {
     const loadFeed = useCallback(async (url?: string, isPagination = false) => {
         setIsLoading(true)
         try {
-            const data = await fetchBotFeed(url)
+            const data = await OpdsClient.fetchFeed(url)
             if (!data) {
                 console.error("[Catalog] No data received from feed")
                 return
