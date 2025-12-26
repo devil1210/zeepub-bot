@@ -154,6 +154,35 @@ async def test_get_feed_staff_evil_access():
         assert args[0] == "http://root/evil"
 
 @pytest.mark.asyncio
+async def test_tunnel_opds_slash_url_defaults():
+    # Test that /api/tunnel/opds?url=/ triggers default Start Catalog
+    from api.routes import tunnel_opds
+    with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user, \
+         patch("api.routes.httpx.AsyncClient") as mock_client_class, \
+         patch("config.config_settings.config.OPDS_SERVER_URL", "http://root"), \
+         patch("config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"):
+        
+        mock_get_user.return_value = {"role": "free", "has_mini_app_access": True}
+        
+        # Mock httpx client
+        mock_client = AsyncMock()
+        mock_client_class.return_value = mock_client
+        
+        mock_response = AsyncMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"content-type": "application/atom+xml"}
+        mock_response.aiter_bytes.return_value = [] # Async iterator
+        
+        mock_client.send.return_value = mock_response
+        
+        # Calling with url="/"
+        await tunnel_opds(url="/", current_uid=123)
+        
+        # Should build request with FULL Start URL
+        args, _ = mock_client.build_request.call_args
+        assert args[1] == "http://root/start"
+
+@pytest.mark.asyncio
 async def test_get_feed_slash_url_defaults():
     # Test that url="/" triggers default Start Catalog
     with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user, \
