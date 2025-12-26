@@ -45,6 +45,7 @@ class SystemManagerPlugin(BasePlugin):
                 CommandHandler("set_auto_delete_time", self.set_auto_delete_time)
             )
             app.add_handler(CommandHandler("setlog", self.setlog))
+            app.add_handler(CommandHandler("set_version", self.set_version))
 
             # Callback Handlers
             app.add_handler(
@@ -393,4 +394,80 @@ class SystemManagerPlugin(BasePlugin):
                 f"✅ <b>Sistema actualizado.</b>\n"
                 f"Versión: <code>{local_hash}</code>",
                 parse_mode="HTML",
+            )
+
+    async def set_version(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        /set_version <tag>
+        Cambia la versión del bot en docker-compose.yml.
+        """
+        uid = update.effective_user.id
+        thread_id = get_thread_id(update)
+
+        if not self._is_admin(uid):
+            return
+
+        if not context.args:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="❌ Uso: /set_version <tag>\nEjemplo: /set_version 4.5.1",
+                message_thread_id=thread_id,
+            )
+            return
+
+        new_tag = context.args[0].strip()
+        compose_path = "docker-compose.yml"
+
+        if not os.path.exists(compose_path):
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="❌ No se encontró docker-compose.yml en el directorio raíz.",
+                message_thread_id=thread_id,
+            )
+            return
+
+        try:
+            import re
+            with open(compose_path, "r") as f:
+                content = f.read()
+
+            # Pattern to match the image tag for zeepubs_bot service
+            # Supports both commented out and active image lines for robustness, 
+            # but targets the ghcr.io one by default as seen in the file.
+            pattern = r"(image:\s+ghcr\.io/devil1210/zeepub-bot:)(.*)"
+            
+            if not re.search(pattern, content):
+                 # Fallback for standard docker hub image if ghcr is not used or commented
+                 pattern = r"(image:\s+devil1210/zeepub-bot:)(.*)"
+
+            if not re.search(pattern, content):
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="❌ No se encontró la línea 'image' esperada en docker-compose.yml",
+                    message_thread_id=thread_id,
+                )
+                return
+
+            new_content = re.sub(pattern, rf"\g<1>{new_tag}", content)
+            
+            with open(compose_path, "w") as f:
+                f.write(new_content)
+
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=(
+                    f"✅ <b>docker-compose.yml actualizado</b>\n\n"
+                    f"Nueva versión configurada: <code>{new_tag}</code>\n\n"
+                    f"⚠️ Usa /update_system para aplicar los cambios ahora."
+                ),
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+            logger.info(f"Admin {uid} cambió la versión en docker-compose.yml a: {new_tag}")
+        except Exception as e:
+            logger.error(f"Error en set_version: {e}")
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=f"❌ Error al actualizar el archivo: {e}",
+                message_thread_id=thread_id,
             )
