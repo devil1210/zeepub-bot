@@ -60,7 +60,9 @@ async def get_current_user(
 
 @router.get("/feed")
 async def get_feed(
-    url: Optional[str] = None, current_uid: int = Depends(get_current_user)
+    url: Optional[str] = None, 
+    admin_mode: bool = Query(False),
+    current_uid: int = Depends(get_current_user)
 ):
     """
     Obtiene el feed OPDS.
@@ -91,9 +93,11 @@ async def get_feed(
 
     # Determinar URL base si no se proporciona o es raíz
     if not url or url == "/":
-        # Default for everyone is the standard Start Catalog.
-        # "Evil" catalog is only accessed if explicitly requested (via Admin Mode switch in frontend)
-        target_url = config.OPDS_ROOT_START
+        # "Evil" catalog is only accessed if explicitly requested AND user is admin
+        if is_admin and admin_mode:
+             target_url = config.OPDS_ROOT_EVIL
+        else:
+             target_url = config.OPDS_ROOT_START
     else:
         # Security: Prevent unauthorized users from accessing Evil Root manually
         if not has_evil_access and (config.OPDS_ROOT_EVIL_SUFFIX in url or config.OPDS_ROOT_EVIL in url):
@@ -128,11 +132,13 @@ async def get_feed(
             "listas de lectura",
             "deseo leer",
             "todas las colecciones",
+            "actualizado recientemente",
+            "añadido recientemente",
         }
 
         for entry in getattr(feed, "entries", []):
             title = entry.get("title", "Sin título")
-            if title.lower() in titles_to_exclude:
+            if not admin_mode and title.lower() in titles_to_exclude:
                 continue
 
             # Special handling for "Todas las bibliotecas" for non-admins
@@ -246,6 +252,31 @@ async def get_feed(
                     ],
                 }
             )
+
+        # 3. Add "Todas las colecciones" to specific sub-feeds as requested
+        sub_feeds = ["/on-deck", "/reading-list", "/want-to-read"]
+        if any(sub in target_url for sub in sub_feeds):
+             # Find base OPDS URL to point collections link correctly
+             base_opds = target_url
+             for sub in sub_feeds:
+                 if sub in base_opds:
+                     base_opds = base_opds.split(sub)[0]
+                     break
+             
+             entries.append({
+                 "id": "injected-collections",
+                 "title": "Todas las colecciones",
+                 "author": "Sistema",
+                 "summary": "Navegar por todas las colecciones",
+                 "cover_url": None,
+                 "subsection_url": f"{base_opds.rstrip('/')}/collections",
+                 "detail_url": None,
+                 "links": [{
+                     "rel": "subsection",
+                     "href": f"{base_opds.rstrip('/')}/collections",
+                     "type": "application/atom+xml;profile=opds-catalog;kind=navigation"
+                 }]
+             })
 
         # Second pass: fetch covers for folders that don't have one
         import asyncio
