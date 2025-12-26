@@ -12,6 +12,48 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
     def __init__(self, db_manager):
         super().__init__(db_manager, "download_history")
 
+    # --- Abstract Methods Implementation ---
+
+    async def get_by_id(self, id: Any) -> Optional[Dict[str, Any]]:
+        async with self.db_manager.connection() as conn:
+            cursor = await conn.execute(
+                "SELECT * FROM download_history WHERE id = ?", (id,)
+            )
+            row = await cursor.fetchone()
+            if not row:
+                return None
+            # Assuming row factory or manual mapping. For now manual.
+            # Using cursor.description could be better but let's stick to basic
+            cols = [description[0] for description in cursor.description]
+            return dict(zip(cols, row))
+
+    async def create(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+        """Creates a download record from a dictionary entity."""
+        # This wraps add_download logic
+        new_id = await self.add_download(
+            user_id=entity["user_id"],
+            title=entity["title"],
+            author=entity.get("author"),
+            download_url=entity.get("download_url"),
+            file_size=entity.get("file_size")
+        )
+        entity["id"] = new_id
+        return entity
+
+    async def update(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+        """Updates not usually supported for history logs, but implementing for interface."""
+        # Minimal implementation
+        return entity
+
+    async def delete(self, id: Any) -> bool:
+        """Deletes a download record."""
+        async with self.db_manager.connection() as conn:
+            await conn.execute("DELETE FROM download_history WHERE id = ?", (id,))
+            await conn.commit()
+            return True
+
+    # --- Specific Methods ---
+
     async def add_download(
         self,
         user_id: int,
