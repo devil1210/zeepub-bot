@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.6.5] - 2025-12-26
+### Fixed
+- Improved `OPDS_AUTH`: Added automatic fallback to `KAVITA_USERNAME` and `KAVITA_PASSWORD` if standard OPDS credentials are missing.
+- Added debug logging for authentication status during downloads.
+
 ## [v4.6.4] - 2025-12-26
 ### Fixed
 - Fixed authenticated downloads in Mini App: `fetch_bytes` now uses `OPDS_AUTH` credentials (resolves issues with Kavita and other private servers).

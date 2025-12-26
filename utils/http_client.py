@@ -45,7 +45,7 @@ async def fetch_bytes(
 
             sess = session or session_manager.get_session()
             logger.debug(
-                f"Iniciando descarga de URL (intento {attempt + 1}/{max_retries}): {url}"
+                f"Iniciando descarga de URL (intento {attempt + 1}/{max_retries}): {url} (auth={'si' if auth else 'no'})"
             )
 
             # Use smart timeout: total=None implies no total limit (good for large files),
