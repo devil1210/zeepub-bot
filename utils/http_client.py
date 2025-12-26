@@ -30,6 +30,7 @@ async def fetch_bytes(
     session: aiohttp.ClientSession = None,
     timeout: int = 15,
     max_retries: int = 3,
+    auth: aiohttp.BasicAuth = None,
 ) -> Union[bytes, str, None]:
     """
     Descarga el contenido de `url`. Si supera MAX_IN_MEMORY_BYTES escribe a fichero temporal.
@@ -56,7 +57,7 @@ async def fetch_bytes(
                     total=None, sock_connect=timeout, sock_read=timeout
                 )
 
-            async with sess.get(url, timeout=request_timeout) as resp:
+            async with sess.get(url, timeout=request_timeout, auth=auth) as resp:
                 # Log response status and headers for debugging
                 logger.debug(
                     f"Response status: {resp.status}, headers: {dict(resp.headers)}"

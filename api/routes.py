@@ -564,7 +564,12 @@ async def public_download(
 
         # Usar fetch_bytes para obtener el contenido (memoria o archivo temp)
         # Nota: fetch_bytes maneja archivos grandes escribiendo a disco
-        data = await fetch_bytes(url, timeout=120)
+        import aiohttp
+        auth = None
+        if config.OPDS_AUTH:
+            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+
+        data = await fetch_bytes(url, timeout=120, auth=auth)
 
         if not data:
             raise HTTPException(status_code=404, detail="Could not fetch file")

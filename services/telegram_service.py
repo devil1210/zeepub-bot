@@ -300,7 +300,9 @@ async def publicar_libro(
         # Descargar EPUB para parsear metadatos
         epub_downloaded = None
         if epub_url:
-            epub_downloaded = await fetch_bytes(epub_url, timeout=120)
+            import aiohttp
+            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+            epub_downloaded = await fetch_bytes(epub_url, timeout=120, auth=auth)
             if epub_downloaded:
                 # Use centralized metadata enrichment
                 from services.epub_service import enrich_metadata_from_epub
@@ -345,7 +347,9 @@ async def publicar_libro(
         if cover_bytes:
             portada_data = cover_bytes
         else:
-            portada_data = await fetch_bytes(portada_url, timeout=15)
+            import aiohttp
+            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+            portada_data = await fetch_bytes(portada_url, timeout=15, auth=auth)
 
         await send_photo_bytes(
             bot,
@@ -775,7 +779,13 @@ async def enviar_libro_directo(
 
         # 3. Descargar EPUB
         logger.info(f"Descargando EPUB desde: {download_url}")
-        epub_bytes = await fetch_bytes(download_url, timeout=120)
+        
+        import aiohttp
+        auth = None
+        if config.OPDS_AUTH:
+            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+
+        epub_bytes = await fetch_bytes(download_url, timeout=120, auth=auth)
         if not epub_bytes:
             error_msg = "❌ Error al descargar el archivo desde la fuente. Posible problema con Cloudflare o servidor de origen."
             logger.error(f"EPUB download failed for: {download_url}")
@@ -806,10 +816,12 @@ async def enviar_libro_directo(
 
         # 5. Preparar Portada
         cover_bytes = extract_cover_from_epub(epub_bytes)
+        import aiohttp
+        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
         portada_data = (
             cover_bytes
             if cover_bytes
-            else (await fetch_bytes(cover_url) if cover_url else None)
+            else (await fetch_bytes(cover_url, auth=auth) if cover_url else None)
         )
 
         # --- LOGICA FACEBOOK ---
@@ -1262,11 +1274,15 @@ async def _publish_choice_facebook(
     # If cover not extracted from buffer, try the pending portada or meta portada
     portada_url = pending.get("portada") if pending else meta.get("portada")
     if not cover_bytes and portada_url:
-        cover_bytes = await fetch_bytes(portada_url)
+        import aiohttp
+        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+        cover_bytes = await fetch_bytes(portada_url, auth=auth)
 
     # If we still don't have metadata or buffer, try to fetch EPUB to build meta/cover
     if (not cover_bytes or not meta) and epub_url:
-        epub_downloaded = await fetch_bytes(epub_url, timeout=60)
+        import aiohttp
+        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+        epub_downloaded = await fetch_bytes(epub_url, timeout=60, auth=auth)
         if epub_downloaded:
             st["epub_buffer"] = epub_downloaded
             epub_buffer = epub_downloaded
@@ -1353,10 +1369,12 @@ async def _publish_choice_telegram(
         except Exception:
             cover_bytes = None
 
+    import aiohttp
+    auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
     portada_data = (
         cover_bytes
         if cover_bytes
-        else (await fetch_bytes(portada_url, timeout=15) if portada_url else None)
+        else (await fetch_bytes(portada_url, timeout=15, auth=auth) if portada_url else None)
     )
 
     await send_photo_bytes(
