@@ -378,52 +378,35 @@ async def proxy_image(rest_of_path: str, request: Request):
     Proxies image requests to the upstream OPDS server.
     """
     try:
-        # Use OPDS_SERVER_URL as the upstream source
         upstream_base = config.OPDS_SERVER_URL.rstrip("/")
-        # Kavita images are usually under /api/image/...
-        # The router match for /image/{path} gives us everything after /image
+        # Try both /api/image and direct paths
         full_url = f"{upstream_base}/api/image/{rest_of_path}"
         query_params = dict(request.query_params)
 
-        logger.info(f"Proxying image request: {full_url}")
+        headers = {
+            "User-Agent": "ZeePubBot/4.5 (Proxy)",
+            "Accept": "image/*, */*"
+        }
 
-        async with httpx.AsyncClient() as client:
-            # Send request with OPDS authentication if available
-            response = await client.get(
-                full_url, 
-                params=query_params, 
-                auth=config.OPDS_AUTH,
-                follow_redirects=True,
-                timeout=30.0
-            )
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            logger.info(f"Proxying image: {full_url} with params {query_params}")
+            resp = await client.get(full_url, params=query_params, auth=config.OPDS_AUTH, headers=headers)
             
-            if response.status_code == 404:
-                # Fallback: maybe it's not under /api/image but directly?
-                # Sometimes images are handled differently.
-                logger.debug(f"Image not found at {full_url}, trying direct path")
-                direct_url = f"{upstream_base}/{rest_of_path}"
-                response = await client.get(
-                    direct_url, 
-                    params=query_params, 
-                    auth=config.OPDS_AUTH,
-                    follow_redirects=True
-                )
-
-            response.raise_for_status()
+            if resp.status_code == 404:
+                # Fallback to direct path
+                alt_url = f"{upstream_base}/{rest_of_path}"
+                logger.debug(f"Image 404 at {full_url}, trying {alt_url}")
+                resp = await client.get(alt_url, params=query_params, auth=config.OPDS_AUTH, headers=headers)
+            
+            resp.raise_for_status()
 
             return Response(
-                content=response.content,
-                media_type=response.headers.get("content-type", "image/jpeg"),
-                headers={"Cache-Control": "public, max-age=86400"},
+                content=resp.content,
+                media_type=resp.headers.get("content-type", "image/jpeg"),
+                headers={"Cache-Control": "public, max-age=86400"}
             )
-    except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP error proxying image from {full_url}: {e}")
-        raise HTTPException(status_code=e.response.status_code, detail="Image not found or upstream error")
-    except httpx.RequestError as e:
-        logger.error(f"Request error proxying image: {e}")
-        raise HTTPException(status_code=500, detail="Network error proxying image")
     except Exception as e:
-        logger.info(f"Falling back to default for image proxy error: {e}")
+        logger.error(f"Image proxy error for {rest_of_path}: {e}")
         raise HTTPException(status_code=404, detail="Image not found")
 
 
@@ -434,63 +417,50 @@ async def tunnel_opds(
 ):
     """
     Proxies OPDS requests directly to the server, injecting credentials.
-    Returns raw XML stream for client-side parsing (faster).
+    Returns raw XML or modified XML for UI improvements.
     """
-    # Check permissions
     user_data = await get_effective_user(current_uid)
     if not user_data.get("has_mini_app_access"):
         raise HTTPException(status_code=403, detail="Access denied")
 
-    from urllib.parse import urljoin
-    
-    # Normalize URL and handle root fallback
+    # Normalize URL: support root fallback and relative paths
     if not url or url == "/":
         target_url = config.OPDS_ROOT_START
     elif not url.startswith("http"):
-        # Assume relative to OPDS root host if not absolute
         base = config.OPDS_SERVER_URL.rstrip("/")
         if url.startswith("/"):
             target_url = f"{base}{url}"
         else:
-             target_url = f"{base}/{url}"
+            target_url = f"{base}/{url}"
     else:
         target_url = url
-    
-    # Security: Ensure target is within allowable domains (OPDS Server)
-    # This checks if the host matches OPDS_SERVER_URL host
-    if config.OPDS_SERVER_URL not in target_url:
-        # Strict check might fail if OPDS_SERVER_URL is generic. 
-        # For now, simplistic check or skip if internal trust is high.
-        pass
 
-    logger.info(f"Tunneling OPDS: {target_url} for {current_uid}")
+    logger.info(f"Tunneling OPDS -> {target_url} for user {current_uid}")
+
+    headers = {
+        "User-Agent": "ZeePubBot/4.5 (OPDS Tunnel)",
+        "Accept": "application/atom+xml,application/xml;q=0.9,*/*;q=0.8"
+    }
 
     try:
-        # Use a single client with follow_redirects
         async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-            # Build Request
-            req = client.build_request("GET", target_url, auth=config.OPDS_AUTH)
-            r = await client.send(req, stream=True)
+            r = await client.get(target_url, auth=config.OPDS_AUTH, headers=headers)
             
             if r.status_code >= 400:
-                 await r.aclose()
-                 return Response(content=f"Upstream Error: {r.status_code}", status_code=r.status_code)
+                 logger.error(f"Upstream OPDS error {r.status_code} for {target_url}: {r.text[:200]}")
+                 return Response(content=f"Error upstream: {r.status_code}", status_code=r.status_code)
 
-            # Check if we should intercept and modify the XML
-            # For simplicity and performance, we only intercept if it's likely a root or navigation feed
-            # that needs "Todas las bibliotecas" renaming
             content_type = r.headers.get("content-type", "")
-            if "xml" in content_type and not user_data.get("is_admin_db"):
-                # Read full content to modify
-                body = await r.aread()
-                xml_text = body.decode("utf-8", errors="ignore")
+            
+            # If it's XML, we might want to modify it (renaming, relinking)
+            if "xml" in content_type:
+                xml_text = r.text
                 
-                # Check for "Todas las bibliotecas" and rename/relink
+                # Global transformations for standard users
+                # Rename the generic libraries list to a more branded one
                 if "Todas las bibliotecas" in xml_text:
                     xml_text = xml_text.replace("Todas las bibliotecas", "Biblioteca Zeepubs")
-                    # Relink /libraries to /libraries/1 for "direct open" of standard library
-                    # We look for the libraries link within the "allLibraries" entry context
-                    # Simplistic replacement for now, as libraries/1 is the target
+                    # Redirect "All libraries" link direct to ZeePubs ES (libraryId 1)
                     xml_text = xml_text.replace("/libraries\"", "/libraries/1\"")
                     xml_text = xml_text.replace("/libraries/", "/libraries/1/")
                 
@@ -498,15 +468,15 @@ async def tunnel_opds(
                     content=xml_text.encode("utf-8"),
                     media_type=content_type
                 )
-
+            
+            # For non-XML (binary icons, etc), stream it
             return StreamingResponse(
                 r.aiter_bytes(),
-                media_type=content_type,
-                background=None
+                media_type=content_type
             )
 
     except Exception as e:
-        logger.error(f"Tunnel Error: {e}")
+        logger.error(f"Tunnel exception for {target_url}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

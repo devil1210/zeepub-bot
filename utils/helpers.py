@@ -471,7 +471,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v4.5.8"
+CURRENT_VERSION = "v4.5.9"
 
 
 def get_current_version() -> str:

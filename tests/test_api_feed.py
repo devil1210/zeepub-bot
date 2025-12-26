@@ -173,20 +173,20 @@ async def test_tunnel_opds_slash_url_defaults():
         mock_response = AsyncMock()
         mock_response.status_code = 200
         mock_response.headers = {"content-type": "application/atom+xml"}
-        mock_response.aread.return_value = b"<feed><title>Kavita</title></feed>"
+        mock_response.text = "<feed><title>Kavita</title></feed>"
         # For StreamingResponse
         async def mock_iter():
             yield b"<feed><title>Kavita</title></feed>"
         mock_response.aiter_bytes.return_value = mock_iter()
         
-        mock_client.send.return_value = mock_response
+        mock_client.get.return_value = mock_response
         
         # Calling with url="/"
         await tunnel_opds(url="/", current_uid=123)
         
-        # Should build request with FULL Start URL
-        args, _ = mock_client.build_request.call_args
-        assert args[1] == "http://root/start"
+        # Should call get with FULL Start URL
+        args, kwargs = mock_client.get.call_args
+        assert args[0] == "http://root/start"
 
 @pytest.mark.asyncio
 async def test_get_feed_slash_url_defaults():
