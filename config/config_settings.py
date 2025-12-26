@@ -164,10 +164,11 @@ class BotConfig:
     def OPDS_AUTH(self) -> Tuple[str, str]:
         """
         Retorna las credenciales OPDS (usuario, pass) %SAME% autenticación.
-        Maneja fallback a KAVITA_USERNAME si OPDS_USER no está definido.
+        Asumimos que están en variables de entorno OPDS_USER y OPDS_PASS.
+        Si no están, retorna None o tupla vacía.
         """
-        user = os.getenv("OPDS_USER") or os.getenv("KAVITA_USERNAME", "")
-        password = os.getenv("OPDS_PASS") or os.getenv("KAVITA_PASSWORD", "")
+        user = os.getenv("OPDS_USER", "")
+        password = os.getenv("OPDS_PASS", "")
         if user and password:
             return (user, password)
         return None
