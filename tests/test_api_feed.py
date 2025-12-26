@@ -152,3 +152,21 @@ async def test_get_feed_staff_evil_access():
         # Verify it ALLOWED evil url
         args, _ = mock_get_feed.call_args
         assert args[0] == "http://root/evil"
+
+@pytest.mark.asyncio
+async def test_get_feed_slash_url_defaults():
+    # Test that url="/" triggers default Start Catalog
+    with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user, \
+         patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed, \
+         patch("config.config_settings.config.OPDS_SERVER_URL", "http://root"), \
+         patch("config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"):
+        
+        mock_get_user.return_value = {"role": "free", "has_mini_app_access": True}
+        mock_get_feed.return_value = MockFeed([])
+        
+        # Calling with url="/"
+        await get_feed(url="/", current_uid=123)
+        
+        # Should call with FULL Start URL
+        args, _ = mock_get_feed.call_args
+        assert args[0] == "http://root/start"

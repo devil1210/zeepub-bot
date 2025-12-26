@@ -89,8 +89,8 @@ async def get_feed(
     # Strictly Admin or Staff (Publishers), excluding VIP/White/Premium
     has_evil_access = role in ["admin", "staff"] or is_admin
 
-    # Determinar URL base si no se proporciona
-    if not url:
+    # Determinar URL base si no se proporciona o es raíz
+    if not url or url == "/":
         # Default for everyone is the standard Start Catalog.
         # "Evil" catalog is only accessed if explicitly requested (via Admin Mode switch in frontend)
         target_url = config.OPDS_ROOT_START
