@@ -233,6 +233,26 @@ function CatalogContent() {
         <div className="min-h-screen bg-background pt-safe pb-20">
             <TransparentHeader />
             <main className="max-w-2xl mx-auto px-4 py-6 space-y-2 text-foreground">
+                {/* Visible back button when there's history */}
+                {history.length > 0 && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGoBack}
+                        className="mb-4 border-border hover:bg-secondary/50"
+                    >
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Subir nivel
+                    </Button>
+                )}
+
+                {/* Feed title */}
+                {currentFeed?.title && (
+                    <div className="pb-2">
+                        <h1 className="text-lg font-semibold text-foreground">{currentFeed.title}</h1>
+                    </div>
+                )}
+
                 {isLoading && (
                     <div className="flex justify-center py-4">
                         <Loader2 className="w-6 h-6 text-primary animate-spin" />
