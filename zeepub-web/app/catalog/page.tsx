@@ -61,38 +61,48 @@ function CatalogContent() {
         }
     }, [])
 
-    // Go back in internal history
+    // Go back in internal history or via OPDS hierarchy
     const goBack = useCallback(() => {
         const currentHistory = historyRef.current
         console.log("[Catalog] goBack called, history length:", currentHistory.length)
 
-        if (currentHistory.length === 0) {
-            console.log("[Catalog] No history, reloading catalog root")
-            // No history - reload the root catalog instead of browser back
-            sessionStorage.removeItem("catalog-history")
-            setCurrentFeedUrl("")
-            loadFeed()  // Load root catalog
+        if (currentHistory.length > 0) {
+            // Standard history back
+            const prevUrl = currentHistory[currentHistory.length - 1]
+            const newHistory = currentHistory.slice(0, -1)
+
+            console.log("[Catalog] Going back via history to:", prevUrl)
+            setHistory(newHistory)
+
+            if (newHistory.length > 0) {
+                sessionStorage.setItem("catalog-history", JSON.stringify(newHistory))
+            } else {
+                sessionStorage.removeItem("catalog-history")
+            }
+
+            loadFeed(prevUrl || undefined)
             window.scrollTo(0, 0)
             return
         }
 
-        const prevUrl = currentHistory[currentHistory.length - 1]
-        const newHistory = currentHistory.slice(0, -1)
-
-        console.log("[Catalog] Going back to:", prevUrl)
-        console.log("[Catalog] New history length:", newHistory.length)
-
-        setHistory(newHistory)
-        // Save updated history
-        if (newHistory.length > 0) {
-            sessionStorage.setItem("catalog-history", JSON.stringify(newHistory))
-        } else {
-            sessionStorage.removeItem("catalog-history")
+        // Fallback: OPDS "Up" link
+        const upLink = currentFeed?.links?.find(l => l.rel === "up")
+        if (upLink) {
+            console.log("[Catalog] Going back via UP link:", upLink.href)
+            // We don't push to history when going up/back, just load
+            setCurrentFeedUrl(upLink.href) // Important to update current tracked URL
+            loadFeed(upLink.href)
+            window.scrollTo(0, 0)
+            return
         }
 
-        loadFeed(prevUrl || undefined)
+        console.log("[Catalog] No history or UP link, reloading catalog root")
+        // No history - reload the root catalog
+        sessionStorage.removeItem("catalog-history")
+        setCurrentFeedUrl("")
+        loadFeed()  // Load root catalog
         window.scrollTo(0, 0)
-    }, [loadFeed])
+    }, [loadFeed, currentFeed])
 
     // Navigate into a subsection
     const handleNavigate = useCallback((url: string) => {
@@ -226,8 +236,8 @@ function CatalogContent() {
         <div className="min-h-screen bg-background pt-safe pb-20">
             <TransparentHeader />
             <main className="max-w-2xl mx-auto px-4 py-6 space-y-2 text-foreground">
-                {/* Visible back button when there's history */}
-                {history.length > 0 && (
+                {/* Visible back button when there's history or an UP link */}
+                {(history.length > 0 || currentFeed?.links?.some(l => l.rel === "up")) && (
                     <Button
                         variant="default"
                         size="sm"
