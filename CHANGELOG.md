@@ -5,11 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [v4.6.7] - 2025-12-26
+## [v4.6.8] - 2025-12-26
 ### Fixed
-- Fixed downloads and navigation by reverting to the previous JSON-based OPDS system.
-- Removed "Tunnel Mode" for OPDS (returned to processing feeds in the backend).
-- Ensured all URLs (covers and downloads) are correctly normalized on the server side.
+- Reverted networking and HTTP request behavior to match the stable v4.5.1 baseline.
+- Reduced strictness on OPDS authentication (now ignored for placeholder credentials).
+- Fixed downloads for setups that don't expect custom User-Agents or invalid Auth headers.
+
+## [v4.6.7] - 2025-12-26
 
 ## [v4.6.6] - 2025-12-26
 ### Fixed

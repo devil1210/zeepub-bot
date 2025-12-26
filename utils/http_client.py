@@ -57,11 +57,7 @@ async def fetch_bytes(
                     total=None, sock_connect=timeout, sock_read=timeout
                 )
 
-            headers = {
-                "User-Agent": "ZeePubBot/4.6 (Downloader)",
-                "Accept": "*/*"
-            }
-            async with sess.get(url, timeout=request_timeout, auth=auth, headers=headers) as resp:
+            async with sess.get(url, timeout=request_timeout, auth=auth) as resp:
                 # Log response status and headers for debugging
                 logger.debug(
                     f"Response status: {resp.status}, headers: {dict(resp.headers)}"

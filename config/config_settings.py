@@ -170,6 +170,10 @@ class BotConfig:
         user = os.getenv("OPDS_USER", "")
         password = os.getenv("OPDS_PASS", "")
         if user and password:
+            # Ignorar si son placeholders comunes
+            placeholders = {"tu_usuario", "tu_password", "USERNAME", "PASSWORD", "user", "pass"}
+            if user in placeholders or password in placeholders:
+                return None
             return (user, password)
         return None
 
