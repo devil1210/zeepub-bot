@@ -91,3 +91,64 @@ async def test_get_feed_no_renaming_for_admin():
         
         # Verify NO renaming
         assert result["entries"][0]["title"] == "Todas las bibliotecas"
+
+@pytest.mark.asyncio
+async def test_get_feed_evil_url_protection():
+    # Test that non-admin requesting Evil URL gets content from Start URL (or redirected logic)
+    with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user, \
+         patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed, \
+         patch("config.config_settings.config.OPDS_SERVER_URL", "http://root"), \
+         patch("config.config_settings.config.OPDS_ROOT_EVIL_SUFFIX", "/evil"), \
+         patch("config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"):
+        
+        mock_get_user.return_value = {"role": "free", "has_mini_app_access": True}
+        
+        # Determine behavior: logic calls get_cached_feed with the TARGET url.
+        # We expect TARGET to be switched to START because we passed an evil-ish URL
+        mock_get_feed.return_value = MockFeed([])
+        
+        await get_feed(url="http://root/evil/secret", current_uid=123)
+        
+        # Verify get_cached_feed was called with START url, not EVIL url
+        # Logic: target_url = config.OPDS_ROOT_START
+        # Note: mocking config attributes usually requires patching the object where it is used or the class.
+        # Here we patch the property or attribute on the imported config object.
+        # We need to verify what mock_get_feed was called with.
+        
+        args, _ = mock_get_feed.call_args
+        assert args[0] == "http://root/start"
+
+@pytest.mark.asyncio
+async def test_get_feed_admin_default_start():
+    # Test that Admin defaults to Start URL if no URL provided (Admin Mode Switch dependent)
+    with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user, \
+         patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed, \
+         patch("config.config_settings.config.OPDS_SERVER_URL", "http://root"), \
+         patch("config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"):
+        
+        mock_get_user.return_value = {"role": "admin", "has_mini_app_access": True}
+        mock_get_feed.return_value = MockFeed([])
+        
+        # Calling without URL should default to START, not EVIL
+        await get_feed(url=None, current_uid=1)
+        
+        # Verify it fetched START
+        args, _ = mock_get_feed.call_args
+        assert args[0] == "http://root/start" 
+
+@pytest.mark.asyncio
+async def test_get_feed_staff_evil_access():
+    # Test that Staff CAN access Evil URL explicitly
+    with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user, \
+         patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed, \
+         patch("config.config_settings.config.OPDS_SERVER_URL", "http://root"), \
+         patch("config.config_settings.config.OPDS_ROOT_EVIL_SUFFIX", "/evil"):
+         
+        mock_get_user.return_value = {"role": "staff", "has_mini_app_access": True}
+        mock_get_feed.return_value = MockFeed([])
+        
+        await get_feed(url="http://root/evil", current_uid=2)
+        
+        # Verify it ALLOWED evil url
+        args, _ = mock_get_feed.call_args
+        assert args[0] == "http://root/evil"

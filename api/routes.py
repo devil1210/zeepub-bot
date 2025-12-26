@@ -76,30 +76,32 @@ async def get_feed(
 
     logger.info(f"Permissions for UID {current_uid}: Role={role}, Admin={is_admin}, Staff={is_staff}")
 
-    # Si no tiene permisos, denegar
-    if not is_admin and not is_staff:
-        logger.warning(
-            f"Access denied for UID: {current_uid}. Effective Role: {role}. "
-            f"Admin List: {config.ADMIN_USERS}, VIP List: {config.VIP_LIST}, "
-            f"Premium List: {config.PREMIUM_LIST}, Whitelist: {config.WHITELIST}, "
-            f"Pub List: {config.FACEBOOK_PUBLISHERS}, HasAccess: {user_data.get('has_mini_app_access')}"
+    # Validar acceso básico a la Mini App
+    if not user_data.get("has_mini_app_access") and not is_admin and not is_staff:
+         # Si no tiene el flag explícito Y no es parte del staff/admin legacy
+         logger.warning(f"Access DENIED for {current_uid} (Role: {role})")
+         raise HTTPException(
+            status_code=403,
+            detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios."
         )
-        # Check specific flag from ZITADEL/DB
-        if not user_data.get("has_mini_app_access"):
-             raise HTTPException(
-                status_code=403,
-                detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios.",
-            )
+    
+    # Define who can access the "Evil" (Restricted) Catalog
+    # Strictly Admin or Staff (Publishers), excluding VIP/White/Premium
+    has_evil_access = role in ["admin", "staff"] or is_admin
 
     # Determinar URL base si no se proporciona
     if not url:
-        if is_admin:
-            target_url = config.OPDS_ROOT_EVIL
-        else:
-            # is_staff is guaranteed if we reached here
-            target_url = config.OPDS_ROOT_START
+        # Default for everyone is the standard Start Catalog.
+        # "Evil" catalog is only accessed if explicitly requested (via Admin Mode switch in frontend)
+        target_url = config.OPDS_ROOT_START
     else:
-        target_url = url
+        # Security: Prevent unauthorized users from accessing Evil Root manually
+        if not has_evil_access and (config.OPDS_ROOT_EVIL_SUFFIX in url or config.OPDS_ROOT_EVIL in url):
+             logger.warning(f"Unauthorized {current_uid} (Role: {role}) tried to access Evil Root: {url}")
+             # Redirect to SAFE root
+             target_url = config.OPDS_ROOT_START
+        else:
+            target_url = url
 
     logger.info(f"Fetching feed from target_url: {target_url}")
     try:
