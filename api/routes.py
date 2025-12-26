@@ -78,13 +78,13 @@ async def get_feed(
 
     # Validar acceso básico a la Mini App
     if not user_data.get("has_mini_app_access") and not is_admin and not is_staff:
-         # Si no tiene el flag explícito Y no es parte del staff/admin legacy
-         logger.warning(f"Access DENIED for {current_uid} (Role: {role})")
-         raise HTTPException(
+        # Si no tiene el flag explícito Y no es parte del staff/admin legacy
+        logger.warning(f"Access DENIED for {current_uid} (Role: {role})")
+        raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios."
         )
-    
+
     # Define who can access the "Evil" (Restricted) Catalog
     # Strictly Admin or Staff (Publishers), excluding VIP/White/Premium
     has_evil_access = role in ["admin", "staff"] or is_admin
@@ -97,9 +97,9 @@ async def get_feed(
     else:
         # Security: Prevent unauthorized users from accessing Evil Root manually
         if not has_evil_access and (config.OPDS_ROOT_EVIL_SUFFIX in url or config.OPDS_ROOT_EVIL in url):
-             logger.warning(f"Unauthorized {current_uid} (Role: {role}) tried to access Evil Root: {url}")
-             # Redirect to SAFE root
-             target_url = config.OPDS_ROOT_START
+            logger.warning(f"Unauthorized {current_uid} (Role: {role}) tried to access Evil Root: {url}")
+            # Redirect to SAFE root
+            target_url = config.OPDS_ROOT_START
         else:
             target_url = url
 

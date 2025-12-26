@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.5.5] - 2025-12-26
+
+**Fixes:**
+- **Navigation:** Fixed "Subir Nivel" button in Catalog to correctly use OPDS hierarchy (`rel="up"`) when local history is empty.
+- **Download History:** Fixed a backend crash in `DownloadRepository` that prevented downloads from being recorded and displayed.
+- **Security:** Reinforced OPDS access control. Non-admins are now strictly blocked from the "Evil" catalog, and admins/staff must explicitly request it. All users default to the "Start" catalog.
+
 ## [v4.5.2] - 2025-12-26
 
 ### Added
