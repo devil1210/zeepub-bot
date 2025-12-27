@@ -132,8 +132,6 @@ async def get_feed(
             "listas de lectura",
             "deseo leer",
             "todas las colecciones",
-            "actualizado recientemente",
-            "añadido recientemente",
         }
 
         for entry in getattr(feed, "entries", []):

@@ -5,8 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [v4.6.8] - 2025-12-26
+## [v4.6.9] - 2025-12-27
 ### Fixed
+- Restored "Recently Updated" and "Recently Added" entries to the standard catalog for all users.
+
+## [v4.6.8] - 2025-12-26
 - Reverted networking and HTTP request behavior to match the stable v4.5.1 baseline.
 - Reduced strictness on OPDS authentication (now ignored for placeholder credentials).
 - Fixed downloads for setups that don't expect custom User-Agents or invalid Auth headers.
