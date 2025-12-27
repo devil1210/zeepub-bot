@@ -5,7 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [v4.11.1] - 2025-12-27
+## [v4.11.2] - 2025-12-27
+### Fixed
+- Fixed UI flickering effect when scrolling through lists in the Mini App.
+- Corrected alignment of circular loading animations to ensure perfect centering.
+- Updated and expanded donation tiers in the Mini App (added "Patrocinador").
+
+## [v4.11.1] - 2025-12-26
 ### Changed
 - **Optimización de I/O Asíncrono:** Convertidas múltiples llamadas bloqueantes de `os.path.exists` y `os.path.getsize` a sus equivalentes asíncronos usando `asyncio.to_thread` en `services/telegram_service.py`.
 - **Limpieza de Archivos No Bloqueante:** Refactorizado el manejo de subida de archivos JSON en `handlers/message_handlers.py` para asegurar que `os.remove` no bloquee el event loop durante la limpieza de temporales.

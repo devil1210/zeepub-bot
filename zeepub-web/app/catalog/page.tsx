@@ -235,8 +235,7 @@ function CatalogContent() {
 
     if (isLoading && !currentFeed) {
         return (
-            <div className="min-h-screen bg-background pt-safe p-4">
-                <TransparentHeader />
+            <div className="min-h-screen bg-background flex items-center justify-center p-4">
                 <CatalogSkeleton />
             </div>
         )
@@ -383,7 +382,7 @@ function CatalogContent() {
 
 export default function CatalogPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-background pt-safe flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>}>
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>}>
             <CatalogContent />
         </Suspense>
     )
