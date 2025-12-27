@@ -5,9 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.7.0] - 2025-12-27
+### Changed
+- Refined catalog filtering for Admin Mode: Only show "Recently Added", "Recently Updated", and "All Libraries" in the root view.
+- Maintained standard filtering for non-admin users.
+
 ## [v4.6.9] - 2025-12-27
-### Fixed
-- Restored "Recently Updated" and "Recently Added" entries to the standard catalog for all users.
 
 ## [v4.6.8] - 2025-12-26
 - Reverted networking and HTTP request behavior to match the stable v4.5.1 baseline.

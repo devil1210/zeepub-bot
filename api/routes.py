@@ -133,11 +133,33 @@ async def get_feed(
             "deseo leer",
             "todas las colecciones",
         }
+        # For Evil Root, only keep these
+        titles_to_keep_evil = {
+            "actualizado recientemente",
+            "añadido recientemente",
+            "todas las bibliotecas",
+            "all libraries",
+        }
+
+        is_root = not url or url == "/"
 
         for entry in getattr(feed, "entries", []):
             title = entry.get("title", "Sin título")
-            if not admin_mode and title.lower() in titles_to_exclude:
-                continue
+            title_low = title.lower()
+
+            # Filtering logic
+            if is_root:
+                if admin_mode:
+                    # Aggressive filtering for Evil Root
+                    if title_low not in titles_to_keep_evil:
+                        continue
+                else:
+                    # Standard filtering for Standard Root
+                    if title_low in titles_to_exclude:
+                        continue
+            else:
+                # In sub-feeds, we generally don't filter by title (we want to see books/folders)
+                pass
 
             # Special handling for "Todas las bibliotecas" for non-admins
             if not is_admin and (title == "Todas las bibliotecas" or title == "All libraries"):
