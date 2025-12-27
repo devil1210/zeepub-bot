@@ -766,6 +766,7 @@ async def enviar_libro_directo(
     cover_url: str = None,
     target_chat_id: int = None,
     format_type: str = "standard",
+    message_thread_id: int = None,
 ):
     """
     Descarga y envía un libro directamente al usuario (para la Mini App).
@@ -1000,6 +1001,7 @@ async def enviar_libro_directo(
                     portada_data,
                     filename="cover.jpg",
                     parse_mode="HTML",
+                    message_thread_id=message_thread_id,
                 )
 
             # 6. Enviar Sinopsis
@@ -1007,7 +1009,12 @@ async def enviar_libro_directo(
             if sinopsis:
                 sinopsis_esc = escapar_html(sinopsis)
                 texto = f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
-                await bot.send_message(chat_id=destino, text=texto, parse_mode="HTML")
+                await bot.send_message(
+                    chat_id=destino,
+                    text=texto,
+                    parse_mode="HTML",
+                    message_thread_id=message_thread_id,
+                )
 
             # 7. Enviar Archivo EPUB
             # Calcular tamaño
@@ -1038,7 +1045,13 @@ async def enviar_libro_directo(
             )
 
             sent_doc = await send_doc_bytes(
-                bot, destino, caption, epub_bytes, filename=fname, parse_mode="HTML"
+                bot,
+                destino,
+                caption,
+                epub_bytes,
+                filename=fname,
+                parse_mode="HTML",
+                message_thread_id=message_thread_id,
             )
 
             # Registrar en historial

@@ -548,6 +548,8 @@ async def handle_bot_request(
                 "title", "Libro"
             )  # Optional from frontend if we update it, or we can fetch it?
             target = data.get("target", "private")
+            target_id_override = data.get("targetId")
+            thread_id_override = data.get("threadId")
 
             # If fronted doesn't send title/cover, we only have book_id (which is the url)
             if not book_id:
@@ -559,13 +561,15 @@ async def handle_bot_request(
 
             # Map target to chat_id
             target_chat_id = user_id  # Default to private
+            message_thread_id = None
             is_admin = user_id in config.ADMIN_USERS
 
             if is_admin:
                 if target == "channel":
-                    target_chat_id = get_setting("mini_app_channel_id", "@ZeePubs")
+                    target_chat_id = target_id_override or get_setting("mini_app_channel_id", "@ZeePubs")
                 elif target == "group":
-                    target_chat_id = get_setting("mini_app_group_id", "@ZeePubBotTest")
+                    target_chat_id = target_id_override or get_setting("mini_app_group_id", "@ZeePubBotTest")
+                    message_thread_id = thread_id_override
 
             success = await enviar_libro_directo(
                 bot=bot.app.bot,
@@ -573,6 +577,7 @@ async def handle_bot_request(
                 title=title,
                 download_url=book_id,
                 target_chat_id=target_chat_id,
+                message_thread_id=message_thread_id,
             )
             return {"success": success}
 

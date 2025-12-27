@@ -15,6 +15,10 @@ interface TelegramContextType {
   setIsAdminMode: (val: boolean) => void
   publishTarget: string
   setPublishTarget: (val: string) => void
+  targetId: string
+  setTargetId: (val: string) => void
+  threadId: string
+  setThreadId: (val: string) => void
 }
 
 const TelegramContext = createContext<TelegramContextType>({
@@ -27,6 +31,10 @@ const TelegramContext = createContext<TelegramContextType>({
   setIsAdminMode: () => { },
   publishTarget: "private",
   setPublishTarget: () => { },
+  targetId: "",
+  setTargetId: () => { },
+  threadId: "",
+  setThreadId: () => { },
 })
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
@@ -79,6 +87,20 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     return 'private'
   })
 
+  const [targetId, setTargetId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('publish_target_id') || ''
+    }
+    return ''
+  })
+
+  const [threadId, setThreadId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('publish_thread_id') || ''
+    }
+    return ''
+  })
+
   const router = useRouter()
   const pathname = usePathname()
 
@@ -90,6 +112,16 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const togglePublishTarget = (val: string) => {
     setPublishTarget(val)
     localStorage.setItem('publish_target', val)
+  }
+
+  const handleSetTargetId = (val: string) => {
+    setTargetId(val)
+    localStorage.setItem('publish_target_id', val)
+  }
+
+  const handleSetThreadId = (val: string) => {
+    setThreadId(val)
+    localStorage.setItem('publish_thread_id', val)
   }
 
   // Configurar botón de retroceso nativo de Telegram
@@ -186,7 +218,11 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     isAdminMode,
     setIsAdminMode: toggleAdminMode,
     publishTarget,
-    setPublishTarget: togglePublishTarget
+    setPublishTarget: togglePublishTarget,
+    targetId,
+    setTargetId: handleSetTargetId,
+    threadId,
+    setThreadId: handleSetThreadId
   }
 
   return <TelegramContext.Provider value={value}>{children}</TelegramContext.Provider>

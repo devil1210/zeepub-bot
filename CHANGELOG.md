@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.10.1] - 2025-12-27
+### Added
+- **IDs Manuales de Publicación:** Los administradores ahora pueden ingresar manualmente el Chat ID y el Topic ID (hilos) para la publicación, permitiendo mayor flexibilidad al enviar contenido a grupos con temas específicos.
+- **Soporte para Topics (Threads):** La lógica de envío ahora respeta el `message_thread_id` para asegurar que el contenido llegue al hilo correcto dentro de un grupo súper-grupo.
+- **UI Refinada:** Añadidos campos de texto opcionales en el Panel Admin que aparecen dinámicamente según el destino seleccionado.
+
 ## [v4.10.0] - 2025-12-27
 ### Added
 - **Selector de Destino de Publicación (Admins):** Los administradores ahora pueden elegir el destino de publicación (Chat Privado, Canal o Grupo) directamente desde el Panel de Administrador en la Mini App.

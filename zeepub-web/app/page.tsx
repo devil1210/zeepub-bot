@@ -7,6 +7,7 @@ import { BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, Shiel
 import { useTelegramContext } from "@/components/telegram-provider"
 import { useStrings } from "@/components/strings-provider"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
 import { AccessGuard } from "@/components/access-guard"
 import { UserLevelBadge } from "@/components/user-level-badge"
 import { callBotAPI } from "@/lib/api"
@@ -24,7 +25,18 @@ import { TransparentHeader } from "@/components/transparent-header"
 import { useTheme } from "@/components/theme-provider"
 
 export default function HomePage() {
-  const { user, isAdmin, isAdminMode, setIsAdminMode, publishTarget, setPublishTarget } = useTelegramContext()
+  const {
+    user,
+    isAdmin,
+    isAdminMode,
+    setIsAdminMode,
+    publishTarget,
+    setPublishTarget,
+    targetId,
+    setTargetId,
+    threadId,
+    setThreadId
+  } = useTelegramContext()
   const { t } = useStrings()
   const { avatarScale } = useTheme()
   const [botInfo, setBotInfo] = useState<BotInfo>({
@@ -228,6 +240,36 @@ export default function HomePage() {
                         </TabsTrigger>
                       </TabsList>
                     </Tabs>
+                  </div>
+
+                  {/* IDs Manuales */}
+                  <div className="space-y-3 pt-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="target-id" className="text-xs font-medium px-1">
+                        {t("home_admin_publish_id")}
+                      </Label>
+                      <Input
+                        id="target-id"
+                        placeholder="ej: -100123456789"
+                        value={targetId}
+                        onChange={(e) => setTargetId(e.target.value)}
+                        className="h-9 bg-secondary/20 border-border/50 text-sm focus-visible:ring-primary/30"
+                      />
+                    </div>
+                    {publishTarget === "group" && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="thread-id" className="text-xs font-medium px-1">
+                          {t("home_admin_publish_topic")}
+                        </Label>
+                        <Input
+                          id="thread-id"
+                          placeholder="ej: 1234"
+                          value={threadId}
+                          onChange={(e) => setThreadId(e.target.value)}
+                          className="h-9 bg-secondary/20 border-border/50 text-sm focus-visible:ring-primary/30"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

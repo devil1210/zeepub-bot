@@ -27,6 +27,8 @@ export interface AppStrings {
     home_admin_publish_private: string
     home_admin_publish_channel: string
     home_admin_publish_group: string
+    home_admin_publish_id: string
+    home_admin_publish_topic: string
     menu_search_label: string
     menu_search_desc: string
     menu_catalog_label: string
@@ -92,6 +94,8 @@ export const DEFAULT_STRINGS: AppStrings = {
     home_admin_publish_private: "Privado",
     home_admin_publish_channel: "Canal",
     home_admin_publish_group: "Grupo",
+    home_admin_publish_id: "ID del Chat (opcional)",
+    home_admin_publish_topic: "ID del Tema/Topic (opcional)",
     menu_search_label: "Buscar Libros",
     menu_search_desc: "Encuentra ePubs en el catálogo",
     menu_catalog_label: "Mi Catálogo",

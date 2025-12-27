@@ -28,7 +28,7 @@ interface BookDetail {
 function BookDetailContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const { webApp, publishTarget } = useTelegramContext()
+    const { webApp, publishTarget, targetId, threadId } = useTelegramContext()
     const { t } = useStrings()
     const [book, setBook] = useState<BookDetail | null>(null)
     const [isLoading, setIsLoading] = useState(true)
@@ -74,7 +74,9 @@ function BookDetailContent() {
             await callBotAPI("download", {
                 bookId: book.downloadUrl,
                 title: book.title,
-                target: publishTarget
+                target: publishTarget,
+                targetId: targetId,
+                threadId: threadId
             })
         } catch (error) {
             console.error("[v0] Download error:", error)
