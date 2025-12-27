@@ -57,8 +57,10 @@ def test_role_based_access_whitelist(mock_opds_roots, client):
         assert response.json()["title"] == "Start Root"
 
 def test_role_based_access_denied(mock_opds_roots, client):
-    response = client.get("/api/feed?uid=999")
-    assert response.status_code == 403
+    with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user:
+        mock_get_user.return_value = {"role": "free", "has_mini_app_access": False}
+        response = client.get("/api/feed?uid=999")
+        assert response.status_code == 403
 
 def test_book_detail_parsing(client, monkeypatch):
     with patch("api.miniapp_routes.get_cached_feed", new_callable=AsyncMock) as mock_feed:

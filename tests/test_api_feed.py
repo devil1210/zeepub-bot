@@ -61,8 +61,9 @@ async def test_get_feed_renaming_logic():
             MockEntry("Todas las bibliotecas", links=[{"rel": "subsection", "href": "http://libs"}])
         ]
         mock_get_feed.side_effect = [
-            MockFeed(entries),          # First call (main feed)
-            MockFeed([])                # Second call (fetching subsection to find zeepubs)
+            MockFeed(entries),          # 1. First call (main feed)
+            MockFeed([MockEntry("ZeePubs ES", links=[{"rel": "subsection", "href": "http://direct-zeepubs-es"}])]), # 2. libraries listing
+            MockFeed([MockEntry("First Lib", links=[{"rel": "subsection", "href": "http://final-deep-link"}])]) # 3. ZeePubs ES listing
         ]
         
         mock_find_zeepubs.return_value = "http://direct-zeepubs-es"
@@ -72,7 +73,7 @@ async def test_get_feed_renaming_logic():
         # Verify renaming
         assert result["entries"][0]["title"] == "Biblioteca Zeepubs"
         # Verify link override
-        assert result["entries"][0]["subsection_url"] == "http://direct-zeepubs-es"
+        assert result["entries"][0]["subsection_url"] == "http://final-deep-link"
 
 @pytest.mark.asyncio
 async def test_get_feed_no_renaming_for_admin():
@@ -119,12 +120,14 @@ async def test_get_feed_evil_url_protection():
         assert args[0] == "http://root/start"
 
 @pytest.mark.asyncio
-async def test_get_feed_admin_default_start():
+async def test_get_feed_admin_default_start(monkeypatch):
     # Test that Admin defaults to Start URL if no URL provided (Admin Mode Switch dependent)
     with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user, \
-         patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed, \
-         patch("config.config_settings.config.OPDS_SERVER_URL", "http://root"), \
-         patch("config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"):
+         patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed:
+        
+        from api.routes import config
+        monkeypatch.setattr(config, "OPDS_SERVER_URL", "http://root")
+        monkeypatch.setattr(config, "OPDS_ROOT_START_SUFFIX", "/start")
         
         mock_get_user.return_value = {"role": "admin", "has_mini_app_access": True}
         mock_get_feed.return_value = MockFeed([])
@@ -134,7 +137,7 @@ async def test_get_feed_admin_default_start():
         
         # Verify it fetched START
         args, _ = mock_get_feed.call_args
-        assert args[0] == "http://root/start" 
+        assert args[0] == "http://root/start"
 
 @pytest.mark.asyncio
 async def test_get_feed_staff_evil_access():

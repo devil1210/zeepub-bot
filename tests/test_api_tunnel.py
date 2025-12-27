@@ -23,11 +23,15 @@ async def test_tunnel_opds_streaming():
         
         # Mock Client and Response
         mock_client = AsyncMock()
+        mock_client.__aenter__.return_value = mock_client
         mock_client_cls.return_value = mock_client
         
-        mock_response = AsyncMock()
+        # Use a real Response object if possible, or a mock that behaves like one
+        import httpx
+        mock_response = MagicMock(spec=httpx.Response)
         mock_response.status_code = 200
         mock_response.headers = {"content-type": "application/atom+xml"}
+        mock_response.text = "<feed><id>root</id></feed>"
         
         # Mock aiter_bytes for streaming
         async def byte_iterator():
@@ -35,16 +39,16 @@ async def test_tunnel_opds_streaming():
             yield b"</feed>"
         
         mock_response.aiter_bytes = byte_iterator
-        mock_client.send.return_value = mock_response
+        mock_client.get.return_value = mock_response
         
         response = await tunnel_opds(url="http://opds.server/catalog", current_uid=1)
         
-        # Verify it returns a StreamingResponse
-        from fastapi.responses import StreamingResponse
-        assert isinstance(response, StreamingResponse)
+        # Verify it returns a Response (it was modified XML)
+        from fastapi.responses import Response
+        assert isinstance(response, Response)
         
         # Verify auth was injected
-        mock_client.build_request.assert_called()
-        call_kwargs = mock_client.build_request.call_args.kwargs
+        mock_client.get.assert_called()
+        call_kwargs = mock_client.get.call_args.kwargs
         assert "auth" in call_kwargs
         assert call_kwargs["auth"] == config.OPDS_AUTH

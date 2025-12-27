@@ -63,10 +63,12 @@ async def get_current_user(
     return 0
 
 
+from typing import Annotated
+
 @router.get("/feed")
 async def get_feed(
     url: Optional[str] = None,
-    admin_mode: bool = Query(False),
+    admin_mode: Annotated[bool, Query()] = False,
     current_uid: int = Depends(get_current_user),
 ):
     """
@@ -435,6 +437,8 @@ async def get_feed(
             "currentPage": current_page,
             "totalPages": total_pages,
         }
+    except HTTPException as e:
+        raise e
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error fetching feed: {e}")
         raise HTTPException(

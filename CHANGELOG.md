@@ -5,10 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [v4.7.2] - 2025-12-27
+## [v4.7.3] - 2025-12-27
 ### Fixed
-- Fixed linting and formatting issues across the codebase (api/routes.py, services/telegram_service.py, services/user_service.py).
-- Ensured consistent 4-space indentation and removed unwanted whitespace.
+- Fixed unit test suite: All 15 tests are now passing.
+- Corrected `get_feed` signature to ensure stable behavior in tests.
+- Improved exception handling in API routes to preserve correct HTTP status codes.
+- Refined mocks in tunnel and feed tests to match latest architectural changes.
+
+## [v4.7.2] - 2025-12-27
 
 ## [v4.7.1] - 2025-12-27
 
