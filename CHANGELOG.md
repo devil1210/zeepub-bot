@@ -5,9 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.8.1] - 2025-12-27
+### Fixed
+- Corregido el color de los botones de paginación (Siguiente/Anterior) para usar el color del tema (`primary`), mejorando la visibilidad y legibilidad.
+
 ## [v4.8.0] - 2025-12-27
-### Added
-- **Optimización Premium de la Mini App**:
     - Implementación de **Skeletons (Esqueletos)** para una carga más fluida y profesional.
     - **Caché en memoria** en el cliente OPDS para navegación instantánea al retroceder.
     - Micro-animaciones de entrada (fade-in, slide-up) para todos los elementos de la lista.

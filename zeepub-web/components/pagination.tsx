@@ -29,20 +29,20 @@ export function Pagination({
             {/* Navigation Buttons */}
             <div className="flex items-center justify-center gap-3">
                 <Button
-                    variant="outline"
+                    variant="default"
                     onClick={onPrevPage}
                     disabled={!hasPrevPage || isLoading}
-                    className="h-11 px-5 bg-card border-border hover:bg-secondary/50 disabled:opacity-40 transition-all"
+                    className="h-11 px-5 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-all shadow-sm"
                 >
                     <ChevronLeft className="w-5 h-5 mr-1" />
                     Anterior
                 </Button>
 
                 <Button
-                    variant="outline"
+                    variant="default"
                     onClick={onNextPage}
                     disabled={!hasNextPage || isLoading}
-                    className="h-11 px-5 bg-card border-border hover:bg-secondary/50 disabled:opacity-40 transition-all"
+                    className="h-11 px-5 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-all shadow-sm"
                 >
                     Siguiente
                     <ChevronRight className="w-5 h-5 ml-1" />
