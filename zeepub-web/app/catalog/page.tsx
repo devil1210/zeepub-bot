@@ -232,8 +232,7 @@ function CatalogContent() {
 
     if (isLoading && !currentFeed) {
         return (
-            <div className="min-h-screen bg-background pt-safe flex items-center justify-center">
-                <TransparentHeader />
+            <div className="min-h-screen bg-background flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
         )

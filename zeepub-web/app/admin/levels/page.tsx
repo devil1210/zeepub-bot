@@ -81,7 +81,6 @@ export default function AccessControlPage() {
     if (authLoading || loading) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
-                <TransparentHeader />
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         )
