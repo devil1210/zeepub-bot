@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { TelegramProvider } from "@/components/telegram-provider"
 import { ThemeProvider } from "@/components/theme-provider"
+import { StringsProvider } from "@/components/strings-provider"
 import Script from "next/script"
 import "./globals.css"
 
@@ -46,7 +47,9 @@ export default function RootLayout({
       <body className={`font-sans antialiased`}>
         <ThemeProvider>
           <TelegramProvider>
-            <div className="pb-4">{children}</div>
+            <StringsProvider>
+              <div className="pb-4">{children}</div>
+            </StringsProvider>
           </TelegramProvider>
         </ThemeProvider>
         <Analytics />

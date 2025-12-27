@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
     # Guardar el bot en app_state para acceso desde rutas
     if bot._initialized:
         app_state["bot"] = bot.app.bot
+        app.state.bot_instance = bot
     yield
     # Shutdown: Detener el bot
     logger.info("Deteniendo ZeePub Bot...")

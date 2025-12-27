@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Search, BookOpen, ChevronRight, Download } from "lucide-react"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
+import { useStrings } from "@/components/strings-provider"
 import { Pagination } from "@/components/pagination"
 
 interface Book {
@@ -42,6 +43,7 @@ export default function SearchPage() {
     currentPage: 1,
   })
   const { webApp } = useTelegramContext()
+  const { t } = useStrings()
   const router = useRouter()
 
   const handleSearch = async (pageUrl?: string) => {
@@ -132,7 +134,7 @@ export default function SearchPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Buscar por título, autor o serie..."
+                  placeholder={t("search_placeholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -140,7 +142,7 @@ export default function SearchPage() {
                 />
               </div>
               <Button onClick={() => handleSearch()} disabled={isLoading} className="h-12 px-6 bg-primary hover:bg-primary/90">
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Buscar"}
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("search_button")}
               </Button>
             </div>
           </div>
@@ -181,13 +183,13 @@ export default function SearchPage() {
                       </h3>
                       {book.is_folder && (
                         <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
-                          Serie
+                          {t("book_series")}
                         </span>
                       )}
                     </div>
                     <p className="text-sm text-primary font-medium mb-1 truncate">{book.author}</p>
                     <p className="text-xs text-muted-foreground line-clamp-2 italic mb-2">
-                      {book.is_folder ? "Ver esta colección..." : "Toca para detalles..."}
+                      {book.is_folder ? t("book_section") : t("book_details_hint")}
                     </p>
 
                     {!book.is_folder && book.download_url && (
@@ -197,7 +199,7 @@ export default function SearchPage() {
                         className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
                       >
                         <Download className="w-3 h-3 mr-1.5" />
-                        Descargar
+                        {t("book_download")}
                       </Button>
                     )}
                   </div>
@@ -227,7 +229,7 @@ export default function SearchPage() {
             <div className="text-center py-12">
               <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
               <p className="text-muted-foreground">
-                {searchQuery ? "No se encontraron resultados" : "Busca libros por título o autor"}
+                {searchQuery ? t("search_empty") : t("search_prompt")}
               </p>
             </div>
           )}

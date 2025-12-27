@@ -5,9 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.9.0] - 2025-12-27
+### Added
+- **Textos Dinámicos en la Mini App:** Ahora todos los textos de la interfaz web (buscador, botones, etiquetas) se pueden editar en tiempo real desde Telegram usando `/add_msge`.
+- **Paginación en /templates:** El comando `/templates` ahora soporta paginación para manejar el creciente número de plantillas.
+- Nuevo endpoint `/api/app-strings` para servir textos personalizados al frontend.
+
 ## [v4.8.2] - 2025-12-27
-### Fixed
-- Agregado el comando `/set_version` al sistema de ayuda y menú de administración.
 
 ## [v4.8.1] - 2025-12-27
 

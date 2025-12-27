@@ -645,6 +645,72 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "⚠️ <b>¡ATENCIÓN!</b> Esto borrará TODO el historial de libros publicados.\nPara confirmar, usa: <code>/clear_history confirm</code>",
     },
+    # --- Mini App (Web) ---
+    "web_catalog_title": {
+        "desc": "Web: Título del catálogo",
+        "vars": [],
+        "default": "Catálogo",
+    },
+    "web_catalog_back": {
+        "desc": "Web: Botón volver/subir nivel",
+        "vars": [],
+        "default": "Subir nivel",
+    },
+    "web_search_placeholder": {
+        "desc": "Web: Placeholder buscador",
+        "vars": [],
+        "default": "Buscar por título, autor o serie...",
+    },
+    "web_search_button": {
+        "desc": "Web: Botón buscar",
+        "vars": [],
+        "default": "Buscar",
+    },
+    "web_search_empty": {
+        "desc": "Web: Texto sin resultados",
+        "vars": [],
+        "default": "No se encontraron resultados",
+    },
+    "web_search_prompt": {
+        "desc": "Web: Instrucción inicial búsqueda",
+        "vars": [],
+        "default": "Busca libros por título o autor",
+    },
+    "web_pagination_prev": {
+        "desc": "Web: Botón Anterior",
+        "vars": [],
+        "default": "Anterior",
+    },
+    "web_pagination_next": {
+        "desc": "Web: Botón Siguiente",
+        "vars": [],
+        "default": "Siguiente",
+    },
+    "web_book_loading": {
+        "desc": "Web: Texto cargando detalles",
+        "vars": [],
+        "default": "Cargando detalles...",
+    },
+    "web_book_download": {
+        "desc": "Web: Botón descargar",
+        "vars": [],
+        "default": "Descargar",
+    },
+    "web_book_section": {
+        "desc": "Web: Texto ver colección",
+        "vars": [],
+        "default": "Ver esta colección...",
+    },
+    "web_book_series": {
+        "desc": "Web: Etiqueta Serie",
+        "vars": [],
+        "default": "Serie",
+    },
+    "web_book_details_hint": {
+        "desc": "Web: Sugerencia ver detalles",
+        "vars": [],
+        "default": "Toca para detalles...",
+    },
 }
 
 # Global variables available in ALL templates
@@ -1109,6 +1175,18 @@ class CustomMessagesPlugin(BasePlugin):
             final_text = final_text.replace(placeholder, safe_value)
 
         return final_text
+    async def get_web_strings(self) -> Dict[str, str]:
+        """
+        Recupera todos los strings destinados a la Mini App.
+        """
+        results = {}
+        for slug in TEMPLATE_REGISTRY:
+            if slug.startswith("web_"):
+                text = await self.get_text(slug)
+                # Remove prefix for shorter keys in JSON
+                key = slug.replace("web_", "")
+                results[key] = text
+        return results
 
     # --- Handlers ---
 
@@ -1569,13 +1647,16 @@ class CustomMessagesPlugin(BasePlugin):
             "Donaciones y Niveles": [],
             "Modo Evil (Privado)": [],
             "Búsqueda": [],
+            "Mini App (Web)": [],
             "Sistema y Estado": [],
             "Otros": [],
         }
 
         all_keys = sorted(TEMPLATE_REGISTRY.keys())
         for slug in all_keys:
-            if slug.startswith("help_"):
+            if slug.startswith("web_"):
+                cat = "Mini App (Web)"
+            elif slug.startswith("help_"):
                 cat = "Ayuda y Menús"
             elif slug.startswith("start_") or slug.startswith("saludo"):
                 cat = "Inicio y Bienvenida"
@@ -1595,7 +1676,7 @@ class CustomMessagesPlugin(BasePlugin):
         return categories
 
     def _build_templates_keyboard(
-        self, current_cat: str = None
+        self, current_cat: str = None, page: int = 1, has_more: bool = False
     ) -> InlineKeyboardMarkup:
         # Fixed order
         cat_order = [
@@ -1604,6 +1685,7 @@ class CustomMessagesPlugin(BasePlugin):
             "Sistema y Estado",
             "Donaciones y Niveles",
             "Búsqueda",
+            "Mini App (Web)",
             "Modo Evil (Privado)",
             "Otros",
         ]
@@ -1612,11 +1694,11 @@ class CustomMessagesPlugin(BasePlugin):
         if current_cat is None:
             # Main Menu: Categories
             for cat in cat_order:
-                # Callback: templates|cat|<cat_name>
+                # Callback: templates|cat|<cat_name>|1
                 buttons.append(
                     [
                         InlineKeyboardButton(
-                            f"📂 {cat}", callback_data=f"templates|cat|{cat}"
+                            f"📂 {cat}", callback_data=f"templates|cat|{cat}|1"
                         )
                     ]
                 )
@@ -1624,7 +1706,26 @@ class CustomMessagesPlugin(BasePlugin):
                 [InlineKeyboardButton("❌ Cerrar", callback_data="templates|close")]
             )
         else:
-            # Back Button only
+            # Pagination Buttons
+            nav_row = []
+            if page > 1:
+                nav_row.append(
+                    InlineKeyboardButton(
+                        "⬅️ Ant", callback_data=f"templates|cat|{current_cat}|{page-1}"
+                    )
+                )
+
+            if has_more:
+                nav_row.append(
+                    InlineKeyboardButton(
+                        "Sig ➡️", callback_data=f"templates|cat|{current_cat}|{page+1}"
+                    )
+                )
+
+            if nav_row:
+                buttons.append(nav_row)
+
+            # Back Button
             buttons.append(
                 [
                     InlineKeyboardButton(
@@ -1677,29 +1778,34 @@ class CustomMessagesPlugin(BasePlugin):
 
         if action == "cat":
             cat_name = arg
+            page = int(data[3]) if len(data) > 3 else 1
+            page_size = 8  # templates per page
+
             categories = self._get_template_categories()
             slugs = categories.get(cat_name, [])
 
-            text = f"📂 <b>{cat_name.upper()}</b>\n\n"
+            # Paginate slugs
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paged_slugs = slugs[start_idx:end_idx]
+            has_more = len(slugs) > end_idx
+
+            text = f"📂 <b>{cat_name.upper()}</b> (Pag {page})\n\n"
             text += "Usa <code>/add_msge &lt;slug&gt;</code> para personalizar.\n\n"
 
-            for slug in slugs:
+            for slug in paged_slugs:
                 info = TEMPLATE_REGISTRY[slug]
                 vars_str = ", ".join(info["vars"]) if info["vars"] else "Ninguna"
                 entry = f"🔹 <b>{slug}</b>\n"
                 entry += f"   📝 {info['desc']}\n"
                 entry += f"   💲 Vars: <code>{vars_str}</code>\n\n"
-
-                # Check length limit (simple check, if too long cut it)
-                if len(text) + len(entry) > 4000:
-                    text += "<i>... lista truncada por límite de longitud ...</i>"
-                    break
                 text += entry
 
-            keyboard = self._build_templates_keyboard(current_cat=cat_name)
-            await query.edit_message_text(
-                text, reply_markup=keyboard, parse_mode="HTML"
+            keyboard = self._build_templates_keyboard(
+                current_cat=cat_name, page=page, has_more=has_more
             )
+            await query.edit_message_text(text, reply_markup=keyboard, parse_mode="HTML")
+            return
 
     async def set_var(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_user.id not in config.ADMIN_USERS:

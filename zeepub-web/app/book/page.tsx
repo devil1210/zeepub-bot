@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2 } from "lucide-react"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
+import { useStrings } from "@/components/strings-provider"
 import { TransparentHeader } from "@/components/transparent-header"
 
 interface BookDetail {
@@ -28,6 +29,7 @@ function BookDetailContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const { webApp } = useTelegramContext()
+    const { t } = useStrings()
     const [book, setBook] = useState<BookDetail | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [isDownloading, setIsDownloading] = useState(false)
@@ -86,7 +88,7 @@ function BookDetailContent() {
             <div className="min-h-screen bg-background flex flex-col items-center justify-center">
                 <div className="text-center">
                     <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-                    <p className="text-muted-foreground">Cargando detalles...</p>
+                    <p className="text-muted-foreground">{t("book_loading")}</p>
                 </div>
             </div>
         )
@@ -210,7 +212,7 @@ function BookDetailContent() {
                     className="w-full h-14 bg-primary hover:bg-primary/90 text-white text-lg font-bold shadow-lg shadow-primary/20 rounded-xl transition-all active:scale-[0.95]"
                 >
                     <Download className="w-6 h-6 mr-2" />
-                    {isDownloading ? "Enviando..." : "Descargar Libro"}
+                    {isDownloading ? "..." : t("book_download")}
                 </Button>
                 {!book.downloadUrl && (
                     <p className="text-center text-xs text-destructive mt-3 font-medium">

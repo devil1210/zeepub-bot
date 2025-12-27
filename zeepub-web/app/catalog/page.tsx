@@ -17,6 +17,7 @@ import { OpdsClient } from "@/lib/opds-client"
 import { OPDSFeed, OPDSEntry, OPDSLink } from "@/lib/opds-types"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
+import { useStrings } from "@/components/strings-provider"
 
 import { Pagination } from "@/components/pagination"
 import { TransparentHeader } from "@/components/transparent-header"
@@ -27,6 +28,7 @@ function CatalogContent() {
     const [history, setHistory] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const { webApp, isAdminMode } = useTelegramContext()
+    const { t } = useStrings()
     const searchParams = useSearchParams()
     const router = useRouter()
 
@@ -253,7 +255,7 @@ function CatalogContent() {
                         className="mb-4 bg-primary hover:bg-primary/90 animate-in fade-in duration-300"
                     >
                         <ChevronLeft className="w-4 h-4 mr-1" />
-                        Subir nivel
+                        {t("catalog_back")}
                     </Button>
                 )}
 
@@ -334,7 +336,7 @@ function CatalogContent() {
                                             {entry.author}
                                         </p>
                                         <p className="text-xs text-muted-foreground line-clamp-2 mb-2 italic flex-1">
-                                            {entry.summary || "Toca para ver detalles..."}
+                                            {entry.summary || t("book_details_hint")}
                                         </p>
                                         <Button
                                             size="sm"
@@ -342,7 +344,7 @@ function CatalogContent() {
                                             className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
                                         >
                                             <Download className="w-3 h-3 mr-1.5" />
-                                            Descargar
+                                            {t("book_download")}
                                         </Button>
                                     </div>
                                     <div className="flex items-center">

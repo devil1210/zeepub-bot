@@ -930,6 +930,35 @@ async def get_config(current_uid: int = Depends(get_current_user)):
     return response
 
 
+@router.get("/app-strings")
+async def get_app_strings(request: Request):
+    """
+    Obtiene los textos personalizados para la Mini App.
+    """
+    bot_instance = getattr(request.app.state, "bot_instance", None)
+    if not bot_instance or not bot_instance.plugin_manager:
+        # Fallback si no hay bot o plugins
+        from plugins.custom_messages_plugin import TEMPLATE_REGISTRY
+
+        return {
+            slug.replace("web_", ""): entry["default"]
+            for slug, entry in TEMPLATE_REGISTRY.items()
+            if slug.startswith("web_")
+        }
+
+    plugin = bot_instance.plugin_manager.get_plugin("custom_messages")
+    if not plugin:
+        from plugins.custom_messages_plugin import TEMPLATE_REGISTRY
+
+        return {
+            slug.replace("web_", ""): entry["default"]
+            for slug, entry in TEMPLATE_REGISTRY.items()
+            if slug.startswith("web_")
+        }
+
+    return await plugin.get_web_strings()
+
+
 @router.post("/download")
 async def download_book(request: Request, current_uid: int = Depends(get_current_user)):
     """
