@@ -9,7 +9,7 @@ from typing import Optional
 import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict, Any, Optional
 from functools import wraps
 
 from api.deps import get_telegram_user_id, get_current_user_data, require_admin, require_mini_app_access

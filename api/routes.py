@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Request, Response, Depends, Header
 from fastapi.responses import StreamingResponse
-from typing import Optional
+from typing import Optional, Dict, Any
 import httpx
 import os
 import hmac
@@ -398,7 +398,7 @@ async def get_feed(
 
 @router.get("/search")
 async def search_books(
-    q: str = Query(..., min_length=1), current_uid: int = Depends(get_current_user)
+    q: str = Query(..., min_length=1), current_uid: int = Depends(get_telegram_user_id)
 ):
     """
     Busca libros usando el término proporcionado.
@@ -451,7 +451,7 @@ async def proxy_image(rest_of_path: str, request: Request):
 async def tunnel_opds(
     url: str = Query(..., description="Target OPDS URL"),
     admin_mode: bool = Query(False, description="Whether to show full admin catalog"),
-    current_uid: int = Depends(get_current_user),
+    current_uid: int = Depends(get_telegram_user_id),
 ):
     """
     Proxies OPDS requests directly to the server, injecting credentials.
@@ -669,7 +669,7 @@ async def public_download(
 
 @router.post("/facebook/prepare")
 async def prepare_facebook_post(
-    request: Request, current_uid: int = Depends(get_current_user)
+    request: Request, current_uid: int = Depends(get_telegram_user_id)
 ):
     """
     Prepara el texto y link para un post de Facebook.
@@ -766,7 +766,7 @@ async def prepare_facebook_post(
 
 @router.post("/facebook/publish")
 async def publish_facebook_post(
-    request: Request, current_uid: int = Depends(get_current_user)
+    request: Request, current_uid: int = Depends(get_telegram_user_id)
 ):
     """
     Publica en el grupo de Facebook configurado.
@@ -826,7 +826,7 @@ async def publish_facebook_post(
 
 
 @router.get("/config")
-async def get_config(current_uid: int = Depends(get_current_user)):
+async def get_config(current_uid: int = Depends(get_telegram_user_id)):
     """
     Retorna configuración inicial para la Mini App, incluyendo permisos de admin y publisher.
     """
@@ -902,7 +902,7 @@ async def get_app_strings(request: Request):
 
 
 @router.post("/download")
-async def download_book(request: Request, current_uid: int = Depends(get_current_user)):
+async def download_book(request: Request, current_uid: int = Depends(get_telegram_user_id)):
     """
     Handle EPUB download requests from Mini App.
     """
