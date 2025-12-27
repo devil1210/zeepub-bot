@@ -202,42 +202,6 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
             "has_mini_app_access": True,
         }
 
-    elif uid in config.FACEBOOK_PUBLISHERS:
-        result = {
-            "role": "staff",
-            "status_label": "Publisher",
-            "expires_at": None,
-            "nickname": None,
-            "has_mini_app_access": True,
-        }
-
-    elif uid in config.PREMIUM_LIST:
-        result = {
-            "role": "premium",
-            "status_label": "Premium (Legacy)",
-            "expires_at": None,
-            "nickname": None,
-            "has_mini_app_access": True,
-        }
-
-    elif uid in config.VIP_LIST:
-        result = {
-            "role": "vip",
-            "status_label": "VIP (Legacy)",
-            "expires_at": None,
-            "nickname": None,
-            "has_mini_app_access": True,
-        }
-
-    elif uid in config.WHITELIST:
-        result = {
-            "role": "white",
-            "status_label": "Patrocinador (Legacy)",
-            "expires_at": None,
-            "nickname": None,
-            "has_mini_app_access": True,
-        }
-
     # Save to cache
     await user_cache.set(cache_key, result)
     return result
