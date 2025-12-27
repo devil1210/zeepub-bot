@@ -766,6 +766,26 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "Panel Administrador",
     },
+    "web_home_admin_publish_title": {
+        "desc": "Web: Título selector destino",
+        "vars": [],
+        "default": "Destino de Publicación",
+    },
+    "web_home_admin_publish_private": {
+        "desc": "Web: Opción privado",
+        "vars": [],
+        "default": "Privado",
+    },
+    "web_home_admin_publish_channel": {
+        "desc": "Web: Opción canal",
+        "vars": [],
+        "default": "Canal",
+    },
+    "web_home_admin_publish_group": {
+        "desc": "Web: Opción grupo",
+        "vars": [],
+        "default": "Grupo",
+    },
     "web_menu_search_label": {
         "desc": "Web: Etiqueta Buscar",
         "vars": [],

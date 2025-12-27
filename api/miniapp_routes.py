@@ -547,19 +547,32 @@ async def handle_bot_request(
             title = data.get(
                 "title", "Libro"
             )  # Optional from frontend if we update it, or we can fetch it?
+            target = data.get("target", "private")
 
             # If fronted doesn't send title/cover, we only have book_id (which is the url)
             if not book_id:
                 raise HTTPException(status_code=400, detail="Missing bookId")
 
             from api.main import bot
+            from config.config_settings import config
+            from services.settings_service import get_setting
+
+            # Map target to chat_id
+            target_chat_id = user_id  # Default to private
+            is_admin = user_id in config.ADMIN_USERS
+
+            if is_admin:
+                if target == "channel":
+                    target_chat_id = get_setting("mini_app_channel_id", "@ZeePubs")
+                elif target == "group":
+                    target_chat_id = get_setting("mini_app_group_id", "@ZeePubBotTest")
 
             success = await enviar_libro_directo(
                 bot=bot.app.bot,
                 user_id=user_id,
                 title=title,
                 download_url=book_id,
-                # cover_url=... we don't have it easily here unless we pass it from frontend
+                target_chat_id=target_chat_id,
             )
             return {"success": success}
 

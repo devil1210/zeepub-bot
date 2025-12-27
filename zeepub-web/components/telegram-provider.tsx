@@ -13,6 +13,8 @@ interface TelegramContextType {
   isAdmin: boolean | null
   isAdminMode: boolean
   setIsAdminMode: (val: boolean) => void
+  publishTarget: string
+  setPublishTarget: (val: string) => void
 }
 
 const TelegramContext = createContext<TelegramContextType>({
@@ -23,6 +25,8 @@ const TelegramContext = createContext<TelegramContextType>({
   isAdmin: null,
   isAdminMode: false,
   setIsAdminMode: () => { },
+  publishTarget: "private",
+  setPublishTarget: () => { },
 })
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
@@ -68,12 +72,24 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     return false
   })
 
+  const [publishTarget, setPublishTarget] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('publish_target') || 'private'
+    }
+    return 'private'
+  })
+
   const router = useRouter()
   const pathname = usePathname()
 
   const toggleAdminMode = (val: boolean) => {
     setIsAdminMode(val)
     localStorage.setItem('admin_mode', val.toString())
+  }
+
+  const togglePublishTarget = (val: string) => {
+    setPublishTarget(val)
+    localStorage.setItem('publish_target', val)
   }
 
   // Configurar botón de retroceso nativo de Telegram
@@ -168,7 +184,9 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     hasAccess,
     isAdmin,
     isAdminMode,
-    setIsAdminMode: toggleAdminMode
+    setIsAdminMode: toggleAdminMode,
+    publishTarget,
+    setPublishTarget: togglePublishTarget
   }
 
   return <TelegramContext.Provider value={value}>{children}</TelegramContext.Provider>

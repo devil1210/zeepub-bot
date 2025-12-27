@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3, Settings } from "lucide-react"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { useStrings } from "@/components/strings-provider"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AccessGuard } from "@/components/access-guard"
 import { UserLevelBadge } from "@/components/user-level-badge"
 import { callBotAPI } from "@/lib/api"
@@ -23,7 +24,7 @@ import { TransparentHeader } from "@/components/transparent-header"
 import { useTheme } from "@/components/theme-provider"
 
 export default function HomePage() {
-  const { user, isAdmin, isAdminMode, setIsAdminMode } = useTelegramContext()
+  const { user, isAdmin, isAdminMode, setIsAdminMode, publishTarget, setPublishTarget } = useTelegramContext()
   const { t } = useStrings()
   const { avatarScale } = useTheme()
   const [botInfo, setBotInfo] = useState<BotInfo>({
@@ -202,12 +203,32 @@ export default function HomePage() {
                   </Card>
 
                   {/* Privacy - Last Item (Rounded Bottom) */}
-                  <Card className="p-3 bg-card border-border rounded-none rounded-b-xl -mt-px">
+                  <Card className="p-3 bg-card border-border rounded-none rounded-b-xl -mt-px border-b">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="group-privacy" className="text-sm font-medium">Privacidad</Label>
                       <Switch id="group-privacy" checked={groupPrivacy} onCheckedChange={setGroupPrivacy} className="scale-75" />
                     </div>
                   </Card>
+
+                  {/* Publicación - Nuevo Selector */}
+                  <div className="pt-2">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block px-1">
+                      {t("home_admin_publish_title")}
+                    </Label>
+                    <Tabs value={publishTarget} onValueChange={setPublishTarget} className="w-full">
+                      <TabsList className="grid w-full grid-cols-3 bg-secondary/30 h-10 p-1">
+                        <TabsTrigger value="private" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white">
+                          {t("home_admin_publish_private")}
+                        </TabsTrigger>
+                        <TabsTrigger value="channel" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white">
+                          {t("home_admin_publish_channel")}
+                        </TabsTrigger>
+                        <TabsTrigger value="group" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white">
+                          {t("home_admin_publish_group")}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
                 </div>
               </div>
             )}

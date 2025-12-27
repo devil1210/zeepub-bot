@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.10.0] - 2025-12-27
+### Added
+- **Selector de Destino de Publicación (Admins):** Los administradores ahora pueden elegir el destino de publicación (Chat Privado, Canal o Grupo) directamente desde el Panel de Administrador en la Mini App.
+- **Persistencia de Configuración:** La elección del destino se guarda localmente en el navegador para una experiencia fluida.
+- **Integración con Backend:** Actualizado el endpoint de descarga para soportar el parámetro de destino, respetando la configuración del bot para canales y grupos.
+
 ## [v4.9.5] - 2025-12-27
 ### Added
 - **Mini App 100% Dinámica:** Todas las páginas (Inicio, Donaciones, Estado, Descargas, Ayuda) ahora consumen sus textos desde el sistema de plantillas.

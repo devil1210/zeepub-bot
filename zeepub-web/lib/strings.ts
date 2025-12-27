@@ -23,6 +23,10 @@ export interface AppStrings {
     home_greeting: string
     home_functions: string
     home_admin_panel: string
+    home_admin_publish_title: string
+    home_admin_publish_private: string
+    home_admin_publish_channel: string
+    home_admin_publish_group: string
     menu_search_label: string
     menu_search_desc: string
     menu_catalog_label: string
@@ -84,6 +88,10 @@ export const DEFAULT_STRINGS: AppStrings = {
     home_greeting: "Hola, [Nombre]",
     home_functions: "Funciones",
     home_admin_panel: "Panel Administrador",
+    home_admin_publish_title: "Destino de Publicación",
+    home_admin_publish_private: "Privado",
+    home_admin_publish_channel: "Canal",
+    home_admin_publish_group: "Grupo",
     menu_search_label: "Buscar Libros",
     menu_search_desc: "Encuentra ePubs en el catálogo",
     menu_catalog_label: "Mi Catálogo",
