@@ -3,6 +3,7 @@
 import io
 import os
 import logging
+import asyncio
 from urllib.parse import urlparse, unquote
 from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest
@@ -71,7 +72,7 @@ async def send_photo_bytes(
                     )
                 raise e
 
-        elif isinstance(data_or_path, str) and os.path.exists(data_or_path):
+        elif isinstance(data_or_path, str) and await asyncio.to_thread(os.path.exists, data_or_path):
             # Read image file asynchronously into memory (covers are small)
             try:
                 import aiofiles
@@ -177,12 +178,10 @@ async def send_doc_bytes(
                         message_thread_id=None,
                     )
                 raise e
-        elif isinstance(data_or_path, str) and os.path.exists(data_or_path):
+        elif isinstance(data_or_path, str) and await asyncio.to_thread(os.path.exists, data_or_path):
             # Decide whether to load to memory or stream from disk
             try:
-                import asyncio as _asyncio
-
-                size = await _asyncio.to_thread(os.path.getsize, data_or_path)
+                size = await asyncio.to_thread(os.path.getsize, data_or_path)
             except Exception:
                 size = None
 
@@ -436,8 +435,8 @@ async def publicar_libro(
             # Calcular tamaño: fetch_bytes puede devolver bytes o ruta de archivo
             if isinstance(epub_downloaded, (bytes, bytearray)):
                 size_mb = len(epub_downloaded) / (1024 * 1024)
-            elif isinstance(epub_downloaded, str) and os.path.exists(epub_downloaded):
-                size_mb = os.path.getsize(epub_downloaded) / (1024 * 1024)
+            elif isinstance(epub_downloaded, str) and await asyncio.to_thread(os.path.exists, epub_downloaded):
+                size_mb = (await asyncio.to_thread(os.path.getsize, epub_downloaded)) / (1024 * 1024)
             else:
                 size_mb = 0.0
 
@@ -609,8 +608,8 @@ async def descargar_epub_pendiente(
         # Calcular tamaño: epub_buffer puede ser bytes o ruta de archivo
         if isinstance(epub_buffer, (bytes, bytearray)):
             size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and os.path.exists(epub_buffer):
-            size_mb = os.path.getsize(epub_buffer) / (1024 * 1024)
+        elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
+            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
         else:
             size_mb = 0.0
         version = meta.get("epub_version", "2.0")  # Default a 2.0 si no se encuentra
@@ -870,8 +869,8 @@ async def enviar_libro_directo(
             # 3. Info del archivo (Actualizado, Tamaño)
             if isinstance(epub_bytes, (bytes, bytearray)):
                 size_mb = len(epub_bytes) / (1024 * 1024)
-            elif isinstance(epub_bytes, str) and os.path.exists(epub_bytes):
-                size_mb = os.path.getsize(epub_bytes) / (1024 * 1024)
+            elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
+                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
             else:
                 size_mb = 0.0
 
@@ -1020,8 +1019,8 @@ async def enviar_libro_directo(
             # Calcular tamaño
             if isinstance(epub_bytes, (bytes, bytearray)):
                 size_mb = len(epub_bytes) / (1024 * 1024)
-            elif isinstance(epub_bytes, str) and os.path.exists(epub_bytes):
-                size_mb = os.path.getsize(epub_bytes) / (1024 * 1024)
+            elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
+                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
             else:
                 size_mb = 0.0
             version = meta.get("epub_version", "2.0")
@@ -1167,8 +1166,8 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     if epub_buffer:
         if isinstance(epub_buffer, (bytes, bytearray)):
             size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and os.path.exists(epub_buffer):
-            size_mb = os.path.getsize(epub_buffer) / (1024 * 1024)
+        elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
+            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
         else:
             size_mb = 0.0
     else:
@@ -1498,8 +1497,8 @@ async def _publish_choice_telegram(
     if epub_buffer:
         if isinstance(epub_buffer, (bytes, bytearray)):
             size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and os.path.exists(epub_buffer):
-            size_mb = os.path.getsize(epub_buffer) / (1024 * 1024)
+        elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
+            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
         else:
             size_mb = 0.0
 

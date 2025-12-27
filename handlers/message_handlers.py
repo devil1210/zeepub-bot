@@ -295,7 +295,7 @@ async def handle_json_upload(update: Update, context: ContextTypes.DEFAULT_TYPE)
         # Reportar
         import os
 
-        os.remove(file_path)
+        await asyncio.to_thread(os.remove, file_path)
 
         text = (
             f"✅ Importación completada.\n\n"
