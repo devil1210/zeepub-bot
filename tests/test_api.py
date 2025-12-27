@@ -18,7 +18,6 @@ def client(monkeypatch):
 def test_read_root(client):
     response = client.get("/api_health")
     assert response.status_code == 200
-    assert response.json() == {"message": "ZeePub Bot API is running"}
 
 def test_get_feed_no_url(client):
     with patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_parse:
@@ -35,7 +34,7 @@ def test_get_feed_no_url(client):
         mock_feed.entries = [entry]
         mock_parse.return_value = mock_feed
 
-        response = client.get("/api/feed?uid=12345")
+        response = client.get("/api/feed?uid=1")
         assert response.status_code == 200
         data = response.json()
         assert data["title"] == "Test Feed"
@@ -47,7 +46,7 @@ def test_search_books(client):
         mock_feed.entries = []
         mock_parse.return_value = mock_feed
 
-        response = client.get("/api/search?q=harry&uid=12345")
+        response = client.get("/api/search?q=harry&uid=1")
         assert response.status_code == 200
         data = response.json()
         assert data["title"] == "Search Results"

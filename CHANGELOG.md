@@ -5,6 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.11.0] - 2025-12-27
+### Changed
+- **Arquitectura de API Centralizada:** Refactorización total de `api/routes.py` y `api/miniapp_routes.py` para utilizar un sistema de dependencias centralizado (`api/deps.py`).
+- **Validación Unificada:** Implementada validación de usuarios de Telegram y control de acceso a Mini App en un solo lugar, eliminando lógica redundante y decoradores legacy.
+- **Optimización de Caché de Usuarios:** Mejorado el servicio de usuarios con caché asíncrona TTL de 1 hora para roles y permisos, reduciendo significativamente las consultas a la base de datos.
+- **Limpieza de Código:** Eliminación completa del directorio legacy `v0/` (frontend antiguo) y múltiples archivos de debug acumulados, reduciendo el tamaño del repositorio y la complejidad.
+
+### Fixed
+- **Estabilidad de Tests:** Actualizado todo el suite de pruebas unitarias y de integración para alinearse con la nueva arquitectura de dependencias.
+- **Consistencia de Roles:** Eliminadas comprobaciones de roles duplicadas y fallbacks obsoletos en el servicio de usuarios.
+
 ## [v4.10.1] - 2025-12-27
 ### Added
 - **IDs Manuales de Publicación:** Los administradores ahora pueden ingresar manualmente el Chat ID y el Topic ID (hilos) para la publicación, permitiendo mayor flexibilidad al enviar contenido a grupos con temas específicos.

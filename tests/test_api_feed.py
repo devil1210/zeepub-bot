@@ -2,7 +2,8 @@ import pytest
 import os
 from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi import HTTPException
-from api.routes import get_feed
+from api.routes import get_feed, tunnel_opds
+from api.deps import require_mini_app_access
 from config.config_settings import config
 
 # Mock entry with links
@@ -30,22 +31,20 @@ class MockFeed:
 @pytest.mark.asyncio
 async def test_get_feed_access_control():
     # Test 1: User with has_mini_app_access=False should raise 403
-    with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user:
-        mock_get_user.return_value = {"role": "free", "has_mini_app_access": False}
-        
-        with pytest.raises(HTTPException) as excinfo:
-            await get_feed(url=None, current_uid=123)
-        assert excinfo.value.status_code == 403
+    user_data = {"role": "free", "has_mini_app_access": False}
+    with pytest.raises(HTTPException) as excinfo:
+        await require_mini_app_access(user_data)
+    assert excinfo.value.status_code == 403
 
-    # Test 2: User with has_mini_app_access=True should pass
-    with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user, \
-         patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed:
-        
-        mock_get_user.return_value = {"role": "free", "has_mini_app_access": True}
-        mock_get_feed.return_value = MockFeed([]) # Return empty feed
-        
-        # Should not raise exception
-        await get_feed(url="http://test.com", current_uid=123)
+    # Test 2: Admin should pass regardless of has_mini_app_access
+    admin_data = {"role": "admin", "has_mini_app_access": False}
+    result = await require_mini_app_access(admin_data)
+    assert result == admin_data
+
+    # Test 3: User with has_mini_app_access=True should pass
+    valid_data = {"role": "free", "has_mini_app_access": True}
+    result = await require_mini_app_access(valid_data)
+    assert result == valid_data
 
 @pytest.mark.asyncio
 async def test_get_feed_renaming_logic():
@@ -68,7 +67,7 @@ async def test_get_feed_renaming_logic():
         
         mock_find_zeepubs.return_value = "http://direct-zeepubs-es"
         
-        result = await get_feed(url="http://root", current_uid=123)
+        result = await get_feed(url="http://root", user_data={"role": "free", "has_mini_app_access": True})
         
         # Verify renaming
         assert result["entries"][0]["title"] == "Biblioteca Zeepubs"
@@ -88,7 +87,7 @@ async def test_get_feed_no_renaming_for_admin():
         ]
         mock_get_feed.return_value = MockFeed(entries)
         
-        result = await get_feed(url="http://root", current_uid=999)
+        result = await get_feed(url="http://root", user_data={"role": "admin", "has_mini_app_access": True})
         
         # Verify NO renaming
         assert result["entries"][0]["title"] == "Todas las bibliotecas"
@@ -108,7 +107,7 @@ async def test_get_feed_evil_url_protection():
         # We expect TARGET to be switched to START because we passed an evil-ish URL
         mock_get_feed.return_value = MockFeed([])
         
-        await get_feed(url="http://root/evil/secret", current_uid=123)
+        await get_feed(url="http://root/evil/secret", user_data={"role": "free", "has_mini_app_access": True})
         
         # Verify get_cached_feed was called with START url, not EVIL url
         # Logic: target_url = config.OPDS_ROOT_START
@@ -133,7 +132,7 @@ async def test_get_feed_admin_default_start(monkeypatch):
         mock_get_feed.return_value = MockFeed([])
         
         # Calling without URL should default to START, not EVIL
-        await get_feed(url=None, current_uid=1)
+        await get_feed(url=None, user_data={"role": "admin", "has_mini_app_access": True})
         
         # Verify it fetched START
         args, _ = mock_get_feed.call_args
@@ -150,7 +149,7 @@ async def test_get_feed_staff_evil_access():
         mock_get_user.return_value = {"role": "staff", "has_mini_app_access": True}
         mock_get_feed.return_value = MockFeed([])
         
-        await get_feed(url="http://root/evil", current_uid=2)
+        await get_feed(url="http://root/evil", user_data={"role": "staff", "has_mini_app_access": True})
         
         # Verify it ALLOWED evil url
         args, _ = mock_get_feed.call_args
@@ -185,7 +184,7 @@ async def test_tunnel_opds_slash_url_defaults():
         mock_client.get.return_value = mock_response
         
         # Calling with url="/"
-        await tunnel_opds(url="/", current_uid=123)
+        await tunnel_opds(url="/", admin_mode=False, user_data={"role": "free", "has_mini_app_access": True})
         
         # Should call get with FULL Start URL
         args, kwargs = mock_client.get.call_args
@@ -203,7 +202,7 @@ async def test_get_feed_slash_url_defaults():
         mock_get_feed.return_value = MockFeed([])
         
         # Calling with url="/"
-        await get_feed(url="/", current_uid=123)
+        await get_feed(url="/", user_data={"role": "free", "has_mini_app_access": True})
         
         # Should call with FULL Start URL
         args, _ = mock_get_feed.call_args

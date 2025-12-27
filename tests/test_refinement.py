@@ -57,7 +57,7 @@ def test_role_based_access_whitelist(mock_opds_roots, client):
         assert response.json()["title"] == "Start Root"
 
 def test_role_based_access_denied(mock_opds_roots, client):
-    with patch("api.routes.get_effective_user", new_callable=AsyncMock) as mock_get_user:
+    with patch("services.user_service.get_effective_user", new_callable=AsyncMock) as mock_get_user:
         mock_get_user.return_value = {"role": "free", "has_mini_app_access": False}
         response = client.get("/api/feed?uid=999")
         assert response.status_code == 403
@@ -76,7 +76,7 @@ def test_book_detail_parsing(client, monkeypatch):
         mock_feed.return_value = mock_feed_obj
         
         monkeypatch.setenv("DEV_MODE", "True")
-        response = client.post("/api/bot", json={
+        response = client.post("/api/bot?uid=123", json={
             "action": "book-detail",
             "data": {"bookId": "http://opds.test/book/1"}
         })

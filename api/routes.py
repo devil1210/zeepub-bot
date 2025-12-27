@@ -398,14 +398,16 @@ async def get_feed(
 
 @router.get("/search")
 async def search_books(
-    q: str = Query(..., min_length=1), current_uid: int = Depends(get_telegram_user_id)
+    q: str = Query(..., min_length=1),
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
-    Busca libros usando el término proporcionado.
+    Busca libros en el servidor OPDS.
     """
+    current_uid = user_data.get("user_id", 0)
     # Usamos el UID validado para construir la URL de búsqueda (si es necesario)
     search_url = build_search_url(q, uid=current_uid)
-    return await get_feed(url=search_url, current_uid=current_uid)
+    return await get_feed(url=search_url, user_data=user_data)
 
 
 @router.get("/image/{rest_of_path:path}")
@@ -451,15 +453,13 @@ async def proxy_image(rest_of_path: str, request: Request):
 async def tunnel_opds(
     url: str = Query(..., description="Target OPDS URL"),
     admin_mode: bool = Query(False, description="Whether to show full admin catalog"),
-    current_uid: int = Depends(get_telegram_user_id),
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Proxies OPDS requests directly to the server, injecting credentials.
     Returns raw XML or modified XML for UI improvements.
     """
-    user_data = await get_effective_user(current_uid)
-    if not user_data.get("has_mini_app_access"):
-        raise HTTPException(status_code=403, detail="Access denied")
+    current_uid = user_data.get("user_id", 0)
 
     # Normalize URL: support root fallback and relative paths
     if not url or url == "/":
@@ -669,11 +669,13 @@ async def public_download(
 
 @router.post("/facebook/prepare")
 async def prepare_facebook_post(
-    request: Request, current_uid: int = Depends(get_telegram_user_id)
+    request: Request,
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Prepara el texto y link para un post de Facebook.
     """
+    current_uid = user_data.get("user_id", 0)
     if current_uid not in config.FACEBOOK_PUBLISHERS:
         raise HTTPException(status_code=403, detail="Not authorized")
 
@@ -766,11 +768,13 @@ async def prepare_facebook_post(
 
 @router.post("/facebook/publish")
 async def publish_facebook_post(
-    request: Request, current_uid: int = Depends(get_telegram_user_id)
+    request: Request,
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Publica en el grupo de Facebook configurado.
     """
+    current_uid = user_data.get("user_id", 0)
     if current_uid not in config.FACEBOOK_PUBLISHERS:
         raise HTTPException(status_code=403, detail="Not authorized")
 
@@ -826,10 +830,11 @@ async def publish_facebook_post(
 
 
 @router.get("/config")
-async def get_config(current_uid: int = Depends(get_telegram_user_id)):
+async def get_config(user_data: Dict[str, Any] = Depends(require_mini_app_access)):
     """
     Retorna configuración inicial para la Mini App, incluyendo permisos de admin y publisher.
     """
+    current_uid = user_data.get("user_id", 0)
     is_admin = current_uid in config.ADMIN_USERS
     is_publisher = current_uid in config.FACEBOOK_PUBLISHERS
 
@@ -902,7 +907,10 @@ async def get_app_strings(request: Request):
 
 
 @router.post("/download")
-async def download_book(request: Request, current_uid: int = Depends(get_telegram_user_id)):
+async def download_book(
+    request: Request,
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+):
     """
     Handle EPUB download requests from Mini App.
     """
@@ -914,7 +922,7 @@ async def download_book(request: Request, current_uid: int = Depends(get_telegra
         target_chat_id = data.get("target_chat_id")
 
         # Validar que el usuario autenticado coincida con el solicitado (o simplemente usar el autenticado)
-        user_id = current_uid
+        user_id = user_data.get("user_id", 0)
 
         if not download_url or not user_id:
             raise HTTPException(
