@@ -184,6 +184,13 @@ COMMANDS_REGISTRY = {
         "usage": "/update_system [force]",
         "example": "/update_system force",
     },
+    "set_version": {
+        "cat": "admin",
+        "desc": "Cambiar versión bot",
+        "long_desc": "Cambia la etiqueta de imagen (versión) en el archivo docker-compose.yml y reinicia el bot.",
+        "usage": "/set_version <tag>",
+        "example": "/set_version v4.8.0",
+    },
     "plugins": {
         "cat": "admin",
         "desc": "Listar plugins",
