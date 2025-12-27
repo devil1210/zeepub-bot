@@ -65,6 +65,7 @@ async def get_current_user(
 
 from typing import Annotated
 
+
 @router.get("/feed")
 async def get_feed(
     url: Optional[str] = None,
