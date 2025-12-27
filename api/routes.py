@@ -181,10 +181,18 @@ async def get_feed(
                         lib_feed = await get_cached_feed(libraries_url)
                         direct_url = find_zeepubs_destino(lib_feed, prefer_libraries=True)
                         if direct_url:
-                             # Inject direct URL as the subsection URL for this entry
-                             # We need to update the entry's links in our processed list later
-                             # For now, we store it to use in the loop below
-                             entry_override_url = direct_url
+                            # Level 2 deep-link: Find the first library within the ZeePubs list
+                            sub_lib_feed = await get_cached_feed(direct_url)
+                            deep_link = None
+                            for sub_entry in getattr(sub_lib_feed, "entries", []):
+                                for sub_link in getattr(sub_entry, "links", []):
+                                    if sub_link.get("rel") == "subsection":
+                                        deep_link = normalize_url(sub_link.get("href"))
+                                        break
+                                if deep_link:
+                                    break
+                            
+                            entry_override_url = deep_link or direct_url
                         else:
                              entry_override_url = None
                     else:
