@@ -9,8 +9,10 @@ import Link from "next/link"
 import { AccessGuard } from "@/components/access-guard"
 import { callBotAPI } from "@/lib/api"
 import { TransparentHeader } from "@/components/transparent-header"
+import { useStrings } from "@/components/strings-provider"
 
 export default function StatusPage() {
+  const { t } = useStrings()
   const [loading, setLoading] = useState(true)
   const [userStats, setUserStats] = useState({
     level: "Lector",
@@ -70,7 +72,7 @@ export default function StatusPage() {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-foreground">{userStats.level}</h2>
-                <p className="text-sm text-muted-foreground">Nivel actual</p>
+                <p className="text-sm text-muted-foreground">{t("status_current_level")}</p>
               </div>
             </div>
           </Card>
@@ -79,7 +81,7 @@ export default function StatusPage() {
           {!userStats.hasUnlimitedDownloads && !userStats.isBanned && (
             <Card className="p-6 border-border">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-foreground">Descargas de Hoy</h3>
+                <h3 className="text-lg font-semibold text-foreground">{t("status_downloads_today")}</h3>
                 <Download className="w-5 h-5 text-primary" />
               </div>
 
@@ -103,7 +105,7 @@ export default function StatusPage() {
 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
                   <Clock className="w-4 h-4" />
-                  <span>Próximo reset en {userStats.timeUntilReset}</span>
+                  <span>{t("status_next_reset", { Tiempo: userStats.timeUntilReset })}</span>
                 </div>
               </div>
             </Card>
@@ -112,17 +114,17 @@ export default function StatusPage() {
           {userStats.hasUnlimitedDownloads && (
             <Card className="p-6 border-border">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Descargas</h3>
+                <h3 className="text-lg font-semibold text-foreground">{t("status_downloads_today")}</h3>
                 <Download className="w-5 h-5 text-primary" />
               </div>
-              <p className="text-2xl font-bold text-primary">✅ Descargas ilimitadas</p>
-              <p className="text-sm text-muted-foreground mt-2">Tu nivel permite descargas sin restricciones</p>
+              <p className="text-2xl font-bold text-primary">{t("status_unlimited")}</p>
+              <p className="text-sm text-muted-foreground mt-2">{t("status_unlimited_desc")}</p>
             </Card>
           )}
 
           {/* Bot Status */}
           <Card className="p-6 border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Estado del Sistema</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">{t("status_system")}</h3>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between py-2">
@@ -152,7 +154,7 @@ export default function StatusPage() {
           {!userStats.hasUnlimitedDownloads && !userStats.isBanned && (
             <Link href="/donate">
               <Button className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">
-                Aumentar Límite de Descargas
+                {t("status_upgrade_btn")}
               </Button>
             </Link>
           )}

@@ -5,6 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.9.5] - 2025-12-27
+### Added
+- **Mini App 100% Dinámica:** Todas las páginas (Inicio, Donaciones, Estado, Descargas, Ayuda) ahora consumen sus textos desde el sistema de plantillas.
+- **Variables Dinámicas en Web:** Implementado el motor de reemplazo de variables en el frontend (`[Nombre]`, `[Cant]`, `[Tiempo]`).
+- Mayor flexibilidad para administradores permitiendo personalizar cada etiqueta de la interfaz.
+
+## [v4.9.3] - 2025-12-27
+### Added
+- **Expansión de Textos Dinámicos:** Las páginas de Inicio, Donaciones y Estado ahora también utilizan el sistema de plantillas.
+- **Soporte para Variables en Frontend:** El sistema de textos ahora soporta el reemplazo de variables como `[Nombre]` o `[Tiempo]` directamente en el navegador.
+
 ## [v4.9.2] - 2025-12-27
 ### Fixed
 - **Parche visual del scroll:** Corregido el problema de las "franjas blancas" al hacer scroll rápido.

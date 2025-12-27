@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3, Settings } from "lucide-react"
 import { useTelegramContext } from "@/components/telegram-provider"
+import { useStrings } from "@/components/strings-provider"
 import { AccessGuard } from "@/components/access-guard"
 import { UserLevelBadge } from "@/components/user-level-badge"
 import { callBotAPI } from "@/lib/api"
@@ -23,6 +24,7 @@ import { useTheme } from "@/components/theme-provider"
 
 export default function HomePage() {
   const { user, isAdmin, isAdminMode, setIsAdminMode } = useTelegramContext()
+  const { t } = useStrings()
   const { avatarScale } = useTheme()
   const [botInfo, setBotInfo] = useState<BotInfo>({
     name: "ZeePubBot",
@@ -57,13 +59,13 @@ export default function HomePage() {
   }, [user])
 
   const menuItems = [
-    { icon: BookOpen, label: "Buscar Libros", href: "/search", description: "Encuentra ePubs en el catálogo" },
-    { icon: Library, label: "Mi Catálogo", href: "/catalog", description: "Accede a bibliotecas OPDS" },
-    { icon: Download, label: "Mis Descargas", href: "/downloads", description: "Historial y límites de descarga" },
-    { icon: BarChart3, label: "Estado", href: "/status", description: "Ver estado del bot y estadísticas" },
+    { icon: BookOpen, label: t("menu_search_label"), href: "/search", description: t("menu_search_desc") },
+    { icon: Library, label: t("menu_catalog_label"), href: "/catalog", description: t("menu_catalog_desc") },
+    { icon: Download, label: t("menu_downloads_label"), href: "/downloads", description: t("menu_downloads_desc") },
+    { icon: BarChart3, label: t("menu_status_label"), href: "/status", description: t("menu_status_desc") },
     { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados", adminOnly: true },
-    { icon: Heart, label: "Donar", href: "/donate", description: "Apoya el proyecto" },
-    { icon: Info, label: "Ayuda", href: "/help", description: "Comandos y soporte" },
+    { icon: Heart, label: t("menu_donate_label"), href: "/donate", description: t("menu_donate_desc") },
+    { icon: Info, label: t("menu_help_label"), href: "/help", description: t("menu_help_desc") },
     { icon: ShieldCheck, label: "Gestión Accesos", href: "/admin/levels", description: "Configura niveles y permisos", adminOnly: true },
   ]
 
@@ -77,7 +79,7 @@ export default function HomePage() {
         <div className="max-w-2xl mx-auto px-4 py-8">
           {user && (
             <div className="text-center mb-4">
-              <p className="text-xs text-muted-foreground">Hola, {user.first_name}</p>
+              <p className="text-xs text-muted-foreground">{t("home_greeting", { Nombre: user.first_name })}</p>
               <div className="mt-1 flex justify-center">
                 <UserLevelBadge userId={user.id} />
               </div>
@@ -111,7 +113,7 @@ export default function HomePage() {
           {/* Menu Items / Admin Panel */}
           <div className="space-y-6">
             <div className="space-y-3">
-              <h3 className="text-xl font-bold mb-4">Funciones</h3>
+              <h3 className="text-xl font-bold mb-4">{t("home_functions")}</h3>
               {menuItems
                 .filter(item => !item.adminOnly)
                 .map((item, index) => (
@@ -134,7 +136,7 @@ export default function HomePage() {
 
             {isAdminMode && (
               <div className="space-y-3 pt-4 border-t border-border">
-                <h3 className="text-lg font-bold">Panel Administrador</h3>
+                <h3 className="text-lg font-bold">{t("home_admin_panel")}</h3>
                 <div className="space-y-2">
                   {/* Apariencia - Solo en Admin Panel */}
                   <a href="/interface-config">

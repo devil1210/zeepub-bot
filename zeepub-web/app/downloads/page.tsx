@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Download, CheckCircle, Clock, FileText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { callBotAPI } from "@/lib/api"
+import { useStrings } from "@/components/strings-provider"
 
 interface DownloadItem {
   id: string
@@ -19,6 +20,7 @@ import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
 
 export default function DownloadsPage() {
+  const { t } = useStrings()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     today: 0,
@@ -109,15 +111,15 @@ export default function DownloadsPage() {
               <div>
                 {stats.hasUnlimitedDownloads ? (
                   <>
-                    <h2 className="text-2xl font-bold text-primary">∞ Ilimitadas</h2>
-                    <p className="text-sm text-muted-foreground">Descargas disponibles</p>
+                    <h2 className="text-2xl font-bold text-primary">{t("downloads_unlimited")}</h2>
+                    <p className="text-sm text-muted-foreground">{t("downloads_available")}</p>
                   </>
                 ) : (
                   <>
                     <h2 className="text-2xl font-bold text-foreground">
                       {stats.today} / {stats.limit}
                     </h2>
-                    <p className="text-sm text-muted-foreground">Descargas hoy</p>
+                    <p className="text-sm text-muted-foreground">{t("downloads_today")}</p>
                   </>
                 )}
               </div>
@@ -128,13 +130,13 @@ export default function DownloadsPage() {
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-muted-foreground">{stats.today} completadas</span>
+                <span className="text-muted-foreground">{t("downloads_completed", { Cant: stats.today.toString() })}</span>
               </div>
               {!stats.hasUnlimitedDownloads && (
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-primary" />
                   <span className="text-muted-foreground">
-                    {stats.remaining} restantes
+                    {t("downloads_remaining", { Cant: stats.remaining.toString() })}
                   </span>
                 </div>
               )}
@@ -144,14 +146,14 @@ export default function DownloadsPage() {
           {/* Info Message */}
           <Card className="p-4 border-border bg-muted/30">
             <p className="text-sm text-muted-foreground text-center">
-              📊 Las estadísticas se resetean diariamente a las 00:00
+              {t("downloads_reset_info")}
             </p>
           </Card>
 
           {/* Downloads List - Currently empty as there's no per-user history */}
           {downloads.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold mb-4">Historial Reciente</h3>
+              <h3 className="text-lg font-semibold mb-4">{t("downloads_history_title")}</h3>
               <div className="space-y-3">
                 {downloads.map((item) => (
                   <Card key={item.id} className="p-4 border-border hover:bg-secondary/30 transition-colors">
@@ -165,7 +167,7 @@ export default function DownloadsPage() {
                           {item.status === "completed" && (
                             <Badge variant="outline" className="text-green-500 border-green-500/50 flex-shrink-0">
                               <CheckCircle className="w-3 h-3 mr-1" />
-                              Enviado
+                              {t("downloads_history_sent")}
                             </Badge>
                           )}
                         </div>

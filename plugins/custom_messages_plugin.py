@@ -711,6 +711,231 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "Toca para detalles...",
     },
+    "web_donate_hero_title": {
+        "desc": "Web: Título cabecera donaciones",
+        "vars": [],
+        "default": "Apoya a ZeePubBot",
+    },
+    "web_donate_hero_desc": {
+        "desc": "Web: Descripción cabecera donaciones",
+        "vars": [],
+        "default": "Tu donación nos ayuda a mantener el servicio activo y mejorar continuamente",
+    },
+    "web_donate_tier_title": {
+        "desc": "Web: Título selección de nivel",
+        "vars": [],
+        "default": "Elige tu nivel",
+    },
+    "web_donate_why_title": {
+        "desc": "Web: Título por qué donar",
+        "vars": [],
+        "default": "¿Por qué donar?",
+    },
+    "web_donate_why_desc": {
+        "desc": "Web: Descripción por qué donar",
+        "vars": [],
+        "default": "ZeePubBot es un proyecto de código abierto mantenido por la comunidad. Tu apoyo nos ayuda a:",
+    },
+    "web_donate_benefit_1": {
+        "desc": "Web: Beneficio donación 1",
+        "vars": [],
+        "default": "Mantener los servidores activos 24/7",
+    },
+    "web_donate_benefit_2": {
+        "desc": "Web: Beneficio donación 2",
+        "vars": [],
+        "default": "Añadir nuevas funcionalidades",
+    },
+    "web_donate_benefit_3": {
+        "desc": "Web: Beneficio donación 3",
+        "vars": [],
+        "default": "Mejorar el catálogo de libros",
+    },
+    "web_home_greeting": {
+        "desc": "Web: Saludo inicial",
+        "vars": ["[Nombre]"],
+        "default": "Hola, [Nombre]",
+    },
+    "web_home_functions": {
+        "desc": "Web: Título sección funciones",
+        "vars": [],
+        "default": "Funciones",
+    },
+    "web_home_admin_panel": {
+        "desc": "Web: Título panel administrador",
+        "vars": [],
+        "default": "Panel Administrador",
+    },
+    "web_menu_search_label": {
+        "desc": "Web: Etiqueta Buscar",
+        "vars": [],
+        "default": "Buscar Libros",
+    },
+    "web_menu_search_desc": {
+        "desc": "Web: Desc Buscar",
+        "vars": [],
+        "default": "Encuentra ePubs en el catálogo",
+    },
+    "web_menu_catalog_label": {
+        "desc": "Web: Etiqueta Catálogo",
+        "vars": [],
+        "default": "Mi Catálogo",
+    },
+    "web_menu_catalog_desc": {
+        "desc": "Web: Desc Catálogo",
+        "vars": [],
+        "default": "Accede a bibliotecas OPDS",
+    },
+    "web_menu_downloads_label": {
+        "desc": "Web: Etiqueta Descargas",
+        "vars": [],
+        "default": "Mis Descargas",
+    },
+    "web_menu_downloads_desc": {
+        "desc": "Web: Desc Descargas",
+        "vars": [],
+        "default": "Historial y límites de descarga",
+    },
+    "web_menu_status_label": {
+        "desc": "Web: Etiqueta Estado",
+        "vars": [],
+        "default": "Estado",
+    },
+    "web_menu_status_desc": {
+        "desc": "Web: Desc Estado",
+        "vars": [],
+        "default": "Ver estado del bot y estadísticas",
+    },
+    "web_menu_donate_label": {
+        "desc": "Web: Etiqueta Donar",
+        "vars": [],
+        "default": "Donar",
+    },
+    "web_menu_donate_desc": {
+        "desc": "Web: Desc Donar",
+        "vars": [],
+        "default": "Apoya el proyecto",
+    },
+    "web_menu_help_label": {
+        "desc": "Web: Etiqueta Ayuda",
+        "vars": [],
+        "default": "Ayuda",
+    },
+    "web_menu_help_desc": {
+        "desc": "Web: Desc Ayuda",
+        "vars": [],
+        "default": "Comandos y soporte",
+    },
+    "web_status_current_level": {
+        "desc": "Web: Etiqueta nivel actual",
+        "vars": [],
+        "default": "Nivel actual",
+    },
+    "web_status_downloads_today": {
+        "desc": "Web: Título descargas de hoy",
+        "vars": [],
+        "default": "Descargas de Hoy",
+    },
+    "web_status_next_reset": {
+        "desc": "Web: Texto próximo reset",
+        "vars": ["[Tiempo]"],
+        "default": "Próximo reset en [Tiempo]",
+    },
+    "web_status_unlimited": {
+        "desc": "Web: Texto descargas ilimitadas",
+        "vars": [],
+        "default": "✅ Descargas ilimitadas",
+    },
+    "web_status_unlimited_desc": {
+        "desc": "Web: Desc descargas ilimitadas",
+        "vars": [],
+        "default": "Tu nivel permite descargas sin restricciones",
+    },
+    "web_status_system": {
+        "desc": "Web: Título estado sistema",
+        "vars": [],
+        "default": "Estado del Sistema",
+    },
+    "web_status_upgrade_btn": {
+        "desc": "Web: Botón aumentar límite",
+        "vars": [],
+        "default": "Aumentar Límite de Descargas",
+    },
+    "web_downloads_unlimited": {
+        "desc": "Web: Etiqueta ilimitado",
+        "vars": [],
+        "default": "∞ Ilimitadas",
+    },
+    "web_downloads_available": {
+        "desc": "Web: Texto descargas disponibles",
+        "vars": [],
+        "default": "Descargas disponibles",
+    },
+    "web_downloads_today": {
+        "desc": "Web: Texto descargas hoy",
+        "vars": [],
+        "default": "Descargas hoy",
+    },
+    "web_downloads_completed": {
+        "desc": "Web: Texto completadas",
+        "vars": ["[Cant]"],
+        "default": "[Cant] completadas",
+    },
+    "web_downloads_remaining": {
+        "desc": "Web: Texto restantes",
+        "vars": ["[Cant]"],
+        "default": "[Cant] restantes",
+    },
+    "web_downloads_reset_info": {
+        "desc": "Web: Info reset",
+        "vars": [],
+        "default": "📊 Las estadísticas se resetean diariamente a las 00:00",
+    },
+    "web_downloads_history_title": {
+        "desc": "Web: Título historial",
+        "vars": [],
+        "default": "Historial Reciente",
+    },
+    "web_downloads_history_sent": {
+        "desc": "Web: Etiqueta enviado",
+        "vars": [],
+        "default": "Enviado",
+    },
+    "web_help_hero_title": {
+        "desc": "Web: Título ayuda",
+        "vars": [],
+        "default": "¿Necesitas ayuda?",
+    },
+    "web_help_hero_desc": {
+        "desc": "Web: Desc ayuda",
+        "vars": [],
+        "default": "Aquí encontrarás todo lo que necesitas saber sobre ZeePubBot",
+    },
+    "web_help_commands_title": {
+        "desc": "Web: Título comandos",
+        "vars": [],
+        "default": "Comandos Disponibles",
+    },
+    "web_help_faq_title": {
+        "desc": "Web: Título FAQ",
+        "vars": [],
+        "default": "Preguntas Frecuentes",
+    },
+    "web_help_support_title": {
+        "desc": "Web: Título soporte",
+        "vars": [],
+        "default": "¿Aún necesitas ayuda?",
+    },
+    "web_help_support_desc": {
+        "desc": "Web: Desc soporte",
+        "vars": [],
+        "default": "Nuestro equipo está aquí para ayudarte",
+    },
+    "web_help_support_btn": {
+        "desc": "Web: Botón soporte",
+        "vars": [],
+        "default": "Contactar Soporte",
+    },
 }
 
 # Global variables available in ALL templates

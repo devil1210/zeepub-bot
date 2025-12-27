@@ -5,6 +5,7 @@ import { HelpCircle, BookOpen, Download, Settings, Link2, MessageCircle } from "
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { TransparentHeader } from "@/components/transparent-header"
+import { useStrings } from "@/components/strings-provider"
 
 interface Command {
   command: string
@@ -12,6 +13,7 @@ interface Command {
 }
 
 export default function HelpPage() {
+  const { t } = useStrings()
   const commands: Command[] = [
     { command: "/start", description: "Inicia el bot y muestra el menú principal" },
     { command: "/help", description: "Muestra esta ayuda" },
@@ -61,9 +63,9 @@ export default function HelpPage() {
         <Card className="p-6 border-border bg-gradient-to-br from-primary/10 to-primary/5">
           <div className="text-center">
             <HelpCircle className="w-16 h-16 text-primary mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">¿Necesitas ayuda?</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-2">{t("help_hero_title")}</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Aquí encontrarás todo lo que necesitas saber sobre ZeePubBot
+              {t("help_hero_desc")}
             </p>
           </div>
         </Card>
@@ -90,7 +92,7 @@ export default function HelpPage() {
 
         {/* Commands */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Comandos Disponibles</h3>
+          <h3 className="text-lg font-semibold mb-4">{t("help_commands_title")}</h3>
           <Card className="p-4 border-border">
             <div className="space-y-3">
               {commands.map((cmd, index) => (
@@ -107,7 +109,7 @@ export default function HelpPage() {
 
         {/* FAQs */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Preguntas Frecuentes</h3>
+          <h3 className="text-lg font-semibold mb-4">{t("help_faq_title")}</h3>
           <Card className="border-border overflow-hidden">
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, index) => (
@@ -127,9 +129,9 @@ export default function HelpPage() {
         {/* Contact Support */}
         <Card className="p-6 border-border text-center">
           <MessageCircle className="w-12 h-12 text-primary mx-auto mb-3" />
-          <h4 className="font-semibold text-foreground mb-2">¿Aún necesitas ayuda?</h4>
-          <p className="text-sm text-muted-foreground mb-4">Nuestro equipo está aquí para ayudarte</p>
-          <Button className="w-full bg-primary hover:bg-primary/90">Contactar Soporte</Button>
+          <h4 className="font-semibold text-foreground mb-2">{t("help_support_title")}</h4>
+          <p className="text-sm text-muted-foreground mb-4">{t("help_support_desc")}</p>
+          <Button className="w-full bg-primary hover:bg-primary/90">{t("help_support_btn")}</Button>
         </Card>
       </div>
     </div>

@@ -16,8 +16,10 @@ interface Tier {
 
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
+import { useStrings } from "@/components/strings-provider"
 
 export default function DonatePage() {
+  const { t } = useStrings()
   const tiers: Tier[] = [
     {
       name: "Lector",
@@ -63,16 +65,16 @@ export default function DonatePage() {
           <Card className="p-6 border-border bg-gradient-to-br from-primary/10 to-primary/5">
             <div className="text-center">
               <Heart className="w-16 h-16 text-primary mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-foreground mb-2">Apoya a ZeePubBot</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-2">{t("donate_hero_title")}</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Tu donación nos ayuda a mantener el servicio activo y mejorar continuamente
+                {t("donate_hero_desc")}
               </p>
             </div>
           </Card>
 
           {/* Tiers */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Elige tu nivel</h3>
+            <h3 className="text-lg font-semibold">{t("donate_tier_title")}</h3>
 
             {tiers.map((tier, index) => {
               const Icon = tier.icon
@@ -124,22 +126,22 @@ export default function DonatePage() {
 
           {/* Info Card */}
           <Card className="p-5 border-border bg-secondary/30">
-            <h4 className="font-semibold text-foreground mb-2">¿Por qué donar?</h4>
+            <h4 className="font-semibold text-foreground mb-2">{t("donate_why_title")}</h4>
             <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-              ZeePubBot es un proyecto de código abierto mantenido por la comunidad. Tu apoyo nos ayuda a:
+              {t("donate_why_desc")}
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                <span>Mantener los servidores activos 24/7</span>
+                <span>{t("donate_benefit_1")}</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                <span>Añadir nuevas funcionalidades</span>
+                <span>{t("donate_benefit_2")}</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                <span>Mejorar el catálogo de libros</span>
+                <span>{t("donate_benefit_3")}</span>
               </li>
             </ul>
           </Card>
