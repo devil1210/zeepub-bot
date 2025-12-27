@@ -25,85 +25,28 @@ from services.user_service import get_effective_user, get_user_info
 import logging
 
 
+from api.deps import get_telegram_user_id, get_current_user_data, require_mini_app_access
+
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
-
-
-async def get_current_user(
-    x_telegram_data: Optional[str] = Header(None, alias="X-Telegram-Data"),
-    uid: Optional[int] = Query(None),
-) -> int:
-    """
-    Valida el usuario mediante initData (si está disponible) o confía en uid (legacy/dev).
-    En producción, se debería forzar el uso de initData.
-    """
-    # Si hay initData, validarlo
-    if x_telegram_data:
-        user_data = validate_telegram_data(x_telegram_data, config.TELEGRAM_TOKEN)
-        if not user_data:
-            logger.warning(f"Invalid initData received: {x_telegram_data[:20]}...")
-            raise HTTPException(status_code=401, detail="Invalid Telegram data")
-
-        # Extraer ID del usuario validado
-        validated_uid = user_data.get("user", {}).get("id")
-        if not validated_uid:
-            logger.error(f"User ID not found in validated user_data: {user_data}")
-            raise HTTPException(status_code=401, detail="User ID not found in data")
-
-        logger.info(f"Authenticated user via initData: {validated_uid}")
-        return validated_uid
-
-    # Fallback para desarrollo o si no se envía header (opcional, se puede quitar para mayor seguridad)
-    # Por ahora permitimos uid directo si no hay header, pero logueamos advertencia
-    if uid:
-        # logger.warning(f"Insecure access with raw UID: {uid}")
-        return uid
-
-    # Si no hay ni header ni uid, permitimos acceso anónimo (para feed público)
-    return 0
-
-
-from typing import Annotated
 
 
 @router.get("/feed")
 async def get_feed(
     url: Optional[str] = None,
-    admin_mode: Annotated[bool, Query()] = False,
-    current_uid: int = Depends(get_current_user),
+    admin_mode: bool = False,
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Obtiene el feed OPDS.
     """
-    logger.info(f"Feed request - UID: {current_uid}, URL: {url}")
-
-    # Determinar rol efectivo (DB + Config)
-    user_data = await get_effective_user(current_uid)
+    current_uid = user_data.get("user_id", 0)
     role = user_data.get("role", "free")
-
     is_admin = role == "admin"
-    is_staff = role in ["admin", "staff", "vip", "premium", "white"]
-
-    logger.info(
-        f"Permissions for UID {current_uid}: Role={role}, Admin={is_admin}, Staff={is_staff}"
-    )
-
-    # Validar acceso básico a la Mini App
-    if not user_data.get("has_mini_app_access") and not is_admin and not is_staff:
-        # Si no tiene el flag explícito Y no es parte del staff/admin legacy
-        logger.warning(f"Access DENIED for {current_uid} (Role: {role})")
-        raise HTTPException(
-            status_code=403,
-            detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios.",
-        )
-
-    # Define who can access the "Evil" (Restricted) Catalog
-    # Strictly Admin or Staff (Publishers), excluding VIP/White/Premium
-    has_evil_access = role in ["admin", "staff"] or is_admin
+    has_evil_access = is_admin or role == "staff"
 
     # Determinar URL base si no se proporciona o es raíz
     if not url or url == "/":
-        # "Evil" catalog is only accessed if explicitly requested AND user is admin
         if is_admin and admin_mode:
             target_url = config.OPDS_ROOT_EVIL
         else:
@@ -116,7 +59,6 @@ async def get_feed(
             logger.warning(
                 f"Unauthorized {current_uid} (Role: {role}) tried to access Evil Root: {url}"
             )
-            # Redirect to SAFE root
             target_url = config.OPDS_ROOT_START
         else:
             target_url = url
