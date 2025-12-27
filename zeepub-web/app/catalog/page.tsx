@@ -20,6 +20,7 @@ import { useTelegramContext } from "@/components/telegram-provider"
 
 import { Pagination } from "@/components/pagination"
 import { TransparentHeader } from "@/components/transparent-header"
+import { CatalogSkeleton } from "@/components/catalog-skeleton"
 
 function CatalogContent() {
     const [currentFeed, setCurrentFeed] = useState<OPDSFeed | null>(null)
@@ -232,8 +233,9 @@ function CatalogContent() {
 
     if (isLoading && !currentFeed) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <div className="min-h-screen bg-background pt-safe p-4">
+                <TransparentHeader />
+                <CatalogSkeleton />
             </div>
         )
     }
@@ -248,7 +250,7 @@ function CatalogContent() {
                         variant="default"
                         size="sm"
                         onClick={handleGoBack}
-                        className="mb-4 bg-primary hover:bg-primary/90"
+                        className="mb-4 bg-primary hover:bg-primary/90 animate-in fade-in duration-300"
                     >
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         Subir nivel
@@ -257,18 +259,20 @@ function CatalogContent() {
 
                 {/* Feed title */}
                 {currentFeed?.title && (
-                    <div className="pb-2">
+                    <div className="pb-2 animate-in fade-in slide-in-from-left-4 duration-300">
                         <h1 className="text-lg font-semibold text-foreground">{currentFeed.title}</h1>
                     </div>
                 )}
 
                 {isLoading && (
-                    <div className="flex justify-center items-center py-8">
-                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <div className="py-4">
+                        <div className="h-1 w-full bg-primary/10 overflow-hidden rounded-full mb-4">
+                            <div className="h-full bg-primary animate-progress-loading w-full" />
+                        </div>
                     </div>
                 )}
 
-                {currentFeed?.entries.map((entry) => {
+                {currentFeed?.entries.map((entry, index) => {
                     const isFolder = entry.links.some((l) => l.rel === "subsection")
                     const isBook = entry.links.some(
                         (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
@@ -279,7 +283,8 @@ function CatalogContent() {
                             <Card
                                 key={entry.id}
                                 onClick={() => handleBookClick(entry)}
-                                className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98]"
+                                className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2 duration-300"
+                                style={{ animationDelay: `${index * 50}ms` }}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden">
@@ -310,7 +315,8 @@ function CatalogContent() {
                             <Card
                                 key={entry.id}
                                 onClick={() => handleBookClick(entry)}
-                                className="p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98]"
+                                className="p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2 duration-300"
+                                style={{ animationDelay: `${index * 50}ms` }}
                             >
                                 <div className="flex gap-4">
                                     <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">

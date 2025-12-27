@@ -1,8 +1,11 @@
 import { getTelegramInitData } from "./telegram"
 import { OPDSFeed } from "./opds-types"
 
+const feedCache = new Map<string, { data: OPDSFeed; timestamp: number }>()
+const CACHE_TTL = 1000 * 60 * 5 // 5 minutes
+
 export class OpdsClient {
-    static async fetchFeed(url?: string, adminMode: boolean = false): Promise<OPDSFeed | null> {
+    static async fetchFeed(url?: string, adminMode: boolean = false, useCache: boolean = true): Promise<OPDSFeed | null> {
         const initData = getTelegramInitData()
 
         const queryParams = new URLSearchParams()
@@ -11,6 +14,15 @@ export class OpdsClient {
         }
         if (adminMode) {
             queryParams.append("admin_mode", "true")
+        }
+
+        const cacheKey = `${url || "root"}-${adminMode}`
+        if (useCache) {
+            const cached = feedCache.get(cacheKey)
+            if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+                console.log(`[OpdsClient] Returning CACHED feed: ${cacheKey}`)
+                return cached.data
+            }
         }
 
         const targetUrl = `/api/feed?${queryParams.toString()}`
@@ -32,10 +44,18 @@ export class OpdsClient {
             }
 
             const data = await response.json()
+
+            // Cache the result
+            feedCache.set(cacheKey, { data, timestamp: Date.now() })
+
             return data as OPDSFeed
         } catch (e) {
             console.error("[OpdsClient] Unexpected Error:", e)
             return null
         }
+    }
+
+    static clearCache() {
+        feedCache.clear()
     }
 }

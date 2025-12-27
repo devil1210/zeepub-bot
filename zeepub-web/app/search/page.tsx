@@ -31,6 +31,8 @@ interface PaginationState {
 
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
+import { CatalogSkeleton } from "@/components/catalog-skeleton"
+import { Loader2 } from "lucide-react"
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -138,18 +140,27 @@ export default function SearchPage() {
                 />
               </div>
               <Button onClick={() => handleSearch()} disabled={isLoading} className="h-12 px-6 bg-primary hover:bg-primary/90">
-                {isLoading ? "Buscando..." : "Buscar"}
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Buscar"}
               </Button>
             </div>
           </div>
 
           {/* Results */}
           <div className="space-y-3">
-            {books.map((book) => (
+            {isLoading && books.length === 0 && <CatalogSkeleton />}
+
+            {isLoading && books.length > 0 && (
+              <div className="h-1 w-full bg-primary/10 overflow-hidden rounded-full mb-4">
+                <div className="h-full bg-primary animate-progress-loading w-full" />
+              </div>
+            )}
+
+            {books.map((book, index) => (
               <Card
                 key={book.id}
                 onClick={() => handleBookClick(book)}
-                className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
+                className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group animate-in fade-in slide-in-from-bottom-2 duration-300"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="flex gap-4">
                   <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
