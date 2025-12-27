@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.9.2] - 2025-12-27
+### Fixed
+- **Parche visual del scroll:** Corregido el problema de las "franjas blancas" al hacer scroll rápido.
+- **Control de overscroll:** Desactivado el rebote vertical en el elemento base para mantener la consistencia del tema oscuro.
+- **Optimización de carga:** Añadido color de fondo y meta `theme-color` directamente en el HTML para evitar destellos blancos durante la carga.
+
 ## [v4.9.1] - 2025-12-27
 ### Fixed
 - **Modo Fullscreen forzado:** Se ha implementado el uso de `requestFullscreen` y `expand()` al iniciar la Mini App para asegurar que ocupe toda la pantalla.

@@ -40,8 +40,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className="dark" suppressHydrationWarning>
+    <html lang="es" className="dark" style={{ backgroundColor: '#1a1a1a' }} suppressHydrationWarning>
       <head>
+        <meta name="theme-color" content="#1a1a1a" />
+        <meta name="color-scheme" content="dark" />
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
       </head>
       <body className={`font-sans antialiased`}>

@@ -125,8 +125,19 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    @apply bg-background;
+    /* Prevents white stripes during overscroll on mobile */
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     @apply bg-background text-foreground;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    /* Smooth scrolling but with control over bounce */
+    scroll-behavior: smooth;
   }
 
   /* Añadiendo soporte para safe-area de iOS/Telegram */
@@ -139,9 +150,17 @@
   }
 
   @keyframes progress-loading {
-    0% { transform: translateX(-100%); }
-    50% { transform: translateX(0); }
-    100% { transform: translateX(100%); }
+    0% {
+      transform: translateX(-100%);
+    }
+
+    50% {
+      transform: translateX(0);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
   }
 
   .animate-progress-loading {
