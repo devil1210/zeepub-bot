@@ -301,7 +301,12 @@ async def publicar_libro(
         epub_downloaded = None
         if epub_url:
             import aiohttp
-            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+
+            auth = (
+                aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+                if config.OPDS_AUTH
+                else None
+            )
             epub_downloaded = await fetch_bytes(epub_url, timeout=120, auth=auth)
             if epub_downloaded:
                 # Use centralized metadata enrichment
@@ -348,7 +353,12 @@ async def publicar_libro(
             portada_data = cover_bytes
         else:
             import aiohttp
-            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+
+            auth = (
+                aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+                if config.OPDS_AUTH
+                else None
+            )
             portada_data = await fetch_bytes(portada_url, timeout=15, auth=auth)
 
         await send_photo_bytes(
@@ -534,6 +544,7 @@ async def descargar_epub_pendiente(
 
     # Verificar privilegios usando el sistema de roles
     from services.user_service import get_effective_user
+
     user_info = await get_effective_user(uid)
     role = user_info.get("role", "free")
     is_privileged = role in ("admin", "staff")
@@ -689,13 +700,14 @@ async def descargar_epub_pendiente(
         # Registrar en historial de descargas
         try:
             from repositories.download_repository import download_repo
+
             author = meta.get("autor", "Desconocido")
             await download_repo.add_download(
                 user_id=uid,
                 title=titulo_vol,
                 author=author,
                 download_url=epub_url,
-                file_size=int(size_mb * 1024 * 1024) if size_mb else None
+                file_size=int(size_mb * 1024 * 1024) if size_mb else None,
             )
         except Exception as e:
             logger.error(f"Error saving download history: {e}")
@@ -779,8 +791,9 @@ async def enviar_libro_directo(
 
         # 3. Descargar EPUB
         logger.info(f"Descargando EPUB desde: {download_url}")
-        
+
         import aiohttp
+
         auth = None
         if config.OPDS_AUTH:
             auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
@@ -817,7 +830,12 @@ async def enviar_libro_directo(
         # 5. Preparar Portada
         cover_bytes = extract_cover_from_epub(epub_bytes)
         import aiohttp
-        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+
+        auth = (
+            aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+            if config.OPDS_AUTH
+            else None
+        )
         portada_data = (
             cover_bytes
             if cover_bytes
@@ -1049,13 +1067,14 @@ async def enviar_libro_directo(
             # Registrar en historial de descargas
             try:
                 from repositories.download_repository import download_repo
+
                 author = meta.get("autor", "Desconocido")
                 await download_repo.add_download(
                     user_id=user_id,
                     title=titulo_vol,
                     author=author,
                     download_url=download_url,
-                    file_size=int(size_mb * 1024 * 1024) if size_mb else None
+                    file_size=int(size_mb * 1024 * 1024) if size_mb else None,
                 )
             except Exception as e:
                 logger.error(f"Error saving download history: {e}")
@@ -1275,13 +1294,23 @@ async def _publish_choice_facebook(
     portada_url = pending.get("portada") if pending else meta.get("portada")
     if not cover_bytes and portada_url:
         import aiohttp
-        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+
+        auth = (
+            aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+            if config.OPDS_AUTH
+            else None
+        )
         cover_bytes = await fetch_bytes(portada_url, auth=auth)
 
     # If we still don't have metadata or buffer, try to fetch EPUB to build meta/cover
     if (not cover_bytes or not meta) and epub_url:
         import aiohttp
-        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+
+        auth = (
+            aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+            if config.OPDS_AUTH
+            else None
+        )
         epub_downloaded = await fetch_bytes(epub_url, timeout=60, auth=auth)
         if epub_downloaded:
             st["epub_buffer"] = epub_downloaded
@@ -1370,11 +1399,20 @@ async def _publish_choice_telegram(
             cover_bytes = None
 
     import aiohttp
-    auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+
+    auth = (
+        aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+        if config.OPDS_AUTH
+        else None
+    )
     portada_data = (
         cover_bytes
         if cover_bytes
-        else (await fetch_bytes(portada_url, timeout=15, auth=auth) if portada_url else None)
+        else (
+            await fetch_bytes(portada_url, timeout=15, auth=auth)
+            if portada_url
+            else None
+        )
     )
 
     await send_photo_bytes(

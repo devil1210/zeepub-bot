@@ -8,7 +8,12 @@ import hashlib
 import json
 from config.config_settings import config
 from services.opds_service import get_cached_feed
-from utils.helpers import build_search_url, formatear_mensaje_portada, find_zeepubs_destino, abs_url
+from utils.helpers import (
+    build_search_url,
+    formatear_mensaje_portada,
+    find_zeepubs_destino,
+    abs_url,
+)
 from utils.security import validate_telegram_data
 from utils.http_client import fetch_bytes
 from services.epub_service import (
@@ -60,9 +65,9 @@ async def get_current_user(
 
 @router.get("/feed")
 async def get_feed(
-    url: Optional[str] = None, 
+    url: Optional[str] = None,
     admin_mode: bool = Query(False),
-    current_uid: int = Depends(get_current_user)
+    current_uid: int = Depends(get_current_user),
 ):
     """
     Obtiene el feed OPDS.
@@ -76,7 +81,9 @@ async def get_feed(
     is_admin = role == "admin"
     is_staff = role in ["admin", "staff", "vip", "premium", "white"]
 
-    logger.info(f"Permissions for UID {current_uid}: Role={role}, Admin={is_admin}, Staff={is_staff}")
+    logger.info(
+        f"Permissions for UID {current_uid}: Role={role}, Admin={is_admin}, Staff={is_staff}"
+    )
 
     # Validar acceso básico a la Mini App
     if not user_data.get("has_mini_app_access") and not is_admin and not is_staff:
@@ -84,7 +91,7 @@ async def get_feed(
         logger.warning(f"Access DENIED for {current_uid} (Role: {role})")
         raise HTTPException(
             status_code=403,
-            detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios."
+            detail="⛔ El acceso a la Mini App está restringido actualmente.\n\nPronto estará disponible para todos los usuarios.",
         )
 
     # Define who can access the "Evil" (Restricted) Catalog
@@ -95,13 +102,17 @@ async def get_feed(
     if not url or url == "/":
         # "Evil" catalog is only accessed if explicitly requested AND user is admin
         if is_admin and admin_mode:
-             target_url = config.OPDS_ROOT_EVIL
+            target_url = config.OPDS_ROOT_EVIL
         else:
-             target_url = config.OPDS_ROOT_START
+            target_url = config.OPDS_ROOT_START
     else:
         # Security: Prevent unauthorized users from accessing Evil Root manually
-        if not has_evil_access and (config.OPDS_ROOT_EVIL_SUFFIX in url or config.OPDS_ROOT_EVIL in url):
-            logger.warning(f"Unauthorized {current_uid} (Role: {role}) tried to access Evil Root: {url}")
+        if not has_evil_access and (
+            config.OPDS_ROOT_EVIL_SUFFIX in url or config.OPDS_ROOT_EVIL in url
+        ):
+            logger.warning(
+                f"Unauthorized {current_uid} (Role: {role}) tried to access Evil Root: {url}"
+            )
             # Redirect to SAFE root
             target_url = config.OPDS_ROOT_START
         else:
@@ -162,7 +173,9 @@ async def get_feed(
                 pass
 
             # Special handling for "Todas las bibliotecas" for non-admins
-            if not is_admin and (title == "Todas las bibliotecas" or title == "All libraries"):
+            if not is_admin and (
+                title == "Todas las bibliotecas" or title == "All libraries"
+            ):
                 title = "Biblioteca Zeepubs"
                 # Try to find direct link to ZeePubs ES
                 try:
@@ -175,11 +188,13 @@ async def get_feed(
                         if link.get("rel") == "subsection":
                             libraries_url = normalize_url(link.get("href"))
                             break
-                    
+
                     if libraries_url:
                         # Fetch that feed to find ZeePubs
                         lib_feed = await get_cached_feed(libraries_url)
-                        direct_url = find_zeepubs_destino(lib_feed, prefer_libraries=True)
+                        direct_url = find_zeepubs_destino(
+                            lib_feed, prefer_libraries=True
+                        )
                         if direct_url:
                             # Level 2 deep-link: Find the first library within the ZeePubs list
                             sub_lib_feed = await get_cached_feed(direct_url)
@@ -191,10 +206,10 @@ async def get_feed(
                                         break
                                 if deep_link:
                                     break
-                            
+
                             entry_override_url = deep_link or direct_url
                         else:
-                             entry_override_url = None
+                            entry_override_url = None
                     else:
                         entry_override_url = None
 
@@ -284,27 +299,31 @@ async def get_feed(
         # 3. Add "Todas las colecciones" to specific sub-feeds as requested
         sub_feeds = ["/on-deck", "/reading-list", "/want-to-read"]
         if any(sub in target_url for sub in sub_feeds):
-             # Find base OPDS URL to point collections link correctly
-             base_opds = target_url
-             for sub in sub_feeds:
-                 if sub in base_opds:
-                     base_opds = base_opds.split(sub)[0]
-                     break
-             
-             entries.append({
-                 "id": "injected-collections",
-                 "title": "Todas las colecciones",
-                 "author": "Sistema",
-                 "summary": "Navegar por todas las colecciones",
-                 "cover_url": None,
-                 "subsection_url": f"{base_opds.rstrip('/')}/collections",
-                 "detail_url": None,
-                 "links": [{
-                     "rel": "subsection",
-                     "href": f"{base_opds.rstrip('/')}/collections",
-                     "type": "application/atom+xml;profile=opds-catalog;kind=navigation"
-                 }]
-             })
+            # Find base OPDS URL to point collections link correctly
+            base_opds = target_url
+            for sub in sub_feeds:
+                if sub in base_opds:
+                    base_opds = base_opds.split(sub)[0]
+                    break
+
+            entries.append(
+                {
+                    "id": "injected-collections",
+                    "title": "Todas las colecciones",
+                    "author": "Sistema",
+                    "summary": "Navegar por todas las colecciones",
+                    "cover_url": None,
+                    "subsection_url": f"{base_opds.rstrip('/')}/collections",
+                    "detail_url": None,
+                    "links": [
+                        {
+                            "rel": "subsection",
+                            "href": f"{base_opds.rstrip('/')}/collections",
+                            "type": "application/atom+xml;profile=opds-catalog;kind=navigation",
+                        }
+                    ],
+                }
+            )
 
         # Second pass: fetch covers for folders that don't have one
         import asyncio
@@ -327,11 +346,17 @@ async def get_feed(
                                 res["cover_url"] = normalize_url(l.get("href"))
                                 break
                 except httpx.HTTPStatusError as e:
-                    logger.warning(f"HTTP error fetching sub-feed {res['subsection_url']}: {e}")
+                    logger.warning(
+                        f"HTTP error fetching sub-feed {res['subsection_url']}: {e}"
+                    )
                 except httpx.RequestError as e:
-                    logger.warning(f"Request error fetching sub-feed {res['subsection_url']}: {e}")
+                    logger.warning(
+                        f"Request error fetching sub-feed {res['subsection_url']}: {e}"
+                    )
                 except Exception as e:
-                    logger.warning(f"Unexpected error fetching sub-feed {res['subsection_url']}: {e}")
+                    logger.warning(
+                        f"Unexpected error fetching sub-feed {res['subsection_url']}: {e}"
+                    )
 
         folder_tasks = [
             fetch_folder_cover(e)
@@ -385,7 +410,9 @@ async def get_feed(
                     items_per_page
                 )
             except ValueError:
-                logger.debug(f"Could not calculate total pages from results={total_results}, items_per_page={items_per_page}")
+                logger.debug(
+                    f"Could not calculate total pages from results={total_results}, items_per_page={items_per_page}"
+                )
             except Exception as e:
                 logger.warning(f"Unexpected error calculating total pages: {e}")
         processed_links = [
@@ -410,7 +437,10 @@ async def get_feed(
         }
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error fetching feed: {e}")
-        raise HTTPException(status_code=e.response.status_code, detail=f"Error fetching feed: {e.response.text}")
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"Error fetching feed: {e.response.text}",
+        )
     except httpx.RequestError as e:
         logger.error(f"Request error fetching feed: {e}")
         raise HTTPException(status_code=500, detail=f"Network error fetching feed: {e}")
@@ -442,27 +472,28 @@ async def proxy_image(rest_of_path: str, request: Request):
         full_url = f"{upstream_base}/api/image/{rest_of_path}"
         query_params = dict(request.query_params)
 
-        headers = {
-            "User-Agent": "ZeePubBot/4.5 (Proxy)",
-            "Accept": "image/*, */*"
-        }
+        headers = {"User-Agent": "ZeePubBot/4.5 (Proxy)", "Accept": "image/*, */*"}
 
         async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             logger.info(f"Proxying image: {full_url} with params {query_params}")
-            resp = await client.get(full_url, params=query_params, auth=config.OPDS_AUTH, headers=headers)
-            
+            resp = await client.get(
+                full_url, params=query_params, auth=config.OPDS_AUTH, headers=headers
+            )
+
             if resp.status_code == 404:
                 # Fallback to direct path
                 alt_url = f"{upstream_base}/{rest_of_path}"
                 logger.debug(f"Image 404 at {full_url}, trying {alt_url}")
-                resp = await client.get(alt_url, params=query_params, auth=config.OPDS_AUTH, headers=headers)
-            
+                resp = await client.get(
+                    alt_url, params=query_params, auth=config.OPDS_AUTH, headers=headers
+                )
+
             resp.raise_for_status()
 
             return Response(
                 content=resp.content,
                 media_type=resp.headers.get("content-type", "image/jpeg"),
-                headers={"Cache-Control": "public, max-age=86400"}
+                headers={"Cache-Control": "public, max-age=86400"},
             )
     except Exception as e:
         logger.error(f"Image proxy error for {rest_of_path}: {e}")
@@ -473,7 +504,7 @@ async def proxy_image(rest_of_path: str, request: Request):
 async def tunnel_opds(
     url: str = Query(..., description="Target OPDS URL"),
     admin_mode: bool = Query(False, description="Whether to show full admin catalog"),
-    current_uid: int = Depends(get_current_user)
+    current_uid: int = Depends(get_current_user),
 ):
     """
     Proxies OPDS requests directly to the server, injecting credentials.
@@ -486,9 +517,9 @@ async def tunnel_opds(
     # Normalize URL: support root fallback and relative paths
     if not url or url == "/":
         if user_data.get("role") == "admin" and admin_mode:
-             target_url = config.OPDS_ROOT_EVIL
+            target_url = config.OPDS_ROOT_EVIL
         else:
-             target_url = config.OPDS_ROOT_START
+            target_url = config.OPDS_ROOT_START
     elif not url.startswith("http"):
         base = config.OPDS_SERVER_URL.rstrip("/")
         if url.startswith("/"):
@@ -498,60 +529,77 @@ async def tunnel_opds(
     else:
         target_url = url
 
-    logger.info(f"Tunneling OPDS -> {target_url} for user {current_uid} (admin_mode={admin_mode})")
+    logger.info(
+        f"Tunneling OPDS -> {target_url} for user {current_uid} (admin_mode={admin_mode})"
+    )
 
     headers = {
         "User-Agent": "ZeePubBot/4.5 (OPDS Tunnel)",
-        "Accept": "application/atom+xml,application/xml;q=0.9,*/*;q=0.8"
+        "Accept": "application/atom+xml,application/xml;q=0.9,*/*;q=0.8",
     }
 
     try:
         async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             r = await client.get(target_url, auth=config.OPDS_AUTH, headers=headers)
-            
+
             if r.status_code >= 400:
-                 logger.error(f"Upstream OPDS error {r.status_code} for {target_url}: {r.text[:200]}")
-                 return Response(content=f"Error upstream: {r.status_code}", status_code=r.status_code)
+                logger.error(
+                    f"Upstream OPDS error {r.status_code} for {target_url}: {r.text[:200]}"
+                )
+                return Response(
+                    content=f"Error upstream: {r.status_code}",
+                    status_code=r.status_code,
+                )
 
             content_type = r.headers.get("content-type", "")
 
             # If it's XML, we might want to modify it (renaming, relinking)
-            if "xml" in content_type and (user_data.get("role") != "admin" or not admin_mode):
+            if "xml" in content_type and (
+                user_data.get("role") != "admin" or not admin_mode
+            ):
                 import re
+
                 xml_text = r.text
-                
+
                 # 1. Rename and Relink "Todas las bibliotecas" -> "Biblioteca Zeepubs"
                 if "Todas las bibliotecas" in xml_text:
-                    xml_text = xml_text.replace("Todas las bibliotecas", "Biblioteca Zeepubs")
+                    xml_text = xml_text.replace(
+                        "Todas las bibliotecas", "Biblioteca Zeepubs"
+                    )
                     # Relink /libraries -> /libraries/1 for direct library access
-                    xml_text = re.sub(r'/libraries(?=["\s/])(?!/1)', '/libraries/1', xml_text)
-                
+                    xml_text = re.sub(
+                        r'/libraries(?=["\s/])(?!/1)', "/libraries/1", xml_text
+                    )
+
                 # 2. Hide unwanted sections from the ROOT feed (Mi Catálogo)
                 if "<id>root</id>" in xml_text or "<id>libraries</id>" in xml_text:
                     to_hide = [
-                        "En el puente", 
-                        "Listas de lectura", 
-                        "Deseo leer", 
-                        "Todas las colecciones", 
-                        "Actualizado recientemente", 
-                        "Añadido recientemente"
+                        "En el puente",
+                        "Listas de lectura",
+                        "Deseo leer",
+                        "Todas las colecciones",
+                        "Actualizado recientemente",
+                        "Añadido recientemente",
                     ]
                     for title in to_hide:
                         # Refined pattern: ensure we don't cross <entry> boundaries
-                        pattern = rf'<entry>(?:(?!</entry>)[\s\S])*?<title>{re.escape(title)}</title>[\s\S]*?</entry>'
-                        xml_text = re.sub(pattern, '', xml_text)
-                
+                        pattern = rf"<entry>(?:(?!</entry>)[\s\S])*?<title>{re.escape(title)}</title>[\s\S]*?</entry>"
+                        xml_text = re.sub(pattern, "", xml_text)
+
                 # 3. Add "Todas las colecciones" to specific sub-feeds as requested
                 sub_feeds = ["/on-deck", "/reading-list", "/want-to-read"]
-                if any(sub in target_url for sub in sub_feeds) and "</feed>" in xml_text:
-                     # Find base OPDS URL to point collections link correctly
-                     base_opds = target_url
-                     for sub in sub_feeds:
-                         if sub in base_opds:
-                             base_opds = base_opds.split(sub)[0]
-                             break
-                     
-                     extra_entry = f"""
+                if (
+                    any(sub in target_url for sub in sub_feeds)
+                    and "</feed>" in xml_text
+                ):
+                    # Find base OPDS URL to point collections link correctly
+                    base_opds = target_url
+                    for sub in sub_feeds:
+                        if sub in base_opds:
+                            base_opds = base_opds.split(sub)[0]
+                            break
+
+                    extra_entry = f"""
   <entry>
     <updated>2025-12-26T12:00:00</updated>
     <id>allCollections-injected</id>
@@ -560,18 +608,14 @@ async def tunnel_opds(
     <link rel="subsection" type="application/atom+xml;profile=opds-catalog;kind=navigation" href="{base_opds}/collections" />
   </entry>
 """
-                     xml_text = xml_text.replace("</feed>", extra_entry + "</feed>")
+                    xml_text = xml_text.replace("</feed>", extra_entry + "</feed>")
 
                 return Response(
-                    content=xml_text.encode("utf-8"),
-                    media_type=content_type
+                    content=xml_text.encode("utf-8"), media_type=content_type
                 )
-            
+
             # For non-XML (binary icons, etc), stream it
-            return StreamingResponse(
-                r.aiter_bytes(),
-                media_type=content_type
-            )
+            return StreamingResponse(r.aiter_bytes(), media_type=content_type)
 
     except Exception as e:
         logger.error(f"Tunnel exception for {target_url}: {e}")
@@ -624,6 +668,7 @@ async def public_download(
         # Usar fetch_bytes para obtener el contenido (memoria o archivo temp)
         # Nota: fetch_bytes maneja archivos grandes escribiendo a disco
         import aiohttp
+
         auth = None
         if config.OPDS_AUTH:
             auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])

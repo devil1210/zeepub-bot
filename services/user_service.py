@@ -150,7 +150,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         # Default policy: Allow access for everyone unless explicitly banned/restricted
         # Or fetch default level from DB if possible, but for performance, we hardcode Lector policy here
         result["has_mini_app_access"] = True
-        
+
     access_info = await user_repo.get_access_info(uid)
     if access_info:
         result["has_mini_app_access"] = access_info["hasAccess"]
@@ -164,7 +164,6 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         if access_info["isAdmin"]:
             result["role"] = "admin"
             result["has_mini_app_access"] = True
-
 
     # 4. Legacy Config Fallbacks (non-admins)
     elif uid in config.FACEBOOK_PUBLISHERS:
@@ -262,7 +261,7 @@ async def upgrade_user_level(telegram_id: int, new_level_name: str):
             SET level_id = (SELECT id FROM user_levels WHERE name = ?)
             WHERE telegram_id = ?
             """,
-            (new_level_name, telegram_id)
+            (new_level_name, telegram_id),
         )
         await conn.commit()
     await user_cache.invalidate(f"user_effective:{telegram_id}")

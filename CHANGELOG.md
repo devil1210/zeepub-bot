@@ -5,9 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.7.2] - 2025-12-27
+### Fixed
+- Fixed linting and formatting issues across the codebase (api/routes.py, services/telegram_service.py, services/user_service.py).
+- Ensured consistent 4-space indentation and removed unwanted whitespace.
+
 ## [v4.7.1] - 2025-12-27
-### Changed
-- Improved "Biblioteca Zeepubs" link: Now redirects directly to the first library within the ZeePubs [ES] list for non-admin users.
 
 ## [v4.7.0] - 2025-12-27
 
