@@ -318,6 +318,7 @@ class CommandHandlers:
             # Rol: Custom Label (Maquetador, etc) -> Only explicit if exists, else same as Nivel/Empty?
             # Let's fallback to system role if status_label is empty, so [Rol] isn't empty.
             rol_val = status_label if status_label else system_role_text
+            total_dl = user_data.get("total_downloads", 0)
 
             final_text = await cms.get_text(
                 "status_message",
@@ -325,6 +326,7 @@ class CommandHandlers:
                 Nivel=system_role_text,
                 Rol=rol_val,
                 Descargas=left_text,
+                TotalDescargas=str(total_dl),
                 ResetTime=reset_time_str,
                 Expires=expires_str,
             )

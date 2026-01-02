@@ -82,6 +82,11 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "Usa /start para comenzar o selecciona una opción del menú.",
     },
+    "search_streaming_feedback": {
+        "desc": "Búsqueda: Feedback en tiempo real (Draft)",
+        "vars": ["[Termino]"],
+        "default": "🔎 Buscando en catálogos: <i>[Termino]</i>...",
+    },
     "start_welcome_unlimited": {
         "desc": "Bienvenida /start (Ilimitado)",
         "vars": ["[Nombre]"],
@@ -309,8 +314,8 @@ TEMPLATE_REGISTRY = {
     },
     "status_message": {
         "desc": "Mensaje de estado (/status)",
-        "vars": ["[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]"],
-        "default": "🤖 <b>ZeePub Bot</b> [VersionBot]\n\n📊 <b>Tu Estado</b>\n\n👤 <b>Usuario:</b> [Nombre]\n🆔 <b>ID:</b> [ID]\n⭐ <b>Nivel:</b> [Nivel]\n{{if Rol}}👨🏻‍💻 <b>Rol:</b> [Rol]\n{{endif}}{{if Apodo}}👨🏻‍💻 <b>Apodo:</b> [Apodo]\n{{endif}}{{if Expires}}📅 <b>Vence:</b> [Expires]\n{{endif}}📉 <b>Descargas:</b> [Descargas]\n{{if ResetTime}}⏳ <b>Reinicio en:</b> [ResetTime]\n{{endif}}",
+        "vars": ["[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]", "[TotalDescargas]"],
+        "default": "🤖 <b>ZeePub Bot</b> [VersionBot]\n\n📊 <b>Tu Estado</b>\n\n👤 <b>Usuario:</b> [Nombre]\n🆔 <b>ID:</b> [ID]\n⭐ <b>Nivel:</b> [Nivel]\n{{if Rol}}👨🏻‍💻 <b>Rol:</b> [Rol]\n{{endif}}{{if Apodo}}👨🏻‍💻 <b>Apodo:</b> [Apodo]\n{{endif}}{{if Expires}}📅 <b>Vence:</b> [Expires]\n{{endif}}📉 <b>Descargas Hoy:</b> [Descargas]\n📈 <b>Descargas Totales:</b> [TotalDescargas]\n{{if ResetTime}}⏳ <b>Reinicio en:</b> [ResetTime]\n{{endif}}",
     },
     "help_cat_header": {
         "desc": "Encabezado de categoría en /help",
@@ -321,6 +326,21 @@ TEMPLATE_REGISTRY = {
         "desc": "Presentación Automática al unirse a grupos/canales",
         "vars": [],
         "default": "👋 <b>¡Hola! Soy ZeePub Bot.</b>\n\nGracias por añadirme. 📚\nPuedo ayudarte a buscar y descargar libros, gestionar bibliotecas y más.\n\n👤 <b>Admin:</b> Usa /start por privado para configurarme.\n🔍 <b>Usuarios:</b> Usen /search para buscar libros.\n\n¡Espero ser de ayuda!",
+    },
+    "milestone_10_downloads": {
+        "desc": "Hito: 10 descargas (Nivel 1)",
+        "vars": ["[Nombre]"],
+        "default": "🎁 ¡Felicidades [Nombre]! Has descargado tus primeros 10 libros. 🎉",
+    },
+    "milestone_50_downloads": {
+        "desc": "Hito: 50 descargas (Nivel 2)",
+        "vars": ["[Nombre]"],
+        "default": "🌟 ¡Increíble [Nombre]! Ya llevas 50 libros descargados. Eres un lector apasionado. 📚",
+    },
+    "milestone_100_downloads": {
+        "desc": "Hito: 100 descargas (Nivel 3)",
+        "vars": ["[Nombre]"],
+        "default": "👑 ¡Master Lector [Nombre]! 100 libros descargados. ¡Tu biblioteca es legendaria! 🏆",
     },
     # --- Help Command Templates ---
     "help_cmd_start": {

@@ -204,10 +204,16 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # API 9.3: Streaming feedback
         from utils.streaming import send_message_draft
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        
+        draft_text = f"🔎 Buscando en catálogos: <i>{html.escape(text)}</i>..."
+        if cms and cms.enabled:
+            draft_text = await cms.get_text("search_streaming_feedback", Termino=html.escape(text))
+            
         draft_id = await send_message_draft(
             context.bot,
             update.effective_chat.id,
-            f"🔎 Buscando en catálogos: <i>{html.escape(text)}</i>...",
+            draft_text,
             message_thread_id=effective_thread_id
         )
         
