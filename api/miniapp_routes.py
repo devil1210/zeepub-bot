@@ -172,7 +172,21 @@ async def handle_bot_request(
             for entry in entries:
                 book_id = entry.get("id", "")
                 title = entry.get("title", "Sin título")
-                author = entry.get("author", "Desconocido")
+                
+                # Robust author extraction
+                author = entry.get("author")
+                if not author:
+                    # Try dc:creator or similar fields via entry keys (feedparser specific)
+                    author_list = entry.get("authors", [])
+                    if author_list:
+                        author = ", ".join([a.get("name", "") for a in author_list if a.get("name")])
+                    
+                    if not author:
+                        author = entry.get("dc_creator") or entry.get("dcterms_creator")
+                
+                if not author:
+                    author = "Desconocido"
+
                 summary = entry.get("summary", "")
 
                 # Extra metadata
@@ -382,10 +396,23 @@ async def handle_bot_request(
                         cover_url = abs_url(entry_base_url, content.get("value", ""))
                         break
 
+            # Robust author extraction for detail
+            author = entry.get("author")
+            if not author:
+                author_list = entry.get("authors", [])
+                if author_list:
+                    author = ", ".join([a.get("name", "") for a in author_list if a.get("name")])
+                
+                if not author:
+                    author = entry.get("dc_creator") or entry.get("dcterms_creator")
+            
+            if not author:
+                author = "Desconocido"
+
             result = {
                 "id": entry.get("id", ""),
                 "title": entry.get("title", "Sin título"),
-                "author": entry.get("author", "Desconocido"),
+                "author": author,
                 "summary": entry.get("summary", ""),
                 "cover": cover_url,
                 "downloadUrl": download_url,
