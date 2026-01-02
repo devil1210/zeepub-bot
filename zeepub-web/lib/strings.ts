@@ -63,6 +63,18 @@ export interface AppStrings {
     help_support_title: string
     help_support_desc: string
     help_support_btn: string
+    donate_tier_lector_name: string
+    donate_tier_lector_price: string
+    donate_tier_lector_downloads: string
+    donate_tier_patrocinador_name: string
+    donate_tier_patrocinador_price: string
+    donate_tier_patrocinador_downloads: string
+    donate_tier_vip_name: string
+    donate_tier_vip_price: string
+    donate_tier_vip_downloads: string
+    donate_tier_premium_name: string
+    donate_tier_premium_price: string
+    donate_tier_premium_downloads: string
 }
 
 export const DEFAULT_STRINGS: AppStrings = {
@@ -130,6 +142,18 @@ export const DEFAULT_STRINGS: AppStrings = {
     help_support_title: "¿Aún necesitas ayuda?",
     help_support_desc: "Nuestro equipo está aquí para ayudarte",
     help_support_btn: "Contactar Soporte",
+    donate_tier_lector_name: "Lector",
+    donate_tier_lector_price: "Gratis",
+    donate_tier_lector_downloads: "5 al día",
+    donate_tier_patrocinador_name: "Patrocinador",
+    donate_tier_patrocinador_price: "$2/mes",
+    donate_tier_patrocinador_downloads: "10 al día",
+    donate_tier_vip_name: "VIP",
+    donate_tier_vip_price: "$8/mes",
+    donate_tier_vip_downloads: "25 al día",
+    donate_tier_premium_name: "Premium",
+    donate_tier_premium_price: "$12/mes",
+    donate_tier_premium_downloads: "Ilimitado",
 }
 
 let cachedStrings: AppStrings | null = null

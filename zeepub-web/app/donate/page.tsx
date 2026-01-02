@@ -22,35 +22,35 @@ export default function DonatePage() {
   const { t } = useStrings()
   const tiers: Tier[] = [
     {
-      name: "Lector",
+      name: t("donate_tier_lector_name"),
       icon: Star,
-      price: "Gratis",
-      downloads: "5 al día",
+      price: t("donate_tier_lector_price"),
+      downloads: t("donate_tier_lector_downloads"),
       features: ["Búsqueda básica", "5 descargas diarias", "Soporte comunitario"],
       color: "text-muted-foreground",
     },
     {
-      name: "Patrocinador",
+      name: t("donate_tier_patrocinador_name"),
       icon: Heart,
-      price: "$2/mes",
-      downloads: "10 al día",
+      price: t("donate_tier_patrocinador_price"),
+      downloads: t("donate_tier_patrocinador_downloads"),
       features: ["Búsqueda básica", "10 descargas diarias", "Sin anuncios", "Soporte por email"],
       color: "text-pink-500",
     },
     {
-      name: "VIP",
+      name: t("donate_tier_vip_name"),
       icon: Zap,
-      price: "$8/mes",
-      downloads: "25 al día",
+      price: t("donate_tier_vip_price"),
+      downloads: t("donate_tier_vip_downloads"),
       features: ["Búsqueda avanzada", "25 descargas diarias", "Sin anuncios", "Soporte prioritario"],
       color: "text-primary",
       popular: true,
     },
     {
-      name: "Premium",
+      name: t("donate_tier_premium_name"),
       icon: Crown,
-      price: "$12/mes",
-      downloads: "Ilimitado",
+      price: t("donate_tier_premium_price"),
+      downloads: t("donate_tier_premium_downloads"),
       features: [
         "Búsqueda ilimitada",
         "Descargas ilimitadas",
@@ -122,10 +122,10 @@ export default function DonatePage() {
                   </ul>
 
                   <Button
-                    className={`w-full ${tier.popular ? "bg-primary hover:bg-primary/90" : "bg-secondary hover:bg-secondary/90"}`}
-                    disabled={tier.price === "Gratis"}
+                    className={`w-full ${tier.popular ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-secondary text-secondary-foreground hover:bg-secondary/90"}`}
+                    disabled={tier.price === t("donate_tier_lector_price")}
                   >
-                    {tier.price === "Gratis" ? "Tu Plan Actual" : `Mejorar a ${tier.name}`}
+                    {tier.price === t("donate_tier_lector_price") ? "Tu Plan Actual" : `Mejorar a ${tier.name}`}
                   </Button>
                 </Card>
               )
