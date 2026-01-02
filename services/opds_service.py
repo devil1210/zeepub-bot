@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 # from core.state_manager import state_manager (Moved to local scope)
 from config.config_settings import config
 from utils.http_client import parse_feed_from_url
-from utils.helpers import abs_url, find_zeepubs_destino
+from utils.helpers import abs_url, find_zeepubs_destino, extract_author
 from services.cache_service import AsyncTTLCache
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,10 @@ async def mostrar_colecciones(
 
     for entry in feed.entries:
         title = getattr(entry, "title", "")
-        author = getattr(entry, "author", "Desconocido")
+        
+        # Check if folder for correct fallback
+        has_subsection = any(getattr(l, "rel", "") == "subsection" for l in getattr(entry, "links", []))
+        author = extract_author(entry, is_folder=has_subsection)
         href_entry = getattr(entry, "link", "")
         href_sub, portada = None, None
         acqs = []

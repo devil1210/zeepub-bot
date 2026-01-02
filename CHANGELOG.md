@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.13.1] - 2026-01-01
+
+### Fixed
+- **Author Extraction**: Mejora significativa en la detección de autores para colecciones y series en OPDS, eliminando etiquetas "Desconocido" cuando la información está presente en campos secundarios o namespaces externos.
+- **Fallback amigable**: Las carpetas sin autor ahora se etiquetan como "Colección" en lugar de "Desconocido".
+
 ## [4.13.0] - 2026-01-01
 
 ### Añadido

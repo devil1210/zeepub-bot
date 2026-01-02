@@ -18,10 +18,11 @@ from services.user_service import get_effective_user
 from utils.security import validate_telegram_data, verify_telegram_user
 from services.opds_service import get_cached_feed
 from services.telegram_service import enviar_libro_directo
-from utils.helpers import build_search_url, abs_url
+from utils.helpers import build_search_url, abs_url, extract_author
 
 router = APIRouter(tags=["miniapp"])
 logger = logging.getLogger(__name__)
+
 
 # --- Modelos Pydantic ---
 
@@ -174,18 +175,8 @@ async def handle_bot_request(
                 title = entry.get("title", "Sin título")
                 
                 # Robust author extraction
-                author = entry.get("author")
-                if not author:
-                    # Try dc:creator or similar fields via entry keys (feedparser specific)
-                    author_list = entry.get("authors", [])
-                    if author_list:
-                        author = ", ".join([a.get("name", "") for a in author_list if a.get("name")])
-                    
-                    if not author:
-                        author = entry.get("dc_creator") or entry.get("dcterms_creator")
-                
-                if not author:
-                    author = "Desconocido"
+                is_folder = any(link.get("rel") == "subsection" for link in getattr(entry, "links", []))
+                author = extract_author(entry, is_folder=is_folder)
 
                 summary = entry.get("summary", "")
 
@@ -397,17 +388,7 @@ async def handle_bot_request(
                         break
 
             # Robust author extraction for detail
-            author = entry.get("author")
-            if not author:
-                author_list = entry.get("authors", [])
-                if author_list:
-                    author = ", ".join([a.get("name", "") for a in author_list if a.get("name")])
-                
-                if not author:
-                    author = entry.get("dc_creator") or entry.get("dcterms_creator")
-            
-            if not author:
-                author = "Desconocido"
+            author = extract_author(entry, is_folder=subsection_url is not None)
 
             result = {
                 "id": entry.get("id", ""),

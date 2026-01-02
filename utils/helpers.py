@@ -4,6 +4,44 @@ from urllib.parse import urljoin, urlparse
 from config.config_settings import config
 
 
+def extract_author(entry, is_folder=False) -> str:
+    """Extrae el autor de una entrada OPDS de forma robusta."""
+    # 1. Intentar entry.author directo (si es objeto, buscar .name)
+    # Entry can be a dict (from API) or a feedparser object (from bot chat)
+    author = entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
+    
+    if hasattr(author, "name"):
+        author = author.name
+    elif isinstance(author, dict):
+        author = author.get("name")
+    
+    # 2. Intentar entry.authors (lista)
+    if not author:
+        authors = entry.get("authors", []) if hasattr(entry, "get") else getattr(entry, "authors", [])
+        if authors:
+            author = ", ".join([a.get("name", "") if hasattr(a, "get") else getattr(a, "name", "") 
+                              for a in authors if (hasattr(a, "get") and a.get("name")) or hasattr(a, "name")])
+    
+    # 3. Intentar entry.author_detail
+    if not author:
+        detail = entry.get("author_detail") if hasattr(entry, "get") else getattr(entry, "author_detail", None)
+        if detail:
+            author = detail.get("name") if hasattr(detail, "get") else getattr(detail, "name", None)
+            
+    # 4. Intentar namespaces (dc:creator, dcterms:creator)
+    if not author:
+        if hasattr(entry, "get"):
+            author = entry.get("dc_creator") or entry.get("dcterms_creator")
+        else:
+            author = getattr(entry, "dc_creator", None) or getattr(entry, "dcterms_creator", None)
+        
+    # 5. Fallback final
+    if not author:
+        author = "Colección" if is_folder else "Desconocido"
+        
+    return author
+
+
 def get_thread_id(update) -> int:
     """
     Extrae el message_thread_id de un Update de Telegram.
@@ -471,7 +509,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v4.13.0"
+CURRENT_VERSION = "v4.13.1"
 
 
 def get_current_version() -> str:
