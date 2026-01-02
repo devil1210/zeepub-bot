@@ -12,6 +12,8 @@ interface Tier {
   features: string[]
   color: string
   popular?: boolean
+  starPrice?: number
+  slug?: string
 }
 
 import { AccessGuard } from "@/components/access-guard"
@@ -36,6 +38,8 @@ export default function DonatePage() {
       downloads: t("donate_tier_patrocinador_downloads"),
       features: ["Búsqueda básica", "10 descargas diarias", "Sin anuncios", "Soporte por email"],
       color: "text-pink-500",
+      starPrice: 100,
+      slug: "patrocinador",
     },
     {
       name: t("donate_tier_vip_name"),
@@ -45,6 +49,8 @@ export default function DonatePage() {
       features: ["Búsqueda avanzada", "25 descargas diarias", "Sin anuncios", "Soporte prioritario"],
       color: "text-primary",
       popular: true,
+      starPrice: 250,
+      slug: "vip",
     },
     {
       name: t("donate_tier_premium_name"),
@@ -59,8 +65,43 @@ export default function DonatePage() {
         "Soporte 24/7",
       ],
       color: "text-yellow-500",
+      starPrice: 500,
+      slug: "premium",
     },
   ]
+
+  const handleStarsPayment = async (tier: Tier) => {
+    if (!tier.starPrice || !tier.slug) return
+
+    try {
+      const response = await fetch("/api/bot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-telegram-init-data": (window as any).Telegram?.WebApp?.initData || "",
+        },
+        body: JSON.stringify({
+          action: "create_stars_invoice",
+          data: {
+            tier: tier.slug,
+            amount: tier.starPrice,
+          },
+        }),
+      })
+
+      const result = await response.json()
+      if (result.invoiceLink) {
+        ; (window as any).Telegram?.WebApp?.openInvoice(result.invoiceLink, (status: string) => {
+          if (status === "paid") {
+            // El bot enviará un mensaje de éxito, pero podemos avisar aquí también
+            alert("¡Pago con Estrellas exitoso!")
+          }
+        })
+      }
+    } catch (error) {
+      console.error("Error creating stars invoice:", error)
+    }
+  }
 
   return (
     <AccessGuard>
@@ -121,12 +162,26 @@ export default function DonatePage() {
                     ))}
                   </ul>
 
-                  <Button
-                    className={`w-full ${tier.popular ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-secondary text-secondary-foreground hover:bg-secondary/90"}`}
-                    disabled={tier.price === t("donate_tier_lector_price")}
-                  >
-                    {tier.price === t("donate_tier_lector_price") ? "Tu Plan Actual" : `Mejorar a ${tier.name}`}
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      className={`w-full ${tier.popular ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-secondary text-secondary-foreground hover:bg-secondary/90"}`}
+                      disabled={tier.price === t("donate_tier_lector_price")}
+                    >
+                      {tier.price === t("donate_tier_lector_price")
+                        ? "Tu Plan Actual"
+                        : `${t("web_donate_stars_btn") || "Pagar con Estrellas ⭐️"}`}
+                    </Button>
+
+                    {tier.starPrice && (
+                      <Button
+                        variant="outline"
+                        className="w-full border-primary/20 hover:bg-primary/5"
+                        onClick={() => handleStarsPayment(tier)}
+                      >
+                        ⭐️ {tier.starPrice} Estrellas
+                      </Button>
+                    )}
+                  </div>
                 </Card>
               )
             })}

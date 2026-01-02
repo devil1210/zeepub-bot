@@ -594,10 +594,26 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "Patrocinador",
     },
-    "web_donate_tier_patrocinador_price": {
-        "desc": "Web: Precio nivel Patrocinador",
+    "web_donate_tier_premium_downloads": {
+        "desc": "Web: Descargas nivel Premium",
         "vars": [],
-        "default": "$2/mes",
+        "default": "Ilimitado",
+    },
+    # --- Telegram Stars ---
+    "star_payment_invoice_desc": {
+        "desc": "Stars: Descripción de la factura",
+        "vars": ["Nivel"],
+        "default": "Suscripción al nivel [Nivel] de ZeePubBot",
+    },
+    "star_payment_success": {
+        "desc": "Stars: Mensaje de pago exitoso",
+        "vars": ["Nivel", "Nombre"],
+        "default": "🌟 ¡Gracias [Nombre]! Has desbloqueado el nivel <b>[Nivel]</b> con éxito usando Telegram Stars.\n\nDisfruta de tus beneficios.",
+    },
+    "web_donate_stars_btn": {
+        "desc": "Web: Botón de pago con Estrellas",
+        "vars": [],
+        "default": "Pagar con Estrellas ⭐️",
     },
     "web_donate_tier_patrocinador_downloads": {
         "desc": "Web: Descargas nivel Patrocinador",
