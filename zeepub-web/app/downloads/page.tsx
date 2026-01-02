@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Download, CheckCircle, Clock, FileText } from "lucide-react"
+import { Download, CheckCircle, Clock, FileText, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { callBotAPI } from "@/lib/api"
 import { useStrings } from "@/components/strings-provider"
@@ -92,9 +92,7 @@ export default function DownloadsPage() {
     return (
       <AccessGuard>
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <TransparentHeader />
-
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
         </div>
       </AccessGuard>
     )

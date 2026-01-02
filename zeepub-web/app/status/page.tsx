@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, Clock, TrendingUp } from "lucide-react"
+import { Download, Clock, TrendingUp, Loader2 } from "lucide-react"
 
 import Link from "next/link"
 import { AccessGuard } from "@/components/access-guard"
@@ -53,7 +53,7 @@ export default function StatusPage() {
         <div className="min-h-screen bg-background flex items-center justify-center">
           <TransparentHeader />
 
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
         </div>
       </AccessGuard>
     )
