@@ -105,10 +105,7 @@ export default function SearchPage() {
   }
 
   const handleBookClick = (book: Book) => {
-    if (book.is_folder && book.subsection_url) {
-      // Use window.location.href to avoid history issues with deep links in catalog
-      window.location.href = `/catalog?feed_url=${encodeURIComponent(book.subsection_url)}`
-    } else if (book.detail_url) {
+    if (book.detail_url) {
       // Save current search state before navigating
       sessionStorage.setItem("search-state", JSON.stringify({
         query: searchQuery,
@@ -117,6 +114,9 @@ export default function SearchPage() {
         prevPage: pagination.prevPage
       }))
       router.push(`/book?id=${encodeURIComponent(book.detail_url)}`)
+    } else if (book.is_folder && book.subsection_url) {
+      // Use window.location.href to avoid history issues with deep links in catalog
+      window.location.href = `/catalog?feed_url=${encodeURIComponent(book.subsection_url)}`
     }
   }
 
@@ -161,8 +161,7 @@ export default function SearchPage() {
               <Card
                 key={book.id}
                 onClick={() => handleBookClick(book)}
-                className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group animate-in fade-in slide-in-from-bottom-2 duration-300"
-                style={{ animationDelay: `${index * 50}ms` }}
+                className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
               >
                 <div className="flex gap-4">
                   <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
