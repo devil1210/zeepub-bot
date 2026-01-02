@@ -32,7 +32,6 @@ interface PaginationState {
 
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
-import { CatalogSkeleton } from "@/components/catalog-skeleton"
 import { Loader2 } from "lucide-react"
 
 export default function SearchPage() {
@@ -149,7 +148,11 @@ export default function SearchPage() {
 
           {/* Results */}
           <div className="space-y-3">
-            {isLoading && books.length === 0 && <CatalogSkeleton />}
+            {isLoading && books.length === 0 && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              </div>
+            )}
 
             {isLoading && books.length > 0 && (
               <div className="h-1 w-full bg-primary/10 overflow-hidden rounded-full mb-4">
