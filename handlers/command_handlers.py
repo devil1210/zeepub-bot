@@ -70,6 +70,18 @@ class CommandHandlers:
         # Capturar message_thread_id para soporte de topics
         thread_id = get_thread_id(update)
 
+        # API 9.3: Soporte para tópicos en chat privado
+        bot_user_dict = update.effective_user.to_dict()
+        has_topics = bot_user_dict.get("has_topics_enabled", False)
+        
+        if has_topics:
+            from services.topic_service import topic_service
+            # Asegurar que los tópicos existan y obtener el ID del tópico "Sistema" para la bienvenida
+            topic_ids = await topic_service.ensure_topics(context.bot, uid)
+            if topic_ids:
+                # Si hay tópicos, redirigimos el mensaje de bienvenida al tópico "Sistema"
+                thread_id = topic_ids.get("sistema", thread_id)
+
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
