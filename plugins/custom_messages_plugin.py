@@ -573,6 +573,67 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "ℹ️ <b>Comando: /revoke_group</b>\n\n📝 <b>Descripción:</b>\nRevoca la autorización del bot en un grupo.\n\n⌨️ <b>Uso:</b> <code>/revoke_group [chat_id]</code>\n💡 <b>Ejemplo:</b> <code>/revoke_group</code>",
     },
+    # --- Mini App Donation Tiers ---
+    "web_donate_tier_lector_name": {
+        "desc": "Web: Nombre nivel Lector",
+        "vars": [],
+        "default": "Lector",
+    },
+    "web_donate_tier_lector_price": {
+        "desc": "Web: Precio nivel Lector",
+        "vars": [],
+        "default": "Gratis",
+    },
+    "web_donate_tier_lector_downloads": {
+        "desc": "Web: Descargas nivel Lector",
+        "vars": [],
+        "default": "5 al día",
+    },
+    "web_donate_tier_patrocinador_name": {
+        "desc": "Web: Nombre nivel Patrocinador",
+        "vars": [],
+        "default": "Patrocinador",
+    },
+    "web_donate_tier_patrocinador_price": {
+        "desc": "Web: Precio nivel Patrocinador",
+        "vars": [],
+        "default": "$2/mes",
+    },
+    "web_donate_tier_patrocinador_downloads": {
+        "desc": "Web: Descargas nivel Patrocinador",
+        "vars": [],
+        "default": "10 al día",
+    },
+    "web_donate_tier_vip_name": {
+        "desc": "Web: Nombre nivel VIP",
+        "vars": [],
+        "default": "VIP",
+    },
+    "web_donate_tier_vip_price": {
+        "desc": "Web: Precio nivel VIP",
+        "vars": [],
+        "default": "$8/mes",
+    },
+    "web_donate_tier_vip_downloads": {
+        "desc": "Web: Descargas nivel VIP",
+        "vars": [],
+        "default": "25 al día",
+    },
+    "web_donate_tier_premium_name": {
+        "desc": "Web: Nombre nivel Premium",
+        "vars": [],
+        "default": "Premium",
+    },
+    "web_donate_tier_premium_price": {
+        "desc": "Web: Precio nivel Premium",
+        "vars": [],
+        "default": "$12/mes",
+    },
+    "web_donate_tier_premium_downloads": {
+        "desc": "Web: Descargas nivel Premium",
+        "vars": [],
+        "default": "Ilimitado",
+    },
     "help_cmd_set_group_welcome": {
         "desc": "Ayuda: /set_group_welcome",
         "vars": [],
@@ -1484,139 +1545,118 @@ class CustomMessagesPlugin(BasePlugin):
         if update.effective_user.id not in config.ADMIN_USERS:
             return
 
+        # 1. Check for arguments: Could be a SLUG to preview or a PAGE NUMBER to navigate
         if context.args:
-            # Preview mode
-            slug = context.args[0].lower()
-            msg = self._get_message(slug)
-
-            # Logic to find text to preview:
-            # 1. DB Content
-            # 2. Registry Default
-            text_to_preview = None
-            source = "database"
-
-            if msg and msg.text_content:
-                text_to_preview = msg.text_content
-            else:
-                # Check registry
-                entry = TEMPLATE_REGISTRY.get(slug)
-                if entry and "default" in entry:
-                    text_to_preview = entry["default"]
-                    source = "default"
-
-            if not text_to_preview:
-                await update.message.reply_text(
-                    "❌ Mensaje no encontrado (ni en base de datos ni por defecto)."
-                )
+            target = context.args[0].lower()
+            
+            # Try to see if it's a page number first
+            try:
+                page = int(target)
+                await self._show_message_list(update, context, page)
+                return
+            except ValueError:
+                # Not a number, assume it's a slug for preview
+                await self._preview_message(update, context, target)
                 return
 
-            # Check for optional target_uid for variable replacement testing
-            target_uid = None
-            if len(context.args) > 1:
+        # 2. No arguments: show first page of list
+        await self._show_message_list(update, context, 1)
+
+    async def _preview_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE, slug: str):
+        """Internal helper to preview a specific message by slug."""
+        msg = self._get_message(slug)
+        entry = TEMPLATE_REGISTRY.get(slug)
+
+        text_content = None
+        source = "database"
+
+        if msg and msg.text_content:
+            text_content = msg.text_content
+        elif entry and "default" in entry:
+            text_content = entry["default"]
+            source = "default"
+
+        if not text_content and not (msg and not msg.text_content):
+            await update.message.reply_text(f"❌ Mensaje '{slug}' no encontrado.")
+            return
+
+        # Check for optional target_uid for variable replacement testing
+        target_uid = None
+        if len(context.args) > 1:
+            try:
+                target_uid = int(context.args[1])
+            except ValueError:
+                pass
+
+        if target_uid:
+            try:
+                user = None
                 try:
-                    target_uid = int(context.args[1])
-                except ValueError:
-                    pass
+                    member = await context.bot.get_chat_member(update.effective_chat.id, target_uid)
+                    user = member.user
+                except Exception:
+                    chat = await context.bot.get_chat(target_uid)
+                    user = chat
 
-            # If we have text content (either from DB or default) and target for replacement
-            if target_uid:
-                try:
-                    # Get user info to replace [Nombre]
-                    try:
-                        member = await context.bot.get_chat_member(
-                            update.effective_chat.id, target_uid
-                        )
-                        user = member.user
-                    except Exception:
-                        chat = await context.bot.get_chat(target_uid)
-                        user = chat
-
-                    first_name = user.first_name if user else "Usuario"
-                    safe_name = html.escape(first_name)
-
-                    # Use get_text. Note: we don't pass default_text because we already resolved it or it's in registry
-                    # But actually get_text will resolve it again if we pass just the slug.
-                    # It's better to rely on get_text's internal resolution to be consistent.
-                    text_sent = await self.get_text(slug, user=user)
-
-                    await context.bot.send_message(
-                        chat_id=update.effective_chat.id,
-                        text=text_sent,
-                        parse_mode=ParseMode.HTML,
-                        message_thread_id=get_thread_id(update),
-                    )
-                    return
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to test vars in list_msge: {e} - Falling back to simple preview"
-                    )
-
-            # Simple preview (raw text) or copy if it was a multimedia message in DB
-            # If source is default, we just send message.
-            # If source is DB and has text_content, we send message.
-            # If source is DB and multimedia (no text_content but has IDs), we copy.
-
-            if source == "default" or (msg and msg.text_content):
-                # Send text representation
-                prefix = (
-                    "⚠️ <b>Mensaje por defecto:</b>\n\n"
-                    if source == "default"
-                    else f"📂 <b>Mensaje Personalizado ({slug}):</b>\n\n"
-                )
-
-                # Render keys to show placeholders? Or just raw?
-                # Let's show raw but maybe escaped to not break HTML?
-                # Actually user wants to see the structure.
-                # Use get_text with NO user to see raw placeholders?
-                # get_text replaces global vars always if we don't pass them? No, only if user object passed?
-                # let's just show text_to_preview raw.
-
+                text_sent = await self.get_text(slug, user=user)
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    text=f"{prefix}{html.escape(text_to_preview)}",
+                    text=text_sent,
                     parse_mode=ParseMode.HTML,
                     message_thread_id=get_thread_id(update),
                 )
-            elif msg:
-                # Multimedia copy fallback
-                try:
-                    await context.bot.copy_message(
-                        chat_id=update.effective_chat.id,
-                        from_chat_id=msg.source_chat_id,
-                        message_id=msg.source_message_id,
-                        message_thread_id=get_thread_id(update),
-                    )
-                except Exception as e:
-                    await update.message.reply_text(
-                        f"❌ Error al previsualizar (¿Mensaje original borrado?): {e}"
-                    )
-            return
+                return
+            except Exception as e:
+                logger.warning(f"Preview test vars failed: {e}")
 
-        # List mode
-        # Show both DB keys and Registry keys
+        if source == "default" or (msg and msg.text_content):
+            prefix = "⚠️ <b>Por defecto:</b>\n" if source == "default" else f"📂 <b>Personalizado ({slug}):</b>\n"
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=f"{prefix}\n{html.escape(text_content)}",
+                parse_mode=ParseMode.HTML,
+                message_thread_id=get_thread_id(update),
+            )
+        elif msg:
+            # Multimedia
+            try:
+                await context.bot.copy_message(
+                    chat_id=update.effective_chat.id,
+                    from_chat_id=msg.source_chat_id,
+                    message_id=msg.source_message_id,
+                    message_thread_id=get_thread_id(update),
+                )
+            except Exception as e:
+                await update.message.reply_text(f"❌ Error al previsualizar multimedia: {e}")
+
+    async def _show_message_list(self, update: Update, context: ContextTypes.DEFAULT_TYPE, page: int):
+        """Internal helper to show a paginated list of slugs."""
         msgs_db = self._list_messages()
         db_slugs = {m.slug for m in msgs_db}
         registry_slugs = set(TEMPLATE_REGISTRY.keys())
-
         all_slugs = sorted(db_slugs.union(registry_slugs))
 
         if not all_slugs:
             await update.message.reply_text("📭 No hay mensajes disponibles.")
             return
 
-        text = "📂 <b>Mensajes Disponibles:</b>\n\n"
-        for s in all_slugs:
-            icon = "🔹"
-            extra = ""
-            if s in db_slugs:
-                icon = "💾"  # Personalizado
-            elif s in registry_slugs:
-                icon = "📄"  # Por defecto
+        page_size = 20
+        total_pages = (len(all_slugs) + page_size - 1) // page_size
+        page = max(1, min(page, total_pages))
+        
+        start_idx = (page - 1) * page_size
+        paged_slugs = all_slugs[start_idx:start_idx + page_size]
 
-            text += f"{icon} <code>{s}</code>{extra}\n"
+        text = f"📂 <b>Mensajes Disponibles</b> (Pág {page}/{total_pages})\n\n"
+        for s in paged_slugs:
+            icon = "💾" if s in db_slugs else "📄"
+            text += f"{icon} <code>{s}</code>\n"
 
-        text += "\n💾 = Personalizado, 📄 = Por defecto"
-        text += "\nUsa <code>/list_msge &lt;id&gt;</code> para ver contenido."
+        text += f"\nTotal: {len(all_slugs)}\n"
+        text += "💾=PS, 📄=DEF\n"
+        text += "📝 <code>/list_msge &lt;id&gt;</code>\n"
+        text += "📑 <code>/list_msge &lt;pág&gt;</code>"
+        
         await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
     async def view_msge(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
