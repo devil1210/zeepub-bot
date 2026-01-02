@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.13.2] - 2026-01-01
+
+### Fixed
+- **Emergency Fix**: Resuelto el error crítico `ImportError: cannot import name 'user_repo'` que impedía el funcionamiento de las búsquedas y descargas en el chat del bot. Se ha estandarizado la exportación del singleton `user_repo` desde su repositorio correspondiente.
+
 ## [4.13.1] - 2026-01-01
 
 ### Fixed

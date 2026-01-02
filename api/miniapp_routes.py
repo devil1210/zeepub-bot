@@ -577,7 +577,8 @@ async def check_user_access(
     request: AccessCheckRequest,
     user_data: Dict[str, Any] = Depends(get_current_user_data)
 ):
-    from services.user_service import get_effective_user, user_repo
+    from services.user_service import get_effective_user
+    from repositories.user_repository import user_repo
 
     current_uid = user_data.get("user_id", 0)
     # Priorizar el ID verificado por Telegram
@@ -629,7 +630,7 @@ async def get_levels(
 ):
 
     logger.info("Fetching all access levels")
-    from services.user_service import user_repo
+    from repositories.user_repository import user_repo
     levels = await user_repo.get_all_levels()
 
     logger.info(f"Found {len(levels)} access levels")
@@ -643,7 +644,7 @@ async def update_levels(
     user_data: Dict[str, Any] = Depends(require_admin)
 ):
 
-    from services.user_service import user_repo
+    from repositories.user_repository import user_repo
     for level in request.levels:
         await user_repo.update_level_access(int(level.id), level.hasAccess)
 

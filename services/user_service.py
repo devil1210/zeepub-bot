@@ -2,13 +2,11 @@ import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from config.config_settings import config
-from repositories.user_repository import UserRepository
+from repositories.user_repository import UserRepository, user_repo
 from services.cache_service import AsyncTTLCache
 
 logger = logging.getLogger(__name__)
 
-# Singleton repository instance
-user_repo = UserRepository()
 # Cache for user info (1 hour) - changed from 5 minutes for high-volume bot (1000+ msg/sec)
 user_cache = AsyncTTLCache(ttl_seconds=3600)
 

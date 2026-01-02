@@ -300,3 +300,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             except Exception:
                 return None
         return None
+
+
+# Singleton instance
+user_repo = UserRepository()
