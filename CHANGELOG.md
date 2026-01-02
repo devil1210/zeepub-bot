@@ -5,6 +5,19 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.12.0] - 2026-01-01
+
+### Añadido
+- **Telegram Bot API 9.3 Compatibility**: Integración completa con las novedades del 31 de diciembre de 2025.
+- **Topics in Private Chats**: Organización de la interacción en hilos separados (Catálogo, Mis Libros, Donaciones, Sistema) en el chat privado con el bot.
+- **Telegram Stars Integration**: Soporte nativo para donaciones y mejoras de nivel usando Estrellas de Telegram.
+- **Streaming Feedback**: Introducción de `sendMessageDraft` para mostrar el progreso de búsqueda en tiempo real.
+- **User Verification**: Nuevo comando `/verify` para que administradores gestionen el estado verificado de Telegram para el staff.
+- **Persistence**: Nueva columna `settings` en la base de datos de usuarios para configuración personalizada y persistencia de tópicos.
+
+### Fixed
+- Enrutamiento mejorado de mensajes según el contexto del tópico.
+
 ## [v4.11.3] - 2026-01-01
 ### Added
 - Pagination for the `/list_msge` command in `CustomMessagesPlugin`, improving performance and readability.
