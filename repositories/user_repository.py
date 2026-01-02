@@ -20,12 +20,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
     async def get_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
         async with self.db.connection() as conn:
             cursor = await conn.execute(
-                "SELECT role, expires_at, custom_status, nickname, settings FROM users WHERE telegram_id = ?",
+                "SELECT role, expires_at, custom_status, nickname, settings, total_downloads FROM users WHERE telegram_id = ?",
                 (telegram_id,),
             )
             row = await cursor.fetchone()
             if row:
-                role, expires_at_raw, custom_status, nickname, settings_raw = row
+                role, expires_at_raw, custom_status, nickname, settings_raw, total_downloads = row
                 expires_at = self._parse_datetime(expires_at_raw)
                 import json
                 try:
@@ -40,6 +40,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "custom_status": custom_status,
                     "nickname": nickname,
                     "settings": settings,
+                    "total_downloads": total_downloads or 0,
                 }
             return None
 
@@ -272,6 +273,21 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 (settings_json, telegram_id),
             )
             await conn.commit()
+
+    async def increment_download_count(self, telegram_id: int) -> int:
+        """Incrementa el contador total de descargas de un usuario y retorna el nuevo valor."""
+        async with self.db.connection() as conn:
+            await conn.execute(
+                "UPDATE users SET total_downloads = total_downloads + 1 WHERE telegram_id = ?",
+                (telegram_id,),
+            )
+            cursor = await conn.execute(
+                "SELECT total_downloads FROM users WHERE telegram_id = ?",
+                (telegram_id,),
+            )
+            row = await cursor.fetchone()
+            await conn.commit()
+            return row[0] if row else 0
 
     def _parse_datetime(self, val: Any) -> Optional[datetime]:
         if not val:

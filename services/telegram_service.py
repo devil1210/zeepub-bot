@@ -709,6 +709,21 @@ async def descargar_epub_pendiente(
 
         # Registrar descarga
         record_download(uid)
+        
+        # Gamificación: Incrementar contador y verificar hitos
+        from services.user_service import increment_download_count, check_milestones
+        await increment_download_count(uid)
+        milestone_msg = await check_milestones(uid, context)
+        if milestone_msg:
+            try:
+                await bot.send_message(
+                    chat_id=destino,
+                    text=milestone_msg,
+                    parse_mode="HTML",
+                    message_thread_id=thread_id_destino
+                )
+            except Exception as e:
+                logger.warning(f"Error enviando mensaje de hito: {e}")
 
         # Registrar en historial de descargas
         try:

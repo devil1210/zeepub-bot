@@ -5,6 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.13.0] - 2026-01-01
+
+### Añadido
+- **Gamificación (Milestones)**: Nuevo sistema de logros y "regalos" automáticos al alcanzar 10, 50 y 100 descargas totales.
+- **Streaming Search (Bot Chat)**: Implementación de `sendMessageDraft` para búsquedas dentro del chat del bot, mejorando la percepción de velocidad.
+- **Tópico de Búsquedas**: Hilo dedicado "🔍 Búsquedas" en chats con temas activados para organizar mejor los resultados y mantener limpio el historial.
+- **Persistencia de Descargas**: Nueva columna `total_downloads` para seguimiento histórico de actividad del usuario.
+
 ## [4.12.0] - 2026-01-01
 
 ### Añadido

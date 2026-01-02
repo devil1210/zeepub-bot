@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 TOPICS_SCHEMA = {
     "catalogo": "📂 Catálogo",
+    "busquedas": "🔍 Búsquedas",
     "mis_libros": "📚 Mis Libros",
     "donaciones": "💎 Donaciones",
     "sistema": "⚙️ Sistema",

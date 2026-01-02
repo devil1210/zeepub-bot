@@ -231,5 +231,44 @@ async def upgrade_user_level(telegram_id: int, new_level_name: str):
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
+async def increment_download_count(telegram_id: int) -> int:
+    """Incrementa el contador de descargas y retorna el nuevo total."""
+    count = await user_repo.increment_download_count(telegram_id)
+    return count
+
+
+async def check_milestones(uid: int, context) -> Optional[str]:
+    """Verifica si el usuario alcanzó un hito y retorna el mensaje de recompensa."""
+    # This would ideally use templates from the custom_messages plugin
+    user_info = await get_user_info(uid)
+    if not user_info:
+        return None
+
+    count = user_info.get("total_downloads", 0)
+    
+    milestones = {
+        10: "milestone_10_downloads",
+        50: "milestone_50_downloads",
+        100: "milestone_100_downloads",
+    }
+    
+    if count in milestones:
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        slug = milestones[count]
+        
+        # Default messages if plugin not active or template not set
+        defaults = {
+            10: "🎁 ¡Felicidades! Has descargado tus primeros 10 libros. 🎉",
+            50: "🌟 ¡Increíble! Ya llevas 50 libros descargados. Eres un lector apasionado. 📚",
+            100: "👑 ¡Master Lector! 100 libros descargados. ¡Tu biblioteca es legendaria! 🏆",
+        }
+        
+        if cms and cms.enabled:
+            return await cms.get_text(slug, user=None) # user will be handled by plugin if needed
+        return defaults.get(count)
+    
+    return None
+
+
 # Init DB is handled by DatabaseManager/UserRepository instantiation
 # We don't need init_user_db() explicit call here as repo handles connections lazily or via manager

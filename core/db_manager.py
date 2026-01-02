@@ -123,6 +123,14 @@ class DatabaseManager:
             except Exception as e:
                 if "duplicate column" not in str(e).lower():
                     logger.debug(f"Notice during migration (settings): {e}")
+            
+            # Migración: Agregar columna total_downloads si no existe
+            try:
+                await conn.execute("ALTER TABLE users ADD COLUMN total_downloads INTEGER DEFAULT 0")
+                logger.info("Migración: Agregada columna 'total_downloads' a tabla users")
+            except Exception as e:
+                if "duplicate column" not in str(e).lower():
+                    logger.debug(f"Notice during migration (total_downloads): {e}")
 
             await conn.commit()
             logger.info(f"Database initialized and schema verified at {self.db_path}")

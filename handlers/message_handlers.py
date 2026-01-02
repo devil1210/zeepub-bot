@@ -191,10 +191,37 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if st.get("esperando_busqueda"):
         logger.debug(f"Usuario {uid} buscando: {text}")
         st["esperando_busqueda"] = False
-        st["message_thread_id"] = thread_id  # Guardar thread_id
+        
+        # API 9.3: Routing to Búsquedas topic in private forums
+        effective_thread_id = thread_id
+        if chat_type == "private":
+            from services.topic_service import topic_service
+            t_id = await topic_service.get_topic_id(uid, "busquedas")
+            if t_id:
+                effective_thread_id = t_id
+        
+        st["message_thread_id"] = effective_thread_id
+        
+        # API 9.3: Streaming feedback
+        from utils.streaming import send_message_draft
+        draft_id = await send_message_draft(
+            context.bot,
+            update.effective_chat.id,
+            f"🔎 Buscando en catálogos: <i>{html.escape(text)}</i>...",
+            message_thread_id=effective_thread_id
+        )
+        
         search_url = build_search_url(text, uid)
         logger.debug(f"URL de búsqueda: {search_url}")
         feed = await get_cached_feed(search_url)
+        
+        # Finalize draft by deleting it (or resolving it)
+        if draft_id:
+            try:
+                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=draft_id)
+            except Exception:
+                pass
+        
         if not feed or not getattr(feed, "entries", []):
             keyboard = [
                 [InlineKeyboardButton("🔄 Volver a buscar", callback_data="buscar")],
