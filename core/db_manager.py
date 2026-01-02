@@ -116,6 +116,14 @@ class DatabaseManager:
                 if "duplicate column" not in str(e).lower():
                     logger.debug(f"Notice during migration (level_id): {e}")
 
+            # Migración: Agregar columna settings si no existe
+            try:
+                await conn.execute("ALTER TABLE users ADD COLUMN settings TEXT DEFAULT '{}'")
+                logger.info("Migración: Agregada columna 'settings' a tabla users")
+            except Exception as e:
+                if "duplicate column" not in str(e).lower():
+                    logger.debug(f"Notice during migration (settings): {e}")
+
             await conn.commit()
             logger.info(f"Database initialized and schema verified at {self.db_path}")
 

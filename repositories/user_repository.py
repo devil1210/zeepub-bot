@@ -20,19 +20,26 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
     async def get_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
         async with self.db.connection() as conn:
             cursor = await conn.execute(
-                "SELECT role, expires_at, custom_status, nickname FROM users WHERE telegram_id = ?",
+                "SELECT role, expires_at, custom_status, nickname, settings FROM users WHERE telegram_id = ?",
                 (telegram_id,),
             )
             row = await cursor.fetchone()
             if row:
-                role, expires_at_raw, custom_status, nickname = row
+                role, expires_at_raw, custom_status, nickname, settings_raw = row
                 expires_at = self._parse_datetime(expires_at_raw)
+                import json
+                try:
+                    settings = json.loads(settings_raw) if settings_raw else {}
+                except Exception:
+                    settings = {}
+                    
                 return {
                     "telegram_id": telegram_id,
                     "role": role,
                     "expires_at": expires_at,
                     "custom_status": custom_status,
                     "nickname": nickname,
+                    "settings": settings,
                 }
             return None
 
@@ -250,6 +257,21 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 "SELECT 1 FROM admins WHERE user_id = ?", (telegram_id,)
             )
             return await cursor.fetchone() is not None
+
+    async def get_user_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
+        """Alias de get_by_id para consistencia."""
+        return await self.get_by_id(telegram_id)
+
+    async def update_user_settings(self, telegram_id: int, settings: Dict[str, Any]):
+        """Actualiza el campo JSON settings de un usuario."""
+        import json
+        settings_json = json.dumps(settings)
+        async with self.db.connection() as conn:
+            await conn.execute(
+                "UPDATE users SET settings = ? WHERE telegram_id = ?",
+                (settings_json, telegram_id),
+            )
+            await conn.commit()
 
     def _parse_datetime(self, val: Any) -> Optional[datetime]:
         if not val:
