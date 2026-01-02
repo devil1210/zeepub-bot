@@ -5,6 +5,20 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v4.11.3] - 2026-01-01
+### Added
+- Pagination for the `/list_msge` command in `CustomMessagesPlugin`, improving performance and readability.
+- Registration of donation tier strings in the template registry for easy customization via bot commands.
+
+### Changed
+- Migrated hardcoded donation tier information to dynamic localized strings in `lib/strings.ts`.
+- Removed all entry animations (`animate-in`, `fade-in`, etc.) to improve perceived speed and responsiveness.
+- Improved button contrast on the Donation page for better visibility.
+- Updated all loading spinners to use `Loader2` and ensured they are perfectly centered across all pages.
+
+### Fixed
+- Corrected search redirection logic to prioritize book details over catalog navigation when clicking search results.
+
 ## [v4.11.2] - 2025-12-27
 ### Fixed
 - Fixed UI flickering effect when scrolling through lists in the Mini App.
