@@ -21,7 +21,6 @@ import { useStrings } from "@/components/strings-provider"
 
 import { Pagination } from "@/components/pagination"
 import { TransparentHeader } from "@/components/transparent-header"
-import { CatalogSkeleton } from "@/components/catalog-skeleton"
 
 function CatalogContent() {
     const [currentFeed, setCurrentFeed] = useState<OPDSFeed | null>(null)
@@ -236,7 +235,7 @@ function CatalogContent() {
     if (isLoading && !currentFeed) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center p-4">
-                <CatalogSkeleton />
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
         )
     }
