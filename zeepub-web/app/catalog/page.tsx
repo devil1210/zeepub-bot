@@ -251,7 +251,7 @@ function CatalogContent() {
                         variant="default"
                         size="sm"
                         onClick={handleGoBack}
-                        className="mb-4 bg-primary hover:bg-primary/90 animate-in fade-in duration-300"
+                        className="mb-4 bg-primary hover:bg-primary/90"
                     >
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         {t("catalog_back")}
@@ -260,7 +260,7 @@ function CatalogContent() {
 
                 {/* Feed title */}
                 {currentFeed?.title && (
-                    <div className="pb-2 animate-in fade-in slide-in-from-left-4 duration-300">
+                    <div className="pb-2">
                         <h1 className="text-lg font-semibold text-foreground">{currentFeed.title}</h1>
                     </div>
                 )}
@@ -268,7 +268,7 @@ function CatalogContent() {
                 {isLoading && (
                     <div className="py-4">
                         <div className="h-1 w-full bg-primary/10 overflow-hidden rounded-full mb-4">
-                            <div className="h-full bg-primary animate-progress-loading w-full" />
+                            <div className="h-full bg-primary w-full" />
                         </div>
                     </div>
                 )}
@@ -284,8 +284,7 @@ function CatalogContent() {
                             <Card
                                 key={entry.id}
                                 onClick={() => handleBookClick(entry)}
-                                className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2 duration-300"
-                                style={{ animationDelay: `${index * 50}ms` }}
+                                className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98]"
                             >
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden">
@@ -316,8 +315,7 @@ function CatalogContent() {
                             <Card
                                 key={entry.id}
                                 onClick={() => handleBookClick(entry)}
-                                className="p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2 duration-300"
-                                style={{ animationDelay: `${index * 50}ms` }}
+                                className="p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98]"
                             >
                                 <div className="flex gap-4">
                                     <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
