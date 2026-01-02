@@ -284,6 +284,13 @@ async def publicar_libro(
         # Solo usar thread_id si destino == chat_origen
         thread_id_destino = thread_id_origen if destino == chat_origen else None
 
+        # API 9.3: Si es chat privado y es el origen, usar tópico de Catálogo
+        if uid == destino:
+            from services.topic_service import topic_service
+            topic_id = await topic_service.get_topic_id(uid, "catalogo")
+            if topic_id:
+                thread_id_destino = topic_id
+
         # Verificar límite antes de descargar
         if not await can_download(uid):
             await bot.send_message(
@@ -537,6 +544,13 @@ async def descargar_epub_pendiente(
 
     # Solo usar thread_id si destino == chat_origen
     thread_id_destino = thread_id_origen if destino == chat_origen else None
+
+    # API 9.3: Si es chat privado y es el origen, usar tópico de 'Mis Libros' para el archivo
+    if uid == destino:
+        from services.topic_service import topic_service
+        topic_id = await topic_service.get_topic_id(uid, "mis_libros")
+        if topic_id:
+            thread_id_destino = topic_id
 
     # Identificar si es grupo
     is_group = update.effective_chat.type in ("group", "supergroup")
