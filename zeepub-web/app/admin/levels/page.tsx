@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
-import { Shield, Save, Loader2, CheckCircle } from "lucide-react"
+import { Shield, Save, CheckCircle } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useAccessControl, type UserLevel } from "@/hooks/use-access-control"
 import { useRouter } from "next/navigation"
 import { TransparentHeader } from "@/components/transparent-header"
@@ -80,8 +81,22 @@ export default function AccessControlPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="min-h-screen bg-background pt-safe">
+                <TransparentHeader />
+                <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+                    <Skeleton className="h-14 w-full rounded-lg" />
+                    <div className="space-y-4">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <Card key={i} className="p-4 border-border flex items-center justify-between">
+                                <div className="space-y-2">
+                                    <Skeleton className="h-5 w-32" />
+                                    <Skeleton className="h-4 w-24" />
+                                </div>
+                                <Skeleton className="h-6 w-12 rounded-full" />
+                            </Card>
+                        ))}
+                    </div>
+                </div>
             </div>
         )
     }
@@ -136,7 +151,7 @@ export default function AccessControlPage() {
                         <Button onClick={handleSave} disabled={saving || saved} className="w-full" size="lg">
                             {saving ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    <div className="w-4 h-4 mr-2 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                                     Guardando...
                                 </>
                             ) : saved ? (

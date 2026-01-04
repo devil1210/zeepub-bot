@@ -9,10 +9,10 @@ import {
     Folder,
     ChevronRight,
     ChevronLeft,
-    Loader2,
     BookOpen,
     Download,
 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { OpdsClient } from "@/lib/opds-client"
 import { OPDSFeed, OPDSEntry, OPDSLink } from "@/lib/opds-types"
 import { callBotAPI } from "@/lib/api"
@@ -234,8 +234,22 @@ function CatalogContent() {
 
     if (isLoading && !currentFeed) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-4">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <div className="min-h-screen bg-background pt-safe">
+                <TransparentHeader />
+                <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+                    <Skeleton className="h-10 w-48 mb-6" />
+                    <div className="grid grid-cols-2 gap-4">
+                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                            <div key={i} className="space-y-3">
+                                <Skeleton className="aspect-[3/4] w-full rounded-xl" />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-3 w-2/3" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         )
     }
@@ -379,7 +393,18 @@ function CatalogContent() {
 
 export default function CatalogPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>}>
+        <Suspense fallback={
+            <div className="min-h-screen bg-background pt-safe p-4 w-full h-full">
+                <div className="max-w-2xl mx-auto space-y-4">
+                    <Skeleton className="h-10 w-48" />
+                    <div className="grid grid-cols-2 gap-4">
+                        {[1, 2, 3, 4].map(i => (
+                            <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        }>
             <CatalogContent />
         </Suspense>
     )

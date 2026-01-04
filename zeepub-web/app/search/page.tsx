@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, BookOpen, ChevronRight, Download } from "lucide-react"
+import { Search, Download, FileText, User, Library, ChevronRight, BookOpen } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { useStrings } from "@/components/strings-provider"
@@ -141,7 +142,7 @@ export default function SearchPage() {
                 />
               </div>
               <Button onClick={() => handleSearch()} disabled={isLoading} className="h-12 px-6 bg-primary hover:bg-primary/90">
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("search_button")}
+                {isLoading ? <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : t("search_button")}
               </Button>
             </div>
           </div>
@@ -149,8 +150,20 @@ export default function SearchPage() {
           {/* Results */}
           <div className="space-y-3">
             {isLoading && books.length === 0 && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Card key={i} className="p-4 border-border flex gap-4">
+                    <Skeleton className="w-16 h-24 rounded-lg flex-shrink-0" />
+                    <div className="flex-1 space-y-2 py-1">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                      <div className="flex gap-2 pt-1">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
             )}
 

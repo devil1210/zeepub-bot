@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Download, CheckCircle, Clock, FileText, Loader2 } from "lucide-react"
+import { Download, CheckCircle, Clock, FileText } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { callBotAPI } from "@/lib/api"
 import { useStrings } from "@/components/strings-provider"
@@ -91,8 +92,37 @@ export default function DownloadsPage() {
   if (loading) {
     return (
       <AccessGuard>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+        <div className="min-h-screen bg-background">
+          <TransparentHeader />
+          <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+            {/* Stats Skeleton */}
+            <Card className="p-6 border-border">
+              <div className="flex items-center justify-between mb-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <Skeleton className="w-10 h-10 rounded-full" />
+              </div>
+              <Skeleton className="h-2 w-full rounded-full" />
+            </Card>
+
+            {/* History Skeleton */}
+            <div className="space-y-4">
+              <Skeleton className="h-6 w-40" />
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i} className="p-4 border-border">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2 w-full">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                    <Skeleton className="w-8 h-8 rounded-lg" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       </AccessGuard>
     )

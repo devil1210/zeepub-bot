@@ -4,7 +4,8 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2 } from "lucide-react"
+import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { useStrings } from "@/components/strings-provider"
@@ -88,10 +89,38 @@ function BookDetailContent() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-background flex flex-col items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-                    <p className="text-muted-foreground">{t("book_loading")}</p>
+            <div className="min-h-screen bg-background pt-safe">
+                <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
+                    <Skeleton className="h-10 w-24 rounded-lg" />
+
+                    <div className="flex flex-col md:flex-row gap-8 items-start">
+                        {/* Cover Skeleton */}
+                        <Skeleton className="w-56 aspect-[3/4] rounded-2xl mx-auto shadow-2xl flex-shrink-0" />
+
+                        <div className="flex-1 space-y-6 w-full">
+                            <div className="space-y-3">
+                                <Skeleton className="h-10 w-full" />
+                                <Skeleton className="h-10 w-2/3" />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Skeleton className="h-6 w-48" />
+                                <Skeleton className="h-6 w-32" />
+                            </div>
+
+                            <Skeleton className="h-14 w-full rounded-2xl" />
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 pt-4">
+                        <Skeleton className="h-6 w-32" />
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
+                        </div>
+                    </div>
                 </div>
             </div>
         )
@@ -230,8 +259,12 @@ function BookDetailContent() {
 export default function BookDetailPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            <div className="min-h-screen bg-background pt-safe flex flex-col items-center justify-center p-6 space-y-4">
+                <Skeleton className="w-48 h-64 rounded-2xl mx-auto shadow-xl" />
+                <div className="space-y-2 w-full max-w-xs">
+                    <Skeleton className="h-6 w-3/4 mx-auto" />
+                    <Skeleton className="h-4 w-1/2 mx-auto" />
+                </div>
             </div>
         }>
             <BookDetailContent />
