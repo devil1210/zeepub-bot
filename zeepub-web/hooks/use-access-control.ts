@@ -15,6 +15,7 @@ export function useAccessControl() {
 
     return {
         isAdmin: !!isAdmin,
+        hasAccess: !!hasAccess,
         loading: !isReady || isAdmin === null || hasAccess === null,
         user
     }

@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, Clock, TrendingUp, Loader2 } from "lucide-react"
+import { Download, Clock, TrendingUp } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 import Link from "next/link"
 import { AccessGuard } from "@/components/access-guard"
@@ -50,10 +51,49 @@ export default function StatusPage() {
   if (loading) {
     return (
       <AccessGuard>
-        <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="min-h-screen bg-background">
           <TransparentHeader />
+          <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+            {/* User Level Skeleton */}
+            <Card className="p-6 border-border">
+              <div className="flex items-center gap-4 mb-4">
+                <Skeleton className="w-16 h-16 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+            </Card>
 
-          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            {/* Download Stats Skeleton */}
+            <Card className="p-6 border-border">
+              <div className="flex items-center justify-between mb-6">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="w-5 h-5 rounded-full" />
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between mb-2">
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-4 w-12" />
+                </div>
+                <Skeleton className="h-2 w-full rounded-full" />
+                <Skeleton className="h-4 w-48 mt-2" />
+              </div>
+            </Card>
+
+            {/* System Status Skeleton */}
+            <Card className="p-6 border-border">
+              <Skeleton className="h-5 w-32 mb-4" />
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between py-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
         </div>
       </AccessGuard>
     )

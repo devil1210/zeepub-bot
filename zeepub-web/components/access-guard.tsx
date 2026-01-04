@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useAccessControl } from "@/hooks/use-access-control"
-import { Loader2 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
@@ -19,11 +19,9 @@ export function AccessGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Verificando acceso...</p>
-        </div>
+      <div className="min-h-screen bg-background p-6 space-y-4">
+        <Skeleton className="h-12 w-3/4 mx-auto rounded-xl" />
+        <Skeleton className="h-4 w-1/2 mx-auto" />
       </div>
     )
   }

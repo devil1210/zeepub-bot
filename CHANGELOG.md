@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.13.3] - 2026-01-01
+
+### Fixed
+- **Mini App UI**: Corregido el alineamiento del icono de carga en la página de Estado (ya no se desplaza a la derecha).
+- **Mini App UI**: Reemplazados los indicadores de carga circulares (`Loader2`) por cargadores de tipo "esqueleto" (rayas horizontales) en toda la aplicación para una estética más limpia.
+
 ## [4.13.2] - 2026-01-01
 
 ### Fixed
