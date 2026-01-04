@@ -778,6 +778,11 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "Anterior",
     },
+    "web_pagination_up": {
+        "desc": "Web: Botón Subir",
+        "vars": [],
+        "default": "Subir",
+    },
     "web_pagination_next": {
         "desc": "Web: Botón Siguiente",
         "vars": [],

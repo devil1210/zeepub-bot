@@ -6,6 +6,7 @@ export interface AppStrings {
     search_empty: string
     search_prompt: string
     pagination_prev: string
+    pagination_up: string
     pagination_next: string
     book_loading: string
     book_download: string
@@ -85,6 +86,7 @@ export const DEFAULT_STRINGS: AppStrings = {
     search_empty: "No se encontraron resultados",
     search_prompt: "Busca libros por título o autor",
     pagination_prev: "Anterior",
+    pagination_up: "Subir",
     pagination_next: "Siguiente",
     book_loading: "Cargando detalles...",
     book_download: "Descargar",

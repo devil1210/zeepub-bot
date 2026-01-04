@@ -368,14 +368,16 @@ function CatalogContent() {
                     return null
                 })}
 
-                {currentFeed && currentFeed.entries.length > 0 && (
+                {currentFeed && (currentFeed.entries.length > 0 || history.length > 0 || !!currentFeed.links?.some(l => l.rel === "up")) && (
                     <Pagination
                         currentPage={currentFeed.currentPage}
                         totalPages={currentFeed.totalPages}
                         hasNextPage={!!currentFeed.nextPage}
                         hasPrevPage={!!currentFeed.prevPage}
+                        hasUpPage={history.length > 0 || !!currentFeed.links?.some(l => l.rel === "up")}
                         onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
                         onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
+                        onUpPage={handleGoBack}
                         isLoading={isLoading}
                     />
                 )}

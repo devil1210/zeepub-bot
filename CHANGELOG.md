@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.15.0] - 2026-01-04
+
+### Added
+- **Búsqueda Reactiva**: Implementada búsqueda dinámica con debounce. Los resultados comienzan a aparecer automáticamente mientras escribes, replicando el comportamiento premium de versiones anteriores.
+- **Navegación Avanzada**: Barra de navegación de tres botones (**Anterior**, **Subir**, **Siguiente**) integrada en Búsqueda y Catálogo.
+- **Botón "Subir" Inteligente**: Permite navegar jerárquicamente hacia atrás en bibliotecas OPDS o limpiar búsquedas de forma rápida.
+
 ## [4.14.0] - 2026-01-04
 
 ### Added

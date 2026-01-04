@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -45,6 +45,30 @@ export default function SearchPage() {
   const { webApp } = useTelegramContext()
   const { t } = useStrings()
   const router = useRouter()
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null)
+
+  // Replicando funcionalidad v3.13.8: Búsqueda dinámica (debounce)
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setBooks([])
+      setPagination({ currentPage: 1 })
+      return
+    }
+
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current)
+    }
+
+    searchTimeout.current = setTimeout(() => {
+      handleSearch()
+    }, 600) // 600ms delay
+
+    return () => {
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current)
+      }
+    }
+  }, [searchQuery])
 
   const handleSearch = async (pageUrl?: string) => {
     if (!searchQuery.trim() && !pageUrl) return
@@ -227,14 +251,20 @@ export default function SearchPage() {
           </div>
 
           {/* Pagination Component */}
-          {books.length > 0 && (
+          {(books.length > 0 || !!searchQuery) && (
             <Pagination
               currentPage={pagination.currentPage}
               totalPages={pagination.totalPages}
               hasNextPage={!!pagination.nextPage}
               hasPrevPage={!!pagination.prevPage}
+              hasUpPage={!!searchQuery} // Replicando v3.13.8: "Subir" limpia búsqueda
               onNextPage={() => pagination.nextPage && handleSearch(pagination.nextPage)}
               onPrevPage={() => pagination.prevPage && handleSearch(pagination.prevPage)}
+              onUpPage={() => {
+                setSearchQuery("")
+                setBooks([])
+                setPagination({ currentPage: 1 })
+              }}
               isLoading={isLoading}
             />
           )}
