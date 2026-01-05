@@ -112,8 +112,10 @@ function BookDetailContent() {
         }
 
         webApp.BackButton.onClick(handleBack)
+        webApp.BackButton.show()
         return () => {
             webApp.BackButton.offClick(handleBack)
+            webApp.BackButton.hide()
         }
     }, [webApp, router, book])
 
