@@ -19,6 +19,7 @@ interface TelegramContextType {
   setTargetId: (val: string) => void
   threadId: string
   setThreadId: (val: string) => void
+  userProfile: any | null
 }
 
 const TelegramContext = createContext<TelegramContextType>({
@@ -35,6 +36,7 @@ const TelegramContext = createContext<TelegramContextType>({
   setTargetId: () => { },
   threadId: "",
   setThreadId: () => { },
+  userProfile: null,
 })
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
@@ -99,6 +101,19 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       return localStorage.getItem('publish_thread_id') || ''
     }
     return ''
+  })
+  const [userProfile, setUserProfile] = useState<any | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('access_status')
+      if (cached) {
+        const data = JSON.parse(cached)
+        const now = Date.now()
+        if (data.timestamp && (now - data.timestamp) < CACHE_TTL) {
+          return data.userProfile || null
+        }
+      }
+    }
+    return null
   })
 
   const router = useRouter()
@@ -182,10 +197,12 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
 
             setHasAccess(accessValue)
             setIsAdmin(result.isAdmin)
+            setUserProfile(result)
 
             localStorage.setItem('access_status', JSON.stringify({
               hasAccess: accessValue,
               isAdmin: result.isAdmin,
+              userProfile: result,
               timestamp: Date.now()
             }))
 
@@ -226,7 +243,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     targetId,
     setTargetId: handleSetTargetId,
     threadId,
-    setThreadId: handleSetThreadId
+    setThreadId: handleSetThreadId,
+    userProfile
   }
 
   return <TelegramContext.Provider value={value}>{children}</TelegramContext.Provider>

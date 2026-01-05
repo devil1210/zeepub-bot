@@ -55,7 +55,7 @@ export default function InterfaceConfigPage() {
         applySettings,
     } = useTheme()
 
-    const { isAdmin } = useTelegramContext()
+    const { isAdmin, userProfile } = useTelegramContext()
     const [editTarget, setEditTarget] = useState("personal")
     const [isSaving, setIsSaving] = useState(false)
     const [botAvatar, setBotAvatar] = useState("/robot-librarian.jpg")
@@ -64,20 +64,8 @@ export default function InterfaceConfigPage() {
     useEffect(() => {
         const init = async () => {
             try {
-                // Apply personal settings immediately to ensure we are in a clean state
-                const personal = {
-                    isDarkMode: localStorage.getItem("theme") === "dark",
-                    primaryColor: localStorage.getItem("primaryColor") || "#3b82f6",
-                    uiScale: parseFloat(localStorage.getItem("uiScale") || "1"),
-                    avatarScale: parseFloat(localStorage.getItem("avatarScale") || "1"),
-                    showSearchCard: localStorage.getItem("showSearchCard") !== "false", // default true
-                    showSearchBar: localStorage.getItem("showSearchBar") === "true",
-                    showDonateCard: localStorage.getItem("showDonateCard") !== "false", // default true
-                    showHelpCard: localStorage.getItem("showHelpCard") !== "false", // default true
-                    showSettingsInMenu: localStorage.getItem("showSettingsInMenu") === "true"
-                }
-                applySettings(personal, true)
-
+                // Apply personal settings immediately from localStorage
+                // ThemeProvider already does this, but we force a sync check
                 const { callBotAPI } = await import("@/lib/api")
                 const info = await callBotAPI("bot_info")
                 if (info && info.avatar) {
@@ -126,12 +114,15 @@ export default function InterfaceConfigPage() {
     }
 
     const handleSaveLevel = async () => {
-        if (editTarget === "personal") return
-
         setIsSaving(true)
         try {
-            await saveGlobalSettings(editTarget)
-            toast.success(`Configuración guardada correctamente para ${editTarget === 'global' ? 'Todos' : `el nivel ${editTarget.toUpperCase()}`}`)
+            if (editTarget === "personal") {
+                await saveGlobalSettings("personal")
+                toast.success("Tu configuración personal ha sido guardada en la nube")
+            } else {
+                await saveGlobalSettings(editTarget)
+                toast.success(`Configuración guardada correctamente para ${editTarget === 'global' ? 'Todos' : `el nivel ${editTarget.toUpperCase()}`}`)
+            }
         } catch (error) {
             toast.error("Error al guardar la configuración en el servidor")
         } finally {
@@ -143,13 +134,17 @@ export default function InterfaceConfigPage() {
         setIsSaving(true)
         try {
             const { callBotAPI } = await import("@/lib/api")
-            const data = await callBotAPI("ui_settings", { subAction: "get", role: "auto" })
+            // Determine user effective role from profile
+            const role = userProfile?.level?.id || "free"
+            const data = await callBotAPI("ui_settings", { subAction: "get", role: role })
             if (data) {
-                applySettings(data, true) // Apply AND persist as personal
-                toast.success("Tu configuración ha sido restablecida a los valores de tu nivel")
+                applySettings(data, true) // Apply AND allow persistence
+                await saveGlobalSettings("personal") // OVERWRITE personal in DB with these role defaults
+                toast.success("Tu configuración ha sido restablecida a los valores oficiales de tu nivel")
             }
         } catch (error) {
-            toast.error("No se pudo obtener la configuración del nivel")
+            console.error("Error resetting to defaults:", error)
+            toast.error("No se pudo obtener la configuración oficial del nivel")
         } finally {
             setIsSaving(false)
         }
