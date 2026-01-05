@@ -24,6 +24,25 @@ import { Pagination } from "@/components/pagination"
 import { TransparentHeader } from "@/components/transparent-header"
 import { Input } from "@/components/ui/input"
 
+interface Book {
+    id: string
+    title: string
+    author: string
+    summary?: string
+    cover?: string
+    download_url?: string
+    subsection_url?: string
+    detail_url?: string
+    is_folder: boolean
+}
+
+interface PaginationState {
+    nextPage?: string | null
+    prevPage?: string | null
+    currentPage: number
+    totalPages?: number | null
+}
+
 function CatalogContent() {
     const [currentFeed, setCurrentFeed] = useState<OPDSFeed | null>(null)
     const [history, setHistory] = useState<string[]>([])
@@ -40,13 +59,49 @@ function CatalogContent() {
     // Track current feed URL for reliable history
     const [currentFeedUrl, setCurrentFeedUrl] = useState<string>("")
 
-    // Replicando funcionalidad v3.13.8: Búsqueda reactiva en catálogo
+    // Replicando funcionalidad v3.13.8: Búsqueda reactiva en catálogo (inline)
     const [searchQuery, setSearchQuery] = useState("")
+    const [searchResults, setSearchResults] = useState<Book[]>([])
+    const [isSearching, setIsSearching] = useState(false)
+    const [searchPagination, setSearchPagination] = useState<PaginationState>({
+        currentPage: 1,
+    })
     const searchTimeout = useRef<NodeJS.Timeout | null>(null)
+
+    const handleCatalogSearch = useCallback(async (pageUrl?: string) => {
+        if (!searchQuery.trim() && !pageUrl) {
+            setSearchResults([])
+            setIsSearching(false)
+            return
+        }
+
+        setIsSearching(true)
+        try {
+            const result = await callBotAPI("search", {
+                query: searchQuery,
+                pageUrl: pageUrl
+            })
+            setSearchResults(result.results || [])
+            setSearchPagination({
+                nextPage: result.nextPage,
+                prevPage: result.prevPage,
+                currentPage: result.currentPage || 1,
+                totalPages: result.totalPages
+            })
+            if (pageUrl) {
+                window.scrollTo(0, 0)
+            }
+        } catch (error) {
+            console.error("[Catalog] Inline search error:", error)
+        } finally {
+            setIsSearching(false)
+        }
+    }, [searchQuery])
 
     useEffect(() => {
         if (!searchQuery.trim()) {
-            // Si el buscador se limpia, volvemos al feed actual o root
+            setSearchResults([])
+            setIsSearching(false)
             return
         }
 
@@ -55,8 +110,7 @@ function CatalogContent() {
         }
 
         searchTimeout.current = setTimeout(() => {
-            // Navegamos a la página de búsqueda con el término
-            router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+            handleCatalogSearch()
         }, 600)
 
         return () => {
@@ -64,7 +118,7 @@ function CatalogContent() {
                 clearTimeout(searchTimeout.current)
             }
         }
-    }, [searchQuery, router])
+    }, [searchQuery, handleCatalogSearch])
 
     // Load feed function
     const loadFeed = useCallback(async (url?: string, isPagination = false) => {
@@ -132,11 +186,17 @@ function CatalogContent() {
             return
         }
 
-        // Fix: Si estamos en el inicio del catálogo, el botón "Subir" de la paginación debe llevar al Home
+        // Fix: Si estamos en el inicio del catálogo o buscador activo, el botón "Subir" de la paginación debe llevar al Home o limpiar búsqueda
+        if (searchQuery) {
+            setSearchQuery("")
+            setSearchResults([])
+            return
+        }
+
         console.log("[Catalog] No history or UP link, returning to Home")
         sessionStorage.removeItem("catalog-history")
         router.push("/")
-    }, [loadFeed, currentFeed, router])
+    }, [loadFeed, currentFeed, router, searchQuery])
 
     // Navigate into a subsection
     const handleNavigate = useCallback((url: string) => {
@@ -257,6 +317,35 @@ function CatalogContent() {
         }
     }
 
+    const handleSearchBookClick = (book: Book) => {
+        if (book.detail_url) {
+            router.push(`/book?id=${encodeURIComponent(book.detail_url)}`)
+        } else if (book.is_folder && book.subsection_url) {
+            // Si es una carpeta en búsqueda, navegamos a ella en el catálogo y limpiamos búsqueda
+            setSearchQuery("")
+            setSearchResults([])
+            handleNavigate(book.subsection_url)
+        }
+    }
+
+    const handleSearchDownload = async (e: React.MouseEvent, book: Book) => {
+        e.stopPropagation()
+        if (!book.download_url) return
+
+        try {
+            webApp?.showPopup?.({
+                title: "Descargando",
+                message: `Se está enviando "${book.title}" a tu chat...`,
+            })
+            await callBotAPI("download", {
+                bookId: book.download_url,
+                title: book.title,
+            })
+        } catch (error) {
+            console.error("[Catalog] Search download error:", error)
+        }
+    }
+
     if (isLoading && !currentFeed) {
         return (
             <div className="min-h-screen bg-background pt-safe">
@@ -302,7 +391,7 @@ function CatalogContent() {
                     </div>
                 )}
 
-                {isLoading && (
+                {isLoading && !searchQuery && (
                     <div className="py-4">
                         <div className="h-1 w-full bg-primary/10 overflow-hidden rounded-full mb-4">
                             <div className="h-full bg-primary w-full" />
@@ -310,7 +399,81 @@ function CatalogContent() {
                     </div>
                 )}
 
-                {currentFeed?.entries.map((entry, index) => {
+                {/* Search Results Inline */}
+                {searchQuery && (
+                    <div className="space-y-3">
+                        {isSearching && searchResults.length === 0 && (
+                            <div className="space-y-3">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <Card key={i} className="p-4 border-border flex gap-4">
+                                        <Skeleton className="w-16 h-24 rounded-lg flex-shrink-0" />
+                                        <div className="flex-1 space-y-2 py-1">
+                                            <Skeleton className="h-5 w-3/4" />
+                                            <Skeleton className="h-4 w-1/2" />
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+
+                        {searchResults.map((book) => (
+                            <Card
+                                key={book.id}
+                                onClick={() => handleSearchBookClick(book)}
+                                className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
+                            >
+                                <div className="flex gap-4">
+                                    <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                                        {book.cover ? (
+                                            <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                                        ) : book.is_folder ? (
+                                            <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                                                <BookOpen className="w-8 h-8 text-primary" />
+                                            </div>
+                                        ) : (
+                                            <img src="/placeholder.svg" alt={book.title} className="w-full h-full object-cover" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0 flex flex-col">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors text-sm">
+                                                {book.title}
+                                            </h3>
+                                        </div>
+                                        <p className="text-xs text-primary font-medium mb-1 truncate">{book.author}</p>
+                                        <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-2">
+                                            {book.is_folder ? t("book_section") : t("book_details_hint")}
+                                        </p>
+
+                                        {!book.is_folder && book.download_url && (
+                                            <Button
+                                                size="sm"
+                                                onClick={(e) => handleSearchDownload(e, book)}
+                                                className="h-7 text-[9px] px-2 bg-primary hover:bg-primary/90 self-start group/btn"
+                                            >
+                                                <Download className="w-3 h-3 mr-1" />
+                                                {t("book_download")}
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center">
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+
+                        {!isSearching && searchResults.length === 0 && (
+                            <div className="text-center py-12">
+                                <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                                <p className="text-sm text-muted-foreground">{t("search_empty")}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Normal Catalog Content */}
+                {!searchQuery && currentFeed?.entries.map((entry, index) => {
                     const isFolder = entry.links.some((l) => l.rel === "subsection")
                     const isBook = entry.links.some(
                         (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
@@ -392,13 +555,13 @@ function CatalogContent() {
                     return null
                 })}
 
-                {currentFeed && (
+                {!searchQuery && currentFeed && (
                     <Pagination
                         currentPage={currentFeed.currentPage}
                         totalPages={currentFeed.totalPages}
                         hasNextPage={!!currentFeed.nextPage}
                         hasPrevPage={!!currentFeed.prevPage}
-                        hasUpPage={true} // Siempre habilitamos subir para volver a Home si no hay jerarquía
+                        hasUpPage={true}
                         onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
                         onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
                         onUpPage={handleGoBack}
@@ -406,7 +569,21 @@ function CatalogContent() {
                     />
                 )}
 
-                {currentFeed && currentFeed.entries.length === 0 && !isLoading && (
+                {searchQuery && (
+                    <Pagination
+                        currentPage={searchPagination.currentPage}
+                        totalPages={searchPagination.totalPages}
+                        hasNextPage={!!searchPagination.nextPage}
+                        hasPrevPage={!!searchPagination.prevPage}
+                        hasUpPage={true}
+                        onNextPage={() => searchPagination.nextPage && handleCatalogSearch(searchPagination.nextPage)}
+                        onPrevPage={() => searchPagination.prevPage && handleCatalogSearch(searchPagination.prevPage)}
+                        onUpPage={handleGoBack}
+                        isLoading={isSearching}
+                    />
+                )}
+
+                {!searchQuery && currentFeed && currentFeed.entries.length === 0 && !isLoading && (
                     <div className="text-center py-16">
                         <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
                         <p className="text-muted-foreground">Esta sección está vacía</p>

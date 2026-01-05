@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.15.2] - 2026-01-04
+
+### Fixed
+- **Buscador Inline en Catálogo**: Corregida la redirección innecesaria. Ahora los resultados de búsqueda se muestran directamente dentro de la página de Catálogo (estilo v3.13.8), manteniendo el foco y el texto escrito.
+- **Sincronización de UI**: Ajustada la lógica de navegación para limpiar la búsqueda antes de subir niveles o volver a Inicio.
+
 ## [4.15.1] - 2026-01-04
 
 ### Added
