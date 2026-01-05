@@ -144,11 +144,15 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       }
 
       // Configurar el evento click
-      webApp.BackButton.onClick(handleBackButton)
+      if (pathname !== "/book") {
+        webApp.BackButton.onClick(handleBackButton)
+      }
 
       // Cleanup: remover el listener al desmontar
       return () => {
-        webApp.BackButton.offClick(handleBackButton)
+        if (pathname !== "/book") {
+          webApp.BackButton.offClick(handleBackButton)
+        }
       }
     }
   }, [telegram.webApp, telegram.isReady, pathname, router])

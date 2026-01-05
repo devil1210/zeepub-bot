@@ -91,6 +91,26 @@ function BookDetailContent() {
         window.scrollTo(0, 0)
     }, [bookId])
 
+    // Override Telegram BackButton to go to the last catalog URL
+    useEffect(() => {
+        if (!webApp?.BackButton) return
+
+        const handleBack = () => {
+            const lastUrl = sessionStorage.getItem("catalog-last-url")
+            if (lastUrl) {
+                // Return to catalog with the specific feed URL
+                router.push(`/catalog?feed_url=${encodeURIComponent(lastUrl)}`)
+            } else {
+                router.back()
+            }
+        }
+
+        webApp.BackButton.onClick(handleBack)
+        return () => {
+            webApp.BackButton.offClick(handleBack)
+        }
+    }, [webApp, router])
+
     const handleDownload = async () => {
         if (!book || !book.downloadUrl) {
             webApp?.showAlert?.("No se encontró link de descarga")
@@ -116,6 +136,28 @@ function BookDetailContent() {
         } finally {
             setIsDownloading(false)
         }
+    }
+
+    // Process summary to remove <br> and redundant metadata labels
+    const getCleanSummary = (summary?: string) => {
+        if (!summary) return ""
+
+        // Replace <br> tags with newlines
+        let clean = summary.replace(/<br\s*\/?>/gi, "\n")
+
+        // Remove redundant labels added by some OPDS servers (like Suwayomi)
+        // Patterns: "File Type: ... - Size: ... Summary: "
+        // Use [\s\S] instead of . with s flag for ES6 compatibility
+        clean = clean.replace(/File Type:[\s\S]*?-[\s\S]*?Summary:\s*/i, "")
+        clean = clean.replace(/^Summary:\s*/i, "")
+
+        return clean.trim()
+    }
+
+    const formatFileType = (type?: string) => {
+        if (!type) return ""
+        if (type.includes("epub")) return "Epub"
+        return type.split("/").pop()?.toUpperCase() || type
     }
 
 
@@ -185,16 +227,6 @@ function BookDetailContent() {
 
                             {/* Quick Info Chips */}
                             <div className="flex flex-wrap gap-2 text-xs">
-                                {book.fileType && (
-                                    <span className="px-2 py-1 bg-secondary rounded-md text-muted-foreground">
-                                        {book.fileType.split("/").pop()?.toUpperCase() || book.fileType}
-                                    </span>
-                                )}
-                                {book.size && (
-                                    <span className="px-2 py-1 bg-secondary rounded-md text-muted-foreground">
-                                        {book.size}
-                                    </span>
-                                )}
                                 {book.year && (
                                     <span className="px-2 py-1 bg-secondary rounded-md text-muted-foreground flex items-center gap-1">
                                         <Calendar className="w-3 h-3" />
@@ -215,7 +247,7 @@ function BookDetailContent() {
                             </span>
                             <h3 className="text-xs font-bold uppercase tracking-wider">Sinopsis</h3>
                         </div>
-                        <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{book.summary}</p>
+                        <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{getCleanSummary(book.summary)}</p>
                     </Card>
                 )}
 
@@ -232,6 +264,18 @@ function BookDetailContent() {
                             <div className="flex justify-between py-3">
                                 <span className="text-muted-foreground">Editorial</span>
                                 <span className="text-foreground font-medium text-right ml-4">{book.publisher}</span>
+                            </div>
+                        )}
+                        {book.fileType && (
+                            <div className="flex justify-between py-3">
+                                <span className="text-muted-foreground">Tipo de Archivo</span>
+                                <span className="text-foreground font-medium">{formatFileType(book.fileType)}</span>
+                            </div>
+                        )}
+                        {book.size && (
+                            <div className="flex justify-between py-3">
+                                <span className="text-muted-foreground">Tamaño</span>
+                                <span className="text-foreground font-medium">{book.size}</span>
                             </div>
                         )}
                         {book.language && (
