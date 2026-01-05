@@ -637,14 +637,20 @@ async def handle_bot_request(
                 return final_settings
 
             elif sub_action == "set":
+                logger.info(f"UI Settings SET request - user_id: {user_id}, user_role: {user_role}")
+                
                 # Admin required - checking role from require_mini_app_access wrap
                 if user_role != "admin":
+                    logger.warning(f"User {user_id} with role {user_role} tried to set UI settings - DENIED")
                     raise HTTPException(status_code=403, detail="Solo administradores pueden cambiar la configuración global")
 
                 target_role = data.get("role", "global")
                 settings_obj = data.get("settings", {})
-
+                
+                logger.info(f"Saving UI settings for role '{target_role}': {settings_obj}")
                 set_setting(f"ui_defaults_{target_role}", json.dumps(settings_obj))
+                logger.info(f"UI settings saved successfully for '{target_role}'")
+                
                 return {"success": True, "message": f"Configuración para {target_role} guardada"}
 
         elif action == "create_stars_invoice":
