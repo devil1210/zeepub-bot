@@ -98,7 +98,7 @@ function BookDetailContent() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-background pt-safe flex flex-col items-center justify-center p-4">
+            <div className="fixed inset-0 bg-background flex flex-col items-center justify-center p-4">
                 <div className="w-32 h-48 bg-secondary/50 rounded-lg animate-pulse mb-6" />
                 <div className="h-6 w-48 bg-secondary/50 rounded-full animate-pulse mb-3" />
                 <div className="h-4 w-32 bg-secondary/30 rounded-full animate-pulse" />
@@ -108,7 +108,7 @@ function BookDetailContent() {
 
     if (!book) {
         return (
-            <div className="min-h-screen bg-background pt-safe flex items-center justify-center">
+            <div className="fixed inset-0 bg-background flex items-center justify-center">
                 <div className="text-center px-4">
                     <BookOpenSVG className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
                     <p className="text-muted-foreground mb-4">No se pudo encontrar la información del libro</p>
