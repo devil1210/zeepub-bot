@@ -25,6 +25,7 @@ from utils.security import validate_telegram_data, verify_telegram_user
 from services.opds_service import get_cached_feed
 from services.telegram_service import enviar_libro_directo
 from utils.helpers import build_search_url, abs_url, extract_author
+from services.settings_service import get_setting, set_setting
 
 router = APIRouter(tags=["miniapp"])
 logger = logging.getLogger(__name__)
@@ -582,9 +583,6 @@ async def handle_bot_request(
 
             bot_user = await bot.app.bot.get_me()
             avatar_url = "/robot-librarian.jpg"
-
-            # Import here for bot_info and ui_settings
-            from services.settings_service import get_setting, set_setting
 
             try:
                 photos = await bot.app.bot.get_user_profile_photos(bot_user.id, limit=1)
