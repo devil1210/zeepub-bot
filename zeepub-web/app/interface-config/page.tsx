@@ -398,13 +398,15 @@ export default function InterfaceConfigPage() {
                                     <Switch id="show-help-card" checked={showHelpCard} onCheckedChange={setShowHelpCard} />
                                 </div>
 
-                                <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
-                                    <div className="flex items-center gap-3">
-                                        <Palette className="w-5 h-5 text-primary" />
-                                        <Label htmlFor="show-settings-in-menu" className="font-medium">Shortcut de Apariencia en Menú</Label>
+                                {editTarget !== "personal" && (
+                                    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <Palette className="w-5 h-5 text-primary" />
+                                            <Label htmlFor="show-settings-in-menu" className="font-medium">Shortcut de Apariencia en Menú</Label>
+                                        </div>
+                                        <Switch id="show-settings-in-menu" checked={showSettingsInMenu} onCheckedChange={setShowSettingsInMenu} />
                                     </div>
-                                    <Switch id="show-settings-in-menu" checked={showSettingsInMenu} onCheckedChange={setShowSettingsInMenu} />
-                                </div>
+                                )}
                             </div>
                         </TabsContent>
                     </Tabs>
