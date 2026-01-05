@@ -351,19 +351,30 @@ function BookDetailContent() {
                 </Card>
 
                 {/* Download Button */}
-                <Button
-                    onClick={handleDownload}
-                    disabled={isDownloading || !book.downloadUrl}
-                    className="w-full h-14 bg-primary hover:bg-primary/90 text-white text-lg font-bold shadow-lg shadow-primary/20 rounded-xl transition-all active:scale-[0.95]"
-                >
-                    <Download className="w-6 h-6 mr-2" />
-                    {isDownloading ? "..." : t("book_download")}
-                </Button>
-                {!book.downloadUrl && (
-                    <p className="text-center text-xs text-destructive mt-3 font-medium">
-                        No hay link de descarga disponible para este libro
-                    </p>
-                )}
+                <div className="sticky bottom-6 z-50 px-2 pb-2">
+                    <Button
+                        onClick={handleDownload}
+                        disabled={isDownloading || !book.downloadUrl}
+                        className="w-full h-14 rounded-2xl text-lg font-bold shadow-2xl shadow-primary/40 border-2 border-primary/50 relative overflow-hidden group"
+                    >
+                        <div className="absolute inset-0 bg-primary/20 group-hover:bg-primary/30 transition-colors" />
+                        <span className="relative flex items-center justify-center gap-2">
+                            {isDownloading ? (
+                                <Loader2 className="w-6 h-6 animate-spin" />
+                            ) : (
+                                <>
+                                    <Download className="w-6 h-6" />
+                                    {t("book_download")}
+                                </>
+                            )}
+                        </span>
+                    </Button>
+                    {!book.downloadUrl && (
+                        <p className="text-center text-xs text-destructive mt-3 font-medium bg-background/80 backdrop-blur-sm rounded-lg py-1">
+                            No hay link de descarga disponible para este libro
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     )

@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.20.2] - 2026-01-05
+
+### Added
+- **Premium Design**: Implementación de botones "Premium" con comportamiento **sticky-to-flow** (fijos al pie hasta el final de la página) en detalles de libro y navegación de catálogo.
+- **UI UX**: Efectos de sombra shadow-2xl, bordes suaves y overlays de brillo interactivos en los botones principales.
+
+### Fixed
+- **UI Settings**: Mejora en la responsividad de la barra de navegación del catálogo.
+
 ## [4.20.1] - 2026-01-05
 
 ### Added
