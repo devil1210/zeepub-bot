@@ -469,7 +469,7 @@ async def bot_avatar_proxy(file_id: str = Query(...)):
             logger.error(f"No file_path found for file_id: {file_id}")
             from fastapi.responses import RedirectResponse
             return RedirectResponse(url="/robot-librarian.jpg")
-            
+
         # Use httpx to download and stream to client
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(file.file_path)

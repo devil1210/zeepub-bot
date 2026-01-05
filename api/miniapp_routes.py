@@ -589,14 +589,14 @@ async def handle_bot_request(
 
             if sub_action == "get":
                 target_role = data.get("role", "global")
-                
+
                 # If 'auto', determine the best role for the current user
                 if target_role == "auto":
-                    target_role = user_role # From the require_mini_app_access wrap
-                
+                    target_role = user_role  # From the require_mini_app_access wrap
+
                 # Load global settings first as base
                 final_settings = json.loads(get_setting("ui_defaults_global", "{}"))
-                
+
                 # If specific role requested/detected, merge it over global
                 if target_role and target_role != "global":
                     role_settings_raw = get_setting(f"ui_defaults_{target_role}", "{}")
@@ -605,7 +605,7 @@ async def handle_bot_request(
                         final_settings.update(role_settings)
                     except Exception:
                         pass
-                        
+
                 return final_settings
 
             elif sub_action == "set":
