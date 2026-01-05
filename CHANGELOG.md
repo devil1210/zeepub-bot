@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.15.3] - 2026-01-04
+
+### Fixed
+- **Skeletons de Búsqueda Premium**: Refinados los cargadores (skeletons) en Catálogo y Búsqueda para que coincidan exactamente con el diseño final de las tarjetas de libros, eliminando saltos visuales y mejorando la estética durante la carga.
+
 ## [4.15.2] - 2026-01-04
 
 ### Fixed
