@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.16.6] - 2026-01-04
+
+### Fixed
+- **Navegación de Detalles**: Se corrigió un error donde algunos libros en los resultados de búsqueda no abrían la página de detalles por falta de `detail_url` explícito, implementando un fallback al ID del elemento si es una URL válida.
+
+## [4.16.5] - 2026-01-04
+
+### Fixed
+- **Error de Sintaxis**: Corregido error de JSX en `BookDetailPage` introducido en la fase previa de eliminación de skeletons.
+
 ## [4.16.4] - 2026-01-04
 
 ### Changed

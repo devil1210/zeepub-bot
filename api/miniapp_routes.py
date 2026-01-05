@@ -213,6 +213,10 @@ async def handle_bot_request(
                     elif "image" in rel or "cover" in rel:
                         cover_url = href
 
+                # Fallback for detail_url if no self/alternate link found
+                if not detail_url and book_id and book_id.startswith("http"):
+                    detail_url = book_id
+
                 results.append(
                     {
                         "id": book_id,

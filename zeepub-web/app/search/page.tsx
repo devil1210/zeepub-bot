@@ -129,7 +129,9 @@ export default function SearchPage() {
   }
 
   const handleBookClick = (book: Book) => {
-    if (book.detail_url) {
+    const detailUrl = book.detail_url || (book.id?.startsWith("http") ? book.id : null)
+
+    if (detailUrl) {
       // Save current search state before navigating
       sessionStorage.setItem("search-state", JSON.stringify({
         query: searchQuery,
@@ -137,7 +139,7 @@ export default function SearchPage() {
         nextPage: pagination.nextPage,
         prevPage: pagination.prevPage
       }))
-      router.push(`/book?id=${encodeURIComponent(book.detail_url)}`)
+      router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
     } else if (book.is_folder && book.subsection_url) {
       // Use window.location.href to avoid history issues with deep links in catalog
       window.location.href = `/catalog?feed_url=${encodeURIComponent(book.subsection_url)}`
