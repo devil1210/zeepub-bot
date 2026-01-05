@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.16.3] - 2026-01-04
+
+### Fixed
+- **Estabilización de Tests**: Corregidos varios fallos en los tests automatizados, incluyendo un `UnboundLocalError` en el detalle del libro y problemas de entorno y mocks en los tests de publicadores y refinamiento.
+
 ## [4.16.2] - 2026-01-04
 
 ### Fixed

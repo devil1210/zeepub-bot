@@ -6,12 +6,12 @@ from unittest.mock import MagicMock, AsyncMock, patch
 def mock_dependencies():
     """Patch dependencies in sys.modules ONLY for the duration of the test."""
     modules_to_patch = {
-        "core": MagicMock(),
+        "core": MagicMock(__path__=[]),
         "core.bot": MagicMock(),
         "core.state_manager": MagicMock(),
         "core.session_manager": MagicMock(),
-        "services": MagicMock(),
-        "utils": MagicMock(),
+        "services": MagicMock(__path__=[]),
+        "utils": MagicMock(__path__=[]),
         "utils.http_client": MagicMock(),
         "utils.helpers": MagicMock(),
         "utils.download_limiter": MagicMock(),
@@ -19,6 +19,7 @@ def mock_dependencies():
         "services.user_service": MagicMock(),
         "services.opds_service": MagicMock(),
         "services.telegram_service": MagicMock(),
+        "services.topic_service": MagicMock(topic_service=MagicMock(ensure_topics=AsyncMock())),
     }
     # Ensure they are AsyncMocks if awaited
     modules_to_patch["utils.download_limiter"].downloads_left = AsyncMock(return_value="ilimitadas")
@@ -26,7 +27,6 @@ def mock_dependencies():
     modules_to_patch["services.opds_service"].mostrar_colecciones = AsyncMock()
     modules_to_patch["services.telegram_service"].publicar_libro = AsyncMock()
     
-    modules_to_patch["utils"].__path__ = []
     modules_to_patch["utils.decorators"] = MagicMock()
 
     with patch.dict(sys.modules, modules_to_patch):

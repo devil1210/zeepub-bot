@@ -8,7 +8,14 @@ def client(monkeypatch):
         mock_instance = mock_bot.return_value
         mock_instance.initialize = AsyncMock()
         
+        # Ensure routes are registered
+        monkeypatch.setenv("ENABLE_MINI_APP", "True")
+        
+        import importlib
+        import api.main
+        importlib.reload(api.main)
         from api.main import app
+        
         from fastapi.testclient import TestClient
         return TestClient(app)
 
@@ -57,7 +64,7 @@ def test_role_based_access_whitelist(mock_opds_roots, client):
         assert response.json()["title"] == "Start Root"
 
 def test_role_based_access_denied(mock_opds_roots, client):
-    with patch("services.user_service.get_effective_user", new_callable=AsyncMock) as mock_get_user:
+    with patch("api.deps.get_effective_user", new_callable=AsyncMock) as mock_get_user:
         mock_get_user.return_value = {"role": "free", "has_mini_app_access": False}
         response = client.get("/api/feed?uid=999")
         assert response.status_code == 403

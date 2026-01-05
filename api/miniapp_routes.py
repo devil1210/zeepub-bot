@@ -280,6 +280,9 @@ async def handle_bot_request(
             book_id_url = data.get("bookId")
             logger.info(f"[book-detail] Request received - bookId: {book_id_url}")
 
+            # Initialize for extraction fallback
+            subsection_url = None
+
             if not book_id_url:
                 logger.error("[book-detail] Missing bookId parameter")
                 raise HTTPException(status_code=400, detail="Missing bookId (URL)")
