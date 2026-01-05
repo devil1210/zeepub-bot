@@ -566,19 +566,21 @@ async def handle_bot_request(
             try:
                 photos = await bot.app.bot.get_user_profile_photos(bot_user.id, limit=1)
                 if photos and photos.photos:
-                    # Use the smallest version for the header
-                    file_id = photos.photos[0][0].file_id
-                    # We will point to our internal proxy
+                    # Use the largest version for better quality in some views
+                    # photos.photos[0] is the list of sizes for the first photo
+                    # The last one [-1] is usually the largest
+                    file_id = photos.photos[0][-1].file_id
                     avatar_url = f"/api/bot/avatar?file_id={file_id}"
+                    logger.info(f"Bot avatar file_id: {file_id}")
             except Exception as e:
-                logger.debug(f"Could not fetch bot profile photo: {e}")
+                logger.error(f"Could not fetch bot profile photo: {e}")
 
             res = {
                 "name": bot_user.first_name or "ZeePubBot",
                 "username": f"@{bot_user.username}" if bot_user.username else "@ZeePubBot",
                 "description": "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
                 "avatar": avatar_url,
-                "ui_defaults": json.loads(get_setting("ui_defaults_global", "{}"))  # Simplified for now, but ui_settings get auto is the main way
+                "ui_defaults": json.loads(get_setting("ui_defaults_global", "{}"))
             }
             logger.info(f"bot_info result for user {user_id}: {res}")
             return res

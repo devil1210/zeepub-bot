@@ -14,7 +14,8 @@ import { useStrings } from "@/components/strings-provider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { useTelegramContext } from "@/components/telegram-provider"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Paleta de colores predefinidos
 const colorPresets = [
@@ -53,6 +54,23 @@ export default function InterfaceConfigPage() {
     const { isAdmin } = useTelegramContext()
     const [targetRole, setTargetRole] = useState("global")
     const [isSaving, setIsSaving] = useState(false)
+    const [botAvatar, setBotAvatar] = useState("/robot-librarian.jpg")
+
+    // Fetch bot avatar for preview
+    useEffect(() => {
+        const fetchBotInfo = async () => {
+            try {
+                const { callBotAPI } = await import("@/lib/api")
+                const info = await callBotAPI("bot_info")
+                if (info && info.avatar) {
+                    setBotAvatar(info.avatar)
+                }
+            } catch (error) {
+                console.error("Error fetching bot info for preview:", error)
+            }
+        }
+        fetchBotInfo()
+    }, [])
 
     const handleSaveGlobal = async () => {
         setIsSaving(true)
@@ -198,17 +216,18 @@ export default function InterfaceConfigPage() {
                             </div>
                             {/* Avatar preview */}
                             <div className="flex justify-center mt-4">
-                                <div
-                                    className="rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center transition-all"
+                                <Avatar
+                                    className="border-2 border-primary shadow-lg transition-all"
                                     style={{
                                         width: `${80 * avatarScale}px`,
                                         height: `${80 * avatarScale}px`
                                     }}
                                 >
-                                    <span className="text-primary font-bold" style={{ fontSize: `${24 * avatarScale}px` }}>
-                                        Z
-                                    </span>
-                                </div>
+                                    <AvatarImage src={botAvatar} alt="Bot Avatar" />
+                                    <AvatarFallback className="bg-primary/20 text-primary font-bold" style={{ fontSize: `${24 * avatarScale}px` }}>
+                                        ZP
+                                    </AvatarFallback>
+                                </Avatar>
                             </div>
                         </div>
                     </Card>
@@ -344,6 +363,7 @@ export default function InterfaceConfigPage() {
                                                 <SelectItem value="staff">Staff</SelectItem>
                                                 <SelectItem value="premium">Premium</SelectItem>
                                                 <SelectItem value="vip">VIP</SelectItem>
+                                                <SelectItem value="white">Patrocinador</SelectItem>
                                                 <SelectItem value="free">Lector (Free)</SelectItem>
                                             </SelectContent>
                                         </Select>
