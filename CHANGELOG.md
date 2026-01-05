@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.18.0] - 2026-01-05
+
+### Added
+- **Diseño Inmersivo (Moon Reader Style)**: Rediseño total de la página de detalles del libro con portada centrada, fondo difuminado y disposición premium inspirada en lectores especializados.
+- **Carga Instantánea**: Implementación de transferencia de metadatos vía `sessionStorage` para que la hoja de detalles se muestre al instante sin parpadeos de carga o errores de "No encontrado".
+- **UX Optimizada**: Botón de descarga destacado y centrado en la parte inferior para mayor comodidad.
+
 ## [4.17.1] - 2026-01-05
 
 ### Fixed
