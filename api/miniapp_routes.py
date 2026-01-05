@@ -560,13 +560,14 @@ async def handle_bot_request(
             from api.main import bot
 
             bot_user = await bot.app.bot.get_me()
+            avatar_url = "/robot-librarian.jpg"
 
-            # Try to get the actual profile photo
-            avatar_url = "/robot-librarian.jpg"  # Robust default
+            # Import here for bot_info and ui_settings
+            from services.settings_service import get_setting, set_setting
+
             try:
                 photos = await bot.app.bot.get_user_profile_photos(bot_user.id, limit=1)
-                if photos and photos.photos:
-                    # Use the largest version for better quality in some views
+                if photos.photos:
                     # photos.photos[0] is the list of sizes for the first photo
                     # The last one [-1] is usually the largest
                     file_id = photos.photos[0][-1].file_id
@@ -587,7 +588,7 @@ async def handle_bot_request(
 
         elif action == "ui_settings":
             # Manage global/role-based UI configurations
-            from services.settings_service import get_setting, set_setting
+            
 
             sub_action = data.get("subAction", "get")
 
