@@ -213,6 +213,7 @@ function BookDetailContent() {
 
     return (
         <div className="min-h-screen bg-background pt-safe pb-20 text-foreground">
+            <TransparentHeader />
             {/* Header */}
 
             <div className="max-w-2xl mx-auto px-4 py-6">
@@ -288,7 +289,15 @@ function BookDetailContent() {
                             </span>
                             <h3 className="text-xs font-bold uppercase tracking-wider">Sinopsis</h3>
                         </div>
-                        <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{getCleanSummary(book.summary)}</p>
+                        <div className="text-sm text-foreground/80 leading-relaxed">
+                            {getCleanSummary(book.summary).split('\n').map((para, i) => (
+                                para.trim() ? (
+                                    <p key={i} className="mb-2 last:mb-0">
+                                        {para.trim()}
+                                    </p>
+                                ) : null
+                            ))}
+                        </div>
                     </Card>
                 )}
 
