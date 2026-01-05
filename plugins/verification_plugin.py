@@ -33,7 +33,7 @@ class VerificationPlugin(BasePlugin):
     async def verify_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Comando /verify <user_id> [true|false]"""
         user_id = update.effective_user.id
-        
+
         # Solo admisn
         if user_id not in config.ADMIN_USERS:
             return
@@ -55,14 +55,14 @@ class VerificationPlugin(BasePlugin):
                 "user_id": target_id,
                 "is_verified": verify
             }
-            
+
             # Intentamos usar el método si existe o raw
             try:
                 if hasattr(context.bot, "verify_user"):
                     await context.bot.verify_user(user_id=target_id, is_verified=verify)
                 else:
                     await context.bot.do_api_request("verifyUser", payload)
-                
+
                 status = "verificado" if verify else "desverificado"
                 await update.message.reply_text(f"✅ Usuario {target_id} {status} correctamente.")
             except Exception as e:

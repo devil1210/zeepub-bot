@@ -26,7 +26,7 @@ def mock_dependencies():
     modules_to_patch["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
     modules_to_patch["services.opds_service"].mostrar_colecciones = AsyncMock()
     modules_to_patch["services.telegram_service"].publicar_libro = AsyncMock()
-    
+
     modules_to_patch["utils.decorators"] = MagicMock()
 
     with patch.dict(sys.modules, modules_to_patch):
@@ -70,12 +70,12 @@ async def test_set_publish_temp_stores_one_time_choice(monkeypatch):
 
     context = MagicMock()
     setup_mocks(update, context)
-    
+
     mock_cms = MagicMock()
     mock_cms.enabled = True
     mock_cms.get_text = AsyncMock(return_value="Preferencia establecida")
     context.application.plugin_manager.get_plugin.return_value = mock_cms
-    
+
     monkeypatch.setattr(cb, "mostrar_colecciones", AsyncMock())
 
     with patch("services.user_service.get_effective_user", new_callable=AsyncMock) as mock_get:
@@ -106,7 +106,7 @@ async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch
     mock_state = MagicMock()
     mock_state.get_user_state.return_value = st
     monkeypatch.setattr(cb, "state_manager", mock_state)
-    
+
     mock_config = MagicMock()
     mock_config.FACEBOOK_PUBLISHERS = {uid}
     mock_config.ADMIN_USERS = set()
@@ -121,7 +121,7 @@ async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch
         mock_cms.enabled = True
         mock_cms.get_text = AsyncMock(return_value="Publicado con éxito")
         context.application.plugin_manager.get_plugin.return_value = mock_cms
-        
+
         with patch("services.user_service.get_effective_user", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = {"role": "free"}
             await cb.button_handler(update, context)
@@ -179,9 +179,9 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
     mock_state = MagicMock()
     mock_state.get_user_state.return_value = st
     monkeypatch.setattr(ch, "state_manager", mock_state)
-    
+
     monkeypatch.setattr(ch, "downloads_left", AsyncMock(return_value="ilimitadas"))
-    
+
     mc = AsyncMock()
     monkeypatch.setattr(ch, "mostrar_colecciones", mc)
 

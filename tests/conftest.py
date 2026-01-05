@@ -32,15 +32,15 @@ def setup_test_db():
     """
     from config.config_settings import config
     from core.db_manager import db_manager
-    
+
     # Use a temporary database for testing
     test_db_path = os.path.join(project_root, "data/test_db.db")
     config.URL_CACHE_DB_PATH = test_db_path
     db_manager.db_path = test_db_path
-    
+
     # Ensure data directory exists
     os.makedirs(os.path.dirname(test_db_path), exist_ok=True)
-    
+
     # Run database initialization
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -48,9 +48,9 @@ def setup_test_db():
         loop.run_until_complete(db_manager.initialize())
     finally:
         loop.close()
-    
+
     yield
-    
+
     # Cleanup: Close all DB connections to avoid hangs
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -58,7 +58,7 @@ def setup_test_db():
         loop.run_until_complete(db_manager.close_all())
     finally:
         loop.close()
-    
+
     # Cleanup after all tests
     if os.path.exists(test_db_path):
         os.remove(test_db_path)

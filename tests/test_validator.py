@@ -18,7 +18,7 @@ def mock_url_cache(tmp_path, monkeypatch):
     url_cache = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(url_cache)
     url_cache.init_db()
-    
+
     # Patch sys.modules for duration of test
     with patch.dict(sys.modules, {'utils.url_cache': url_cache}):
         yield url_cache
@@ -40,7 +40,7 @@ async def test_get_candidates_and_validator(mock_url_cache, monkeypatch):
 
     spec2 = importlib.util.spec_from_file_location("utils.url_validator", os.path.join(os.path.dirname(__file__), "..", "utils", "url_validator.py"))
     url_validator = importlib.util.module_from_spec(spec2)
-    
+
     with patch.dict(sys.modules, {'utils.url_validator': url_validator}):
         spec2.loader.exec_module(url_validator)
         loop = asyncio.get_event_loop()

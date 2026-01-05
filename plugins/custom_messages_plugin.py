@@ -1589,7 +1589,7 @@ class CustomMessagesPlugin(BasePlugin):
         # 1. Check for arguments: Could be a SLUG to preview or a PAGE NUMBER to navigate
         if context.args:
             target = context.args[0].lower()
-            
+
             # Try to see if it's a page number first
             try:
                 page = int(target)
@@ -1684,7 +1684,7 @@ class CustomMessagesPlugin(BasePlugin):
         page_size = 20
         total_pages = (len(all_slugs) + page_size - 1) // page_size
         page = max(1, min(page, total_pages))
-        
+
         start_idx = (page - 1) * page_size
         paged_slugs = all_slugs[start_idx:start_idx + page_size]
 
@@ -1697,7 +1697,7 @@ class CustomMessagesPlugin(BasePlugin):
         text += "💾=PS, 📄=DEF\n"
         text += "📝 <code>/list_msge &lt;id&gt;</code>\n"
         text += "📑 <code>/list_msge &lt;pág&gt;</code>"
-        
+
         await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
     async def view_msge(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

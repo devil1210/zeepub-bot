@@ -65,13 +65,13 @@ async def test_state_cleanup_on_new_book(monkeypatch):
     mock_state = MagicMock()
     mock_state.get_user_state.return_value = st
     monkeypatch.setattr(cb, "state_manager", mock_state)
-    
+
     # Mock config
     mock_config = MagicMock()
     mock_config.FACEBOOK_PUBLISHERS = {uid}
     mock_config.ADMIN_USERS = set()
     monkeypatch.setattr(cb, "config", mock_config)
-    
+
     pub = AsyncMock()
     # Mock telegram_service.publicar_libro
     with patch("services.telegram_service.publicar_libro", pub):
@@ -85,7 +85,7 @@ async def test_state_cleanup_on_new_book(monkeypatch):
         context.bot.send_message = AsyncMock(return_value=send_msg)
 
         await cb.button_handler(update, context)
-        
+
         # All temp keys should be gone
         for k in ("epub_buffer", "meta_pendiente", "portada_pendiente", "titulo_pendiente", "fb_caption"):
             assert k not in st, f"Key '{k}' should have been cleaned up"

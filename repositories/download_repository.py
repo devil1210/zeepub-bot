@@ -78,7 +78,7 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 """
-                INSERT INTO download_history 
+                INSERT INTO download_history
                 (user_id, title, author, download_url, file_size)
                 VALUES (?, ?, ?, ?, ?)
                 """,

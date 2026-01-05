@@ -21,7 +21,7 @@ def mock_dependencies():
         "config": MagicMock(),
     }
     modules_to_patch["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
-    
+
     with patch.dict(sys.modules, modules_to_patch):
         # We need to ensure handlers.message_handlers is reloaded if already imported
         if "handlers.message_handlers" in sys.modules:
@@ -41,7 +41,7 @@ async def test_recibir_texto_group_chat_suppression(monkeypatch):
 
     mock_state_manager = MagicMock()
     mock_state_manager.get_user_state.return_value = {}
-    
+
     # Use a local reference to state_manager in the module
     import handlers.message_handlers as mh
     monkeypatch.setattr(mh, "state_manager", mock_state_manager)

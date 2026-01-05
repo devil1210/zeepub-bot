@@ -7,15 +7,15 @@ def client(monkeypatch):
     with patch("core.bot.ZeePubBot") as mock_bot:
         mock_instance = mock_bot.return_value
         mock_instance.initialize = AsyncMock()
-        
+
         # Ensure routes are registered
         monkeypatch.setenv("ENABLE_MINI_APP", "True")
-        
+
         import importlib
         import api.main
         importlib.reload(api.main)
         from api.main import app
-        
+
         from fastapi.testclient import TestClient
         return TestClient(app)
 
@@ -81,7 +81,7 @@ def test_book_detail_parsing(client, monkeypatch):
         ]
         mock_feed_obj.feed.get = lambda k, d=None: getattr(mock_feed_obj.feed, k, d)
         mock_feed.return_value = mock_feed_obj
-        
+
         monkeypatch.setenv("DEV_MODE", "True")
         response = client.post("/api/bot?uid=123", json={
             "action": "book-detail",

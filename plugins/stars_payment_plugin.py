@@ -25,13 +25,13 @@ class StarsPaymentPlugin(BasePlugin):
     async def initialize(self, bot_instance) -> bool:
         self.bot = bot_instance.bot
         self.cms = bot_instance.plugin_manager.get_plugin("custom_messages")
-        
+
         # Registrar handlers de pago
         bot_instance.add_handler(PreCheckoutQueryHandler(self.pre_checkout_handler))
         bot_instance.add_handler(
             MessageHandler(filters.SUCCESSFUL_PAYMENT, self.successful_payment_handler)
         )
-        
+
         logger.info("StarsPaymentPlugin inicializado y handlers registrados.")
         return True
 
@@ -49,11 +49,11 @@ class StarsPaymentPlugin(BasePlugin):
         """Maneja el pago exitoso y actualiza el nivel del usuario."""
         payment = update.message.successful_payment
         user = update.effective_user
-        
+
         # El payload contiene el nivel solicitado
         payload = payment.invoice_payload
         # Ejemplo payload: "upgrade_vip" o "upgrade_premium"
-        
+
         new_role = "free"
         if "premium" in payload.lower():
             new_role = "premium"
@@ -68,7 +68,7 @@ class StarsPaymentPlugin(BasePlugin):
             role=new_role,
             nickname=user.first_name
         )
-        
+
         # Limpiar caché del servicio de usuario
         await invalidate_user_cache(user.id)
 
@@ -87,14 +87,14 @@ class StarsPaymentPlugin(BasePlugin):
             text=text,
             parse_mode="HTML"
         )
-        
+
         logger.info(f"Usuario {user.id} mejorado a {new_role} vía Stars.")
 
     async def create_stars_invoice_link(self, title: str, description: str, payload: str, amount: int) -> str:
         """Genera un enlace de factura para Telegram Stars."""
         # "XTR" es el código de moneda para Telegram Stars
         prices = [LabeledPrice("Estrellas", amount)]
-        
+
         # createInvoiceLink es el método para generar el enlace que se usa en la Mini App
         link = await self.bot.create_invoice_link(
             title=title,

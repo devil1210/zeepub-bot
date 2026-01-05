@@ -11,7 +11,7 @@ from plugins.custom_messages_plugin import CustomMessagesPlugin
 async def test_welcome_handler_uses_fallback(monkeypatch):
     mock_config = MagicMock()
     monkeypatch.setattr(plugin_mod, "config", mock_config)
-    
+
     plugin = CustomMessagesPlugin()
     plugin._get_setting = MagicMock(return_value=None)
     plugin._get_message = MagicMock(return_value=None)

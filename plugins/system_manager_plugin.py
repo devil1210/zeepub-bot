@@ -432,10 +432,10 @@ class SystemManagerPlugin(BasePlugin):
                 content = f.read()
 
             # Pattern to match the image tag for zeepubs_bot service
-            # Supports both commented out and active image lines for robustness, 
+            # Supports both commented out and active image lines for robustness,
             # but targets the ghcr.io one by default as seen in the file.
             pattern = r"(image:\s+ghcr\.io/devil1210/zeepub-bot:)(.*)"
-            
+
             if not re.search(pattern, content):
                  # Fallback for standard docker hub image if ghcr is not used or commented
                  pattern = r"(image:\s+devil1210/zeepub-bot:)(.*)"
@@ -449,7 +449,7 @@ class SystemManagerPlugin(BasePlugin):
                 return
 
             new_content = re.sub(pattern, rf"\g<1>{new_tag}", content)
-            
+
             with open(compose_path, "w") as f:
                 f.write(new_content)
 

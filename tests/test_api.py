@@ -10,7 +10,7 @@ def client(monkeypatch):
         mock_instance.initialize = AsyncMock()
         mock_instance.start_async = AsyncMock()
         mock_instance.stop_async = AsyncMock()
-        
+
         from api.main import app
         from fastapi.testclient import TestClient
         return TestClient(app)

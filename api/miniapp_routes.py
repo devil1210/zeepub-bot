@@ -635,7 +635,7 @@ async def check_user_access(
             'free': 6
         }
         level_id = role_to_level.get(role, 6)
-        
+
         logger.info(f"User {uid} not found in user_levels. Role effective: {role}. Creating entry with Level ID {level_id}.")
         await user_repo.create_minimal_user(uid, level_id=level_id)
         access_info = await user_repo.get_access_info(uid)
@@ -655,15 +655,15 @@ async def check_user_access(
     # - Es Staff (de Config o DB)
     # - Tiene acceso explícito por su nivel de DB
     # - Tiene acceso explícito por get_effective_user (fallbacks de config)
-    
+
     is_admin = (eff.get("role") == "admin") or access_info.get("isAdmin", False)
     is_staff = (eff.get("role") == "staff")
-    
+
     # Priority: Roles admin/staff TRUMP level restrictions
     has_access = (
-        is_admin or 
-        is_staff or 
-        eff.get("has_mini_app_access", False) or 
+        is_admin or
+        is_staff or
+        eff.get("has_mini_app_access", False) or
         access_info.get("hasAccess", False)
     )
 
