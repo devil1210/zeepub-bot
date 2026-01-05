@@ -332,7 +332,7 @@ function CatalogContent() {
             }))
 
             // Save current position before navigating to book details
-            const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href
+            const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href || currentFeedUrl
             if (currentUrl) {
                 sessionStorage.setItem("catalog-last-url", currentUrl)
             }

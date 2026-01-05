@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.20.4] - 2026-01-05
+
+### Fixed
+- **Navigation**: Corregida navegación de regreso ("Atrás") para que regrese correctamente al listado de la serie/colección en lugar de al inicio del catálogo.
+- **Backend**: Resuelto error `UnboundLocalError` que impedía la correcta extracción de enlaces de navegación en los detalles del libro.
+
 ## [4.20.3] - 2026-01-05
 
 ### Added

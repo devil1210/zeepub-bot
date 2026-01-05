@@ -388,6 +388,7 @@ async def handle_bot_request(
             cover_url = None
             size = None
             file_type = None
+            subsection_url = None
 
             links = getattr(entry, "links", [])
             logger.info(
