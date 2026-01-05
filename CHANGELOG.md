@@ -5,7 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.18.4] - 2026-01-05
+
+### Fixed
+- **Tests**: Corregidos fallos en `tests/test_api.py` relacionados con la nueva política de restricción de acceso por defecto. Se actualizaron los tests para usar UIDs autorizados.
+- **Estilo**: Eliminación de espacios en blanco al final de línea y formateo con `black`.
+
 ## [4.18.3] - 2026-01-05
+
 
 ### Fixed
 - **Acceso Staff**: Corregida la lógica de validación de acceso para asegurar que miembros del staff y administradores tengan acceso inmediato a la Mini App, incluso si no están registrados previamente en la base de datos.
