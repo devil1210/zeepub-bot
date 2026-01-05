@@ -5,7 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.18.5] - 2026-01-05
+
+### Added
+- **Comando /status**: Los administradores ahora pueden consultar el estado de otros usuarios citando sus mensajes con el comando `/status`.
+
 ## [4.18.4] - 2026-01-05
+
 
 ### Fixed
 - **Tests**: Corregidos fallos en `tests/test_api.py` relacionados con la nueva política de restricción de acceso por defecto. Se actualizaron los tests para usar UIDs autorizados.

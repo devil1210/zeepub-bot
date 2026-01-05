@@ -216,6 +216,16 @@ class CommandHandlers:
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /status: informa estado interno, nivel de usuario y descargas restantes."""
         uid = update.effective_user.id
+        target_user = update.effective_user
+
+        # Lógica para administradores: si citan un mensaje, mostrar status de ese usuario
+        if update.message.reply_to_message:
+            from config.config_settings import config
+            if uid in config.ADMIN_USERS:
+                target_user = update.message.reply_to_message.from_user
+                uid = target_user.id
+                logger.info(f"Admin {update.effective_user.id} requested status for user {uid}")
+
         st = state_manager.get_user_state(uid)
 
         # Obtener info extendida
@@ -322,7 +332,7 @@ class CommandHandlers:
 
             final_text = await cms.get_text(
                 "status_message",
-                user=update.effective_user,
+                user=target_user,
                 Nivel=system_role_text,
                 Rol=rol_val,
                 Descargas=left_text,
