@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.20.1] - 2026-01-05
+
+### Added
+- **UI Settings**: Selector de color personalizado con soporte para códigos HEX y Transparencia (alpha).
+- **UI Settings**: Reducción del tamaño de los círculos de colores predefinidos para una estética más limpia.
+- **UI Settings**: Nuevos colores predefinidos añadidos (Café, Zinc, Negro, Blanco).
+
+### Fixed
+- **UI Settings**: Ocultado de toggles críticos para prevenir bloqueos accidentales de configuración.
+
 ## [4.20.0] - 2026-01-05
 
 ### Added

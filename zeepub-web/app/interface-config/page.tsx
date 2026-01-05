@@ -294,9 +294,17 @@ export default function InterfaceConfigPage() {
                             </Card>
 
                             {/* Color Principal */}
-                            <div className="space-y-4">
-                                <Label className="text-base">Color Principal</Label>
-                                <div className="grid grid-cols-5 gap-3">
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-base font-bold">Color Principal</Label>
+                                    <div
+                                        className="w-8 h-8 rounded-lg shadow-sm border border-border/50"
+                                        style={{ backgroundColor: primaryColor }}
+                                    />
+                                </div>
+
+                                {/* Selección Rápida - Círculos más pequeños */}
+                                <div className="grid grid-cols-7 gap-2">
                                     {[
                                         { color: "#3b82f6", name: "Azul" },
                                         { color: "#ef4444", name: "Rojo" },
@@ -308,20 +316,82 @@ export default function InterfaceConfigPage() {
                                         { color: "#f97316", name: "Naranja" },
                                         { color: "#64748b", name: "Pizarra" },
                                         { color: "#171717", name: "Neutro" },
+                                        { color: "#000000", name: "Negro" },
+                                        { color: "#ffffff", name: "Blanco" },
+                                        { color: "#71717a", name: "Zinc" },
+                                        { color: "#451a03", name: "Café" },
                                     ].map((c) => (
                                         <button
                                             key={c.color}
                                             onClick={() => setPrimaryColor(c.color)}
                                             className={`
                                                 w-full aspect-square rounded-full flex items-center justify-center transition-all
-                                                ${primaryColor === c.color ? 'ring-2 ring-offset-2 ring-primary scale-110 shadow-lg' : 'hover:scale-105 hover:shadow-md'}
+                                                ${primaryColor.toLowerCase().startsWith(c.color.toLowerCase())
+                                                    ? 'ring-2 ring-offset-2 ring-primary scale-110 shadow-lg'
+                                                    : 'hover:scale-105 hover:bg-muted/50'}
                                             `}
                                             style={{ backgroundColor: c.color }}
                                             title={c.name}
                                         >
-                                            {primaryColor === c.color && <Check className="w-4 h-4 text-white drop-shadow-md" />}
+                                            {primaryColor.toLowerCase().startsWith(c.color.toLowerCase()) &&
+                                                <Check className="w-3 h-3 text-white drop-shadow-md" />}
                                         </button>
                                     ))}
+                                </div>
+
+                                {/* Color Personalizado */}
+                                <div className="p-4 bg-muted/30 border border-border/50 rounded-2xl space-y-4">
+                                    <Label className="text-sm font-semibold flex items-center gap-2">
+                                        <Palette className="w-4 h-4" />
+                                        Personalizar Color
+                                    </Label>
+
+                                    <div className="flex gap-4">
+                                        <div className="relative group">
+                                            <input
+                                                type="color"
+                                                value={primaryColor.length >= 7 ? primaryColor.substring(0, 7) : "#3b82f6"}
+                                                onChange={(e) => {
+                                                    const base = e.target.value;
+                                                    const alpha = primaryColor.length > 7 ? primaryColor.substring(7, 9) : "ff";
+                                                    setPrimaryColor(base + alpha);
+                                                }}
+                                                className="w-14 h-14 rounded-xl cursor-pointer bg-background border-2 border-border p-1"
+                                            />
+                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-background animate-pulse" />
+                                        </div>
+
+                                        <div className="flex-1 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-mono text-muted-foreground">HEX:</span>
+                                                <input
+                                                    type="text"
+                                                    value={primaryColor}
+                                                    onChange={(e) => setPrimaryColor(e.target.value)}
+                                                    className="bg-background border border-border rounded-lg px-2 py-1 text-sm font-mono w-full focus:ring-1 focus:ring-primary outline-none"
+                                                    placeholder="#RRGGBB(AA)"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1.5 font-sans">
+                                                <div className="flex justify-between text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                                                    <span>Transparencia</span>
+                                                    <span>{Math.round((parseInt(primaryColor.length > 7 ? primaryColor.substring(7, 9) : "ff", 16) / 255) * 100)}%</span>
+                                                </div>
+                                                <Slider
+                                                    value={[parseInt(primaryColor.length > 7 ? primaryColor.substring(7, 9) : "ff", 16) / 255]}
+                                                    min={0.1}
+                                                    max={1}
+                                                    step={0.01}
+                                                    onValueChange={(val) => {
+                                                        const base = primaryColor.length >= 7 ? primaryColor.substring(0, 7) : "#3b82f6";
+                                                        const alphaHex = Math.round(val[0] * 255).toString(16).padStart(2, '0');
+                                                        setPrimaryColor(base + alphaHex);
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
