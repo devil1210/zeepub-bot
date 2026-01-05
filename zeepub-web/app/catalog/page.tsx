@@ -303,7 +303,7 @@ function CatalogContent() {
 
     const handleBookClick = (entry: OPDSEntry) => {
         const subsectionLink = entry.links.find((l) => l.rel === "subsection")
-        const detailUrl = entry.detail_url || entry.links.find(l => l.rel === "self")?.href
+        const detailUrl = entry.detail_url || entry.id || entry.links.find(l => l.rel === "self")?.href
 
         if (subsectionLink) {
             handleNavigate(subsectionLink.href)
@@ -320,8 +320,11 @@ function CatalogContent() {
     const handleSearchBookClick = (book: Book) => {
         const detailUrl = book.detail_url || book.id
 
-        if (detailUrl && detailUrl.startsWith("http")) {
-            router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
+        if (detailUrl) {
+            const url = detailUrl.startsWith("http") ? detailUrl : null
+            if (url) {
+                router.push(`/book?id=${encodeURIComponent(url)}`)
+            }
         } else if (book.is_folder && book.subsection_url) {
             // Si es una carpeta en búsqueda, navegamos a ella en el catálogo y limpiamos búsqueda
             setSearchQuery("")

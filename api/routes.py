@@ -208,12 +208,19 @@ async def get_feed(
 
             for link in getattr(entry, "links", []):
                 rel = link.get("rel", "")
-                if rel == "self" or rel == "alternate":
+                l_type = link.get("type", "")
+                href = normalize_url(link.get("href"))
+
+                if rel == "self" or rel == "alternate" or "type=entry" in l_type:
                     if not detail_url or rel == "self":
-                        detail_url = normalize_url(link.get("href"))
-                elif "acquisition" in rel or "epub" in link.get("type", ""):
-                    file_type = link.get("type")
+                        detail_url = href
+                elif "acquisition" in rel or "epub" in l_type:
+                    file_type = l_type
                     size = link.get("contentlength") or link.get("length")
+
+            # Fallback for detail_url: if missing, use ID after normalization
+            if not detail_url and entry.get("id"):
+                detail_url = normalize_url(entry.get("id"))
 
             entries.append(
                 {

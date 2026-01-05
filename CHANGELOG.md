@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.16.10] - 2026-01-05
+
+### Fixed
+- **Navegación de Detalles (Global)**: Extendida la lógica de extracción robusta de `detail_url` a todas las rutas del catálogo (no solo búsqueda). Ahora cualquier elemento con un ID válido intentará cargar su página de detalles si no tiene un link explícito, solucionando el problema de pantallas en blanco o clics inactivos.
+
 ## [4.16.9] - 2026-01-05
 
 ### Fixed
