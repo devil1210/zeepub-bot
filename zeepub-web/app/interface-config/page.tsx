@@ -58,7 +58,7 @@ export default function InterfaceConfigPage() {
         setIsSaving(true)
         try {
             await saveGlobalSettings(targetRole)
-            toast.success(`Configuración guardada para: ${targetRole} `)
+            toast.success(`Configuración guardada para: ${targetRole}`)
         } catch (error) {
             toast.error("Error al guardar la configuración global")
         } finally {
@@ -119,9 +119,9 @@ export default function InterfaceConfigPage() {
                                         key={color.name}
                                         onClick={() => setPrimaryColor(colorValue)}
                                         className={`
-                      relative h-12 rounded-lg transition-all
-                      ${isSelected ? "ring-2 ring-offset-2 ring-offset-background ring-white scale-110" : "hover:scale-105"}
-                    `}
+                                            relative h-12 rounded-lg transition-all
+                                            ${isSelected ? "ring-2 ring-offset-2 ring-offset-background ring-white scale-110" : "hover:scale-105"}
+                                        `}
                                         style={{ backgroundColor: colorValue }}
                                         aria-label={color.name}
                                     >
@@ -157,7 +157,6 @@ export default function InterfaceConfigPage() {
                                         if (val.length === 6 || val.length === 3) {
                                             setPrimaryColor(`#${val}`)
                                         } else if (val.length > 0) {
-                                            // Allow partial input while typing
                                             setPrimaryColor(`#${val}`)
                                         }
                                     }}
