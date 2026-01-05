@@ -350,20 +350,6 @@ function CatalogContent() {
         return (
             <div className="min-h-screen bg-background pt-safe">
                 <TransparentHeader />
-                <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-                    <Skeleton className="h-10 w-48 mb-6" />
-                    <div className="grid grid-cols-2 gap-4">
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <div key={i} className="space-y-3">
-                                <Skeleton className="aspect-[3/4] w-full rounded-xl" />
-                                <div className="space-y-2">
-                                    <Skeleton className="h-4 w-full" />
-                                    <Skeleton className="h-3 w-2/3" />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
             </div>
         )
     }
@@ -402,27 +388,6 @@ function CatalogContent() {
                 {/* Search Results Inline */}
                 {searchQuery && (
                     <div className="space-y-3">
-                        {isSearching && searchResults.length === 0 && (
-                            <div className="space-y-3">
-                                {[1, 2, 3, 4].map((i) => (
-                                    <Card key={i} className="p-4 border-border flex gap-4">
-                                        <Skeleton className="w-16 h-24 rounded-lg flex-shrink-0" />
-                                        <div className="flex-1 space-y-3 py-1">
-                                            <div className="space-y-2">
-                                                <Skeleton className="h-4 w-3/4" />
-                                                <Skeleton className="h-3 w-1/2" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <Skeleton className="h-2 w-full opacity-50" />
-                                                <Skeleton className="h-2 w-2/3 opacity-50" />
-                                            </div>
-                                            <Skeleton className="h-7 w-24 rounded-md" />
-                                        </div>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
-
                         {searchResults.map((book) => (
                             <Card
                                 key={book.id}
@@ -605,14 +570,7 @@ export default function CatalogPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-background pt-safe p-4 w-full h-full">
-                <div className="max-w-2xl mx-auto space-y-4">
-                    <Skeleton className="h-10 w-48" />
-                    <div className="grid grid-cols-2 gap-4">
-                        {[1, 2, 3, 4].map(i => (
-                            <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />
-                        ))}
-                    </div>
-                </div>
+                <TransparentHeader />
             </div>
         }>
             <CatalogContent />

@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.16.0] - 2026-01-04
+
+### Removed
+- **Skeletons de Carga**: Eliminados todos los skeleton loaders de Catálogo y Búsqueda por petición del usuario. Ahora los resultados cargan de forma natural sin placeholders visuales.
+
 ## [4.15.3] - 2026-01-04
 
 ### Fixed

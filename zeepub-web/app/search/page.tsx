@@ -173,33 +173,6 @@ export default function SearchPage() {
 
           {/* Results */}
           <div className="space-y-3">
-            {isLoading && books.length === 0 && (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Card key={i} className="p-4 border-border flex gap-4">
-                    <Skeleton className="w-16 h-24 rounded-lg flex-shrink-0" />
-                    <div className="flex-1 space-y-3 py-1">
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                      </div>
-                      <div className="space-y-1">
-                        <Skeleton className="h-2 w-full opacity-50" />
-                        <Skeleton className="h-2 w-2/3 opacity-50" />
-                      </div>
-                      <Skeleton className="h-7 w-24 rounded-md" />
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-
-            {isLoading && books.length > 0 && (
-              <div className="h-1 w-full bg-primary/10 overflow-hidden rounded-full mb-4">
-                <div className="h-full bg-primary animate-progress-loading w-full" />
-              </div>
-            )}
-
             {books.map((book, index) => (
               <Card
                 key={book.id}
