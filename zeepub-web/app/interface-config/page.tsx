@@ -53,6 +53,8 @@ export default function InterfaceConfigPage() {
         setShowSettingsInMenu,
         saveGlobalSettings,
         applySettings,
+        enableAnimations,
+        setEnableAnimations,
     } = useTheme()
 
     const { isAdmin, userProfile } = useTelegramContext()
@@ -413,6 +415,19 @@ export default function InterfaceConfigPage() {
                                     <span>Normal</span>
                                     <span>Grande</span>
                                 </div>
+                            </div>
+
+                            {/* Animaciones */}
+                            <div className="flex items-center justify-between pt-4 border-t border-border mt-6">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="animations-toggle" className="text-base font-bold">Animaciones Fluidas</Label>
+                                    <p className="text-xs text-muted-foreground">Transiciones suaves entre páginas</p>
+                                </div>
+                                <Switch
+                                    id="animations-toggle"
+                                    checked={enableAnimations}
+                                    onCheckedChange={setEnableAnimations}
+                                />
                             </div>
                         </TabsContent>
 

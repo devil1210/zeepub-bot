@@ -69,6 +69,14 @@ export default function RootLayout({
                   html.style.setProperty("--font-scale", savedScale);
                   html.style.fontSize = (parseFloat(savedScale) * 100) + "%";
 
+                  // Apply Animations
+                  var savedAnimations = localStorage.getItem("enableAnimations");
+                  if (savedAnimations === "true") {
+                    html.classList.add("animations-enabled");
+                  } else {
+                    html.classList.remove("animations-enabled");
+                  }
+
                   // Color Utils
                   function getContrastColor(hex) {
                     var r = parseInt(hex.substr(1, 2), 16);

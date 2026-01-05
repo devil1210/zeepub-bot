@@ -23,6 +23,8 @@ interface ThemeContextType {
   setShowSettingsInMenu: (show: boolean) => void
   saveGlobalSettings: (role: string) => Promise<void>
   applySettings: (settings: any, persistToLocal?: boolean) => void
+  enableAnimations: boolean
+  setEnableAnimations: (enabled: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -46,6 +48,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setShowSettingsInMenu: () => { },
   saveGlobalSettings: async () => { },
   applySettings: () => { },
+  enableAnimations: false,
+  setEnableAnimations: () => { },
 })
 
 export function useTheme() {
@@ -115,6 +119,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [showDonateCard, setShowDonateCard] = useState(true)
   const [showHelpCard, setShowHelpCard] = useState(true)
   const [showSettingsInMenu, setShowSettingsInMenu] = useState(false)
+  const [enableAnimations, setEnableAnimations] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [shouldPersist, setShouldPersist] = useState(true)
   const [isResetting, setIsResetting] = useState(false)
@@ -132,6 +137,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedShowDonateCard = localStorage.getItem("showDonateCard")
     const savedShowHelpCard = localStorage.getItem("showHelpCard")
     const savedShowSettingsInMenu = localStorage.getItem("showSettingsInMenu")
+    const savedEnableAnimations = localStorage.getItem("enableAnimations")
 
     // Sync with Backend (Role Defaults)
     const fetchRemoteDefaults = async () => {
@@ -196,6 +202,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setShowSettingsInMenu(data.showSettingsInMenu)
             localStorage.setItem("showSettingsInMenu", String(data.showSettingsInMenu))
           }
+
+          if (data.enableAnimations !== undefined) {
+            setEnableAnimations(data.enableAnimations)
+            localStorage.setItem("enableAnimations", String(data.enableAnimations))
+          }
         }
       } catch (error) {
         console.error("Error fetching UI defaults:", error)
@@ -215,6 +226,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedShowDonateCard !== null) setShowDonateCard(savedShowDonateCard === "true")
     if (savedShowHelpCard !== null) setShowHelpCard(savedShowHelpCard === "true")
     if (savedShowSettingsInMenu !== null) setShowSettingsInMenu(savedShowSettingsInMenu === "true")
+    if (savedEnableAnimations !== null) setEnableAnimations(savedEnableAnimations === "true")
 
     // Then fetch remote defaults for missing ones
     fetchRemoteDefaults()
@@ -350,6 +362,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [showSettingsInMenu, isLoaded, shouldPersist])
 
+  useEffect(() => {
+    if (!isLoaded) return
+    const html = document.documentElement
+    if (enableAnimations) {
+      html.classList.add("animations-enabled")
+    } else {
+      html.classList.remove("animations-enabled")
+    }
+    if (shouldPersist) {
+      localStorage.setItem("enableAnimations", String(enableAnimations))
+    }
+  }, [enableAnimations, isLoaded, shouldPersist])
+
   const saveGlobalSettings = async (role: string) => {
     try {
       const { callBotAPI } = await import("@/lib/api")
@@ -362,7 +387,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         showSearchBar,
         showDonateCard,
         showHelpCard,
-        showSettingsInMenu
+        showSettingsInMenu,
+        enableAnimations
       }
       await callBotAPI("ui_settings", { subAction: "set", role, settings })
     } catch (error) {
@@ -384,6 +410,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.showDonateCard !== undefined) setShowDonateCard(settings.showDonateCard)
     if (settings.showHelpCard !== undefined) setShowHelpCard(settings.showHelpCard)
     if (settings.showSettingsInMenu !== undefined) setShowSettingsInMenu(settings.showSettingsInMenu)
+    if (settings.enableAnimations !== undefined) setEnableAnimations(settings.enableAnimations)
 
     // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
     if (persistToLocal) {
@@ -396,6 +423,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("showDonateCard", String(settings.showDonateCard ?? true))
       localStorage.setItem("showHelpCard", String(settings.showHelpCard ?? true))
       localStorage.setItem("showSettingsInMenu", String(settings.showSettingsInMenu ?? false))
+      localStorage.setItem("enableAnimations", String(settings.enableAnimations ?? false))
     }
   }
 
@@ -420,6 +448,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setShowHelpCard,
         showSettingsInMenu,
         setShowSettingsInMenu,
+        enableAnimations,
+        setEnableAnimations,
         saveGlobalSettings,
         applySettings,
       }}
