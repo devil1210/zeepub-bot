@@ -139,31 +139,57 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const { callBotAPI } = await import("@/lib/api")
         const data = await callBotAPI("ui_settings", { subAction: "get", role: "auto" })
         if (data) {
-          // Branding Override Logic:
-          // If the user has a value in localStorage that is the system default (e.g. Blue #3b82f6),
-          // but their level has a custom Branding color (e.g. Staff Orange), 
-          // we override the local default with the Level Branding.
-          const systemDefaultBlue = "#3b82f6"
+          // CRITICAL BRANDING LOGIC:
+          // Level branding should ALWAYS apply on initial load.
+          // Users can override by going to "Para ti" and customizing.
+          // This ensures Staff/Admin see their official team colors.
 
-          // 1. Dark Mode
-          if (!savedTheme && data.isDarkMode !== undefined) setIsDarkMode(data.isDarkMode)
-
-          // 2. Primary Color Branding
-          if ((!savedColor || savedColor === systemDefaultBlue) && data.primaryColor && data.primaryColor !== systemDefaultBlue) {
+          // Always apply level defaults, overriding localStorage
+          if (data.primaryColor) {
             setPrimaryColor(data.primaryColor)
             localStorage.setItem("primaryColor", data.primaryColor)
-          } else if (!savedColor && data.primaryColor) {
-            setPrimaryColor(data.primaryColor)
           }
 
-          // 3. Other Scales/Cards (only if not customized)
-          if (!savedScale && data.uiScale !== undefined) setUiScale(data.uiScale)
-          if (!savedAvatarScale && data.avatarScale !== undefined) setAvatarScale(data.avatarScale)
-          if (!savedShowSearchCard && data.showSearchCard !== undefined) setShowSearchCard(data.showSearchCard)
-          if (!savedShowSearchBar && data.showSearchBar !== undefined) setShowSearchBar(data.showSearchBar)
-          if (!savedShowDonateCard && data.showDonateCard !== undefined) setShowDonateCard(data.showDonateCard)
-          if (!savedShowHelpCard && data.showHelpCard !== undefined) setShowHelpCard(data.showHelpCard)
-          if (!savedShowSettingsInMenu && data.showSettingsInMenu !== undefined) setShowSettingsInMenu(data.showSettingsInMenu)
+          if (data.isDarkMode !== undefined) {
+            setIsDarkMode(data.isDarkMode)
+            localStorage.setItem("theme", data.isDarkMode ? "dark" : "light")
+          }
+
+          // Other settings - also apply and persist level defaults
+          if (data.uiScale !== undefined) {
+            setUiScale(data.uiScale)
+            localStorage.setItem("uiScale", data.uiScale.toString())
+          }
+
+          if (data.avatarScale !== undefined) {
+            setAvatarScale(data.avatarScale)
+            localStorage.setItem("avatarScale", data.avatarScale.toString())
+          }
+
+          if (data.showSearchCard !== undefined) {
+            setShowSearchCard(data.showSearchCard)
+            localStorage.setItem("showSearchCard", String(data.showSearchCard))
+          }
+
+          if (data.showSearchBar !== undefined) {
+            setShowSearchBar(data.showSearchBar)
+            localStorage.setItem("showSearchBar", String(data.showSearchBar))
+          }
+
+          if (data.showDonateCard !== undefined) {
+            setShowDonateCard(data.showDonateCard)
+            localStorage.setItem("showDonateCard", String(data.showDonateCard))
+          }
+
+          if (data.showHelpCard !== undefined) {
+            setShowHelpCard(data.showHelpCard)
+            localStorage.setItem("showHelpCard", String(data.showHelpCard))
+          }
+
+          if (data.showSettingsInMenu !== undefined) {
+            setShowSettingsInMenu(data.showSettingsInMenu)
+            localStorage.setItem("showSettingsInMenu", String(data.showSettingsInMenu))
+          }
         }
       } catch (error) {
         console.error("Error fetching UI defaults:", error)
