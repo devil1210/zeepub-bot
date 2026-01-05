@@ -11,6 +11,7 @@ import {
     ChevronLeft,
     BookOpen,
     Download,
+    Search,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { OpdsClient } from "@/lib/opds-client"
@@ -21,6 +22,7 @@ import { useStrings } from "@/components/strings-provider"
 
 import { Pagination } from "@/components/pagination"
 import { TransparentHeader } from "@/components/transparent-header"
+import { Input } from "@/components/ui/input"
 
 function CatalogContent() {
     const [currentFeed, setCurrentFeed] = useState<OPDSFeed | null>(null)
@@ -37,6 +39,32 @@ function CatalogContent() {
 
     // Track current feed URL for reliable history
     const [currentFeedUrl, setCurrentFeedUrl] = useState<string>("")
+
+    // Replicando funcionalidad v3.13.8: Búsqueda reactiva en catálogo
+    const [searchQuery, setSearchQuery] = useState("")
+    const searchTimeout = useRef<NodeJS.Timeout | null>(null)
+
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            // Si el buscador se limpia, volvemos al feed actual o root
+            return
+        }
+
+        if (searchTimeout.current) {
+            clearTimeout(searchTimeout.current)
+        }
+
+        searchTimeout.current = setTimeout(() => {
+            // Navegamos a la página de búsqueda con el término
+            router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+        }, 600)
+
+        return () => {
+            if (searchTimeout.current) {
+                clearTimeout(searchTimeout.current)
+            }
+        }
+    }, [searchQuery, router])
 
     // Load feed function
     const loadFeed = useCallback(async (url?: string, isPagination = false) => {
@@ -98,20 +126,17 @@ function CatalogContent() {
         const upLink = currentFeed?.links?.find(l => l.rel === "up")
         if (upLink) {
             console.log("[Catalog] Going back via UP link:", upLink.href)
-            // We don't push to history when going up/back, just load
-            setCurrentFeedUrl(upLink.href) // Important to update current tracked URL
+            setCurrentFeedUrl(upLink.href)
             loadFeed(upLink.href)
             window.scrollTo(0, 0)
             return
         }
 
-        console.log("[Catalog] No history or UP link, reloading catalog root")
-        // No history - reload the root catalog
+        // Fix: Si estamos en el inicio del catálogo, el botón "Subir" de la paginación debe llevar al Home
+        console.log("[Catalog] No history or UP link, returning to Home")
         sessionStorage.removeItem("catalog-history")
-        setCurrentFeedUrl("")
-        loadFeed()  // Load root catalog
-        window.scrollTo(0, 0)
-    }, [loadFeed, currentFeed])
+        router.push("/")
+    }, [loadFeed, currentFeed, router])
 
     // Navigate into a subsection
     const handleNavigate = useCallback((url: string) => {
@@ -257,24 +282,23 @@ function CatalogContent() {
     return (
         <div className="min-h-screen bg-background pt-safe pb-20">
             <TransparentHeader />
-            <main className="max-w-2xl mx-auto px-4 py-6 space-y-2 text-foreground">
-                {/* Visible back button when there's history or an UP link */}
-                {(history.length > 0 || currentFeed?.links?.some(l => l.rel === "up")) && (
-                    <Button
-                        variant="default"
-                        size="sm"
-                        onClick={handleGoBack}
-                        className="mb-4 bg-primary hover:bg-primary/90"
-                    >
-                        <ChevronLeft className="w-4 h-4 mr-1" />
-                        {t("catalog_back")}
-                    </Button>
-                )}
+            <main className="max-w-2xl mx-auto px-4 py-6 space-y-4 text-foreground">
+                {/* Replicando funcionalidad v3.13.8: Buscador reactivo en catálogo */}
+                <div className="relative mb-2">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                        type="text"
+                        placeholder={t("search_placeholder")}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-12 h-12 bg-card border-border rounded-xl shadow-sm focus:ring-primary/20"
+                    />
+                </div>
 
                 {/* Feed title */}
                 {currentFeed?.title && (
-                    <div className="pb-2">
-                        <h1 className="text-lg font-semibold text-foreground">{currentFeed.title}</h1>
+                    <div className="pb-1">
+                        <h1 className="text-lg font-bold text-foreground">{currentFeed.title}</h1>
                     </div>
                 )}
 
@@ -368,13 +392,13 @@ function CatalogContent() {
                     return null
                 })}
 
-                {currentFeed && (currentFeed.entries.length > 0 || history.length > 0 || !!currentFeed.links?.some(l => l.rel === "up")) && (
+                {currentFeed && (
                     <Pagination
                         currentPage={currentFeed.currentPage}
                         totalPages={currentFeed.totalPages}
                         hasNextPage={!!currentFeed.nextPage}
                         hasPrevPage={!!currentFeed.prevPage}
-                        hasUpPage={history.length > 0 || !!currentFeed.links?.some(l => l.rel === "up")}
+                        hasUpPage={true} // Siempre habilitamos subir para volver a Home si no hay jerarquía
                         onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
                         onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
                         onUpPage={handleGoBack}

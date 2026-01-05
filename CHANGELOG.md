@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.15.1] - 2026-01-04
+
+### Added
+- **Buscador en Catálogo**: Integrado buscador reactivo (estilo v3.13.8) directamente en la página de Catálogo.
+- **Refinamiento de Navegación**: Eliminado botón "Subir nivel" superior por redundancia.
+- **Fix de Navegación**: Corregido error donde la navegación se quedaba "atrapada" en la raíz del catálogo; ahora el botón "Subir" redirige correctamente a Inicio si no hay más niveles.
+
 ## [4.15.0] - 2026-01-04
 
 ### Added
