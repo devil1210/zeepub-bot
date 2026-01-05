@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.18.8] - 2026-01-05
+
+### Added
+- **Configuración**: Añadidas opciones de personalización en Apariencia para ocultar la tarjeta de búsqueda y mostrar una barra de búsqueda directa en el inicio.
+- **Búsqueda**: Soporte para consultas iniciales vía parámetros de URL en la página de búsqueda.
+
 ## [4.18.7] - 2026-01-05
 
 ### Fixed

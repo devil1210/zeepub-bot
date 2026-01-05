@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
-import { Sun, Moon, Palette } from "lucide-react"
+import { Sun, Moon, Palette, BookOpen } from "lucide-react"
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
 import { useTheme } from "@/components/theme-provider"
@@ -21,7 +21,20 @@ const colorPresets = [
 
 export default function InterfaceConfigPage() {
     // Use global theme context
-    const { isDarkMode, setIsDarkMode, primaryColor, setPrimaryColor, uiScale, setUiScale, avatarScale, setAvatarScale } = useTheme()
+    const {
+        isDarkMode,
+        setIsDarkMode,
+        primaryColor,
+        setPrimaryColor,
+        uiScale,
+        setUiScale,
+        avatarScale,
+        setAvatarScale,
+        showSearchCard,
+        setShowSearchCard,
+        showSearchBar,
+        setShowSearchBar
+    } = useTheme()
 
     return (
         <AccessGuard>
@@ -205,6 +218,41 @@ export default function InterfaceConfigPage() {
                                 >
                                     Vista previa del tamaño de texto actual
                                 </p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Configuración de Búsqueda */}
+                    <Card className="p-6 border-border">
+                        <div className="flex items-center gap-3 mb-6">
+                            <BookOpen className="w-5 h-5 text-primary" />
+                            <div>
+                                <Label className="text-base font-semibold">Configuración de Búsqueda</Label>
+                                <p className="text-xs text-muted-foreground">
+                                    Personaliza cómo aparece la búsqueda en el inicio
+                                </p>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label className="text-sm font-medium">Mostrar Tarjeta de Búsqueda</Label>
+                                    <p className="text-xs text-muted-foreground">Muestra el acceso directo en "Funciones"</p>
+                                </div>
+                                <Switch
+                                    checked={showSearchCard}
+                                    onCheckedChange={setShowSearchCard}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label className="text-sm font-medium">Mostrar Barra de Búsqueda</Label>
+                                    <p className="text-xs text-muted-foreground">Muestra una barra directamente en el inicio</p>
+                                </div>
+                                <Switch
+                                    checked={showSearchBar}
+                                    onCheckedChange={setShowSearchBar}
+                                />
                             </div>
                         </div>
                     </Card>

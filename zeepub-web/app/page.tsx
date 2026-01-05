@@ -3,14 +3,20 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3, Settings } from "lucide-react"
+import { BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3, Settings, Search } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { useStrings } from "@/components/strings-provider"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { AccessGuard } from "@/components/access-guard"
 import { UserLevelBadge } from "@/components/user-level-badge"
 import { callBotAPI } from "@/lib/api"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { TransparentHeader } from "@/components/transparent-header"
+import { useTheme } from "@/components/theme-provider"
 
 interface BotInfo {
   name: string
@@ -18,11 +24,6 @@ interface BotInfo {
   description: string
   avatar: string
 }
-
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { TransparentHeader } from "@/components/transparent-header"
-import { useTheme } from "@/components/theme-provider"
 
 export default function HomePage() {
   const {
@@ -38,7 +39,10 @@ export default function HomePage() {
     setThreadId
   } = useTelegramContext()
   const { t } = useStrings()
-  const { avatarScale } = useTheme()
+  const { avatarScale, showSearchCard, showSearchBar } = useTheme()
+  const router = useRouter()
+  const [homeSearchQuery, setHomeSearchQuery] = useState("")
+
   const [botInfo, setBotInfo] = useState<BotInfo>({
     name: "ZeePubBot",
     username: "@ZeePubBot",
@@ -51,7 +55,6 @@ export default function HomePage() {
   const [groupPrivacy, setGroupPrivacy] = useState(true)
 
   useEffect(() => {
-    // Fetch bot info from API
     async function fetchBotInfo() {
       try {
         const info = await callBotAPI("bot_info")
@@ -65,21 +68,15 @@ export default function HomePage() {
     fetchBotInfo()
   }, [])
 
-  useEffect(() => {
-    if (user) {
-      console.log("[v0] Telegram user loaded:", user)
-    }
-  }, [user])
-
   const menuItems = [
-    { icon: BookOpen, label: t("menu_search_label"), href: "/search", description: t("menu_search_desc") },
-    { icon: Library, label: t("menu_catalog_label"), href: "/catalog", description: t("menu_catalog_desc") },
-    { icon: Download, label: t("menu_downloads_label"), href: "/downloads", description: t("menu_downloads_desc") },
-    { icon: BarChart3, label: t("menu_status_label"), href: "/status", description: t("menu_status_desc") },
-    { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados", adminOnly: true },
-    { icon: Heart, label: t("menu_donate_label"), href: "/donate", description: t("menu_donate_desc") },
-    { icon: Info, label: t("menu_help_label"), href: "/help", description: t("menu_help_desc") },
-    { icon: ShieldCheck, label: "Gestión Accesos", href: "/admin/levels", description: "Configura niveles y permisos", adminOnly: true },
+    { icon: BookOpen, label: t("menu_search_label"), href: "/search", description: t("menu_search_desc"), id: "search" },
+    { icon: Library, label: t("menu_catalog_label"), href: "/catalog", description: t("menu_catalog_desc"), id: "catalog" },
+    { icon: Download, label: t("menu_downloads_label"), href: "/downloads", description: t("menu_downloads_desc"), id: "downloads" },
+    { icon: BarChart3, label: t("menu_status_label"), href: "/status", description: t("menu_status_desc"), id: "status" },
+    { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados", adminOnly: true, id: "links" },
+    { icon: Heart, label: t("menu_donate_label"), href: "/donate", description: t("menu_donate_desc"), id: "donate" },
+    { icon: Info, label: t("menu_help_label"), href: "/help", description: t("menu_help_desc"), id: "help" },
+    { icon: ShieldCheck, label: "Gestión Accesos", href: "/admin/levels", description: "Configura niveles y permisos", adminOnly: true, id: "admin" },
   ]
 
   return (
@@ -87,8 +84,6 @@ export default function HomePage() {
       <div className="min-h-screen bg-background pt-safe">
         <TransparentHeader />
 
-
-        {/* Bot Profile Section */}
         <div className="max-w-2xl mx-auto px-4 py-8">
           {user && (
             <div className="text-center mb-4">
@@ -107,7 +102,6 @@ export default function HomePage() {
               <AvatarImage src={botInfo.avatar || "/placeholder.svg"} alt={botInfo.name} />
               <AvatarFallback className="bg-primary text-primary-foreground text-sm">ZP</AvatarFallback>
             </Avatar>
-            {/* Admin toggle oculto en el nombre del bot */}
             <h2
               className={`text-xl font-bold mb-1 ${typeof isAdmin === 'boolean' && isAdmin ? 'cursor-pointer select-none' : ''}`}
               onClick={() => {
@@ -122,13 +116,40 @@ export default function HomePage() {
             <p className="text-xs text-foreground/80 leading-relaxed max-w-xs">{botInfo.description}</p>
           </div>
 
-
-          {/* Menu Items / Admin Panel */}
           <div className="space-y-6">
             <div className="space-y-3">
+              {showSearchBar && (
+                <div className="mb-6 relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                    <Search className="w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder={t("search_placeholder")}
+                    value={homeSearchQuery}
+                    onChange={(e) => setHomeSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && homeSearchQuery.trim()) {
+                        router.push(`/search?q=${encodeURIComponent(homeSearchQuery)}`)
+                      }
+                    }}
+                    className="pl-12 h-14 bg-card border-border rounded-2xl shadow-sm focus-visible:ring-primary/20 transition-all text-base"
+                  />
+                  {homeSearchQuery.trim() && (
+                    <Button
+                      onClick={() => router.push(`/search?q=${encodeURIComponent(homeSearchQuery)}`)}
+                      size="sm"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-bold shadow-md shadow-primary/20 animate-in fade-in zoom-in duration-200"
+                    >
+                      {t("search_button")}
+                    </Button>
+                  )}
+                </div>
+              )}
+
               <h3 className="text-xl font-bold mb-4">{t("home_functions")}</h3>
               {menuItems
-                .filter(item => !item.adminOnly)
+                .filter(item => !item.adminOnly && (item.id !== "search" || showSearchCard))
                 .map((item, index) => (
                   <a key={index} href={item.href}>
                     <Card className="p-3 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
@@ -151,7 +172,6 @@ export default function HomePage() {
               <div className="space-y-3 pt-4 border-t border-border">
                 <h3 className="text-lg font-bold">{t("home_admin_panel")}</h3>
                 <div className="space-y-2">
-                  {/* Apariencia - Solo en Admin Panel */}
                   <a href="/interface-config">
                     <Card className="p-3 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
                       <div className="flex items-center gap-3">
@@ -167,7 +187,6 @@ export default function HomePage() {
                     </Card>
                   </a>
 
-                  {/* Access Management - First Item (Rounded Top) */}
                   <a href="/admin/levels" className="block">
                     <Card className="p-3 bg-card hover:bg-secondary/50 transition-colors cursor-pointer border-border rounded-none rounded-t-xl border-b-0">
                       <div className="flex items-center gap-3">
@@ -183,7 +202,6 @@ export default function HomePage() {
                     </Card>
                   </a>
 
-                  {/* Links Management - Middle Item (No border radius) */}
                   <a href="/links" className="block -mt-px">
                     <Card className="p-3 bg-card hover:bg-secondary/50 transition-colors cursor-pointer border-border rounded-none border-b-0">
                       <div className="flex items-center gap-3">
@@ -199,7 +217,6 @@ export default function HomePage() {
                     </Card>
                   </a>
 
-                  {/* Settings Cards - Middle Items (No border radius) */}
                   <Card className="p-3 bg-card border-border rounded-none border-b-0 -mt-px">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="business-mode" className="text-sm font-medium">Business Mode</Label>
@@ -214,7 +231,6 @@ export default function HomePage() {
                     </div>
                   </Card>
 
-                  {/* Privacy - Last Item (Rounded Bottom) */}
                   <Card className="p-3 bg-card border-border rounded-none rounded-b-xl -mt-px border-b">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="group-privacy" className="text-sm font-medium">Privacidad</Label>
@@ -222,7 +238,6 @@ export default function HomePage() {
                     </div>
                   </Card>
 
-                  {/* Publicación - Nuevo Selector */}
                   <div className="pt-2">
                     <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block px-1">
                       {t("home_admin_publish_title")}
@@ -242,7 +257,6 @@ export default function HomePage() {
                     </Tabs>
                   </div>
 
-                  {/* IDs Manuales */}
                   <div className="space-y-3 pt-2">
                     <div className="space-y-1.5">
                       <Label htmlFor="target-id" className="text-xs font-medium px-1">

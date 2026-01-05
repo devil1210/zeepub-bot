@@ -11,6 +11,10 @@ interface ThemeContextType {
   setUiScale: (val: number) => void
   avatarScale: number
   setAvatarScale: (val: number) => void
+  showSearchCard: boolean
+  setShowSearchCard: (val: boolean) => void
+  showSearchBar: boolean
+  setShowSearchBar: (val: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -22,6 +26,10 @@ const ThemeContext = createContext<ThemeContextType>({
   setUiScale: () => { },
   avatarScale: 1,
   setAvatarScale: () => { },
+  showSearchCard: true,
+  setShowSearchCard: () => { },
+  showSearchBar: false,
+  setShowSearchBar: () => { },
 })
 
 export function useTheme() {
@@ -86,6 +94,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [primaryColor, setPrimaryColor] = useState("#3b82f6")
   const [uiScale, setUiScale] = useState(1)
   const [avatarScale, setAvatarScale] = useState(1)
+  const [showSearchCard, setShowSearchCard] = useState(true)
+  const [showSearchBar, setShowSearchBar] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
 
   // Load saved settings from localStorage on mount
@@ -96,6 +106,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedColor = localStorage.getItem("ui-primary-color")
     const savedScale = localStorage.getItem("ui-scale")
     const savedAvatarScale = localStorage.getItem("ui-avatar-scale")
+    const savedShowCard = localStorage.getItem("ui-show-search-card")
+    const savedShowBar = localStorage.getItem("ui-show-search-bar")
 
     if (savedTheme) {
       setIsDarkMode(savedTheme === "dark")
@@ -108,6 +120,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     if (savedAvatarScale) {
       setAvatarScale(parseFloat(savedAvatarScale))
+    }
+    if (savedShowCard !== null) {
+      setShowSearchCard(savedShowCard === "true")
+    }
+    if (savedShowBar !== null) {
+      setShowSearchBar(savedShowBar === "true")
     }
 
     setIsLoaded(true)
@@ -199,6 +217,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("ui-avatar-scale", avatarScale.toString())
   }, [avatarScale, isLoaded])
 
+  // Save search preferences
+  useEffect(() => {
+    if (!isLoaded) return
+    localStorage.setItem("ui-show-search-card", showSearchCard.toString())
+  }, [showSearchCard, isLoaded])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    localStorage.setItem("ui-show-search-bar", showSearchBar.toString())
+  }, [showSearchBar, isLoaded])
+
   return (
     <ThemeContext.Provider
       value={{
@@ -210,6 +239,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setUiScale,
         avatarScale,
         setAvatarScale,
+        showSearchCard,
+        setShowSearchCard,
+        showSearchBar,
+        setShowSearchBar,
       }}
     >
       {children}
