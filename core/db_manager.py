@@ -95,7 +95,7 @@ class DatabaseManager:
 
             # Crear índice para búsquedas rápidas por usuario
             await conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_download_history_user_id 
+                CREATE INDEX IF NOT EXISTS idx_download_history_user_id
                 ON download_history(user_id, downloaded_at DESC)
             """)
 
@@ -123,7 +123,7 @@ class DatabaseManager:
             except Exception as e:
                 if "duplicate column" not in str(e).lower():
                     logger.debug(f"Notice during migration (settings): {e}")
-            
+
             # Migración: Agregar columna total_downloads si no existe
             try:
                 await conn.execute("ALTER TABLE users ADD COLUMN total_downloads INTEGER DEFAULT 0")

@@ -9,7 +9,6 @@ from services.user_service import get_effective_user, user_repo
 logger = logging.getLogger(__name__)
 
 
-
 async def get_telegram_user_id(
     x_telegram_init_data: Optional[str] = Header(None, alias="x-telegram-init-data"),
     x_telegram_data: Optional[str] = Header(None, alias="X-Telegram-Data"),
@@ -27,7 +26,7 @@ async def get_telegram_user_id(
         if not user_data:
             logger.warning(f"Invalid initData received: {init_data[:20]}...")
             raise HTTPException(status_code=401, detail="Invalid Telegram data")
-        
+
         user_id = user_data.get("user", {}).get("id")
         if user_id:
             return user_id
@@ -35,10 +34,9 @@ async def get_telegram_user_id(
     # Fallback for dev or legacy (insecure)
     if uid:
         return uid
-    
+
     # Anonymous or unauthorized
     return 0
-
 
 
 async def get_current_user_data(user_id: int = Depends(get_telegram_user_id)) -> Dict[str, Any]:
@@ -47,11 +45,10 @@ async def get_current_user_data(user_id: int = Depends(get_telegram_user_id)) ->
     """
     if user_id == 0:
         return {"user_id": 0, "role": "anonymous", "has_mini_app_access": False}
-    
+
     data = await get_effective_user(user_id)
     data["user_id"] = user_id
     return data
-
 
 
 async def require_admin(user_data: Dict[str, Any] = Depends(get_current_user_data)):
@@ -62,13 +59,14 @@ async def require_admin(user_data: Dict[str, Any] = Depends(get_current_user_dat
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return user_data
 
+
 async def require_mini_app_access(user_data: Dict[str, Any] = Depends(get_current_user_data)):
     """
     Dependency that enforces Mini App access permissions.
     """
     if not user_data.get("has_mini_app_access") and user_data.get("role") != "admin":
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente."
         )
     return user_data

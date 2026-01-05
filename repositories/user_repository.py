@@ -32,7 +32,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     settings = json.loads(settings_raw) if settings_raw else {}
                 except Exception:
                     settings = {}
-                    
+
                 return {
                     "telegram_id": telegram_id,
                     "role": role,

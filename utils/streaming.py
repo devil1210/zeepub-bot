@@ -6,6 +6,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+
 async def send_message_draft(
     bot: Bot,
     chat_id: int,

@@ -243,28 +243,28 @@ async def check_milestones(uid: int, context) -> Optional[str]:
         return None
 
     count = user_info.get("total_downloads", 0)
-    
+
     milestones = {
         10: "milestone_10_downloads",
         50: "milestone_50_downloads",
         100: "milestone_100_downloads",
     }
-    
+
     if count in milestones:
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         slug = milestones[count]
-        
+
         # Default messages if plugin not active or template not set
         defaults = {
             10: "🎁 ¡Felicidades! Has descargado tus primeros 10 libros. 🎉",
             50: "🌟 ¡Increíble! Ya llevas 50 libros descargados. Eres un lector apasionado. 📚",
             100: "👑 ¡Master Lector! 100 libros descargados. ¡Tu biblioteca es legendaria! 🏆",
         }
-        
+
         if cms and cms.enabled:
             return await cms.get_text(slug, user=None)  # user will be handled by plugin if needed
         return defaults.get(count)
-    
+
     return None
 
 

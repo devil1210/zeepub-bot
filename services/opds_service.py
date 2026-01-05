@@ -99,7 +99,7 @@ async def mostrar_colecciones(
 
     for entry in feed.entries:
         title = getattr(entry, "title", "")
-        
+
         # Check if folder for correct fallback
         has_subsection = any(getattr(l, "rel", "") == "subsection" for l in getattr(entry, "links", []))
         author = extract_author(entry, is_folder=has_subsection)

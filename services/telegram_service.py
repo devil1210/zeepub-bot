@@ -709,7 +709,7 @@ async def descargar_epub_pendiente(
 
         # Registrar descarga
         record_download(uid)
-        
+
         # Gamificación: Incrementar contador y verificar hitos
         from services.user_service import increment_download_count, check_milestones
         await increment_download_count(uid)

@@ -16,6 +16,7 @@ TOPICS_SCHEMA = {
     "sistema": "⚙️ Sistema",
 }
 
+
 class TopicService:
     def __init__(self):
         pass
@@ -28,7 +29,7 @@ class TopicService:
         # En una implementación real, esto consultaría la DB para evitar recrear
         # o para recuperar IDs existentes.
         # Por ahora, simulamos el almacenamiento en el estado o DB.
-        
+
         user_data = await user_repo.get_user_by_id(user_id)
         if not user_data:
             return {}

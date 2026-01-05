@@ -73,7 +73,7 @@ class CommandHandlers:
         # API 9.3: Soporte para tópicos en chat privado
         bot_user_dict = update.effective_user.to_dict()
         has_topics = bot_user_dict.get("has_topics_enabled", False)
-        
+
         if has_topics:
             from services.topic_service import topic_service
             # Asegurar que los tópicos existan y obtener el ID del tópico "Sistema" para la bienvenida

@@ -191,7 +191,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if st.get("esperando_busqueda"):
         logger.debug(f"Usuario {uid} buscando: {text}")
         st["esperando_busqueda"] = False
-        
+
         # API 9.3: Routing to Búsquedas topic in private forums
         effective_thread_id = thread_id
         if chat_type == "private":
@@ -199,35 +199,35 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             t_id = await topic_service.get_topic_id(uid, "busquedas")
             if t_id:
                 effective_thread_id = t_id
-        
+
         st["message_thread_id"] = effective_thread_id
-        
+
         # API 9.3: Streaming feedback
         from utils.streaming import send_message_draft
         cms = context.application.plugin_manager.get_plugin("custom_messages")
-        
+
         draft_text = f"🔎 Buscando en catálogos: <i>{html.escape(text)}</i>..."
         if cms and cms.enabled:
             draft_text = await cms.get_text("search_streaming_feedback", Termino=html.escape(text))
-            
+
         draft_id = await send_message_draft(
             context.bot,
             update.effective_chat.id,
             draft_text,
             message_thread_id=effective_thread_id
         )
-        
+
         search_url = build_search_url(text, uid)
         logger.debug(f"URL de búsqueda: {search_url}")
         feed = await get_cached_feed(search_url)
-        
+
         # Finalize draft by deleting it (or resolving it)
         if draft_id:
             try:
                 await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=draft_id)
             except Exception:
                 pass
-        
+
         if not feed or not getattr(feed, "entries", []):
             keyboard = [
                 [InlineKeyboardButton("🔄 Volver a buscar", callback_data="buscar")],

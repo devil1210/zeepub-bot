@@ -55,6 +55,7 @@ class UpdateLevelsRequest(BaseModel):
 
 # --- Routes ---
 
+
 @router.post("/api/bot")
 async def handle_bot_request(
     request: Request,
@@ -101,7 +102,7 @@ async def handle_bot_request(
                 if page_url
                 else build_search_url(query, uid=user_id, role=user_role)
             )
-            
+
             # API 9.3: Feedback en streaming vía borrador de mensaje
             if not page_url:  # Solo en búsqueda inicial, no en paginación
                 from utils.streaming import send_message_draft
@@ -170,7 +171,7 @@ async def handle_bot_request(
             for entry in entries:
                 book_id = entry.get("id", "")
                 title = entry.get("title", "Sin título")
-                
+
                 # Robust author extraction
                 is_folder = any(link.get("rel") == "subsection" for link in getattr(entry, "links", []))
                 author = extract_author(entry, is_folder=is_folder)
@@ -539,14 +540,14 @@ async def handle_bot_request(
         elif action == "create_stars_invoice":
             tier = data.get("tier", "premium")
             amount = data.get("amount", 100)  # Default stars amount
-            
+
             # Fetch Bot instance and plugin
             from api.main import bot
             stars_plugin = bot.plugin_manager.get_plugin("stars_payment")
             cms_plugin = bot.plugin_manager.get_plugin("custom_messages")
             if not stars_plugin:
                 raise HTTPException(status_code=500, detail="Stars Payment Plugin not found")
-            
+
             # Prepare invoice details using CMS strings if available
             title = f"Nivel {tier.capitalize()}"
             desc = f"Suscripción al nivel {tier.capitalize()}"
@@ -560,7 +561,7 @@ async def handle_bot_request(
                 payload=f"upgrade_{tier}",
                 amount=amount
             )
-            
+
             return {"invoiceLink": invoice_link}
 
         else:
