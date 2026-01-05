@@ -89,44 +89,6 @@ export default function DownloadsPage() {
   // Solo mostramos las estadísticas de hoy
 
 
-  if (loading) {
-    return (
-      <AccessGuard>
-        <div className="min-h-screen bg-background">
-          <TransparentHeader />
-          <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-            {/* Stats Skeleton */}
-            <Card className="p-6 border-border">
-              <div className="flex items-center justify-between mb-4">
-                <div className="space-y-2">
-                  <Skeleton className="h-8 w-32" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-                <Skeleton className="w-10 h-10 rounded-full" />
-              </div>
-              <Skeleton className="h-2 w-full rounded-full" />
-            </Card>
-
-            {/* History Skeleton */}
-            <div className="space-y-4">
-              <Skeleton className="h-6 w-40" />
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="p-4 border-border">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2 w-full">
-                      <Skeleton className="h-5 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                    </div>
-                    <Skeleton className="w-8 h-8 rounded-lg" />
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
-      </AccessGuard>
-    )
-  }
 
   return (
     <AccessGuard>

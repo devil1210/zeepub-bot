@@ -87,44 +87,6 @@ function BookDetailContent() {
         }
     }
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-background pt-safe">
-                <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
-                    <Skeleton className="h-10 w-24 rounded-lg" />
-
-                    <div className="flex flex-col md:flex-row gap-8 items-start">
-                        {/* Cover Skeleton */}
-                        <Skeleton className="w-56 aspect-[3/4] rounded-2xl mx-auto shadow-2xl flex-shrink-0" />
-
-                        <div className="flex-1 space-y-6 w-full">
-                            <div className="space-y-3">
-                                <Skeleton className="h-10 w-full" />
-                                <Skeleton className="h-10 w-2/3" />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Skeleton className="h-6 w-48" />
-                                <Skeleton className="h-6 w-32" />
-                            </div>
-
-                            <Skeleton className="h-14 w-full rounded-2xl" />
-                        </div>
-                    </div>
-
-                    <div className="space-y-4 pt-4">
-                        <Skeleton className="h-6 w-32" />
-                        <div className="space-y-2">
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-3/4" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )
-    }
 
     if (!book) {
         return (
@@ -258,17 +220,9 @@ function BookDetailContent() {
 
 export default function BookDetailPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-background pt-safe flex flex-col items-center justify-center p-6 space-y-4">
-                <Skeleton className="w-48 h-64 rounded-2xl mx-auto shadow-xl" />
-                <div className="space-y-2 w-full max-w-xs">
-                    <Skeleton className="h-6 w-3/4 mx-auto" />
-                    <Skeleton className="h-4 w-1/2 mx-auto" />
-                </div>
-            </div>
-        }>
+            <div className="min-h-screen bg-background pt-safe" />
             <BookDetailContent />
-        </Suspense>
+        </Suspense >
     )
 }
 

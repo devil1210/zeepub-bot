@@ -79,27 +79,6 @@ export default function AccessControlPage() {
         }
     }
 
-    if (authLoading || loading) {
-        return (
-            <div className="min-h-screen bg-background pt-safe">
-                <TransparentHeader />
-                <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-                    <Skeleton className="h-14 w-full rounded-lg" />
-                    <div className="space-y-4">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <Card key={i} className="p-4 border-border flex items-center justify-between">
-                                <div className="space-y-2">
-                                    <Skeleton className="h-5 w-32" />
-                                    <Skeleton className="h-4 w-24" />
-                                </div>
-                                <Skeleton className="h-6 w-12 rounded-full" />
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        )
-    }
 
     if (!isAdmin) {
         return null
