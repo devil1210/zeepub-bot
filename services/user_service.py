@@ -142,12 +142,11 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
                 "custom_status": custom_status,
             }
 
-    # 3. Check Level and Admin status
-    # First, let's establish defaults for non-DB users (Lector level equivalent)
+    # 4. Fallback default policy for non-DB users
     if "has_mini_app_access" not in result:
-        # Default policy: Allow access for everyone unless explicitly banned/restricted
-        # Or fetch default level from DB if possible, but for performance, we hardcode Lector policy here
-        result["has_mini_app_access"] = True
+        # Default policy: Restricted access for unknown users (matching Lector behavior)
+        # Admins and Staff from config will have this set to True explicitly below/above
+        result["has_mini_app_access"] = False
 
     access_info = await user_repo.get_access_info(uid)
     if access_info:

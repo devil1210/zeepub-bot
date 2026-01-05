@@ -621,31 +621,53 @@ async def check_user_access(
     access_info = await user_repo.get_access_info(uid)
 
     if not access_info:
-        # Si no existe en la tabla de niveles, creamos registro con nivel básico
-        logger.info(f"User {uid} not found in user_levels, creating minimal entry.")
-        await user_repo.create_minimal_user(uid, level_id=6)  # Lector
+        # Si no existe en la tabla de niveles, creamos registro.
+        # Si get_effective_user ya sabe que es staff/admin/premium, usamos ese nivel.
+        role = eff.get("role", "free")
+        # El nivel id por defecto para free es 6 (Lector)
+        # IDs mapping: Admin=1, Staff=2, Premium=3, VIP=4, Patrocinador=5, Lector=6
+        role_to_level = {
+            'admin': 1,
+            'staff': 2,
+            'premium': 3,
+            'vip': 4,
+            'white': 5,
+            'free': 6
+        }
+        level_id = role_to_level.get(role, 6)
+        
+        logger.info(f"User {uid} not found in user_levels. Role effective: {role}. Creating entry with Level ID {level_id}.")
+        await user_repo.create_minimal_user(uid, level_id=level_id)
         access_info = await user_repo.get_access_info(uid)
 
     if not access_info:
         logger.error(f"Failed to retrieve access info for user {uid}")
-        # Fallback: Check if Lector level (id=6) has access directly
-        levels = await user_repo.get_all_levels()
-        lector_level = next((l for l in levels if l["name"] == "Lector" or l["id"] == "6"), None)
-        if lector_level:
-            logger.info(f"Using fallback Lector level for user {uid}")
-            return AccessResponse(
-                level=UserLevelModel(**lector_level),
-                hasAccess=lector_level.get("hasAccess", True),  # Default to True for Lector
-                isAdmin=False
-            )
-        raise HTTPException(status_code=500, detail="Error al recuperar nivel de usuario")
+        # Fallback de emergencia
+        return AccessResponse(
+            level=UserLevelModel(id="6", name="Lector", priority=1, color="#9E9E9E", hasAccess=False),
+            hasAccess=eff.get("has_mini_app_access", False),
+            isAdmin=(eff.get("role") == "admin")
+        )
 
     # 3. Determinar flags finales mezclando ambos sistemas
-    # El usuario tiene acceso si su nivel de DB lo permite O si su rol efectivo tiene el flag activo
+    # El usuario tiene acceso si:
+    # - Es Admin (de Config o DB)
+    # - Es Staff (de Config o DB)
+    # - Tiene acceso explícito por su nivel de DB
+    # - Tiene acceso explícito por get_effective_user (fallbacks de config)
+    
     is_admin = (eff.get("role") == "admin") or access_info.get("isAdmin", False)
-    has_access = eff.get("has_mini_app_access", False) or access_info.get("hasAccess", False) or is_admin
+    is_staff = (eff.get("role") == "staff")
+    
+    # Priority: Roles admin/staff TRUMP level restrictions
+    has_access = (
+        is_admin or 
+        is_staff or 
+        eff.get("has_mini_app_access", False) or 
+        access_info.get("hasAccess", False)
+    )
 
-    logger.info(f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}")
+    logger.info(f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}, role={eff.get('role')}")
     return AccessResponse(
         level=UserLevelModel(**access_info["level"]),
         hasAccess=has_access,

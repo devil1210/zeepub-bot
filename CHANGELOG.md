@@ -5,7 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.18.3] - 2026-01-05
+
+### Fixed
+- **Acceso Staff**: Corregida la lógica de validación de acceso para asegurar que miembros del staff y administradores tengan acceso inmediato a la Mini App, incluso si no están registrados previamente en la base de datos.
+- **Auto-Aprovisionamiento**: Se implementó el registro automático con el nivel correcto (Staff/Admin) al primer acceso para usuarios privilegiados.
+
 ## [4.18.2] - 2026-01-05
+
 
 ### Fixed
 - **Página de Detalles**: Corregida la lógica para mostrar la información del libro usando los datos del catálogo/búsqueda. Ahora la página muestra la información inmediatamente al navegar, sin esperar la respuesta del servidor.
