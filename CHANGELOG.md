@@ -5,6 +5,18 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.20.0] - 2026-01-05
+
+### Added
+- **Persistencia en Base de Datos**: Las configuraciones de interfaz personalizadas ahora se guardan en la base de datos vinculadas al ID de usuario, permitiendo que persistan entre dispositivos.
+- **Jerarquía de 3 Capas**: Implementado sistema de prioridad: Global -> Nivel (Staff, VIP, etc.) -> Personal. Los cambios administrativos se aplican a todos los usuarios de un nivel que no tengan una configuración personal explícita.
+- **Notificaciones de Actualización**: El sistema ahora detecta cuando un administrador actualiza drásticamente los colores de un nivel y notifica al usuario con un mensaje flotante ("La interfaz ha sido actualizada").
+- **Versión de UI**: Añadida gestión de versiones internas de UI para forzar actualizaciones y sincronizar cambios masivos.
+
+### Changed
+- **Lógica de Carga**: La Mini App ahora confía plenamente en el merge realizado por el backend, eliminando redundancias en el cliente.
+- **Reset Profundo**: El botón de restablecer valores ahora limpia tanto el almacenamiento local como los registros en la base de datos para volver al look oficial del nivel.
+
 ## [4.19.0] - 2026-01-05
 
 ### Added
