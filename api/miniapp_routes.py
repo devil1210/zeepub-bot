@@ -397,6 +397,11 @@ async def handle_bot_request(
                     ):  # Prioritize rel="image" over others
                         cover_url = href
 
+                # Check for parent/collection navigation
+                elif rel in ["up", "collection", "ancestor", "index"]:
+                    if not subsection_url or rel == "up":
+                        subsection_url = href
+
             # Fallback for cover if not found in links but exists in content
             if not cover_url and "content" in entry:
                 for content in entry.get("content", []):
@@ -423,10 +428,11 @@ async def handle_bot_request(
                 "year": year,
                 "size": size,
                 "fileType": file_type,
+                "upUrl": subsection_url,
             }
 
             logger.info(
-                f"[book-detail] Returning result: {result['title']} (Cover: {result['cover']}, DL: {result['downloadUrl']})"
+                f"[book-detail] Returning result: {result['title']} (Cover: {result['cover']}, DL: {result['downloadUrl']}, Up: {result['upUrl']})"
             )
             return result
 

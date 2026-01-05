@@ -27,6 +27,7 @@ interface BookDetail {
     series?: string
     seriesIndex?: string
     categories?: string[]
+    upUrl?: string
 }
 
 function BookDetailContent() {
@@ -96,6 +97,11 @@ function BookDetailContent() {
         if (!webApp?.BackButton) return
 
         const handleBack = () => {
+            if (book?.upUrl) {
+                router.push(`/catalog?feed_url=${encodeURIComponent(book.upUrl)}`)
+                return
+            }
+
             const lastUrl = sessionStorage.getItem("catalog-last-url")
             if (lastUrl) {
                 // Return to catalog with the specific feed URL
@@ -150,6 +156,9 @@ function BookDetailContent() {
         // Use [\s\S] instead of . with s flag for ES6 compatibility
         clean = clean.replace(/File Type:[\s\S]*?-[\s\S]*?Summary:\s*/i, "")
         clean = clean.replace(/^Summary:\s*/i, "")
+
+        // Compact excessive newlines (max 2)
+        clean = clean.replace(/\n{3,}/g, "\n\n")
 
         return clean.trim()
     }
@@ -245,7 +254,7 @@ function BookDetailContent() {
                             )}
 
                             {/* Quick Info Chips */}
-                            <div className="flex flex-wrap gap-2 text-xs">
+                            <div className="flex flex-wrap gap-2 text-xs mb-3">
                                 {book.year && (
                                     <span className="px-2 py-1 bg-secondary rounded-md text-muted-foreground flex items-center gap-1">
                                         <Calendar className="w-3 h-3" />
@@ -253,6 +262,19 @@ function BookDetailContent() {
                                     </span>
                                 )}
                             </div>
+
+                            {/* Back to Series Button */}
+                            {book.upUrl && (
+                                <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="p-0 h-auto text-xs text-primary/70 hover:text-primary flex items-center gap-1"
+                                    onClick={() => router.push(`/catalog?feed_url=${encodeURIComponent(book.upUrl!)}`)}
+                                >
+                                    <ChevronLeft className="w-3 h-3" />
+                                    Volver a la serie
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </Card>
@@ -280,25 +302,25 @@ function BookDetailContent() {
                     </div>
                     <div className="divide-y divide-border/50 text-sm">
                         {book.publisher && (
-                            <div className="flex justify-between py-3">
+                            <div className="flex justify-between py-2">
                                 <span className="text-muted-foreground">Editorial</span>
                                 <span className="text-foreground font-medium text-right ml-4">{book.publisher}</span>
                             </div>
                         )}
                         {displayFileType && (
-                            <div className="flex justify-between py-3">
+                            <div className="flex justify-between py-2">
                                 <span className="text-muted-foreground">Tipo de Archivo</span>
                                 <span className="text-foreground font-medium">{formatFileType(displayFileType)}</span>
                             </div>
                         )}
                         {displaySize && (
-                            <div className="flex justify-between py-3">
+                            <div className="flex justify-between py-2">
                                 <span className="text-muted-foreground">Tamaño</span>
                                 <span className="text-foreground font-medium">{displaySize}</span>
                             </div>
                         )}
                         {book.language && (
-                            <div className="flex justify-between py-3">
+                            <div className="flex justify-between py-2">
                                 <span className="text-muted-foreground flex items-center gap-1.5">
                                     <Globe className="w-3.5 h-3.5" />
                                     Idioma
@@ -307,12 +329,12 @@ function BookDetailContent() {
                             </div>
                         )}
                         {book.isbn && (
-                            <div className="flex justify-between py-3">
+                            <div className="flex justify-between py-2">
                                 <span className="text-muted-foreground">ISBN</span>
                                 <span className="text-foreground font-medium font-mono">{book.isbn}</span>
                             </div>
                         )}
-                        <div className="flex justify-between py-3">
+                        <div className="flex justify-between py-2">
                             <span className="text-muted-foreground">ID OPDS</span>
                             <span className="text-foreground font-medium truncate ml-4">{book.id}</span>
                         </div>
