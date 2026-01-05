@@ -117,6 +117,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [showSettingsInMenu, setShowSettingsInMenu] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [shouldPersist, setShouldPersist] = useState(true)
+  const [isResetting, setIsResetting] = useState(false)
 
   // Load saved settings from localStorage on mount
   useEffect(() => {
@@ -324,7 +325,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }
 
   const applySettings = (settings: any, persistToLocal: boolean = true) => {
-    // Disable persistence temporarily if requested to avoid overwriting local storage during previews
+    // Disable persistence temporarily if requested (e.g. previewing level settings)
     setShouldPersist(persistToLocal)
 
     if (settings.isDarkMode !== undefined) setIsDarkMode(settings.isDarkMode)
@@ -336,6 +337,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.showDonateCard !== undefined) setShowDonateCard(settings.showDonateCard)
     if (settings.showHelpCard !== undefined) setShowHelpCard(settings.showHelpCard)
     if (settings.showSettingsInMenu !== undefined) setShowSettingsInMenu(settings.showSettingsInMenu)
+
+    // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
+    if (persistToLocal) {
+      localStorage.setItem("theme", settings.isDarkMode ? "dark" : "light")
+      localStorage.setItem("primaryColor", settings.primaryColor || "#3b82f6")
+      localStorage.setItem("uiScale", (settings.uiScale || 1).toString())
+      localStorage.setItem("avatarScale", (settings.avatarScale || 1).toString())
+      localStorage.setItem("showSearchCard", String(settings.showSearchCard ?? true))
+      localStorage.setItem("showSearchBar", String(settings.showSearchBar ?? false))
+      localStorage.setItem("showDonateCard", String(settings.showDonateCard ?? true))
+      localStorage.setItem("showHelpCard", String(settings.showHelpCard ?? true))
+      localStorage.setItem("showSettingsInMenu", String(settings.showSettingsInMenu ?? false))
+    }
   }
 
   return (

@@ -601,7 +601,26 @@ async def handle_bot_request(
                 logger.info(f"Fetching UI settings for role: {target_role} (original: {data.get('role')}, actual user_role: {user_role})")
 
                 # Load global settings first as base
-                final_settings = json.loads(get_setting("ui_defaults_global", "{}"))
+                defaults = {
+                    "primaryColor": "#3b82f6",
+                    "uiScale": 1.0,
+                    "avatarScale": 1.0,
+                    "isDarkMode": True,
+                    "showSearchCard": True,
+                    "showSearchBar": False,
+                    "showDonateCard": True,
+                    "showHelpCard": True,
+                    "showSettingsInMenu": False
+                }
+                
+                global_settings_raw = get_setting("ui_defaults_global", "{}")
+                try:
+                    global_settings = json.loads(global_settings_raw)
+                    defaults.update(global_settings)
+                except Exception:
+                    pass
+
+                final_settings = defaults.copy()
 
                 # If specific role requested/detected, merge it over global
                 if target_role and target_role != "global":

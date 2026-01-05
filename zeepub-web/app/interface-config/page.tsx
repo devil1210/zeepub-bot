@@ -57,20 +57,34 @@ export default function InterfaceConfigPage() {
     const [isSaving, setIsSaving] = useState(false)
     const [botAvatar, setBotAvatar] = useState("/robot-librarian.jpg")
 
-    // Fetch bot avatar for preview
+    // Fetch bot avatar for preview and SYNC personal settings
     useEffect(() => {
-        const fetchBotInfo = async () => {
+        const init = async () => {
             try {
+                // Apply personal settings immediately to ensure we are in a clean state
+                const personal = {
+                    isDarkMode: localStorage.getItem("theme") === "dark",
+                    primaryColor: localStorage.getItem("primaryColor") || "#3b82f6",
+                    uiScale: parseFloat(localStorage.getItem("uiScale") || "1"),
+                    avatarScale: parseFloat(localStorage.getItem("avatarScale") || "1"),
+                    showSearchCard: localStorage.getItem("showSearchCard") !== "false", // default true
+                    showSearchBar: localStorage.getItem("showSearchBar") === "true",
+                    showDonateCard: localStorage.getItem("showDonateCard") !== "false", // default true
+                    showHelpCard: localStorage.getItem("showHelpCard") !== "false", // default true
+                    showSettingsInMenu: localStorage.getItem("showSettingsInMenu") === "true"
+                }
+                applySettings(personal, true)
+
                 const { callBotAPI } = await import("@/lib/api")
                 const info = await callBotAPI("bot_info")
                 if (info && info.avatar) {
                     setBotAvatar(info.avatar)
                 }
             } catch (error) {
-                console.error("Error fetching bot info for preview:", error)
+                console.error("Error initializing config page:", error)
             }
         }
-        fetchBotInfo()
+        init()
     }, [])
 
     // Handle target context change
@@ -122,6 +136,22 @@ export default function InterfaceConfigPage() {
         }
     }
 
+    const handleResetToLevelDefaults = async () => {
+        setIsSaving(true)
+        try {
+            const { callBotAPI } = await import("@/lib/api")
+            const data = await callBotAPI("ui_settings", { subAction: "get", role: "auto" })
+            if (data) {
+                applySettings(data, true) // Apply AND persist as personal
+                toast.success("Tu configuración ha sido restablecida a los valores de tu nivel")
+            }
+        } catch (error) {
+            toast.error("No se pudo obtener la configuración del nivel")
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
     return (
         <AccessGuard>
             <div className="min-h-screen bg-background pt-safe">
@@ -153,7 +183,19 @@ export default function InterfaceConfigPage() {
                                     </SelectContent>
                                 </Select>
 
-                                {editTarget !== "personal" && (
+                                {editTarget === "personal" ? (
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            className="flex-1 bg-card border-primary/20 hover:bg-primary/5 text-primary text-xs h-10 rounded-xl"
+                                            onClick={handleResetToLevelDefaults}
+                                            disabled={isSaving}
+                                        >
+                                            <Palette className="w-4 h-4 mr-2" />
+                                            Restablecer a valores del nivel
+                                        </Button>
+                                    </div>
+                                ) : (
                                     <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                                         <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                                         <div className="space-y-1">
