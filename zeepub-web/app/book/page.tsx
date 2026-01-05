@@ -314,7 +314,7 @@ function BookDetailContent() {
                         )}
                         <div className="flex justify-between py-3">
                             <span className="text-muted-foreground">ID OPDS</span>
-                            <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">{book.id}</span>
+                            <span className="text-foreground font-medium truncate ml-4">{book.id}</span>
                         </div>
                     </div>
                 </Card>
