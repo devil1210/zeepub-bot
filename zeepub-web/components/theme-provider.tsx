@@ -12,9 +12,16 @@ interface ThemeContextType {
   avatarScale: number
   setAvatarScale: (val: number) => void
   showSearchCard: boolean
-  setShowSearchCard: (val: boolean) => void
+  setShowSearchCard: (show: boolean) => void
   showSearchBar: boolean
-  setShowSearchBar: (val: boolean) => void
+  setShowSearchBar: (show: boolean) => void
+  showDonateCard: boolean
+  setShowDonateCard: (show: boolean) => void
+  showHelpCard: boolean
+  setShowHelpCard: (show: boolean) => void
+  showSettingsInMenu: boolean
+  setShowSettingsInMenu: (show: boolean) => void
+  saveGlobalSettings: (role: string) => Promise<void>
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -30,6 +37,13 @@ const ThemeContext = createContext<ThemeContextType>({
   setShowSearchCard: () => { },
   showSearchBar: false,
   setShowSearchBar: () => { },
+  showDonateCard: true,
+  setShowDonateCard: () => { },
+  showHelpCard: true,
+  setShowHelpCard: () => { },
+  showSettingsInMenu: false,
+  setShowSettingsInMenu: () => { },
+  saveGlobalSettings: async () => { },
 })
 
 export function useTheme() {
@@ -96,6 +110,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [avatarScale, setAvatarScale] = useState(1)
   const [showSearchCard, setShowSearchCard] = useState(true)
   const [showSearchBar, setShowSearchBar] = useState(false)
+  const [showDonateCard, setShowDonateCard] = useState(true)
+  const [showHelpCard, setShowHelpCard] = useState(true)
+  const [showSettingsInMenu, setShowSettingsInMenu] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
 
   // Load saved settings from localStorage on mount
@@ -128,7 +145,51 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setShowSearchBar(savedShowBar === "true")
     }
 
+    const storedShowSearchCard = localStorage.getItem("showSearchCard")
+    if (storedShowSearchCard !== null) setShowSearchCard(storedShowSearchCard === "true")
+
+    const storedShowSearchBar = localStorage.getItem("showSearchBar")
+    if (storedShowSearchBar !== null) setShowSearchBar(storedShowSearchBar === "true")
+
+    const storedShowDonateCard = localStorage.getItem("showDonateCard")
+    if (storedShowDonateCard !== null) setShowDonateCard(storedShowDonateCard === "true")
+
+    const storedShowHelpCard = localStorage.getItem("showHelpCard")
+    if (storedShowHelpCard !== null) setShowHelpCard(storedShowHelpCard === "true")
+
+    const storedShowSettingsInMenu = localStorage.getItem("showSettingsInMenu")
+    if (storedShowSettingsInMenu !== null) setShowSettingsInMenu(storedShowSettingsInMenu === "true")
+
     setIsLoaded(true)
+  }, [])
+
+  // Sync with Backend (Role Defaults)
+  useEffect(() => {
+    async function fetchDefaults() {
+      try {
+        const { callBotAPI } = await import("@/lib/api")
+        // Get global defaults first, then role specific if possible
+        const globalDefaults = await callBotAPI("ui_settings", { subAction: "get", role: "global" })
+
+        const applyDefaults = (defaults: any) => {
+          if (!defaults) return
+          if (defaults.primaryColor && !localStorage.getItem("primaryColor")) setPrimaryColor(defaults.primaryColor)
+          if (defaults.uiScale !== undefined && !localStorage.getItem("uiScale")) setUiScale(defaults.uiScale)
+          if (defaults.avatarScale !== undefined && !localStorage.getItem("avatarScale")) setAvatarScale(defaults.avatarScale)
+          if (defaults.isDarkMode !== undefined && !localStorage.getItem("isDarkMode")) setIsDarkMode(defaults.isDarkMode)
+          if (defaults.showSearchCard !== undefined && !localStorage.getItem("showSearchCard")) setShowSearchCard(defaults.showSearchCard)
+          if (defaults.showSearchBar !== undefined && !localStorage.getItem("showSearchBar")) setShowSearchBar(defaults.showSearchBar)
+          if (defaults.showDonateCard !== undefined && !localStorage.getItem("showDonateCard")) setShowDonateCard(defaults.showDonateCard)
+          if (defaults.showHelpCard !== undefined && !localStorage.getItem("showHelpCard")) setShowHelpCard(defaults.showHelpCard)
+          if (defaults.showSettingsInMenu !== undefined && !localStorage.getItem("showSettingsInMenu")) setShowSettingsInMenu(defaults.showSettingsInMenu)
+        }
+
+        applyDefaults(globalDefaults)
+      } catch (error) {
+        console.error("Error fetching UI defaults:", error)
+      }
+    }
+    fetchDefaults()
   }, [])
 
   // Apply dark mode class to html element
@@ -228,6 +289,47 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("ui-show-search-bar", showSearchBar.toString())
   }, [showSearchBar, isLoaded])
 
+  useEffect(() => {
+    localStorage.setItem("showSearchCard", String(showSearchCard))
+  }, [showSearchCard])
+
+  useEffect(() => {
+    localStorage.setItem("showSearchBar", String(showSearchBar))
+  }, [showSearchBar])
+
+  useEffect(() => {
+    localStorage.setItem("showDonateCard", String(showDonateCard))
+  }, [showDonateCard])
+
+  useEffect(() => {
+    localStorage.setItem("showHelpCard", String(showHelpCard))
+  }, [showHelpCard])
+
+  useEffect(() => {
+    localStorage.setItem("showSettingsInMenu", String(showSettingsInMenu))
+  }, [showSettingsInMenu])
+
+  const saveGlobalSettings = async (role: string) => {
+    try {
+      const { callBotAPI } = await import("@/lib/api")
+      const settings = {
+        primaryColor,
+        uiScale,
+        avatarScale,
+        isDarkMode,
+        showSearchCard,
+        showSearchBar,
+        showDonateCard,
+        showHelpCard,
+        showSettingsInMenu
+      }
+      await callBotAPI("ui_settings", { subAction: "set", role, settings })
+    } catch (error) {
+      console.error("Error saving global settings:", error)
+      throw error
+    }
+  }
+
   return (
     <ThemeContext.Provider
       value={{
@@ -243,6 +345,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setShowSearchCard,
         showSearchBar,
         setShowSearchBar,
+        showDonateCard,
+        setShowDonateCard,
+        showHelpCard,
+        setShowHelpCard,
+        showSettingsInMenu,
+        setShowSettingsInMenu,
+        saveGlobalSettings,
       }}
     >
       {children}

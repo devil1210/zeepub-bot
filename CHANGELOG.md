@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.18.9] - 2026-01-05
+
+### Added
+- **Configuración Avanzada**: Los administradores ahora pueden guardar configuraciones de interfaz por defecto globales o por rol (Premium, Staff, etc.).
+- **Personalización de Inicio**: Toggles para ocultar/mostrar tarjetas de "Donar", "Ayuda" y acceso directo a "Apariencia" en la página principal.
+- **Avatar del Bot**: Implementado sistema de proxy para mostrar la foto real de perfil de Telegram del bot, con fallback local robusto.
+
 ## [4.18.8] - 2026-01-05
 
 ### Added

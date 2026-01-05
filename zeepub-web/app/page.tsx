@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3, Settings, Search } from "lucide-react"
+import { BookOpen, Download, Heart, LinkIcon, Info, ChevronRight, Library, ShieldCheck, BarChart3, Settings, Search, Palette } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { useStrings } from "@/components/strings-provider"
@@ -39,7 +39,7 @@ export default function HomePage() {
     setThreadId
   } = useTelegramContext()
   const { t } = useStrings()
-  const { avatarScale, showSearchCard, showSearchBar } = useTheme()
+  const { avatarScale, showSearchCard, showSearchBar, showDonateCard, showHelpCard, showSettingsInMenu } = useTheme()
   const router = useRouter()
   const [homeSearchQuery, setHomeSearchQuery] = useState("")
 
@@ -76,6 +76,7 @@ export default function HomePage() {
     { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados", adminOnly: true, id: "links" },
     { icon: Heart, label: t("menu_donate_label"), href: "/donate", description: t("menu_donate_desc"), id: "donate" },
     { icon: Info, label: t("menu_help_label"), href: "/help", description: t("menu_help_desc"), id: "help" },
+    { icon: Palette, label: "Apariencia", href: "/interface-config", description: "Personaliza tu interfaz", id: "appearance" },
     { icon: ShieldCheck, label: "Gestión Accesos", href: "/admin/levels", description: "Configura niveles y permisos", adminOnly: true, id: "admin" },
   ]
 
@@ -149,7 +150,14 @@ export default function HomePage() {
 
               <h3 className="text-xl font-bold mb-4">{t("home_functions")}</h3>
               {menuItems
-                .filter(item => !item.adminOnly && (item.id !== "search" || showSearchCard))
+                .filter(item => {
+                  if (item.adminOnly && !isAdminMode) return false
+                  if (item.id === "search" && !showSearchCard) return false
+                  if (item.id === "donate" && !showDonateCard) return false
+                  if (item.id === "help" && !showHelpCard) return false
+                  if (item.id === "appearance" && !showSettingsInMenu) return false
+                  return true
+                })
                 .map((item, index) => (
                   <a key={index} href={item.href}>
                     <Card className="p-3 hover:bg-secondary/50 transition-colors cursor-pointer border-border">

@@ -1,13 +1,21 @@
+```javascript
 "use client"
 
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
-import { Sun, Moon, Palette, BookOpen } from "lucide-react"
+import { Info, Moon, Sun, Monitor, Type, UserCircle, BookOpen, Heart, HelpCircle, Palette, Save, Globe } from "lucide-react"
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
 import { useTheme } from "@/components/theme-provider"
+import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
+import { useStrings } from "@/components/strings-provider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
+import { useTelegramContext } from "@/components/telegram-provider"
+import { useState } from "react"
 
 // Paleta de colores predefinidos
 const colorPresets = [
@@ -33,8 +41,31 @@ export default function InterfaceConfigPage() {
         showSearchCard,
         setShowSearchCard,
         showSearchBar,
-        setShowSearchBar
+        setShowSearchBar,
+        showDonateCard,
+        setShowDonateCard,
+        showHelpCard,
+        setShowHelpCard,
+        showSettingsInMenu,
+        setShowSettingsInMenu,
+        saveGlobalSettings,
     } = useTheme()
+    const { t } = useStrings()
+    const { isAdmin } = useTelegramContext()
+    const [targetRole, setTargetRole] = useState("global")
+    const [isSaving, setIsSaving] = useState(false)
+
+    const handleSaveGlobal = async () => {
+        setIsSaving(true)
+        try {
+            await saveGlobalSettings(targetRole)
+            toast.success(`Configuración guardada para: ${ targetRole } `)
+        } catch (error) {
+            toast.error("Error al guardar la configuración global")
+        } finally {
+            setIsSaving(false)
+        }
+    }
 
     return (
         <AccessGuard>
@@ -89,9 +120,9 @@ export default function InterfaceConfigPage() {
                                         key={color.name}
                                         onClick={() => setPrimaryColor(colorValue)}
                                         className={`
-                      relative h-12 rounded-lg transition-all
-                      ${isSelected ? "ring-2 ring-offset-2 ring-offset-background ring-white scale-110" : "hover:scale-105"}
-                    `}
+                      relative h - 12 rounded - lg transition - all
+                      ${ isSelected ? "ring-2 ring-offset-2 ring-offset-background ring-white scale-110" : "hover:scale-105" }
+`}
                                         style={{ backgroundColor: colorValue }}
                                         aria-label={color.name}
                                     >
@@ -110,7 +141,7 @@ export default function InterfaceConfigPage() {
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                     type="color"
-                                    value={primaryColor.startsWith('#') ? primaryColor : `#${primaryColor}`}
+                                    value={primaryColor.startsWith('#') ? primaryColor : `#${ primaryColor } `}
                                     onChange={(e) => setPrimaryColor(e.target.value)}
                                     className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer bg-transparent"
                                     style={{ padding: 0 }}
@@ -125,10 +156,10 @@ export default function InterfaceConfigPage() {
                                     onChange={(e) => {
                                         const val = e.target.value.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6)
                                         if (val.length === 6 || val.length === 3) {
-                                            setPrimaryColor(`#${val}`)
+                                            setPrimaryColor(`#${ val } `)
                                         } else if (val.length > 0) {
                                             // Allow partial input while typing
-                                            setPrimaryColor(`#${val}`)
+                                            setPrimaryColor(`#${ val } `)
                                         }
                                     }}
                                     placeholder="3B82F6"
@@ -172,11 +203,11 @@ export default function InterfaceConfigPage() {
                                 <div
                                     className="rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center transition-all"
                                     style={{
-                                        width: `${80 * avatarScale}px`,
-                                        height: `${80 * avatarScale}px`
+                                        width: `${ 80 * avatarScale } px`,
+                                        height: `${ 80 * avatarScale } px`
                                     }}
                                 >
-                                    <span className="text-primary font-bold" style={{ fontSize: `${24 * avatarScale}px` }}>
+                                    <span className="text-primary font-bold" style={{ fontSize: `${ 24 * avatarScale } px` }}>
                                         Z
                                     </span>
                                 </div>
@@ -212,8 +243,8 @@ export default function InterfaceConfigPage() {
                                 <p
                                     className="text-sm"
                                     style={{
-                                        fontSize: `calc(0.875rem * ${uiScale})`,
-                                        lineHeight: `calc(1.25rem * ${uiScale})`,
+                                        fontSize: `calc(0.875rem * ${ uiScale })`,
+                                        lineHeight: `calc(1.25rem * ${ uiScale })`,
                                     }}
                                 >
                                     Vista previa del tamaño de texto actual
@@ -249,13 +280,89 @@ export default function InterfaceConfigPage() {
                                     <Label className="text-sm font-medium">Mostrar Barra de Búsqueda</Label>
                                     <p className="text-xs text-muted-foreground">Muestra una barra directamente en el inicio</p>
                                 </div>
-                                <Switch
-                                    checked={showSearchBar}
-                                    onCheckedChange={setShowSearchBar}
-                                />
+                                <Switch id="show-search-bar" checked={showSearchBar} onCheckedChange={setShowSearchBar} />
                             </div>
                         </div>
                     </Card>
+
+                    <Separator className="bg-primary/10" />
+
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Palette className="w-5 h-5 text-primary" />
+                            <h3 className="text-lg font-semibold">Visibilidad de Tarjetas</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                <div className="flex items-center gap-3">
+                                    <Heart className="w-5 h-5 text-primary" />
+                                    <Label htmlFor="show-donate-card" className="font-medium">Mostrar Tarjeta de Donar</Label>
+                                </div>
+                                <Switch id="show-donate-card" checked={showDonateCard} onCheckedChange={setShowDonateCard} />
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                <div className="flex items-center gap-3">
+                                    <HelpCircle className="w-5 h-5 text-primary" />
+                                    <Label htmlFor="show-help-card" className="font-medium">Mostrar Tarjeta de Ayuda</Label>
+                                </div>
+                                <Switch id="show-help-card" checked={showHelpCard} onCheckedChange={setShowHelpCard} />
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                <div className="flex items-center gap-3">
+                                    <Palette className="w-5 h-5 text-primary" />
+                                    <Label htmlFor="show-settings-in-menu" className="font-medium">Shortcut de Apariencia en Menú</Label>
+                                </div>
+                                <Switch id="show-settings-in-menu" checked={showSettingsInMenu} onCheckedChange={setShowSettingsInMenu} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {isAdmin && (
+                        <>
+                            <Separator className="bg-primary/10" />
+                            <div className="space-y-4 p-4 border-2 border-primary/20 rounded-2xl bg-primary/5">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Globe className="w-5 h-5 text-primary" />
+                                    <h3 className="text-lg font-bold">Configuración Global (Admin)</h3>
+                                </div>
+
+                                <p className="text-xs text-muted-foreground mb-4">
+                                    Como administrador, puedes guardar la configuración actual como predeterminada para todos los usuarios o para roles específicos.
+                                </p>
+
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium">Aplicar a:</Label>
+                                        <Select value={targetRole} onValueChange={setTargetRole}>
+                                            <SelectTrigger className="w-full bg-card">
+                                                <SelectValue placeholder="Selecciona un rol" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="global">Todos (Global)</SelectItem>
+                                                <SelectItem value="admin">Administradores</SelectItem>
+                                                <SelectItem value="staff">Staff</SelectItem>
+                                                <SelectItem value="premium">Premium</SelectItem>
+                                                <SelectItem value="vip">VIP</SelectItem>
+                                                <SelectItem value="free">Lector (Free)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <Button
+                                        className="w-full h-12 rounded-xl text-md font-bold"
+                                        onClick={handleSaveGlobal}
+                                        disabled={isSaving}
+                                    >
+                                        {isSaving ? "Guardando..." : "Guardar como Prefijado"}
+                                        <Save className="ml-2 w-5 h-5" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     {/* Información */}
                     <Card className="p-4 border-border bg-primary/5">

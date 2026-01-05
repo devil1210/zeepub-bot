@@ -456,6 +456,32 @@ async def proxy_image(rest_of_path: str, request: Request):
         raise HTTPException(status_code=404, detail="Image not found")
 
 
+@router.get("/bot/avatar")
+async def bot_avatar_proxy(file_id: str = Query(...)):
+    """
+    Proxies the bot's profile photo from Telegram.
+    """
+    from api.main import bot
+    try:
+        file = await bot.app.bot.get_file(file_id)
+        # Use httpx to download and stream to client
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(file.file_path)
+            resp.raise_for_status()
+            
+            return Response(
+                content=resp.content,
+                media_type="image/jpeg",
+                headers={"Cache-Control": "public, max-age=31536000"} # Cache for a year
+            )
+    except Exception as e:
+        logger.error(f"Error proxying bot avatar {file_id}: {e}")
+        # Fallback to the local librarian image via redirect or local read
+        # For simplicity and robustness, lets just tell the browser to use the local one
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/robot-librarian.jpg")
+
+
 @router.get("/tunnel/opds")
 async def tunnel_opds(
     url: str = Query(..., description="Target OPDS URL"),

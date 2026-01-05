@@ -7,7 +7,8 @@ import hmac
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from functools import wraps
@@ -559,12 +560,51 @@ async def handle_bot_request(
             from api.main import bot
 
             bot_user = await bot.app.bot.get_me()
+            
+            # Try to get the actual profile photo
+            avatar_url = "/robot-librarian.jpg" # Robust default
+            try:
+                photos = await bot.app.bot.get_user_profile_photos(bot_user.id, limit=1)
+                if photos and photos.photos:
+                    # Use the smallest version for the header
+                    file_id = photos.photos[0][0].file_id
+                    # We will point to our internal proxy
+                    avatar_url = f"/api/bot/avatar?file_id={file_id}"
+            except Exception as e:
+                logger.debug(f"Could not fetch bot profile photo: {e}")
+
             return {
                 "name": bot_user.first_name or "ZeePubBot",
                 "username": f"@{bot_user.username}" if bot_user.username else "@ZeePubBot",
                 "description": "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
-                "avatar": "/robot-librarian.jpg",  # Default or fetched avatar
+                "avatar": avatar_url,
             }
+
+        elif action == "ui_settings":
+            # Manage global/role-based UI configurations
+            from services.settings_service import get_setting, set_setting
+            
+            sub_action = data.get("subAction", "get")
+            
+            if sub_action == "get":
+                target_role = data.get("role", "global")
+                # Load settings from bot_settings table
+                settings_raw = get_setting(f"ui_defaults_{target_role}", "{}")
+                try:
+                    return json.loads(settings_raw)
+                except Exception:
+                    return {}
+                    
+            elif sub_action == "set":
+                # Admin required
+                if user_id not in config.ADMIN_USERS:
+                    raise HTTPException(status_code=403, detail="Solo administradores pueden cambiar la configuración global")
+                
+                target_role = data.get("role", "global")
+                settings_obj = data.get("settings", {})
+                
+                set_setting(f"ui_defaults_{target_role}", json.dumps(settings_obj))
+                return {"success": True, "message": f"Configuración para {target_role} guardada"}
 
         elif action == "create_stars_invoice":
             tier = data.get("tier", "premium")
