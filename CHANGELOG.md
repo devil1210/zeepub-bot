@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.20.6] - 2026-01-05
+
+### Added
+- **Instant Theme Loading (FOUC Fix)**: Implementación de script de carga bloqueante que aplica tus colores y preferencias *antes* de que la página sea visible. Adiós a los parpadeos y a ver el tema por defecto por unos segundos.
+
 ## [4.20.5] - 2026-01-05
 
 ### Fixed
