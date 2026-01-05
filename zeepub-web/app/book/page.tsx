@@ -24,6 +24,9 @@ interface BookDetail {
     language?: string
     isbn?: string
     downloadUrl?: string
+    series?: string
+    seriesIndex?: string
+    categories?: string[]
 }
 
 function BookDetailContent() {
@@ -88,6 +91,16 @@ function BookDetailContent() {
     }
 
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-background pt-safe flex flex-col items-center justify-center p-4">
+                <div className="w-32 h-48 bg-secondary/50 rounded-lg animate-pulse mb-6" />
+                <div className="h-6 w-48 bg-secondary/50 rounded-full animate-pulse mb-3" />
+                <div className="h-4 w-32 bg-secondary/30 rounded-full animate-pulse" />
+            </div>
+        )
+    }
+
     if (!book) {
         return (
             <div className="min-h-screen bg-background pt-safe flex items-center justify-center">
@@ -123,8 +136,26 @@ function BookDetailContent() {
 
                         {/* Title and Author */}
                         <div className="flex-1 min-w-0">
-                            <h2 className="text-xl font-bold text-foreground mb-2 leading-tight line-clamp-3">{book.title}</h2>
-                            <p className="text-base text-primary font-medium mb-4 truncate">{book.author}</p>
+                            <h2 className="text-xl font-bold text-foreground mb-1 leading-tight line-clamp-3">{book.title}</h2>
+                            <p className="text-base text-primary font-medium mb-1 truncate">{book.author}</p>
+
+                            {book.series && (
+                                <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                                    <Library className="w-3 h-3" />
+                                    {book.series} {book.seriesIndex ? `(Vol. ${book.seriesIndex})` : ""}
+                                </p>
+                            )}
+
+                            {/* Tags/Categories */}
+                            {book.categories && book.categories.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mb-4">
+                                    {book.categories.slice(0, 5).map((tag, idx) => (
+                                        <span key={idx} className="px-1.5 py-0.5 bg-primary/5 text-primary/70 rounded border border-primary/10 text-[9px] font-medium uppercase tracking-tight">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
 
                             {/* Quick Info Chips */}
                             <div className="flex flex-wrap gap-2 text-xs">

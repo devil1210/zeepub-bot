@@ -356,6 +356,11 @@ async def handle_bot_request(
                 parts = identifier.split(":")
                 isbn = parts[-1].strip()
 
+            # Rich Metadata: Series and Tags
+            series = entry.get("calibre_series") or entry.get("schema_series")
+            series_index = entry.get("calibre_series_index")
+            categories = [cat.get("term") for cat in entry.get("tags", []) if cat.get("term")]
+
             download_url = None
             cover_url = None
             size = None
@@ -406,6 +411,9 @@ async def handle_bot_request(
                 "publisher": publisher,
                 "language": language,
                 "isbn": isbn,
+                "series": series,
+                "seriesIndex": series_index,
+                "categories": categories,
                 "year": year,
                 "size": size,
                 "fileType": file_type,

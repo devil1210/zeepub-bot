@@ -5,6 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.17.0] - 2026-01-05
+
+### Added
+- **Detalles Enriquecidos**: Evolución de la página de detalles del libro inspirada en KOReader y Moon+ Reader.
+- **Soporte de Series**: Ahora se muestra la Saga/Serie y el Número de Volumen si están disponibles en el servidor OPDS.
+- **Categorías y Etiquetas**: Visualización de etiquetas y géneros del libro en la hoja de detalles.
+- **Mejora de UX en Carga**: Corregido el parpadeo de error durante la carga de detalles; ahora muestra un esqueleto de carga elegante.
+
 ## [4.16.10] - 2026-01-05
 
 ### Fixed
