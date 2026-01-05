@@ -139,12 +139,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const { callBotAPI } = await import("@/lib/api")
         const data = await callBotAPI("ui_settings", { subAction: "get", role: "auto" })
         if (data) {
-          // CRITICAL BRANDING LOGIC:
-          // Level branding should ALWAYS apply on initial load.
-          // Users can override by going to "Para ti" and customizing.
-          // This ensures Staff/Admin see their official team colors.
+          // Backend now handles the 3-Way Merge (Global < Role < User)
+          // So we blindly apply what we receive as the source of truth.
 
-          // Always apply level defaults, overriding localStorage
+          if (data.update_notification) {
+            const { toast } = await import("sonner")
+            toast.info("La interfaz ha sido actualizada por el administrador", {
+              duration: 5000,
+              icon: "🔔"
+            })
+          }
+
+          // Always apply received settings to state AND localStorage
+          // This keeps local state perfectly synced with DB state
           if (data.primaryColor) {
             setPrimaryColor(data.primaryColor)
             localStorage.setItem("primaryColor", data.primaryColor)
@@ -155,7 +162,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             localStorage.setItem("theme", data.isDarkMode ? "dark" : "light")
           }
 
-          // Other settings - also apply and persist level defaults
           if (data.uiScale !== undefined) {
             setUiScale(data.uiScale)
             localStorage.setItem("uiScale", data.uiScale.toString())

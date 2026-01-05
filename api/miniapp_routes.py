@@ -13,7 +13,12 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from functools import wraps
 
-from api.deps import get_telegram_user_id, get_current_user_data, require_admin, require_mini_app_access
+from api.deps import (
+    get_telegram_user_id,
+    get_current_user_data,
+    require_admin,
+    require_mini_app_access,
+)
 from config.config_settings import config
 from services.user_service import get_effective_user
 from utils.security import validate_telegram_data, verify_telegram_user
@@ -54,6 +59,7 @@ class LevelUpdate(BaseModel):
 class UpdateLevelsRequest(BaseModel):
     levels: List[LevelUpdate]
 
+
 # --- Routes ---
 
 
@@ -84,8 +90,7 @@ async def handle_bot_request(
     # El resto depende de su nivel (has_mini_app_access).
     if user_effective.get("has_mini_app_access") is False and action != "status":
         raise HTTPException(
-            status_code=403,
-            detail="Tu nivel de usuario no tiene acceso a la Mini App"
+            status_code=403, detail="Tu nivel de usuario no tiene acceso a la Mini App"
         )
 
     logger.info(f"Miniapp action: {action} User: {user_id} Role: {user_role}")
@@ -108,10 +113,11 @@ async def handle_bot_request(
             if not page_url:  # Solo en búsqueda inicial, no en paginación
                 from utils.streaming import send_message_draft
                 from api.main import bot
+
                 await send_message_draft(
                     bot=bot.app.bot,
                     chat_id=user_id,
-                    text=f"🔍 <b>Buscando:</b> {query}..."
+                    text=f"🔍 <b>Buscando:</b> {query}...",
                 )
 
             feed = await get_cached_feed(target_url)
@@ -174,7 +180,10 @@ async def handle_bot_request(
                 title = entry.get("title", "Sin título")
 
                 # Robust author extraction
-                is_folder = any(link.get("rel") == "subsection" for link in getattr(entry, "links", []))
+                is_folder = any(
+                    link.get("rel") == "subsection"
+                    for link in getattr(entry, "links", [])
+                )
                 author = extract_author(entry, is_folder=is_folder)
 
                 summary = entry.get("summary", "")
@@ -309,11 +318,15 @@ async def handle_bot_request(
                 feed = await get_cached_feed(book_id_url)
             except Exception as e:
                 logger.error(f"[book-detail] Error fetching {book_id_url}: {e}")
-                raise HTTPException(status_code=400, detail=f"Invalid book URL: {book_id_url}")
+                raise HTTPException(
+                    status_code=400, detail=f"Invalid book URL: {book_id_url}"
+                )
 
             if not feed:
                 logger.error(f"[book-detail] No feed data returned from {book_id_url}")
-                raise HTTPException(status_code=404, detail="Book detail feed not found")
+                raise HTTPException(
+                    status_code=404, detail="Book detail feed not found"
+                )
 
             # OPDS entries can be at the top level or in feed.entries
             entries = getattr(feed, "entries", [])
@@ -366,7 +379,9 @@ async def handle_bot_request(
             # Rich Metadata: Series and Tags
             series = entry.get("calibre_series") or entry.get("schema_series")
             series_index = entry.get("calibre_series_index")
-            categories = [cat.get("term") for cat in entry.get("tags", []) if cat.get("term")]
+            categories = [
+                cat.get("term") for cat in entry.get("tags", []) if cat.get("term")
+            ]
 
             download_url = None
             cover_url = None
@@ -488,10 +503,12 @@ async def handle_bot_request(
                 "downloadsLimit": max_dl,
                 "timeUntilReset": f"{hours}h {minutes}m",
                 "hasUnlimitedDownloads": max_dl is None and role_key != "banned",
-                "isBanned": role_key == "banned"
+                "isBanned": role_key == "banned",
             }
 
-            logger.info(f"[user_status] User {user_id} - Role: {role_key}, Level: {system_role_text}, Used: {used}, Limit: {max_dl}, Reset: {hours}h {minutes}m")
+            logger.info(
+                f"[user_status] User {user_id} - Role: {role_key}, Level: {system_role_text}, Used: {used}, Limit: {max_dl}, Reset: {hours}h {minutes}m"
+            )
 
             return result
 
@@ -502,11 +519,11 @@ async def handle_bot_request(
 
                 downloads = await download_repo.get_user_downloads(user_id, limit=10)
 
-                logger.info(f"[user_downloads_history] User {user_id} - Retrieved {len(downloads)} downloads")
+                logger.info(
+                    f"[user_downloads_history] User {user_id} - Retrieved {len(downloads)} downloads"
+                )
 
-                return {
-                    "downloads": downloads
-                }
+                return {"downloads": downloads}
             except Exception as e:
                 logger.error(f"Error fetching download history for user {user_id}: {e}")
                 return {"downloads": []}
@@ -540,9 +557,13 @@ async def handle_bot_request(
 
             if is_admin:
                 if target == "channel":
-                    target_chat_id = target_id_override or get_setting("mini_app_channel_id", "@ZeePubs")
+                    target_chat_id = target_id_override or get_setting(
+                        "mini_app_channel_id", "@ZeePubs"
+                    )
                 elif target == "group":
-                    target_chat_id = target_id_override or get_setting("mini_app_group_id", "@ZeePubBotTest")
+                    target_chat_id = target_id_override or get_setting(
+                        "mini_app_group_id", "@ZeePubBotTest"
+                    )
                     message_thread_id = thread_id_override
 
             success = await enviar_libro_directo(
@@ -578,31 +599,38 @@ async def handle_bot_request(
 
             res = {
                 "name": bot_user.first_name or "ZeePubBot",
-                "username": f"@{bot_user.username}" if bot_user.username else "@ZeePubBot",
+                "username": (
+                    f"@{bot_user.username}" if bot_user.username else "@ZeePubBot"
+                ),
                 "description": "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
                 "avatar": avatar_url,
-                "ui_defaults": json.loads(get_setting("ui_defaults_global", "{}"))
+                "ui_defaults": json.loads(get_setting("ui_defaults_global", "{}")),
             }
             logger.info(f"bot_info result for user {user_id}: {res}")
             return res
 
         elif action == "ui_settings":
-            # Manage global/role-based UI configurations
-            
+            # Manage global/role-based/personal UI configurations
 
             sub_action = data.get("subAction", "get")
+
+            # Helper to get user repo
+            from repositories.user_repository import user_repo
 
             if sub_action == "get":
                 target_role = data.get("role", "global")
 
-                # If 'auto', determine the best role for the current user
+                # If 'auto', determine if we should load personal or role-based defaults
+                # Logic: Always load Global -> Role defaults -> User Personal Overrides
                 if target_role == "auto":
-                    target_role = user_role  # From the require_mini_app_access wrap
-                
-                logger.info(f"Fetching UI settings for role: {target_role} (original: {data.get('role')}, actual user_role: {user_role})")
+                    target_role = user_role  # Effective role
 
-                # Load global settings first as base
-                defaults = {
+                logger.info(
+                    f"Fetching UI settings chain for user {user_id} (Role: {target_role})"
+                )
+
+                # 1. Load GLOBAL settings (Base)
+                final_settings = {
                     "primaryColor": "#3b82f6",
                     "uiScale": 1.0,
                     "avatarScale": 1.0,
@@ -611,48 +639,110 @@ async def handle_bot_request(
                     "showSearchBar": False,
                     "showDonateCard": True,
                     "showHelpCard": True,
-                    "showSettingsInMenu": False
+                    "showSettingsInMenu": False,
                 }
-                
-                global_settings_raw = get_setting("ui_defaults_global", "{}")
+
                 try:
-                    global_settings = json.loads(global_settings_raw)
-                    defaults.update(global_settings)
+                    global_raw = get_setting("ui_defaults_global", "{}")
+                    final_settings.update(json.loads(global_raw))
                 except Exception:
                     pass
 
-                final_settings = defaults.copy()
-
-                # If specific role requested/detected, merge it over global
+                # 2. Load ROLE settings (Mid Layer)
+                role_version = 0
                 if target_role and target_role != "global":
-                    role_settings_raw = get_setting(f"ui_defaults_{target_role}", "{}")
                     try:
-                        role_settings = json.loads(role_settings_raw)
-                        logger.info(f"Merging {target_role} settings: {role_settings}")
+                        role_raw = get_setting(f"ui_defaults_{target_role}", "{}")
+                        role_settings = json.loads(role_raw)
+
+                        # Extract version for notification logic
+                        role_version = role_settings.get("ui_version", 0)
+
+                        logger.info(
+                            f"Merging {target_role} defaults (v{role_version}): {role_settings}"
+                        )
                         final_settings.update(role_settings)
                     except Exception as e:
                         logger.error(f"Error merging role settings: {e}")
-                        pass
-                
-                logger.debug(f"Final merged settings for {user_id}: {final_settings}")
+
+                # 3. Load USER settings (Top Layer) - Only if looking for "auto"/personal context
+                # If specifically requesting "staff" defaults, we don't merge user settings
+                update_notification = False
+
+                if data.get("role") == "auto":
+                    user_record = await user_repo.get_by_id(user_id)
+                    if user_record and user_record.get("settings"):
+                        user_settings = user_record.get("settings", {})
+                        last_seen_version = user_settings.get("last_seen_version", 0)
+
+                        # VERSION CHECK: If Admin pushed a new version, notify user
+                        # But still merge their settings (user choice prevails, but they get notified)
+                        if role_version > last_seen_version:
+                            update_notification = True
+                            final_settings["update_notification"] = True
+                            logger.info(
+                                f"User {user_id} has old version ({last_seen_version} < {role_version}). Sending update notification."
+                            )
+
+                        logger.info(f"Merging USER personal settings: {user_settings}")
+                        final_settings.update(user_settings)
+
                 return final_settings
 
             elif sub_action == "set":
-                logger.info(f"UI Settings SET request - user_id: {user_id}, user_role: {user_role}")
-                
-                # Admin required - checking role from require_mini_app_access wrap
-                if user_role != "admin":
-                    logger.warning(f"User {user_id} with role {user_role} tried to set UI settings - DENIED")
-                    raise HTTPException(status_code=403, detail="Solo administradores pueden cambiar la configuración global")
+                logger.info(
+                    f"UI Settings SET request - user_id: {user_id}, role: {data.get('role')}"
+                )
 
                 target_role = data.get("role", "global")
                 settings_obj = data.get("settings", {})
-                
-                logger.info(f"Saving UI settings for role '{target_role}': {settings_obj}")
-                set_setting(f"ui_defaults_{target_role}", json.dumps(settings_obj))
-                logger.info(f"UI settings saved successfully for '{target_role}'")
-                
-                return {"success": True, "message": f"Configuración para {target_role} guardada"}
+
+                if target_role == "personal":
+                    # USER SAVING PERSONAL SETTINGS
+                    # 1. Get current role version to ack checks
+                    current_role = user_role
+                    role_raw = get_setting(f"ui_defaults_{current_role}", "{}")
+                    try:
+                        role_data = json.loads(role_raw)
+                        settings_obj["last_seen_version"] = role_data.get(
+                            "ui_version", 0
+                        )
+                    except Exception:
+                        settings_obj["last_seen_version"] = 0
+
+                    # 2. Save to DB users table
+                    await user_repo.update_user_settings(user_id, settings_obj)
+                    logger.info(f"Saved PERSONAL settings for user {user_id}")
+                    return {
+                        "success": True,
+                        "message": "Configuración personal guardada",
+                    }
+
+                else:
+                    # ADMIN SAVING ROLE DEFAULTS
+                    if user_role != "admin":
+                        logger.warning(
+                            f"User {user_id} tried to set UI settings for {target_role} - DENIED"
+                        )
+                        raise HTTPException(
+                            status_code=403,
+                            detail="Solo administradores pueden cambiar la configuración global",
+                        )
+
+                    # Increment Version to force notifications
+                    import time
+
+                    settings_obj["ui_version"] = int(time.time())
+
+                    logger.info(
+                        f"Saving UI settings for role '{target_role}' (v{settings_obj['ui_version']}): {settings_obj}"
+                    )
+                    set_setting(f"ui_defaults_{target_role}", json.dumps(settings_obj))
+
+                    return {
+                        "success": True,
+                        "message": f"Configuración para {target_role} guardada (v{settings_obj['ui_version']})",
+                    }
 
         elif action == "create_stars_invoice":
             tier = data.get("tier", "premium")
@@ -660,23 +750,25 @@ async def handle_bot_request(
 
             # Fetch Bot instance and plugin
             from api.main import bot
+
             stars_plugin = bot.plugin_manager.get_plugin("stars_payment")
             cms_plugin = bot.plugin_manager.get_plugin("custom_messages")
             if not stars_plugin:
-                raise HTTPException(status_code=500, detail="Stars Payment Plugin not found")
+                raise HTTPException(
+                    status_code=500, detail="Stars Payment Plugin not found"
+                )
 
             # Prepare invoice details using CMS strings if available
             title = f"Nivel {tier.capitalize()}"
             desc = f"Suscripción al nivel {tier.capitalize()}"
             if cms_plugin:
-                desc = await cms_plugin.get_text("star_payment_invoice_desc", Nivel=tier.capitalize())
+                desc = await cms_plugin.get_text(
+                    "star_payment_invoice_desc", Nivel=tier.capitalize()
+                )
 
             # Generate Link
             invoice_link = await stars_plugin.create_stars_invoice_link(
-                title=title,
-                description=desc,
-                payload=f"upgrade_{tier}",
-                amount=amount
+                title=title, description=desc, payload=f"upgrade_{tier}", amount=amount
             )
 
             return {"invoiceLink": invoice_link}
@@ -691,10 +783,11 @@ async def handle_bot_request(
 
 # --- Nuevos Endpoints de Control de Acceso ---
 
+
 @router.post("/api/user/access", response_model=AccessResponse)
 async def check_user_access(
     request: AccessCheckRequest,
-    user_data: Dict[str, Any] = Depends(get_current_user_data)
+    user_data: Dict[str, Any] = Depends(get_current_user_data),
 ):
     from services.user_service import get_effective_user
     from repositories.user_repository import user_repo
@@ -716,16 +809,18 @@ async def check_user_access(
         # El nivel id por defecto para free es 6 (Lector)
         # IDs mapping: Admin=1, Staff=2, Premium=3, VIP=4, Patrocinador=5, Lector=6
         role_to_level = {
-            'admin': 1,
-            'staff': 2,
-            'premium': 3,
-            'vip': 4,
-            'white': 5,
-            'free': 6
+            "admin": 1,
+            "staff": 2,
+            "premium": 3,
+            "vip": 4,
+            "white": 5,
+            "free": 6,
         }
         level_id = role_to_level.get(role, 6)
 
-        logger.info(f"User {uid} not found in user_levels. Role effective: {role}. Creating entry with Level ID {level_id}.")
+        logger.info(
+            f"User {uid} not found in user_levels. Role effective: {role}. Creating entry with Level ID {level_id}."
+        )
         await user_repo.create_minimal_user(uid, level_id=level_id)
         access_info = await user_repo.get_access_info(uid)
 
@@ -733,9 +828,11 @@ async def check_user_access(
         logger.error(f"Failed to retrieve access info for user {uid}")
         # Fallback de emergencia
         return AccessResponse(
-            level=UserLevelModel(id="6", name="Lector", priority=1, color="#9E9E9E", hasAccess=False),
+            level=UserLevelModel(
+                id="6", name="Lector", priority=1, color="#9E9E9E", hasAccess=False
+            ),
             hasAccess=eff.get("has_mini_app_access", False),
-            isAdmin=(eff.get("role") == "admin")
+            isAdmin=(eff.get("role") == "admin"),
         )
 
     # 3. Determinar flags finales mezclando ambos sistemas
@@ -746,32 +843,33 @@ async def check_user_access(
     # - Tiene acceso explícito por get_effective_user (fallbacks de config)
 
     is_admin = (eff.get("role") == "admin") or access_info.get("isAdmin", False)
-    is_staff = (eff.get("role") == "staff")
+    is_staff = eff.get("role") == "staff"
 
     # Priority: Roles admin/staff TRUMP level restrictions
     has_access = (
-        is_admin or
-        is_staff or
-        eff.get("has_mini_app_access", False) or
-        access_info.get("hasAccess", False)
+        is_admin
+        or is_staff
+        or eff.get("has_mini_app_access", False)
+        or access_info.get("hasAccess", False)
     )
 
-    logger.info(f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}, role={eff.get('role')}")
+    logger.info(
+        f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}, role={eff.get('role')}"
+    )
     return AccessResponse(
         level=UserLevelModel(**access_info["level"]),
         hasAccess=has_access,
-        isAdmin=is_admin
+        isAdmin=is_admin,
     )
 
 
 @router.get("/api/admin/levels")
 @router.get("/api/admin/access-levels")
-async def get_levels(
-    user_data: Dict[str, Any] = Depends(require_admin)
-):
+async def get_levels(user_data: Dict[str, Any] = Depends(require_admin)):
 
     logger.info("Fetching all access levels")
     from repositories.user_repository import user_repo
+
     levels = await user_repo.get_all_levels()
 
     logger.info(f"Found {len(levels)} access levels")
@@ -781,15 +879,12 @@ async def get_levels(
 @router.put("/api/admin/levels")
 @router.post("/api/admin/access-levels")
 async def update_levels(
-    request: UpdateLevelsRequest,
-    user_data: Dict[str, Any] = Depends(require_admin)
+    request: UpdateLevelsRequest, user_data: Dict[str, Any] = Depends(require_admin)
 ):
 
     from repositories.user_repository import user_repo
+
     for level in request.levels:
         await user_repo.update_level_access(int(level.id), level.hasAccess)
 
-    return {
-        "success": True,
-        "message": "Niveles actualizados correctamente"
-    }
+    return {"success": True, "message": "Niveles actualizados correctamente"}

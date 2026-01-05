@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
-import { Info, Moon, Sun, Monitor, Type, UserCircle, BookOpen, Heart, HelpCircle, Palette, Save, Globe } from "lucide-react"
+import { Info, Moon, Sun, Monitor, Type, UserCircle, BookOpen, Heart, HelpCircle, Palette, Save, Globe, AlertTriangle, Search, CreditCard, RotateCcw, Check } from "lucide-react"
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
 import { useTheme } from "@/components/theme-provider"
@@ -16,6 +16,9 @@ import { toast } from "sonner"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // Paleta de colores predefinidos
 const colorPresets = [
@@ -211,268 +214,231 @@ export default function InterfaceConfigPage() {
                         </Card>
                     )}
 
-                    {/* Selector de Tema */}
-                    <Card className="p-6 border-border">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                {isDarkMode ? (
-                                    <Moon className="w-5 h-5 text-primary" />
-                                ) : (
-                                    <Sun className="w-5 h-5 text-primary" />
-                                )}
-                                <div>
-                                    <Label className="text-base font-semibold">Tema</Label>
-                                    <p className="text-xs text-muted-foreground">
-                                        Cambiar entre modo claro y oscuro
-                                    </p>
-                                </div>
-                            </div>
-                            <Switch
-                                checked={isDarkMode}
-                                onCheckedChange={setIsDarkMode}
-                                className="scale-110"
-                            />
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                            {isDarkMode ? "Modo Oscuro" : "Modo Claro"}
-                        </div>
-                    </Card>
-
-                    {/* Selector de Color Principal */}
-                    <Card className="p-6 border-border">
-                        <div className="flex items-center gap-3 mb-4">
-                            <Palette className="w-5 h-5 text-primary" />
-                            <div>
-                                <Label className="text-base font-semibold">Color Principal</Label>
-                                <p className="text-xs text-muted-foreground">
-                                    Personaliza el color de acento de la interfaz
-                                </p>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-6 gap-3 mt-4">
-                            {colorPresets.map((color) => {
-                                const colorValue = isDarkMode ? color.dark : color.value
-                                const isSelected = primaryColor === colorValue
-                                return (
-                                    <button
-                                        key={color.name}
-                                        onClick={() => setPrimaryColor(colorValue)}
-                                        className={`
-                                            relative h-12 rounded-lg transition-all
-                                            ${isSelected ? "ring-2 ring-offset-2 ring-offset-background ring-white scale-110" : "hover:scale-105"}
-                                        `}
-                                        style={{ backgroundColor: colorValue }}
-                                        aria-label={color.name}
-                                    >
-                                        {isSelected && (
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <div className="w-2 h-2 bg-white rounded-full" />
-                                            </div>
-                                        )}
-                                    </button>
-                                )
-                            })}
-                        </div>
-
-                        {/* Custom Color Picker */}
-                        <div className="mt-4 flex items-center gap-3 flex-wrap">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="color"
-                                    value={primaryColor.startsWith('#') ? primaryColor : `#${primaryColor}`}
-                                    onChange={(e) => setPrimaryColor(e.target.value)}
-                                    className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer bg-transparent"
-                                    style={{ padding: 0 }}
-                                />
-                                <span className="text-sm text-muted-foreground">Personalizado</span>
-                            </label>
-                            <div className="flex items-center gap-1">
-                                <span className="text-muted-foreground">#</span>
-                                <input
-                                    type="text"
-                                    value={primaryColor.replace('#', '').toUpperCase()}
-                                    onChange={(e) => {
-                                        const val = e.target.value.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6)
-                                        if (val.length === 6 || val.length === 3) {
-                                            setPrimaryColor(`#${val}`)
-                                        } else if (val.length > 0) {
-                                            setPrimaryColor(`#${val}`)
-                                        }
-                                    }}
-                                    placeholder="3B82F6"
-                                    className="w-20 px-2 py-1 text-xs font-mono bg-secondary border border-border rounded text-foreground uppercase"
-                                    maxLength={6}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="mt-3 text-sm text-muted-foreground text-center">
-                            {colorPresets.find((c) => c.value === primaryColor || c.dark === primaryColor)?.name || "Personalizado"}
-                        </div>
-                    </Card>
-
-                    {/* Slider de Tamaño de Avatar */}
-                    <Card className="p-6 border-border">
-                        <div className="mb-6">
-                            <Label className="text-base font-semibold">Tamaño del Avatar</Label>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                Ajusta el tamaño del avatar del bot en la página principal
-                            </p>
-                        </div>
-                        <div className="space-y-4">
-                            <Slider
-                                value={[avatarScale]}
-                                onValueChange={(value) => setAvatarScale(value[0])}
-                                min={0.6}
-                                max={1.4}
-                                step={0.1}
-                                className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Pequeño (60%)</span>
-                                <span className="font-semibold text-foreground">
-                                    {Math.round(avatarScale * 100)}%
-                                </span>
-                                <span>Grande (140%)</span>
-                            </div>
-                            {/* Avatar preview */}
-                            <div className="flex justify-center mt-4">
-                                <Avatar
-                                    className="border-2 border-primary shadow-lg transition-all"
-                                    style={{
-                                        width: `${80 * avatarScale}px`,
-                                        height: `${80 * avatarScale}px`
-                                    }}
-                                >
-                                    <AvatarImage src={botAvatar} alt="Bot Avatar" />
-                                    <AvatarFallback className="bg-primary/20 text-primary font-bold" style={{ fontSize: `${24 * avatarScale}px` }}>
-                                        ZP
-                                    </AvatarFallback>
-                                </Avatar>
-                            </div>
-                        </div>
-                    </Card>
-
-                    {/* Slider de Escala de UI */}
-                    <Card className="p-6 border-border">
-                        <div className="mb-6">
-                            <Label className="text-base font-semibold">Tamaño de Interfaz</Label>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                Ajusta el tamaño general de texto y elementos
-                            </p>
-                        </div>
-                        <div className="space-y-4">
-                            <Slider
-                                value={[uiScale]}
-                                onValueChange={(value) => setUiScale(value[0])}
-                                min={0.8}
-                                max={1.2}
-                                step={0.05}
-                                className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Pequeño (80%)</span>
-                                <span className="font-semibold text-foreground">
-                                    {Math.round(uiScale * 100)}%
-                                </span>
-                                <span>Grande (120%)</span>
-                            </div>
-                            <div className="mt-4 p-4 bg-secondary/20 rounded-lg border border-border">
-                                <p
-                                    className="text-sm"
-                                    style={{
-                                        fontSize: `calc(0.875rem * ${uiScale})`,
-                                        lineHeight: `calc(1.25rem * ${uiScale})`,
-                                    }}
-                                >
-                                    Vista previa del tamaño de texto actual
-                                </p>
-                            </div>
-                        </div>
-                    </Card>
-
-                    {/* Configuración de Búsqueda */}
-                    <Card className="p-6 border-border">
-                        <div className="flex items-center gap-3 mb-6">
-                            <BookOpen className="w-5 h-5 text-primary" />
-                            <div>
-                                <Label className="text-base font-semibold">Configuración de Búsqueda</Label>
-                                <p className="text-xs text-muted-foreground">
-                                    Personaliza cómo aparece la búsqueda en el inicio
-                                </p>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label className="text-sm font-medium">Mostrar Tarjeta de Búsqueda</Label>
-                                    <p className="text-xs text-muted-foreground">Muestra el acceso directo en "Funciones"</p>
-                                </div>
-                                <Switch
-                                    checked={showSearchCard}
-                                    onCheckedChange={setShowSearchCard}
-                                />
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label className="text-sm font-medium">Mostrar Barra de Búsqueda</Label>
-                                    <p className="text-xs text-muted-foreground">Muestra una barra directamente en el inicio</p>
-                                </div>
-                                <Switch id="show-search-bar" checked={showSearchBar} onCheckedChange={setShowSearchBar} />
-                            </div>
-                        </div>
-                    </Card>
-
-                    <Separator className="bg-primary/10" />
-
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Palette className="w-5 h-5 text-primary" />
-                            <h3 className="text-lg font-semibold">Visibilidad de Tarjetas</h3>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
-                                <div className="flex items-center gap-3">
-                                    <Heart className="w-5 h-5 text-primary" />
-                                    <Label htmlFor="show-donate-card" className="font-medium">Mostrar Tarjeta de Donar</Label>
-                                </div>
-                                <Switch id="show-donate-card" checked={showDonateCard} onCheckedChange={setShowDonateCard} />
-                            </div>
-
-                            <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
-                                <div className="flex items-center gap-3">
-                                    <HelpCircle className="w-5 h-5 text-primary" />
-                                    <Label htmlFor="show-help-card" className="font-medium">Mostrar Tarjeta de Ayuda</Label>
-                                </div>
-                                <Switch id="show-help-card" checked={showHelpCard} onCheckedChange={setShowHelpCard} />
-                            </div>
-
-                            <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
-                                <div className="flex items-center gap-3">
-                                    <Palette className="w-5 h-5 text-primary" />
-                                    <Label htmlFor="show-settings-in-menu" className="font-medium">Shortcut de Apariencia en Menú</Label>
-                                </div>
-                                <Switch id="show-settings-in-menu" checked={showSettingsInMenu} onCheckedChange={setShowSettingsInMenu} />
-                            </div>
-                        </div>
-                    </div>
-
+                    {/* Banner de aviso cuando se edita un nivel */}
                     {editTarget !== "personal" && (
-                        <div className="sticky bottom-6 z-50 px-2 pb-2">
+                        <Alert className="bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400">
+                            <AlertTriangle className="w-4 h-4" />
+                            <AlertTitle>Editando nivel {editTarget.toUpperCase()}</AlertTitle>
+                            <AlertDescription>
+                                Los cambios afectarán a todos los usuarios de este nivel que no tengan una configuración personal guardada.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    {/* Previsualización */}
+                    <Card className="p-6 border-border shadow-sm overflow-hidden relative">
+                        <Label className="text-lg font-bold mb-4 block">Previsualización</Label>
+                        <div className="relative z-10 bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+                            <Avatar
+                                className="border-2 border-primary shadow-lg transition-all mx-auto mb-4"
+                                style={{
+                                    width: `${80 * avatarScale}px`,
+                                    height: `${80 * avatarScale}px`
+                                }}
+                            >
+                                <AvatarImage src={botAvatar} alt="Bot Avatar" />
+                                <AvatarFallback className="bg-primary/20 text-primary font-bold" style={{ fontSize: `${24 * avatarScale}px` }}>
+                                    ZP
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="text-center space-y-2">
+                                <h3 className="font-bold text-xl text-foreground">ZeePub Bot</h3>
+                                <p className="text-sm text-muted-foreground">Asistente de lectura digital</p>
+                                <div className="flex justify-center gap-2 mt-4">
+                                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                                        Demo
+                                    </Badge>
+                                    <Badge variant="outline" className="border-primary/50 text-primary">
+                                        v1.0
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Background pattern preview */}
+                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                            style={{
+                                backgroundImage: `radial-gradient(circle at 1px 1px, ${primaryColor} 1px, transparent 0)`,
+                                backgroundSize: '24px 24px'
+                            }}
+                        />
+                    </Card>
+
+                    <Tabs defaultValue="appearance" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="appearance">Apariencia</TabsTrigger>
+                            <TabsTrigger value="interface">Interfaz</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="appearance" className="space-y-6 mt-6">
+                            {/* Tema */}
+                            <Card className="p-6 border-border">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        {isDarkMode ? (
+                                            <Moon className="w-5 h-5 text-primary" />
+                                        ) : (
+                                            <Sun className="w-5 h-5 text-primary" />
+                                        )}
+                                        <div>
+                                            <Label className="text-base font-semibold">Tema</Label>
+                                            <p className="text-xs text-muted-foreground">
+                                                Cambiar entre modo claro y oscuro
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={isDarkMode}
+                                        onCheckedChange={setIsDarkMode}
+                                        className="scale-110"
+                                    />
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                    {isDarkMode ? "Modo Oscuro" : "Modo Claro"}
+                                </div>
+                            </Card>
+
+                            {/* Color Principal */}
+                            <div className="space-y-4">
+                                <Label className="text-base">Color Principal</Label>
+                                <div className="grid grid-cols-5 gap-3">
+                                    {[
+                                        { color: "#3b82f6", name: "Azul" },
+                                        { color: "#ef4444", name: "Rojo" },
+                                        { color: "#10b981", name: "Verde" },
+                                        { color: "#f59e0b", name: "Ámbar" },
+                                        { color: "#8b5cf6", name: "Violeta" },
+                                        { color: "#ec4899", name: "Rosa" },
+                                        { color: "#06b6d4", name: "Cian" },
+                                        { color: "#f97316", name: "Naranja" },
+                                        { color: "#64748b", name: "Pizarra" },
+                                        { color: "#171717", name: "Neutro" },
+                                    ].map((c) => (
+                                        <button
+                                            key={c.color}
+                                            onClick={() => setPrimaryColor(c.color)}
+                                            className={`
+                                                w-full aspect-square rounded-full flex items-center justify-center transition-all
+                                                ${primaryColor === c.color ? 'ring-2 ring-offset-2 ring-primary scale-110 shadow-lg' : 'hover:scale-105 hover:shadow-md'}
+                                            `}
+                                            style={{ backgroundColor: c.color }}
+                                            title={c.name}
+                                        >
+                                            {primaryColor === c.color && <Check className="w-4 h-4 text-white drop-shadow-md" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Escala UI */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-base">Escala de Interfaz</Label>
+                                    <span className="text-sm text-muted-foreground">{Math.round(uiScale * 100)}%</span>
+                                </div>
+                                <Slider
+                                    value={[uiScale]}
+                                    min={0.8}
+                                    max={1.2}
+                                    step={0.05}
+                                    onValueChange={(val) => setUiScale(val[0])}
+                                />
+                                <div className="flex justify-between text-xs text-muted-foreground px-1">
+                                    <span>Pequeño</span>
+                                    <span>Normal</span>
+                                    <span>Grande</span>
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="interface" className="space-y-6 mt-6">
+                            {/* Avatar Scale */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-base">Tamaño del Avatar</Label>
+                                    <span className="text-sm text-muted-foreground">{Math.round(avatarScale * 100)}%</span>
+                                </div>
+                                <Slider
+                                    value={[avatarScale]}
+                                    min={0.8}
+                                    max={1.5}
+                                    step={0.1}
+                                    onValueChange={(val) => setAvatarScale(val[0])}
+                                />
+                            </div>
+
+                            {/* Toggles de Visibilidad */}
+                            <div className="space-y-4">
+                                <Label className="text-base mb-2 block">Elementos Visibles</Label>
+
+                                <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <Search className="w-5 h-5 text-primary" />
+                                        <Label htmlFor="show-search-card" className="font-medium">Tarjeta de Búsqueda</Label>
+                                    </div>
+                                    <Switch id="show-search-card" checked={showSearchCard} onCheckedChange={setShowSearchCard} />
+                                </div>
+
+                                <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <Search className="w-5 h-5 text-primary" />
+                                        <Label htmlFor="show-search-bar" className="font-medium">Barra Flotante</Label>
+                                    </div>
+                                    <Switch id="show-search-bar" checked={showSearchBar} onCheckedChange={setShowSearchBar} />
+                                </div>
+
+                                <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <CreditCard className="w-5 h-5 text-primary" />
+                                        <Label htmlFor="show-donate-card" className="font-medium">Tarjeta de Donación</Label>
+                                    </div>
+                                    <Switch id="show-donate-card" checked={showDonateCard} onCheckedChange={setShowDonateCard} />
+                                </div>
+
+                                <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <HelpCircle className="w-5 h-5 text-primary" />
+                                        <Label htmlFor="show-help-card" className="font-medium">Tarjeta de Ayuda</Label>
+                                    </div>
+                                    <Switch id="show-help-card" checked={showHelpCard} onCheckedChange={setShowHelpCard} />
+                                </div>
+
+                                <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <Palette className="w-5 h-5 text-primary" />
+                                        <Label htmlFor="show-settings-in-menu" className="font-medium">Shortcut de Apariencia en Menú</Label>
+                                    </div>
+                                    <Switch id="show-settings-in-menu" checked={showSettingsInMenu} onCheckedChange={setShowSettingsInMenu} />
+                                </div>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+
+                    <div className="sticky bottom-6 z-50 px-2 pb-2">
+                        <Button
+                            className="w-full h-14 rounded-2xl text-lg font-bold shadow-2xl shadow-primary/40 border-2 border-primary/50 relative overflow-hidden group"
+                            onClick={handleSaveLevel}
+                            disabled={isSaving}
+                        >
+                            <div className="absolute inset-0 bg-primary/20 group-hover:bg-primary/30 transition-colors" />
+                            <span className="relative flex items-center justify-center gap-2">
+                                {isSaving ? "Guardando..." : `Guardar ${editTarget === 'personal' ? 'Cambios' : `para ${editTarget.toUpperCase()}`}`}
+                                <Save className="w-6 h-6" />
+                            </span>
+                        </Button>
+
+                        {editTarget === 'personal' && (
                             <Button
-                                className="w-full h-14 rounded-2xl text-lg font-bold shadow-2xl shadow-primary/40 border-2 border-primary/50 relative overflow-hidden group"
-                                onClick={handleSaveLevel}
+                                variant="ghost"
+                                className="w-full mt-2 text-muted-foreground hover:text-foreground hover:bg-transparent"
+                                onClick={handleResetToLevelDefaults}
                                 disabled={isSaving}
                             >
-                                <div className="absolute inset-0 bg-primary/20 group-hover:bg-primary/30 transition-colors" />
-                                <span className="relative flex items-center justify-center gap-2">
-                                    {isSaving ? "Guardando..." : `Guardar para ${editTarget === 'global' ? 'Todos' : editTarget.toUpperCase()}`}
-                                    <Save className="w-6 h-6" />
-                                </span>
+                                <RotateCcw className="w-4 h-4 mr-2" />
+                                Restablecer a valores del nivel
                             </Button>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     {/* Información */}
                     <Card className="p-4 border-border bg-primary/5">
