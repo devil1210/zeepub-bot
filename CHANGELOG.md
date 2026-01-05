@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.16.8] - 2026-01-05
+
+### Fixed
+- **Plugin de Pagos**: Corregido error de importación en `stars_payment_plugin.py` y actualizado para usar la nueva interfaz de invalidación de caché.
+
+## [4.16.7] - 2026-01-05
+
+### Changed
+- **Optimización de Tests**: Implementado cierre forzado de conexiones a la base de datos y cancelación de tareas asíncronas para evitar bloqueos al finalizar la suite de pruebas.
+
 ## [4.16.6] - 2026-01-04
 
 ### Fixed

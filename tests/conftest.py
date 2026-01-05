@@ -51,6 +51,14 @@ def setup_test_db():
     
     yield
     
+    # Cleanup: Close all DB connections to avoid hangs
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(db_manager.close_all())
+    finally:
+        loop.close()
+    
     # Cleanup after all tests
     if os.path.exists(test_db_path):
         os.remove(test_db_path)
@@ -58,6 +66,21 @@ def setup_test_db():
         for suffix in ["-shm", "-wal"]:
             if os.path.exists(test_db_path + suffix):
                 os.remove(test_db_path + suffix)
+
+@pytest.fixture(scope="session", autouse=True)
+def global_cleanup():
+    """
+    Ensures that all background tasks are cancelled at the end of the test session.
+    """
+    yield
+    # Final cleanup of any dangling async tasks
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            for task in asyncio.all_tasks(loop):
+                task.cancel()
+    except Exception:
+        pass
 
 @pytest.fixture(autouse=True)
 def cleanup_sys_modules():

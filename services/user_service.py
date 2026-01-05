@@ -268,5 +268,10 @@ async def check_milestones(uid: int, context) -> Optional[str]:
     return None
 
 
+async def invalidate_user_cache(telegram_id: int):
+    """Limpia la caché de un usuario específico."""
+    await user_cache.invalidate(f"user_effective:{telegram_id}")
+
+
 # Init DB is handled by DatabaseManager/UserRepository instantiation
 # We don't need init_user_db() explicit call here as repo handles connections lazily or via manager

@@ -4,7 +4,7 @@ import logging
 from telegram import Update, LabeledPrice
 from telegram.ext import ContextTypes, PreCheckoutQueryHandler, MessageHandler, filters
 from plugins.base_plugin import BasePlugin
-from services.user_service import user_service
+from services.user_service import invalidate_user_cache
 from repositories.user_repository import user_repo
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class StarsPaymentPlugin(BasePlugin):
         )
         
         # Limpiar caché del servicio de usuario
-        user_service.clear_cache(user.id)
+        await invalidate_user_cache(user.id)
 
         # Enviar mensaje de éxito usando el sistema de plantillas
         if self.cms:
