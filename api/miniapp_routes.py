@@ -573,13 +573,15 @@ async def handle_bot_request(
             except Exception as e:
                 logger.debug(f"Could not fetch bot profile photo: {e}")
 
-            return {
+            res = {
                 "name": bot_user.first_name or "ZeePubBot",
                 "username": f"@{bot_user.username}" if bot_user.username else "@ZeePubBot",
                 "description": "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
                 "avatar": avatar_url,
                 "ui_defaults": json.loads(get_setting("ui_defaults_global", "{}"))  # Simplified for now, but ui_settings get auto is the main way
             }
+            logger.info(f"bot_info result for user {user_id}: {res}")
+            return res
 
         elif action == "ui_settings":
             # Manage global/role-based UI configurations
@@ -593,6 +595,8 @@ async def handle_bot_request(
                 # If 'auto', determine the best role for the current user
                 if target_role == "auto":
                     target_role = user_role  # From the require_mini_app_access wrap
+                
+                logger.info(f"Fetching UI settings for role: {target_role} (original: {data.get('role')}, actual user_role: {user_role})")
 
                 # Load global settings first as base
                 final_settings = json.loads(get_setting("ui_defaults_global", "{}"))
@@ -602,10 +606,13 @@ async def handle_bot_request(
                     role_settings_raw = get_setting(f"ui_defaults_{target_role}", "{}")
                     try:
                         role_settings = json.loads(role_settings_raw)
+                        logger.info(f"Merging {target_role} settings: {role_settings}")
                         final_settings.update(role_settings)
-                    except Exception:
+                    except Exception as e:
+                        logger.error(f"Error merging role settings: {e}")
                         pass
-
+                
+                logger.debug(f"Final merged settings for {user_id}: {final_settings}")
                 return final_settings
 
             elif sub_action == "set":

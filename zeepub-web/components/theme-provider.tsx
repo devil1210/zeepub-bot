@@ -129,6 +129,32 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedShowHelpCard = localStorage.getItem("showHelpCard")
     const savedShowSettingsInMenu = localStorage.getItem("showSettingsInMenu")
 
+    // Sync with Backend (Role Defaults)
+    const fetchRemoteDefaults = async () => {
+      try {
+        const { callBotAPI } = await import("@/lib/api")
+        const data = await callBotAPI("ui_settings", { subAction: "get", role: "auto" })
+        if (data) {
+          // Only apply remote defaults for keys NOT present in localStorage
+          if (data.primaryColor && !savedColor) setPrimaryColor(data.primaryColor)
+          if (data.uiScale !== undefined && !savedScale) setUiScale(data.uiScale)
+          if (data.avatarScale !== undefined && !savedAvatarScale) setAvatarScale(data.avatarScale)
+          if (data.isDarkMode !== undefined && !savedTheme) setIsDarkMode(data.isDarkMode)
+          if (data.showSearchCard !== undefined && !savedShowSearchCard) setShowSearchCard(data.showSearchCard)
+          if (data.showSearchBar !== undefined && !savedShowSearchBar) setShowSearchBar(data.showSearchBar)
+          if (data.showDonateCard !== undefined && !savedShowDonateCard) setShowDonateCard(data.showDonateCard)
+          if (data.showHelpCard !== undefined && !savedShowHelpCard) setShowHelpCard(data.showHelpCard)
+          if (data.showSettingsInMenu !== undefined && !savedShowSettingsInMenu) setShowSettingsInMenu(data.showSettingsInMenu)
+        }
+      } catch (error) {
+        console.error("Error fetching UI defaults:", error)
+      } finally {
+        // ALWAYS mark as loaded even if fetch fails
+        setIsLoaded(true)
+      }
+    }
+
+    // Apply local settings if they exist
     if (savedTheme) setIsDarkMode(savedTheme === "dark")
     if (savedColor) setPrimaryColor(savedColor)
     if (savedScale) setUiScale(parseFloat(savedScale))
@@ -139,36 +165,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedShowHelpCard !== null) setShowHelpCard(savedShowHelpCard === "true")
     if (savedShowSettingsInMenu !== null) setShowSettingsInMenu(savedShowSettingsInMenu === "true")
 
-    setIsLoaded(true)
-  }, [])
-
-  // Sync with Backend (Role Defaults)
-  useEffect(() => {
-    async function fetchDefaults() {
-      try {
-        const { callBotAPI } = await import("@/lib/api")
-        // Get settings for the current user (role: 'auto' determines it in backend)
-        const data = await callBotAPI("ui_settings", { subAction: "get", role: "auto" })
-
-        const applyDefaults = (defaults: any) => {
-          if (!defaults) return
-          if (defaults.primaryColor && !localStorage.getItem("primaryColor")) setPrimaryColor(defaults.primaryColor)
-          if (defaults.uiScale !== undefined && !localStorage.getItem("uiScale")) setUiScale(defaults.uiScale)
-          if (defaults.avatarScale !== undefined && !localStorage.getItem("avatarScale")) setAvatarScale(defaults.avatarScale)
-          if (defaults.isDarkMode !== undefined && !localStorage.getItem("isDarkMode")) setIsDarkMode(defaults.isDarkMode)
-          if (defaults.showSearchCard !== undefined && !localStorage.getItem("showSearchCard")) setShowSearchCard(defaults.showSearchCard)
-          if (defaults.showSearchBar !== undefined && !localStorage.getItem("showSearchBar")) setShowSearchBar(defaults.showSearchBar)
-          if (defaults.showDonateCard !== undefined && !localStorage.getItem("showDonateCard")) setShowDonateCard(defaults.showDonateCard)
-          if (defaults.showHelpCard !== undefined && !localStorage.getItem("showHelpCard")) setShowHelpCard(defaults.showHelpCard)
-          if (defaults.showSettingsInMenu !== undefined && !localStorage.getItem("showSettingsInMenu")) setShowSettingsInMenu(defaults.showSettingsInMenu)
-        }
-
-        applyDefaults(data)
-      } catch (error) {
-        console.error("Error fetching UI defaults:", error)
-      }
-    }
-    fetchDefaults()
+    // Then fetch remote defaults for missing ones
+    fetchRemoteDefaults()
   }, [])
 
   // Apply dark mode class to html element
