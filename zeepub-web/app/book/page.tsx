@@ -97,18 +97,8 @@ function BookDetailContent() {
         if (!webApp?.BackButton) return
 
         const handleBack = () => {
-            if (book?.upUrl) {
-                router.push(`/catalog?feed_url=${encodeURIComponent(book.upUrl)}`)
-                return
-            }
-
-            const lastUrl = sessionStorage.getItem("catalog-last-url")
-            if (lastUrl) {
-                // Return to catalog with the specific feed URL
-                router.push(`/catalog?feed_url=${encodeURIComponent(lastUrl)}`)
-            } else {
-                router.back()
-            }
+            console.log("[Book] Back button clicked, using router.back()")
+            router.back()
         }
 
         webApp.BackButton.onClick(handleBack)

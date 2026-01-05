@@ -8,8 +8,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ## [4.20.4] - 2026-01-05
 
 ### Fixed
-- **Navigation**: Corregida navegación de regreso ("Atrás") para que regrese correctamente al listado de la serie/colección en lugar de al inicio del catálogo.
-- **Backend**: Resuelto error `UnboundLocalError` que impedía la correcta extracción de enlaces de navegación en los detalles del libro.
+- **Navigation Architecture**: Rediseño completo de la navegación del catálogo basado en el historial nativo del navegador (URL-based). Esto soluciona los saltos inesperados en el historial y asegura que el botón "Atrás" siempre regrese al nivel inmediatamente anterior (ej. lista de volúmenes).
+- **Backend**: Resuelto error `UnboundLocalError` que impedía la carga de metadatos de navegación en ciertos libros.
 
 ## [4.20.3] - 2026-01-05
 
