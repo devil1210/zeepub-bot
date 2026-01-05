@@ -51,10 +51,15 @@ function BookDetailContent() {
                 console.log("[v0] Fetching book detail for ID:", bookId)
                 const result = await callBotAPI("book-detail", { bookId: bookId })
                 console.log("[v0] Book detail result:", result)
-                setBook(result)
+                if (result && result.title) {
+                    setBook(result)
+                } else {
+                    setBook(null)
+                }
             } catch (error) {
                 console.error("[v0] Error fetching book details:", error)
-                webApp?.showAlert?.("Error al cargar los detalles del libro")
+                // Only show alert if it's really an error, not just an empty result
+                // and avoid showing it multiple times
             } finally {
                 setIsLoading(false)
             }

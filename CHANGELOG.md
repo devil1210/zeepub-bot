@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.17.1] - 2026-01-05
+
+### Fixed
+- **Resolución de Detalles**: Corregido fallo que impedía cargar los detalles de libros con identificadores cortos o relativos. Ahora el backend resuelve inteligentemente los IDs contra la URL raíz del catálogo.
+- **Manejo de Errores**: Eliminadas alertas innecesarias en el frontend durante la resolución de metadatos.
+
 ## [4.17.0] - 2026-01-05
 
 ### Added

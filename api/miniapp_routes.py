@@ -297,16 +297,22 @@ async def handle_bot_request(
                 logger.warning(
                     f"[book-detail] bookId {book_id_url} is not a URL. Attempting to build one."
                 )
-                # Fallback: if it's just an id, we might need a search or a direct link
-                # but for simplicity, let's assume it MUST be a URL for now as per search logic.
-                pass
+                # If it's not a URL, it might be a relative path or an ID.
+                # We try several fallbacks:
+                # 1. Assume it's relative to the OPDS root
+                book_id_url = abs_url(config.OPDS_ROOT_START, book_id_url)
+                logger.info(f"[book-detail] Resolved relative ID to: {book_id_url}")
 
             logger.info(f"[book-detail] Fetching feed from: {book_id_url}")
-            feed = await get_cached_feed(book_id_url)
+            try:
+                feed = await get_cached_feed(book_id_url)
+            except Exception as e:
+                logger.error(f"[book-detail] Error fetching {book_id_url}: {e}")
+                raise HTTPException(status_code=400, detail=f"Invalid book URL: {book_id_url}")
 
             if not feed:
-                logger.error(f"[book-detail] Failed to fetch feed from {book_id_url}")
-                raise HTTPException(status_code=404, detail="Could not fetch book feed")
+                logger.error(f"[book-detail] No feed data returned from {book_id_url}")
+                raise HTTPException(status_code=404, detail="Book detail feed not found")
 
             # OPDS entries can be at the top level or in feed.entries
             entries = getattr(feed, "entries", [])
