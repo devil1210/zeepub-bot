@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.18.2] - 2026-01-05
+
+### Fixed
+- **Página de Detalles**: Corregida la lógica para mostrar la información del libro usando los datos del catálogo/búsqueda. Ahora la página muestra la información inmediatamente al navegar, sin esperar la respuesta del servidor.
+
 ## [4.18.1] - 2026-01-05
 
 ### Fixed

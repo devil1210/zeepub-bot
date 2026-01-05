@@ -41,32 +41,52 @@ function BookDetailContent() {
     const bookId = searchParams.get("id")
 
     useEffect(() => {
+        // Try to load from session storage first for instant feedback
+        const savedBook = sessionStorage.getItem("preview-book")
+        if (savedBook) {
+            try {
+                const parsed = JSON.parse(savedBook)
+                console.log("[v0] Loaded book from session storage:", parsed)
+                setBook(parsed)
+                setIsLoading(false)
+                // Clear it so it's not reused incorrectly
+                sessionStorage.removeItem("preview-book")
+            } catch (e) {
+                console.error("Error parsing saved book", e)
+            }
+        }
+
         const fetchBookDetail = async () => {
             if (!bookId) {
                 setIsLoading(false)
                 return
             }
             try {
-                setIsLoading(true)
+                // Only show loading if we don't already have book data
+                if (!savedBook) {
+                    setIsLoading(true)
+                }
+
                 console.log("[v0] Fetching book detail for ID:", bookId)
                 const result = await callBotAPI("book-detail", { bookId: bookId })
                 console.log("[v0] Book detail result:", result)
                 if (result && result.title) {
-                    setBook(result)
-                } else {
-                    setBook(null)
+                    // Merge with existing data, preferring API data
+                    setBook(prevBook => ({
+                        ...prevBook,
+                        ...result
+                    }))
                 }
             } catch (error) {
                 console.error("[v0] Error fetching book details:", error)
-                // Only show alert if it's really an error, not just an empty result
-                // and avoid showing it multiple times
+                // If we already have preview data, don't clear it on error
             } finally {
                 setIsLoading(false)
             }
         }
 
         fetchBookDetail()
-    }, [bookId, webApp])
+    }, [bookId])
 
     const handleDownload = async () => {
         if (!book || !book.downloadUrl) {
