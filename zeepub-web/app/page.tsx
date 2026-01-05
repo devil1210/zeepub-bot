@@ -73,10 +73,10 @@ export default function HomePage() {
     { icon: Library, label: t("menu_catalog_label"), href: "/catalog", description: t("menu_catalog_desc"), id: "catalog" },
     { icon: Download, label: t("menu_downloads_label"), href: "/downloads", description: t("menu_downloads_desc"), id: "downloads" },
     { icon: BarChart3, label: t("menu_status_label"), href: "/status", description: t("menu_status_desc"), id: "status" },
+    { icon: Palette, label: "Apariencia", href: "/interface-config", description: "Personaliza tu interfaz", id: "appearance" },
     { icon: LinkIcon, label: "Mis Enlaces", href: "/links", description: "Gestión de links acortados", adminOnly: true, id: "links" },
     { icon: Heart, label: t("menu_donate_label"), href: "/donate", description: t("menu_donate_desc"), id: "donate" },
     { icon: Info, label: t("menu_help_label"), href: "/help", description: t("menu_help_desc"), id: "help" },
-    { icon: Palette, label: "Apariencia", href: "/interface-config", description: "Personaliza tu interfaz", id: "appearance" },
     { icon: ShieldCheck, label: "Gestión Accesos", href: "/admin/levels", description: "Configura niveles y permisos", adminOnly: true, id: "admin" },
   ]
 

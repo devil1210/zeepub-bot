@@ -578,6 +578,7 @@ async def handle_bot_request(
                 "username": f"@{bot_user.username}" if bot_user.username else "@ZeePubBot",
                 "description": "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
                 "avatar": avatar_url,
+                "ui_defaults": json.loads(get_setting("ui_defaults_global", "{}"))  # Simplified for now, but ui_settings get auto is the main way
             }
 
         elif action == "ui_settings":
@@ -588,12 +589,24 @@ async def handle_bot_request(
 
             if sub_action == "get":
                 target_role = data.get("role", "global")
-                # Load settings from bot_settings table
-                settings_raw = get_setting(f"ui_defaults_{target_role}", "{}")
-                try:
-                    return json.loads(settings_raw)
-                except Exception:
-                    return {}
+                
+                # If 'auto', determine the best role for the current user
+                if target_role == "auto":
+                    target_role = user_role # From the require_mini_app_access wrap
+                
+                # Load global settings first as base
+                final_settings = json.loads(get_setting("ui_defaults_global", "{}"))
+                
+                # If specific role requested/detected, merge it over global
+                if target_role and target_role != "global":
+                    role_settings_raw = get_setting(f"ui_defaults_{target_role}", "{}")
+                    try:
+                        role_settings = json.loads(role_settings_raw)
+                        final_settings.update(role_settings)
+                    except Exception:
+                        pass
+                        
+                return final_settings
 
             elif sub_action == "set":
                 # Admin required

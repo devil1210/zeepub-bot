@@ -168,8 +168,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     async function fetchDefaults() {
       try {
         const { callBotAPI } = await import("@/lib/api")
-        // Get global defaults first, then role specific if possible
-        const globalDefaults = await callBotAPI("ui_settings", { subAction: "get", role: "global" })
+        // Get settings for the current user (role: 'auto' determines it in backend)
+        const data = await callBotAPI("ui_settings", { subAction: "get", role: "auto" })
 
         const applyDefaults = (defaults: any) => {
           if (!defaults) return
@@ -184,7 +184,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           if (defaults.showSettingsInMenu !== undefined && !localStorage.getItem("showSettingsInMenu")) setShowSettingsInMenu(defaults.showSettingsInMenu)
         }
 
-        applyDefaults(globalDefaults)
+        applyDefaults(data)
       } catch (error) {
         console.error("Error fetching UI defaults:", error)
       }
