@@ -22,6 +22,7 @@ interface ThemeContextType {
   showSettingsInMenu: boolean
   setShowSettingsInMenu: (show: boolean) => void
   saveGlobalSettings: (role: string) => Promise<void>
+  applySettings: (settings: any, persistToLocal?: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -44,6 +45,7 @@ const ThemeContext = createContext<ThemeContextType>({
   showSettingsInMenu: false,
   setShowSettingsInMenu: () => { },
   saveGlobalSettings: async () => { },
+  applySettings: () => { },
 })
 
 export function useTheme() {
@@ -114,6 +116,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [showHelpCard, setShowHelpCard] = useState(true)
   const [showSettingsInMenu, setShowSettingsInMenu] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [shouldPersist, setShouldPersist] = useState(true)
 
   // Load saved settings from localStorage on mount
   useEffect(() => {
@@ -179,8 +182,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } else {
       html.classList.remove("dark")
     }
-    localStorage.setItem("theme", isDarkMode ? "dark" : "light")
-  }, [isDarkMode, isLoaded])
+    if (shouldPersist) {
+      localStorage.setItem("theme", isDarkMode ? "dark" : "light")
+    }
+  }, [isDarkMode, isLoaded, shouldPersist])
 
   // Apply primary color as CSS variables - use hex directly for accuracy
   useEffect(() => {
@@ -237,8 +242,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       .border-primary { border-color: ${colorToUse} !important; }
     `
 
-    localStorage.setItem("primaryColor", primaryColor)
-  }, [primaryColor, isDarkMode, isLoaded])
+    if (shouldPersist) {
+      localStorage.setItem("primaryColor", primaryColor)
+    }
+  }, [primaryColor, isDarkMode, isLoaded, shouldPersist])
 
   // Apply UI scale
   useEffect(() => {
@@ -246,40 +253,54 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     document.documentElement.style.setProperty("--font-scale", uiScale.toString())
     document.documentElement.style.fontSize = `${uiScale * 100}%`
-    localStorage.setItem("uiScale", uiScale.toString())
-  }, [uiScale, isLoaded])
+    if (shouldPersist) {
+      localStorage.setItem("uiScale", uiScale.toString())
+    }
+  }, [uiScale, isLoaded, shouldPersist])
 
   // Save avatar scale
   useEffect(() => {
     if (!isLoaded) return
-    localStorage.setItem("avatarScale", avatarScale.toString())
-  }, [avatarScale, isLoaded])
+    if (shouldPersist) {
+      localStorage.setItem("avatarScale", avatarScale.toString())
+    }
+  }, [avatarScale, isLoaded, shouldPersist])
 
   // Save visibility preferences
   useEffect(() => {
     if (!isLoaded) return
-    localStorage.setItem("showSearchCard", String(showSearchCard))
-  }, [showSearchCard, isLoaded])
+    if (shouldPersist) {
+      localStorage.setItem("showSearchCard", String(showSearchCard))
+    }
+  }, [showSearchCard, isLoaded, shouldPersist])
 
   useEffect(() => {
     if (!isLoaded) return
-    localStorage.setItem("showSearchBar", String(showSearchBar))
-  }, [showSearchBar, isLoaded])
+    if (shouldPersist) {
+      localStorage.setItem("showSearchBar", String(showSearchBar))
+    }
+  }, [showSearchBar, isLoaded, shouldPersist])
 
   useEffect(() => {
     if (!isLoaded) return
-    localStorage.setItem("showDonateCard", String(showDonateCard))
-  }, [showDonateCard, isLoaded])
+    if (shouldPersist) {
+      localStorage.setItem("showDonateCard", String(showDonateCard))
+    }
+  }, [showDonateCard, isLoaded, shouldPersist])
 
   useEffect(() => {
     if (!isLoaded) return
-    localStorage.setItem("showHelpCard", String(showHelpCard))
-  }, [showHelpCard, isLoaded])
+    if (shouldPersist) {
+      localStorage.setItem("showHelpCard", String(showHelpCard))
+    }
+  }, [showHelpCard, isLoaded, shouldPersist])
 
   useEffect(() => {
     if (!isLoaded) return
-    localStorage.setItem("showSettingsInMenu", String(showSettingsInMenu))
-  }, [showSettingsInMenu, isLoaded])
+    if (shouldPersist) {
+      localStorage.setItem("showSettingsInMenu", String(showSettingsInMenu))
+    }
+  }, [showSettingsInMenu, isLoaded, shouldPersist])
 
   const saveGlobalSettings = async (role: string) => {
     try {
@@ -300,6 +321,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       console.error("Error saving global settings:", error)
       throw error
     }
+  }
+
+  const applySettings = (settings: any, persistToLocal: boolean = true) => {
+    // Disable persistence temporarily if requested to avoid overwriting local storage during previews
+    setShouldPersist(persistToLocal)
+
+    if (settings.isDarkMode !== undefined) setIsDarkMode(settings.isDarkMode)
+    if (settings.primaryColor !== undefined) setPrimaryColor(settings.primaryColor)
+    if (settings.uiScale !== undefined) setUiScale(settings.uiScale)
+    if (settings.avatarScale !== undefined) setAvatarScale(settings.avatarScale)
+    if (settings.showSearchCard !== undefined) setShowSearchCard(settings.showSearchCard)
+    if (settings.showSearchBar !== undefined) setShowSearchBar(settings.showSearchBar)
+    if (settings.showDonateCard !== undefined) setShowDonateCard(settings.showDonateCard)
+    if (settings.showHelpCard !== undefined) setShowHelpCard(settings.showHelpCard)
+    if (settings.showSettingsInMenu !== undefined) setShowSettingsInMenu(settings.showSettingsInMenu)
   }
 
   return (
@@ -324,6 +360,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         showSettingsInMenu,
         setShowSettingsInMenu,
         saveGlobalSettings,
+        applySettings,
       }}
     >
       {children}

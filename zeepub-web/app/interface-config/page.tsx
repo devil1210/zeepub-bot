@@ -49,10 +49,11 @@ export default function InterfaceConfigPage() {
         showSettingsInMenu,
         setShowSettingsInMenu,
         saveGlobalSettings,
+        applySettings,
     } = useTheme()
-    const { t } = useStrings()
+
     const { isAdmin } = useTelegramContext()
-    const [targetRole, setTargetRole] = useState("global")
+    const [editTarget, setEditTarget] = useState("personal")
     const [isSaving, setIsSaving] = useState(false)
     const [botAvatar, setBotAvatar] = useState("/robot-librarian.jpg")
 
@@ -72,13 +73,50 @@ export default function InterfaceConfigPage() {
         fetchBotInfo()
     }, [])
 
-    const handleSaveGlobal = async () => {
+    // Handle target context change
+    const handleTargetChange = async (newTarget: string) => {
+        setEditTarget(newTarget)
+
+        if (newTarget === "personal") {
+            // Restore personal settings from localStorage
+            const personal = {
+                isDarkMode: localStorage.getItem("theme") === "dark",
+                primaryColor: localStorage.getItem("primaryColor") || "#3b82f6",
+                uiScale: parseFloat(localStorage.getItem("uiScale") || "1"),
+                avatarScale: parseFloat(localStorage.getItem("avatarScale") || "1"),
+                showSearchCard: localStorage.getItem("showSearchCard") === "true",
+                showSearchBar: localStorage.getItem("showSearchBar") === "true",
+                showDonateCard: localStorage.getItem("showDonateCard") === "true",
+                showHelpCard: localStorage.getItem("showHelpCard") === "true",
+                showSettingsInMenu: localStorage.getItem("showSettingsInMenu") === "true"
+            }
+            applySettings(personal, true) // Restore and ENABLE persistence
+            toast.info("Has vuelto a tu configuración personal")
+        } else {
+            // Fetch defaults for the selected level
+            try {
+                const { callBotAPI } = await import("@/lib/api")
+                const data = await callBotAPI("ui_settings", { subAction: "get", role: newTarget })
+                if (data) {
+                    applySettings(data, false) // Apply but DISABLE persistence to localStorage during edit
+                    toast.info(`Cargada configuración para: ${newTarget === 'global' ? 'Global' : `Nivel ${newTarget.toUpperCase()}`}`)
+                }
+            } catch (error) {
+                console.error("Error loading level settings:", error)
+                toast.error("No se pudo cargar la configuración del nivel")
+            }
+        }
+    }
+
+    const handleSaveLevel = async () => {
+        if (editTarget === "personal") return
+
         setIsSaving(true)
         try {
-            await saveGlobalSettings(targetRole)
-            toast.success(`Configuración guardada para: ${targetRole}`)
+            await saveGlobalSettings(editTarget)
+            toast.success(`Configuración guardada correctamente para ${editTarget === 'global' ? 'Todos' : `el nivel ${editTarget.toUpperCase()}`}`)
         } catch (error) {
-            toast.error("Error al guardar la configuración global")
+            toast.error("Error al guardar la configuración en el servidor")
         } finally {
             setIsSaving(false)
         }
@@ -90,6 +128,47 @@ export default function InterfaceConfigPage() {
                 <TransparentHeader />
 
                 <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+                    {/* Selector de Objetivo (Solo Admins) */}
+                    {isAdmin && (
+                        <Card className="p-4 border-2 border-primary/30 bg-primary/10 rounded-2xl shadow-lg">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Globe className="w-5 h-5 text-primary" />
+                                <Label className="text-lg font-bold">Configurar para:</Label>
+                            </div>
+                            <div className="space-y-4">
+                                <Select value={editTarget} onValueChange={handleTargetChange}>
+                                    <SelectTrigger className="w-full bg-card h-12 rounded-xl text-md font-medium">
+                                        <SelectValue placeholder="Selecciona nivel o contexto" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="personal" className="font-bold text-primary">Para ti (Personal)</SelectItem>
+                                        <Separator className="my-2" />
+                                        <SelectItem value="global">Todos los usuarios (Global)</SelectItem>
+                                        <SelectItem value="admin">Nivel: Administrador</SelectItem>
+                                        <SelectItem value="staff">Nivel: Staff</SelectItem>
+                                        <SelectItem value="premium">Nivel: Premium</SelectItem>
+                                        <SelectItem value="vip">Nivel: VIP</SelectItem>
+                                        <SelectItem value="white">Nivel: Patrocinador</SelectItem>
+                                        <SelectItem value="free">Nivel: Lector (Free)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                {editTarget !== "personal" && (
+                                    <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-semibold text-amber-500">Modo de Edición de Nivel</p>
+                                            <p className="text-xs text-amber-200/80 leading-relaxed">
+                                                ⚠️ A partir de este momento se cambiara la configuracion para <strong>{editTarget === 'global' ? 'todos los usuarios' : `el nivel ${editTarget.toUpperCase()}`}</strong>.
+                                                Los cambios que realices a continuación solo se aplicarán permanentemente cuando pulses el botón de guardar.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
+                    )}
+
                     {/* Selector de Tema */}
                     <Card className="p-6 border-border">
                         <div className="flex items-center justify-between mb-4">
@@ -337,55 +416,28 @@ export default function InterfaceConfigPage() {
                         </div>
                     </div>
 
-                    {isAdmin && (
-                        <>
-                            <Separator className="bg-primary/10" />
-                            <div className="space-y-4 p-4 border-2 border-primary/20 rounded-2xl bg-primary/5">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Globe className="w-5 h-5 text-primary" />
-                                    <h3 className="text-lg font-bold">Configuración Global (Admin)</h3>
-                                </div>
-
-                                <p className="text-xs text-muted-foreground mb-4">
-                                    Como administrador, puedes guardar la configuración actual como predeterminada para todos los usuarios o para roles específicos.
-                                </p>
-
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-medium">Aplicar a:</Label>
-                                        <Select value={targetRole} onValueChange={setTargetRole}>
-                                            <SelectTrigger className="w-full bg-card">
-                                                <SelectValue placeholder="Selecciona un rol" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="global">Todos (Global)</SelectItem>
-                                                <SelectItem value="admin">Administradores</SelectItem>
-                                                <SelectItem value="staff">Staff</SelectItem>
-                                                <SelectItem value="premium">Premium</SelectItem>
-                                                <SelectItem value="vip">VIP</SelectItem>
-                                                <SelectItem value="white">Patrocinador</SelectItem>
-                                                <SelectItem value="free">Lector (Free)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <Button
-                                        className="w-full h-12 rounded-xl text-md font-bold"
-                                        onClick={handleSaveGlobal}
-                                        disabled={isSaving}
-                                    >
-                                        {isSaving ? "Guardando..." : "Guardar como Prefijado"}
-                                        <Save className="ml-2 w-5 h-5" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </>
+                    {editTarget !== "personal" && (
+                        <div className="sticky bottom-6 z-50 px-2 pb-2">
+                            <Button
+                                className="w-full h-14 rounded-2xl text-lg font-bold shadow-2xl shadow-primary/40 border-2 border-primary/50 relative overflow-hidden group"
+                                onClick={handleSaveLevel}
+                                disabled={isSaving}
+                            >
+                                <div className="absolute inset-0 bg-primary/20 group-hover:bg-primary/30 transition-colors" />
+                                <span className="relative flex items-center justify-center gap-2">
+                                    {isSaving ? "Guardando..." : `Guardar para ${editTarget === 'global' ? 'Todos' : editTarget.toUpperCase()}`}
+                                    <Save className="w-6 h-6" />
+                                </span>
+                            </Button>
+                        </div>
                     )}
 
                     {/* Información */}
                     <Card className="p-4 border-border bg-primary/5">
                         <p className="text-xs text-muted-foreground text-center">
-                            Las configuraciones se guardan automáticamente y se aplicarán en toda la aplicación
+                            {editTarget === 'personal'
+                                ? "Las configuraciones se guardan automáticamente y se aplicarán en toda la aplicación"
+                                : "En modo de edición de nivel, los cambios solo se guardan cuando pulsas el botón de guardar"}
                         </p>
                     </Card>
                 </div>
