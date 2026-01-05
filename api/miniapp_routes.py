@@ -55,9 +55,6 @@ class UpdateLevelsRequest(BaseModel):
 
 # --- Routes ---
 
-
-
-
 @router.post("/api/bot")
 async def handle_bot_request(
     request: Request,
@@ -106,7 +103,7 @@ async def handle_bot_request(
             )
             
             # API 9.3: Feedback en streaming vía borrador de mensaje
-            if not page_url: # Solo en búsqueda inicial, no en paginación
+            if not page_url:  # Solo en búsqueda inicial, no en paginación
                 from utils.streaming import send_message_draft
                 from api.main import bot
                 await send_message_draft(
@@ -527,22 +524,26 @@ async def handle_bot_request(
             )
             return {"success": success}
 
+        elif action == "bot_info":
+            # Fetch bot info dynamically if possible
+            from api.main import bot
+
+            bot_user = await bot.app.bot.get_me()
             return {
-                "name": "ZeePubBot",
-                "username": "@ZeePubBot",
+                "name": bot_user.first_name or "ZeePubBot",
+                "username": f"@{bot_user.username}" if bot_user.username else "@ZeePubBot",
                 "description": "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
-                "avatar": avatar_url
+                "avatar": "/robot-librarian.jpg",  # Default or fetched avatar
             }
 
         elif action == "create_stars_invoice":
             tier = data.get("tier", "premium")
-            amount = data.get("amount", 100) # Default stars amount
+            amount = data.get("amount", 100)  # Default stars amount
             
             # Fetch Bot instance and plugin
             from api.main import bot
             stars_plugin = bot.plugin_manager.get_plugin("stars_payment")
             cms_plugin = bot.plugin_manager.get_plugin("custom_messages")
-            
             if not stars_plugin:
                 raise HTTPException(status_code=500, detail="Stars Payment Plugin not found")
             

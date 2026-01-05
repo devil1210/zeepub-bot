@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.16.1] - 2026-01-04
+
+### Fixed
+- **Error Crítico 'avatar_url'**: Corregido un `NameError` en `api/miniapp_routes.py` que causaba fallos al obtener información del bot.
+- **Limpieza de Código (PEP8)**: Normalizado el formato en múltiples archivos (api/deps.py, services/user_service.py, utils/helpers.py, etc.) para cumplir con PEP8 y asegurar un código más robusto y mantenible.
+
 ## [4.16.0] - 2026-01-04
 
 ### Removed

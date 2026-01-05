@@ -262,7 +262,7 @@ async def check_milestones(uid: int, context) -> Optional[str]:
         }
         
         if cms and cms.enabled:
-            return await cms.get_text(slug, user=None) # user will be handled by plugin if needed
+            return await cms.get_text(slug, user=None)  # user will be handled by plugin if needed
         return defaults.get(count)
     
     return None

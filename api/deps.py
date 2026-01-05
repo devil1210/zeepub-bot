@@ -8,6 +8,8 @@ from services.user_service import get_effective_user, user_repo
 
 logger = logging.getLogger(__name__)
 
+
+
 async def get_telegram_user_id(
     x_telegram_init_data: Optional[str] = Header(None, alias="x-telegram-init-data"),
     x_telegram_data: Optional[str] = Header(None, alias="X-Telegram-Data"),
@@ -37,6 +39,8 @@ async def get_telegram_user_id(
     # Anonymous or unauthorized
     return 0
 
+
+
 async def get_current_user_data(user_id: int = Depends(get_telegram_user_id)) -> Dict[str, Any]:
     """
     Dependency that returns the full effective user data.
@@ -47,6 +51,8 @@ async def get_current_user_data(user_id: int = Depends(get_telegram_user_id)) ->
     data = await get_effective_user(user_id)
     data["user_id"] = user_id
     return data
+
+
 
 async def require_admin(user_data: Dict[str, Any] = Depends(get_current_user_data)):
     """

@@ -19,8 +19,13 @@ def extract_author(entry, is_folder=False) -> str:
     if not author:
         authors = entry.get("authors", []) if hasattr(entry, "get") else getattr(entry, "authors", [])
         if authors:
-            author = ", ".join([a.get("name", "") if hasattr(a, "get") else getattr(a, "name", "") 
-                              for a in authors if (hasattr(a, "get") and a.get("name")) or hasattr(a, "name")])
+            author = ", ".join(
+                [
+                    a.get("name", "") if hasattr(a, "get") else getattr(a, "name", "")
+                    for a in authors
+                    if (hasattr(a, "get") and a.get("name")) or hasattr(a, "name")
+                ]
+            )
     
     # 3. Intentar entry.author_detail
     if not author:
@@ -509,7 +514,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v4.16.0"
+CURRENT_VERSION = "v4.16.1"
 
 
 def get_current_version() -> str:
