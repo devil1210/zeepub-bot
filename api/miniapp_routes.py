@@ -560,9 +560,9 @@ async def handle_bot_request(
             from api.main import bot
 
             bot_user = await bot.app.bot.get_me()
-            
+
             # Try to get the actual profile photo
-            avatar_url = "/robot-librarian.jpg" # Robust default
+            avatar_url = "/robot-librarian.jpg"  # Robust default
             try:
                 photos = await bot.app.bot.get_user_profile_photos(bot_user.id, limit=1)
                 if photos and photos.photos:
@@ -583,9 +583,9 @@ async def handle_bot_request(
         elif action == "ui_settings":
             # Manage global/role-based UI configurations
             from services.settings_service import get_setting, set_setting
-            
+
             sub_action = data.get("subAction", "get")
-            
+
             if sub_action == "get":
                 target_role = data.get("role", "global")
                 # Load settings from bot_settings table
@@ -594,15 +594,15 @@ async def handle_bot_request(
                     return json.loads(settings_raw)
                 except Exception:
                     return {}
-                    
+
             elif sub_action == "set":
                 # Admin required
                 if user_id not in config.ADMIN_USERS:
                     raise HTTPException(status_code=403, detail="Solo administradores pueden cambiar la configuración global")
-                
+
                 target_role = data.get("role", "global")
                 settings_obj = data.get("settings", {})
-                
+
                 set_setting(f"ui_defaults_{target_role}", json.dumps(settings_obj))
                 return {"success": True, "message": f"Configuración para {target_role} guardada"}
 

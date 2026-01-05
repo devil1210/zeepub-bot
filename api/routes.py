@@ -468,11 +468,11 @@ async def bot_avatar_proxy(file_id: str = Query(...)):
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(file.file_path)
             resp.raise_for_status()
-            
+
             return Response(
                 content=resp.content,
                 media_type="image/jpeg",
-                headers={"Cache-Control": "public, max-age=31536000"} # Cache for a year
+                headers={"Cache-Control": "public, max-age=31536000"},  # Cache for a year
             )
     except Exception as e:
         logger.error(f"Error proxying bot avatar {file_id}: {e}")
