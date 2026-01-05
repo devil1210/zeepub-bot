@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.18.7] - 2026-01-05
+
+### Fixed
+- **Navegación**: Corregido el comportamiento del botón de retroceso en la página de detalles del libro. Ahora vuelve correctamente a la lista de volúmenes de la serie en lugar de al catálogo principal.
+
 ## [4.18.6] - 2026-01-05
 
 ### Fixed

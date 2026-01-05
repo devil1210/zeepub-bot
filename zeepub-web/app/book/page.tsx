@@ -115,7 +115,7 @@ function BookDetailContent() {
         return () => {
             webApp.BackButton.offClick(handleBack)
         }
-    }, [webApp, router])
+    }, [webApp, router, book])
 
     const handleDownload = async () => {
         if (!book || !book.downloadUrl) {

@@ -398,7 +398,8 @@ async def handle_bot_request(
                         cover_url = href
 
                 # Check for parent/collection navigation
-                elif rel in ["up", "collection", "ancestor", "index"]:
+                elif rel in ["up", "collection", "ancestor", "index", "breadcrumb"]:
+                    # Prioritize 'up' but accept others as fallbacks
                     if not subsection_url or rel == "up":
                         subsection_url = href
 
