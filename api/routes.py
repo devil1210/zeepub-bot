@@ -463,7 +463,13 @@ async def bot_avatar_proxy(file_id: str = Query(...)):
     """
     from api.main import bot
     try:
+        logger.info(f"Proxying bot avatar for file_id: {file_id}")
         file = await bot.app.bot.get_file(file_id)
+        if not file.file_path:
+            logger.error(f"No file_path found for file_id: {file_id}")
+            from fastapi.responses import RedirectResponse
+            return RedirectResponse(url="/robot-librarian.jpg")
+            
         # Use httpx to download and stream to client
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(file.file_path)
@@ -475,7 +481,7 @@ async def bot_avatar_proxy(file_id: str = Query(...)):
                 headers={"Cache-Control": "public, max-age=31536000"},  # Cache for a year
             )
     except Exception as e:
-        logger.error(f"Error proxying bot avatar {file_id}: {e}")
+        logger.error(f"Error proxying bot avatar {file_id}: {e}", exc_info=True)
         # Fallback to the local librarian image via redirect or local read
         # For simplicity and robustness, lets just tell the browser to use the local one
         from fastapi.responses import RedirectResponse

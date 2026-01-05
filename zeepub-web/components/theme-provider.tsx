@@ -119,46 +119,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const savedTheme = localStorage.getItem("ui-theme")
-    const savedColor = localStorage.getItem("ui-primary-color")
-    const savedScale = localStorage.getItem("ui-scale")
-    const savedAvatarScale = localStorage.getItem("ui-avatar-scale")
-    const savedShowCard = localStorage.getItem("ui-show-search-card")
-    const savedShowBar = localStorage.getItem("ui-show-search-bar")
+    const savedTheme = localStorage.getItem("theme")
+    const savedColor = localStorage.getItem("primaryColor")
+    const savedScale = localStorage.getItem("uiScale")
+    const savedAvatarScale = localStorage.getItem("avatarScale")
+    const savedShowSearchCard = localStorage.getItem("showSearchCard")
+    const savedShowSearchBar = localStorage.getItem("showSearchBar")
+    const savedShowDonateCard = localStorage.getItem("showDonateCard")
+    const savedShowHelpCard = localStorage.getItem("showHelpCard")
+    const savedShowSettingsInMenu = localStorage.getItem("showSettingsInMenu")
 
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === "dark")
-    }
-    if (savedColor) {
-      setPrimaryColor(savedColor)
-    }
-    if (savedScale) {
-      setUiScale(parseFloat(savedScale))
-    }
-    if (savedAvatarScale) {
-      setAvatarScale(parseFloat(savedAvatarScale))
-    }
-    if (savedShowCard !== null) {
-      setShowSearchCard(savedShowCard === "true")
-    }
-    if (savedShowBar !== null) {
-      setShowSearchBar(savedShowBar === "true")
-    }
-
-    const storedShowSearchCard = localStorage.getItem("showSearchCard")
-    if (storedShowSearchCard !== null) setShowSearchCard(storedShowSearchCard === "true")
-
-    const storedShowSearchBar = localStorage.getItem("showSearchBar")
-    if (storedShowSearchBar !== null) setShowSearchBar(storedShowSearchBar === "true")
-
-    const storedShowDonateCard = localStorage.getItem("showDonateCard")
-    if (storedShowDonateCard !== null) setShowDonateCard(storedShowDonateCard === "true")
-
-    const storedShowHelpCard = localStorage.getItem("showHelpCard")
-    if (storedShowHelpCard !== null) setShowHelpCard(storedShowHelpCard === "true")
-
-    const storedShowSettingsInMenu = localStorage.getItem("showSettingsInMenu")
-    if (storedShowSettingsInMenu !== null) setShowSettingsInMenu(storedShowSettingsInMenu === "true")
+    if (savedTheme) setIsDarkMode(savedTheme === "dark")
+    if (savedColor) setPrimaryColor(savedColor)
+    if (savedScale) setUiScale(parseFloat(savedScale))
+    if (savedAvatarScale) setAvatarScale(parseFloat(savedAvatarScale))
+    if (savedShowSearchCard !== null) setShowSearchCard(savedShowSearchCard === "true")
+    if (savedShowSearchBar !== null) setShowSearchBar(savedShowSearchBar === "true")
+    if (savedShowDonateCard !== null) setShowDonateCard(savedShowDonateCard === "true")
+    if (savedShowHelpCard !== null) setShowHelpCard(savedShowHelpCard === "true")
+    if (savedShowSettingsInMenu !== null) setShowSettingsInMenu(savedShowSettingsInMenu === "true")
 
     setIsLoaded(true)
   }, [])
@@ -202,7 +181,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } else {
       html.classList.remove("dark")
     }
-    localStorage.setItem("ui-theme", isDarkMode ? "dark" : "light")
+    localStorage.setItem("theme", isDarkMode ? "dark" : "light")
   }, [isDarkMode, isLoaded])
 
   // Apply primary color as CSS variables - use hex directly for accuracy
@@ -260,7 +239,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       .border-primary { border-color: ${colorToUse} !important; }
     `
 
-    localStorage.setItem("ui-primary-color", primaryColor)
+    localStorage.setItem("primaryColor", primaryColor)
   }, [primaryColor, isDarkMode, isLoaded])
 
   // Apply UI scale
@@ -269,45 +248,40 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     document.documentElement.style.setProperty("--font-scale", uiScale.toString())
     document.documentElement.style.fontSize = `${uiScale * 100}%`
-    localStorage.setItem("ui-scale", uiScale.toString())
+    localStorage.setItem("uiScale", uiScale.toString())
   }, [uiScale, isLoaded])
 
   // Save avatar scale
   useEffect(() => {
     if (!isLoaded) return
-    localStorage.setItem("ui-avatar-scale", avatarScale.toString())
+    localStorage.setItem("avatarScale", avatarScale.toString())
   }, [avatarScale, isLoaded])
 
-  // Save search preferences
+  // Save visibility preferences
   useEffect(() => {
     if (!isLoaded) return
-    localStorage.setItem("ui-show-search-card", showSearchCard.toString())
+    localStorage.setItem("showSearchCard", String(showSearchCard))
   }, [showSearchCard, isLoaded])
 
   useEffect(() => {
     if (!isLoaded) return
-    localStorage.setItem("ui-show-search-bar", showSearchBar.toString())
+    localStorage.setItem("showSearchBar", String(showSearchBar))
   }, [showSearchBar, isLoaded])
 
   useEffect(() => {
-    localStorage.setItem("showSearchCard", String(showSearchCard))
-  }, [showSearchCard])
-
-  useEffect(() => {
-    localStorage.setItem("showSearchBar", String(showSearchBar))
-  }, [showSearchBar])
-
-  useEffect(() => {
+    if (!isLoaded) return
     localStorage.setItem("showDonateCard", String(showDonateCard))
-  }, [showDonateCard])
+  }, [showDonateCard, isLoaded])
 
   useEffect(() => {
+    if (!isLoaded) return
     localStorage.setItem("showHelpCard", String(showHelpCard))
-  }, [showHelpCard])
+  }, [showHelpCard, isLoaded])
 
   useEffect(() => {
+    if (!isLoaded) return
     localStorage.setItem("showSettingsInMenu", String(showSettingsInMenu))
-  }, [showSettingsInMenu])
+  }, [showSettingsInMenu, isLoaded])
 
   const saveGlobalSettings = async (role: string) => {
     try {
