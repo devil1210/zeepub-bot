@@ -307,277 +307,293 @@ function CatalogContent() {
 
         if (subsectionLink) {
             handleNavigate(subsectionLink.href)
-        } else if (detailUrl) {
-            // Save current position before navigating to book details
-            const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href
-            if (currentUrl) {
-                sessionStorage.setItem("catalog-last-url", currentUrl)
+            if (detailUrl) {
+                // Save preview data for instant loading in detail page
+                const previewData = {
+                    id: entry.id,
+                    title: entry.title,
+                    author: entry.author,
+                    cover: entry.cover_url,
+                    summary: entry.summary,
+                    series: entry.series,
+                    seriesIndex: entry.series_index,
+                    categories: entry.categories,
+                    fileType: entry.file_type,
+                    size: entry.size,
+                    year: entry.year
+                }
+                sessionStorage.setItem("preview-book", JSON.stringify(previewData))
+
+                // Save current position before navigating to book details
+                const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href
+                if (currentUrl) {
+                    sessionStorage.setItem("catalog-last-url", currentUrl)
+                }
+                router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
             }
-            router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
         }
-    }
 
-    const handleSearchBookClick = (book: Book) => {
-        const detailUrl = book.detail_url || book.id
+        const handleSearchBookClick = (book: Book) => {
+            const detailUrl = book.detail_url || book.id
 
-        if (detailUrl) {
-            const url = detailUrl.startsWith("http") ? detailUrl : null
-            if (url) {
-                router.push(`/book?id=${encodeURIComponent(url)}`)
+            if (detailUrl) {
+                const url = detailUrl.startsWith("http") ? detailUrl : null
+                if (url) {
+                    router.push(`/book?id=${encodeURIComponent(url)}`)
+                }
+            } else if (book.is_folder && book.subsection_url) {
+                // Si es una carpeta en búsqueda, navegamos a ella en el catálogo y limpiamos búsqueda
+                setSearchQuery("")
+                setSearchResults([])
+                handleNavigate(book.subsection_url)
             }
-        } else if (book.is_folder && book.subsection_url) {
-            // Si es una carpeta en búsqueda, navegamos a ella en el catálogo y limpiamos búsqueda
-            setSearchQuery("")
-            setSearchResults([])
-            handleNavigate(book.subsection_url)
         }
-    }
-    const handleSearchDownload = async (e: React.MouseEvent, book: Book) => {
-        e.stopPropagation()
-        if (!book.download_url) return
+        const handleSearchDownload = async (e: React.MouseEvent, book: Book) => {
+            e.stopPropagation()
+            if (!book.download_url) return
 
-        try {
-            webApp?.showPopup?.({
-                title: "Descargando",
-                message: `Se está enviando "${book.title}" a tu chat...`,
-            })
-            await callBotAPI("download", {
-                bookId: book.download_url,
-                title: book.title,
-            })
-        } catch (error) {
-            console.error("[Catalog] Search download error:", error)
+            try {
+                webApp?.showPopup?.({
+                    title: "Descargando",
+                    message: `Se está enviando "${book.title}" a tu chat...`,
+                })
+                await callBotAPI("download", {
+                    bookId: book.download_url,
+                    title: book.title,
+                })
+            } catch (error) {
+                console.error("[Catalog] Search download error:", error)
+            }
         }
-    }
 
-    if (isLoading && !currentFeed) {
+        if (isLoading && !currentFeed) {
+            return (
+                <div className="min-h-screen bg-background pt-safe">
+                    <TransparentHeader />
+                </div>
+            )
+        }
+
         return (
-            <div className="min-h-screen bg-background pt-safe">
+            <div className="min-h-screen bg-background pt-safe pb-20">
                 <TransparentHeader />
+                <main className="max-w-2xl mx-auto px-4 py-6 space-y-4 text-foreground">
+                    {/* Replicando funcionalidad v3.13.8: Buscador reactivo en catálogo */}
+                    <div className="relative mb-2">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <Input
+                            type="text"
+                            placeholder={t("search_placeholder")}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-12 h-12 bg-card border-border rounded-xl shadow-sm focus:ring-primary/20"
+                        />
+                    </div>
+
+                    {/* Feed title */}
+                    {currentFeed?.title && (
+                        <div className="pb-1">
+                            <h1 className="text-lg font-bold text-foreground">{currentFeed.title}</h1>
+                        </div>
+                    )}
+
+                    {isLoading && !searchQuery && (
+                        <div className="py-4">
+                            <div className="h-1 w-full bg-primary/10 overflow-hidden rounded-full mb-4">
+                                <div className="h-full bg-primary w-full" />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Search Results Inline */}
+                    {searchQuery && (
+                        <div className="space-y-3">
+                            {searchResults.map((book) => (
+                                <Card
+                                    key={book.id}
+                                    onClick={() => handleSearchBookClick(book)}
+                                    className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
+                                >
+                                    <div className="flex gap-4">
+                                        <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                                            {book.cover ? (
+                                                <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                                            ) : book.is_folder ? (
+                                                <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                                                    <BookOpen className="w-8 h-8 text-primary" />
+                                                </div>
+                                            ) : (
+                                                <img src="/placeholder.svg" alt={book.title} className="w-full h-full object-cover" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0 flex flex-col">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors text-sm">
+                                                    {book.title}
+                                                </h3>
+                                            </div>
+                                            <p className="text-xs text-primary font-medium mb-1 truncate">{book.author}</p>
+                                            <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-2">
+                                                {book.is_folder ? t("book_section") : t("book_details_hint")}
+                                            </p>
+
+                                            {!book.is_folder && book.download_url && (
+                                                <Button
+                                                    size="sm"
+                                                    onClick={(e) => handleSearchDownload(e, book)}
+                                                    className="h-7 text-[9px] px-2 bg-primary hover:bg-primary/90 self-start group/btn"
+                                                >
+                                                    <Download className="w-3 h-3 mr-1" />
+                                                    {t("book_download")}
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center">
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+
+                            {!isSearching && searchResults.length === 0 && (
+                                <div className="text-center py-12">
+                                    <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                                    <p className="text-sm text-muted-foreground">{t("search_empty")}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Normal Catalog Content */}
+                    {!searchQuery && currentFeed?.entries.map((entry, index) => {
+                        const isFolder = entry.links.some((l) => l.rel === "subsection")
+                        const isBook = entry.links.some(
+                            (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
+                        )
+
+                        if (isFolder) {
+                            return (
+                                <Card
+                                    key={entry.id}
+                                    onClick={() => handleBookClick(entry)}
+                                    className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98]"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden">
+                                            {entry.cover_url ? (
+                                                <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <Folder className="w-6 h-6 text-primary" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                                {entry.title}
+                                            </h3>
+                                            {entry.summary && (
+                                                <p className="text-xs text-muted-foreground line-clamp-1 italic">
+                                                    {entry.summary}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                    </div>
+                                </Card>
+                            )
+                        }
+
+                        if (isBook) {
+                            return (
+                                <Card
+                                    key={entry.id}
+                                    onClick={() => handleBookClick(entry)}
+                                    className="p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98]"
+                                >
+                                    <div className="flex gap-4">
+                                        <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                                            <img
+                                                src={entry.cover_url || "/placeholder.svg"}
+                                                alt={entry.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="flex-1 min-w-0 flex flex-col">
+                                            <h3 className="font-semibold text-foreground mb-0.5 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                                                {entry.title}
+                                            </h3>
+                                            <p className="text-sm text-primary font-medium mb-1 truncate">
+                                                {entry.author}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2 italic flex-1">
+                                                {entry.summary || t("book_details_hint")}
+                                            </p>
+                                            <Button
+                                                size="sm"
+                                                onClick={(e) => handleDownload(e, entry)}
+                                                className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
+                                            >
+                                                <Download className="w-3 h-3 mr-1.5" />
+                                                {t("book_download")}
+                                            </Button>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                        </div>
+                                    </div>
+                                </Card>
+                            )
+                        }
+
+                        return null
+                    })}
+
+                    {!searchQuery && currentFeed && (
+                        <Pagination
+                            currentPage={currentFeed.currentPage}
+                            totalPages={currentFeed.totalPages}
+                            hasNextPage={!!currentFeed.nextPage}
+                            hasPrevPage={!!currentFeed.prevPage}
+                            hasUpPage={true}
+                            onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
+                            onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
+                            onUpPage={handleGoBack}
+                            isLoading={isLoading}
+                        />
+                    )}
+
+                    {searchQuery && (
+                        <Pagination
+                            currentPage={searchPagination.currentPage}
+                            totalPages={searchPagination.totalPages}
+                            hasNextPage={!!searchPagination.nextPage}
+                            hasPrevPage={!!searchPagination.prevPage}
+                            hasUpPage={true}
+                            onNextPage={() => searchPagination.nextPage && handleCatalogSearch(searchPagination.nextPage)}
+                            onPrevPage={() => searchPagination.prevPage && handleCatalogSearch(searchPagination.prevPage)}
+                            onUpPage={handleGoBack}
+                            isLoading={isSearching}
+                        />
+                    )}
+
+                    {!searchQuery && currentFeed && currentFeed.entries.length === 0 && !isLoading && (
+                        <div className="text-center py-16">
+                            <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
+                            <p className="text-muted-foreground">Esta sección está vacía</p>
+                        </div>
+                    )}
+                </main>
             </div>
         )
     }
 
-    return (
-        <div className="min-h-screen bg-background pt-safe pb-20">
-            <TransparentHeader />
-            <main className="max-w-2xl mx-auto px-4 py-6 space-y-4 text-foreground">
-                {/* Replicando funcionalidad v3.13.8: Buscador reactivo en catálogo */}
-                <div className="relative mb-2">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                        type="text"
-                        placeholder={t("search_placeholder")}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-12 h-12 bg-card border-border rounded-xl shadow-sm focus:ring-primary/20"
-                    />
+    export default function CatalogPage() {
+        return (
+            <Suspense fallback={
+                <div className="min-h-screen bg-background pt-safe p-4 w-full h-full">
+                    <TransparentHeader />
                 </div>
-
-                {/* Feed title */}
-                {currentFeed?.title && (
-                    <div className="pb-1">
-                        <h1 className="text-lg font-bold text-foreground">{currentFeed.title}</h1>
-                    </div>
-                )}
-
-                {isLoading && !searchQuery && (
-                    <div className="py-4">
-                        <div className="h-1 w-full bg-primary/10 overflow-hidden rounded-full mb-4">
-                            <div className="h-full bg-primary w-full" />
-                        </div>
-                    </div>
-                )}
-
-                {/* Search Results Inline */}
-                {searchQuery && (
-                    <div className="space-y-3">
-                        {searchResults.map((book) => (
-                            <Card
-                                key={book.id}
-                                onClick={() => handleSearchBookClick(book)}
-                                className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
-                            >
-                                <div className="flex gap-4">
-                                    <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                                        {book.cover ? (
-                                            <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
-                                        ) : book.is_folder ? (
-                                            <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                                                <BookOpen className="w-8 h-8 text-primary" />
-                                            </div>
-                                        ) : (
-                                            <img src="/placeholder.svg" alt={book.title} className="w-full h-full object-cover" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0 flex flex-col">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors text-sm">
-                                                {book.title}
-                                            </h3>
-                                        </div>
-                                        <p className="text-xs text-primary font-medium mb-1 truncate">{book.author}</p>
-                                        <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-2">
-                                            {book.is_folder ? t("book_section") : t("book_details_hint")}
-                                        </p>
-
-                                        {!book.is_folder && book.download_url && (
-                                            <Button
-                                                size="sm"
-                                                onClick={(e) => handleSearchDownload(e, book)}
-                                                className="h-7 text-[9px] px-2 bg-primary hover:bg-primary/90 self-start group/btn"
-                                            >
-                                                <Download className="w-3 h-3 mr-1" />
-                                                {t("book_download")}
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center">
-                                        <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                    </div>
-                                </div>
-                            </Card>
-                        ))}
-
-                        {!isSearching && searchResults.length === 0 && (
-                            <div className="text-center py-12">
-                                <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                                <p className="text-sm text-muted-foreground">{t("search_empty")}</p>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Normal Catalog Content */}
-                {!searchQuery && currentFeed?.entries.map((entry, index) => {
-                    const isFolder = entry.links.some((l) => l.rel === "subsection")
-                    const isBook = entry.links.some(
-                        (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
-                    )
-
-                    if (isFolder) {
-                        return (
-                            <Card
-                                key={entry.id}
-                                onClick={() => handleBookClick(entry)}
-                                className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98]"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden">
-                                        {entry.cover_url ? (
-                                            <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <Folder className="w-6 h-6 text-primary" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                                            {entry.title}
-                                        </h3>
-                                        {entry.summary && (
-                                            <p className="text-xs text-muted-foreground line-clamp-1 italic">
-                                                {entry.summary}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                </div>
-                            </Card>
-                        )
-                    }
-
-                    if (isBook) {
-                        return (
-                            <Card
-                                key={entry.id}
-                                onClick={() => handleBookClick(entry)}
-                                className="p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98]"
-                            >
-                                <div className="flex gap-4">
-                                    <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                                        <img
-                                            src={entry.cover_url || "/placeholder.svg"}
-                                            alt={entry.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                    <div className="flex-1 min-w-0 flex flex-col">
-                                        <h3 className="font-semibold text-foreground mb-0.5 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                            {entry.title}
-                                        </h3>
-                                        <p className="text-sm text-primary font-medium mb-1 truncate">
-                                            {entry.author}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 italic flex-1">
-                                            {entry.summary || t("book_details_hint")}
-                                        </p>
-                                        <Button
-                                            size="sm"
-                                            onClick={(e) => handleDownload(e, entry)}
-                                            className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
-                                        >
-                                            <Download className="w-3 h-3 mr-1.5" />
-                                            {t("book_download")}
-                                        </Button>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                    </div>
-                                </div>
-                            </Card>
-                        )
-                    }
-
-                    return null
-                })}
-
-                {!searchQuery && currentFeed && (
-                    <Pagination
-                        currentPage={currentFeed.currentPage}
-                        totalPages={currentFeed.totalPages}
-                        hasNextPage={!!currentFeed.nextPage}
-                        hasPrevPage={!!currentFeed.prevPage}
-                        hasUpPage={true}
-                        onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
-                        onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
-                        onUpPage={handleGoBack}
-                        isLoading={isLoading}
-                    />
-                )}
-
-                {searchQuery && (
-                    <Pagination
-                        currentPage={searchPagination.currentPage}
-                        totalPages={searchPagination.totalPages}
-                        hasNextPage={!!searchPagination.nextPage}
-                        hasPrevPage={!!searchPagination.prevPage}
-                        hasUpPage={true}
-                        onNextPage={() => searchPagination.nextPage && handleCatalogSearch(searchPagination.nextPage)}
-                        onPrevPage={() => searchPagination.prevPage && handleCatalogSearch(searchPagination.prevPage)}
-                        onUpPage={handleGoBack}
-                        isLoading={isSearching}
-                    />
-                )}
-
-                {!searchQuery && currentFeed && currentFeed.entries.length === 0 && !isLoading && (
-                    <div className="text-center py-16">
-                        <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
-                        <p className="text-muted-foreground">Esta sección está vacía</p>
-                    </div>
-                )}
-            </main>
-        </div>
-    )
-}
-
-export default function CatalogPage() {
-    return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-background pt-safe p-4 w-full h-full">
-                <TransparentHeader />
-            </div>
-        }>
-            <CatalogContent />
-        </Suspense>
-    )
-}
+            }>
+                <CatalogContent />
+            </Suspense>
+        )
+    }
