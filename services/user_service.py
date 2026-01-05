@@ -153,7 +153,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         result["has_mini_app_access"] = access_info["hasAccess"]
         result["is_admin_db"] = access_info["isAdmin"]
         result["level_info"] = access_info["level"]
-        
+
         # Override role with level name for consistent UI settings
         level_name = access_info["level"]["name"].lower()
         if level_name == "administrador":
@@ -161,7 +161,7 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
         elif level_name == "lector":
             result["role"] = "free"
         elif level_name == "patrocinador":
-            result["role"] = "white" # Legacy mapping for whitelist
+            result["role"] = "white"  # Legacy mapping for whitelist
         else:
             result["role"] = level_name
 
