@@ -139,16 +139,31 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const { callBotAPI } = await import("@/lib/api")
         const data = await callBotAPI("ui_settings", { subAction: "get", role: "auto" })
         if (data) {
-          // Only apply remote defaults for keys NOT present in localStorage
-          if (data.primaryColor && !savedColor) setPrimaryColor(data.primaryColor)
-          if (data.uiScale !== undefined && !savedScale) setUiScale(data.uiScale)
-          if (data.avatarScale !== undefined && !savedAvatarScale) setAvatarScale(data.avatarScale)
-          if (data.isDarkMode !== undefined && !savedTheme) setIsDarkMode(data.isDarkMode)
-          if (data.showSearchCard !== undefined && !savedShowSearchCard) setShowSearchCard(data.showSearchCard)
-          if (data.showSearchBar !== undefined && !savedShowSearchBar) setShowSearchBar(data.showSearchBar)
-          if (data.showDonateCard !== undefined && !savedShowDonateCard) setShowDonateCard(data.showDonateCard)
-          if (data.showHelpCard !== undefined && !savedShowHelpCard) setShowHelpCard(data.showHelpCard)
-          if (data.showSettingsInMenu !== undefined && !savedShowSettingsInMenu) setShowSettingsInMenu(data.showSettingsInMenu)
+          // Branding Override Logic:
+          // If the user has a value in localStorage that is the system default (e.g. Blue #3b82f6),
+          // but their level has a custom Branding color (e.g. Staff Orange), 
+          // we override the local default with the Level Branding.
+          const systemDefaultBlue = "#3b82f6"
+
+          // 1. Dark Mode
+          if (!savedTheme && data.isDarkMode !== undefined) setIsDarkMode(data.isDarkMode)
+
+          // 2. Primary Color Branding
+          if ((!savedColor || savedColor === systemDefaultBlue) && data.primaryColor && data.primaryColor !== systemDefaultBlue) {
+            setPrimaryColor(data.primaryColor)
+            localStorage.setItem("primaryColor", data.primaryColor)
+          } else if (!savedColor && data.primaryColor) {
+            setPrimaryColor(data.primaryColor)
+          }
+
+          // 3. Other Scales/Cards (only if not customized)
+          if (!savedScale && data.uiScale !== undefined) setUiScale(data.uiScale)
+          if (!savedAvatarScale && data.avatarScale !== undefined) setAvatarScale(data.avatarScale)
+          if (!savedShowSearchCard && data.showSearchCard !== undefined) setShowSearchCard(data.showSearchCard)
+          if (!savedShowSearchBar && data.showSearchBar !== undefined) setShowSearchBar(data.showSearchBar)
+          if (!savedShowDonateCard && data.showDonateCard !== undefined) setShowDonateCard(data.showDonateCard)
+          if (!savedShowHelpCard && data.showHelpCard !== undefined) setShowHelpCard(data.showHelpCard)
+          if (!savedShowSettingsInMenu && data.showSettingsInMenu !== undefined) setShowSettingsInMenu(data.showSettingsInMenu)
         }
       } catch (error) {
         console.error("Error fetching UI defaults:", error)

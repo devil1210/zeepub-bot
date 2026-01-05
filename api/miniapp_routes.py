@@ -637,8 +637,8 @@ async def handle_bot_request(
                 return final_settings
 
             elif sub_action == "set":
-                # Admin required
-                if user_id not in config.ADMIN_USERS:
+                # Admin required - checking role from require_mini_app_access wrap
+                if user_role != "admin":
                     raise HTTPException(status_code=403, detail="Solo administradores pueden cambiar la configuración global")
 
                 target_role = data.get("role", "global")
