@@ -1,4 +1,3 @@
-```javascript
 "use client"
 
 import { Card } from "@/components/ui/card"
@@ -59,7 +58,7 @@ export default function InterfaceConfigPage() {
         setIsSaving(true)
         try {
             await saveGlobalSettings(targetRole)
-            toast.success(`Configuración guardada para: ${ targetRole } `)
+            toast.success(`Configuración guardada para: ${targetRole} `)
         } catch (error) {
             toast.error("Error al guardar la configuración global")
         } finally {
@@ -120,9 +119,9 @@ export default function InterfaceConfigPage() {
                                         key={color.name}
                                         onClick={() => setPrimaryColor(colorValue)}
                                         className={`
-                      relative h - 12 rounded - lg transition - all
-                      ${ isSelected ? "ring-2 ring-offset-2 ring-offset-background ring-white scale-110" : "hover:scale-105" }
-`}
+                      relative h-12 rounded-lg transition-all
+                      ${isSelected ? "ring-2 ring-offset-2 ring-offset-background ring-white scale-110" : "hover:scale-105"}
+                    `}
                                         style={{ backgroundColor: colorValue }}
                                         aria-label={color.name}
                                     >
@@ -141,7 +140,7 @@ export default function InterfaceConfigPage() {
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                     type="color"
-                                    value={primaryColor.startsWith('#') ? primaryColor : `#${ primaryColor } `}
+                                    value={primaryColor.startsWith('#') ? primaryColor : `#${primaryColor}`}
                                     onChange={(e) => setPrimaryColor(e.target.value)}
                                     className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer bg-transparent"
                                     style={{ padding: 0 }}
@@ -156,10 +155,10 @@ export default function InterfaceConfigPage() {
                                     onChange={(e) => {
                                         const val = e.target.value.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6)
                                         if (val.length === 6 || val.length === 3) {
-                                            setPrimaryColor(`#${ val } `)
+                                            setPrimaryColor(`#${val}`)
                                         } else if (val.length > 0) {
                                             // Allow partial input while typing
-                                            setPrimaryColor(`#${ val } `)
+                                            setPrimaryColor(`#${val}`)
                                         }
                                     }}
                                     placeholder="3B82F6"
@@ -203,11 +202,11 @@ export default function InterfaceConfigPage() {
                                 <div
                                     className="rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center transition-all"
                                     style={{
-                                        width: `${ 80 * avatarScale } px`,
-                                        height: `${ 80 * avatarScale } px`
+                                        width: `${80 * avatarScale}px`,
+                                        height: `${80 * avatarScale}px`
                                     }}
                                 >
-                                    <span className="text-primary font-bold" style={{ fontSize: `${ 24 * avatarScale } px` }}>
+                                    <span className="text-primary font-bold" style={{ fontSize: `${24 * avatarScale}px` }}>
                                         Z
                                     </span>
                                 </div>
@@ -243,8 +242,8 @@ export default function InterfaceConfigPage() {
                                 <p
                                     className="text-sm"
                                     style={{
-                                        fontSize: `calc(0.875rem * ${ uiScale })`,
-                                        lineHeight: `calc(1.25rem * ${ uiScale })`,
+                                        fontSize: `calc(0.875rem * ${uiScale})`,
+                                        lineHeight: `calc(1.25rem * ${uiScale})`,
                                     }}
                                 >
                                     Vista previa del tamaño de texto actual
