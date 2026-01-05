@@ -3,6 +3,8 @@ export interface OPDSLink {
     rel: string
     type?: string
     title?: string
+    contentlength?: string
+    length?: string
 }
 
 export interface OPDSEntry {

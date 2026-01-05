@@ -156,8 +156,24 @@ function BookDetailContent() {
 
     const formatFileType = (type?: string) => {
         if (!type) return ""
-        if (type.includes("epub")) return "Epub"
+        const t = type.toLowerCase()
+        if (t.includes("epub")) return "Epub"
+        if (t.includes("pdf")) return "PDF"
+        if (t.includes("mobi")) return "Mobi"
+        if (t.includes("azw")) return "AZW3"
         return type.split("/").pop()?.toUpperCase() || type
+    }
+
+    const extractFileTypeFromSummary = (summary?: string) => {
+        if (!summary) return ""
+        const match = summary.match(/File Type:\s*(.*?)\s*-/i)
+        return match ? match[1] : ""
+    }
+
+    const extractSizeFromSummary = (summary?: string) => {
+        if (!summary) return ""
+        const match = summary.match(/-\s*([\d.]+\s*[KMGT]B)\s*Summary:/i)
+        return match ? match[1] : ""
     }
 
 
@@ -182,6 +198,9 @@ function BookDetailContent() {
             </div>
         )
     }
+
+    const displayFileType = book.fileType || extractFileTypeFromSummary(book.summary)
+    const displaySize = book.size || extractSizeFromSummary(book.summary)
 
     return (
         <div className="min-h-screen bg-background pt-safe pb-20 text-foreground">
@@ -266,16 +285,16 @@ function BookDetailContent() {
                                 <span className="text-foreground font-medium text-right ml-4">{book.publisher}</span>
                             </div>
                         )}
-                        {book.fileType && (
+                        {displayFileType && (
                             <div className="flex justify-between py-3">
                                 <span className="text-muted-foreground">Tipo de Archivo</span>
-                                <span className="text-foreground font-medium">{formatFileType(book.fileType)}</span>
+                                <span className="text-foreground font-medium">{formatFileType(displayFileType)}</span>
                             </div>
                         )}
-                        {book.size && (
+                        {displaySize && (
                             <div className="flex justify-between py-3">
                                 <span className="text-muted-foreground">Tamaño</span>
-                                <span className="text-foreground font-medium">{book.size}</span>
+                                <span className="text-foreground font-medium">{displaySize}</span>
                             </div>
                         )}
                         {book.language && (

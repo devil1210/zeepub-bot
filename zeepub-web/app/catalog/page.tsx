@@ -37,6 +37,8 @@ interface Book {
     year?: string
     publisher?: string
     language?: string
+    size?: string
+    file_type?: string
 }
 
 interface PaginationState {
@@ -323,7 +325,10 @@ function CatalogContent() {
                 language: entry.language,
                 downloadUrl: entry.links.find(
                     (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
-                )?.href
+                )?.href,
+                size: entry.links.find(l => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.contentlength ||
+                    entry.links.find(l => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.length,
+                fileType: entry.links.find((l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.type
             }))
 
             // Save current position before navigating to book details
@@ -351,7 +356,9 @@ function CatalogContent() {
                     year: book.year,
                     publisher: book.publisher,
                     language: book.language,
-                    downloadUrl: book.download_url
+                    downloadUrl: book.download_url,
+                    size: book.size,
+                    fileType: book.file_type
                 }))
                 router.push(`/book?id=${encodeURIComponent(url)}`)
             }
