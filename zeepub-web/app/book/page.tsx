@@ -220,9 +220,12 @@ function BookDetailContent() {
 
 export default function BookDetailPage() {
     return (
-            <div className="min-h-screen bg-background pt-safe" />
-            <BookDetailContent />
-        </Suspense >
+        <Suspense fallback={<div className="min-h-screen bg-background pt-safe" />}>
+            <>
+                <div className="min-h-screen bg-background pt-safe" />
+                <BookDetailContent />
+            </>
+        </Suspense>
     )
 }
 
