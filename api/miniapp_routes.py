@@ -200,22 +200,23 @@ async def handle_bot_request(
                 for link in getattr(entry, "links", []):
                     rel = link.get("rel", "")
                     href = abs_url(feed_base_url, link.get("href", ""))
+                    ltype = link.get("type", "")
+
                     if rel == "subsection":
                         subsection_url = href
-                    elif rel == "self" or rel == "alternate":
+                    elif rel == "self" or rel == "alternate" or "type=entry" in ltype:
                         if not detail_url or rel == "self":
                             detail_url = href
-                    elif "acquisition" in rel or "epub" in link.get("type", ""):
+                    elif "acquisition" in rel or "epub" in ltype:
                         download_url = href
-                        file_type = link.get("type")
-                        # Try to get size from link attributes if available
+                        file_type = ltype
                         size = link.get("contentlength") or link.get("length")
                     elif "image" in rel or "cover" in rel:
                         cover_url = href
 
-                # Fallback for detail_url if no self/alternate link found
-                if not detail_url and book_id and book_id.startswith("http"):
-                    detail_url = book_id
+                # Fallback for detail_url: if missing, try to resolve the ID as a relative URL
+                if not detail_url and book_id:
+                    detail_url = abs_url(feed_base_url, book_id)
 
                 results.append(
                     {

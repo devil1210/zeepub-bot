@@ -318,9 +318,9 @@ function CatalogContent() {
     }
 
     const handleSearchBookClick = (book: Book) => {
-        const detailUrl = book.detail_url || (book.id?.startsWith("http") ? book.id : null)
+        const detailUrl = book.detail_url || book.id
 
-        if (detailUrl) {
+        if (detailUrl && detailUrl.startsWith("http")) {
             router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
         } else if (book.is_folder && book.subsection_url) {
             // Si es una carpeta en búsqueda, navegamos a ella en el catálogo y limpiamos búsqueda

@@ -129,9 +129,9 @@ export default function SearchPage() {
   }
 
   const handleBookClick = (book: Book) => {
-    const detailUrl = book.detail_url || (book.id?.startsWith("http") ? book.id : null)
+    const detailUrl = book.detail_url || book.id
 
-    if (detailUrl) {
+    if (detailUrl && detailUrl.startsWith("http")) {
       // Save current search state before navigating
       sessionStorage.setItem("search-state", JSON.stringify({
         query: searchQuery,

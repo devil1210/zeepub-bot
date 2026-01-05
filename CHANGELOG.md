@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.16.9] - 2026-01-05
+
+### Fixed
+- **Navegación de Detalles**: Implementada una lógica de extracción mucho más robusta para `detail_url`. Ahora, si el servidor no provee un link explícito, se intenta resolver el ID del libro contra la URL base para generar la página de detalles, solucionando fallos de navegación en búsquedas de ciertos servidores OPDS.
+
 ## [4.16.8] - 2026-01-05
 
 ### Fixed
