@@ -116,12 +116,10 @@ function BookDetailContent() {
     }
 
 
-    if (isLoading) {
+    if (isLoading && !book) {
         return (
             <div className="fixed inset-0 bg-background flex flex-col items-center justify-center p-4">
-                <div className="w-32 h-48 bg-secondary/50 rounded-lg animate-pulse mb-6" />
-                <div className="h-6 w-48 bg-secondary/50 rounded-full animate-pulse mb-3" />
-                <div className="h-4 w-32 bg-secondary/30 rounded-full animate-pulse" />
+                <Loader2 className="w-10 h-10 text-primary animate-spin opacity-20" />
             </div>
         )
     }
