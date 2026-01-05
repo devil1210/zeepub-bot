@@ -549,7 +549,6 @@ async def handle_bot_request(
 
             from api.main import bot
             from config.config_settings import config
-            from services.settings_service import get_setting
 
             # Map target to chat_id
             target_chat_id = user_id  # Default to private
