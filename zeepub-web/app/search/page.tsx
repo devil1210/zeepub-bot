@@ -132,6 +132,12 @@ export default function SearchPage() {
   }
 
   const handleBookClick = (book: Book) => {
+    if (book.is_folder && book.subsection_url) {
+      // Use window.location.href to avoid history issues with deep links in catalog
+      window.location.href = `/catalog?feed_url=${encodeURIComponent(book.subsection_url)}`
+      return
+    }
+
     const detailUrl = book.detail_url || book.id
 
     if (detailUrl && detailUrl.startsWith("http")) {
@@ -157,9 +163,6 @@ export default function SearchPage() {
       sessionStorage.setItem("preview-book", JSON.stringify(previewData))
 
       router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
-    } else if (book.is_folder && book.subsection_url) {
-      // Use window.location.href to avoid history issues with deep links in catalog
-      window.location.href = `/catalog?feed_url=${encodeURIComponent(book.subsection_url)}`
     }
   }
 

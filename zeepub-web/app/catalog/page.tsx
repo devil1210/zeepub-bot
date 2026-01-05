@@ -341,6 +341,14 @@ function CatalogContent() {
     }
 
     const handleSearchBookClick = (book: Book) => {
+        if (book.is_folder && book.subsection_url) {
+            // Si es una carpeta en búsqueda, navegamos a ella en el catálogo y limpiamos búsqueda
+            setSearchQuery("")
+            setSearchResults([])
+            handleNavigate(book.subsection_url)
+            return
+        }
+
         const detailUrl = book.detail_url || book.id
 
         if (detailUrl) {
@@ -362,11 +370,6 @@ function CatalogContent() {
                 }))
                 router.push(`/book?id=${encodeURIComponent(url)}`)
             }
-        } else if (book.is_folder && book.subsection_url) {
-            // Si es una carpeta en búsqueda, navegamos a ella en el catálogo y limpiamos búsqueda
-            setSearchQuery("")
-            setSearchResults([])
-            handleNavigate(book.subsection_url)
         }
     }
     const handleSearchDownload = async (e: React.MouseEvent, book: Book) => {

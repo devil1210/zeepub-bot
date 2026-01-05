@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.18.6] - 2026-01-05
+
+### Fixed
+- **Búsqueda**: Corregida la lógica de navegación en los resultados de búsqueda. Ahora se prioriza el acceso a la colección/serie cuando el item es una carpeta, evitando que se abra una página de detalles vacía.
+
 ## [4.18.5] - 2026-01-05
 
 ### Added
