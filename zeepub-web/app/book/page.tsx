@@ -86,6 +86,9 @@ function BookDetailContent() {
         }
 
         fetchBookDetail()
+
+        // Ensure we scroll to top on mount or book change
+        window.scrollTo(0, 0)
     }, [bookId])
 
     const handleDownload = async () => {
@@ -275,10 +278,7 @@ function BookDetailContent() {
 export default function BookDetailPage() {
     return (
         <Suspense fallback={<div className="min-h-screen bg-background pt-safe" />}>
-            <>
-                <div className="min-h-screen bg-background pt-safe" />
-                <BookDetailContent />
-            </>
+            <BookDetailContent />
         </Suspense>
     )
 }

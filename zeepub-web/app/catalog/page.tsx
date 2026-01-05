@@ -34,6 +34,9 @@ interface Book {
     subsection_url?: string
     detail_url?: string
     is_folder: boolean
+    year?: string
+    publisher?: string
+    language?: string
 }
 
 interface PaginationState {
@@ -317,7 +320,10 @@ function CatalogContent() {
                 summary: entry.summary,
                 year: entry.year,
                 publisher: entry.publisher,
-                language: entry.language
+                language: entry.language,
+                downloadUrl: entry.links.find(
+                    (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
+                )?.href
             }))
 
             // Save current position before navigating to book details
@@ -335,6 +341,18 @@ function CatalogContent() {
         if (detailUrl) {
             const url = detailUrl.startsWith("http") ? detailUrl : null
             if (url) {
+                // Also save preview for search results if possible
+                sessionStorage.setItem("preview-book", JSON.stringify({
+                    id: book.id,
+                    title: book.title,
+                    author: book.author,
+                    cover: book.cover,
+                    summary: book.summary,
+                    year: book.year,
+                    publisher: book.publisher,
+                    language: book.language,
+                    downloadUrl: book.download_url
+                }))
                 router.push(`/book?id=${encodeURIComponent(url)}`)
             }
         } else if (book.is_folder && book.subsection_url) {
