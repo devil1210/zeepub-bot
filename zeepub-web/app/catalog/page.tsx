@@ -145,12 +145,12 @@ function CatalogContent() {
         }
     }, [isAdminMode])
 
-    // Load feed when isAdminMode changes if we are at root
+    // Unified feed loader: handle searchParams and isAdminMode changes
     useEffect(() => {
-        // Only auto-reload if we are at root (no history) or if we want to force refresh the view
-        // To be safe and meet user expectation of "switch mode -> see change", we reload current URL
-        loadFeed(currentFeedUrl || undefined)
-    }, [isAdminMode, loadFeed])
+        const feedUrl = searchParams.get("feed_url")
+        console.log("[Catalog] Unified loading effect triggered, feedUrl:", feedUrl || "root")
+        loadFeed(feedUrl || undefined)
+    }, [searchParams, isAdminMode, loadFeed])
 
     // Go back in internal history or via OPDS hierarchy
     // Go back via native browser history
@@ -161,9 +161,12 @@ function CatalogContent() {
 
     // Navigate into a subsection using URL parameters (native history)
     const handleNavigate = useCallback((url: string) => {
-        if (!url) return
-        console.log("[Catalog] Navigating to subsection:", url)
-        router.push(`/catalog?feed_url=${encodeURIComponent(url)}`)
+        console.log("[Catalog] Navigating to subsection:", url || "root")
+        if (!url) {
+            router.push('/catalog')
+        } else {
+            router.push(`/catalog?feed_url=${encodeURIComponent(url)}`)
+        }
     }, [router])
 
     // History persistence removed in favor of URL-based navigation
@@ -172,7 +175,7 @@ function CatalogContent() {
     useEffect(() => {
         if (!webApp?.BackButton) return
 
-        console.log("[Catalog] Setting up BackButton, history length:", history.length)
+        console.log("[Catalog] Setting up BackButton")
 
         // Always show back button in catalog (user can always go back to main menu)
         webApp.BackButton.show()
@@ -189,18 +192,7 @@ function CatalogContent() {
         }
     }, [webApp, goBack])
 
-    // Initial feed load
-    useEffect(() => {
-        const feedUrl = searchParams.get("feed_url")
-
-        if (feedUrl) {
-            // Loading specific URL from URL parameters
-            loadFeed(feedUrl)
-        } else {
-            // Normal catalog entry - load root
-            loadFeed()
-        }
-    }, [searchParams, loadFeed])
+    // Loading logic moved to unified effect above
 
     const handleGoBack = () => {
         goBack()
