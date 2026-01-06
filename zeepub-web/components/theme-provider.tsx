@@ -60,6 +60,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setAnimationDuration: () => { },
   animationDistance: 4,
   setAnimationDistance: () => { },
+  disableDisplacement: false,
+  setDisableDisplacement: () => { },
 })
 
 export function useTheme() {
@@ -132,6 +134,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [enableAnimations, setEnableAnimations] = useState(false)
   const [animationDuration, setAnimationDuration] = useState(200)
   const [animationDistance, setAnimationDistance] = useState(4)
+  const [disableDisplacement, setDisableDisplacement] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [shouldPersist, setShouldPersist] = useState(true)
   const [isResetting, setIsResetting] = useState(false)
