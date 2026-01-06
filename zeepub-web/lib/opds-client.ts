@@ -2,7 +2,7 @@ import { getTelegramInitData } from "./telegram"
 import { OPDSFeed } from "./opds-types"
 
 const feedCache = new Map<string, { data: OPDSFeed; timestamp: number }>()
-const CACHE_TTL = 1000 * 60 * 5 // 5 minutes
+const CACHE_TTL = 1000 * 60 * 60 // 60 minutes
 
 export class OpdsClient {
     static async fetchFeed(url?: string, adminMode: boolean = false, useCache: boolean = true): Promise<OPDSFeed | null> {

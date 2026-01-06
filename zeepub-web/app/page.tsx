@@ -165,8 +165,8 @@ export default function HomePage() {
                   return true
                 })
                 .map((item, index) => (
-                  <a key={index} href={item.href}>
-                    <Card className="p-3 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
+                  <a key={index} href={item.href} className="block mb-4">
+                    <Card className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <item.icon className="w-5 h-5 text-primary" />
