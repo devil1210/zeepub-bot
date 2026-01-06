@@ -26,14 +26,21 @@ export default function Template({ children }: { children: React.ReactNode }) {
     // CSS transitions on the router-outlet if possible, or just individual mounting animations.
 
     // Actually, let's make a simple mount animation wrapper.
-    const { enableAnimations } = useTheme()
+    const { enableAnimations, animationDuration, animationDistance } = useTheme()
 
     if (!enableAnimations) {
         return <>{children}</>
     }
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-1 duration-200 ease-out">
+        <div
+            className="dynamic-page-transition"
+            style={{
+                // @ts-ignore
+                "--anim-duration": `${animationDuration}ms`,
+                "--anim-translate-y": `${animationDistance}px`
+            }}
+        >
             {children}
         </div>
     )

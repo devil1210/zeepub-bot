@@ -55,6 +55,10 @@ export default function InterfaceConfigPage() {
         applySettings,
         enableAnimations,
         setEnableAnimations,
+        animationDuration,
+        setAnimationDuration,
+        animationDistance,
+        setAnimationDistance,
     } = useTheme()
 
     const { isAdmin, userProfile } = useTelegramContext()
@@ -96,7 +100,10 @@ export default function InterfaceConfigPage() {
                 showSearchBar: localStorage.getItem("showSearchBar") === "true",
                 showDonateCard: localStorage.getItem("showDonateCard") === "true",
                 showHelpCard: localStorage.getItem("showHelpCard") === "true",
-                showSettingsInMenu: localStorage.getItem("showSettingsInMenu") === "true"
+                showSettingsInMenu: localStorage.getItem("showSettingsInMenu") === "true",
+                enableAnimations: localStorage.getItem("enableAnimations") === "true",
+                animationDuration: parseInt(localStorage.getItem("animationDuration") || "200"),
+                animationDistance: parseInt(localStorage.getItem("animationDistance") || "4")
             }
             applySettings(personal, true) // Restore and ENABLE persistence
             toast.info("Has vuelto a tu configuración personal")
@@ -444,6 +451,50 @@ export default function InterfaceConfigPage() {
                                     onCheckedChange={setEnableAnimations}
                                 />
                             </div>
+
+                            {enableAnimations && (
+                                <div className="space-y-6 pl-2 border-l-2 border-primary/20 ml-2 animate-in fade-in slide-in-from-top-2">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-sm">Velocidad (Duración)</Label>
+                                            <span className="text-xs text-muted-foreground">{animationDuration}ms</span>
+                                        </div>
+                                        <Slider
+                                            value={[animationDuration]}
+                                            min={50}
+                                            max={800}
+                                            step={50}
+                                            onValueChange={(val) => setAnimationDuration(val[0])}
+                                            className="cursor-pointer"
+                                        />
+                                        <div className="flex justify-between text-[10px] text-muted-foreground px-1">
+                                            <span>Rápido (50ms)</span>
+                                            <span>Normal (200ms)</span>
+                                            <span>Lento (800ms)</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-sm">Desplazamiento Vertical</Label>
+                                            <span className="text-xs text-muted-foreground">{animationDistance}px</span>
+                                        </div>
+                                        <Slider
+                                            value={[animationDistance]}
+                                            min={0}
+                                            max={50}
+                                            step={1}
+                                            onValueChange={(val) => setAnimationDistance(val[0])}
+                                            className="cursor-pointer"
+                                        />
+                                        <div className="flex justify-between text-[10px] text-muted-foreground px-1">
+                                            <span>Ninguno (0px)</span>
+                                            <span>Sutil (4px)</span>
+                                            <span>Largo (50px)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </TabsContent>
 
                         <TabsContent value="interface" className="space-y-6 mt-6">

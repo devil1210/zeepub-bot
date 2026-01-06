@@ -166,4 +166,23 @@
   .animate-progress-loading {
     animation: progress-loading 1.5s infinite linear;
   }
+
+  /* Dynamic Page Transitions */
+  @keyframes dynamic-fade-in-up {
+    0% {
+      opacity: 0;
+      transform: translateY(var(--anim-translate-y, 4px));
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .dynamic-page-transition {
+    animation-name: dynamic-fade-in-up;
+    animation-duration: var(--anim-duration, 200ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
 }

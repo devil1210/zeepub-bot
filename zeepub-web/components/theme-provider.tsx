@@ -25,6 +25,10 @@ interface ThemeContextType {
   applySettings: (settings: any, persistToLocal?: boolean) => void
   enableAnimations: boolean
   setEnableAnimations: (enabled: boolean) => void
+  animationDuration: number
+  setAnimationDuration: (val: number) => void
+  animationDistance: number
+  setAnimationDistance: (val: number) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -50,6 +54,10 @@ const ThemeContext = createContext<ThemeContextType>({
   applySettings: () => { },
   enableAnimations: false,
   setEnableAnimations: () => { },
+  animationDuration: 200,
+  setAnimationDuration: () => { },
+  animationDistance: 4,
+  setAnimationDistance: () => { },
 })
 
 export function useTheme() {
@@ -120,6 +128,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [showHelpCard, setShowHelpCard] = useState(true)
   const [showSettingsInMenu, setShowSettingsInMenu] = useState(false)
   const [enableAnimations, setEnableAnimations] = useState(false)
+  const [animationDuration, setAnimationDuration] = useState(200)
+  const [animationDistance, setAnimationDistance] = useState(4)
   const [isLoaded, setIsLoaded] = useState(false)
   const [shouldPersist, setShouldPersist] = useState(true)
   const [isResetting, setIsResetting] = useState(false)
@@ -138,6 +148,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedShowHelpCard = localStorage.getItem("showHelpCard")
     const savedShowSettingsInMenu = localStorage.getItem("showSettingsInMenu")
     const savedEnableAnimations = localStorage.getItem("enableAnimations")
+    const savedAnimDuration = localStorage.getItem("animationDuration")
+    const savedAnimDistance = localStorage.getItem("animationDistance")
 
     // Sync with Backend (Role Defaults)
     const fetchRemoteDefaults = async () => {
@@ -207,6 +219,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setEnableAnimations(data.enableAnimations)
             localStorage.setItem("enableAnimations", String(data.enableAnimations))
           }
+
+          if (data.animationDuration !== undefined) {
+            setAnimationDuration(data.animationDuration)
+            localStorage.setItem("animationDuration", String(data.animationDuration))
+          }
+
+          if (data.animationDistance !== undefined) {
+            setAnimationDistance(data.animationDistance)
+            localStorage.setItem("animationDistance", String(data.animationDistance))
+          }
         }
       } catch (error) {
         console.error("Error fetching UI defaults:", error)
@@ -227,6 +249,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedShowHelpCard !== null) setShowHelpCard(savedShowHelpCard === "true")
     if (savedShowSettingsInMenu !== null) setShowSettingsInMenu(savedShowSettingsInMenu === "true")
     if (savedEnableAnimations !== null) setEnableAnimations(savedEnableAnimations === "true")
+    if (savedAnimDuration) setAnimationDuration(parseInt(savedAnimDuration))
+    if (savedAnimDistance) setAnimationDistance(parseInt(savedAnimDistance))
 
     // Then fetch remote defaults for missing ones
     fetchRemoteDefaults()
@@ -375,6 +399,23 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [enableAnimations, isLoaded, shouldPersist])
 
+  // Save animation duration
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("animationDuration", String(animationDuration))
+    }
+  }, [animationDuration, isLoaded, shouldPersist])
+
+  // Save animation distance
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("animationDistance", String(animationDistance))
+    }
+  }, [animationDistance, isLoaded, shouldPersist])
+
+
   const saveGlobalSettings = async (role: string) => {
     try {
       const { callBotAPI } = await import("@/lib/api")
@@ -388,7 +429,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         showDonateCard,
         showHelpCard,
         showSettingsInMenu,
-        enableAnimations
+        enableAnimations,
+        animationDuration,
+        animationDistance
       }
       await callBotAPI("ui_settings", { subAction: "set", role, settings })
     } catch (error) {
@@ -411,6 +454,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.showHelpCard !== undefined) setShowHelpCard(settings.showHelpCard)
     if (settings.showSettingsInMenu !== undefined) setShowSettingsInMenu(settings.showSettingsInMenu)
     if (settings.enableAnimations !== undefined) setEnableAnimations(settings.enableAnimations)
+    if (settings.animationDuration !== undefined) setAnimationDuration(settings.animationDuration)
+    if (settings.animationDistance !== undefined) setAnimationDistance(settings.animationDistance)
 
     // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
     if (persistToLocal) {
@@ -424,6 +469,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("showHelpCard", String(settings.showHelpCard ?? true))
       localStorage.setItem("showSettingsInMenu", String(settings.showSettingsInMenu ?? false))
       localStorage.setItem("enableAnimations", String(settings.enableAnimations ?? false))
+      localStorage.setItem("animationDuration", String(settings.animationDuration ?? 200))
+      localStorage.setItem("animationDistance", String(settings.animationDistance ?? 4))
     }
   }
 
@@ -450,6 +497,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setShowSettingsInMenu,
         enableAnimations,
         setEnableAnimations,
+        animationDuration,
+        setAnimationDuration,
+        animationDistance,
+        setAnimationDistance,
         saveGlobalSettings,
         applySettings,
       }}
