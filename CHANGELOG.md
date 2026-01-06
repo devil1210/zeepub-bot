@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.4] - 2026-01-06
+
+### Improved
+- **Bot - Visualización de Títulos**: Nueva lógica para feeds "Storyline" de Kavita. Ahora se muestra el título en Inglés y Romaji en líneas separadas para mayor claridad, limpiando símbolos decorativos.
+- **Bot - Botones Inteligentes**: Los botones de volúmenes ahora incluyen tags relevantes (ej: `[TurretT]`) si estos difieren del contexto de la serie, permitiendo identificar mejor las versiones o traductores.
 ## [v5.0.3] - 2026-01-06
 
 ### Fixed

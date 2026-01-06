@@ -201,15 +201,24 @@ async def mostrar_colecciones(
                                 # Match starts at 0 for both (prefix match)
                                 is_redundant = True
 
+                # Determine minimal tags to show (tags in book but not in series context)
+                book_tags = set(meta.get("tags", []))
+                context_tags = set(meta_context.get("tags", []))
+                unique_tags = sorted(list(book_tags - context_tags))
+                
+                tags_str = ""
+                if unique_tags:
+                    tags_str = " " + " ".join([f"[{t}]" for t in unique_tags])
+
                 if is_redundant:
-                    display_title = f"Volumen {meta['volume']}" 
+                    display_title = f"Volumen {meta['volume']}{tags_str}"
                 else:
-                    # Shorten format for buttons: "S. Name - Vol. 01"
+                    # Shorten format for buttons: "S. Name - Vol. 01 [Tags]"
                     # Truncate series if too long
                     s_name = meta["series"]
                     if len(s_name) > 20:
                         s_name = s_name[:17] + "..."
-                    display_title = f"{s_name} - {meta['volume']}"
+                    display_title = f"{s_name} - {meta['volume']}{tags_str}"
             elif meta.get("clean_title"):
                 display_title = meta["clean_title"]
 
@@ -240,7 +249,57 @@ async def mostrar_colecciones(
         keyboard.append([InlineKeyboardButton("❌ Salir", callback_data="cerrar")])
 
     # Título y markup
+    # Intento de mejorar el título si estamos en una vista de "Storyline" (Series de Kavita)
     title = st.get("titulo") or "📚 Categorías"
+    
+    # Lógica para extraer Romaji title si el feed title termina en " - Storyline"
+    raw_feed_title = getattr(feed.feed, "title", "")
+    if raw_feed_title.endswith(" - Storyline") and libros:
+        # Intentar deducir la estructura English - Romaji - Volume del primer libro
+        first_book_title = getattr(feed.entries[0], "title", "")
+        clean_feed_title_part = raw_feed_title.replace(" - Storyline", "").strip()
+        
+        # Parseamos el primer libro para ver si contiene el título del feed + algo más en medio
+        # Estructura esperada: "English Title [Tags] - Romaji Title - Volume info"
+        # Ojo: parse_metadata_from_title limpia tags, así que usaremos split directo
+        parts = first_book_title.split(" - ")
+        
+        if len(parts) >= 3:
+            # Asumimos Part 0 = English (con tags), Part 1 = Romaji, Part 2+ = Info volumen
+            # Verificamos si Part 0 coincide con el título del feed (aprox)
+            
+            # Limpieza básica para comparar (ignorar tags para la coincidencia base)
+            import re
+            def clean_title_part(s):
+                # Remove tags
+                s = re.sub(r"\[.*?\]", "", s)
+                # Remove leading non-alphanumeric (bullets, etc), keeping parens if needed
+                s = re.sub(r"^[^\w\(\)]+", "", s)
+                return s.strip()
+
+            p0_clean = clean_title_part(parts[0])
+            feed_clean = clean_title_part(clean_feed_title_part)
+            
+            if p0_clean == feed_clean or p0_clean in feed_clean or feed_clean in p0_clean:
+                # ¡Bingo! Tenemos un título Romaji potencial en parts[1]
+                romaji_title = parts[1].strip()
+                # Clean English title specifically to remove the bullet "⭘" if present
+                english_title = re.sub(r"^[^\w\(\)]+", "", parts[0]).strip()
+                
+                # Construimos el nuevo título visual
+                # Usamos el icono que ya pudiera tener el título del state o default
+                icon_prefix = ""
+                basic_title = title
+                if " " in title:
+                    # Intenta preservar el emoji inicial si existe (ej: 📁 )
+                    possible_icon = title.split(" ", 1)[0]
+                    # Validación simple de emoji (si no es alfanumérico)
+                    if not possible_icon.isalnum():
+                        icon_prefix = possible_icon + " "
+                
+                # Si st["titulo"] ya tenía el título en inglés, lo reemplazamos con el formato rico
+                title = f"{icon_prefix}{english_title}\n\n{romaji_title}"
+
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Enviar o editar mensaje
