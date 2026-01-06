@@ -145,8 +145,12 @@ export default function DownloadsPage() {
             <div>
               <h3 className="text-lg font-semibold mb-4">{t("downloads_history_title")}</h3>
               <div className="space-y-3">
-                {downloads.map((item) => (
-                  <Card key={item.id} className="p-4 border-border hover:bg-secondary/30 transition-colors">
+                {downloads.map((item, index) => (
+                  <Card
+                    key={item.id}
+                    className="p-4 border-border hover:bg-secondary/30 transition-colors animate-in fade-in slide-in-from-top-4 duration-500 fill-mode-both"
+                    style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}
+                  >
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                         <FileText className="w-6 h-6 text-primary" />
