@@ -798,6 +798,47 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "Descargar",
     },
+    # --- Command Menu Descriptions (Telegram /) ---
+    "cmd_menu_desc_start": {
+        "desc": "Menú: Descripción /start",
+        "vars": [],
+        "default": "Iniciar bot",
+    },
+    "cmd_menu_desc_help": {
+        "desc": "Menú: Descripción /help",
+        "vars": [],
+        "default": "Muestra este menú",
+    },
+    "cmd_menu_desc_menu": {
+        "desc": "Menú: Descripción /menu",
+        "vars": [],
+        "default": "Menú interactivo",
+    },
+    "cmd_menu_desc_search": {
+        "desc": "Menú: Descripción /search",
+        "vars": [],
+        "default": "Buscar libros",
+    },
+    "cmd_menu_desc_donar": {
+        "desc": "Menú: Descripción /donar",
+        "vars": [],
+        "default": "Link donación",
+    },
+    "cmd_menu_desc_niveles": {
+        "desc": "Menú: Descripción /niveles",
+        "vars": [],
+        "default": "Info niveles",
+    },
+    "cmd_menu_desc_status": {
+        "desc": "Menú: Descripción /status",
+        "vars": [],
+        "default": "Mi estado",
+    },
+    "cmd_menu_desc_cancel": {
+        "desc": "Menú: Descripción /cancel",
+        "vars": [],
+        "default": "Cancelar acción",
+    },
     "web_book_section": {
         "desc": "Web: Texto ver colección",
         "vars": [],

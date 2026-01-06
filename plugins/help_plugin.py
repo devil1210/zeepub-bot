@@ -814,6 +814,14 @@ class HelpPlugin(BasePlugin):
         )
 
         try:
+            cms = None
+            # Try to get custom_messages plugin for dynamic descriptions
+            try:
+                from plugins.plugin_manager import manager
+                cms = manager.get_plugin("custom_messages")
+            except Exception:
+                logger.debug("Custom messages plugin not available during command update")
+
             # 1. Comandos para TODOS (Básicos)
             # Intentar cargar desde DB
             raw_cmds = get_setting("menu_public_commands")
@@ -822,15 +830,21 @@ class HelpPlugin(BasePlugin):
                     cmd_list = [c.strip() for c in raw_cmds.split(",") if c.strip()]
                     public_cmds = []
                     for c_name in cmd_list:
-                        desc = COMMANDS_REGISTRY.get(c_name, {}).get(
+                        fallback_desc = COMMANDS_REGISTRY.get(c_name, {}).get(
                             "desc", "Comando bot"
                         )
+                        
+                        desc = fallback_desc
+                        if cms and cms.enabled:
+                            # Use get_text with slug cmd_menu_desc_{command}
+                            desc = await cms.get_text(f"cmd_menu_desc_{c_name}", default_text=fallback_desc)
+                        
                         public_cmds.append(BotCommand(c_name, desc))
                 except Exception as ex:
                     logger.error(f"Error parseando menu_public_commands: {ex}")
-                    public_cmds = self._get_default_public_cmds()
+                    public_cmds = await self._get_default_public_cmds_dynamic(cms)
             else:
-                public_cmds = self._get_default_public_cmds()
+                public_cmds = await self._get_default_public_cmds_dynamic(cms)
 
             # Forzar visibilidad en todos los contextos posibles para usuarios normales
             # Registramos el set público en TODOS los scopes globales
@@ -852,8 +866,13 @@ class HelpPlugin(BasePlugin):
             for cmd_name in sorted(COMMANDS_REGISTRY.keys()):
                 if len(all_cmds) >= 100:
                     break
-                data = COMMANDS_REGISTRY[cmd_name]
-                all_cmds.append(BotCommand(cmd_name, data["desc"]))
+                
+                fallback_desc = COMMANDS_REGISTRY[cmd_name]["desc"]
+                desc = fallback_desc
+                if cms and cms.enabled:
+                    desc = await cms.get_text(f"cmd_menu_desc_{cmd_name}", default_text=fallback_desc)
+                    
+                all_cmds.append(BotCommand(cmd_name, desc))
 
             count_admins = 0
             for admin_id in config.ADMIN_USERS:
@@ -875,6 +894,29 @@ class HelpPlugin(BasePlugin):
             logger.error(
                 f"Error actualizando menú de comandos en Telegram: {e}", exc_info=True
             )
+
+    async def _get_default_public_cmds_dynamic(self, cms=None):
+        from telegram import BotCommand
+
+        default_list = [
+            ("start", "Iniciar bot"),
+            ("help", "Ayuda simple"),
+            ("menu", "Menú interactivo"),
+            ("search", "Buscar libros"),
+            ("donar", "Link donación"),
+            ("niveles", "Info niveles"),
+            ("status", "Mi estado"),
+            ("cancel", "Cancelar acción"),
+        ]
+        
+        cmds = []
+        for c_name, fallback_desc in default_list:
+            desc = fallback_desc
+            if cms and cms.enabled:
+                desc = await cms.get_text(f"cmd_menu_desc_{c_name}", default_text=fallback_desc)
+            cmds.append(BotCommand(c_name, desc))
+            
+        return cmds
 
     def _get_default_public_cmds(self):
         from telegram import BotCommand

@@ -5,6 +5,18 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.9] - 2026-01-06
+
+### Fixed
+- **Mini App - Navegación**: Corregido problema donde el botón "Atrás" y "Subir" reiniciaban a la página 1 de la biblioteca. Ahora se utiliza navegación basada en URL para preservar el estado de la paginación en el historial del navegador.
+- **Mini App - UI de Paginación**: Restauradas las etiquetas de texto ("Anterior", "Subir", "Siguiente") en dispositivos móviles para mejorar la usabilidad y coincidir con el diseño solicitado.
+
+### Added
+- **Mensajes - Descripciones de Comandos**: Las descripciones de los comandos que aparecen en el menú nativo de Telegram (`/`) ahora son editables mediante el sistema de mensajes personalizados. Se han añadido plantillas con el prefijo `cmd_menu_desc_` para todos los comandos principales.
+
+### Improved
+- **Ayuda - Registro de Comandos**: Refinada la lógica de registro de comandos en Telegram para soportar descripciones dinámicas desde el plugin de mensajes personalizados.
+
 ## [v5.0.8] - 2026-01-06
 
 ### Fixed
