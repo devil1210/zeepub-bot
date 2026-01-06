@@ -752,10 +752,10 @@ async def handle_bot_request(
                             await user_repo.reset_level_users_settings(level_id)
                             logger.info(f"Force Overwrite: Reset settings for level {level_id} (role {target_role})")
                         elif target_role == "global":
-                             # If global overwrite is requested, technically we should do nothing or all?
-                             # For safety, let's only log valid levels.
-                             # If user wants to reset ALL users, that's a bigger nuke.
-                             pass
+                            # If global overwrite is requested, technically we should do nothing or all?
+                            # For safety, let's only log valid levels.
+                            # If user wants to reset ALL users, that's a bigger nuke.
+                            pass
 
                     return {
                         "success": True,
