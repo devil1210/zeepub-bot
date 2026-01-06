@@ -1,6 +1,7 @@
 import uuid
 import logging
 from urllib.parse import urlparse, unquote
+from difflib import SequenceMatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 # from core.state_manager import state_manager (Moved to local scope)
@@ -159,7 +160,12 @@ async def mostrar_colecciones(
             # b["titulo"] comes from opds entry.title
             
             # Context Awareness: Get current folder title to avoid redundancy
-            feed_title = getattr(feed.feed, "title", "")
+            # Fallback to st["titulo"] (from previous nav) if feed.feed.title is missing
+            feed_title = getattr(feed.feed, "title",  st.get("titulo", ""))
+            
+            # Clean common Kavita suffixes from context
+            feed_title = feed_title.replace(" - Storyline", "")
+            
             meta_context = parse_metadata_from_title(feed_title)
             context_series = meta_context.get("series", "").lower()
             
@@ -168,21 +174,33 @@ async def mostrar_colecciones(
             display_title = b["titulo"]
             if meta.get("series") and meta.get("volume"):
                 # If we are inside the series folder (fuzzy match), show only volume
-                # Check if context_series covers a significant part of meta["series"]
                 book_series = meta["series"].lower()
                 
-                # Logic: If the folder title is effectively the series name, we hide it.
-                # using "in" implies the folder might be "Series Name [Tags]" and book is "Series Name"
-                # or folder is "Series Name" and book is "Series Name"
                 is_redundant = False
                 if context_series and book_series:
                     # Remove non-alphanumeric to compare loosely
                     import re
                     s1 = re.sub(r"[^\w]", "", context_series)
                     s2 = re.sub(r"[^\w]", "", book_series)
+                    
+                    # 1. Direct Subset Match
                     if s1 in s2 or s2 in s1:
                         is_redundant = True
-                
+                    else:
+                        # 2. Fuzzy Match (Ratio)
+                        # Useful if one has extra subtitles but they share distinct series name
+                        ratio = SequenceMatcher(None, s1, s2).ratio()
+                        # If > 80% match, assume redundant
+                        if ratio > 0.8:
+                            is_redundant = True
+                        else:
+                            # 3. Common Prefix Match
+                            # If they share a long prefix (e.g. > 15 chars), assume match
+                            match = SequenceMatcher(None, s1, s2).find_longest_match(0, len(s1), 0, len(s2))
+                            if match.size > 15 and match.a == 0 and match.b == 0:
+                                # Match starts at 0 for both (prefix match)
+                                is_redundant = True
+
                 if is_redundant:
                     display_title = f"Volumen {meta['volume']}" 
                 else:

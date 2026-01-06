@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.3] - 2026-01-06
+
+### Fixed
+- **Bot - Redundancia de Títulos**: Mejorada significativamente la lógica de detección de series redundantes. Ahora usa coincidencia difusa (fuzzy match) y detección de prefijos comunes para manejar títulos complejos (ej: "Argonaut") y sufijos como " - Storyline". También usa el título del estado actual si el feed OPDS no provee uno.
+
 ## [v5.0.2] - 2026-01-06
 
 ### Improved
