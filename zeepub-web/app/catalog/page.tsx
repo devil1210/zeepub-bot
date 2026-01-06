@@ -122,6 +122,20 @@ function CatalogContent() {
         }
     }, [searchQuery, handleCatalogSearch])
 
+    // Prefetch next page for smoother navigation
+    useEffect(() => {
+        if (currentFeed?.nextPage) {
+            const nextUrl = currentFeed.nextPage
+            // Delay slightly to prioritize current page render
+            const timer = setTimeout(() => {
+                OpdsClient.fetchFeed(nextUrl, isAdminMode).then(() => {
+                    console.log("[Catalog] Prefetched next page:", nextUrl)
+                }).catch(err => console.error("Prefetch error:", err))
+            }, 1000)
+            return () => clearTimeout(timer)
+        }
+    }, [currentFeed, isAdminMode])
+
     // Load feed function
     const loadFeed = useCallback(async (url?: string, isPagination = false) => {
         setIsLoading(true)
