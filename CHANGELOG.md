@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.1] - 2026-01-06
+
+### Fixed
+- **Parsing de Títulos**: Corregido bug donde símbolos decorativos (como ⭘, ●) aparecían al inicio de los títulos limpios. Ahora se eliminan automáticamente todos los caracteres no alfanuméricos iniciales.
+
 ## [v5.0.0] - 2026-01-06
 
 ### Major
@@ -16,8 +21,3 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Bot - Listados**: Títulos de botones más limpios y legibles (ej: `Serie - 01` en lugar del nombre completo del archivo).
 
 ## [4.20.11] - 2026-01-05
-
-### Added
-- **Animaciones Configurables**: Nueva sección avanzada en el menú de "Apariencia". Ahora puedes ajustar la velocidad (ms) y la distancia de desplazamiento vertical (px) de las animaciones para encontrar tu punto exacto de fluidez.
-
-## [4.20.10] - 2026-01-05

@@ -288,6 +288,11 @@ def parse_metadata_from_title(title_str: str) -> dict:
     # Limpiar título inicial de corchetes
     clean = re.sub(r"\[.*?\]", "", title_str).strip()
 
+    # 1b. Limpiar símbolos decorativos al inicio (ej: ⭘, ●, •, -, etc.)
+    # Se eliminan caracteres no alfanuméricos iniciales (Unicode aware)
+    # Excluyendo paréntesis que podrían ser parte del título
+    clean = re.sub(r"^[^\w\(\)]+", "", clean).strip()
+
     # 2. Buscar patrón de volumen (Volumen XX, Vol. XX, Tomo XX, vXX)
     # Prioridad: Volumen > Vol > Tomo > v
     vol_pattern = r"(?:Volumen|Vol\.?|Tomo|v)\s*(\d+(?:\.\d+)?)"
@@ -547,7 +552,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v5.0.0"
+CURRENT_VERSION = "v5.0.1"
 
 
 def get_current_version() -> str:
