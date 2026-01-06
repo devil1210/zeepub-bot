@@ -48,7 +48,7 @@ export function Pagination({
                         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <span className="relative flex items-center gap-1.5 font-bold text-sm">
                             <ChevronLeft className="w-5 h-5" />
-                            <span className="hidden sm:inline">{t("pagination_prev")}</span>
+                            <span>{t("pagination_prev")}</span>
                         </span>
                     </Button>
 
@@ -62,7 +62,7 @@ export function Pagination({
                     >
                         <span className="relative flex items-center gap-1.5 font-bold text-sm">
                             <ChevronUp className="w-5 h-5" />
-                            <span className="hidden sm:inline">{t("pagination_up")}</span>
+                            <span>{t("pagination_up")}</span>
                         </span>
                     </Button>
 
@@ -76,7 +76,7 @@ export function Pagination({
                     >
                         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <span className="relative flex items-center gap-1.5 font-bold text-sm">
-                            <span className="hidden sm:inline">{t("pagination_next")}</span>
+                            <span>{t("pagination_next")}</span>
                             <ChevronRight className="w-5 h-5" />
                         </span>
                     </Button>

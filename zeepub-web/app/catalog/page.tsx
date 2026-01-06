@@ -512,8 +512,8 @@ function CatalogContent() {
                             hasNextPage={!!currentFeed.nextPage}
                             hasPrevPage={!!currentFeed.prevPage}
                             hasUpPage={true}
-                            onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
-                            onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
+                            onNextPage={() => currentFeed.nextPage && handleNavigate(currentFeed.nextPage)}
+                            onPrevPage={() => currentFeed.prevPage && handleNavigate(currentFeed.prevPage)}
                             onUpPage={handleGoBack}
                             isLoading={isLoading}
                         />
@@ -527,8 +527,8 @@ function CatalogContent() {
                         hasNextPage={!!searchPagination.nextPage}
                         hasPrevPage={!!searchPagination.prevPage}
                         hasUpPage={true}
-                        onNextPage={() => searchPagination.nextPage && handleCatalogSearch(searchPagination.nextPage)}
-                        onPrevPage={() => searchPagination.prevPage && handleCatalogSearch(searchPagination.prevPage)}
+                        onNextPage={() => searchPagination.nextPage && handleNavigate(searchPagination.nextPage)}
+                        onPrevPage={() => searchPagination.prevPage && handleNavigate(searchPagination.prevPage)}
                         onUpPage={handleGoBack}
                         isLoading={isSearching}
                     />
