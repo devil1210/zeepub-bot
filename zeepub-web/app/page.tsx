@@ -36,7 +36,8 @@ export default function HomePage() {
     targetId,
     setTargetId,
     threadId,
-    setThreadId
+    setThreadId,
+    userProfile
   } = useTelegramContext()
   const { t } = useStrings()
   const { avatarScale, showSearchCard, showSearchBar, showDonateCard, showHelpCard, showSettingsInMenu } = useTheme()
@@ -155,7 +156,12 @@ export default function HomePage() {
                   if (item.id === "search" && !showSearchCard) return false
                   if (item.id === "donate" && !showDonateCard) return false
                   if (item.id === "help" && !showHelpCard) return false
-                  if (item.id === "appearance" && !showSettingsInMenu) return false
+                  if (item.id === "help" && !showHelpCard) return false
+                  if (item.id === "appearance") {
+                    // Always show for Admin (1) and Staff (2), or if specifically enabled
+                    const isPrivileged = isAdmin || userProfile?.level?.id === '1' || userProfile?.level?.id === '2'
+                    if (!showSettingsInMenu && !isPrivileged) return false
+                  }
                   return true
                 })
                 .map((item, index) => (

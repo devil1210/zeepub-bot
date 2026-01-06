@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.20.8] - 2026-01-05
+
+### Fixed
+- **Acceso Garantizado a Configuración**: Se ha forzado la visualización del menú "Apariencia" para usuarios Admin y Staff. Esto evita que, al restablecer una configuración (que tenga oculto este menú por defecto), se queden bloqueados sin poder volver a entrar para reactivarlo.
+
 ## [4.20.7] - 2026-01-05
 
 ### Added
