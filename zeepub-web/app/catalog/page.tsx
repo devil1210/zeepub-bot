@@ -18,6 +18,7 @@ import { OpdsClient } from "@/lib/opds-client"
 import { OPDSFeed, OPDSEntry, OPDSLink } from "@/lib/opds-types"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
+import { useTheme } from "@/components/theme-provider"
 import { useStrings } from "@/components/strings-provider"
 
 import { Pagination } from "@/components/pagination"
@@ -60,6 +61,7 @@ function CatalogContent() {
     const [currentFeedUrl, setCurrentFeedUrl] = useState<string>("")
 
     // Replicando funcionalidad v3.13.8: Búsqueda reactiva en catálogo (inline)
+    const { disableDisplacement } = useTheme()
     const [searchQuery, setSearchQuery] = useState("")
     const [searchResults, setSearchResults] = useState<Book[]>([])
     const [isSearching, setIsSearching] = useState(false)
@@ -339,19 +341,18 @@ function CatalogContent() {
                     </div>
                 )}
 
-                {/* Content Container with Fade/Blur Transition */}
-                <div
-                    className={`transition-all duration-300 ease-in-out ${isLoading ? "opacity-50 blur-[2px] scale-[0.99]" : "opacity-100 blur-0 scale-100"
-                        }`}
-                >
+                {/* Content Container */}
+                <div className="space-y-4">
                     {/* Search Results Inline */}
                     {searchQuery && (
                         <div className="space-y-3">
-                            {searchResults.map((book) => (
+                            {searchResults.map((book, index) => (
                                 <Card
                                     key={book.id}
                                     onClick={() => handleSearchBookClick(book)}
-                                    className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
+                                    className={`p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
+                                        }`}
+                                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                                 >
                                     <div className="flex gap-4">
                                         <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
@@ -395,7 +396,7 @@ function CatalogContent() {
                             ))}
 
                             {!isSearching && searchResults.length === 0 && (
-                                <div className="text-center py-12">
+                                <div className="text-center py-12 animate-in fade-in zoom-in-95 duration-300">
                                     <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                                     <p className="text-sm text-muted-foreground">{t("search_empty")}</p>
                                 </div>
@@ -415,7 +416,9 @@ function CatalogContent() {
                                 <Card
                                     key={entry.id}
                                     onClick={() => handleBookClick(entry)}
-                                    className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98] mb-4"
+                                    className={`p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98] animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
+                                        }`}
+                                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden">
@@ -446,7 +449,9 @@ function CatalogContent() {
                                 <Card
                                     key={entry.id}
                                     onClick={() => handleBookClick(entry)}
-                                    className="p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98] mb-4"
+                                    className={`p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98] animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
+                                        }`}
+                                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                                 >
                                     <div className="flex gap-4">
                                         <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
@@ -487,17 +492,19 @@ function CatalogContent() {
                     })}
 
                     {!searchQuery && currentFeed && (
-                        <Pagination
-                            currentPage={currentFeed.currentPage}
-                            totalPages={currentFeed.totalPages}
-                            hasNextPage={!!currentFeed.nextPage}
-                            hasPrevPage={!!currentFeed.prevPage}
-                            hasUpPage={true}
-                            onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
-                            onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
-                            onUpPage={handleGoBack}
-                            isLoading={isLoading}
-                        />
+                        <div className="pt-4">
+                            <Pagination
+                                currentPage={currentFeed.currentPage}
+                                totalPages={currentFeed.totalPages}
+                                hasNextPage={!!currentFeed.nextPage}
+                                hasPrevPage={!!currentFeed.prevPage}
+                                hasUpPage={true}
+                                onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
+                                onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
+                                onUpPage={handleGoBack}
+                                isLoading={isLoading}
+                            />
+                        </div>
                     )}
                 </div>
 
