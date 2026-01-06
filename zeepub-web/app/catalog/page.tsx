@@ -339,169 +339,167 @@ function CatalogContent() {
                     </div>
                 )}
 
-                {isLoading && !searchQuery && (
-                    <div className="py-4">
-                        <div className="h-1 w-full bg-primary/10 overflow-hidden rounded-full mb-4">
-                            <div className="h-full bg-primary w-full" />
-                        </div>
-                    </div>
-                )}
-
-                {/* Search Results Inline */}
-                {searchQuery && (
-                    <div className="space-y-3">
-                        {searchResults.map((book) => (
-                            <Card
-                                key={book.id}
-                                onClick={() => handleSearchBookClick(book)}
-                                className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
-                            >
-                                <div className="flex gap-4">
-                                    <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                                        {book.cover ? (
-                                            <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
-                                        ) : book.is_folder ? (
-                                            <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                                                <BookOpen className="w-8 h-8 text-primary" />
-                                            </div>
-                                        ) : (
-                                            <img src="/placeholder.svg" alt={book.title} className="w-full h-full object-cover" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0 flex flex-col">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors text-sm">
-                                                {book.title}
-                                            </h3>
+                {/* Content Container with Fade/Blur Transition */}
+                <div
+                    className={`transition-all duration-300 ease-in-out ${isLoading ? "opacity-50 blur-[2px] scale-[0.99]" : "opacity-100 blur-0 scale-100"
+                        }`}
+                >
+                    {/* Search Results Inline */}
+                    {searchQuery && (
+                        <div className="space-y-3">
+                            {searchResults.map((book) => (
+                                <Card
+                                    key={book.id}
+                                    onClick={() => handleSearchBookClick(book)}
+                                    className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
+                                >
+                                    <div className="flex gap-4">
+                                        <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                                            {book.cover ? (
+                                                <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                                            ) : book.is_folder ? (
+                                                <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                                                    <BookOpen className="w-8 h-8 text-primary" />
+                                                </div>
+                                            ) : (
+                                                <img src="/placeholder.svg" alt={book.title} className="w-full h-full object-cover" />
+                                            )}
                                         </div>
-                                        <p className="text-xs text-primary font-medium mb-1 truncate">{book.author}</p>
-                                        <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-2">
-                                            {book.is_folder ? t("book_section") : t("book_details_hint")}
-                                        </p>
-
-                                        {!book.is_folder && book.download_url && (
-                                            <Button
-                                                size="sm"
-                                                onClick={(e) => handleSearchDownload(e, book)}
-                                                className="h-7 text-[9px] px-2 bg-primary hover:bg-primary/90 self-start group/btn"
-                                            >
-                                                <Download className="w-3 h-3 mr-1" />
-                                                {t("book_download")}
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center">
-                                        <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                    </div>
-                                </div>
-                            </Card>
-                        ))}
-
-                        {!isSearching && searchResults.length === 0 && (
-                            <div className="text-center py-12">
-                                <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                                <p className="text-sm text-muted-foreground">{t("search_empty")}</p>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Normal Catalog Content */}
-                {!searchQuery && currentFeed?.entries.map((entry, index) => {
-                    const isFolder = entry.links.some((l) => l.rel === "subsection")
-                    const isBook = entry.links.some(
-                        (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
-                    )
-
-                    if (isFolder) {
-                        return (
-                            <Card
-                                key={entry.id}
-                                onClick={() => handleBookClick(entry)}
-                                className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98]"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden">
-                                        {entry.cover_url ? (
-                                            <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <Folder className="w-6 h-6 text-primary" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                                            {entry.title}
-                                        </h3>
-                                        {entry.summary && (
-                                            <p className="text-xs text-muted-foreground line-clamp-1 italic">
-                                                {entry.summary}
+                                        <div className="flex-1 min-w-0 flex flex-col">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors text-sm">
+                                                    {book.title}
+                                                </h3>
+                                            </div>
+                                            <p className="text-xs text-primary font-medium mb-1 truncate">{book.author}</p>
+                                            <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-2">
+                                                {book.is_folder ? t("book_section") : t("book_details_hint")}
                                             </p>
-                                        )}
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                </div>
-                            </Card>
-                        )
-                    }
 
-                    if (isBook) {
-                        return (
-                            <Card
-                                key={entry.id}
-                                onClick={() => handleBookClick(entry)}
-                                className="p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98]"
-                            >
-                                <div className="flex gap-4">
-                                    <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                                        <img
-                                            src={entry.cover_url || "/placeholder.svg"}
-                                            alt={entry.title}
-                                            className="w-full h-full object-cover"
-                                        />
+                                            {!book.is_folder && book.download_url && (
+                                                <Button
+                                                    size="sm"
+                                                    onClick={(e) => handleSearchDownload(e, book)}
+                                                    className="h-7 text-[9px] px-2 bg-primary hover:bg-primary/90 self-start group/btn"
+                                                >
+                                                    <Download className="w-3 h-3 mr-1" />
+                                                    {t("book_download")}
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center">
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0 flex flex-col">
-                                        <h3 className="font-semibold text-foreground mb-0.5 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                            {entry.title}
-                                        </h3>
-                                        <p className="text-sm text-primary font-medium mb-1 truncate">
-                                            {entry.author}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 italic flex-1">
-                                            {entry.summary || t("book_details_hint")}
-                                        </p>
-                                        <Button
-                                            size="sm"
-                                            onClick={(e) => handleDownload(e, entry)}
-                                            className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
-                                        >
-                                            <Download className="w-3 h-3 mr-1.5" />
-                                            {t("book_download")}
-                                        </Button>
-                                    </div>
-                                    <div className="flex items-center">
+                                </Card>
+                            ))}
+
+                            {!isSearching && searchResults.length === 0 && (
+                                <div className="text-center py-12">
+                                    <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                                    <p className="text-sm text-muted-foreground">{t("search_empty")}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Normal Catalog Content */}
+                    {!searchQuery && currentFeed?.entries.map((entry, index) => {
+                        const isFolder = entry.links.some((l) => l.rel === "subsection")
+                        const isBook = entry.links.some(
+                            (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
+                        )
+
+                        if (isFolder) {
+                            return (
+                                <Card
+                                    key={entry.id}
+                                    onClick={() => handleBookClick(entry)}
+                                    className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98] mb-4"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden">
+                                            {entry.cover_url ? (
+                                                <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <Folder className="w-6 h-6 text-primary" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                                {entry.title}
+                                            </h3>
+                                            {entry.summary && (
+                                                <p className="text-xs text-muted-foreground line-clamp-1 italic">
+                                                    {entry.summary}
+                                                </p>
+                                            )}
+                                        </div>
                                         <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                                     </div>
-                                </div>
-                            </Card>
-                        )
-                    }
+                                </Card>
+                            )
+                        }
 
-                    return null
-                })}
+                        if (isBook) {
+                            return (
+                                <Card
+                                    key={entry.id}
+                                    onClick={() => handleBookClick(entry)}
+                                    className="p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98] mb-4"
+                                >
+                                    <div className="flex gap-4">
+                                        <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                                            <img
+                                                src={entry.cover_url || "/placeholder.svg"}
+                                                alt={entry.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="flex-1 min-w-0 flex flex-col">
+                                            <h3 className="font-semibold text-foreground mb-0.5 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                                                {entry.title}
+                                            </h3>
+                                            <p className="text-sm text-primary font-medium mb-1 truncate">
+                                                {entry.author}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2 italic flex-1">
+                                                {entry.summary || t("book_details_hint")}
+                                            </p>
+                                            <Button
+                                                size="sm"
+                                                onClick={(e) => handleDownload(e, entry)}
+                                                className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
+                                            >
+                                                <Download className="w-3 h-3 mr-1.5" />
+                                                {t("book_download")}
+                                            </Button>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                        </div>
+                                    </div>
+                                </Card>
+                            )
+                        }
 
-                {!searchQuery && currentFeed && (
-                    <Pagination
-                        currentPage={currentFeed.currentPage}
-                        totalPages={currentFeed.totalPages}
-                        hasNextPage={!!currentFeed.nextPage}
-                        hasPrevPage={!!currentFeed.prevPage}
-                        hasUpPage={true}
-                        onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
-                        onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
-                        onUpPage={handleGoBack}
-                        isLoading={isLoading}
-                    />
-                )}
+                        return null
+                    })}
+
+                    {!searchQuery && currentFeed && (
+                        <Pagination
+                            currentPage={currentFeed.currentPage}
+                            totalPages={currentFeed.totalPages}
+                            hasNextPage={!!currentFeed.nextPage}
+                            hasPrevPage={!!currentFeed.prevPage}
+                            hasUpPage={true}
+                            onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
+                            onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
+                            onUpPage={handleGoBack}
+                            isLoading={isLoading}
+                        />
+                    )}
+                </div>
 
                 {searchQuery && (
                     <Pagination
