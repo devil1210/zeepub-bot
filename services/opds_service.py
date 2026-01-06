@@ -209,24 +209,32 @@ async def mostrar_colecciones(
             
             s_ctx = simplify(context_series)
             s_book = simplify(clean_title)
-            s_romaji = simplify(known_romaji) if known_romaji else ""
+            
+            # Clean tags from romaji for comparison too
+            clean_romaji = re.sub(r"\[.*?\]", "", known_romaji or "").strip()
+            s_romaji = simplify(clean_romaji) if clean_romaji else ""
             
             is_redundant = False
             if s_book:
-                # Redundante si coincide con la serie (Inglés) o con el Romaji detectado en el header
-                if s_ctx and s_ctx in s_book:
+                # 1. Direct Subset (Inglés o Romaji)
+                if s_ctx and (s_ctx in s_book or s_book in s_ctx):
                     is_redundant = True
                 elif s_romaji and (s_romaji in s_book or s_book in s_romaji):
                     is_redundant = True
                 else:
-                    # Fuzzy match fallback
+                    # 2. Fuzzy match fallback (Permisivo para títulos largos)
                     ratio = SequenceMatcher(None, s_ctx, s_book).ratio()
                     if ratio > 0.8:
                         is_redundant = True
                     elif s_romaji:
                         ratio_r = SequenceMatcher(None, s_romaji, s_book).ratio()
-                        if ratio_r > 0.8:
+                        if ratio_r > 0.7: # Más permisivo para Romaji
                             is_redundant = True
+                    
+                    # 3. Last chance: check if the full original title contains the Romaji name
+                    # (Useful if tag parsing failed)
+                    if not is_redundant and s_romaji and s_romaji in simplify(b["titulo"]):
+                        is_redundant = True
 
             if is_redundant:
                 if meta.get("volume"):

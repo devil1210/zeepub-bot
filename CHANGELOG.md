@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.8] - 2026-01-06
+
+### Fixed
+- **Bot - Redundancia de Títulos Largos**: Optimizada la lógica de comparación para títulos muy extensos. Ahora se eliminan los tags (*brackets*) antes de comparar nombres en Romaji y se ha ajustado el umbral de coincidencia difusa para asegurar que obras con títulos largos (como *A Returnee Classmate...*) se identifiquen correctamente como redundantes y muestren **"Volumen único"**.
+
 ## [v5.0.7] - 2026-01-06
 
 ### Improved
