@@ -1,6 +1,7 @@
-
 import re
 import sys
+
+
 # Mock helper
 def parse_metadata_from_title(title_str: str) -> dict:
     if not title_str:
@@ -8,13 +9,13 @@ def parse_metadata_from_title(title_str: str) -> dict:
 
     tags = re.findall(r"\[(.*?)\]", title_str)
     clean = re.sub(r"\[.*?\]", "", title_str).strip()
-    
+
     # Clean decorative
     clean = re.sub(r"^[^\w\(\)]+", "", clean).strip()
 
     vol_pattern = r"(?:Volumen|Vol\.?|Tomo|v)\s*(\d+(?:\.\d+)?)"
     match = re.search(vol_pattern, clean, re.IGNORECASE)
-    
+
     volume = ""
     series = clean
 
@@ -22,23 +23,19 @@ def parse_metadata_from_title(title_str: str) -> dict:
         volume = match.group(1)
         full_vol_str = match.group(0)
         series = clean.replace(full_vol_str, "")
-    
+
     series = re.sub(r"[\-:\s]+$", "", series).strip()
     if not series and not volume:
         series = clean
 
-    return {
-        "series": series,
-        "volume": volume,
-        "clean_title": clean,
-        "tags": tags
-    }
+    return {"series": series, "volume": volume, "clean_title": clean, "tags": tags}
+
 
 def check_redundancy(feed_title, book_title):
     print(f"--- Checking ---")
     print(f"Feed Title: '{feed_title}'")
     print(f"Book Title: '{book_title}'")
-    
+
     meta_context = parse_metadata_from_title(feed_title)
     context_series = meta_context.get("series", "").lower()
     print(f"Context Series (parsed): '{meta_context.get('series')}'")
@@ -55,14 +52,15 @@ def check_redundancy(feed_title, book_title):
         s2 = re.sub(r"[^\w]", "", book_series)
         print(f"s1 (clean context): '{s1}'")
         print(f"s2 (clean book): '{s2}'")
-        
+
         if s1 in s2 or s2 in s1:
             is_redundant = True
             print("MATCH: Redundant!")
         else:
             print("NO MATCH.")
-    
+
     return is_redundant
+
 
 # Test Cases
 t1_feed = "Arifureta: From Commonplace to World's Strongest [NL]"
