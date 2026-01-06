@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.7] - 2026-01-06
+
+### Improved
+- **Bot - Redundancia en Storylines**: Se ha mejorado la detección de tomos únicos para series que tienen nombres distintos en inglés y japonés (ej: *Index*). Ahora el bot detecta ambos nombres y aplica correctamente la etiqueta **"Volumen único"** independientemente de qué idioma use el archivo.
+
 ## [v5.0.6] - 2026-01-06
 
 ### Fixed

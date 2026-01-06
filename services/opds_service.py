@@ -132,7 +132,43 @@ async def mostrar_colecciones(
                     }
                 )
 
-    # construir teclado
+    # Título y markup
+    title = st.get("titulo") or "📚 Categorías"
+    
+    # 1. Pre-procesar Storyline para la cabecera e identificar nombres extra para redundancia
+    raw_feed_title = getattr(feed.feed, "title", "")
+    known_romaji = None
+    known_english = None
+    
+    if raw_feed_title.endswith(" - Storyline") and libros:
+        # Intentar deducir la estructura English - Romaji del primer libro
+        first_book_title = getattr(feed.entries[0], "title", "")
+        clean_feed_title_part = raw_feed_title.replace(" - Storyline", "").strip()
+        
+        parts = first_book_title.split(" - ")
+        if len(parts) >= 2:
+            import re
+            def clean_title_part(s):
+                s = re.sub(r"\[.*?\]", "", s)
+                s = re.sub(r"^[^\w\(\)]+", "", s)
+                return s.strip()
+
+            p0_clean = clean_title_part(parts[0])
+            feed_clean = clean_title_part(clean_feed_title_part)
+            
+            if p0_clean == feed_clean or p0_clean in feed_clean or feed_clean in p0_clean:
+                known_romaji = parts[1].strip()
+                known_english = re.sub(r"^[^\w\(\)]+", "", parts[0]).strip()
+                
+                icon_prefix = ""
+                if " " in title:
+                    possible_icon = title.split(" ", 1)[0]
+                    if not possible_icon.isalnum():
+                        icon_prefix = possible_icon + " "
+                
+                title = f"{icon_prefix}{known_english}\n\n{known_romaji}"
+
+    # 2. Construir teclado
     keyboard = [[InlineKeyboardButton("🔍 Buscar EPUB", callback_data="buscar")]]
 
     if colecciones:
@@ -140,39 +176,24 @@ async def mostrar_colecciones(
             st["colecciones"][i] = col
             titulo_boton = col["titulo"]
 
-            # Para no-admins, mostrar "Biblioteca ZeePubs" en lugar de "Todas las bibliotecas"
-            if (
-                uid not in config.ADMIN_USERS
-                and col["titulo"] == "Todas las bibliotecas"
-            ):
+            if uid not in config.ADMIN_USERS and col["titulo"] == "Todas las bibliotecas":
                 titulo_boton = "📚 Biblioteca ZeePubs"
 
-            keyboard.append(
-                [InlineKeyboardButton(titulo_boton, callback_data=f"col|{i}")]
-            )
+            keyboard.append([InlineKeyboardButton(titulo_boton, callback_data=f"col|{i}")])
     else:
         for b in libros:
             key = uuid.uuid4().hex[:8]
             st["libros"][key] = b
-            st["libros"][key] = b
             
-            # [NEW] Smart Format for Button Label
-            # b["titulo"] comes from opds entry.title
-            
-            # Context Awareness: Get current folder title to avoid redundancy
-            # Fallback to st["titulo"] (from previous nav) if feed.feed.title is missing
-            feed_title = getattr(feed.feed, "title",  st.get("titulo", ""))
-            
-            # Clean common Kavita suffixes from context
+            feed_title = getattr(feed.feed, "title", st.get("titulo", ""))
             feed_title = feed_title.replace(" - Storyline", "")
             
             meta_context = parse_metadata_from_title(feed_title)
             context_series = meta_context.get("series", "").lower()
             
             meta = parse_metadata_from_title(b["titulo"])
-            
             display_title = b["titulo"]
-            # Determine minimal tags to show (tags in book but not in series context)
+            
             book_tags = set(meta.get("tags", []))
             context_tags = set(meta_context.get("tags", []))
             unique_tags = sorted(list(book_tags - context_tags))
@@ -181,128 +202,59 @@ async def mostrar_colecciones(
             if unique_tags:
                 tags_str = " " + " ".join([f"[{t}]" for t in unique_tags])
 
-            # Improved Redundancy Check
-            # We want to check if the context (series name) is present in the book title
-            # and strip it to show only the relevant part (Volume, Subtitle, etc.)
-            
             clean_title = meta.get("clean_title", display_title)
             
-            # Prepare strings for fuzzy comparison
             import re
             def simplify(s): return re.sub(r"[^\w]", "", s).lower()
             
             s_ctx = simplify(context_series)
             s_book = simplify(clean_title)
+            s_romaji = simplify(known_romaji) if known_romaji else ""
             
             is_redundant = False
-            if s_ctx and s_book:
-                # 1. Direct Subset
-                if s_ctx in s_book:
+            if s_book:
+                # Redundante si coincide con la serie (Inglés) o con el Romaji detectado en el header
+                if s_ctx and s_ctx in s_book:
+                    is_redundant = True
+                elif s_romaji and (s_romaji in s_book or s_book in s_romaji):
                     is_redundant = True
                 else:
-                    # 2. Fuzzy / Prefix (reusing previous logic)
+                    # Fuzzy match fallback
                     ratio = SequenceMatcher(None, s_ctx, s_book).ratio()
                     if ratio > 0.8:
                         is_redundant = True
-                    else:
-                        match = SequenceMatcher(None, s_ctx, s_book).find_longest_match(0, len(s_ctx), 0, len(s_book))
-                        # If huge overlap at start
-                        if match.a == 0 and match.b == 0 and match.size > 15:
+                    elif s_romaji:
+                        ratio_r = SequenceMatcher(None, s_romaji, s_book).ratio()
+                        if ratio_r > 0.8:
                             is_redundant = True
 
             if is_redundant:
-                # If we have a detected volume, show that
                 if meta.get("volume"):
-                     display_title = f"Volumen {meta['volume']}{tags_str}"
+                    display_title = f"Volumen {meta['volume']}{tags_str}"
                 else:
-                    # It's redundant but has no volume number
-                    # The user wants "Volumen único" for these cases (e.g. one-shots/movies)
                     display_title = f"Volumen único{tags_str}"
             else:
-                 # Not redundant, show shortened full title
-                 s_name = clean_title
-                 # Truncate if very long
-                 if len(s_name) > 30:
-                     s_name = s_name[:27] + "..."
-                 display_title = f"{s_name}{tags_str}"
+                s_name = clean_title
+                if len(s_name) > 30:
+                    s_name = s_name[:27] + "..."
+                display_title = f"{s_name}{tags_str}"
 
             keyboard.append([InlineKeyboardButton(display_title, callback_data=f"lib|{key}")])
 
-    # Botones de navegación: todos en la misma fila
+    # 3. Botones de navegación (Subir nivel, Anterior, Siguiente)
     nav_buttons = []
-
-    # Botón "Subir nivel" (usar historial para ir al nivel anterior)
     if st["historial"]:
-        nav_buttons.append(
-            InlineKeyboardButton("⬆️ Subir nivel", callback_data="subir_nivel")
-        )
-
-    # Botones de paginación (navegar dentro de la misma biblioteca)
+        nav_buttons.append(InlineKeyboardButton("⬆️ Subir nivel", callback_data="subir_nivel"))
     if st["nav"]["prev"]:
         nav_buttons.append(InlineKeyboardButton("⬅️ Anterior", callback_data="nav|prev"))
     if st["nav"]["next"]:
-        nav_buttons.append(
-            InlineKeyboardButton("➡️ Siguiente", callback_data="nav|next")
-        )
+        nav_buttons.append(InlineKeyboardButton("➡️ Siguiente", callback_data="nav|next"))
 
     if nav_buttons:
         keyboard.append(nav_buttons)
 
-    # Botón Salir solo en el primer nivel (sin historial)
     if not st["historial"]:
         keyboard.append([InlineKeyboardButton("❌ Salir", callback_data="cerrar")])
-
-    # Título y markup
-    # Intento de mejorar el título si estamos en una vista de "Storyline" (Series de Kavita)
-    title = st.get("titulo") or "📚 Categorías"
-    
-    # Lógica para extraer Romaji title si el feed title termina en " - Storyline"
-    raw_feed_title = getattr(feed.feed, "title", "")
-    if raw_feed_title.endswith(" - Storyline") and libros:
-        # Intentar deducir la estructura English - Romaji - Volume del primer libro
-        first_book_title = getattr(feed.entries[0], "title", "")
-        clean_feed_title_part = raw_feed_title.replace(" - Storyline", "").strip()
-        
-        # Parseamos el primer libro para ver si contiene el título del feed + algo más en medio
-        # Estructura esperada: "English Title [Tags] - Romaji Title - Volume info"
-        # Ojo: parse_metadata_from_title limpia tags, así que usaremos split directo
-        parts = first_book_title.split(" - ")
-        
-        if len(parts) >= 2:
-            # Asumimos Part 0 = English (con tags), Part 1 = Romaji/Subtitle
-            # Verificamos si Part 0 coincide con el título del feed (aprox)
-            
-            # Limpieza básica para comparar (ignorar tags para la coincidencia base)
-            import re
-            def clean_title_part(s):
-                # Remove tags
-                s = re.sub(r"\[.*?\]", "", s)
-                # Remove leading non-alphanumeric (bullets, etc), keeping parens if needed
-                s = re.sub(r"^[^\w\(\)]+", "", s)
-                return s.strip()
-
-            p0_clean = clean_title_part(parts[0])
-            feed_clean = clean_title_part(clean_feed_title_part)
-            
-            if p0_clean == feed_clean or p0_clean in feed_clean or feed_clean in p0_clean:
-                # ¡Bingo! Tenemos un título Romaji potencial en parts[1]
-                romaji_title = parts[1].strip()
-                # Clean English title specifically to remove the bullet "⭘" if present
-                english_title = re.sub(r"^[^\w\(\)]+", "", parts[0]).strip()
-                
-                # Construimos el nuevo título visual
-                # Usamos el icono que ya pudiera tener el título del state o default
-                icon_prefix = ""
-                basic_title = title
-                if " " in title:
-                    # Intenta preservar el emoji inicial si existe (ej: 📁 )
-                    possible_icon = title.split(" ", 1)[0]
-                    # Validación simple de emoji (si no es alfanumérico)
-                    if not possible_icon.isalnum():
-                        icon_prefix = possible_icon + " "
-                
-                # Si st["titulo"] ya tenía el título en inglés, lo reemplazamos con el formato rico
-                title = f"{icon_prefix}{english_title}\n\n{romaji_title}"
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
