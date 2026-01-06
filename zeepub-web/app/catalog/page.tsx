@@ -492,19 +492,17 @@ function CatalogContent() {
                     })}
 
                     {!searchQuery && currentFeed && (
-                        <div className="pt-4">
-                            <Pagination
-                                currentPage={currentFeed.currentPage}
-                                totalPages={currentFeed.totalPages}
-                                hasNextPage={!!currentFeed.nextPage}
-                                hasPrevPage={!!currentFeed.prevPage}
-                                hasUpPage={true}
-                                onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
-                                onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
-                                onUpPage={handleGoBack}
-                                isLoading={isLoading}
-                            />
-                        </div>
+                        <Pagination
+                            currentPage={currentFeed.currentPage}
+                            totalPages={currentFeed.totalPages}
+                            hasNextPage={!!currentFeed.nextPage}
+                            hasPrevPage={!!currentFeed.prevPage}
+                            hasUpPage={true}
+                            onNextPage={() => currentFeed.nextPage && loadFeed(currentFeed.nextPage, true)}
+                            onPrevPage={() => currentFeed.prevPage && loadFeed(currentFeed.prevPage, true)}
+                            onUpPage={handleGoBack}
+                            isLoading={isLoading}
+                        />
                     )}
                 </div>
 
