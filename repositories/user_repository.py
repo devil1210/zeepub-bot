@@ -301,8 +301,6 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 return None
         return None
 
-
-
     async def reset_level_users_settings(self, level_id: int):
         """
         Resetea (borra) la configuración personal de todos los usuarios de un nivel.
