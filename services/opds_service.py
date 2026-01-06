@@ -172,55 +172,77 @@ async def mostrar_colecciones(
             meta = parse_metadata_from_title(b["titulo"])
             
             display_title = b["titulo"]
-            if meta.get("series") and meta.get("volume"):
-                # If we are inside the series folder (fuzzy match), show only volume
-                book_series = meta["series"].lower()
-                
-                is_redundant = False
-                if context_series and book_series:
-                    # Remove non-alphanumeric to compare loosely
-                    import re
-                    s1 = re.sub(r"[^\w]", "", context_series)
-                    s2 = re.sub(r"[^\w]", "", book_series)
-                    
-                    # 1. Direct Subset Match
-                    if s1 in s2 or s2 in s1:
+            # Determine minimal tags to show (tags in book but not in series context)
+            book_tags = set(meta.get("tags", []))
+            context_tags = set(meta_context.get("tags", []))
+            unique_tags = sorted(list(book_tags - context_tags))
+            
+            tags_str = ""
+            if unique_tags:
+                tags_str = " " + " ".join([f"[{t}]" for t in unique_tags])
+
+            # Improved Redundancy Check
+            # We want to check if the context (series name) is present in the book title
+            # and strip it to show only the relevant part (Volume, Subtitle, etc.)
+            
+            clean_title = meta.get("clean_title", display_title)
+            
+            # Prepare strings for fuzzy comparison
+            import re
+            def simplify(s): return re.sub(r"[^\w]", "", s).lower()
+            
+            s_ctx = simplify(context_series)
+            s_book = simplify(clean_title)
+            
+            is_redundant = False
+            if s_ctx and s_book:
+                # 1. Direct Subset
+                if s_ctx in s_book:
+                    is_redundant = True
+                else:
+                    # 2. Fuzzy / Prefix (reusing previous logic)
+                    ratio = SequenceMatcher(None, s_ctx, s_book).ratio()
+                    if ratio > 0.8:
                         is_redundant = True
                     else:
-                        # 2. Fuzzy Match (Ratio)
-                        # Useful if one has extra subtitles but they share distinct series name
-                        ratio = SequenceMatcher(None, s1, s2).ratio()
-                        # If > 80% match, assume redundant
-                        if ratio > 0.8:
+                        match = SequenceMatcher(None, s_ctx, s_book).find_longest_match(0, len(s_ctx), 0, len(s_book))
+                        # If huge overlap at start
+                        if match.a == 0 and match.b == 0 and match.size > 15:
                             is_redundant = True
-                        else:
-                            # 3. Common Prefix Match
-                            # If they share a long prefix (e.g. > 15 chars), assume match
-                            match = SequenceMatcher(None, s1, s2).find_longest_match(0, len(s1), 0, len(s2))
-                            if match.size > 15 and match.a == 0 and match.b == 0:
-                                # Match starts at 0 for both (prefix match)
-                                is_redundant = True
 
-                # Determine minimal tags to show (tags in book but not in series context)
-                book_tags = set(meta.get("tags", []))
-                context_tags = set(meta_context.get("tags", []))
-                unique_tags = sorted(list(book_tags - context_tags))
-                
-                tags_str = ""
-                if unique_tags:
-                    tags_str = " " + " ".join([f"[{t}]" for t in unique_tags])
-
-                if is_redundant:
-                    display_title = f"Volumen {meta['volume']}{tags_str}"
+            if is_redundant:
+                # If we have a detected volume, show that
+                if meta.get("volume"):
+                     display_title = f"Volumen {meta['volume']}{tags_str}"
                 else:
-                    # Shorten format for buttons: "S. Name - Vol. 01 [Tags]"
-                    # Truncate series if too long
-                    s_name = meta["series"]
-                    if len(s_name) > 20:
-                        s_name = s_name[:17] + "..."
-                    display_title = f"{s_name} - {meta['volume']}{tags_str}"
-            elif meta.get("clean_title"):
-                display_title = meta["clean_title"]
+                    # If no volume, try to strip the Series Name from the Clean Title to get the Subtitle
+                    # We accept case-insensitive replacement of the context series
+                    pattern = re.escape(context_series)
+                    # We use the raw 'clean_title' (which has spaces/formatting) for stripping
+                    # Try to match the series part at the beginning
+                    match = re.search(f"^{pattern}", clean_title, re.IGNORECASE)
+                    if match:
+                        # Strip it
+                        remainder = clean_title[match.end():]
+                        # Clean leading separators " - ", ": ", etc.
+                        remainder = re.sub(r"^[\s\-\:\|]+", "", remainder).strip()
+                        if remainder:
+                            display_title = f"{remainder}{tags_str}"
+                        else:
+                            # It was EXACTLY the series name
+                            display_title = f"Completo {tags_str}" if tags_str else "📖 Ver Libro"
+                    else:
+                        # Fallback if regex clean failed (e.g. slight mismatch)
+                        # Just show the full clean title or tags? 
+                        # Safe fallback: Clean Title
+                        display_title = f"{clean_title}{tags_str}"
+            else:
+                 # Not redundant, show shortened full title
+                 s_name = clean_title
+                 # Truncate if very long
+                 if len(s_name) > 30:
+                     s_name = s_name[:27] + "..."
+                 display_title = f"{s_name}{tags_str}"
 
             keyboard.append([InlineKeyboardButton(display_title, callback_data=f"lib|{key}")])
 
@@ -264,8 +286,8 @@ async def mostrar_colecciones(
         # Ojo: parse_metadata_from_title limpia tags, así que usaremos split directo
         parts = first_book_title.split(" - ")
         
-        if len(parts) >= 3:
-            # Asumimos Part 0 = English (con tags), Part 1 = Romaji, Part 2+ = Info volumen
+        if len(parts) >= 2:
+            # Asumimos Part 0 = English (con tags), Part 1 = Romaji/Subtitle
             # Verificamos si Part 0 coincide con el título del feed (aprox)
             
             # Limpieza básica para comparar (ignorar tags para la coincidencia base)

@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.5] - 2026-01-06
+
+### Fixed
+- **Bot - Títulos de 2 Partes**: Ajustada la lógica para leer correctamente títulos que solo tienen 2 partes (Inglés - Romaji) sin información de volumen.
+- **Bot - Botones de One-Shots**: Mejorada la etiqueta de los botones para obras únicas o one-shots. Si el título del archivo repite el nombre de la serie, el botón ahora muestra "Completo" o el subtítulo restante, en lugar del nombre completo redundante.
 ## [v5.0.4] - 2026-01-06
 
 ### Improved
