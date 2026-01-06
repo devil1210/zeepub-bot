@@ -267,31 +267,64 @@ def generar_slug_from_meta(meta: dict) -> str:
     return slug
 
 
-def parse_title_string(title_str: str) -> tuple[str, str]:
-    """
-    Parsea un título completo (ej: "Serie - Volumen 01 [Tag]").
-    Retorna (titulo_serie, volumen).
+
+def parse_metadata_from_title(title_str: str) -> dict:
+    """"
+    Parsea un título completo de forma inteligente.
+    Retorna diccionario con: series, volume, clean_title, tags.
+    Ej: "Arifureta... [NL] - Volumen 01 [TFP]" ->
+        series="Arifureta...", volume="01", tags=["NL", "TFP"]
     """
     if not title_str:
-        return "", ""
+        return {
+            "series": "",
+            "volume": "",
+            "clean_title": "",
+            "tags": []
+        }
 
-    # Regex para encontrar "Volumen XX"
-    vol_match = re.search(r"(Volumen\s+\d+(\.\d+)?)", title_str, re.IGNORECASE)
-    volume = vol_match.group(1) if vol_match else ""
+    # 1. Extraer tags en corchetes [Tag]
+    tags = re.findall(r"\[(.*?)\]", title_str)
+    # Limpiar título inicial de corchetes
+    clean = re.sub(r"\[.*?\]", "", title_str).strip()
 
-    # Serie: Eliminar volumen y tags, pero mantener otros símbolos
-    series = title_str
-    if volume:
-        series = series.replace(volume, "")
+    # 2. Buscar patrón de volumen (Volumen XX, Vol. XX, Tomo XX, vXX)
+    # Prioridad: Volumen > Vol > Tomo > v
+    vol_pattern = r"(?:Volumen|Vol\.?|Tomo|v)\s*(\d+(?:\.\d+)?)"
+    match = re.search(vol_pattern, clean, re.IGNORECASE)
+    
+    volume = ""
+    series = clean
 
-    # Eliminar tags [xxx]
-    series = re.sub(r"\[.*?\]", "", series).strip()
+    if match:
+        volume = match.group(1)
+        # La serie es lo que hay ANTES del volumen (generalmente)
+        # O quitamos el string de volumen y limpiamos
+        full_vol_str = match.group(0) # ej "Volumen 01"
+        series = clean.replace(full_vol_str, "")
+    
+    # 3. Limpieza final de la serie
+    # Quitar separadores residuales al final (guiones, dos puntos)
+    series = re.sub(r"[\-:\s]+$", "", series).strip()
+    # Si la serie quedó vacía (ej: el título era solo "Volumen 1"), usar el título original limpio
+    if not series and not volume:
+        series = clean
 
-    # Limpiar separadores residuales al final (ej: "Titulo - ") si quedaron tras quitar volumen
-    # Pero cuidado de no quitar simbolos internos. Solo si están al final.
-    series = re.sub(r"\s+-\s*$", "", series).strip()
+    return {
+        "series": series,
+        "volume": volume,
+        "clean_title": clean,
+        "tags": tags
+    }
 
-    return series.strip(), volume.strip()
+
+def parse_title_string(title_str: str) -> tuple[str, str]:
+    """
+    DEPRECATED: Use parse_metadata_from_title instead.
+    Mantener por compatibilidad inversa si algo lo usa.
+    """
+    res = parse_metadata_from_title(title_str)
+    return res["series"], res["volume"]
 
 
 def formatear_mensaje_portada(meta: dict, include_slug: bool = True) -> str:
@@ -514,7 +547,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v4.20.11"
+CURRENT_VERSION = "v5.0.0"
 
 
 def get_current_version() -> str:

@@ -24,8 +24,8 @@ from services.user_service import get_effective_user
 from utils.security import validate_telegram_data, verify_telegram_user
 from services.opds_service import get_cached_feed
 from services.telegram_service import enviar_libro_directo
-from utils.helpers import build_search_url, abs_url, extract_author
 from services.settings_service import get_setting, set_setting
+from utils.helpers import build_search_url, abs_url, extract_author, parse_metadata_from_title
 
 router = APIRouter(tags=["miniapp"])
 logger = logging.getLogger(__name__)
@@ -383,6 +383,28 @@ async def handle_bot_request(
             categories = [
                 cat.get("term") for cat in entry.get("tags", []) if cat.get("term")
             ]
+            
+            # [NEW] Smart Tags & Series Extraction Fallback
+            extracted_meta = parse_metadata_from_title(entry.get("title", ""))
+            
+            # Capture tags from title (e.g. [Tag])
+            title_tags = extracted_meta.get("tags", [])
+            # Add to categories or a separate field? 
+            # The user asked to "save them" to replace properly later.
+            # We'll prepend them to categories for now to make them visible, 
+            # or could add a 'publisher_groups' field if the frontend supported it.
+            # Let's add them to categories with a prefix or just raw for now.
+            for ttag in title_tags:
+                if ttag not in categories:
+                    categories.append(ttag)
+
+            # Fallback for Series/Volume if not provided by server
+            if not series and extracted_meta.get("series"):
+                series = extracted_meta["series"]
+            
+            if not series_index and extracted_meta.get("volume"):
+                series_index = extracted_meta["volume"]
+
 
             download_url = None
             cover_url = None

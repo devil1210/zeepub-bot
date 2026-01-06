@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 # from core.state_manager import state_manager (Moved to local scope)
 from config.config_settings import config
 from utils.http_client import parse_feed_from_url
-from utils.helpers import abs_url, find_zeepubs_destino, extract_author
+from utils.helpers import abs_url, find_zeepubs_destino, extract_author, parse_metadata_from_title
 from services.cache_service import AsyncTTLCache
 
 logger = logging.getLogger(__name__)
@@ -153,10 +153,25 @@ async def mostrar_colecciones(
         for b in libros:
             key = uuid.uuid4().hex[:8]
             st["libros"][key] = b
-            name = unquote(urlparse(b["descarga"]).path.split("/")[-1]).replace(
-                ".epub", ""
-            )
-            keyboard.append([InlineKeyboardButton(name, callback_data=f"lib|{key}")])
+            st["libros"][key] = b
+            
+            # [NEW] Smart Format for Button Label
+            # b["titulo"] comes from opds entry.title
+            # We want to show "Series - Vol XX" or clean title
+            meta = parse_metadata_from_title(b["titulo"])
+            
+            display_title = b["titulo"]
+            if meta.get("series") and meta.get("volume"):
+                # Shorten format for buttons: "S. Name - Vol. 01"
+                # Truncate series if too long
+                s_name = meta["series"]
+                if len(s_name) > 20:
+                    s_name = s_name[:17] + "..."
+                display_title = f"{s_name} - {meta['volume']}"
+            elif meta.get("clean_title"):
+                display_title = meta["clean_title"]
+
+            keyboard.append([InlineKeyboardButton(display_title, callback_data=f"lib|{key}")])
 
     # Botones de navegación: todos en la misma fila
     nav_buttons = []
