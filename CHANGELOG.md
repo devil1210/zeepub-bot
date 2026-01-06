@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.6] - 2026-01-06
+
+### Fixed
+- **Bot - Botones de Tomos Únicos**: Se ha refinado la lógica para obras que no tienen número de volumen. Ahora, si el título es redundante con respecto a la serie, el botón mostrará explícitamente **"Volumen único"** (manteniendo los tags como traductores), en lugar de repetir nombres largos o subtítulos.
+
 ## [v5.0.5] - 2026-01-06
 
 ### Fixed

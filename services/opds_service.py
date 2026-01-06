@@ -215,27 +215,9 @@ async def mostrar_colecciones(
                 if meta.get("volume"):
                      display_title = f"Volumen {meta['volume']}{tags_str}"
                 else:
-                    # If no volume, try to strip the Series Name from the Clean Title to get the Subtitle
-                    # We accept case-insensitive replacement of the context series
-                    pattern = re.escape(context_series)
-                    # We use the raw 'clean_title' (which has spaces/formatting) for stripping
-                    # Try to match the series part at the beginning
-                    match = re.search(f"^{pattern}", clean_title, re.IGNORECASE)
-                    if match:
-                        # Strip it
-                        remainder = clean_title[match.end():]
-                        # Clean leading separators " - ", ": ", etc.
-                        remainder = re.sub(r"^[\s\-\:\|]+", "", remainder).strip()
-                        if remainder:
-                            display_title = f"{remainder}{tags_str}"
-                        else:
-                            # It was EXACTLY the series name
-                            display_title = f"Completo {tags_str}" if tags_str else "📖 Ver Libro"
-                    else:
-                        # Fallback if regex clean failed (e.g. slight mismatch)
-                        # Just show the full clean title or tags? 
-                        # Safe fallback: Clean Title
-                        display_title = f"{clean_title}{tags_str}"
+                    # It's redundant but has no volume number
+                    # The user wants "Volumen único" for these cases (e.g. one-shots/movies)
+                    display_title = f"Volumen único{tags_str}"
             else:
                  # Not redundant, show shortened full title
                  s_name = clean_title
