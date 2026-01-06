@@ -29,6 +29,8 @@ interface ThemeContextType {
   setAnimationDuration: (val: number) => void
   animationDistance: number
   setAnimationDistance: (val: number) => void
+  disableDisplacement: boolean
+  setDisableDisplacement: (disabled: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -415,6 +417,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [animationDistance, isLoaded, shouldPersist])
 
+  // Save disable displacement
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("disableDisplacement", String(disableDisplacement))
+    }
+  }, [disableDisplacement, isLoaded, shouldPersist])
+
 
   const saveGlobalSettings = async (role: string) => {
     try {
@@ -431,7 +441,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         showSettingsInMenu,
         enableAnimations,
         animationDuration,
-        animationDistance
+        animationDistance,
+        disableDisplacement
       }
       await callBotAPI("ui_settings", { subAction: "set", role, settings })
     } catch (error) {
@@ -456,6 +467,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.enableAnimations !== undefined) setEnableAnimations(settings.enableAnimations)
     if (settings.animationDuration !== undefined) setAnimationDuration(settings.animationDuration)
     if (settings.animationDistance !== undefined) setAnimationDistance(settings.animationDistance)
+    if (settings.disableDisplacement !== undefined) setDisableDisplacement(settings.disableDisplacement)
 
     // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
     if (persistToLocal) {
@@ -471,6 +483,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("enableAnimations", String(settings.enableAnimations ?? false))
       localStorage.setItem("animationDuration", String(settings.animationDuration ?? 200))
       localStorage.setItem("animationDistance", String(settings.animationDistance ?? 4))
+      localStorage.setItem("disableDisplacement", String(settings.disableDisplacement ?? false))
     }
   }
 
@@ -501,6 +514,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setAnimationDuration,
         animationDistance,
         setAnimationDistance,
+        disableDisplacement,
+        setDisableDisplacement,
         saveGlobalSettings,
         applySettings,
       }}

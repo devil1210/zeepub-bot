@@ -59,6 +59,8 @@ export default function InterfaceConfigPage() {
         setAnimationDuration,
         animationDistance,
         setAnimationDistance,
+        disableDisplacement,
+        setDisableDisplacement,
     } = useTheme()
 
     const { isAdmin, userProfile } = useTelegramContext()
@@ -103,7 +105,8 @@ export default function InterfaceConfigPage() {
                 showSettingsInMenu: localStorage.getItem("showSettingsInMenu") === "true",
                 enableAnimations: localStorage.getItem("enableAnimations") === "true",
                 animationDuration: parseInt(localStorage.getItem("animationDuration") || "200"),
-                animationDistance: parseInt(localStorage.getItem("animationDistance") || "4")
+                animationDistance: parseInt(localStorage.getItem("animationDistance") || "4"),
+                disableDisplacement: localStorage.getItem("disableDisplacement") === "true"
             }
             applySettings(personal, true) // Restore and ENABLE persistence
             toast.info("Has vuelto a tu configuración personal")
@@ -485,13 +488,30 @@ export default function InterfaceConfigPage() {
                                             max={50}
                                             step={1}
                                             onValueChange={(val) => setAnimationDistance(val[0])}
-                                            className="cursor-pointer"
+                                            className={`cursor-pointer ${disableDisplacement ? "opacity-50 pointer-events-none" : ""}`}
+                                            disabled={disableDisplacement}
                                         />
                                         <div className="flex justify-between text-[10px] text-muted-foreground px-1">
                                             <span>Ninguno (0px)</span>
                                             <span>Sutil (4px)</span>
                                             <span>Largo (50px)</span>
                                         </div>
+                                    </div>
+
+                                    {/* Compatibility Mode */}
+                                    <div className="flex items-start justify-between border-t border-border pt-4">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="disable-displacement" className="text-sm font-semibold text-foreground">Modo Compatibilidad</Label>
+                                            <p className="text-xs text-muted-foreground max-w-[200px]">
+                                                Desactiva el desplazamiento para evitar fallos gráficos en algunos dispositivos. Solo usa desvanecimiento.
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            id="disable-displacement"
+                                            checked={disableDisplacement}
+                                            onCheckedChange={setDisableDisplacement}
+                                            className="mt-1"
+                                        />
                                     </div>
                                 </div>
                             )}
