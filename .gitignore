@@ -93,4 +93,5 @@ __pycache__/
 !zeepub-miniapp/**
 
 !bolt/
-!bolt/**
+!bolt/**!debug_redundancy.py
+!debug_redundancy.py
