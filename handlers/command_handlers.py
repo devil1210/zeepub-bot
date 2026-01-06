@@ -220,7 +220,6 @@ class CommandHandlers:
 
         # Lógica para administradores: si citan un mensaje, mostrar status de ese usuario
         if update.message.reply_to_message:
-            from config.config_settings import config
             if uid in config.ADMIN_USERS:
                 target_user = update.message.reply_to_message.from_user
                 uid = target_user.id
