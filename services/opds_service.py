@@ -1,5 +1,7 @@
 import uuid
 import logging
+from functools import wraps
+import re
 from urllib.parse import urlparse, unquote
 from difflib import SequenceMatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -134,20 +136,19 @@ async def mostrar_colecciones(
 
     # Título y markup
     title = st.get("titulo") or "📚 Categorías"
-    
+
     # 1. Pre-procesar Storyline para la cabecera e identificar nombres extra para redundancia
     raw_feed_title = getattr(feed.feed, "title", "")
     known_romaji = None
     known_english = None
-    
+
     if raw_feed_title.endswith(" - Storyline") and libros:
         # Intentar deducir la estructura English - Romaji del primer libro
         first_book_title = getattr(feed.entries[0], "title", "")
         clean_feed_title_part = raw_feed_title.replace(" - Storyline", "").strip()
-        
+
         parts = first_book_title.split(" - ")
         if len(parts) >= 2:
-            import re
             def clean_title_part(s):
                 s = re.sub(r"\[.*?\]", "", s)
                 s = re.sub(r"^[^\w\(\)]+", "", s)
@@ -155,17 +156,17 @@ async def mostrar_colecciones(
 
             p0_clean = clean_title_part(parts[0])
             feed_clean = clean_title_part(clean_feed_title_part)
-            
+
             if p0_clean == feed_clean or p0_clean in feed_clean or feed_clean in p0_clean:
                 known_romaji = parts[1].strip()
                 known_english = re.sub(r"^[^\w\(\)]+", "", parts[0]).strip()
-                
+
                 icon_prefix = ""
                 if " " in title:
                     possible_icon = title.split(" ", 1)[0]
                     if not possible_icon.isalnum():
                         icon_prefix = possible_icon + " "
-                
+
                 title = f"{icon_prefix}{known_english}\n\n{known_romaji}"
 
     # 2. Construir teclado
@@ -184,36 +185,36 @@ async def mostrar_colecciones(
         for b in libros:
             key = uuid.uuid4().hex[:8]
             st["libros"][key] = b
-            
+
             feed_title = getattr(feed.feed, "title", st.get("titulo", ""))
             feed_title = feed_title.replace(" - Storyline", "")
-            
+
             meta_context = parse_metadata_from_title(feed_title)
             context_series = meta_context.get("series", "").lower()
-            
+
             meta = parse_metadata_from_title(b["titulo"])
             display_title = b["titulo"]
-            
+
             book_tags = set(meta.get("tags", []))
             context_tags = set(meta_context.get("tags", []))
             unique_tags = sorted(list(book_tags - context_tags))
-            
+
             tags_str = ""
             if unique_tags:
                 tags_str = " " + " ".join([f"[{t}]" for t in unique_tags])
 
             clean_title = meta.get("clean_title", display_title)
-            
-            import re
-            def simplify(s): return re.sub(r"[^\w]", "", s).lower()
-            
+
+            def simplify(s):
+                return re.sub(r"[^\w]", "", s).lower()
+
             s_ctx = simplify(context_series)
             s_book = simplify(clean_title)
-            
+
             # Clean tags from romaji for comparison too
             clean_romaji = re.sub(r"\[.*?\]", "", known_romaji or "").strip()
             s_romaji = simplify(clean_romaji) if clean_romaji else ""
-            
+
             is_redundant = False
             if s_book:
                 # 1. Direct Subset (Inglés o Romaji)
@@ -228,9 +229,9 @@ async def mostrar_colecciones(
                         is_redundant = True
                     elif s_romaji:
                         ratio_r = SequenceMatcher(None, s_romaji, s_book).ratio()
-                        if ratio_r > 0.7: # Más permisivo para Romaji
+                        if ratio_r > 0.7:  # Más permisivo para Romaji
                             is_redundant = True
-                    
+
                     # 3. Last chance: check if the full original title contains the Romaji name
                     # (Useful if tag parsing failed)
                     if not is_redundant and s_romaji and s_romaji in simplify(b["titulo"]):

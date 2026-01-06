@@ -267,7 +267,6 @@ def generar_slug_from_meta(meta: dict) -> str:
     return slug
 
 
-
 def parse_metadata_from_title(title_str: str) -> dict:
     """"
     Parsea un título completo de forma inteligente.
@@ -297,17 +296,16 @@ def parse_metadata_from_title(title_str: str) -> dict:
     # Prioridad: Volumen > Vol > Tomo > v
     vol_pattern = r"(?:Volumen|Vol\.?|Tomo|v)\s*(\d+(?:\.\d+)?)"
     match = re.search(vol_pattern, clean, re.IGNORECASE)
-    
+
     volume = ""
     series = clean
 
     if match:
         volume = match.group(1)
-        # La serie es lo que hay ANTES del volumen (generalmente)
         # O quitamos el string de volumen y limpiamos
-        full_vol_str = match.group(0) # ej "Volumen 01"
+        full_vol_str = match.group(0)  # ej "Volumen 01"
         series = clean.replace(full_vol_str, "")
-    
+
     # 3. Limpieza final de la serie
     # Quitar separadores residuales al final (guiones, dos puntos)
     series = re.sub(r"[\-:\s]+$", "", series).strip()
