@@ -11,8 +11,8 @@ from services.cache_service import AsyncTTLCache
 
 logger = logging.getLogger(__name__)
 
-# Cache global para OPDS feeds (10 minutos TTL)
-opds_cache = AsyncTTLCache(ttl_seconds=600)
+# Cache global para OPDS feeds (60 minutos TTL)
+opds_cache = AsyncTTLCache(ttl_seconds=3600)
 
 
 async def get_cached_feed(url: str):
