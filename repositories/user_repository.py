@@ -302,5 +302,18 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         return None
 
 
+
+    async def reset_level_users_settings(self, level_id: int):
+        """
+        Resetea (borra) la configuración personal de todos los usuarios de un nivel.
+        Establece 'settings' a '{}'.
+        """
+        async with self.db.connection() as conn:
+            await conn.execute(
+                "UPDATE users SET settings = '{}' WHERE level_id = ?",
+                (level_id,),
+            )
+            await conn.commit()
+
 # Singleton instance
 user_repo = UserRepository()

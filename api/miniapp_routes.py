@@ -737,6 +737,26 @@ async def handle_bot_request(
                     )
                     set_setting(f"ui_defaults_{target_role}", json.dumps(settings_obj))
 
+                    # Force Overwrite: Reset all users of this level/role
+                    if data.get("forceOverwrite"):
+                        role_to_level = {
+                            "admin": 1,
+                            "staff": 2,
+                            "premium": 3,
+                            "vip": 4,
+                            "white": 5,
+                            "free": 6,
+                        }
+                        level_id = role_to_level.get(target_role)
+                        if level_id:
+                            await user_repo.reset_level_users_settings(level_id)
+                            logger.info(f"Force Overwrite: Reset settings for level {level_id} (role {target_role})")
+                        elif target_role == "global":
+                             # If global overwrite is requested, technically we should do nothing or all?
+                             # For safety, let's only log valid levels.
+                             # If user wants to reset ALL users, that's a bigger nuke.
+                             pass
+
                     return {
                         "success": True,
                         "message": f"Configuración para {target_role} guardada (v{settings_obj['ui_version']})",

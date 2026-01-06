@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [4.20.9] - 2026-01-05
+
+### Added
+- **Sobreescritura de Configuración por Nivel**: Nueva opción "Sobreescribir usuarios existentes" al editar la configuración de un nivel (Staff, Premium, etc.). Permite limpiar las personalizaciones individuales de los usuarios de ese nivel para imponer el nuevo estándar.
+
 ## [4.20.8] - 2026-01-05
 
 ### Fixed

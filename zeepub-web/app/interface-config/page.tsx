@@ -60,6 +60,7 @@ export default function InterfaceConfigPage() {
     const { isAdmin, userProfile } = useTelegramContext()
     const [editTarget, setEditTarget] = useState("personal")
     const [isSaving, setIsSaving] = useState(false)
+    const [forceOverwrite, setForceOverwrite] = useState(false)
     const [botAvatar, setBotAvatar] = useState("/robot-librarian.jpg")
 
     // Fetch bot avatar for preview and SYNC personal settings
@@ -215,10 +216,24 @@ export default function InterfaceConfigPage() {
                     {editTarget !== "personal" && (
                         <Alert className="bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400">
                             <AlertTriangle className="w-4 h-4" />
-                            <AlertTitle>Editando nivel {editTarget.toUpperCase()}</AlertTitle>
-                            <AlertDescription>
-                                Los cambios afectarán a todos los usuarios de este nivel que no tengan una configuración personal guardada.
-                            </AlertDescription>
+                            <div className="flex-1">
+                                <AlertTitle>Editando nivel {editTarget.toUpperCase()}</AlertTitle>
+                                <AlertDescription>
+                                    Los cambios afectarán a todos los usuarios de este nivel que no tengan una configuración personal guardada.
+                                </AlertDescription>
+                                <div className="mt-3 flex items-center justify-between bg-background/50 p-2 rounded-lg border border-amber-500/20">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="force-overwrite" className="text-sm font-bold text-foreground">Sobreescribir usuarios existentes</Label>
+                                        <p className="text-[10px] text-muted-foreground">Borra las personalizaciones de todos los usuarios de este nivel.</p>
+                                    </div>
+                                    <Switch
+                                        id="force-overwrite"
+                                        checked={forceOverwrite}
+                                        onCheckedChange={setForceOverwrite}
+                                        className="data-[state=checked]:bg-destructive"
+                                    />
+                                </div>
+                            </div>
                         </Alert>
                     )}
 
