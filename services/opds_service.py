@@ -157,17 +157,41 @@ async def mostrar_colecciones(
             
             # [NEW] Smart Format for Button Label
             # b["titulo"] comes from opds entry.title
-            # We want to show "Series - Vol XX" or clean title
+            
+            # Context Awareness: Get current folder title to avoid redundancy
+            feed_title = getattr(feed.feed, "title", "")
+            meta_context = parse_metadata_from_title(feed_title)
+            context_series = meta_context.get("series", "").lower()
+            
             meta = parse_metadata_from_title(b["titulo"])
             
             display_title = b["titulo"]
             if meta.get("series") and meta.get("volume"):
-                # Shorten format for buttons: "S. Name - Vol. 01"
-                # Truncate series if too long
-                s_name = meta["series"]
-                if len(s_name) > 20:
-                    s_name = s_name[:17] + "..."
-                display_title = f"{s_name} - {meta['volume']}"
+                # If we are inside the series folder (fuzzy match), show only volume
+                # Check if context_series covers a significant part of meta["series"]
+                book_series = meta["series"].lower()
+                
+                # Logic: If the folder title is effectively the series name, we hide it.
+                # using "in" implies the folder might be "Series Name [Tags]" and book is "Series Name"
+                # or folder is "Series Name" and book is "Series Name"
+                is_redundant = False
+                if context_series and book_series:
+                    # Remove non-alphanumeric to compare loosely
+                    import re
+                    s1 = re.sub(r"[^\w]", "", context_series)
+                    s2 = re.sub(r"[^\w]", "", book_series)
+                    if s1 in s2 or s2 in s1:
+                        is_redundant = True
+                
+                if is_redundant:
+                    display_title = f"Volumen {meta['volume']}" 
+                else:
+                    # Shorten format for buttons: "S. Name - Vol. 01"
+                    # Truncate series if too long
+                    s_name = meta["series"]
+                    if len(s_name) > 20:
+                        s_name = s_name[:17] + "..."
+                    display_title = f"{s_name} - {meta['volume']}"
             elif meta.get("clean_title"):
                 display_title = meta["clean_title"]
 

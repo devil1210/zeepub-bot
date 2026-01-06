@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.2] - 2026-01-06
+
+### Improved
+- **Bot - UX**: Detección de contexto inteligente en listados de libros. Si estás dentro de la carpeta de una serie (ej: "Arifureta"), los botones de los libros simplifican su nombre a solo "Volumen XX", eliminando la redundancia del título de la serie.
+
 ## [v5.0.1] - 2026-01-06
 
 ### Fixed
