@@ -321,7 +321,8 @@ def parse_metadata_from_title(title_str: str) -> dict:
 
     # 3. Split parts by various hyphen types to find English vs Romaji
     # We use a non-capturing group for the different dashes
-    parts = [p.strip() for p in re.split(r"\s*[\-\–\—\−]\s*", clean_no_vol) if p.strip()]
+    # REQUIRE spaces around hyphens to avoid splitting names like Arya-san
+    parts = [p.strip() for p in re.split(r"\s+[\-\–\—\−]\s+", clean_no_vol) if p.strip()]
 
     romaji = ""
     series = clean_no_vol
@@ -338,19 +339,27 @@ def parse_metadata_from_title(title_str: str) -> dict:
 
     # 4. Fallback for specific Romaji structures (Japanese characters)
     if not romaji:
-        specific_romaji_pattern = r"[\-\–\—\−]\s*([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s*[\-\–\—\−]\s*"
+        specific_romaji_pattern = r"\s+[\-\–\—\−]\s+([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s+[\-\–\—\−]\s+"
         sr_match = re.search(specific_romaji_pattern, clean, re.IGNORECASE)
         if sr_match:
             romaji = sr_match.group(1).strip()
             series = clean.replace(sr_match.group(0), " - ").strip()
             series = re.sub(vol_pattern, "", series, flags=re.IGNORECASE).strip()
 
-    # 5. Final cleaning of series title
+    # 5. Final cleaning of series title and romaji
+    # Ensure no leading symbols or trailing punctuation reach the final fields
+    series = re.sub(r"^[^\w\(\)\[\]]+", "", series).strip()
     series = re.sub(r"[\-:\s]+$", "", series).strip()
+    
+    if romaji:
+        romaji = re.sub(r"^[^\w\(\)\[\]]+", "", romaji).strip()
+        romaji = re.sub(r"[\-:\s]+$", "", romaji).strip()
 
     # If we have Romaji, cleanTitle should be the English Part (series)
     # This allows the frontend to show English as main title if romaji exists
     clean_title_result = series if romaji else clean_no_vol
+    # Final cleaning of clean_title_result
+    clean_title_result = re.sub(r"^[^\w\(\)\[\]]+", "", clean_title_result).strip()
 
     return {
         "series": series,
@@ -590,7 +599,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v5.0.22"
+CURRENT_VERSION = "v5.0.23"
 
 
 def get_current_version() -> str:

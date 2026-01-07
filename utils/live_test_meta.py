@@ -1,21 +1,22 @@
 import sys
 import os
 
-# Add project root to path
-sys.path.append(os.getcwd())
+# Añadir el directorio raíz al path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.helpers import parse_metadata_from_title
 
-test_titles = [
-    "○ 5 Centimeters per Second + Children Who Chase Lost Voices [NL] - Byōsoku Go Senchimētoru + Hoshi wo Ou Kodomo no Koe [NL] - Volumen 01",
-    "Arifureta: From Commonplace to World's Strongest [NL] - Arifureta Shokugyou de Sekai Saikyou - Volumen 01 [TFP]"
+titles = [
+    "⭘ Alya Sometimes Hides Her Feelings in Russian [NL] - Tokidoki Bosotto Russiago de Dereru Tonari no Arya-san - Volumen 01 [Vlady]",
+    "⭘ 86 - EIGHTY-SIX [NL] - 86 ―Eitishikkusu― - Volumen 01 [TFP]",
+    "⭘ Sword Art Online [NL] - Volumen 01"
 ]
 
-for title in test_titles:
-    print(f"\nTesting: {title}")
-    res = parse_metadata_from_title(title)
-    print(f"  Series: {res.get('series')}")
-    print(f"  Volume: {res.get('volume')}")
-    print(f"  Romaji: {res.get('romaji')}")
-    print(f"  Clean:  {res.get('clean_title')}")
-    print(f"  Tags:   {res.get('tags')}")
+for t in titles:
+    res = parse_metadata_from_title(t)
+    print(f"Original: {t}")
+    print(f"  -> CleanTitle: {res['clean_title']}")
+    print(f"  -> Romaji:     {res['romaji']}")
+    print(f"  -> Vol:        {res['volume']}")
+    print(f"  -> Tags:       {res['tags']}")
+    print("-" * 50)
