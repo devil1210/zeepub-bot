@@ -5,6 +5,10 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.34] - 2026-01-07
+### Fixed
+- **UI Switch**: Reescrito el componente `Switch` para corregir la sintaxis CSS inválida (`calc` sin espacios) y simplificar los estilos. Esto soluciona que los interruptores (toggles) fueran invisibles en algunos navegadores.
+
 ## [v5.0.33] - 2026-01-07
 ### Fixed
 - **API Feed**: Corregido un error crítico donde la clave `seriesIndex` no se enviaba en la respuesta del feed, causando que el frontend ignorara el volumen detectado.
