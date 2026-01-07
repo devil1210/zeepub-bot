@@ -233,8 +233,23 @@ class ZeePubBot:
     async def start_async(self):
         """Inicia el bot y el polling de forma asíncrona (para uso con API)."""
         await self.app.start()
-        await self.app.updater.start_polling()
-        logger.info("Bot iniciado en modo asíncrono (API).")
+
+        # Robust polling start with retries for NetworkError
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Iniciando polling (intento {attempt + 1}/{max_retries})...")
+                await self.app.updater.start_polling()
+                logger.info("Bot iniciado en modo asíncrono (API).")
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait = 5 * (attempt + 1)
+                    logger.warning(f"Error iniciando polling: {e}. Reintentando en {wait}s...")
+                    await asyncio.sleep(wait)
+                else:
+                    logger.error(f"No se pudo iniciar polling tras {max_retries} intentos: {e}")
+                    raise
 
         # Inicializar schedulers y updates usando BotInitializer
         await BotInitializer.initialize_schedulers(self.app.bot)

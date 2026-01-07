@@ -804,6 +804,9 @@ class HelpPlugin(BasePlugin):
 
     async def update_bot_commands(self, bot):
         """Registra los comandos en el menú nativo de Telegram (/)."""
+        # Introduce an initial delay to let the bot stabilize (deleteWebhook etc)
+        await asyncio.sleep(5)
+        
         from telegram import (
             BotCommand,
             BotCommandScopeDefault,
@@ -849,15 +852,19 @@ class HelpPlugin(BasePlugin):
             # Forzar visibilidad en todos los contextos posibles para usuarios normales
             # Registramos el set público en TODOS los scopes globales
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeDefault())
+            await asyncio.sleep(0.5)
             await bot.set_my_commands(
                 public_cmds, scope=BotCommandScopeAllPrivateChats()
             )
+            await asyncio.sleep(0.5)
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllGroupChats())
+            await asyncio.sleep(0.5)
 
             # Los admins de grupo también ven el menú básico por defecto (evita que vean menú vacío)
             await bot.set_my_commands(
                 public_cmds, scope=BotCommandScopeAllChatAdministrators()
             )
+            await asyncio.sleep(0.5)
 
             logger.info("Comandos básicos registrados en todos los scopes globales.")
 
@@ -882,6 +889,8 @@ class HelpPlugin(BasePlugin):
                         all_cmds, scope=BotCommandScopeChat(chat_id=admin_id)
                     )
                     count_admins += 1
+                    # Rate limiting to avoid connection resets/flood
+                    await asyncio.sleep(1.0)
                 except Exception as e:
                     logger.debug(
                         f"No se pudieron setear comandos completos para admin {admin_id}: {e}"
