@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.33] - 2026-01-07
+### Fixed
+- **API Feed**: Corregido un error crítico donde la clave `seriesIndex` no se enviaba en la respuesta del feed, causando que el frontend ignorara el volumen detectado.
+- **Limpieza**: Eliminados campos duplicados en la respuesta de la API.
+
 ## [v5.0.32] - 2026-01-07
 ### Fixed
 - **Metadatos de Volumen**: Corregido un error donde todos los libros aparecían como "Volumen único" en el catálogo. Ahora usa correctamente los metadatos internos del feed si el título no contiene el número.
