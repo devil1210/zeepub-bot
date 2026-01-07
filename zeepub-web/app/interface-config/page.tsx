@@ -198,15 +198,30 @@ export default function InterfaceConfigPage() {
                                 </Select>
 
                                 {editTarget === "personal" ? (
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col gap-2">
                                         <Button
                                             variant="outline"
-                                            className="flex-1 bg-card border-primary/20 hover:bg-primary/5 text-primary text-xs h-10 rounded-xl"
+                                            className="w-full bg-card border-primary/20 hover:bg-primary/5 text-primary text-xs h-10 rounded-xl"
                                             onClick={handleResetToLevelDefaults}
                                             disabled={isSaving}
                                         >
                                             <Palette className="w-4 h-4 mr-2" />
                                             Restablecer a valores del nivel
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full bg-destructive/10 border-destructive/20 hover:bg-destructive/20 text-destructive text-xs h-10 rounded-xl"
+                                            onClick={() => {
+                                                if (confirm("¿Estás seguro? Esto borrará toda tu configuración local y recargará la aplicación.")) {
+                                                    localStorage.clear()
+                                                    sessionStorage.clear()
+                                                    window.location.reload()
+                                                }
+                                            }}
+                                            disabled={isSaving}
+                                        >
+                                            <RotateCcw className="w-4 h-4 mr-2" />
+                                            Borrar Caché y Reiniciar App
                                         </Button>
                                     </div>
                                 ) : (
