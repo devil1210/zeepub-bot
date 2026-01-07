@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.20] - 2026-01-07
+
+### Changed
+- **Backend**: Improved `parse_metadata_from_title` with support for various hyphen types (`–`, `—`, `−`) and aggressive decorative symbol cleaning (`○`, `●`, etc.).
+- **Backend**: Unified metadata extraction keys between search and book-detail actions.
+
 ## [v5.0.19] - 2026-01-07
 
 ### Fixed

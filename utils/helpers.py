@@ -301,10 +301,9 @@ def parse_metadata_from_title(title_str: str) -> dict:
     # Limpiar título inicial de corchetes
     clean = re.sub(r"\[.*?\]", "", title_str).strip()
 
-    # 1b. Limpiar símbolos decorativos al inicio (ej: ⭘, ●, •, -, etc.)
-    # Se eliminan caracteres no alfanuméricos iniciales (Unicode aware)
-    # Excluyendo paréntesis que podrían ser parte del título
-    clean = re.sub(r"^[^\w\(\)]+", "", clean).strip()
+    # 1b. Limpiar símbolos decorativos al inicio de forma más agresiva
+    # Específicamente ○ y otros símbolos que \w podría considerar erróneamente caracteres
+    clean = re.sub(r"^[\s⭘●•○\-\–\—\−\+]+", "", clean).strip()
 
     # 2. Extract volume first to facilitate title splitting
     vol_pattern = r"(?:Volumen|Vol\.?|Tomo|v)\s*(\d+(?:\.\d+)?)"
@@ -316,10 +315,12 @@ def parse_metadata_from_title(title_str: str) -> dict:
         volume = match.group(1)
         full_vol_str = match.group(0)
         # Remove " - Volumen XX" or " Volumen XX" from the string to get the base title
-        clean_no_vol = re.sub(rf"\s*(?:-\s*)?{re.escape(full_vol_str)}.*", "", clean, flags=re.IGNORECASE).strip()
+        # Also handles various hyphen types
+        clean_no_vol = re.sub(rf"\s*(?:[\-\–\—\−]\s*)?{re.escape(full_vol_str)}.*", "", clean, flags=re.IGNORECASE).strip()
 
-    # 3. Split parts by ' - ' to find English vs Romaji
-    parts = [p.strip() for p in clean_no_vol.split(" - ") if p.strip()]
+    # 3. Split parts by various hyphen types to find English vs Romaji
+    # Standard -, En dash –, Em dash —, and Minus −
+    parts = [p.strip() for p in re.split(r"\s+[\-\–\—\−]\s+", clean_no_vol) if p.strip()]
 
     romaji = ""
     series = clean_no_vol
@@ -336,12 +337,11 @@ def parse_metadata_from_title(title_str: str) -> dict:
 
     # 4. Fallback for specific Romaji characters (hyphens/Japanese)
     if not romaji:
-        specific_romaji_pattern = r"-\s*([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s*-\s*(?:Volumen|Vol)"
+        specific_romaji_pattern = r"(?:[\-\–\—\−])\s*([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s*(?:[\-\–\—\−])\s*(?:Volumen|Vol)"
         sr_match = re.search(specific_romaji_pattern, clean, re.IGNORECASE)
         if sr_match:
             romaji = sr_match.group(1).strip()
-            series = clean.replace(f"- {romaji} -", "-").strip()
-            series = re.sub(vol_pattern, "", series, flags=re.IGNORECASE).strip()
+            series = re.sub(re.escape(sr_match.group(0)), "", clean).strip()
 
     # 5. Final cleaning
     series = re.sub(r"[\-:\s]+$", "", series).strip()
@@ -586,7 +586,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v5.0.19"
+CURRENT_VERSION = "v5.0.20"
 
 
 def get_current_version() -> str:
