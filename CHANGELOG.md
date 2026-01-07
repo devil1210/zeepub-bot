@@ -18,6 +18,17 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Title Extraction**: Improved hyphen detection to support `―` (horizontal bar) and added better fallbacks for `cleanTitle`.
 - **Display**: Fixed "Actualizado" row to show correct date format when available.
 
+## [v5.0.27] - 2026-01-07
+### fixed
+- **Startup Robustness**: Fixed `NameError` due to missing `asyncio` import in `help_plugin.py`.
+- **Clean Shutdown**: Refactored `SessionManager.close()` to be asynchronous, resolving a `RuntimeError` during bot stop/reboot.
+
+## [v5.0.26] - 2026-01-07
+
+### Fixed
+- **Backend**: Fixed over-aggressive title splitting that was breaking hyphenated names (e.g., `Arya-san`). Now requires spaces around hyphen separators.
+- **Backend**: Improved leading symbol cleaning for and English titles.
+
 ## [v5.0.24] - 2026-01-07
 
 ### Changed

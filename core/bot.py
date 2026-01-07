@@ -119,7 +119,7 @@ class ZeePubBot:
 
         loop.run_until_complete(self.initialize())
         self.app.run_polling()
-        session_manager.close()
+        loop.run_until_complete(session_manager.close())
 
     async def initialize(self):
         """Inicializa la aplicación (para uso con API)."""
@@ -261,7 +261,7 @@ class ZeePubBot:
             await self.app.updater.stop()
         await self.app.stop()
         await self.app.shutdown()
-        session_manager.close()
+        await session_manager.close()
         logger.info("Bot detenido (API).")
 
     async def _metrics_middleware(

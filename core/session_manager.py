@@ -31,11 +31,11 @@ class SessionManager:
             self._locks[uid] = asyncio.Lock()
         return self._locks[uid]
 
-    def close(self):
+    async def close(self):
         """Cierra la sesión HTTP si existe."""
         if self._session:
             self.logger.debug("Cerrando sesión HTTP.")
-            asyncio.get_event_loop().run_until_complete(self._session.close())
+            await self._session.close()
             self._session = None
 
 
