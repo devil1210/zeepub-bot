@@ -536,7 +536,6 @@ export default function InterfaceConfigPage() {
                                     <Switch
                                         checked={dataSaver}
                                         onCheckedChange={setDataSaver}
-                                        className="scale-110"
                                     />
                                 </div>
                             </Card>

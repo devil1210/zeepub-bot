@@ -198,6 +198,14 @@ async def get_feed(
 
             title_meta = parse_metadata_from_title(title)
 
+            # Series/Volume extraction from entry metadata (like in search)
+            entry_series = entry.get("calibre_series") or entry.get("schema_series")
+            entry_series_index = entry.get("calibre_series_index")
+
+            # Fallback to title parsing if metadata is missing
+            final_series = entry_series or title_meta.get("series", "")
+            final_series_index = entry_series_index or title_meta.get("volume", "")
+
             entries.append(
                 {
                     "title": title,
@@ -214,8 +222,10 @@ async def get_feed(
                     "size": size,
                     "file_type": file_type,
                     "is_folder": is_folder,
-                    "series": title_meta.get("series", ""),
-                    "volume": title_meta.get("volume", ""),
+                    "file_type": file_type,
+                    "is_folder": is_folder,
+                    "series": final_series,
+                    "volume": final_series_index,
                     "tags": title_meta.get("tags", []),
                     "cleanTitle": title_meta.get("clean_title", title),
                     "romaji": title_meta.get("romaji", ""),
