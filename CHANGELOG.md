@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.17] - 2026-01-07
+
+### Fixed
+- **Backend**: Restored accidentally removed imports in `api/routes.py`.
+- **Backend**: Fixed linting error (E701) in `api/routes.py`.
+
 ## [v5.0.16] - 2026-01-07
 
 ### Fixed

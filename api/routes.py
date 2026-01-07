@@ -16,6 +16,14 @@ from utils.helpers import (
     extract_author,
     parse_metadata_from_title,
 )
+from utils.security import validate_telegram_data
+from utils.http_client import fetch_bytes
+from services.epub_service import (
+    parse_opf_from_epub,
+    extract_cover_from_epub,
+    extract_internal_title,
+)
+from services.user_service import get_effective_user, get_user_info
 import logging
 
 
@@ -127,7 +135,8 @@ async def get_feed(
                                     if sub_link.get("rel") == "subsection":
                                         deep_link = normalize_url(sub_link.get("href"))
                                         break
-                                if deep_link: break
+                                if deep_link:
+                                    break
                             entry_override_url = deep_link or direct_url
                 except Exception as e:
                     logger.warning(f"Error resolving direct link for ZeePubs: {e}")
