@@ -14,6 +14,12 @@ def extract_author(entry, is_folder=False) -> str:
         if hasattr(entry, "get")
         else getattr(entry, "authors", [])
     )
+    # DEBUG LOG
+    import logging
+    logger = logging.getLogger(__name__)
+    title = entry.get("title", "No Title") if hasattr(entry, "get") else getattr(entry, "title", "No Title")
+    logger.info(f"[DEBUG AUTHOR] Title: {title} | Raw Authors: {authors}")
+
     if authors:
         author = " - ".join(
             [

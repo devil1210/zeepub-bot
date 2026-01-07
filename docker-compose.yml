@@ -13,9 +13,13 @@ services:
     #   - db
     volumes:
       - ./data:/app/data # Persist URL cache database
-      # - ./config:/app/config  # Only for development
-      # - ./plugins:/app/plugins  # Only for development
-      # Uncomment if you want to persist logs outside
+      - ./config:/app/config
+      - ./plugins:/app/plugins
+      - ./utils:/app/utils
+      - ./api:/app/api
+      - ./services:/app/services
+      - ./core:/app/core
+      - ./zeepub-web/dist:/app/zeepub-web/dist # Mount built frontend
       # - ./logs:/app/logs
     logging:
       driver: "json-file"

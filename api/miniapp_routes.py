@@ -242,11 +242,13 @@ async def handle_bot_request(
                     detail_url = abs_url(feed_base_url, book_id)
 
                 # Categories/Genres
+                raw_tags = getattr(entry, "tags", [])
                 categories = [
                     tag.get("label") or tag.get("term")
-                    for tag in getattr(entry, "tags", [])
+                    for tag in raw_tags
                     if tag.get("label") or tag.get("term")
                 ]
+                logger.info(f"[DEBUG CATS] Title: {title} | Extracted: {categories} | Raw: {raw_tags}")
 
                 # Parse metadata from title for better display
                 title_meta = parse_metadata_from_title(title)
