@@ -249,9 +249,22 @@ function SearchContent() {
                     )}
                   </div>
                   <p className="text-sm text-primary font-medium mb-1 line-clamp-1">{book.author}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-2 italic mb-2">
+                  <p className="text-xs text-muted-foreground line-clamp-1 italic mb-1">
                     {book.isFolder ? t("book_section") : t("book_details_hint")}
                   </p>
+
+                  {!book.isFolder && (
+                    <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
+                      <span className="font-medium">
+                        {!book.seriesIndex || ["unico", "único"].includes(book.seriesIndex.toLowerCase())
+                          ? "Volumen único"
+                          : `Volumen ${book.seriesIndex}`}
+                      </span>
+                      {book.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
+                        <span key={i} className="text-primary font-semibold">[{tag}]</span>
+                      ))}
+                    </p>
+                  )}
 
                   {!book.isFolder && book.downloadUrl && (
                     <Button

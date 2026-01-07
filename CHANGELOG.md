@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.30] - 2026-01-07
+### fixed
+- **UI Metadata**: Restored missing Volume display in search and catalog cards.
+- **UI Logic**: Implemented "Volumen único" logic for books without a volume number.
+- **Localization**: Updated "Actualizado" date format to `dd-mm-yyyy` as requested.
+- **Frontend**: Unified Volume/Tags display across all list views for consistency.
+
 ## [v5.0.23] - 2026-01-07
 
 ### Fixed

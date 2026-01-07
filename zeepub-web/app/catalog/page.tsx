@@ -425,14 +425,16 @@ function CatalogContent() {
                                             )}
 
                                             {/* Volume and Extra Tags (combined) */}
-                                            {(book.seriesIndex || (book.tags && book.tags.filter(t => !["NL", "NW", "WN"].includes(t)).length > 0)) && (
-                                                <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
-                                                    {book.seriesIndex ? `Volumen ${book.seriesIndex}` : ""}
-                                                    {book.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
-                                                        <span key={i} className="text-primary font-semibold">[{tag}]</span>
-                                                    ))}
-                                                </p>
-                                            )}
+                                            <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
+                                                <span className="font-medium">
+                                                    {!book.seriesIndex || ["unico", "único"].includes(book.seriesIndex.toLowerCase())
+                                                        ? "Volumen único"
+                                                        : `Volumen ${book.seriesIndex}`}
+                                                </span>
+                                                {book.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
+                                                    <span key={i} className="text-primary font-semibold">[{tag}]</span>
+                                                ))}
+                                            </p>
 
                                             {!book.isFolder && book.downloadUrl && (
                                                 <Button
@@ -546,14 +548,16 @@ function CatalogContent() {
                                             )}
 
                                             {/* Volume and Extra Tags (combined) */}
-                                            {(entry.seriesIndex || (entry.tags && entry.tags.filter(t => !["NL", "NW", "WN"].includes(t)).length > 0)) && (
-                                                <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1 flex-1">
-                                                    {entry.seriesIndex ? `Volumen ${entry.seriesIndex}` : ""}
-                                                    {entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
-                                                        <span key={i} className="text-primary font-bold">[{tag}]</span>
-                                                    ))}
-                                                </p>
-                                            )}
+                                            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1 flex-1">
+                                                <span className="font-medium">
+                                                    {!entry.seriesIndex || ["unico", "único"].includes(entry.seriesIndex.toLowerCase())
+                                                        ? "Volumen único"
+                                                        : `Volumen ${entry.seriesIndex}`}
+                                                </span>
+                                                {entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
+                                                    <span key={i} className="text-primary font-bold">[{tag}]</span>
+                                                ))}
+                                            </p>
 
                                             <Button
                                                 size="sm"

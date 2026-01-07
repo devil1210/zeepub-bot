@@ -277,14 +277,16 @@ function BookDetailContent() {
                             <p className="text-base text-primary font-medium mb-2">{book.author}</p>
 
                             {/* Volume and Extra Tags (combined line) */}
-                            {(book.seriesIndex || (book.tags && book.tags.filter(t => !["NL", "NW", "WN", "EPUB"].includes(t.toUpperCase())).length > 0)) && (
-                                <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1 font-medium">
-                                    {book.seriesIndex ? `Volumen ${book.seriesIndex}` : ""}
-                                    {book.tags?.filter(t => !["NL", "NW", "WN", "EPUB"].includes(t.toUpperCase())).map((tag, i) => (
-                                        <span key={i} className="text-primary font-bold">[{tag}]</span>
-                                    ))}
-                                </p>
-                            )}
+                            <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1 font-medium">
+                                <span>
+                                    {!book.seriesIndex || ["unico", "único"].includes(book.seriesIndex.toLowerCase())
+                                        ? "Volumen único"
+                                        : `Volumen ${book.seriesIndex}`}
+                                </span>
+                                {book.tags?.filter(t => !["NL", "NW", "WN", "EPUB"].includes(t.toUpperCase())).map((tag, i) => (
+                                    <span key={i} className="text-primary font-bold">[{tag}]</span>
+                                ))}
+                            </p>
 
                             {/* Quick Info Chips */}
                             <div className="flex flex-wrap gap-2 text-xs mb-3">
@@ -405,7 +407,17 @@ function BookDetailContent() {
                                     Actualizado
                                 </span>
                                 <span className="text-foreground font-medium whitespace-nowrap ml-4">
-                                    {book.updatedDate.includes('T') ? book.updatedDate.split('T')[0] : book.updatedDate}
+                                    {(() => {
+                                        const raw = book.updatedDate.includes('T') ? book.updatedDate.split('T')[0] : book.updatedDate;
+                                        if (raw.includes('-')) {
+                                            const parts = raw.split('-');
+                                            if (parts.length === 3) {
+                                                // yyyy-mm-dd to dd-mm-yyyy
+                                                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                                            }
+                                        }
+                                        return raw;
+                                    })()}
                                 </span>
                             </div>
                         )}
