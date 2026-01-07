@@ -30,11 +30,12 @@ interface Book {
   fileType?: string
   // Enhanced metadata fields
   series?: string
-  volume?: string
+  seriesIndex?: string
   tags?: string[]
   cleanTitle?: string
   romaji?: string
   categories?: string[]
+  updatedDate?: string
 }
 
 interface PaginationState {
@@ -179,11 +180,12 @@ function SearchContent() {
         fileType: book.fileType,
         // ENRICHED with new fields for search results
         series: book.series,
-        volume: book.volume,
+        seriesIndex: book.seriesIndex,
         tags: book.tags,
         cleanTitle: book.cleanTitle,
         romaji: book.romaji,
-        categories: book.categories
+        categories: book.categories,
+        updatedDate: book.updatedDate
       }
       sessionStorage.setItem("preview-book", JSON.stringify(previewData))
 

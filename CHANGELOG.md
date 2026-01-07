@@ -36,6 +36,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Frontend**: Unified "Volumen" and tags into a single clean line in Book Detail.
 - **Frontend**: Added dedicated "Géneros" section to Book Detail page.
 
+## [v5.0.29] - 2026-01-07
+### fixed
+- **Metadata Consistency**: Standardized all backend and frontend field names to use `seriesIndex` and `updatedDate`.
+- **Robustness**: Improved the intelligent merging logic in Book Detail to prevent over-writing volume and update date when the API returns empty results.
+- **Backend**: Enhanced the catalog action to include more robust extraction of series/volume from entry metadata as a fallback to title parsing.
+
 ## [v5.0.28] - 2026-01-07
 ### fixed
 - **Catalog UI Optimization**: Standardized card dimensions for series and volumes (`w-20 h-28`).

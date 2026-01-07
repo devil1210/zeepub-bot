@@ -101,6 +101,12 @@ function BookDetailContent() {
                         if (!result.series && prevBook.series) {
                             merged.series = prevBook.series
                         }
+                        if (!result.seriesIndex && prevBook.seriesIndex) {
+                            merged.seriesIndex = prevBook.seriesIndex
+                        }
+                        if (!result.updatedDate && prevBook.updatedDate) {
+                            merged.updatedDate = prevBook.updatedDate
+                        }
 
                         return merged
                     })

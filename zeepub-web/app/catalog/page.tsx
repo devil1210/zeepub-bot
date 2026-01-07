@@ -40,13 +40,13 @@ interface Book {
     language?: string
     size?: string
     fileType?: string
-    // Enhanced metadata for better display
     series?: string
-    volume?: string
+    seriesIndex?: string
     tags?: string[]
     cleanTitle?: string
     romaji?: string
     categories?: string[]
+    updatedDate?: string
 }
 
 interface PaginationState {
@@ -273,11 +273,12 @@ function CatalogContent() {
                 fileType: entry.links.find((l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.type,
                 // Enhanced metadata persistence
                 series: entry.series,
-                volume: entry.volume,
+                seriesIndex: entry.seriesIndex,
                 tags: entry.tags,
                 cleanTitle: entry.cleanTitle,
                 romaji: entry.romaji,
-                categories: entry.categories
+                categories: entry.categories,
+                updatedDate: entry.updatedDate
             }))
 
             // Save current position before navigating to book details
@@ -319,11 +320,12 @@ function CatalogContent() {
                     fileType: book.fileType,
                     // Metadata suite
                     series: book.series,
-                    volume: book.volume,
+                    seriesIndex: book.seriesIndex,
                     tags: book.tags,
                     cleanTitle: book.cleanTitle,
                     romaji: book.romaji,
-                    categories: book.categories
+                    categories: book.categories,
+                    updatedDate: book.updatedDate
                 }))
                 router.push(`/book?id=${encodeURIComponent(url)}`)
             }
@@ -423,9 +425,9 @@ function CatalogContent() {
                                             )}
 
                                             {/* Volume and Extra Tags (combined) */}
-                                            {(book.volume || (book.tags && book.tags.filter(t => !["NL", "NW", "WN"].includes(t)).length > 0)) && (
+                                            {(book.seriesIndex || (book.tags && book.tags.filter(t => !["NL", "NW", "WN"].includes(t)).length > 0)) && (
                                                 <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
-                                                    {book.volume ? `Volumen ${book.volume}` : ""}
+                                                    {book.seriesIndex ? `Volumen ${book.seriesIndex}` : ""}
                                                     {book.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
                                                         <span key={i} className="text-primary font-semibold">[{tag}]</span>
                                                     ))}
@@ -544,9 +546,9 @@ function CatalogContent() {
                                             )}
 
                                             {/* Volume and Extra Tags (combined) */}
-                                            {(entry.volume || (entry.tags && entry.tags.filter(t => !["NL", "NW", "WN"].includes(t)).length > 0)) && (
+                                            {(entry.seriesIndex || (entry.tags && entry.tags.filter(t => !["NL", "NW", "WN"].includes(t)).length > 0)) && (
                                                 <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1 flex-1">
-                                                    {entry.volume ? `Volumen ${entry.volume}` : ""}
+                                                    {entry.seriesIndex ? `Volumen ${entry.seriesIndex}` : ""}
                                                     {entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
                                                         <span key={i} className="text-primary font-bold">[{tag}]</span>
                                                     ))}

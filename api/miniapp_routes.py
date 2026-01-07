@@ -253,6 +253,14 @@ async def handle_bot_request(
                 # Parse metadata from title for better display
                 title_meta = parse_metadata_from_title(title)
 
+                # Series/Volume extraction from entry metadata
+                entry_series = entry.get("calibre_series") or entry.get("schema_series")
+                entry_series_index = entry.get("calibre_series_index")
+
+                # Fallback to title parsing if metadata is missing
+                final_series = entry_series or title_meta.get("series", "")
+                final_series_index = entry_series_index or title_meta.get("volume", "")
+
                 results.append(
                     {
                         "id": book_id,
@@ -270,9 +278,10 @@ async def handle_bot_request(
                         "size": size,
                         "fileType": file_type,
                         "is_folder": subsection_url is not None,
+                        "updatedDate": entry.get("updated") or entry.get("published") or "",
                         # Enhanced metadata for better UI display
-                        "series": title_meta.get("series", ""),
-                        "volume": title_meta.get("volume", ""),
+                        "series": final_series,
+                        "seriesIndex": final_series_index,
                         "tags": title_meta.get("tags", []),
                         "cleanTitle": title_meta.get("clean_title", title),
                         "romaji": title_meta.get("romaji", ""),

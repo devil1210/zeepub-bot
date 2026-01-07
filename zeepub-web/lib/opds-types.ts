@@ -21,11 +21,12 @@ export interface OPDSEntry {
     year?: string
     // Enhanced metadata for better display
     series?: string
-    volume?: string
+    seriesIndex?: string
     tags?: string[]
     cleanTitle?: string
     romaji?: string
     categories?: string[]
+    updatedDate?: string
 }
 
 export interface OPDSFeed {
