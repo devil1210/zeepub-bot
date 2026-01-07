@@ -25,6 +25,7 @@ export interface OPDSEntry {
     tags?: string[]
     cleanTitle?: string
     romaji?: string
+    categories?: string[]
 }
 
 export interface OPDSFeed {

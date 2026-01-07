@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.13] - 2026-01-07
+
+### Fixed
+- **Backend**: Updated `extract_author` to use " - " as separator for multiple authors.
+- **Backend**: Added category/genre extraction for `feed` and `search` actions.
+- **Frontend**: Updated catalog and search cards to show genres below authors.
+- **Frontend**: Removed synopsis from catalog list cards for a cleaner look.
+- **Frontend**: Fixed TypeScript types for OPDS entries to include categories.
+
 ## [v5.0.12] - 2026-01-07
 
 ### Fixed

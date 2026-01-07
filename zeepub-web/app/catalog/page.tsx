@@ -46,6 +46,7 @@ interface Book {
     tags?: string[]
     cleanTitle?: string
     romaji?: string
+    categories?: string[]
 }
 
 interface PaginationState {
@@ -405,27 +406,14 @@ function CatalogContent() {
                                             {/* Authors */}
                                             <p className="text-xs text-primary font-medium mb-1 truncate">{book.author}</p>
 
-                                            {/* Volume info if available */}
-                                            {book.volume && (
-                                                <p className="text-[10px] text-muted-foreground mb-1">
-                                                    Volumen {book.volume}
+                                            {/* Genres display */}
+                                            {book.categories && book.categories.length > 0 && (
+                                                <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-2">
+                                                    {book.categories.join(", ")}
                                                 </p>
                                             )}
 
-                                            {/* Tags display (translator tags) */}
-                                            {book.tags && book.tags.length > 0 && (
-                                                <div className="flex gap-1 flex-wrap mb-1">
-                                                    {book.tags.filter(t => !["NL", "NW", "WN"].includes(t)).slice(0, 2).map((tag, i) => (
-                                                        <span key={i} className="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                                                            [{tag}]
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-2">
-                                                {book.is_folder ? t("book_section") : t("book_details_hint")}
-                                            </p>
+                                            {/* Volume info if available */}
 
                                             {!book.is_folder && book.download_url && (
                                                 <Button
@@ -531,6 +519,13 @@ function CatalogContent() {
                                             <p className="text-sm text-primary font-medium mb-1 truncate">
                                                 {entry.author}
                                             </p>
+
+                                            {/* Genres display */}
+                                            {entry.categories && entry.categories.length > 0 && (
+                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2 italic flex-1">
+                                                    {entry.categories.join(", ")}
+                                                </p>
+                                            )}
 
                                             {/* Volume info if available */}
                                             {entry.volume && (

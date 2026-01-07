@@ -241,6 +241,13 @@ async def handle_bot_request(
                 if not detail_url and book_id:
                     detail_url = abs_url(feed_base_url, book_id)
 
+                # Categories/Genres
+                categories = [
+                    tag.get("label") or tag.get("term")
+                    for tag in getattr(entry, "tags", [])
+                    if tag.get("label") or tag.get("term")
+                ]
+
                 # Parse metadata from title for better display
                 title_meta = parse_metadata_from_title(title)
 
@@ -267,6 +274,7 @@ async def handle_bot_request(
                         "tags": title_meta.get("tags", []),
                         "cleanTitle": title_meta.get("clean_title", title),
                         "romaji": title_meta.get("romaji", ""),
+                        "categories": categories,
                     }
                 )
 

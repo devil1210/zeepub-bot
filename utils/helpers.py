@@ -25,7 +25,7 @@ def extract_author(entry, is_folder=False) -> str:
             else getattr(entry, "authors", [])
         )
         if authors:
-            author = ", ".join(
+            author = " - ".join(
                 [
                     a.get("name", "") if hasattr(a, "get") else getattr(a, "name", "")
                     for a in authors
@@ -573,7 +573,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v5.0.12"
+CURRENT_VERSION = "v5.0.13"
 
 
 def get_current_version() -> str:
