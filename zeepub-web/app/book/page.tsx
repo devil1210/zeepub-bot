@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2 } from "lucide-react"
+import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2, Tag } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
@@ -228,18 +228,18 @@ function BookDetailContent() {
 
                         {/* Title and Author */}
                         <div className="flex-1 min-w-0">
-                            {/* Main Title - prioritize Romaji */}
+                            {/* Main Title - English/Clean */}
                             <h2 className="text-xl font-bold text-foreground mb-1 leading-tight line-clamp-3">
-                                {book.romaji || book.cleanTitle || book.title}
+                                {book.cleanTitle || book.title}
                                 {book.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
                                     ` [${book.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
                                     : ""}
                             </h2>
 
-                            {/* English Title as Sub-header if Romaji exists */}
-                            {book.romaji && (book.cleanTitle || book.series) && (
+                            {/* Romaji Name as Sub-title */}
+                            {book.romaji && (
                                 <p className="text-sm text-muted-foreground/80 font-medium mb-1 line-clamp-1 italic">
-                                    {book.cleanTitle || book.series}
+                                    {book.romaji}
                                 </p>
                             )}
 
@@ -305,6 +305,27 @@ function BookDetailContent() {
                     )
                 }
 
+                {/* Genres / Categories - New more visible section */}
+                {book.categories && book.categories.length > 0 && (
+                    <Card className="p-5 border-border mb-4 bg-card">
+                        <div className="flex items-center gap-2 mb-3 text-primary">
+                            <span className="p-1 bg-primary/10 rounded-full">
+                                <Tag className="w-3 h-3" />
+                            </span>
+                            <h3 className="text-xs font-bold uppercase tracking-wider">Géneros</h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {book.categories
+                                .filter(cat => !book.tags?.includes(cat))
+                                .map((cat, i) => (
+                                    <span key={i} className="px-2.5 py-1 bg-secondary text-foreground text-xs rounded-md font-medium">
+                                        {cat}
+                                    </span>
+                                ))}
+                        </div>
+                    </Card>
+                )}
+
                 {/* Additional Details */}
                 <Card className="p-5 border-border mb-6 bg-card">
                     <div className="flex items-center gap-2 mb-4 text-primary">
@@ -314,17 +335,6 @@ function BookDetailContent() {
                         <h3 className="text-xs font-bold uppercase tracking-wider">Detalles adicionales</h3>
                     </div>
                     <div className="divide-y divide-border/50 text-sm">
-                        {/* Genres / Categories */}
-                        {book.categories && book.categories.length > 0 && (
-                            <div className="flex justify-between py-2">
-                                <span className="text-muted-foreground">Géneros</span>
-                                <span className="text-foreground font-medium text-right ml-4 max-w-[60%]">
-                                    {book.categories
-                                        .filter(cat => !book.tags?.includes(cat)) // Avoid duplicating tags if they are in categories
-                                        .join(", ")}
-                                </span>
-                            </div>
-                        )}
                         {book.publisher && (
                             <div className="flex justify-between py-2">
                                 <span className="text-muted-foreground">Editorial</span>
@@ -358,10 +368,6 @@ function BookDetailContent() {
                                 <span className="text-foreground font-medium font-mono">{book.isbn}</span>
                             </div>
                         )}
-                        <div className="flex justify-between py-2">
-                            <span className="text-muted-foreground">ID OPDS</span>
-                            <span className="text-foreground font-medium truncate ml-4">{book.id}</span>
-                        </div>
                     </div>
                 </Card>
 

@@ -5,11 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [v5.0.20] - 2026-01-07
+## [v5.0.21] - 2026-01-07
 
 ### Changed
-- **Backend**: Improved `parse_metadata_from_title` with support for various hyphen types (`–`, `—`, `−`) and aggressive decorative symbol cleaning (`○`, `●`, etc.).
-- **Backend**: Unified metadata extraction keys between search and book-detail actions.
+- **Frontend**: Redesigned Book Detail header to prioritize English/Main title, with Romaji as a subtitle.
+- **Frontend**: Unified "Volumen" and tags into a single clean line in Book Detail.
+- **Frontend**: Added dedicated "Géneros" section to Book Detail page.
+- **Frontend**: Removed "ID OPDS" from Additional Details to declutter the UI.
+- **Backend**: definitive robust parsing for complex titles (multiple hyphen types, aggressive symbol cleaning).
+- **Backend**: Added detailed logging for `book-detail` requests.
+
+## [v5.0.20] - 2026-01-07
 
 ## [v5.0.19] - 2026-01-07
 

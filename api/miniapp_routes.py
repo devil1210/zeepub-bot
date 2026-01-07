@@ -483,6 +483,7 @@ async def handle_bot_request(
             # Robust author extraction for detail
             author = extract_author(entry, is_folder=subsection_url is not None)
 
+            # Enhanced metadata
             result = {
                 "id": entry.get("id", ""),
                 "title": entry.get("title", "Sin título"),
@@ -505,6 +506,15 @@ async def handle_bot_request(
                 "cleanTitle": extracted_meta.get("clean_title", ""),
                 "tags": extracted_meta.get("tags", []),
             }
+
+            logger.info(
+                f"[book-detail] Title: {result['title']}\n"
+                f"  -> Romaji: {result['romaji']}\n"
+                f"  -> CleanTitle: {result['cleanTitle']}\n"
+                f"  -> Author: {result['author']}\n"
+                f"  -> Vol: {result['seriesIndex']}\n"
+                f"  -> Tags: {result['tags']}"
+            )
 
             logger.info(
                 f"[book-detail] Returning result: {result['title']} (Cover: {result['cover']}, DL: {result['downloadUrl']}, Up: {result['upUrl']})"

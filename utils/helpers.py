@@ -298,15 +298,16 @@ def parse_metadata_from_title(title_str: str) -> dict:
 
     # 1. Extraer tags en corchetes [Tag]
     tags = re.findall(r"\[(.*?)\]", title_str)
-    # Limpiar título inicial de corchetes
+    # Limpiar título inicial de corchetes de forma global
     clean = re.sub(r"\[.*?\]", "", title_str).strip()
 
-    # 1b. Limpiar símbolos decorativos al inicio de forma más agresiva
-    # Específicamente ○ y otros símbolos que \w podría considerar erróneamente caracteres
-    clean = re.sub(r"^[\s⭘●•○\-\–\—\−\+]+", "", clean).strip()
+    # 1b. Limpiar símbolos decorativos al inicio de forma muy agresiva
+    # Maneja ○, ●, ⭘, • y varios tipos de guiones/puntos
+    clean = re.sub(r"^[^\w\(\)\[\]]+", "", clean).strip()
 
     # 2. Extract volume first to facilitate title splitting
-    vol_pattern = r"(?:Volumen|Vol\.?|Tomo|v)\s*(\d+(?:\.\d+)?)"
+    # Handles: Volumen, Vol, Tomo, v. y números decimales
+    vol_pattern = r"(?:Volumen|Vol\.?|Tomo|v\.?|V)\s*(\d+(?:\.\d+)?)"
     match = re.search(vol_pattern, clean, re.IGNORECASE)
 
     volume = ""
@@ -315,12 +316,12 @@ def parse_metadata_from_title(title_str: str) -> dict:
         volume = match.group(1)
         full_vol_str = match.group(0)
         # Remove " - Volumen XX" or " Volumen XX" from the string to get the base title
-        # Also handles various hyphen types
-        clean_no_vol = re.sub(rf"\s*(?:[\-\–\—\−]\s*)?{re.escape(full_vol_str)}.*", "", clean, flags=re.IGNORECASE).strip()
+        # regex handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus)
+        clean_no_vol = re.sub(rf"\s*[\-\–\—\−]?\s*{re.escape(full_vol_str)}.*", "", clean, flags=re.IGNORECASE).strip()
 
     # 3. Split parts by various hyphen types to find English vs Romaji
-    # Standard -, En dash –, Em dash —, and Minus −
-    parts = [p.strip() for p in re.split(r"\s+[\-\–\—\−]\s+", clean_no_vol) if p.strip()]
+    # We use a non-capturing group for the different dashes
+    parts = [p.strip() for p in re.split(r"\s*[\-\–\—\−]\s*", clean_no_vol) if p.strip()]
 
     romaji = ""
     series = clean_no_vol
@@ -330,28 +331,31 @@ def parse_metadata_from_title(title_str: str) -> dict:
         last_part = parts[-1]
         if last_part.lower() not in ["storyline", "libro"]:
             romaji = last_part
-            series = " - ".join(parts[:-1])
+            series = " - ".join(parts[:-1]) if len(parts) > 2 else parts[0]
         elif len(parts) >= 3:
             romaji = parts[-2]
-            series = " - ".join(parts[:-2])
+            series = " - ".join(parts[:-2]) if len(parts) > 3 else parts[0]
 
-    # 4. Fallback for specific Romaji characters (hyphens/Japanese)
+    # 4. Fallback for specific Romaji structures (Japanese characters)
     if not romaji:
-        specific_romaji_pattern = r"(?:[\-\–\—\−])\s*([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s*(?:[\-\–\—\−])\s*(?:Volumen|Vol)"
+        specific_romaji_pattern = r"[\-\–\—\−]\s*([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s*[\-\–\—\−]\s*"
         sr_match = re.search(specific_romaji_pattern, clean, re.IGNORECASE)
         if sr_match:
             romaji = sr_match.group(1).strip()
-            series = re.sub(re.escape(sr_match.group(0)), "", clean).strip()
+            series = clean.replace(sr_match.group(0), " - ").strip()
+            series = re.sub(vol_pattern, "", series, flags=re.IGNORECASE).strip()
 
-    # 5. Final cleaning
+    # 5. Final cleaning of series title
     series = re.sub(r"[\-:\s]+$", "", series).strip()
-    if not series and not volume:
-        series = clean
+
+    # If we have Romaji, cleanTitle should be the English Part (series)
+    # This allows the frontend to show English as main title if romaji exists
+    clean_title_result = series if romaji else clean_no_vol
 
     return {
         "series": series,
         "volume": volume,
-        "clean_title": clean_no_vol,
+        "clean_title": clean_title_result,
         "tags": tags,
         "romaji": romaji,
     }
@@ -586,7 +590,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v5.0.20"
+CURRENT_VERSION = "v5.0.21"
 
 
 def get_current_version() -> str:
