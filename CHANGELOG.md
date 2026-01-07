@@ -36,6 +36,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Frontend**: Unified "Volumen" and tags into a single clean line in Book Detail.
 - **Frontend**: Added dedicated "Géneros" section to Book Detail page.
 
+## [v5.0.28] - 2026-01-07
+### fixed
+- **Catalog UI Optimization**: Standardized card dimensions for series and volumes (`w-20 h-28`).
+- **Text Layout**: Improved text wrapping using `line-clamp` characters, ensuring titles and authors stay within cards without breaking the layout.
+
 ## [v5.0.23] - 2026-01-07
 
 ### Fixed

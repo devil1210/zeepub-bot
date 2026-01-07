@@ -476,25 +476,25 @@ function CatalogContent() {
                                     style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden">
+                                        <div className="w-20 h-28 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden border border-border/50 shadow-sm">
                                             {entry.cover_url ? (
                                                 <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
                                             ) : (
-                                                <Folder className="w-6 h-6 text-primary" />
+                                                <Folder className="w-8 h-8 text-primary" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                            <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors mb-1">
                                                 {entry.title}
                                             </h3>
                                             {entry.author && entry.author !== "Colección" && (
-                                                <p className="text-xs text-primary font-medium truncate">
+                                                <p className="text-xs text-primary font-medium line-clamp-1 mb-1">
                                                     {entry.author}
                                                 </p>
                                             )}
                                             {/* Genres display for folders/series */}
                                             {entry.categories && entry.categories.length > 0 && (
-                                                <p className="text-xs text-muted-foreground truncate italic">
+                                                <p className="text-xs text-muted-foreground line-clamp-2 italic">
                                                     {entry.categories.join(", ")}
                                                 </p>
                                             )}
@@ -532,7 +532,7 @@ function CatalogContent() {
                                             </h3>
 
                                             {/* Authors */}
-                                            <p className="text-sm text-primary font-medium mb-1 truncate">
+                                            <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
                                                 {entry.author}
                                             </p>
 

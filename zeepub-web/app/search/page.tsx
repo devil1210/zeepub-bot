@@ -224,7 +224,7 @@ function SearchContent() {
               className="p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group"
             >
               <div className="flex gap-4">
-                <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50 flex items-center justify-center">
                   {book.cover ? (
                     <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
                   ) : book.isFolder ? (
@@ -246,7 +246,7 @@ function SearchContent() {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-primary font-medium mb-1 truncate">{book.author}</p>
+                  <p className="text-sm text-primary font-medium mb-1 line-clamp-1">{book.author}</p>
                   <p className="text-xs text-muted-foreground line-clamp-2 italic mb-2">
                     {book.isFolder ? t("book_section") : t("book_details_hint")}
                   </p>
