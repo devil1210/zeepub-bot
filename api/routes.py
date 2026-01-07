@@ -13,15 +13,9 @@ from utils.helpers import (
     formatear_mensaje_portada,
     find_zeepubs_destino,
     abs_url,
+    extract_author,
+    parse_metadata_from_title,
 )
-from utils.security import validate_telegram_data
-from utils.http_client import fetch_bytes
-from services.epub_service import (
-    parse_opf_from_epub,
-    extract_cover_from_epub,
-    extract_internal_title,
-)
-from services.user_service import get_effective_user, get_user_info
 import logging
 
 
@@ -106,42 +100,26 @@ async def get_feed(
             # Filtering logic
             if is_root:
                 if admin_mode:
-                    # Aggressive filtering for Evil Root
                     if title_low not in titles_to_keep_evil:
                         continue
                 else:
-                    # Standard filtering for Standard Root
                     if title_low in titles_to_exclude:
                         continue
-            else:
-                # In sub-feeds, we generally don't filter by title (we want to see books/folders)
-                pass
 
-            # Special handling for "Todas las bibliotecas" for non-admins
-            if not is_admin and (
-                title == "Todas las bibliotecas" or title == "All libraries"
-            ):
+            # Special handling for "Todas las bibliotecas"
+            entry_override_url = None
+            if not is_admin and (title == "Todas las bibliotecas" or title == "All libraries"):
                 title = "Biblioteca Zeepubs"
-                # Try to find direct link to ZeePubs ES
                 try:
-                    # We might need to fetch the subsection to find the direct link if it's not immediate
-                    # But find_zeepubs_destino works on a FEED object.
-                    # Here 'feed' is the current feed we are iterating.
-                    # check if this entry is the one pointing to libraries
                     libraries_url = None
                     for link in getattr(entry, "links", []):
                         if link.get("rel") == "subsection":
                             libraries_url = normalize_url(link.get("href"))
                             break
-
                     if libraries_url:
-                        # Fetch that feed to find ZeePubs
                         lib_feed = await get_cached_feed(libraries_url)
-                        direct_url = find_zeepubs_destino(
-                            lib_feed, prefer_libraries=True
-                        )
+                        direct_url = find_zeepubs_destino(lib_feed, prefer_libraries=True)
                         if direct_url:
-                            # Level 2 deep-link: Find the first library within the ZeePubs list
                             sub_lib_feed = await get_cached_feed(direct_url)
                             deep_link = None
                             for sub_entry in getattr(sub_lib_feed, "entries", []):
@@ -149,49 +127,28 @@ async def get_feed(
                                     if sub_link.get("rel") == "subsection":
                                         deep_link = normalize_url(sub_link.get("href"))
                                         break
-                                if deep_link:
-                                    break
-
+                                if deep_link: break
                             entry_override_url = deep_link or direct_url
-                        else:
-                            entry_override_url = None
-                    else:
-                        entry_override_url = None
-
                 except Exception as e:
                     logger.warning(f"Error resolving direct link for ZeePubs: {e}")
-                    entry_override_url = None
-            else:
-                entry_override_url = None
 
+            # Basic metadata
             cover_url = None
             subsection_url = None
-
-            # Buscar cover y subsection en links
             for link in getattr(entry, "links", []):
                 link_type = link.get("type", "")
                 link_rel = link.get("rel", "")
-                if (
-                    "image" in link_type
-                    or "cover" in link_rel
-                    or link_rel == "http://opds-spec.org/image"
-                ):
+                if "image" in link_type or "cover" in link_rel or link_rel == "http://opds-spec.org/image":
                     cover_url = normalize_url(link.get("href"))
                 elif link_rel == "subsection":
-                    # Use override if available
-                    if entry_override_url:
-                        subsection_url = entry_override_url
-                    else:
-                        subsection_url = normalize_url(link.get("href"))
+                    subsection_url = entry_override_url or normalize_url(link.get("href"))
 
-            # Buscar cover en content
             if not cover_url and hasattr(entry, "content"):
                 for content in entry.content:
                     if "image" in content.get("type", ""):
                         cover_url = normalize_url(content.get("value"))
                         break
 
-            # Extra metadata
             publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
             language = entry.get("dc_language") or entry.get("dcterms_language")
             published = entry.get("published") or entry.get("issued")
@@ -200,17 +157,15 @@ async def get_feed(
             isbn = None
             identifier = entry.get("identifier")
             if identifier and "isbn" in identifier.lower():
-                isbn = identifier.split(":")[-1]
+                isbn = identifier.split(":")[-1].strip()
 
             detail_url = None
             size = None
             file_type = None
-
             for link in getattr(entry, "links", []):
                 rel = link.get("rel", "")
                 l_type = link.get("type", "")
                 href = normalize_url(link.get("href"))
-
                 if rel == "self" or rel == "alternate" or "type=entry" in l_type:
                     if not detail_url or rel == "self":
                         detail_url = href
@@ -218,14 +173,26 @@ async def get_feed(
                     file_type = l_type
                     size = link.get("contentlength") or link.get("length")
 
-            # Fallback for detail_url: if missing, use ID after normalization
             if not detail_url and entry.get("id"):
                 detail_url = normalize_url(entry.get("id"))
+
+            # --- NEW ROBUST METADATA ---
+            is_folder = subsection_url is not None
+            author = extract_author(entry, is_folder=is_folder)
+
+            raw_tags = getattr(entry, "tags", [])
+            categories = [
+                tag.get("label") or tag.get("term")
+                for tag in raw_tags
+                if tag.get("label") or tag.get("term")
+            ]
+
+            title_meta = parse_metadata_from_title(title)
 
             entries.append(
                 {
                     "title": title,
-                    "author": entry.get("author", "Desconocido"),
+                    "author": author,
                     "summary": entry.get("summary", ""),
                     "id": entry.get("id", ""),
                     "cover_url": cover_url,
@@ -237,6 +204,13 @@ async def get_feed(
                     "year": year,
                     "size": size,
                     "file_type": file_type,
+                    "is_folder": is_folder,
+                    "series": title_meta.get("series", ""),
+                    "volume": title_meta.get("volume", ""),
+                    "tags": title_meta.get("tags", []),
+                    "cleanTitle": title_meta.get("clean_title", title),
+                    "romaji": title_meta.get("romaji", ""),
+                    "categories": categories,
                     "links": [
                         {
                             "href": normalize_url(l.get("href")),

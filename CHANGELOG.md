@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.16] - 2026-01-07
+
+### Fixed
+- **Backend**: Unified feed processing logic between `api/routes.py` and `api/miniapp_routes.py`.
+- **Backend**: Fixed issue where metadata (authors, genres, romaji) was missing in the catalog due to redundant legacy code in `api/routes.py`.
+- **Backend**: Updated `book-detail` action to include `romaji`, `cleanTitle`, and `tags`.
+
 ## [v5.0.15] - 2026-01-07
 
 ### Changed
