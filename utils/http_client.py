@@ -152,7 +152,10 @@ async def fetch_bytes(
                 )
                 return None
         except Exception as e:
-            logger.error(f"Error inesperado fetch_bytes para {url}: {e}", exc_info=True)
+            msg = f"Error inesperado fetch_bytes para {url}: {e}"
+            if 'resp' in locals() and hasattr(resp, 'status'):
+                msg += f" (Status: {resp.status})"
+            logger.error(msg, exc_info=True)
             return None
 
     return None

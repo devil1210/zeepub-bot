@@ -132,6 +132,15 @@ class DatabaseManager:
                 if "duplicate column" not in str(e).lower():
                     logger.debug(f"Notice during migration (total_downloads): {e}")
 
+            # Migración: Agregar nuevas columnas a download_history para historial enriquecido
+            for col in [("romaji_title", "TEXT"), ("series", "TEXT"), ("volume", "TEXT"), ("translator", "TEXT"), ("clean_title", "TEXT")]:
+                try:
+                    await conn.execute(f"ALTER TABLE download_history ADD COLUMN {col[0]} {col[1]}")
+                    logger.info(f"Migración: Agregada columna '{col[0]}' a tabla download_history")
+                except Exception as e:
+                    if "duplicate column" not in str(e).lower():
+                        logger.debug(f"Notice during migration (download_history {col[0]}): {e}")
+
             await conn.commit()
             logger.info(f"Database initialized and schema verified at {self.db_path}")
 

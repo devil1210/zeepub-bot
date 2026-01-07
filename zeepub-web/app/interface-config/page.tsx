@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
-import { Info, Moon, Sun, Monitor, Type, UserCircle, BookOpen, Heart, HelpCircle, Palette, Save, Globe, AlertTriangle, Search, CreditCard, RotateCcw, Check } from "lucide-react"
+import { Info, Moon, Sun, Monitor, Type, UserCircle, BookOpen, Heart, HelpCircle, Palette, Save, Globe, AlertTriangle, Search, CreditCard, RotateCcw, Check, ImageOff } from "lucide-react"
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
 import { useTheme } from "@/components/theme-provider"
@@ -61,6 +61,8 @@ export default function InterfaceConfigPage() {
         setAnimationDistance,
         disableDisplacement,
         setDisableDisplacement,
+        dataSaver,
+        setDataSaver,
     } = useTheme()
 
     const { isAdmin, userProfile } = useTelegramContext()
@@ -103,6 +105,7 @@ export default function InterfaceConfigPage() {
                 showDonateCard: localStorage.getItem("showDonateCard") === "true",
                 showHelpCard: localStorage.getItem("showHelpCard") === "true",
                 showSettingsInMenu: localStorage.getItem("showSettingsInMenu") === "true",
+                dataSaver: localStorage.getItem("dataSaver") === "true",
                 enableAnimations: localStorage.getItem("enableAnimations") === "true",
                 animationDuration: parseInt(localStorage.getItem("animationDuration") || "200"),
                 animationDistance: parseInt(localStorage.getItem("animationDistance") || "4"),
@@ -518,6 +521,26 @@ export default function InterfaceConfigPage() {
                         </TabsContent>
 
                         <TabsContent value="interface" className="space-y-6 mt-6">
+                            {/* Ahorro de Datos */}
+                            <Card className="p-4 bg-primary/5 border-primary/20">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                            <ImageOff className="w-6 h-6 text-primary" />
+                                        </div>
+                                        <div>
+                                            <Label className="text-base font-bold">Ahorro de Datos</Label>
+                                            <p className="text-xs text-muted-foreground">Oculta las portadas para reducir el consumo</p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={dataSaver}
+                                        onCheckedChange={setDataSaver}
+                                        className="scale-110"
+                                    />
+                                </div>
+                            </Card>
+
                             {/* Avatar Scale */}
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">

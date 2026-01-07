@@ -60,7 +60,12 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         title: str,
         author: Optional[str] = None,
         download_url: Optional[str] = None,
-        file_size: Optional[int] = None
+        file_size: Optional[int] = None,
+        romaji_title: Optional[str] = None,
+        series: Optional[str] = None,
+        volume: Optional[str] = None,
+        translator: Optional[str] = None,
+        clean_title: Optional[str] = None
     ) -> int:
         """
         Record a download in the history.
@@ -79,10 +84,10 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             cursor = await conn.execute(
                 """
                 INSERT INTO download_history
-                (user_id, title, author, download_url, file_size)
-                VALUES (?, ?, ?, ?, ?)
+                (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (user_id, title, author, download_url, file_size)
+                (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title)
             )
             await conn.commit()
             return cursor.lastrowid
@@ -105,7 +110,7 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 """
-                SELECT id, title, author, file_size, downloaded_at
+                SELECT id, title, author, file_size, downloaded_at, romaji_title, series, volume, translator, clean_title
                 FROM download_history
                 WHERE user_id = ?
                 ORDER BY downloaded_at DESC
@@ -121,7 +126,12 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
                     "title": row[1],
                     "author": row[2] or "Desconocido",
                     "file_size": row[3],
-                    "downloaded_at": row[4]
+                    "downloaded_at": row[4],
+                    "romaji_title": row[5],
+                    "series": row[6],
+                    "volume": row[7],
+                    "translator": row[8],
+                    "clean_title": row[9]
                 }
                 for row in rows
             ]

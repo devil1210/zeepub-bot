@@ -12,6 +12,7 @@ import {
     BookOpen,
     Download,
     Search,
+    ImageOff,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { OpdsClient } from "@/lib/opds-client"
@@ -68,7 +69,7 @@ function CatalogContent() {
     const [currentFeedUrl, setCurrentFeedUrl] = useState<string>("")
 
     // Replicando funcionalidad v3.13.8: Búsqueda reactiva en catálogo (inline)
-    const { disableDisplacement } = useTheme()
+    const { disableDisplacement, dataSaver } = useTheme()
     const [searchQuery, setSearchQuery] = useState("")
     const [searchResults, setSearchResults] = useState<Book[]>([])
     const [isSearching, setIsSearching] = useState(false)
@@ -395,7 +396,12 @@ function CatalogContent() {
                                 >
                                     <div className="flex gap-4">
                                         <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                                            {book.cover ? (
+                                            {dataSaver ? (
+                                                <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
+                                                    <ImageOff className="w-6 h-6 mb-1 opacity-20" />
+                                                    <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
+                                                </div>
+                                            ) : book.cover ? (
                                                 <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
                                             ) : book.isFolder ? (
                                                 <div className="w-full h-full flex items-center justify-center bg-primary/10">
@@ -481,7 +487,12 @@ function CatalogContent() {
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-20 h-28 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden border border-border/50 shadow-sm">
-                                            {entry.cover_url ? (
+                                            {dataSaver ? (
+                                                <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
+                                                    <ImageOff className="w-7 h-7 mb-1 opacity-20" />
+                                                    <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
+                                                </div>
+                                            ) : entry.cover_url ? (
                                                 <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
                                             ) : (
                                                 <Folder className="w-8 h-8 text-primary" />
@@ -520,11 +531,18 @@ function CatalogContent() {
                                 >
                                     <div className="flex gap-4">
                                         <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                                            <img
-                                                src={entry.cover_url || "/placeholder.svg"}
-                                                alt={entry.title}
-                                                className="w-full h-full object-cover"
-                                            />
+                                            {dataSaver ? (
+                                                <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
+                                                    <ImageOff className="w-7 h-7 mb-1 opacity-20" />
+                                                    <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
+                                                </div>
+                                            ) : (
+                                                <img
+                                                    src={entry.cover_url || "/placeholder.svg"}
+                                                    alt={entry.title}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            )}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col">
                                             {/* Title - prioritize Romaji for cards */}

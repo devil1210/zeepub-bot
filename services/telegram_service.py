@@ -730,12 +730,28 @@ async def descargar_epub_pendiente(
             from repositories.download_repository import download_repo
 
             author = meta.get("autor", "Desconocido")
+            
+            # Enrich metadata if needed from title
+            from utils.helpers import parse_metadata_from_title
+            title_meta = parse_metadata_from_title(titulo_vol)
+            
+            romaji = meta.get("romaji_title") or title_meta.get("romaji")
+            series = meta.get("titulo_serie") or title_meta.get("series")
+            volume = meta.get("volumen") or meta.get("series_index") or title_meta.get("volume")
+            clean_title = meta.get("internal_title") or title_meta.get("clean_title")
+            translator = meta.get("traductor") or meta.get("publisher")
+
             await download_repo.add_download(
                 user_id=uid,
                 title=titulo_vol,
                 author=author,
                 download_url=epub_url,
                 file_size=int(size_mb * 1024 * 1024) if size_mb else None,
+                romaji_title=romaji,
+                series=series,
+                volume=volume,
+                translator=translator,
+                clean_title=clean_title
             )
         except Exception as e:
             logger.error(f"Error saving download history: {e}")
@@ -1110,12 +1126,28 @@ async def enviar_libro_directo(
                 from repositories.download_repository import download_repo
 
                 author = meta.get("autor", "Desconocido")
+                
+                # Enrich metadata if needed from title
+                from utils.helpers import parse_metadata_from_title
+                title_meta = parse_metadata_from_title(titulo_vol)
+                
+                romaji = meta.get("romaji_title") or title_meta.get("romaji")
+                series = meta.get("titulo_serie") or title_meta.get("series")
+                volume = meta.get("series_index") or title_meta.get("volume")
+                clean_title = meta.get("internal_title") or title_meta.get("clean_title")
+                translator = meta.get("traductor") or meta.get("publisher")
+
                 await download_repo.add_download(
                     user_id=user_id,
                     title=titulo_vol,
                     author=author,
                     download_url=download_url,
                     file_size=int(size_mb * 1024 * 1024) if size_mb else None,
+                    romaji_title=romaji,
+                    series=series,
+                    volume=volume,
+                    translator=translator,
+                    clean_title=clean_title
                 )
             except Exception as e:
                 logger.error(f"Error saving download history: {e}")

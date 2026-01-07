@@ -13,7 +13,8 @@ import { useStrings } from "@/components/strings-provider"
 import { Pagination } from "@/components/pagination"
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
-import { Loader2 } from "lucide-react"
+import { Loader2, ImageOff } from "lucide-react"
+import { useTheme } from "@/components/theme-provider"
 
 interface Book {
   id: string
@@ -59,6 +60,7 @@ function SearchContent() {
   const { webApp } = useTelegramContext()
   const { t } = useStrings()
   const router = useRouter()
+  const { dataSaver } = useTheme()
   const searchTimeout = useRef<NodeJS.Timeout | null>(null)
 
   const handleSearch = async (pageUrl?: string) => {
@@ -227,7 +229,12 @@ function SearchContent() {
             >
               <div className="flex gap-4">
                 <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50 flex items-center justify-center">
-                  {book.cover ? (
+                  {dataSaver ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
+                      <ImageOff className="w-7 h-7 mb-1 opacity-20" />
+                      <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
+                    </div>
+                  ) : book.cover ? (
                     <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
                   ) : book.isFolder ? (
                     <div className="w-full h-full flex items-center justify-center bg-primary/10">

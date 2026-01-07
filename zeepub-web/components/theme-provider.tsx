@@ -31,6 +31,8 @@ interface ThemeContextType {
   setAnimationDistance: (val: number) => void
   disableDisplacement: boolean
   setDisableDisplacement: (disabled: boolean) => void
+  dataSaver: boolean
+  setDataSaver: (enabled: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -62,6 +64,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setAnimationDistance: () => { },
   disableDisplacement: false,
   setDisableDisplacement: () => { },
+  dataSaver: false,
+  setDataSaver: () => { },
 })
 
 export function useTheme() {
@@ -131,6 +135,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [showDonateCard, setShowDonateCard] = useState(true)
   const [showHelpCard, setShowHelpCard] = useState(true)
   const [showSettingsInMenu, setShowSettingsInMenu] = useState(false)
+  const [dataSaver, setDataSaver] = useState(false)
   const [enableAnimations, setEnableAnimations] = useState(false)
   const [animationDuration, setAnimationDuration] = useState(200)
   const [animationDistance, setAnimationDistance] = useState(4)
@@ -155,6 +160,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedEnableAnimations = localStorage.getItem("enableAnimations")
     const savedAnimDuration = localStorage.getItem("animationDuration")
     const savedAnimDistance = localStorage.getItem("animationDistance")
+    const savedDataSaver = localStorage.getItem("dataSaver")
 
     // Sync with Backend (Role Defaults)
     const fetchRemoteDefaults = async () => {
@@ -234,6 +240,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setAnimationDistance(data.animationDistance)
             localStorage.setItem("animationDistance", String(data.animationDistance))
           }
+          if (data.dataSaver !== undefined) {
+            setDataSaver(data.dataSaver)
+            localStorage.setItem("dataSaver", String(data.dataSaver))
+          }
         }
       } catch (error) {
         console.error("Error fetching UI defaults:", error)
@@ -256,6 +266,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedEnableAnimations !== null) setEnableAnimations(savedEnableAnimations === "true")
     if (savedAnimDuration) setAnimationDuration(parseInt(savedAnimDuration))
     if (savedAnimDistance) setAnimationDistance(parseInt(savedAnimDistance))
+    if (savedDataSaver !== null) setDataSaver(savedDataSaver === "true")
 
     // Then fetch remote defaults for missing ones
     fetchRemoteDefaults()
@@ -429,6 +440,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [disableDisplacement, isLoaded, shouldPersist])
 
 
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("dataSaver", String(dataSaver))
+    }
+  }, [dataSaver, isLoaded, shouldPersist])
+
   const saveGlobalSettings = async (role: string) => {
     try {
       const { callBotAPI } = await import("@/lib/api")
@@ -445,7 +463,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         enableAnimations,
         animationDuration,
         animationDistance,
-        disableDisplacement
+        disableDisplacement,
+        dataSaver
       }
       await callBotAPI("ui_settings", { subAction: "set", role, settings })
     } catch (error) {
@@ -471,6 +490,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.animationDuration !== undefined) setAnimationDuration(settings.animationDuration)
     if (settings.animationDistance !== undefined) setAnimationDistance(settings.animationDistance)
     if (settings.disableDisplacement !== undefined) setDisableDisplacement(settings.disableDisplacement)
+    if (settings.dataSaver !== undefined) setDataSaver(settings.dataSaver)
 
     // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
     if (persistToLocal) {
@@ -487,6 +507,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("animationDuration", String(settings.animationDuration ?? 200))
       localStorage.setItem("animationDistance", String(settings.animationDistance ?? 4))
       localStorage.setItem("disableDisplacement", String(settings.disableDisplacement ?? false))
+      localStorage.setItem("dataSaver", String(settings.dataSaver ?? false))
     }
   }
 
@@ -519,6 +540,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setAnimationDistance,
         disableDisplacement,
         setDisableDisplacement,
+        dataSaver,
+        setDataSaver,
         saveGlobalSettings,
         applySettings,
       }}

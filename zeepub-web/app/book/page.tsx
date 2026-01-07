@@ -4,7 +4,8 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock } from "lucide-react"
+import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock, ImageOff } from "lucide-react"
+import { useTheme } from "@/components/theme-provider"
 import { Skeleton } from "@/components/ui/skeleton"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
@@ -40,6 +41,7 @@ function BookDetailContent() {
     const { webApp, publishTarget, targetId, threadId } = useTelegramContext()
     const { t } = useStrings()
     const [book, setBook] = useState<BookDetail | null>(null)
+    const { dataSaver } = useTheme()
     const [isLoading, setIsLoading] = useState(true)
     const [isDownloading, setIsDownloading] = useState(false)
 
@@ -247,7 +249,12 @@ function BookDetailContent() {
                     <div className="flex gap-6 items-start">
                         {/* Large Cover */}
                         <div className="w-32 h-48 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-xl border border-border/50">
-                            {book.cover ? (
+                            {dataSaver ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
+                                    <ImageOff className="w-10 h-10 mb-2 opacity-20" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-30 px-2 text-center">Modo Ahorro</span>
+                                </div>
+                            ) : book.cover ? (
                                 <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-primary/5">

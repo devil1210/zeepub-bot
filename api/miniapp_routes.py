@@ -365,8 +365,11 @@ async def handle_bot_request(
 
             if not feed:
                 logger.error(f"[book-detail] No feed data returned from {book_id_url}")
+                # Use a more descriptive error if we can detect it's a 500
+                # Since get_cached_feed hides the status, we assume if it's None and it was a valid-looking URL, 
+                # it's likely a server error from source.
                 raise HTTPException(
-                    status_code=404, detail="Book detail feed not found"
+                    status_code=502, detail="Error en el servidor de origen (OPDS). Intenta más tarde."
                 )
 
             # OPDS entries can be at the top level or in feed.entries
@@ -595,13 +598,28 @@ async def handle_bot_request(
             try:
                 from repositories.download_repository import download_repo
 
-                downloads = await download_repo.get_user_downloads(user_id, limit=10)
+                downloads = await download_repo.get_user_downloads(user_id, limit=20)
+
+                # Map to frontend expected format
+                formatted = []
+                for d in downloads:
+                    formatted.append({
+                        "id": d["id"],
+                        "title": d["title"],
+                        "author": d["author"],
+                        "downloaded_at": d["downloaded_at"],
+                        "file_size": d["file_size"],
+                        "romaji_title": d.get("romaji_title"),
+                        "series": d.get("series"),
+                        "volume": d.get("volume"),
+                        "translator": d.get("translator"),
+                        "clean_title": d.get("clean_title")
+                    })
 
                 logger.info(
-                    f"[user_downloads_history] User {user_id} - Retrieved {len(downloads)} downloads"
+                    f"[user_downloads_history] User {user_id} - Retrieved {len(formatted)} downloads"
                 )
-
-                return {"downloads": downloads}
+                return {"downloads": formatted}
             except Exception as e:
                 logger.error(f"Error fetching download history for user {user_id}: {e}")
                 return {"downloads": []}
@@ -714,6 +732,7 @@ async def handle_bot_request(
                     "showDonateCard": True,
                     "showHelpCard": True,
                     "showSettingsInMenu": False,
+                    "dataSaver": False,
                 }
 
                 try:

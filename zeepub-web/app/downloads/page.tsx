@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Download, CheckCircle, Clock, FileText } from "lucide-react"
+import { Download, CheckCircle, Clock, FileText, Globe } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { callBotAPI } from "@/lib/api"
@@ -15,6 +15,11 @@ interface DownloadItem {
   date: string
   size: string
   status: "completed" | "pending"
+  romaji_title?: string
+  series?: string
+  volume?: string
+  translator?: string
+  clean_title?: string
 }
 
 import { AccessGuard } from "@/components/access-guard"
@@ -71,6 +76,11 @@ export default function DownloadsPage() {
               date: formattedDate,
               size: `${sizeMB} MB`,
               status: "completed" as const,
+              romaji_title: item.romaji_title,
+              series: item.series,
+              volume: item.volume,
+              translator: item.translator,
+              clean_title: item.clean_title
             }
           })
           setDownloads(formattedDownloads)
@@ -156,20 +166,50 @@ export default function DownloadsPage() {
                         <FileText className="w-6 h-6 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="font-semibold text-foreground line-clamp-1">{item.title}</h4>
+                        <div className="flex items-start justify-between gap-2 mb-0.5">
+                          <h4 className="font-semibold text-foreground line-clamp-1 leading-tight">
+                            {item.clean_title || item.title}
+                          </h4>
                           {item.status === "completed" && (
-                            <Badge variant="outline" className="text-green-500 border-green-500/50 flex-shrink-0">
+                            <Badge variant="outline" className="text-green-500 border-green-500/50 flex-shrink-0 text-[10px] h-5">
                               <CheckCircle className="w-3 h-3 mr-1" />
                               {t("downloads_history_sent")}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{item.author}</p>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>{item.date}</span>
+
+                        {item.romaji_title && (
+                          <p className="text-[11px] text-muted-foreground italic mb-1 line-clamp-1">
+                            {item.romaji_title}
+                          </p>
+                        )}
+
+                        <p className="text-xs text-primary font-medium mb-1">{item.author}</p>
+
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground mb-1">
+                          {item.volume && (
+                            <span className="bg-primary/5 px-1.5 py-0.5 rounded text-primary font-bold">
+                              {["unico", "único"].includes(item.volume.toLowerCase()) ? "Volumen único" : `Volumen ${item.volume}`}
+                            </span>
+                          )}
+                          {item.translator && (
+                            <span className="flex items-center gap-1">
+                              <Globe className="w-3 h-3" />
+                              {item.translator}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {item.date}
+                          </span>
                           <span>•</span>
-                          <span>{item.size}</span>
+                          <span className="flex items-center gap-1">
+                            <FileText className="w-3 h-3" />
+                            {item.size}
+                          </span>
                         </div>
                       </div>
                     </div>

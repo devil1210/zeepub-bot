@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.31] - 2026-01-07
+### Added
+- **Modo Ahorro de Datos**: Nueva opción en configuración para ocultar portadas y reducir consumo.
+- **Historial Enriquecido**: El historial de descargas ahora muestra Título Romaji, Volumen, Traductor y tamaño real del archivo.
+- **Metadatos Persistentes**: Mejorada la recolección de metadatos desde el título para descargas directas.
+
+### Fixed
+- **OPDS Error 500**: Mejorado el feedback cuando el servidor de origen falla, evitando mensajes de "no encontrado" genéricos.
+- **Corrección de Indentación**: Corregido un error visual en el historial de descargas.
+
 ## [v5.0.30] - 2026-01-07
 ### fixed
 - **UI Metadata**: Restored missing Volume display in search and catalog cards.
