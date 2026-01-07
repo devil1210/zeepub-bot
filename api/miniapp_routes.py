@@ -501,6 +501,7 @@ async def handle_bot_request(
                 "size": size,
                 "fileType": file_type,
                 "upUrl": subsection_url,
+                "updatedDate": entry.get("updated", ""),
                 # Enhanced metadata
                 "romaji": extracted_meta.get("romaji", ""),
                 "cleanTitle": extracted_meta.get("clean_title", ""),

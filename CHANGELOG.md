@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.22] - 2026-01-07
+
+### Added
+- **Mini App**: Added "Fecha de actualización" (from `<updated>` tag) to Book Detail page.
+
 ## [v5.0.21] - 2026-01-07
 
 ### Changed

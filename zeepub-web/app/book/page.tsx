@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2, Tag } from "lucide-react"
+import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
@@ -31,6 +31,7 @@ interface BookDetail {
     romaji?: string
     cleanTitle?: string
     tags?: string[]
+    updatedDate?: string
 }
 
 function BookDetailContent() {
@@ -366,6 +367,17 @@ function BookDetailContent() {
                             <div className="flex justify-between py-2">
                                 <span className="text-muted-foreground">ISBN</span>
                                 <span className="text-foreground font-medium font-mono">{book.isbn}</span>
+                            </div>
+                        )}
+                        {book.updatedDate && (
+                            <div className="flex justify-between py-2">
+                                <span className="text-muted-foreground flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    Actualizado
+                                </span>
+                                <span className="text-foreground font-medium whitespace-nowrap ml-4">
+                                    {book.updatedDate.includes('T') ? book.updatedDate.split('T')[0] : book.updatedDate}
+                                </span>
                             </div>
                         )}
                     </div>

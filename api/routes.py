@@ -219,6 +219,7 @@ async def get_feed(
                     "tags": title_meta.get("tags", []),
                     "cleanTitle": title_meta.get("clean_title", title),
                     "romaji": title_meta.get("romaji", ""),
+                    "updatedDate": entry.get("updated", ""),
                     "categories": categories,
                     "links": [
                         {
