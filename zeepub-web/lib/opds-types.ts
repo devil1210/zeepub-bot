@@ -19,6 +19,12 @@ export interface OPDSEntry {
     publisher?: string
     language?: string
     year?: string
+    // Enhanced metadata for better display
+    series?: string
+    volume?: string
+    tags?: string[]
+    cleanTitle?: string
+    romaji?: string
 }
 
 export interface OPDSFeed {

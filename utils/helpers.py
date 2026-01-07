@@ -8,7 +8,9 @@ def extract_author(entry, is_folder=False) -> str:
     """Extrae el autor de una entrada OPDS de forma robusta."""
     # 1. Intentar entry.author directo (si es objeto, buscar .name)
     # Entry can be a dict (from API) or a feedparser object (from bot chat)
-    author = entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
+    author = (
+        entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
+    )
 
     if hasattr(author, "name"):
         author = author.name
@@ -17,7 +19,11 @@ def extract_author(entry, is_folder=False) -> str:
 
     # 2. Intentar entry.authors (lista)
     if not author:
-        authors = entry.get("authors", []) if hasattr(entry, "get") else getattr(entry, "authors", [])
+        authors = (
+            entry.get("authors", [])
+            if hasattr(entry, "get")
+            else getattr(entry, "authors", [])
+        )
         if authors:
             author = ", ".join(
                 [
@@ -29,16 +35,26 @@ def extract_author(entry, is_folder=False) -> str:
 
     # 3. Intentar entry.author_detail
     if not author:
-        detail = entry.get("author_detail") if hasattr(entry, "get") else getattr(entry, "author_detail", None)
+        detail = (
+            entry.get("author_detail")
+            if hasattr(entry, "get")
+            else getattr(entry, "author_detail", None)
+        )
         if detail:
-            author = detail.get("name") if hasattr(detail, "get") else getattr(detail, "name", None)
+            author = (
+                detail.get("name")
+                if hasattr(detail, "get")
+                else getattr(detail, "name", None)
+            )
 
     # 4. Intentar namespaces (dc:creator, dcterms:creator)
     if not author:
         if hasattr(entry, "get"):
             author = entry.get("dc_creator") or entry.get("dcterms_creator")
         else:
-            author = getattr(entry, "dc_creator", None) or getattr(entry, "dcterms_creator", None)
+            author = getattr(entry, "dc_creator", None) or getattr(
+                entry, "dcterms_creator", None
+            )
 
     # 5. Fallback final
     if not author:
@@ -268,19 +284,14 @@ def generar_slug_from_meta(meta: dict) -> str:
 
 
 def parse_metadata_from_title(title_str: str) -> dict:
-    """"
+    """ "
     Parsea un título completo de forma inteligente.
-    Retorna diccionario con: series, volume, clean_title, tags.
-    Ej: "Arifureta... [NL] - Volumen 01 [TFP]" ->
-        series="Arifureta...", volume="01", tags=["NL", "TFP"]
+    Retorna diccionario con: series, volume, clean_title, tags, romaji.
+    Ej: "⭘ 86 - EIGHTY-SIX [NL] - 86 ―Eitishikkusu― - Volumen 01 [TFP]" ->
+        series="86 - EIGHTY-SIX [NL]", volume="01", tags=["NL", "TFP"], romaji="86 ―Eitishikkusu―"
     """
     if not title_str:
-        return {
-            "series": "",
-            "volume": "",
-            "clean_title": "",
-            "tags": []
-        }
+        return {"series": "", "volume": "", "clean_title": "", "tags": [], "romaji": ""}
 
     # 1. Extraer tags en corchetes [Tag]
     tags = re.findall(r"\[(.*?)\]", title_str)
@@ -292,7 +303,18 @@ def parse_metadata_from_title(title_str: str) -> dict:
     # Excluyendo paréntesis que podrían ser parte del título
     clean = re.sub(r"^[^\w\(\)]+", "", clean).strip()
 
-    # 2. Buscar patrón de volumen (Volumen XX, Vol. XX, Tomo XX, vXX)
+    # 2. Extraer romaji (texto entre guiones antes de "Volumen")
+    # Patrón: - [Texto con caracteres especiales como ―] - Volumen
+    romaji = ""
+    romaji_pattern = r"-\s*([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s*-\s*(?:Volumen|Vol)"
+    romaji_match = re.search(romaji_pattern, clean, re.IGNORECASE)
+
+    if romaji_match:
+        romaji = romaji_match.group(1).strip()
+        # Limpiar el título quitando el segmento de romaji
+        clean = clean.replace(f"- {romaji} -", "-").strip()
+
+    # 3. Buscar patrón de volumen (Volumen XX, Vol. XX, Tomo XX, vXX)
     # Prioridad: Volumen > Vol > Tomo > v
     vol_pattern = r"(?:Volumen|Vol\.?|Tomo|v)\s*(\d+(?:\.\d+)?)"
     match = re.search(vol_pattern, clean, re.IGNORECASE)
@@ -306,7 +328,7 @@ def parse_metadata_from_title(title_str: str) -> dict:
         full_vol_str = match.group(0)  # ej "Volumen 01"
         series = clean.replace(full_vol_str, "")
 
-    # 3. Limpieza final de la serie
+    # 4. Limpieza final de la serie
     # Quitar separadores residuales al final (guiones, dos puntos)
     series = re.sub(r"[\-:\s]+$", "", series).strip()
     # Si la serie quedó vacía (ej: el título era solo "Volumen 1"), usar el título original limpio
@@ -317,7 +339,8 @@ def parse_metadata_from_title(title_str: str) -> dict:
         "series": series,
         "volume": volume,
         "clean_title": clean,
-        "tags": tags
+        "tags": tags,
+        "romaji": romaji,
     }
 
 
@@ -550,7 +573,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v5.0.10"
+CURRENT_VERSION = "v5.0.11"
 
 
 def get_current_version() -> str:

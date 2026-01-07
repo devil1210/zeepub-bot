@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.11] - 2026-01-07
+
+### Added
+- **Backend**: Enhanced `book-detail` API response with `romaji`, `cleanTitle`, and `tags`.
+- **Backend**: Added romaji extraction to `parse_metadata_from_title` utility.
+- **Frontend**: New Book Detail page layout showing English title, Romaji, Authors, Tags, and Genres.
+- **Frontend**: Improved Catalog Series/Folder cards to display authors instead of summary.
+- **Backend**: Cleaned `summary` field to remove "Format: Epub Summary:" prefixes.
+
 ## [v5.0.10] - 2026-01-06
 
 ### Fixed

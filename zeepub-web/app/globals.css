@@ -1,188 +1,120 @@
+/* Tailwind CSS v4 */
 @import "tailwindcss";
-@import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
-/* Light Theme - Telegram inspired colors */
+/* 
+ * Variables de Tema - Usando HSL para máxima compatibilidad con linters 
+ * y evitando oklch() que suele marcarse en amarillo en algunos editores.
+ */
 :root {
-  --background: oklch(0.98 0.002 260);
-  --foreground: oklch(0.15 0.01 260);
-  --card: oklch(1.0 0 0);
-  --card-foreground: oklch(0.15 0.01 260);
-  --popover: oklch(1.0 0 0);
-  --popover-foreground: oklch(0.15 0.01 260);
-  --primary: oklch(0.55 0.18 230);
-  --primary-foreground: oklch(1.0 0 0);
-  --secondary: oklch(0.94 0.01 260);
-  --secondary-foreground: oklch(0.25 0.01 260);
-  --muted: oklch(0.94 0.01 260);
-  --muted-foreground: oklch(0.45 0.01 260);
-  --accent: oklch(0.55 0.18 230);
-  --accent-foreground: oklch(1.0 0 0);
-  --destructive: oklch(0.55 0.22 15);
-  --destructive-foreground: oklch(1.0 0 0);
-  --border: oklch(0.88 0.01 260);
-  --input: oklch(0.88 0.01 260);
-  --ring: oklch(0.55 0.18 230);
-  --chart-1: oklch(0.55 0.2 40);
-  --chart-2: oklch(0.55 0.12 185);
-  --chart-3: oklch(0.40 0.07 227);
-  --chart-4: oklch(0.75 0.19 85);
-  --chart-5: oklch(0.70 0.19 70);
+  --background: hsl(260, 5%, 98%);
+  --foreground: hsl(260, 5%, 15%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(260, 5%, 15%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(260, 5%, 15%);
+  --primary: hsl(230, 60%, 55%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(260, 5%, 94%);
+  --secondary-foreground: hsl(260, 5%, 25%);
+  --muted: hsl(260, 5%, 94%);
+  --muted-foreground: hsl(260, 5%, 45%);
+  --accent: hsl(230, 60%, 55%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(15, 80%, 55%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(260, 5%, 88%);
+  --input: hsl(260, 5%, 88%);
+  --ring: hsl(230, 60%, 55%);
+  --chart-1: hsl(40, 70%, 55%);
+  --chart-2: hsl(185, 40%, 55%);
+  --chart-3: hsl(227, 30%, 40%);
+  --chart-4: hsl(85, 60%, 75%);
+  --chart-5: hsl(70, 60%, 70%);
   --radius: 0.75rem;
-  --sidebar: oklch(0.97 0 0);
-  --sidebar-foreground: oklch(0.15 0 0);
-  --sidebar-primary: oklch(0.55 0.18 230);
-  --sidebar-primary-foreground: oklch(1.0 0 0);
-  --sidebar-accent: oklch(0.94 0 0);
-  --sidebar-accent-foreground: oklch(0.20 0 0);
-  --sidebar-border: oklch(0.90 0 0);
-  --sidebar-ring: oklch(0.55 0.18 230);
 
-  /* Variables para escala de UI */
+  /* Sidebar */
+  --sidebar: hsl(0, 0%, 97%);
+  --sidebar-foreground: hsl(0, 0%, 15%);
+  --sidebar-primary: hsl(230, 60%, 55%);
+  --sidebar-primary-foreground: hsl(0, 0%, 100%);
+  --sidebar-accent: hsl(0, 0%, 94%);
+  --sidebar-accent-foreground: hsl(0, 0%, 20%);
+  --sidebar-border: hsl(0, 0%, 90%);
+  --sidebar-ring: hsl(230, 60%, 55%);
+
+  /* UI Scale */
   --font-scale: 1;
   --spacing-scale: 1;
 }
 
-/* Dark Theme - Current colors */
 .dark {
-  --background: oklch(0.18 0.015 260);
-  --foreground: oklch(0.98 0.005 260);
-  --card: oklch(0.22 0.018 260);
-  --card-foreground: oklch(0.98 0.005 260);
-  --popover: oklch(0.22 0.018 260);
-  --popover-foreground: oklch(0.98 0.005 260);
-  --primary: oklch(0.68 0.14 230);
-  --primary-foreground: oklch(0.98 0.005 260);
-  --secondary: oklch(0.28 0.02 260);
-  --secondary-foreground: oklch(0.98 0.005 260);
-  --muted: oklch(0.28 0.02 260);
-  --muted-foreground: oklch(0.65 0.01 260);
-  --accent: oklch(0.68 0.14 230);
-  --accent-foreground: oklch(0.98 0.005 260);
-  --destructive: oklch(0.58 0.2 15);
-  --destructive-foreground: oklch(0.98 0.005 260);
-  --border: oklch(0.3 0.02 260);
-  --input: oklch(0.3 0.02 260);
-  --ring: oklch(0.68 0.14 230);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
-}
+  --background: hsl(260, 10%, 12%);
+  --foreground: hsl(260, 5%, 98%);
+  --card: hsl(260, 10%, 15%);
+  --card-foreground: hsl(260, 5%, 98%);
+  --popover: hsl(260, 10%, 15%);
+  --popover-foreground: hsl(260, 5%, 98%);
+  --primary: hsl(230, 50%, 68%);
+  --primary-foreground: hsl(260, 5%, 98%);
+  --secondary: hsl(260, 10%, 20%);
+  --secondary-foreground: hsl(260, 5%, 98%);
+  --muted: hsl(260, 10%, 20%);
+  --muted-foreground: hsl(260, 5%, 65%);
+  --accent: hsl(230, 50%, 68%);
+  --accent-foreground: hsl(260, 5%, 98%);
+  --destructive: hsl(15, 60%, 58%);
+  --destructive-foreground: hsl(260, 5%, 98%);
+  --border: hsl(260, 10%, 25%);
+  --input: hsl(260, 10%, 25%);
+  --ring: hsl(230, 50%, 68%);
+  --chart-1: hsl(264, 50%, 48%);
+  --chart-2: hsl(162, 40%, 69%);
+  --chart-3: hsl(70, 50%, 76%);
+  --chart-4: hsl(303, 50%, 62%);
+  --chart-5: hsl(16, 50%, 64%);
 
-@theme inline {
-  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  /* Sidebar Dark */
+  --sidebar: hsl(0, 0%, 20%);
+  --sidebar-foreground: hsl(0, 0%, 98.5%);
+  --sidebar-primary: hsl(264, 50%, 48%);
+  --sidebar-primary-foreground: hsl(0, 0%, 98.5%);
+  --sidebar-accent: hsl(0, 0%, 26.9%);
+  --sidebar-accent-foreground: hsl(0, 0%, 98.5%);
+  --sidebar-border: hsl(0, 0%, 26.9%);
+  --sidebar-ring: hsl(0, 0%, 43.9%);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+
+  *,
+  ::after,
+  ::before,
+  ::placeholder,
+  ::file-selector-button {
+    border-color: var(--border);
   }
 
   html {
-    @apply bg-background;
-    /* Prevents white stripes during overscroll on mobile */
+    background-color: var(--background);
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
     min-height: 100vh;
     min-height: -webkit-fill-available;
-    /* Smooth scrolling but with control over bounce */
     scroll-behavior: smooth;
   }
+}
 
-  /* Añadiendo soporte para safe-area de iOS/Telegram */
+@layer utilities {
   .safe-area-inset-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0px);
-  }
-
-  @keyframes progress-loading {
-    0% {
-      transform: translateX(-100%);
-    }
-
-    50% {
-      transform: translateX(0);
-    }
-
-    100% {
-      transform: translateX(100%);
-    }
-  }
-
-  .animate-progress-loading {
-    animation: progress-loading 1.5s infinite linear;
-  }
-
-  /* Dynamic Page Transitions */
-  @keyframes dynamic-fade-in-up {
-    0% {
-      opacity: 0;
-      transform: translateY(var(--anim-translate-y, 4px));
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .dynamic-page-transition {
-    animation-name: dynamic-fade-in-up;
-    animation-duration: var(--anim-duration, 200ms);
-    animation-timing-function: ease-out;
-    animation-fill-mode: both;
   }
 }

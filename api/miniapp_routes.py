@@ -25,7 +25,12 @@ from utils.security import validate_telegram_data, verify_telegram_user
 from services.opds_service import get_cached_feed
 from services.telegram_service import enviar_libro_directo
 from services.settings_service import get_setting, set_setting
-from utils.helpers import build_search_url, abs_url, extract_author, parse_metadata_from_title
+from utils.helpers import (
+    build_search_url,
+    abs_url,
+    extract_author,
+    parse_metadata_from_title,
+)
 
 router = APIRouter(tags=["miniapp"])
 logger = logging.getLogger(__name__)
@@ -188,6 +193,13 @@ async def handle_bot_request(
                 author = extract_author(entry, is_folder=is_folder)
 
                 summary = entry.get("summary", "")
+                # Clean summary: remove "Format: Epub Summary:" prefix that Kavita adds
+                if summary:
+                    # Remove common Kavita prefixes
+                    summary = summary.replace("Format: Epub Summary: ", "")
+                    summary = summary.replace("Format: Epub ", "")
+                    summary = summary.replace("Summary: ", "")
+                    summary = summary.strip()
 
                 # Extra metadata
                 publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
@@ -229,6 +241,9 @@ async def handle_bot_request(
                 if not detail_url and book_id:
                     detail_url = abs_url(feed_base_url, book_id)
 
+                # Parse metadata from title for better display
+                title_meta = parse_metadata_from_title(title)
+
                 results.append(
                     {
                         "id": book_id,
@@ -246,6 +261,12 @@ async def handle_bot_request(
                         "size": size,
                         "file_type": file_type,
                         "is_folder": subsection_url is not None,
+                        # Enhanced metadata for better UI display
+                        "series": title_meta.get("series", ""),
+                        "volume": title_meta.get("volume", ""),
+                        "tags": title_meta.get("tags", []),
+                        "cleanTitle": title_meta.get("clean_title", title),
+                        "romaji": title_meta.get("romaji", ""),
                     }
                 )
 
@@ -469,6 +490,10 @@ async def handle_bot_request(
                 "size": size,
                 "fileType": file_type,
                 "upUrl": subsection_url,
+                # Enhanced metadata
+                "romaji": extracted_meta.get("romaji", ""),
+                "cleanTitle": extracted_meta.get("clean_title", ""),
+                "tags": extracted_meta.get("tags", []),
             }
 
             logger.info(
@@ -771,7 +796,9 @@ async def handle_bot_request(
                         level_id = role_to_level.get(target_role)
                         if level_id:
                             await user_repo.reset_level_users_settings(level_id)
-                            logger.info(f"Force Overwrite: Reset settings for level {level_id} (role {target_role})")
+                            logger.info(
+                                f"Force Overwrite: Reset settings for level {level_id} (role {target_role})"
+                            )
                         elif target_role == "global":
                             # If global overwrite is requested, technically we should do nothing or all?
                             # For safety, let's only log valid levels.

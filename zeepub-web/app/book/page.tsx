@@ -28,6 +28,9 @@ interface BookDetail {
     seriesIndex?: string
     categories?: string[]
     upUrl?: string
+    romaji?: string
+    cleanTitle?: string
+    tags?: string[]
 }
 
 function BookDetailContent() {
@@ -225,8 +228,23 @@ function BookDetailContent() {
 
                         {/* Title and Author */}
                         <div className="flex-1 min-w-0">
-                            <h2 className="text-xl font-bold text-foreground mb-1 leading-tight line-clamp-3">{book.title}</h2>
-                            <p className="text-base text-primary font-medium mb-1 truncate">{book.author}</p>
+                            {/* Clean Title - Use cleanTitle from backend if available for better parsing */}
+                            <h2 className="text-xl font-bold text-foreground mb-2 leading-tight line-clamp-3">
+                                {(book.cleanTitle || book.title.replace(/ - Storyline$/i, '').trim())}
+                                {book.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
+                                    ` [${book.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
+                                    : ""}
+                            </h2>
+
+                            {/* Romaji Name */}
+                            {book.romaji && (
+                                <p className="text-base text-muted-foreground/80 font-medium mb-2 italic">
+                                    {book.romaji}
+                                </p>
+                            )}
+
+                            {/* Authors */}
+                            <p className="text-base text-primary font-medium mb-3">{book.author}</p>
 
                             {book.series && (
                                 <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
@@ -235,14 +253,22 @@ function BookDetailContent() {
                                 </p>
                             )}
 
-                            {/* Tags/Categories */}
-                            {book.categories && book.categories.length > 0 && (
+
+
+                            {/* Tags/Translators from Title */}
+                            {book.tags && book.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mb-4">
-                                    {book.categories.slice(0, 5).map((tag, idx) => (
-                                        <span key={idx} className="px-1.5 py-0.5 bg-primary/5 text-primary/70 rounded border border-primary/10 text-[9px] font-medium uppercase tracking-tight">
-                                            {tag}
-                                        </span>
-                                    ))}
+                                    {book.tags.map((tag, idx) => {
+                                        // Skip NL/NW as they seem to be desired in title or handled differently if we want
+                                        // User asked for "lo que va entre corchetes en este caso ShinsengumiTL"
+                                        // If we want to show all tags:
+                                        if (tag === "NL" || tag === "NW") return null;
+                                        return (
+                                            <span key={idx} className="text-sm font-medium text-foreground">
+                                                [{tag}]
+                                            </span>
+                                        );
+                                    })}
                                 </div>
                             )}
 
@@ -273,25 +299,27 @@ function BookDetailContent() {
                 </Card>
 
                 {/* Summary */}
-                {book.summary && (
-                    <Card className="p-5 border-border mb-4 bg-card">
-                        <div className="flex items-center gap-2 mb-3 text-primary">
-                            <span className="p-1 bg-primary/10 rounded-full">
-                                <Info className="w-3 h-3" />
-                            </span>
-                            <h3 className="text-xs font-bold uppercase tracking-wider">Sinopsis</h3>
-                        </div>
-                        <div className="text-sm text-foreground/80 leading-relaxed">
-                            {getCleanSummary(book.summary).split('\n').map((para, i) => (
-                                para.trim() ? (
-                                    <p key={i} className="mb-2 last:mb-0">
-                                        {para.trim()}
-                                    </p>
-                                ) : null
-                            ))}
-                        </div>
-                    </Card>
-                )}
+                {
+                    book.summary && (
+                        <Card className="p-5 border-border mb-4 bg-card">
+                            <div className="flex items-center gap-2 mb-3 text-primary">
+                                <span className="p-1 bg-primary/10 rounded-full">
+                                    <Info className="w-3 h-3" />
+                                </span>
+                                <h3 className="text-xs font-bold uppercase tracking-wider">Sinopsis</h3>
+                            </div>
+                            <div className="text-sm text-foreground/80 leading-relaxed">
+                                {getCleanSummary(book.summary).split('\n').map((para, i) => (
+                                    para.trim() ? (
+                                        <p key={i} className="mb-2 last:mb-0">
+                                            {para.trim()}
+                                        </p>
+                                    ) : null
+                                ))}
+                            </div>
+                        </Card>
+                    )
+                }
 
                 {/* Additional Details */}
                 <Card className="p-5 border-border mb-6 bg-card">
@@ -302,6 +330,17 @@ function BookDetailContent() {
                         <h3 className="text-xs font-bold uppercase tracking-wider">Detalles adicionales</h3>
                     </div>
                     <div className="divide-y divide-border/50 text-sm">
+                        {/* Genres / Categories */}
+                        {book.categories && book.categories.length > 0 && (
+                            <div className="flex justify-between py-2">
+                                <span className="text-muted-foreground">Géneros</span>
+                                <span className="text-foreground font-medium text-right ml-4 max-w-[60%]">
+                                    {book.categories
+                                        .filter(cat => !book.tags?.includes(cat)) // Avoid duplicating tags if they are in categories
+                                        .join(", ")}
+                                </span>
+                            </div>
+                        )}
                         {book.publisher && (
                             <div className="flex justify-between py-2">
                                 <span className="text-muted-foreground">Editorial</span>
@@ -367,8 +406,8 @@ function BookDetailContent() {
                         </p>
                     )}
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     )
 }
 
