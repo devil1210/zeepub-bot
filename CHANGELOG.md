@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.35] - 2026-01-07
+### Fixed
+- **Apariencia Restaurada**: Revertidos los colores y estilos globales a la versión clásica (`15fe89d`) que usaba `oklch`, corrigiendo la visualización de colores en la interfaz.
+- **UI Switch**: Restaurado el componente `Switch` original pero corrigiendo el error de sintaxis CSS (`calc`) que lo hacía invisible.
+
 ## [v5.0.34] - 2026-01-07
 ### Fixed
 - **UI Switch**: Reescrito el componente `Switch` para corregir la sintaxis CSS inválida (`calc` sin espacios) y simplificar los estilos. Esto soluciona que los interruptores (toggles) fueran invisibles en algunos navegadores.
