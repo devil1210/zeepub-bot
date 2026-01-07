@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.12] - 2026-01-07
+
+### Fixed
+- **Frontend**: Updated catalog and search book cards to properly display clean English title with [NL]/[NW] tags.
+- **Frontend**: Added romaji name display below title in catalog and search results.
+- **Frontend**: Fixed author display (now shows all authors from OPDS feed).
+- **Frontend**: Added translator tags display (e.g., [ShinsengumiTL]) below metadata.
+- **Frontend**: Improved book detail page to use parsed metadata instead of raw OPDS title.
+
 ## [v5.0.11] - 2026-01-07
 
 ### Added
