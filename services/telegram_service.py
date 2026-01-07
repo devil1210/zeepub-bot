@@ -730,11 +730,11 @@ async def descargar_epub_pendiente(
             from repositories.download_repository import download_repo
 
             author = meta.get("autor", "Desconocido")
-            
+
             # Enrich metadata if needed from title
             from utils.helpers import parse_metadata_from_title
             title_meta = parse_metadata_from_title(titulo_vol)
-            
+
             romaji = meta.get("romaji_title") or title_meta.get("romaji")
             series = meta.get("titulo_serie") or title_meta.get("series")
             volume = meta.get("volumen") or meta.get("series_index") or title_meta.get("volume")
@@ -1126,11 +1126,11 @@ async def enviar_libro_directo(
                 from repositories.download_repository import download_repo
 
                 author = meta.get("autor", "Desconocido")
-                
+
                 # Enrich metadata if needed from title
                 from utils.helpers import parse_metadata_from_title
                 title_meta = parse_metadata_from_title(titulo_vol)
-                
+
                 romaji = meta.get("romaji_title") or title_meta.get("romaji")
                 series = meta.get("titulo_serie") or title_meta.get("series")
                 volume = meta.get("series_index") or title_meta.get("volume")

@@ -350,7 +350,7 @@ def parse_metadata_from_title(title_str: str) -> dict:
     # Ensure no leading symbols or trailing punctuation reach the final fields
     series = re.sub(r"^[^\w\(\)\[\]]+", "", series).strip()
     series = re.sub(r"[\-:\s]+$", "", series).strip()
-    
+
     if romaji:
         romaji = re.sub(r"^[^\w\(\)\[\]]+", "", romaji).strip()
         romaji = re.sub(r"[\-:\s]+$", "", romaji).strip()
