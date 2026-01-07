@@ -387,36 +387,42 @@ function CatalogContent() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Enhanced title display with series/volume separation */}
-                                            {book.series ? (
-                                                <div className="space-y-0.5 mb-1">
-                                                    <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide truncate">
-                                                        {book.series}
-                                                    </p>
-                                                    {book.volume && (
-                                                        <h3 className="font-semibold text-foreground text-sm leading-tight group-hover:text-primary transition-colors">
-                                                            Volumen {book.volume}
-                                                        </h3>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors text-sm">
-                                                    {book.cleanTitle || book.title}
-                                                </h3>
+                                            {/* Title - show clean English title with format tags */}
+                                            <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors text-sm mb-1">
+                                                {book.series || book.cleanTitle || book.title}
+                                                {book.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
+                                                    ` [${book.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
+                                                    : ""}
+                                            </h3>
+
+                                            {/* Romaji Name */}
+                                            {book.romaji && (
+                                                <p className="text-[10px] text-muted-foreground/80 font-medium mb-1 italic">
+                                                    {book.romaji}
+                                                </p>
                                             )}
 
-                                            {/* Tags display */}
+                                            {/* Authors */}
+                                            <p className="text-xs text-primary font-medium mb-1 truncate">{book.author}</p>
+
+                                            {/* Volume info if available */}
+                                            {book.volume && (
+                                                <p className="text-[10px] text-muted-foreground mb-1">
+                                                    Volumen {book.volume}
+                                                </p>
+                                            )}
+
+                                            {/* Tags display (translator tags) */}
                                             {book.tags && book.tags.length > 0 && (
                                                 <div className="flex gap-1 flex-wrap mb-1">
-                                                    {book.tags.slice(0, 2).map((tag, i) => (
-                                                        <span key={i} className="text-[7px] px-1 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                                                            {tag}
+                                                    {book.tags.filter(t => !["NL", "NW", "WN"].includes(t)).slice(0, 2).map((tag, i) => (
+                                                        <span key={i} className="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                                                            [{tag}]
                                                         </span>
                                                     ))}
                                                 </div>
                                             )}
 
-                                            <p className="text-xs text-primary font-medium mb-1 truncate">{book.author}</p>
                                             <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-2">
                                                 {book.is_folder ? t("book_section") : t("book_details_hint")}
                                             </p>
@@ -506,41 +512,44 @@ function CatalogContent() {
                                             />
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Enhanced title display with series/volume separation */}
-                                            {entry.series ? (
-                                                <div className="space-y-0.5 mb-1">
-                                                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide truncate">
-                                                        {entry.series}
-                                                    </p>
-                                                    {entry.volume && (
-                                                        <h3 className="font-semibold text-foreground leading-tight group-hover:text-primary transition-colors">
-                                                            Volumen {entry.volume}
-                                                        </h3>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <h3 className="font-semibold text-foreground mb-0.5 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                                    {entry.cleanTitle || entry.title}
-                                                </h3>
+                                            {/* Title - show clean English title with format tags */}
+                                            <h3 className="font-semibold text-foreground mb-1 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                                                {entry.series || entry.cleanTitle || entry.title}
+                                                {entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
+                                                    ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
+                                                    : ""}
+                                            </h3>
+
+                                            {/* Romaji Name */}
+                                            {entry.romaji && (
+                                                <p className="text-xs text-muted-foreground/80 font-medium mb-1 italic">
+                                                    {entry.romaji}
+                                                </p>
                                             )}
 
-                                            {/* Tags display */}
+                                            {/* Authors */}
+                                            <p className="text-sm text-primary font-medium mb-1 truncate">
+                                                {entry.author}
+                                            </p>
+
+                                            {/* Volume info if available */}
+                                            {entry.volume && (
+                                                <p className="text-xs text-muted-foreground mb-1">
+                                                    Volumen {entry.volume}
+                                                </p>
+                                            )}
+
+                                            {/* Tags display (translator tags like ShinsengumiTL) */}
                                             {entry.tags && entry.tags.length > 0 && (
                                                 <div className="flex gap-1 flex-wrap mb-1">
-                                                    {entry.tags.slice(0, 3).map((tag, i) => (
-                                                        <span key={i} className="text-[8px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                                                            {tag}
+                                                    {entry.tags.filter(t => !["NL", "NW", "WN"].includes(t)).slice(0, 3).map((tag, i) => (
+                                                        <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                                                            [{tag}]
                                                         </span>
                                                     ))}
                                                 </div>
                                             )}
 
-                                            <p className="text-sm text-primary font-medium mb-1 truncate">
-                                                {entry.author}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2 italic flex-1">
-                                                {entry.summary || t("book_details_hint")}
-                                            </p>
                                             <Button
                                                 size="sm"
                                                 onClick={(e) => handleDownload(e, entry)}
