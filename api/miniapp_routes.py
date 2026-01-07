@@ -248,7 +248,7 @@ async def handle_bot_request(
                     for tag in raw_tags
                     if tag.get("label") or tag.get("term")
                 ]
-                logger.info(f"[DEBUG CATS] Title: {title} | Extracted: {categories} | Raw: {raw_tags}")
+                # logger.info(f"[DEBUG CATS] Title: {title} | Extracted: {categories} | Raw: {raw_tags}")
 
                 # Parse metadata from title for better display
                 title_meta = parse_metadata_from_title(title)
