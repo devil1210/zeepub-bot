@@ -5,6 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.18] - 2026-01-07
+
+### Changed
+- **Mini App**: Refined metadata display in catalog and search cards. Prioritizes Romaji title and removes redundant English titles.
+- **Mini App**: Combined volume and extra tags (e.g. [TFP]) into a single line for a cleaner look.
+- **Mini App**: Updated Book Detail page to match the new clean metadata format.
+- **Backend**: Improved `parse_metadata_from_title` logic to better split English and Romaji titles by ' - '.
+
 ## [v5.0.17] - 2026-01-07
 
 ### Fixed

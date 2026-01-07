@@ -388,32 +388,33 @@ function CatalogContent() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Title - show clean English title with format tags */}
+                                            {/* Title - prioritize Romaji/Clean for cards */}
                                             <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors text-sm mb-1">
-                                                {book.series || book.cleanTitle || book.title}
+                                                {book.romaji || book.cleanTitle || book.title}
                                                 {book.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
                                                     ` [${book.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
                                                     : ""}
                                             </h3>
-
-                                            {/* Romaji Name */}
-                                            {book.romaji && (
-                                                <p className="text-[10px] text-muted-foreground/80 font-medium mb-1 italic">
-                                                    {book.romaji}
-                                                </p>
-                                            )}
 
                                             {/* Authors */}
                                             <p className="text-xs text-primary font-medium mb-1 truncate">{book.author}</p>
 
                                             {/* Genres display */}
                                             {book.categories && book.categories.length > 0 && (
-                                                <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-2">
+                                                <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-1">
                                                     {book.categories.join(", ")}
                                                 </p>
                                             )}
 
-                                            {/* Volume info if available */}
+                                            {/* Volume and Extra Tags (combined) */}
+                                            {(book.volume || (book.tags && book.tags.filter(t => !["NL", "NW", "WN"].includes(t)).length > 0)) && (
+                                                <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
+                                                    {book.volume ? `Volumen ${book.volume}` : ""}
+                                                    {book.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
+                                                        <span key={i} className="text-primary font-semibold">[{tag}]</span>
+                                                    ))}
+                                                </p>
+                                            )}
 
                                             {!book.is_folder && book.download_url && (
                                                 <Button
@@ -506,20 +507,13 @@ function CatalogContent() {
                                             />
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Title - show clean English title with format tags */}
+                                            {/* Title - prioritize Romaji for cards */}
                                             <h3 className="font-semibold text-foreground mb-1 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                                {entry.series || entry.cleanTitle || entry.title}
+                                                {entry.romaji || entry.series || entry.cleanTitle || entry.title}
                                                 {entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
                                                     ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
                                                     : ""}
                                             </h3>
-
-                                            {/* Romaji Name */}
-                                            {entry.romaji && (
-                                                <p className="text-xs text-muted-foreground/80 font-medium mb-1 italic">
-                                                    {entry.romaji}
-                                                </p>
-                                            )}
 
                                             {/* Authors */}
                                             <p className="text-sm text-primary font-medium mb-1 truncate">
@@ -528,27 +522,19 @@ function CatalogContent() {
 
                                             {/* Genres display */}
                                             {entry.categories && entry.categories.length > 0 && (
-                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2 italic flex-1">
+                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-1 italic">
                                                     {entry.categories.join(", ")}
                                                 </p>
                                             )}
 
-                                            {/* Volume info if available */}
-                                            {entry.volume && (
-                                                <p className="text-xs text-muted-foreground mb-1">
-                                                    Volumen {entry.volume}
-                                                </p>
-                                            )}
-
-                                            {/* Tags display (translator tags like ShinsengumiTL) */}
-                                            {entry.tags && entry.tags.length > 0 && (
-                                                <div className="flex gap-1 flex-wrap mb-1">
-                                                    {entry.tags.filter(t => !["NL", "NW", "WN"].includes(t)).slice(0, 3).map((tag, i) => (
-                                                        <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                                                            [{tag}]
-                                                        </span>
+                                            {/* Volume and Extra Tags (combined) */}
+                                            {(entry.volume || (entry.tags && entry.tags.filter(t => !["NL", "NW", "WN"].includes(t)).length > 0)) && (
+                                                <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1 flex-1">
+                                                    {entry.volume ? `Volumen ${entry.volume}` : ""}
+                                                    {entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
+                                                        <span key={i} className="text-primary font-bold">[{tag}]</span>
                                                     ))}
-                                                </div>
+                                                </p>
                                             )}
 
                                             <Button

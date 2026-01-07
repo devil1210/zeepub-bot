@@ -228,48 +228,32 @@ function BookDetailContent() {
 
                         {/* Title and Author */}
                         <div className="flex-1 min-w-0">
-                            {/* Clean Title - Use cleanTitle from backend if available for better parsing */}
-                            <h2 className="text-xl font-bold text-foreground mb-2 leading-tight line-clamp-3">
-                                {(book.cleanTitle || book.title.replace(/ - Storyline$/i, '').trim())}
+                            {/* Main Title - prioritize Romaji */}
+                            <h2 className="text-xl font-bold text-foreground mb-1 leading-tight line-clamp-3">
+                                {book.romaji || book.cleanTitle || book.title}
                                 {book.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
                                     ` [${book.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
                                     : ""}
                             </h2>
 
-                            {/* Romaji Name */}
-                            {book.romaji && (
-                                <p className="text-base text-muted-foreground/80 font-medium mb-2 italic">
-                                    {book.romaji}
+                            {/* English Title as Sub-header if Romaji exists */}
+                            {book.romaji && (book.cleanTitle || book.series) && (
+                                <p className="text-sm text-muted-foreground/80 font-medium mb-1 line-clamp-1 italic">
+                                    {book.cleanTitle || book.series}
                                 </p>
                             )}
 
                             {/* Authors */}
-                            <p className="text-base text-primary font-medium mb-3">{book.author}</p>
+                            <p className="text-base text-primary font-medium mb-2">{book.author}</p>
 
-                            {book.series && (
-                                <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
-                                    <Library className="w-3 h-3" />
-                                    {book.series} {book.seriesIndex ? `(Vol. ${book.seriesIndex})` : ""}
+                            {/* Volume and Extra Tags (combined line) */}
+                            {(book.seriesIndex || (book.tags && book.tags.filter(t => !["NL", "NW", "WN", "EPUB"].includes(t.toUpperCase())).length > 0)) && (
+                                <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1 font-medium">
+                                    {book.seriesIndex ? `Volumen ${book.seriesIndex}` : ""}
+                                    {book.tags?.filter(t => !["NL", "NW", "WN", "EPUB"].includes(t.toUpperCase())).map((tag, i) => (
+                                        <span key={i} className="text-primary font-bold">[{tag}]</span>
+                                    ))}
                                 </p>
-                            )}
-
-
-
-                            {/* Tags/Translators from Title */}
-                            {book.tags && book.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mb-4">
-                                    {book.tags.map((tag, idx) => {
-                                        // Skip NL/NW as they seem to be desired in title or handled differently if we want
-                                        // User asked for "lo que va entre corchetes en este caso ShinsengumiTL"
-                                        // If we want to show all tags:
-                                        if (tag === "NL" || tag === "NW") return null;
-                                        return (
-                                            <span key={idx} className="text-sm font-medium text-foreground">
-                                                [{tag}]
-                                            </span>
-                                        );
-                                    })}
-                                </div>
                             )}
 
                             {/* Quick Info Chips */}

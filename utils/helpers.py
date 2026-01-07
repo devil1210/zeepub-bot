@@ -306,42 +306,52 @@ def parse_metadata_from_title(title_str: str) -> dict:
     # Excluyendo paréntesis que podrían ser parte del título
     clean = re.sub(r"^[^\w\(\)]+", "", clean).strip()
 
-    # 2. Extraer romaji (texto entre guiones antes de "Volumen")
-    # Patrón: - [Texto con caracteres especiales como ―] - Volumen
-    romaji = ""
-    romaji_pattern = r"-\s*([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s*-\s*(?:Volumen|Vol)"
-    romaji_match = re.search(romaji_pattern, clean, re.IGNORECASE)
-
-    if romaji_match:
-        romaji = romaji_match.group(1).strip()
-        # Limpiar el título quitando el segmento de romaji
-        clean = clean.replace(f"- {romaji} -", "-").strip()
-
-    # 3. Buscar patrón de volumen (Volumen XX, Vol. XX, Tomo XX, vXX)
-    # Prioridad: Volumen > Vol > Tomo > v
+    # 2. Extract volume first to facilitate title splitting
     vol_pattern = r"(?:Volumen|Vol\.?|Tomo|v)\s*(\d+(?:\.\d+)?)"
     match = re.search(vol_pattern, clean, re.IGNORECASE)
 
     volume = ""
-    series = clean
-
+    clean_no_vol = clean
     if match:
         volume = match.group(1)
-        # O quitamos el string de volumen y limpiamos
-        full_vol_str = match.group(0)  # ej "Volumen 01"
-        series = clean.replace(full_vol_str, "")
+        full_vol_str = match.group(0)
+        # Remove " - Volumen XX" or " Volumen XX" from the string to get the base title
+        clean_no_vol = re.sub(rf"\s*(?:-\s*)?{re.escape(full_vol_str)}.*", "", clean, flags=re.IGNORECASE).strip()
 
-    # 4. Limpieza final de la serie
-    # Quitar separadores residuales al final (guiones, dos puntos)
+    # 3. Split parts by ' - ' to find English vs Romaji
+    parts = [p.strip() for p in clean_no_vol.split(" - ") if p.strip()]
+    
+    romaji = ""
+    series = clean_no_vol
+    
+    if len(parts) >= 2:
+        # Avoid taking "Storyline" or "Libro" as romaji
+        last_part = parts[-1]
+        if last_part.lower() not in ["storyline", "libro"]:
+            romaji = last_part
+            series = " - ".join(parts[:-1])
+        elif len(parts) >= 3:
+            romaji = parts[-2]
+            series = " - ".join(parts[:-2])
+
+    # 4. Fallback for specific Romaji characters (hyphens/Japanese)
+    if not romaji:
+        specific_romaji_pattern = r"-\s*([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s*-\s*(?:Volumen|Vol)"
+        sr_match = re.search(specific_romaji_pattern, clean, re.IGNORECASE)
+        if sr_match:
+            romaji = sr_match.group(1).strip()
+            series = clean.replace(f"- {romaji} -", "-").strip()
+            series = re.sub(vol_pattern, "", series, flags=re.IGNORECASE).strip()
+
+    # 5. Final cleaning
     series = re.sub(r"[\-:\s]+$", "", series).strip()
-    # Si la serie quedó vacía (ej: el título era solo "Volumen 1"), usar el título original limpio
     if not series and not volume:
         series = clean
 
     return {
         "series": series,
         "volume": volume,
-        "clean_title": clean,
+        "clean_title": clean_no_vol,
         "tags": tags,
         "romaji": romaji,
     }
@@ -576,7 +586,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v5.0.17"
+CURRENT_VERSION = "v5.0.18"
 
 
 def get_current_version() -> str:
