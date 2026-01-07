@@ -320,10 +320,10 @@ def parse_metadata_from_title(title_str: str) -> dict:
 
     # 3. Split parts by ' - ' to find English vs Romaji
     parts = [p.strip() for p in clean_no_vol.split(" - ") if p.strip()]
-    
+
     romaji = ""
     series = clean_no_vol
-    
+
     if len(parts) >= 2:
         # Avoid taking "Storyline" or "Libro" as romaji
         last_part = parts[-1]
@@ -586,7 +586,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v5.0.18"
+CURRENT_VERSION = "v5.0.19"
 
 
 def get_current_version() -> str:
