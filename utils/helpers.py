@@ -6,32 +6,34 @@ from config.config_settings import config
 
 def extract_author(entry, is_folder=False) -> str:
     """Extrae el autor de una entrada OPDS de forma robusta."""
-    # 1. Intentar entry.author directo (si es objeto, buscar .name)
-    # Entry can be a dict (from API) or a feedparser object (from bot chat)
-    author = (
-        entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
+    author = None
+
+    # 1. FIRST: Try entry.authors (list) - this captures multiple authors
+    authors = (
+        entry.get("authors", [])
+        if hasattr(entry, "get")
+        else getattr(entry, "authors", [])
     )
-
-    if hasattr(author, "name"):
-        author = author.name
-    elif isinstance(author, dict):
-        author = author.get("name")
-
-    # 2. Intentar entry.authors (lista)
-    if not author:
-        authors = (
-            entry.get("authors", [])
-            if hasattr(entry, "get")
-            else getattr(entry, "authors", [])
+    if authors:
+        author = " - ".join(
+            [
+                a.get("name", "") if hasattr(a, "get") else getattr(a, "name", "")
+                for a in authors
+                if (hasattr(a, "get") and a.get("name")) or hasattr(a, "name")
+            ]
         )
-        if authors:
-            author = " - ".join(
-                [
-                    a.get("name", "") if hasattr(a, "get") else getattr(a, "name", "")
-                    for a in authors
-                    if (hasattr(a, "get") and a.get("name")) or hasattr(a, "name")
-                ]
-            )
+
+    # 2. Fallback: Try entry.author directo (si es objeto, buscar .name)
+    if not author:
+        single_author = (
+            entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
+        )
+        if hasattr(single_author, "name"):
+            author = single_author.name
+        elif isinstance(single_author, dict):
+            author = single_author.get("name")
+        elif isinstance(single_author, str) and single_author:
+            author = single_author
 
     # 3. Intentar entry.author_detail
     if not author:
@@ -573,7 +575,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v5.0.13"
+CURRENT_VERSION = "v5.0.14"
 
 
 def get_current_version() -> str:

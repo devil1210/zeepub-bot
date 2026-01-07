@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v5.0.14] - 2026-01-07
+
+### Fixed
+- **Backend**: Fixed `extract_author` to check `entry.authors` list FIRST, ensuring all authors are captured when multiple exist.
+- **Frontend**: Added categories (genres) display to folder/series cards in catalog listing.
+
 ## [v5.0.13] - 2026-01-07
 
 ### Fixed

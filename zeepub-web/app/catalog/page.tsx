@@ -475,6 +475,12 @@ function CatalogContent() {
                                                     {entry.author}
                                                 </p>
                                             )}
+                                            {/* Genres display for folders/series */}
+                                            {entry.categories && entry.categories.length > 0 && (
+                                                <p className="text-xs text-muted-foreground truncate italic">
+                                                    {entry.categories.join(", ")}
+                                                </p>
+                                            )}
                                         </div>
                                         <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                                     </div>
