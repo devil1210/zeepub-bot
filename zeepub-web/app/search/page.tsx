@@ -21,13 +21,20 @@ interface Book {
   author: string
   summary?: string
   cover?: string
-  download_url?: string
-  subsection_url?: string
-  detail_url?: string
-  is_folder: boolean
+  downloadUrl?: string
+  subsectionUrl?: string
+  detailUrl?: string
+  isFolder: boolean
   year?: string
   size?: string
-  file_type?: string
+  fileType?: string
+  // Enhanced metadata fields
+  series?: string
+  volume?: string
+  tags?: string[]
+  cleanTitle?: string
+  romaji?: string
+  categories?: string[]
 }
 
 interface PaginationState {
@@ -125,7 +132,7 @@ function SearchContent() {
 
   const handleDownload = async (e: React.MouseEvent, book: Book) => {
     e.stopPropagation()
-    if (!book.download_url) {
+    if (!book.downloadUrl) {
       webApp?.showAlert?.("No hay link de descarga")
       return
     }
@@ -136,7 +143,7 @@ function SearchContent() {
         message: `Se está enviando "${book.title}" a tu chat...`,
       })
       await callBotAPI("download", {
-        bookId: book.download_url,
+        bookId: book.downloadUrl,
         title: book.title
       })
     } catch (error) {
@@ -146,12 +153,12 @@ function SearchContent() {
   }
 
   const handleBookClick = (book: Book) => {
-    if (book.is_folder && book.subsection_url) {
-      window.location.href = `/catalog?feed_url=${encodeURIComponent(book.subsection_url)}`
+    if (book.isFolder && book.subsectionUrl) {
+      window.location.href = `/catalog?feed_url=${encodeURIComponent(book.subsectionUrl)}`
       return
     }
 
-    const detailUrl = book.detail_url || book.id
+    const detailUrl = book.detailUrl || book.id
 
     if (detailUrl && detailUrl.startsWith("http")) {
       sessionStorage.setItem("search-state", JSON.stringify({
@@ -169,7 +176,14 @@ function SearchContent() {
         summary: book.summary,
         year: book.year,
         size: book.size,
-        fileType: book.file_type
+        fileType: book.fileType,
+        // ENRICHED with new fields for search results
+        series: book.series,
+        volume: book.volume,
+        tags: book.tags,
+        cleanTitle: book.cleanTitle,
+        romaji: book.romaji,
+        categories: book.categories
       }
       sessionStorage.setItem("preview-book", JSON.stringify(previewData))
 
@@ -213,7 +227,7 @@ function SearchContent() {
                 <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
                   {book.cover ? (
                     <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
-                  ) : book.is_folder ? (
+                  ) : book.isFolder ? (
                     <div className="w-full h-full flex items-center justify-center bg-primary/10">
                       <BookOpen className="w-8 h-8 text-primary" />
                     </div>
@@ -226,7 +240,7 @@ function SearchContent() {
                     <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                       {book.title}
                     </h3>
-                    {book.is_folder && (
+                    {book.isFolder && (
                       <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
                         {t("book_series")}
                       </span>
@@ -234,10 +248,10 @@ function SearchContent() {
                   </div>
                   <p className="text-sm text-primary font-medium mb-1 truncate">{book.author}</p>
                   <p className="text-xs text-muted-foreground line-clamp-2 italic mb-2">
-                    {book.is_folder ? t("book_section") : t("book_details_hint")}
+                    {book.isFolder ? t("book_section") : t("book_details_hint")}
                   </p>
 
-                  {!book.is_folder && book.download_url && (
+                  {!book.isFolder && book.downloadUrl && (
                     <Button
                       size="sm"
                       onClick={(e) => handleDownload(e, book)}

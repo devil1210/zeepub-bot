@@ -25,6 +25,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Frontend**: Unified "Volumen" and tags into a single clean line in Book Detail.
 - **Frontend**: Added dedicated "Géneros" section to Book Detail page.
 
+## [v5.0.23] - 2026-01-07
+
+### Fixed
+- **Backend**: Fixed over-aggressive title splitting that was breaking hyphenated names (e.g., `Arya-san`). Now requires spaces around hyphen separators.
+- **Backend**: Improved leading symbol cleaning for and English titles.
+
 ## [v5.0.22] - 2026-01-07
 
 ### Added

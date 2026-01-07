@@ -76,11 +76,34 @@ function BookDetailContent() {
                 const result = await callBotAPI("book-detail", { bookId: bookId })
                 console.log("[v0] Book detail result:", result)
                 if (result && result.title) {
-                    // Merge with existing data, preferring API data
-                    setBook(prevBook => ({
-                        ...prevBook,
-                        ...result
-                    }))
+                    setBook(prevBook => {
+                        // Intelligent merging: preserve preview data if API returns empty fields
+                        if (!prevBook) return result;
+
+                        const merged = {
+                            ...prevBook,
+                            ...result,
+                        }
+
+                        // If API result has empty categories/tags but prevBook (preview) has them, preserve them
+                        if ((!result.categories || result.categories.length === 0) && prevBook.categories && prevBook.categories.length > 0) {
+                            merged.categories = prevBook.categories
+                        }
+                        if ((!result.tags || result.tags.length === 0) && prevBook.tags && prevBook.tags.length > 0) {
+                            merged.tags = prevBook.tags
+                        }
+                        if (!result.romaji && prevBook.romaji) {
+                            merged.romaji = prevBook.romaji
+                        }
+                        if (!result.cleanTitle && prevBook.cleanTitle) {
+                            merged.cleanTitle = prevBook.cleanTitle
+                        }
+                        if (!result.series && prevBook.series) {
+                            merged.series = prevBook.series
+                        }
+
+                        return merged
+                    })
                 }
             } catch (error) {
                 console.error("[v0] Error fetching book details:", error)
@@ -230,12 +253,12 @@ function BookDetailContent() {
                         {/* Title and Author */}
                         <div className="flex-1 min-w-0">
                             {/* Main Title - English/Clean */}
-                            <h2 className="text-xl font-bold text-foreground mb-1 leading-tight line-clamp-3">
+                            <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">
                                 {book.cleanTitle || book.title}
                                 {book.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
                                     ` [${book.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
                                     : ""}
-                            </h2>
+                            </h1>
 
                             {/* Romaji Name as Sub-title */}
                             {book.romaji && (

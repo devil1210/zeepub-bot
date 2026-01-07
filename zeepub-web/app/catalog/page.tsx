@@ -31,15 +31,15 @@ interface Book {
     author: string
     summary?: string
     cover?: string
-    download_url?: string
-    subsection_url?: string
-    detail_url?: string
-    is_folder: boolean
+    downloadUrl?: string
+    subsectionUrl?: string
+    detailUrl?: string
+    isFolder: boolean
     year?: string
     publisher?: string
     language?: string
     size?: string
-    file_type?: string
+    fileType?: string
     // Enhanced metadata for better display
     series?: string
     volume?: string
@@ -255,6 +255,7 @@ function CatalogContent() {
             handleNavigate(subsectionLink.href)
         } else if (detailUrl) {
             // Save preview data for instant loading in detail page
+            // ENRICHED with new fields
             sessionStorage.setItem("preview-book", JSON.stringify({
                 id: entry.id,
                 title: entry.title,
@@ -269,7 +270,14 @@ function CatalogContent() {
                 )?.href,
                 size: entry.links.find(l => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.contentlength ||
                     entry.links.find(l => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.length,
-                fileType: entry.links.find((l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.type
+                fileType: entry.links.find((l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.type,
+                // Enhanced metadata persistence
+                series: entry.series,
+                volume: entry.volume,
+                tags: entry.tags,
+                cleanTitle: entry.cleanTitle,
+                romaji: entry.romaji,
+                categories: entry.categories
             }))
 
             // Save current position before navigating to book details
@@ -282,20 +290,21 @@ function CatalogContent() {
     }
 
     const handleSearchBookClick = (book: Book) => {
-        if (book.is_folder && book.subsection_url) {
+        if (book.isFolder && book.subsectionUrl) {
             // Si es una carpeta en búsqueda, navegamos a ella en el catálogo y limpiamos búsqueda
             setSearchQuery("")
             setSearchResults([])
-            handleNavigate(book.subsection_url)
+            handleNavigate(book.subsectionUrl)
             return
         }
 
-        const detailUrl = book.detail_url || book.id
+        const detailUrl = book.detailUrl || book.id
 
         if (detailUrl) {
             const url = detailUrl.startsWith("http") ? detailUrl : null
             if (url) {
-                // Also save preview for search results if possible
+                // Also save preview for search results
+                // ENRICHED with new fields
                 sessionStorage.setItem("preview-book", JSON.stringify({
                     id: book.id,
                     title: book.title,
@@ -305,9 +314,16 @@ function CatalogContent() {
                     year: book.year,
                     publisher: book.publisher,
                     language: book.language,
-                    downloadUrl: book.download_url,
+                    downloadUrl: book.downloadUrl,
                     size: book.size,
-                    fileType: book.file_type
+                    fileType: book.fileType,
+                    // Metadata suite
+                    series: book.series,
+                    volume: book.volume,
+                    tags: book.tags,
+                    cleanTitle: book.cleanTitle,
+                    romaji: book.romaji,
+                    categories: book.categories
                 }))
                 router.push(`/book?id=${encodeURIComponent(url)}`)
             }
@@ -315,7 +331,7 @@ function CatalogContent() {
     }
     const handleSearchDownload = async (e: React.MouseEvent, book: Book) => {
         e.stopPropagation()
-        if (!book.download_url) return
+        if (!book.downloadUrl) return
 
         try {
             webApp?.showPopup?.({
@@ -323,7 +339,7 @@ function CatalogContent() {
                 message: `Se está enviando "${book.title}" a tu chat...`,
             })
             await callBotAPI("download", {
-                bookId: book.download_url,
+                bookId: book.downloadUrl,
                 title: book.title,
             })
         } catch (error) {
@@ -379,7 +395,7 @@ function CatalogContent() {
                                         <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
                                             {book.cover ? (
                                                 <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
-                                            ) : book.is_folder ? (
+                                            ) : book.isFolder ? (
                                                 <div className="w-full h-full flex items-center justify-center bg-primary/10">
                                                     <BookOpen className="w-8 h-8 text-primary" />
                                                 </div>
@@ -416,7 +432,7 @@ function CatalogContent() {
                                                 </p>
                                             )}
 
-                                            {!book.is_folder && book.download_url && (
+                                            {!book.isFolder && book.downloadUrl && (
                                                 <Button
                                                     size="sm"
                                                     onClick={(e) => handleSearchDownload(e, book)}
