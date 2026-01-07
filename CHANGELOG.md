@@ -11,6 +11,20 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Backend**: Fixed over-aggressive title splitting that was breaking hyphenated names (e.g., `Arya-san`). Now requires spaces around hyphen separators.
 - **Backend**: Improved leading symbol cleaning for and English titles.
 
+## [v5.0.25] - 2026-01-07
+### fixed
+- **Book Detail UI**: Forced a fresh frontend build to reflect latest UI changes (Title hierarchy, Genres card, etc).
+- **Metadata Flow**: Standardized field names (camelCase) between Search and Book-Detail actions.
+- **Title Extraction**: Improved hyphen detection to support `―` (horizontal bar) and added better fallbacks for `cleanTitle`.
+- **Display**: Fixed "Actualizado" row to show correct date format when available.
+
+## [v5.0.24] - 2026-01-07
+
+### Changed
+- **Frontend**: Redesigned Book Detail header to prioritize English/Main title, with Romaji as a subtitle.
+- **Frontend**: Unified "Volumen" and tags into a single clean line in Book Detail.
+- **Frontend**: Added dedicated "Géneros" section to Book Detail page.
+
 ## [v5.0.22] - 2026-01-07
 
 ### Added

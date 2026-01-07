@@ -320,9 +320,9 @@ def parse_metadata_from_title(title_str: str) -> dict:
         clean_no_vol = re.sub(rf"\s*[\-\–\—\−]?\s*{re.escape(full_vol_str)}.*", "", clean, flags=re.IGNORECASE).strip()
 
     # 3. Split parts by various hyphen types to find English vs Romaji
-    # We use a non-capturing group for the different dashes
+    # re handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus), ― (horizontal bar)
     # REQUIRE spaces around hyphens to avoid splitting names like Arya-san
-    parts = [p.strip() for p in re.split(r"\s+[\-\–\—\−]\s+", clean_no_vol) if p.strip()]
+    parts = [p.strip() for p in re.split(r"\s+[\-\–\—\−\―]\s+", clean_no_vol) if p.strip()]
 
     romaji = ""
     series = clean_no_vol
@@ -599,7 +599,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v5.0.24"
+CURRENT_VERSION = "v5.0.25"
 
 
 def get_current_version() -> str:
