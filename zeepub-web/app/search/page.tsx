@@ -261,7 +261,7 @@ function SearchContent() {
                   {!book.isFolder && (
                     <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
                       <span className="font-medium">
-                        {!book.seriesIndex || ["unico", "único"].includes(book.seriesIndex.toLowerCase())
+                        {!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())
                           ? "Volumen único"
                           : `Volumen ${book.seriesIndex}`}
                       </span>

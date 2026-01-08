@@ -324,7 +324,7 @@ function BookDetailContent() {
                             {/* Volume and Extra Tags (combined line) */}
                             <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1 font-medium">
                                 <span>
-                                    {!book.seriesIndex || ["unico", "único"].includes(book.seriesIndex.toLowerCase())
+                                    {!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())
                                         ? "Volumen único"
                                         : `Volumen ${book.seriesIndex}`}
                                 </span>

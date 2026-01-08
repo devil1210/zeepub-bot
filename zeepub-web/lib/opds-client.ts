@@ -116,11 +116,11 @@ export class OpdsClient {
                         cover_url: coverUrl,
                         is_folder: !!item.is_folder,
                         series: item.series,
-                        seriesIndex: item.seriesIndex,
+                        seriesIndex: item.series_index != null ? String(item.series_index) : undefined,
                         tags: item.tags || [],
                         romaji: item.romajiTitle,
                         cleanTitle: item.title,
-                        year: (item.modifiedAt && typeof item.modifiedAt === 'string') ? item.modifiedAt.split("-")[0] : undefined,
+                        year: (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
                         links: [
                             {
                                 rel: item.is_folder ? "subsection" : "http://opds-spec.org/acquisition",
@@ -182,7 +182,7 @@ export class OpdsClient {
                         isFolder: false,
                         downloadUrl: item.downloadUrl,
                         series: item.series,
-                        seriesIndex: item.seriesIndex,
+                        seriesIndex: item.seriesIndex != null ? String(item.seriesIndex) : undefined,
                         tags: item.tags || [],
                         romaji: item.romajiTitle,
                         cleanTitle: item.title
