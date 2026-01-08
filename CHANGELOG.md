@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0-alpha.54] - 2026-01-08
+### Changed
+- **Search Polish**: Cleaned up the primary search headlines by removing redundant brackets (e.g., [NL]).
+- **Search Layout**: Enabled text wrapping for search results (Line 1, 2, and 3) to prevent awkward truncation and ensure all details fit within the card.
+
 ## [v6.0.0-alpha.53] - 2026-01-08
 ### Changed
 - **Search Results**: Reverted search result grouping to a list of individual books for better reliability and direct navigation to book details.

@@ -523,20 +523,20 @@ function CatalogContent() {
                                             {/* Content */}
                                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                                                 {/* Line 1: Title */}
-                                                <h3 className="font-bold text-sm text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
+                                                <h3 className="font-bold text-sm text-foreground mb-0.5 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                                                     {(book as any).englishTitle || book.cleanTitle || book.title}
                                                 </h3>
 
                                                 {/* Line 2: Romaji */}
                                                 {book.romaji && (
-                                                    <p className="text-[11px] text-muted-foreground/80 font-medium italic mb-1 line-clamp-1">
+                                                    <p className="text-[11px] text-muted-foreground/80 font-medium italic mb-1 line-clamp-2">
                                                         {book.romaji}
                                                     </p>
                                                 )}
 
                                                 {/* Line 3: Author */}
                                                 {(book.author || (book as any).illustrator) && (
-                                                    <p className="text-[11px] text-primary font-semibold mb-1 line-clamp-1">
+                                                    <p className="text-[11px] text-primary font-semibold mb-1 line-clamp-2">
                                                         {book.author}
                                                         {(!book.author && (book as any).illustrator) ? (book as any).illustrator : ((book as any).illustrator ? ` - ${(book as any).illustrator}` : "")}
                                                     </p>

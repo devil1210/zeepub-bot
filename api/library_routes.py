@@ -96,20 +96,20 @@ async def search_local_books(
             id_to_book = {b.id: b for b in all_results}
             results = [id_to_book[id] for id in matching_ids if id in id_to_book][:100]
         
-        # Ya no agrupamos por serie para asegurar navegación directa y simple
-        response = []
+        import re
         for book in results:
             d = book.to_dict()
-            # Asegurar que el título principal (cleanTitle/englishTitle) sea la serie si existe
-            # para mantener la estética de "Títulos limpios"
+            # Limpiar tags de tipo [NL], [NW], [WN] de cualquier campo de texto
+            clean_regex = r'\s*\[(NL|NW|WN)\]\s*'
+            
             if book.series:
-                d["cleanTitle"] = book.series
-                d["englishTitle"] = book.series
+                clean_series = re.sub(clean_regex, '', book.series, flags=re.IGNORECASE).strip()
+                d["cleanTitle"] = clean_series
+                d["englishTitle"] = clean_series
             else:
-                # Limpiar título de tags si no hay serie
-                import re
-                d["cleanTitle"] = re.sub(r'\s*\[(NL|NW|WN)\]\s*', '', book.title, flags=re.IGNORECASE).strip()
-                d["englishTitle"] = d["cleanTitle"]
+                clean_title = re.sub(clean_regex, '', book.title, flags=re.IGNORECASE).strip()
+                d["cleanTitle"] = clean_title
+                d["englishTitle"] = clean_title
             
             # Asegurar compatibilidad con el frontend
             d["is_series_folder"] = False
