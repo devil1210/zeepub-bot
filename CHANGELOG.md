@@ -10,8 +10,16 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.25] - 2026-01-08
+### Fixed
+- **Book Detail Restructuring (v6.0.0-alpha.25)**:
+    - Logical grouping into **Demografía y Géneros**, **Detalles del Libro**, and **Información Técnica**.
+    - Explicit **Grupo Traductor** label.
+    - Statistics: Page count, Word count, and Reading time (placeholders).
+
 ## [v6.0.0-alpha.24] - 2026-01-08
 ### Fixed
+- **Details Header Refinements (v6.0.0-alpha.24)**:
 - **Hybrid UI for Details Header**: Unified the design of the book detail header with the hybrid catalog cards.
 - **Clean Title**: Automatically strips volume info and tags (like `[NL]`) from the main heading.
 - **Subtitle Romaji**: Added italicized Romaji subtitles.
@@ -21,7 +29,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [v6.0.0-alpha.23] - 2026-01-08
 ### Fixed
-- **Volume Card UI Refinements**: 
+- **Volume Card UI Refinements**:
     - Prioritized Romaji titles for volumes within series folders.
     - Added book type acronym suffix (`[NL]`, `[NW]`, `[WN]`) to primary titles.
     - Simplified metadata logic: moved English titles to sub-titles when Romaji is available.
