@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0-alpha.52] - 2026-01-08
+### Fixed
+- **Book Detail Page**: Restored missing metadata sections, including "Demografía y Géneros", "Detalles del Libro", and "Información Técnica".
+- **Enhanced Metadata**: Fixed rendering of Illustrator, ISBN, ASIN, Word Count, Page Count, and Reading Time in the details view.
+
 ## [v6.0.0-alpha.51] - 2026-01-08
 ### Changed
 - **Catalog Folder UI**: Cleaned up folder titles by removing redundant type tags (e.g., [NL]).

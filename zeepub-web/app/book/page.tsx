@@ -283,32 +283,163 @@ function BookDetailContent() {
 
                 {book.summary && (
                     <Card className="p-5 border-border mb-4 bg-card">
-                        <div className="flex items-center gap-2 mb-3 text-primary"><Info className="w-3 h-3" /><h3 className="text-xs font-bold uppercase">Sinopsis</h3></div>
+                        <div className="flex items-center gap-2 mb-3 text-primary">
+                            <Info className="w-3.5 h-3.5" />
+                            <h3 className="text-xs font-bold uppercase tracking-wider">Sinopsis</h3>
+                        </div>
                         <div className="text-sm text-foreground/80 leading-relaxed">
                             {getCleanSummary(book.summary).split('\n').map((para, i) => para.trim() ? <p key={i} className="mb-2 last:mb-0">{para.trim()}</p> : null)}
                         </div>
                     </Card>
                 )}
 
-                {(book.categories?.length || book.demographics?.length) && (
+                {(book.demographics?.length || book.categories?.length || book.tags?.length) && (
                     <Card className="p-5 border-border mb-4 bg-card">
-                        <div className="flex items-center gap-2 mb-4 text-primary"><Tag className="w-3.5 h-3.5" /><h3 className="text-xs font-bold uppercase">Categorías</h3></div>
+                        <div className="flex items-center gap-2 mb-4 text-primary">
+                            <Tag className="w-3.5 h-3.5" />
+                            <h3 className="text-xs font-bold uppercase tracking-wider">Demografía y Géneros</h3>
+                        </div>
                         <div className="flex flex-wrap gap-2">
-                            {book.demographics?.map((cat, i) => <span key={`d-${i}`} className="px-3 py-1 bg-primary/20 text-primary text-xs rounded-full font-semibold">{cat}</span>)}
-                            {[...(book.categories || []), ...(book.tags || [])].filter((c, i, s) => c && s.indexOf(c) === i && !book.demographics?.includes(c)).map((cat, i) => (
-                                <span key={`g-${i}`} className="px-3 py-1 bg-secondary text-foreground text-xs rounded-full font-medium">{cat}</span>
+                            {book.demographics?.map((cat, i) => (
+                                <span key={`d-${i}`} className="px-3 py-1 bg-primary/20 text-primary text-[10px] rounded-full font-bold uppercase tracking-tight border border-primary/20">
+                                    {cat}
+                                </span>
                             ))}
+                            {[...(book.categories || []), ...(book.tags || [])]
+                                .filter((c, i, s) => c && s.indexOf(c) === i && !book.demographics?.includes(c))
+                                .map((cat, i) => (
+                                    <span key={`g-${i}`} className="px-3 py-1 bg-secondary text-foreground text-[10px] rounded-full font-semibold border border-border/50">
+                                        {cat}
+                                    </span>
+                                ))}
                         </div>
                     </Card>
                 )}
 
                 <Card className="p-5 border-border mb-4 bg-card">
-                    <div className="flex items-center gap-2 mb-5 text-primary"><Library className="w-3.5 h-3.5" /><h3 className="text-xs font-bold uppercase">Detalles</h3></div>
-                    <div className="space-y-3 text-sm">
-                        {book.series && <div className="flex justify-between border-b border-border/30 pb-2"><span className="text-muted-foreground">Serie</span><span className="font-semibold">{book.series}</span></div>}
-                        <div className="flex justify-between border-b border-border/30 pb-2"><span className="text-muted-foreground">Autor</span><span className="font-semibold">{book.author}</span></div>
-                        <div className="flex justify-between border-b border-border/30 pb-2"><span className="text-muted-foreground">Formato</span><span className="font-mono">{formatFileType(displayFileType)}</span></div>
-                        <div className="flex justify-between last:border-0 pb-2"><span className="text-muted-foreground">Tamaño</span><span className="font-bold">{book.fileSize ? `${(book.fileSize / (1024 * 1024)).toFixed(2)} MB` : (displaySize || "N/A")}</span></div>
+                    <div className="flex items-center gap-2 mb-5 text-primary">
+                        <Library className="w-3.5 h-3.5" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider">Detalles del Libro</h3>
+                    </div>
+                    <div className="space-y-4 text-sm">
+                        {book.series && (
+                            <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                                <span className="text-muted-foreground shrink-0">Serie</span>
+                                <span className="font-semibold text-right">{book.series}</span>
+                            </div>
+                        )}
+                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                            <span className="text-muted-foreground shrink-0">Título</span>
+                            <span className="font-bold italic text-right">{book.romaji || book.cleanTitle || book.title}</span>
+                        </div>
+                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                            <span className="text-muted-foreground shrink-0">Volumen</span>
+                            <span className="font-bold text-right">
+                                {(() => {
+                                    if (!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())) return "1";
+                                    return book.seriesIndex;
+                                })()}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                            <span className="text-muted-foreground shrink-0">Autor</span>
+                            <span className="font-semibold text-right">{book.author}</span>
+                        </div>
+                        {book.illustrator && (
+                            <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                                <span className="text-muted-foreground shrink-0">Ilustrador</span>
+                                <span className="font-semibold text-right">{book.illustrator}</span>
+                            </div>
+                        )}
+                        {book.isbn && (
+                            <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                                <span className="text-muted-foreground shrink-0">ISBN</span>
+                                <span className="font-mono text-[11px] text-right">{book.isbn}</span>
+                            </div>
+                        )}
+                        {book.asin && (
+                            <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                                <span className="text-muted-foreground shrink-0">ASIN (Amazon)</span>
+                                <span className="font-mono text-[11px] text-right">{book.asin}</span>
+                            </div>
+                        )}
+                        {(book.publishedAt || book.year) && (
+                            <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                                <span className="flex items-center gap-1.5 text-muted-foreground shrink-0">
+                                    <Calendar className="w-3.5 h-3.5" /> Fecha de publicación
+                                </span>
+                                <span className="font-semibold text-right">{book.publishedAt || book.year}</span>
+                            </div>
+                        )}
+                        {book.publisher && (
+                            <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                                <span className="text-muted-foreground shrink-0">Grupo Traductor</span>
+                                <span className="font-bold text-primary text-right">{book.publisher}</span>
+                            </div>
+                        )}
+                        {book.translator && (
+                            <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                                <span className="text-muted-foreground shrink-0">Traductor</span>
+                                <span className="font-semibold text-right">{book.translator}</span>
+                            </div>
+                        )}
+                        {book.layoutBy && (
+                            <div className="flex justify-between items-start gap-4 last:border-0 pb-3">
+                                <span className="text-muted-foreground shrink-0">Maquetador</span>
+                                <span className="font-semibold text-right">{book.layoutBy}</span>
+                            </div>
+                        )}
+                    </div>
+                </Card>
+
+                <Card className="p-5 border-border mb-4 bg-card">
+                    <div className="flex items-center gap-2 mb-5 text-primary">
+                        <Info className="w-3.5 h-3.5" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider">Información Técnica</h3>
+                    </div>
+                    <div className="space-y-4 text-sm">
+                        <div className="flex justify-between items-center border-b border-border/30 pb-3">
+                            <span className="text-muted-foreground">Tipo de Archivo</span>
+                            <span className="font-bold">{formatFileType(displayFileType)}</span>
+                        </div>
+                        {book.epubVersion && (
+                            <div className="flex justify-between items-center border-b border-border/30 pb-3">
+                                <span className="text-muted-foreground">Versión Epub</span>
+                                <span className="font-bold">{book.epubVersion}</span>
+                            </div>
+                        )}
+                        <div className="flex justify-between items-center border-b border-border/30 pb-3">
+                            <span className="text-muted-foreground">Tamaño</span>
+                            <span className="font-bold">{book.fileSize ? `${(book.fileSize / (1024 * 1024)).toFixed(2)} MB` : (displaySize || "N/A")}</span>
+                        </div>
+                        {book.pageCount && (
+                            <div className="flex justify-between items-center border-b border-border/30 pb-3">
+                                <span className="text-muted-foreground">Cantidad de Páginas</span>
+                                <span className="font-bold">{book.pageCount}</span>
+                            </div>
+                        )}
+                        {book.wordCount && (
+                            <div className="flex justify-between items-center border-b border-border/30 pb-3">
+                                <span className="text-muted-foreground">Cantidad de Palabras</span>
+                                <span className="font-bold">{book.wordCount}</span>
+                            </div>
+                        )}
+                        {book.readingTime && (
+                            <div className="flex justify-between items-center border-b border-border/30 pb-3">
+                                <span className="flex items-center gap-1.5 text-muted-foreground">
+                                    <Clock className="w-3.5 h-3.5" /> Tiempo de lectura
+                                </span>
+                                <span className="font-bold">{book.readingTime}</span>
+                            </div>
+                        )}
+                        {(book.updatedDate || (book as any).modifiedAt) && (
+                            <div className="flex justify-between items-center last:border-0 pb-3">
+                                <span className="flex items-center gap-1.5 text-muted-foreground">
+                                    <Clock className="w-3.5 h-3.5" /> Última actualización
+                                </span>
+                                <span className="font-semibold">{book.updatedDate || (book as any).modifiedAt}</span>
+                            </div>
+                        )}
                     </div>
                 </Card>
 
