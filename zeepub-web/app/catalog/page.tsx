@@ -598,7 +598,7 @@ function CatalogContent() {
                                             </p>
 
                                             {/* Hide Genres display if it's a series volume list to keep it compact */}
-                                            {(!folder || entry.is_folder) && entry.categories && entry.categories.length > 0 && (
+                                            {(!folder || folder.length === 0 || entry.is_folder) && entry.categories && entry.categories.length > 0 && (
                                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-1 italic">
                                                     {entry.categories.join(", ")}
                                                 </p>
