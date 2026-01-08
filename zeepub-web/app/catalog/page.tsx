@@ -638,19 +638,23 @@ function CatalogContent() {
                                                         return `Volumen ${padded}`;
                                                     })()}
                                                 </span>
-                                                {/* When in folder, only show scanlation/quality tags (exclude genres and formats) */}
+                                                {/* When in folder, show publisher (scanlation group) or other tags */}
                                                 {folder ? (
-                                                    entry.tags?.filter(t => {
-                                                        const lower = t.toLowerCase();
-                                                        // Hide formats
-                                                        if (["nl", "nw", "wn"].includes(lower)) return false;
-                                                        // Hide known genres from the tag line too
-                                                        const genres = ["juvenil", "chicos", "shounen", "acción", "accion", "bélico", "belico", "ciencia ficción", "ciencia ficcion", "drama", "misterio", "romance", "sobrenatural", "maduro", "adultos", "seinen", "fantasía", "fantasia", "historia", "shojo", "josei", "terror", "suspenso", "psicológico", "psicologico", "aventura", "comedia", "recuentos de la vida", "escolar", "harem", "ecchi", "isekai", "mecha", "yuri", "yaoi", "tragedia", "militar", "mágia", "magia", "artes marciales", "deportes"];
-                                                        if (genres.some(g => lower.includes(g))) return false;
-                                                        return true;
-                                                    }).map((tag, i) => (
-                                                        <span key={i} className="text-primary font-bold">[{tag}]</span>
-                                                    ))
+                                                    <>
+                                                        {entry.publisher ? (
+                                                            <span className="text-primary font-bold">[{entry.publisher}]</span>
+                                                        ) : (
+                                                            entry.tags?.filter(t => {
+                                                                const lower = t.toLowerCase();
+                                                                if (["nl", "nw", "wn"].includes(lower)) return false;
+                                                                const genres = ["juvenil", "chicos", "shounen", "acción", "accion", "bélico", "belico", "ciencia ficción", "ciencia ficcion", "drama", "misterio", "romance", "sobrenatural", "maduro", "adultos", "seinen", "fantasía", "fantasia", "historia", "shojo", "josei", "terror", "suspenso", "psicológico", "psicologico", "aventura", "comedia", "recuentos de la vida", "escolar", "harem", "ecchi", "isekai", "mecha", "yuri", "yaoi", "tragedia", "militar", "mágia", "magia", "artes marciales", "deportes"];
+                                                                if (genres.some(g => lower.includes(g))) return false;
+                                                                return true;
+                                                            }).map((tag, i) => (
+                                                                <span key={i} className="text-primary font-bold">[{tag}]</span>
+                                                            ))
+                                                        )}
+                                                    </>
                                                 ) : (
                                                     entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
                                                         <span key={i} className="text-primary font-bold">[{tag}]</span>

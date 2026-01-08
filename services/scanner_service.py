@@ -95,6 +95,14 @@ class ScannerService:
             book.file_created_at = datetime.fromtimestamp(stat.st_ctime)
             
             book.title = meta.get('title') or book.filename
+            
+            # Extract Romaji Title from main Title if it follows "Romaji - ...Volumen" pattern
+            romaji = meta.get('romaji_title')
+            if not romaji and book.title and ' - ' in book.title:
+                # If title is "Romaji - Volume...", take the first part
+                romaji = book.title.split(' - ')[0].strip()
+            
+            book.romaji_title = romaji
             book.author = meta.get('author')
             book.illustrator = meta.get('illustrator')
             book.translator = meta.get('translator')

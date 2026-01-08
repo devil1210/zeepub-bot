@@ -138,6 +138,7 @@ export class OpdsClient {
                         tags: item.tags || [],
                         categories: item.tags || [],
                         romaji: romaji,
+                        publisher: item.publisher,
                         cleanTitle: title || item.title, // use cleaned title
                         year: (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
                         illustrator: item.illustrator,

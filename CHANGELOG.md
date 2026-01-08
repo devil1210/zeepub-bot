@@ -10,6 +10,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.17] - 2026-01-08
+### Fixed
+- **Metadata Extraction**: Improved intelligent extraction of Romaji titles from DC:Title when using patterns like "Romaji - ...".
+- **Scanlation Groups**: The UI now prioritizes and displays the Publisher (`dc:publisher`) as the scanlation/translator group in the volume line.
+- **Backend Sync**: Ensure `publisher` and `romaji_title` are correctly mapped and exposed through the OPDS API.
+
 ## [v6.0.0-alpha.16] - 2026-01-08
 ### Fixed
 - **Build Recovery**: Retrying build after GitHub flakiness (502 error).
