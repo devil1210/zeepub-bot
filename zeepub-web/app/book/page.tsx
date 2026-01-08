@@ -341,13 +341,7 @@ function BookDetailContent() {
                         <div className="flex-1 min-w-0">
                             {/* Main Title - Clean English/Common Header */}
                             <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">
-                                {(() => {
-                                    // Búsqueda inteligente: Priorizar título en inglés o título limpio
-                                    // Si tenemos englishTitle explícito, lo usamos.
-                                    // Si no, usamos cleanTitle (que suele ser la parte inglesa tras el split).
-                                    const base = (book.englishTitle || book.cleanTitle || book.title || "").split(' - ')[0].replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
-                                    return base;
-                                })()}
+                                {book.series || (book.englishTitle || book.cleanTitle || book.title || "").split(' - ')[0].replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim()}
                             </h1>
 
                             {/* Romaji Name as Sub-title */}
@@ -486,25 +480,15 @@ function BookDetailContent() {
                         <h3 className="text-xs font-bold uppercase tracking-widest">DETALLES DEL LIBRO</h3>
                     </div>
                     <div className="space-y-3.5 text-sm">
-                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                            <span className="text-muted-foreground">Autor</span>
-                            <span className="text-foreground font-semibold text-right ml-4">{book.author}</span>
-                        </div>
-                        {book.illustrator && (
+                        {book.series && (
                             <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Ilustrador</span>
-                                <span className="text-foreground font-semibold text-right ml-4">{book.illustrator}</span>
-                            </div>
-                        )}
-                        {book.englishTitle && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Título Inglés</span>
-                                <span className="text-foreground font-semibold text-right ml-4">{book.englishTitle}</span>
+                                <span className="text-muted-foreground">Serie</span>
+                                <span className="text-foreground font-semibold text-right ml-4">{book.series}</span>
                             </div>
                         )}
                         {book.romaji && (
                             <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Título Romaji</span>
+                                <span className="text-muted-foreground">Título</span>
                                 <span className="text-foreground font-semibold text-right ml-4 italic">{book.romaji}</span>
                             </div>
                         )}
@@ -514,6 +498,16 @@ function BookDetailContent() {
                                 <span className="text-foreground font-bold text-right ml-4">
                                     {["unico", "único"].includes(String(book.seriesIndex).toLowerCase()) ? "Único" : book.seriesIndex}
                                 </span>
+                            </div>
+                        )}
+                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                            <span className="text-muted-foreground">Autor</span>
+                            <span className="text-foreground font-semibold text-right ml-4">{book.author}</span>
+                        </div>
+                        {book.illustrator && (
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                                <span className="text-muted-foreground">Ilustrador</span>
+                                <span className="text-foreground font-semibold text-right ml-4">{book.illustrator}</span>
                             </div>
                         )}
                         {book.isbn && (
@@ -528,26 +522,8 @@ function BookDetailContent() {
                                 <span className="text-foreground font-semibold font-mono tracking-tight">{book.asin}</span>
                             </div>
                         )}
-                        {book.translator && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Traductor</span>
-                                <span className="text-foreground font-semibold text-right ml-4">{book.translator}</span>
-                            </div>
-                        )}
-                        {book.layoutBy && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Maquetador</span>
-                                <span className="text-foreground font-semibold text-right ml-4">{book.layoutBy}</span>
-                            </div>
-                        )}
-                        {book.publisher && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Grupo Traductor</span>
-                                <span className="text-foreground font-semibold text-right ml-4">{book.publisher}</span>
-                            </div>
-                        )}
                         {book.publishedAt && (
-                            <div className="flex justify-between items-center py-0.5 last:border-0">
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
                                 <span className="text-muted-foreground flex items-center gap-1.5">
                                     <Calendar className="w-3.5 h-3.5" />
                                     Fecha de publicación
@@ -564,6 +540,24 @@ function BookDetailContent() {
                                 </span>
                             </div>
                         )}
+                        {book.publisher && (
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                                <span className="text-muted-foreground">Grupo Traductor</span>
+                                <span className="text-foreground font-semibold text-right ml-4">{book.publisher}</span>
+                            </div>
+                        )}
+                        {book.translator && (
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                                <span className="text-muted-foreground">Traductor</span>
+                                <span className="text-foreground font-semibold text-right ml-4">{book.translator}</span>
+                            </div>
+                        )}
+                        {book.layoutBy && (
+                            <div className="flex justify-between items-center py-0.5 last:border-0">
+                                <span className="text-muted-foreground">Maquetador</span>
+                                <span className="text-foreground font-semibold text-right ml-4">{book.layoutBy}</span>
+                            </div>
+                        )}
                     </div>
                 </Card>
 
@@ -578,7 +572,7 @@ function BookDetailContent() {
                     <div className="space-y-3.5 text-sm">
                         <div className="flex justify-between items-center py-0.5 border-b border-border/30">
                             <span className="text-muted-foreground">Tipo de Archivo</span>
-                            <span className="text-foreground font-semibold">{formatFileType(displayFileType || "Epub")}</span>
+                            <span className="text-foreground font-semibold font-mono">{formatFileType(displayFileType || "Epub")}</span>
                         </div>
                         {book.epubVersion && (
                             <div className="flex justify-between items-center py-0.5 border-b border-border/30">
@@ -594,8 +588,24 @@ function BookDetailContent() {
                                     : (displaySize || "No disponible")}
                             </span>
                         </div>
+                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                            <span className="text-muted-foreground">Cantidad de Páginas</span>
+                            <span className="text-foreground font-semibold">{book.pageCount || "No disponible"}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                            <span className="text-muted-foreground">Cantidad de Palabras</span>
+                            <span className="text-foreground font-semibold">
+                                {book.wordCount ? String(book.wordCount).replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "No disponible"}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                            <span className="text-muted-foreground">Tiempo de lectura</span>
+                            <span className="text-foreground font-semibold">
+                                {book.readingTime ? `${book.readingTime} min / ${(Number(book.readingTime) / 60).toFixed(1)} h` : "No disponible"}
+                            </span>
+                        </div>
                         {(book.updatedDate || book.modifiedAtOpf) && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                            <div className="flex justify-between items-center py-0.5 last:border-0">
                                 <span className="text-muted-foreground flex items-center gap-1.5">
                                     <Clock className="w-3.5 h-3.5" />
                                     Última actualización
@@ -613,22 +623,6 @@ function BookDetailContent() {
                                 </span>
                             </div>
                         )}
-                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                            <span className="text-muted-foreground">Cantidad de Páginas</span>
-                            <span className="text-foreground font-semibold">{book.pageCount || "No disponible"}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                            <span className="text-muted-foreground">Cantidad de Palabras</span>
-                            <span className="text-foreground font-semibold">
-                                {book.wordCount ? book.wordCount.toLocaleString() : "No disponible"}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 last:border-0">
-                            <span className="text-muted-foreground">Tiempo de lectura</span>
-                            <span className="text-foreground font-semibold">
-                                {book.readingTime ? `${book.readingTime} min` : "No disponible"}
-                            </span>
-                        </div>
                     </div>
                 </Card>
 

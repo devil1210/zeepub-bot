@@ -10,6 +10,16 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.34] - 2026-01-08
+### Changed
+- **Header Priority**: The primary title in book details now displays the **Series/English Title** for better identification.
+- **Metadata Reordering**: Reordered fields in "Detalles del Libro" and "Información Técnica" to focus on the most relevant data first.
+- **Improved Nomenclature**: Renamed "Título Romaji" to just **"Título"** as requested.
+- **Technical Metrics Formatting**: 
+    - Word counts now use dot separators (e.g., `78.399`).
+    - Reading time now displays both minutes and hours (e.g., `391 min / 6.5 h`).
+- **Catalog Aesthetics**: Removed the folder icon overlay from representative covers to maintain a cleaner grid layout.
+
 ## [v6.0.0-alpha.33] - 2026-01-08
 ### Added
 - **Full-screen Cover Preview**: Users can now tap on any book cover in the details page to view it in full screen with a sleek interactive overlay.

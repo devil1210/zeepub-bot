@@ -532,15 +532,7 @@ function CatalogContent() {
                                                     <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
                                                 </div>
                                             ) : entry.cover_url ? (
-                                                <>
-                                                    <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
-                                                    {/* Folder Icon Overlay */}
-                                                    <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex items-end justify-start p-2">
-                                                        <div className="bg-primary/90 p-1 rounded shadow-lg backdrop-blur-sm">
-                                                            <Folder className="w-3.5 h-3.5 text-primary-foreground" />
-                                                        </div>
-                                                    </div>
-                                                </>
+                                                <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
                                             ) : (
                                                 <Folder className="w-8 h-8 text-primary" />
                                             )}
