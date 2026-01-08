@@ -10,6 +10,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.20] - 2026-01-08
+### Added
+- **Forced Re-scan**: Added support for `/scan_library force` to bypass date checks and re-process all library metadata.
+
 ## [v6.0.0-alpha.19] - 2026-01-08
 ### Fixed
 - **Schemaless Migration**: Added a self-healing database migration logic to support new metadata columns without requiring a full DB reset.

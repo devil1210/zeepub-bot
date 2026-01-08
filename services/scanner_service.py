@@ -24,7 +24,7 @@ class ScannerService:
         
         init_library_db()
 
-    def sync_all(self):
+    def sync_all(self, force_scan=False):
         """
         Sincroniza todas las fuentes configuradas.
         """
@@ -40,7 +40,7 @@ class ScannerService:
                     session.add(source)
                     session.commit()
                 
-                self._scan_directory(source, session)
+                self._scan_directory(source, session, force_scan)
                 
                 source.last_scanned = datetime.utcnow()
                 session.commit()
@@ -49,7 +49,7 @@ class ScannerService:
         finally:
             session.close()
 
-    def _scan_directory(self, source, session):
+    def _scan_directory(self, source, session, force_scan=False):
         """
         Recorre el directorio y procesa archivos nuevos o modificados.
         """
@@ -57,9 +57,9 @@ class ScannerService:
             for file in files:
                 if file.lower().endswith('.epub'):
                     full_path = os.path.join(root, file)
-                    self._process_book(full_path, source, session)
+                    self._process_book(full_path, source, session, force_scan)
 
-    def _process_book(self, filepath, source, session):
+    def _process_book(self, filepath, source, session, force_scan=False):
         """
         Procesa un archivo individual.
         """
@@ -71,8 +71,8 @@ class ScannerService:
             # Buscar si ya existe en DB
             book = session.query(LocalBook).filter_by(filepath=filepath).first()
             
-            # Si ya existe y no ha cambiado el mtime ni el tamaño, saltar
-            if book and book.file_modified_at == mtime and book.file_size == size:
+            # Si ya existe y no ha cambiado el mtime ni el tamaño, saltar (a menos que sea force_scan)
+            if not force_scan and book and book.file_modified_at == mtime and book.file_size == size:
                 return
 
             print(f"Procesando: {filepath}")

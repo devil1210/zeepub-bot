@@ -622,9 +622,12 @@ class MaintenancePlugin(BasePlugin):
             await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
             return
 
+        force = context.args and context.args[0].lower() == "force"
         thread_id = get_thread_id(update)
+        
+        scan_type = " (FORZADO)" if force else ""
         msg = await update.message.reply_text(
-            "🔍 <b>Iniciando escaneo de biblioteca local...</b>\nEsto puede tardar unos minutos.",
+            f"🔍 <b>Iniciando escaneo de biblioteca local{scan_type}...</b>\nEsto puede tardar unos minutos.",
             parse_mode="HTML",
             message_thread_id=thread_id
         )
@@ -644,7 +647,7 @@ class MaintenancePlugin(BasePlugin):
 
             # Ejecutar escaneo en un hilo separado para no bloquear el bot
             scanner = ScannerService(libs_json)
-            await asyncio.to_thread(scanner.sync_all)
+            await asyncio.to_thread(scanner.sync_all, force_scan=force)
 
             await context.bot.edit_message_text(
                 chat_id=update.effective_chat.id,
