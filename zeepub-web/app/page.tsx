@@ -70,7 +70,7 @@ export default function HomePage() {
   }, [])
 
   const menuItems = [
-    { icon: BookOpen, label: t("menu_search_label"), href: "/search", description: t("menu_search_desc"), id: "search" },
+    { icon: BookOpen, label: t("menu_search_label"), href: "/catalog", description: t("menu_search_desc"), id: "search" },
     { icon: Library, label: t("menu_catalog_label"), href: "/catalog", description: t("menu_catalog_desc"), id: "catalog" },
     { icon: Download, label: t("menu_downloads_label"), href: "/downloads", description: t("menu_downloads_desc"), id: "downloads" },
     { icon: BarChart3, label: t("menu_status_label"), href: "/status", description: t("menu_status_desc"), id: "status" },
@@ -132,14 +132,14 @@ export default function HomePage() {
                     onChange={(e) => setHomeSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && homeSearchQuery.trim()) {
-                        router.push(`/search?q=${encodeURIComponent(homeSearchQuery)}`)
+                        router.push(`/catalog?q=${encodeURIComponent(homeSearchQuery)}`)
                       }
                     }}
                     className="pl-12 h-14 bg-card border-border rounded-2xl shadow-sm focus-visible:ring-primary/20 transition-all text-base"
                   />
                   {homeSearchQuery.trim() && (
                     <Button
-                      onClick={() => router.push(`/search?q=${encodeURIComponent(homeSearchQuery)}`)}
+                      onClick={() => router.push(`/catalog?q=${encodeURIComponent(homeSearchQuery)}`)}
                       size="sm"
                       className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-bold shadow-md shadow-primary/20 animate-in fade-in zoom-in duration-200"
                     >

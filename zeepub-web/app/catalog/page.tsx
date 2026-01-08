@@ -101,11 +101,12 @@ function CatalogContent() {
     const [isSearching, setIsSearching] = useState(false)
     const [searchPagination, setSearchPagination] = useState<PaginationState>({
         currentPage: 1,
+        totalPages: 1
     })
     const searchTimeout = useRef<NodeJS.Timeout | null>(null)
 
-    const handleCatalogSearch = useCallback(async (pageUrl?: string) => {
-        if (!searchQuery.trim() && !pageUrl) {
+    const handleCatalogSearch = useCallback(async (page: number = 1) => {
+        if (!searchQuery.trim()) {
             setSearchResults([])
             setIsSearching(false)
             return
@@ -113,15 +114,17 @@ function CatalogContent() {
 
         setIsSearching(true)
         try {
-            const result = await OpdsClient.search(searchQuery, pageUrl, searchType)
+            // New format: returns { items, total, page, totalPages }
+            // Note: We'll modify OpdsClient.search to support page parameter
+            const result = await (OpdsClient as any).search(searchQuery, undefined, searchType, page)
             setSearchResults(result.results || [])
             setSearchPagination({
-                nextPage: result.nextPage,
-                prevPage: result.prevPage,
                 currentPage: result.currentPage || 1,
-                totalPages: result.totalPages
+                totalPages: result.totalPages || 1,
+                nextPage: (result.currentPage < result.totalPages) ? "next" : null,
+                prevPage: (result.currentPage > 1) ? "prev" : null
             })
-            if (pageUrl) {
+            if (page > 1) {
                 window.scrollTo(0, 0)
             }
         } catch (error) {
@@ -129,7 +132,7 @@ function CatalogContent() {
         } finally {
             setIsSearching(false)
         }
-    }, [searchQuery])
+    }, [searchQuery, searchType])
 
     useEffect(() => {
         if (!searchQuery.trim()) {
@@ -195,8 +198,14 @@ function CatalogContent() {
     // Unified feed loader: handle searchParams and isAdminMode changes
     useEffect(() => {
         const feedUrl = searchParams.get("feed_url")
-        console.log("[Catalog] Unified loading effect triggered, feedUrl:", feedUrl || "root")
-        loadFeed(feedUrl || undefined)
+        const q = searchParams.get("q")
+
+        if (q) {
+            setSearchQuery(q)
+        } else {
+            console.log("[Catalog] Unified loading effect triggered, feedUrl:", feedUrl || "root")
+            loadFeed(feedUrl || undefined)
+        }
     }, [searchParams, isAdminMode, loadFeed])
 
     // Go back in internal history or via OPDS hierarchy
@@ -771,13 +780,13 @@ function CatalogContent() {
                 {searchQuery && (
                     <Pagination
                         currentPage={searchPagination.currentPage}
-                        totalPages={searchPagination.totalPages}
+                        totalPages={searchPagination.totalPages || 1}
                         hasNextPage={!!searchPagination.nextPage}
                         hasPrevPage={!!searchPagination.prevPage}
-                        hasUpPage={true}
-                        onNextPage={() => searchPagination.nextPage && handleNavigate(searchPagination.nextPage)}
-                        onPrevPage={() => searchPagination.prevPage && handleNavigate(searchPagination.prevPage)}
-                        onUpPage={handleGoBack}
+                        hasUpPage={false}
+                        onNextPage={() => handleCatalogSearch(searchPagination.currentPage + 1)}
+                        onPrevPage={() => handleCatalogSearch(searchPagination.currentPage - 1)}
+                        onUpPage={() => setSearchQuery("")}
                         isLoading={isSearching}
                     />
                 )}

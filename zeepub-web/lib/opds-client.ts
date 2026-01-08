@@ -194,16 +194,17 @@ export class OpdsClient {
         }
     }
 
-    static async search(query: string, pageUrl?: string, searchType: string = "all"): Promise<any> {
+    static async search(query: string, pageUrl?: string, searchType: string = "all", page: number = 1): Promise<any> {
         const initData = getTelegramInitData()
         const useLocalLibrary = localStorage.getItem("useLocalLibrary") === "true"
 
         if (useLocalLibrary && !pageUrl?.startsWith("http")) {
-            const response = await fetch(`/api/library/search?q=${encodeURIComponent(query)}&search_type=${searchType}`, {
+            const response = await fetch(`/api/library/search?q=${encodeURIComponent(query)}&search_type=${searchType}&page=${page}&page_size=10`, {
                 headers: { "X-Telegram-Data": initData }
             })
             if (!response.ok) return { results: [] }
-            const items = await response.json()
+            const data = await response.json()
+            const items = data.items || []
             return {
                 results: items.map((item: any) => {
                     // Safe cover extracting
@@ -232,8 +233,9 @@ export class OpdsClient {
                         readingTime: item.readingTime
                     }
                 }),
-                currentPage: 1,
-                totalPages: 1
+                currentPage: data.page || 1,
+                totalPages: data.totalPages || 1,
+                totalItems: data.total || 0
             }
         }
 

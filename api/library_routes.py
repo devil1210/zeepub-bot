@@ -38,6 +38,8 @@ async def get_sources(
 @router.get("/api/library/search")
 async def search_local_books(
     q: str = Query(..., min_length=1),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1),
     source_id: Optional[int] = None,
     search_type: str = Query("all", regex="^(all|title|author|illustrator|translator|genres)$"),
     user_data: dict = Depends(require_mini_app_access)
@@ -135,7 +137,19 @@ async def search_local_books(
         # Agregar libros individuales
         response.extend(individual_books)
         
-        return response
+        # Paginación manual de la respuesta combinada (series + libros)
+        total_items = len(response)
+        total_pages = (total_items + page_size - 1) // page_size
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated_response = response[start:end]
+        
+        return {
+            "items": paginated_response,
+            "total": total_items,
+            "page": page,
+            "totalPages": total_pages
+        }
     finally:
         session.close()
 
@@ -162,7 +176,7 @@ async def get_catalog(
     source_id: Optional[int] = Query(None),
     folder: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1),
+    page_size: int = Query(10, ge=1),
     use_random_covers: bool = Query(True),
     user_data: dict = Depends(require_mini_app_access)
 ):

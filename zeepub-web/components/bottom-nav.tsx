@@ -9,7 +9,7 @@ import { useAccessControl } from "@/hooks/use-access-control"
 
 const navItems = [
   { icon: Home, label: "Inicio", href: "/" },
-  { icon: Search, label: "Buscar", href: "/search" },
+  { icon: Search, label: "Buscar", href: "/catalog" },
   { icon: Library, label: "Catálogo", href: "/catalog" },
   { icon: BarChart3, label: "Estado", href: "/status" },
 ]
