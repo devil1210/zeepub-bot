@@ -64,8 +64,30 @@ function CatalogContent() {
     const { webApp, isAdminMode } = useTelegramContext()
     const { t } = useStrings()
     const searchParams = useSearchParams()
-    const folder = searchParams.get("folder")
     const router = useRouter()
+
+    // Robust Folder Detection:
+    // 1. Try "folder" search param
+    // 2. Try to extract from "feed_url" if it starts with "local"
+    let folderParam = searchParams.get("folder")
+    const feedUrlParam = searchParams.get("feed_url")
+
+    if (!folderParam && feedUrlParam && feedUrlParam.startsWith("local")) {
+        try {
+            // Decoded feed_url might be "local?source_id=1&folder=Name"
+            // or it might be encoded "local%3Fsource_id..."
+            let decoded = decodeURIComponent(feedUrlParam)
+            if (decoded.includes("?")) {
+                const queryPart = decoded.split("?")[1]
+                const params = new URLSearchParams(queryPart)
+                folderParam = params.get("folder")
+            }
+        } catch (e) {
+            console.error("Error parsing feed_url for folder:", e)
+        }
+    }
+
+    const folder = folderParam
 
     // URL-based navigation: track current feed URL
     const [currentFeedUrl, setCurrentFeedUrl] = useState<string>("")

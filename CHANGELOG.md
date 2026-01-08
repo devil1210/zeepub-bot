@@ -10,6 +10,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.14] - 2026-01-08
+### Fixed
+- **Folder Detection**: Hardened the logic to detect if the user is inside a series folder, even if the URL parameters are nested within `feed_url` (fixing the "genres showing" bug).
+
 ## [v6.0.0-alpha.13] - 2026-01-08
 ### Changed
 - **Debug UI**: Added visible version footer to catalog page to verify update status.
