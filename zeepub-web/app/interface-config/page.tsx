@@ -63,6 +63,8 @@ export default function InterfaceConfigPage() {
         setDisableDisplacement,
         dataSaver,
         setDataSaver,
+        useLocalLibrary,
+        setUseLocalLibrary,
     } = useTheme()
 
     const { isAdmin, userProfile } = useTelegramContext()
@@ -106,6 +108,7 @@ export default function InterfaceConfigPage() {
                 showHelpCard: localStorage.getItem("showHelpCard") === "true",
                 showSettingsInMenu: localStorage.getItem("showSettingsInMenu") === "true",
                 dataSaver: localStorage.getItem("dataSaver") === "true",
+                useLocalLibrary: localStorage.getItem("useLocalLibrary") === "true",
                 enableAnimations: localStorage.getItem("enableAnimations") === "true",
                 animationDuration: parseInt(localStorage.getItem("animationDuration") || "200"),
                 animationDistance: parseInt(localStorage.getItem("animationDistance") || "4"),
@@ -605,6 +608,26 @@ export default function InterfaceConfigPage() {
                                     </div>
                                     <Switch id="show-help-card" checked={showHelpCard} onCheckedChange={setShowHelpCard} />
                                 </div>
+
+                                <Separator className="my-4" />
+                                <Label className="text-base mb-2 block">Librería</Label>
+                                <Card className="p-4 bg-primary/5 border-primary/20">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                                <BookOpen className="w-6 h-6 text-primary" />
+                                            </div>
+                                            <div>
+                                                <Label className="text-base font-bold">Biblioteca Local</Label>
+                                                <p className="text-xs text-muted-foreground">Usa el índice local en lugar de Kavita</p>
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            checked={useLocalLibrary}
+                                            onCheckedChange={setUseLocalLibrary}
+                                        />
+                                    </div>
+                                </Card>
 
                                 {editTarget !== "personal" && (
                                     <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">

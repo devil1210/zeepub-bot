@@ -834,19 +834,25 @@ async def enviar_libro_directo(
         # Destino final del libro
         destino = target_chat_id if target_chat_id else user_id
 
-        # 3. Descargar EPUB
-        logger.info(f"Descargando EPUB desde: {download_url}")
+        # 3. Obtener EPUB (Local o Servidor)
+        epub_bytes = None
 
-        import aiohttp
+        # Detectar si es ruta local absoluta
+        if download_url.startswith("/") and os.path.exists(download_url):
+            logger.info(f"Usando archivo local: {download_url}")
+            epub_bytes = download_url # send_doc_bytes acepta rutas
+        else:
+            logger.info(f"Descargando EPUB desde: {download_url}")
+            import aiohttp
+            auth = None
+            if config.OPDS_AUTH:
+                auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
 
-        auth = None
-        if config.OPDS_AUTH:
-            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+            epub_bytes = await fetch_bytes(download_url, timeout=120, auth=auth)
 
-        epub_bytes = await fetch_bytes(download_url, timeout=120, auth=auth)
         if not epub_bytes:
-            error_msg = "❌ Error al descargar el archivo desde la fuente. Posible problema con Cloudflare o servidor de origen."
-            logger.error(f"EPUB download failed for: {download_url}")
+            error_msg = "❌ Error al obtener el archivo. No se encontró en el disco o la descarga falló."
+            logger.error(f"EPUB acquisition failed for: {download_url}")
             await bot.send_message(
                 chat_id=user_id,
                 text=error_msg,
@@ -854,7 +860,7 @@ async def enviar_libro_directo(
             return False
 
         logger.info(
-            f"EPUB descargado exitosamente: {len(epub_bytes) if isinstance(epub_bytes, bytes) else 'archivo temp'} bytes"
+            f"EPUB listo para procesar: {download_url}"
         )
 
         # 4. Parsear metadatos del EPUB

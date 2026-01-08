@@ -5,6 +5,7 @@
 !.gitignore
 !Dockerfile
 !docker-compose.yml
+!docker-compose.prod-lib.yml
 !.github/
 !.github/workflows/
 !.github/workflows/*.yml
@@ -85,6 +86,9 @@ __pycache__/
 
 !repositories/
 !repositories/*.py
+
+!models/
+!models/*.py
 
 !v0/
 !v0/**

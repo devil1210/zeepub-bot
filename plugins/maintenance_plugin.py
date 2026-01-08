@@ -45,6 +45,7 @@ class MaintenancePlugin(BasePlugin):
             app.add_handler(CommandHandler("import_history", self.import_history))
             app.add_handler(CommandHandler("latest_books", self.latest_books))
             app.add_handler(CommandHandler("clear_history", self.clear_history))
+            app.add_handler(CommandHandler("scan_library", self.scan_library))
 
             # Publisher/Admin commands
             app.add_handler(CommandHandler("export_db", self.export_db))
@@ -613,4 +614,50 @@ class MaintenancePlugin(BasePlugin):
             logger.error(f"Error en export_history: {e}", exc_info=True)
             await update.message.reply_text(
                 "❌ Error generando exportación de historial."
+            )
+    async def scan_library(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Inicia el escaneo de la biblioteca local (solo admins)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            return
+
+        thread_id = get_thread_id(update)
+        msg = await update.message.reply_text(
+            "🔍 <b>Iniciando escaneo de biblioteca local...</b>\nEsto puede tardar unos minutos.",
+            parse_mode="HTML",
+            message_thread_id=thread_id
+        )
+
+        try:
+            from services.scanner_service import ScannerService
+            
+            libs_json = os.getenv("LOCAL_LIBRARIES")
+            if not libs_json:
+                await context.bot.edit_message_text(
+                    chat_id=update.effective_chat.id,
+                    message_id=msg.message_id,
+                    text="❌ No se ha configurado la variable <code>LOCAL_LIBRARIES</code>.",
+                    parse_mode="HTML"
+                )
+                return
+
+            # Ejecutar escaneo en un hilo separado para no bloquear el bot
+            scanner = ScannerService(libs_json)
+            await asyncio.to_thread(scanner.sync_all)
+
+            await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                message_id=msg.message_id,
+                text="✅ <b>Escaneo completado con éxito.</b>\nLa base de datos local ha sido actualizada.",
+                parse_mode="HTML"
+            )
+            logger.info(f"Admin {uid} inició y completó escaneo de biblioteca.")
+
+        except Exception as e:
+            logger.error(f"Error en scan_library: {e}", exc_info=True)
+            await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                message_id=msg.message_id,
+                text=f"❌ Error durante el escaneo: {str(e)}"
             )

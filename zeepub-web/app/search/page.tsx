@@ -15,6 +15,7 @@ import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
 import { Loader2, ImageOff } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
+import { OpdsClient } from "@/lib/opds-client"
 
 interface Book {
   id: string
@@ -69,10 +70,7 @@ function SearchContent() {
 
     setIsLoading(true)
     try {
-      const result = await callBotAPI("search", {
-        query: queryToUse,
-        pageUrl: pageUrl
-      })
+      const result = await OpdsClient.search(queryToUse, pageUrl)
       setBooks(result.results || [])
       setPagination({
         nextPage: result.nextPage,

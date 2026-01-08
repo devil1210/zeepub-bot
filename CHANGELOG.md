@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0-alpha.1] - 2026-01-07
+### Added
+- **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
+- **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
+
 ## [v5.0.36] - 2026-01-07
 ### Added
 - **Botón Borrar Caché**: Nueva opción en configuración personal para borrar toda la caché local (`localStorage`, `sessionStorage`) y recargar la aplicación. Útil para resolver problemas de visualización tras actualizaciones.

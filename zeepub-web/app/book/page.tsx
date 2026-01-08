@@ -33,6 +33,15 @@ interface BookDetail {
     cleanTitle?: string
     tags?: string[]
     updatedDate?: string
+
+    // Enriched fields
+    illustrator?: string
+    translator?: string
+    layoutBy?: string
+    bookType?: string
+    publishedAt?: string
+    modifiedAtOpf?: string
+    asin?: string
 }
 
 function BookDetailContent() {
@@ -75,7 +84,18 @@ function BookDetailContent() {
                 }
 
                 console.log("[v0] Fetching book detail for ID:", bookId)
-                const result = await callBotAPI("book-detail", { bookId: bookId })
+                let result;
+                if (bookId.startsWith("local_")) {
+                    const response = await fetch(`/api/library/books/${bookId}`, {
+                        headers: { "X-Telegram-Data": JSON.stringify(webApp?.initData || "") }
+                    });
+                    if (response.ok) {
+                        result = await response.json();
+                    }
+                } else {
+                    result = await callBotAPI("book-detail", { bookId: bookId })
+                }
+
                 console.log("[v0] Book detail result:", result)
                 if (result && result.title) {
                     setBook(prevBook => {
@@ -109,6 +129,15 @@ function BookDetailContent() {
                         if (!result.updatedDate && prevBook.updatedDate) {
                             merged.updatedDate = prevBook.updatedDate
                         }
+
+                        // Enriched fields merge
+                        merged.illustrator = result.illustrator || prevBook.illustrator
+                        merged.translator = result.translator || prevBook.translator
+                        merged.layoutBy = result.layoutBy || prevBook.layoutBy
+                        merged.bookType = result.bookType || prevBook.bookType
+                        merged.publishedAt = result.publishedAt || prevBook.publishedAt
+                        merged.modifiedAtOpf = result.modifiedAtOpf || prevBook.modifiedAtOpf
+                        merged.asin = result.asin || prevBook.asin
 
                         return merged
                     })
@@ -281,7 +310,16 @@ function BookDetailContent() {
                             )}
 
                             {/* Authors */}
-                            <p className="text-base text-primary font-medium mb-2">{book.author}</p>
+                            <p className="text-base text-primary font-medium mb-1">{book.author}</p>
+
+                            {/* Book Type Badge */}
+                            {book.bookType && (
+                                <div className="mb-2">
+                                    <span className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded-md border border-primary/30">
+                                        {book.bookType}
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Volume and Extra Tags (combined line) */}
                             <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1 font-medium">
@@ -365,6 +403,38 @@ function BookDetailContent() {
                     </Card>
                 )}
 
+                {/* Credits Section */}
+                {(book.illustrator || book.translator || book.layoutBy) && (
+                    <Card className="p-5 border-border mb-4 bg-card">
+                        <div className="flex items-center gap-2 mb-3 text-primary">
+                            <span className="p-1 bg-primary/10 rounded-full">
+                                <UserIcon className="w-3 h-3" />
+                            </span>
+                            <h3 className="text-xs font-bold uppercase tracking-wider">Créditos</h3>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3">
+                            {book.illustrator && (
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Ilustrador</span>
+                                    <span className="text-sm font-medium">{book.illustrator}</span>
+                                </div>
+                            )}
+                            {book.translator && (
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Traductor</span>
+                                    <span className="text-sm font-medium">{book.translator}</span>
+                                </div>
+                            )}
+                            {book.layoutBy && (
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Maquetador</span>
+                                    <span className="text-sm font-medium">{book.layoutBy}</span>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                )}
+
                 {/* Additional Details */}
                 <Card className="p-5 border-border mb-6 bg-card">
                     <div className="flex items-center gap-2 mb-4 text-primary">
@@ -407,15 +477,33 @@ function BookDetailContent() {
                                 <span className="text-foreground font-medium font-mono">{book.isbn}</span>
                             </div>
                         )}
-                        {book.updatedDate && (
+                        {book.asin && (
+                            <div className="flex justify-between py-2">
+                                <span className="text-muted-foreground">ASIN (Amazon)</span>
+                                <span className="text-foreground font-medium font-mono">{book.asin}</span>
+                            </div>
+                        )}
+                        {book.publishedAt && (
+                            <div className="flex justify-between py-2">
+                                <span className="text-muted-foreground flex items-center gap-1.5">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    Fecha de publicación
+                                </span>
+                                <span className="text-foreground font-medium text-right ml-4">
+                                    {book.publishedAt.includes('T') ? book.publishedAt.split('T')[0] : book.publishedAt}
+                                </span>
+                            </div>
+                        )}
+                        {(book.updatedDate || book.modifiedAtOpf) && (
                             <div className="flex justify-between py-2">
                                 <span className="text-muted-foreground flex items-center gap-1.5">
                                     <Clock className="w-3.5 h-3.5" />
-                                    Actualizado
+                                    Última actualización
                                 </span>
                                 <span className="text-foreground font-medium whitespace-nowrap ml-4">
                                     {(() => {
-                                        const raw = book.updatedDate.includes('T') ? book.updatedDate.split('T')[0] : book.updatedDate;
+                                        const updateDate = book.modifiedAtOpf || book.updatedDate || "";
+                                        const raw = updateDate.includes('T') ? updateDate.split('T')[0] : updateDate;
                                         if (raw.includes('-')) {
                                             const parts = raw.split('-');
                                             if (parts.length === 3) {
@@ -485,6 +573,26 @@ function BookOpenSVG(props: any) {
         >
             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
             <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+    )
+}
+
+function UserIcon(props: any) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
         </svg>
     )
 }

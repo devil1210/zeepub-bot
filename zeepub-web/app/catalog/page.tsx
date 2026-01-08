@@ -87,10 +87,7 @@ function CatalogContent() {
 
         setIsSearching(true)
         try {
-            const result = await callBotAPI("search", {
-                query: searchQuery,
-                pageUrl: pageUrl
-            })
+            const result = await OpdsClient.search(searchQuery, pageUrl)
             setSearchResults(result.results || [])
             setSearchPagination({
                 nextPage: result.nextPage,

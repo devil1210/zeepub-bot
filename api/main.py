@@ -89,13 +89,20 @@ if enable_miniapp:
     # Importar rutas solo si está activo
     from api.routes import router
     from api.miniapp_routes import router as miniapp_router
+    from api.library_routes import router as library_router
 
     app.include_router(router)
     app.include_router(miniapp_router)
+    app.include_router(library_router)
 
     # Montar archivos estáticos del frontend
     from fastapi.staticfiles import StaticFiles
     from fastapi.responses import FileResponse
+    
+    # Montar portadas de la librería local
+    from utils.library_db import COVERS_DIR
+    if os.path.exists(COVERS_DIR):
+        app.mount("/api/library/covers", StaticFiles(directory=COVERS_DIR), name="library_covers")
 
     # Ruta al directorio de build del frontend
     frontend_dist = os.path.join(
