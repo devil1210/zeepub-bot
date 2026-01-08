@@ -589,7 +589,8 @@ async def handle_bot_request(
             }
 
             logger.info(
-                f"[user_status] User {user_id} - Role: {role_key}, Level: {system_role_text}, Used: {used}, Limit: {max_dl}, Reset: {hours}h {minutes}m"
+                f"[user_status] User {user_id} - Role: {role_key}, Level: {system_role_text}, Used: {used}, Limit: {max_dl}, "
+                f"Reset: {hours}h {minutes}m, user_effective_role: {user_effective.get('role')}, status_label: {user_effective.get('status_label')}"
             )
 
             return result
