@@ -559,7 +559,7 @@ function CatalogContent() {
                                                 ) : (
                                                     <p className="text-[10px] text-muted-foreground font-bold flex items-center gap-1">
                                                         <span>
-                                                            {!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())
+                                                            {!book.seriesIndex || ["unico", "único", "0", "00"].includes(String(book.seriesIndex).toLowerCase().trim())
                                                                 ? "Volumen único"
                                                                 : `Volumen ${book.seriesIndex}`}
                                                         </span>
@@ -736,7 +736,8 @@ function CatalogContent() {
                                                 <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
                                                     <span className="font-medium">
                                                         {(() => {
-                                                            if (!entry.seriesIndex || ["unico", "único"].includes(String(entry.seriesIndex).toLowerCase())) {
+                                                            const idx = String(entry.seriesIndex || "").toLowerCase().trim();
+                                                            if (!entry.seriesIndex || ["unico", "único", "0", "00"].includes(idx)) {
                                                                 return "Volumen único";
                                                             }
                                                             const volNum = parseFloat(entry.seriesIndex);

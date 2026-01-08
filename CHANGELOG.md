@@ -5,6 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0-alpha.57] - 2026-01-08
+### Added
+- **Metadata Refinements**: Standardized book metadata formatting across the app.
+### Changed
+- **Date Formatting**: All dates are now displayed in `dd/mm/yyyy` format, removing time and timezone data.
+- **Volume Logic**: Volumes `0`, `00`, or missing are now consistently labeled as "Volumen único".
+- **Clean Titles**: Aggressively removed bracketed tags (e.g., `[NL]`, `[UkuTL]`) from series and title fields in the book detail section for a cleaner look.
+
 ## [v6.0.0-alpha.56] - 2026-01-08
 ### Fixed
 - **Search API**: Fixed a `NameError` that broke search functionality due to a missing variable initialization.

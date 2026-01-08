@@ -68,6 +68,26 @@ function BookDetailContent() {
     const [book, setBook] = useState<BookDetail | null>(null)
     const { dataSaver } = useTheme()
     const [isLoading, setIsLoading] = useState(true)
+
+    const formatDate = (dateStr?: string) => {
+        if (!dateStr) return "N/A";
+        // Remove time (T00:00:00Z or similar)
+        const pureDate = dateStr.split('T')[0];
+        // If it matches YYYY-MM-DD
+        const parts = pureDate.split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        // If it's just a year
+        if (/^\d{4}$/.test(pureDate)) return pureDate;
+        return pureDate;
+    };
+
+    const cleanMetadataTitle = (text?: string) => {
+        if (!text) return "";
+        // Aggressively remove anything in brackets [Tag], [UkuTL], etc.
+        return text.replace(/\[.*?\]/g, "").replace(/\s+/g, " ").trim();
+    };
     const [isVisible, setIsVisible] = useState(false)
     const [isDownloading, setIsDownloading] = useState(false)
     const [isCoverFull, setIsCoverFull] = useState(false)
@@ -275,7 +295,8 @@ function BookDetailContent() {
                             <p className="text-base text-primary font-medium mb-1">{book.author}{book.illustrator ? ` - ${book.illustrator}` : ""}</p>
                             <p className="text-sm text-muted-foreground mb-4 font-medium">
                                 {(() => {
-                                    if (!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())) return "Volumen único";
+                                    const idx = String(book.seriesIndex || "").toLowerCase().trim();
+                                    if (!book.seriesIndex || ["unico", "único", "0", "00"].includes(idx)) return "Volumen único";
                                     const volNum = parseFloat(book.seriesIndex);
                                     return `Volumen ${isNaN(volNum) ? book.seriesIndex : (volNum < 10 ? `0${volNum}` : volNum)}`;
                                 })()}
@@ -334,18 +355,19 @@ function BookDetailContent() {
                         {book.series && (
                             <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
                                 <span className="text-muted-foreground shrink-0">Serie</span>
-                                <span className="font-semibold text-right">{book.series}</span>
+                                <span className="font-semibold text-right">{cleanMetadataTitle(book.series)}</span>
                             </div>
                         )}
                         <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
                             <span className="text-muted-foreground shrink-0">Título</span>
-                            <span className="font-bold italic text-right">{book.romaji || book.cleanTitle || book.title}</span>
+                            <span className="font-bold italic text-right">{cleanMetadataTitle(book.romaji || book.cleanTitle || book.title)}</span>
                         </div>
                         <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
                             <span className="text-muted-foreground shrink-0">Volumen</span>
                             <span className="font-bold text-right">
                                 {(() => {
-                                    if (!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())) return "1";
+                                    const idx = String(book.seriesIndex || "").toLowerCase().trim();
+                                    if (!book.seriesIndex || ["unico", "único", "0", "00"].includes(idx)) return "1 (Único)";
                                     return book.seriesIndex;
                                 })()}
                             </span>
@@ -377,7 +399,7 @@ function BookDetailContent() {
                                 <span className="flex items-center gap-1.5 text-muted-foreground shrink-0">
                                     <Calendar className="w-3.5 h-3.5" /> Fecha de publicación
                                 </span>
-                                <span className="font-semibold text-right">{book.publishedAt || book.year}</span>
+                                <span className="font-semibold text-right">{formatDate(book.publishedAt || book.year)}</span>
                             </div>
                         )}
                         {book.publisher && (
@@ -446,7 +468,7 @@ function BookDetailContent() {
                                 <span className="flex items-center gap-1.5 text-muted-foreground">
                                     <Clock className="w-3.5 h-3.5" /> Última actualización
                                 </span>
-                                <span className="font-semibold">{book.updatedDate || (book as any).modifiedAt}</span>
+                                <span className="font-semibold text-right">{formatDate(book.updatedDate || (book as any).modifiedAt)}</span>
                             </div>
                         )}
                     </div>
