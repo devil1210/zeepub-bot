@@ -93,10 +93,11 @@ export class OpdsClient {
             const totalItems = Array.isArray(data) ? data.length : (data.total || data.items?.length || 0)
             const totalPages = Array.isArray(data) ? 1 : (data.totalPages || 1)
             const currentPage = Array.isArray(data) ? 1 : (data.page || 1)
+            const sourceName = !Array.isArray(data) ? data.source_name : null
 
             // Map local items to OPDSFeed format
             const feed: OPDSFeed = {
-                title: currentFolder || "Bibliotecas Disponibles",
+                title: currentFolder || sourceName || "Bibliotecas Disponibles",
                 currentPage: currentPage,
                 totalItems: totalItems,
                 totalPages: totalPages,

@@ -341,7 +341,7 @@ function BookDetailContent() {
                         <div className="flex-1 min-w-0">
                             {/* Main Title - Clean English/Common Header */}
                             <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">
-                                {book.series || (book.englishTitle || book.cleanTitle || book.title || "").split(' - ')[0].replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim()}
+                                {(book.series || (book.englishTitle || book.cleanTitle || book.title || "").split(' - ')[0]).replace(/\s*\[(NL|NW|WN)\]\s*/gi, "").trim()}
                             </h1>
 
                             {/* Romaji Name as Sub-title */}

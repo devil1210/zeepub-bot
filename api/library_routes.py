@@ -209,7 +209,8 @@ async def get_catalog(
             "items": paged_items,
             "total": total,
             "page": page,
-            "totalPages": total_pages
+            "totalPages": total_pages,
+            "source_name": source.name if source else None
         }
     finally:
         session.close()

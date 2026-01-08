@@ -10,6 +10,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.36] - 2026-01-08
+### Changed
+- **Book Header Cleanup**: Removed redundant `[NL]`, `[NW]`, `[WN]` tags from the main series title in book details to avoid duplication with the badge.
+- **Dynamic Library Names**: The catalog now displays the actual library/source name (e.g., "ZeePubs [ES]") instead of the generic "Biblioteca Local" when browsing a specific source.
+- **Version Footer**: Added bot version display at the bottom of the home page for better transparency.
+
 ## [v6.0.0-alpha.35] - 2026-01-08
 ### Changed
 - **Catalog Navigation Header**: Renamed the root page header from "Biblioteca Local" to **"Bibliotecas Disponibles"** as requested.
