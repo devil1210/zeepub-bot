@@ -10,6 +10,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.16] - 2026-01-08
+### Fixed
+- **Build Recovery**: Retrying build after GitHub flakiness (502 error).
+- **UI Polish**: Confirmed Romaji prefix and combined Author-Illustrator line to match exact reference.
+- **Scanlation Filter**: Improved tag filtering to ensure only translation group tags appear in the volume line.
+
 ## [v6.0.0-alpha.15] - 2026-01-08
 ### Fixed
 - **Local Library UI (Final Refinement)**:
