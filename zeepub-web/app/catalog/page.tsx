@@ -13,6 +13,7 @@ import {
     Download,
     Search,
     ImageOff,
+    Calendar,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { OpdsClient } from "@/lib/opds-client"
@@ -300,7 +301,7 @@ function CatalogContent() {
                 cleanTitle: entry.cleanTitle,
                 romaji: entry.romaji,
                 categories: entry.categories,
-                updatedDate: entry.updatedDate
+                publishedDate: entry.publishedDate
             }))
 
             // Save current position before navigating to book details
@@ -595,41 +596,27 @@ function CatalogContent() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Title: Romaji (primary) + format tags (NL/NW/WN) */}
-                                            <h3 className="font-semibold text-foreground mb-1 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                                {folder ? (
-                                                    <>
-                                                        {entry.romaji || entry.series || entry.title}
-                                                        {entry.bookType ? ` [${entry.bookType}]` :
-                                                            entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
-                                                                ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
-                                                                : ""}
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        {entry.romaji || entry.title}
-                                                        {entry.bookType ? ` [${entry.bookType}]` :
-                                                            entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
-                                                                ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
-                                                                : ""}
-                                                    </>
-                                                )}
+                                            {/* 1. Main Title & Italic Subtitle */}
+                                            <h3 className="font-semibold text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
+                                                {(() => {
+                                                    const base = (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+                                                    return base;
+                                                })()}
                                             </h3>
-
-                                            {/* Authors + Illustrator */}
-                                            <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
-                                                {entry.author}{entry.illustrator ? ` - ${entry.illustrator}` : ""}
-                                            </p>
-
-                                            {/* Genres & Demographics Line: HIDE ENTIRELY when inside a folder (Storyline view) */}
-                                            {!folder && (entry.categories?.length || entry.demographics?.length) && (
-                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-1 italic">
-                                                    {[...(entry.demographics || []), ...(entry.categories || [])].join(", ")}
+                                            {entry.romaji && (
+                                                <p className="text-xs text-muted-foreground/80 italic mb-1 line-clamp-1">
+                                                    {entry.romaji}
                                                 </p>
                                             )}
 
-                                            {/* Volume and Scanlation/Quality Tags ONLY (hide all other tags when in folder) */}
-                                            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1 flex-1">
+                                            {/* 2. Team: Author - Illustrator */}
+                                            <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
+                                                {entry.author}
+                                                {entry.illustrator ? ` - ${entry.illustrator}` : ""}
+                                            </p>
+
+                                            {/* 3. Volume & Group Line */}
+                                            <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
                                                 <span className="font-medium">
                                                     {(() => {
                                                         if (!entry.seriesIndex || ["unico", "único"].includes(String(entry.seriesIndex).toLowerCase())) {
@@ -640,29 +627,27 @@ function CatalogContent() {
                                                         return `Volumen ${padded}`;
                                                     })()}
                                                 </span>
-                                                {/* When in folder, show publisher (scanlation group) or other tags */}
-                                                {folder ? (
-                                                    <>
-                                                        {entry.publisher ? (
-                                                            <span className="text-primary font-bold">[{entry.publisher}]</span>
-                                                        ) : (
-                                                            entry.tags?.filter(t => {
-                                                                const lower = t.toLowerCase();
-                                                                if (["nl", "nw", "wn"].includes(lower)) return false;
-                                                                const genres = ["juvenil", "chicos", "shounen", "acción", "accion", "bélico", "belico", "ciencia ficción", "ciencia ficcion", "drama", "misterio", "romance", "sobrenatural", "maduro", "adultos", "seinen", "fantasía", "fantasia", "historia", "shojo", "josei", "terror", "suspenso", "psicológico", "psicologico", "aventura", "comedia", "recuentos de la vida", "escolar", "harem", "ecchi", "isekai", "mecha", "yuri", "yaoi", "tragedia", "militar", "mágia", "magia", "artes marciales", "deportes"];
-                                                                if (genres.some(g => lower.includes(g))) return false;
-                                                                return true;
-                                                            }).map((tag, i) => (
-                                                                <span key={i} className="text-primary font-bold">[{tag}]</span>
-                                                            ))
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
-                                                        <span key={i} className="text-primary font-bold">[{tag}]</span>
-                                                    ))
+                                                {entry.publisher && (
+                                                    <span className="text-primary font-bold">[{entry.publisher}]</span>
                                                 )}
                                             </p>
+
+                                            {/* 4. Meta Badges: Format & Date */}
+                                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                {entry.bookType && (
+                                                    <div className="px-1.5 py-0.5 bg-secondary text-[8px] font-bold text-secondary-foreground rounded uppercase tracking-wider">
+                                                        {entry.bookType}
+                                                    </div>
+                                                )}
+                                                {(entry.publishedAt || entry.year) && (
+                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-secondary/50 text-[8px] text-muted-foreground rounded">
+                                                        <Calendar className="w-2.5 h-2.5" />
+                                                        {entry.publishedAt || entry.year}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Genres & Tags removed as per user feedback to keep cards cleaner */}
 
                                             <Button
                                                 size="sm"

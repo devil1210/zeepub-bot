@@ -10,6 +10,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.21] - 2026-01-08
+### Fixed
+- **Hybrid UI Design**: Merged the best elements from reference designs into a single, clean card view.
+- **Clean Titles**: Removed redundant format tags (like [NL]) from the main title.
+- **Improved Hierarchy**: Added italicized Romaji subtitles and combined team lines (Author - Illustrator).
+- **Metadata Badges**: Added uppercase format badges and full date badges with calendar icons.
+- **Cleaner Aesthetic**: Removed all demographic and genre tags from the card view to minimize visual clutter.
+
 ## [v6.0.0-alpha.20] - 2026-01-08
 ### Added
 - **Forced Re-scan**: Added support for `/scan_library force` to bypass date checks and re-process all library metadata.

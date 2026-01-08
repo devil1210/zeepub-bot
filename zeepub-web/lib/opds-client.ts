@@ -140,9 +140,9 @@ export class OpdsClient {
                         demographics: item.demographics || [],
                         bookType: item.bookType,
                         romaji: romaji,
-                        publisher: item.publisher,
-                        cleanTitle: title || item.title, // use cleaned title
-                        year: (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
+                        publishedAt: item.publishedAt,
+                        publishedDate: item.publishedAt || item.modifiedAtOpf,
+                        year: item.publishedAt ? item.publishedAt.split("-")[0] : (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
                         illustrator: item.illustrator,
                         translator: item.translator,
                         layoutBy: item.layoutBy,

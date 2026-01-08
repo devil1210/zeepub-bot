@@ -29,7 +29,8 @@ export interface OPDSEntry {
     demographics?: string[]
     bookType?: string
     categories?: string[]
-    updatedDate?: string
+    publishedDate?: string
+    publishedAt?: string
     illustrator?: string
     translator?: string
     layoutBy?: string
