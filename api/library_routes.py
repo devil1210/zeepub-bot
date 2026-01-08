@@ -302,3 +302,43 @@ async def delete_backup(
             raise HTTPException(status_code=404, detail="Backup not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting backup: {str(e)}")
+
+# ===== EXPORT/IMPORT ENDPOINTS =====
+from services.library_export_service import LibraryExportService
+from fastapi.responses import JSONResponse
+
+@router.get("/api/library/export")
+async def export_library(
+    source_id: Optional[int] = Query(None),
+    series: Optional[str] = Query(None),
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Exporta metadatos de la biblioteca en formato JSON.
+    Solo disponible para administradores.
+    """
+    try:
+        data = LibraryExportService.export_library(source_id=source_id, series=series)
+        return JSONResponse(content=data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error exporting library: {str(e)}")
+
+@router.post("/api/library/import")
+async def import_library(
+    data: dict,
+    merge: bool = Query(True),
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Importa metadatos de la biblioteca desde JSON.
+    Solo disponible para administradores.
+    """
+    try:
+        stats = LibraryExportService.import_from_json(data, merge=merge)
+        return {
+            "success": True,
+            "message": "Importación completada",
+            "stats": stats
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error importing library: {str(e)}")
