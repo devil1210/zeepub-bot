@@ -260,7 +260,8 @@ async def get_catalog(
                 "author": rep.get("author"),
                 "numBooks": subfolder_book_query.count(),
                 "tags": rep.get("tags"),
-                "series": rep.get("series")
+                "series": rep.get("series"),
+                "bookType": random_cover_book.book_type if random_cover_book else rep.get("book_type")
             })
             
         # Ordenar libros
