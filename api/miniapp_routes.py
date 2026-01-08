@@ -645,7 +645,6 @@ async def handle_bot_request(
                 raise HTTPException(status_code=400, detail="Missing bookId")
 
             from api.main import bot
-            from config.config_settings import config
 
             # Map target to chat_id
             target_chat_id = user_id  # Default to private
