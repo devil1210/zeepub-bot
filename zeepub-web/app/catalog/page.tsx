@@ -96,6 +96,7 @@ function CatalogContent() {
     // Replicando funcionalidad v3.13.8: Búsqueda reactiva en catálogo (inline)
     const { disableDisplacement, dataSaver } = useTheme()
     const [searchQuery, setSearchQuery] = useState("")
+    const [searchType, setSearchType] = useState("all")
     const [searchResults, setSearchResults] = useState<Book[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [searchPagination, setSearchPagination] = useState<PaginationState>({
@@ -112,7 +113,7 @@ function CatalogContent() {
 
         setIsSearching(true)
         try {
-            const result = await OpdsClient.search(searchQuery, pageUrl)
+            const result = await OpdsClient.search(searchQuery, pageUrl, searchType)
             setSearchResults(result.results || [])
             setSearchPagination({
                 nextPage: result.nextPage,
@@ -385,15 +386,29 @@ function CatalogContent() {
             <TransparentHeader />
             <main className="max-w-2xl mx-auto px-4 py-6 space-y-4 text-foreground">
                 {/* Replicando funcionalidad v3.13.8: Buscador reactivo en catálogo */}
-                <div className="relative mb-2">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                        type="text"
-                        placeholder={t("search_placeholder")}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-12 h-12 bg-card border-border rounded-xl shadow-sm focus:ring-primary/20"
-                    />
+                <div className="flex gap-2 mb-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <Input
+                            type="text"
+                            placeholder={t("search_placeholder")}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-12 h-12 bg-card border-border rounded-xl shadow-sm focus:ring-primary/20"
+                        />
+                    </div>
+                    <select
+                        value={searchType}
+                        onChange={(e) => setSearchType(e.target.value)}
+                        className="h-12 px-4 bg-card border border-border rounded-xl text-sm font-medium text-foreground focus:ring-2 focus:ring-primary/20 outline-none"
+                    >
+                        <option value="all">Todos</option>
+                        <option value="title">Título</option>
+                        <option value="author">Autor</option>
+                        <option value="illustrator">Ilustrador</option>
+                        <option value="translator">Grupo Traductor</option>
+                        <option value="genres">Géneros</option>
+                    </select>
                 </div>
 
                 {/* Feed title */}
@@ -428,76 +443,108 @@ function CatalogContent() {
                     {/* Search Results Inline */}
                     {searchQuery && (
                         <div className="space-y-3">
-                            {searchResults.map((book, index) => (
-                                <Card
-                                    key={book.id}
-                                    onClick={() => handleSearchBookClick(book)}
-                                    className={`p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
-                                        }`}
-                                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
-                                >
-                                    <div className="flex gap-4">
-                                        <div className="w-16 h-24 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                                            {dataSaver ? (
-                                                <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
-                                                    <ImageOff className="w-6 h-6 mb-1 opacity-20" />
-                                                    <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
+                            {searchResults.map((book, index) => {
+                                const isSeriesFolder = (book as any).is_series_folder;
+
+                                return (
+                                    <Card
+                                        key={book.id || (book as any).series}
+                                        onClick={() => {
+                                            if (isSeriesFolder) {
+                                                // Navigate to series folder in catalog
+                                                const sourceId = (book as any).source_id;
+                                                const seriesName = (book as any).series;
+                                                router.push(`/catalog?source=${sourceId}&folder=${encodeURIComponent(seriesName)}`);
+                                            } else {
+                                                handleSearchBookClick(book);
+                                            }
+                                        }}
+                                        className={`p-3 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
+                                            }`}
+                                        style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                                    >
+                                        <div className="flex gap-3">
+                                            {/* Cover - Compact */}
+                                            <div className="w-14 h-20 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                                                {dataSaver ? (
+                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40">
+                                                        <ImageOff className="w-5 h-5 opacity-20" />
+                                                    </div>
+                                                ) : book.cover ? (
+                                                    <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                                                        <BookOpen className="w-6 h-6 text-primary" />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Content - Compact */}
+                                            <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                                {/* Title */}
+                                                <div>
+                                                    <h3 className="font-bold text-foreground line-clamp-1 leading-tight group-hover:text-primary transition-colors text-base">
+                                                        {book.romaji || book.cleanTitle || book.title}
+                                                    </h3>
+
+                                                    {/* Author + Translator Group */}
+                                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                                        {book.author && <span>{book.author}</span>}
+                                                        {book.author && (book as any).publisher && <span> - </span>}
+                                                        {(book as any).publisher && <span className="text-primary font-medium">[{(book as any).publisher}]</span>}
+                                                    </p>
+
+                                                    {/* Volume Info (for books) or Book Count (for series) */}
+                                                    {!isSeriesFolder && (
+                                                        <p className="text-[10px] text-muted-foreground mt-1">
+                                                            <span className="font-medium">
+                                                                {!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())
+                                                                    ? "Volumen único"
+                                                                    : `Volumen ${book.seriesIndex}`}
+                                                            </span>
+                                                        </p>
+                                                    )}
+                                                    {isSeriesFolder && (
+                                                        <p className="text-[10px] text-muted-foreground mt-1">
+                                                            <span className="font-medium">{(book as any).book_count} volúmenes</span>
+                                                        </p>
+                                                    )}
+
+                                                    {/* Tags/Genres */}
+                                                    {book.categories && book.categories.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            {book.categories.slice(0, 3).map((cat, i) => (
+                                                                <span key={i} className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary rounded border border-primary/20">
+                                                                    {cat}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            ) : book.cover ? (
-                                                <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
-                                            ) : book.isFolder ? (
-                                                <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                                                    <BookOpen className="w-8 h-8 text-primary" />
+
+                                                {/* Action Button */}
+                                                <div className="mt-2">
+                                                    {isSeriesFolder ? (
+                                                        <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded border border-primary/30">
+                                                            <BookOpen className="w-3 h-3" />
+                                                            Serie
+                                                        </div>
+                                                    ) : book.downloadUrl && (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={(e) => handleSearchDownload(e, book)}
+                                                            className="h-7 text-[10px] px-2.5 bg-primary hover:bg-primary/90"
+                                                        >
+                                                            <Download className="w-3 h-3 mr-1" />
+                                                            {t("book_download")}
+                                                        </Button>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <img src="/placeholder.svg" alt={book.title} className="w-full h-full object-cover" />
-                                            )}
+                                            </div>
                                         </div>
-                                        <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Title - prioritize Romaji/Clean for cards */}
-                                            <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors text-sm mb-1">
-                                                {book.romaji || book.cleanTitle || book.title}
-                                                {book.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
-                                                    ` [${book.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
-                                                    : ""}
-                                            </h3>
-
-                                            {/* Genres display */}
-                                            {book.categories && book.categories.length > 0 && (
-                                                <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-1">
-                                                    {book.categories.join(", ")}
-                                                </p>
-                                            )}
-
-                                            {/* Volume and Extra Tags (combined) */}
-                                            <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
-                                                <span className="font-medium">
-                                                    {!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())
-                                                        ? "Volumen único"
-                                                        : `Volumen ${book.seriesIndex}`}
-                                                </span>
-                                                {book.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
-                                                    <span key={i} className="text-primary font-semibold">[{tag}]</span>
-                                                ))}
-                                            </p>
-
-                                            {!book.isFolder && book.downloadUrl && (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={(e) => handleSearchDownload(e, book)}
-                                                    className="h-7 text-[9px] px-2 bg-primary hover:bg-primary/90 self-start group/btn"
-                                                >
-                                                    <Download className="w-3 h-3 mr-1" />
-                                                    {t("book_download")}
-                                                </Button>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center">
-                                            <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                        </div>
-                                    </div>
-                                </Card>
-                            ))}
+                                    </Card>
+                                );
+                            })}
 
                             {!isSearching && searchResults.length === 0 && (
                                 <div className="text-center py-12 animate-in fade-in zoom-in-95 duration-300">
@@ -506,198 +553,203 @@ function CatalogContent() {
                                 </div>
                             )}
                         </div>
-                    )}
+                    )
+                    }
 
                     {/* Normal Catalog Content */}
-                    {!searchQuery && currentFeed?.entries.map((entry, index) => {
-                        const isFolder = entry.links.some((l) => l.rel === "subsection")
-                        const isBook = entry.links.some(
-                            (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
-                        )
+                    {
+                        !searchQuery && currentFeed?.entries.map((entry, index) => {
+                            const isFolder = entry.links.some((l) => l.rel === "subsection")
+                            const isBook = entry.links.some(
+                                (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
+                            )
 
-                        if (isFolder) {
-                            return (
-                                <Card
-                                    key={entry.id}
-                                    onClick={() => handleBookClick(entry)}
-                                    className={`p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98] animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
-                                        }`}
-                                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-20 h-28 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden border border-border/50 shadow-sm relative">
-                                            {dataSaver ? (
-                                                <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
-                                                    <ImageOff className="w-7 h-7 mb-1 opacity-20" />
-                                                    <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
-                                                </div>
-                                            ) : entry.cover_url ? (
-                                                <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <Folder className="w-8 h-8 text-primary" />
-                                            )}
+                            if (isFolder) {
+                                return (
+                                    <Card
+                                        key={entry.id}
+                                        onClick={() => handleBookClick(entry)}
+                                        className={`p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98] animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
+                                            }`}
+                                        style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-20 h-28 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden border border-border/50 shadow-sm relative">
+                                                {dataSaver ? (
+                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
+                                                        <ImageOff className="w-7 h-7 mb-1 opacity-20" />
+                                                        <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
+                                                    </div>
+                                                ) : entry.cover_url ? (
+                                                    <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <Folder className="w-8 h-8 text-primary" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors mb-1">
+                                                    {entry.title}
+                                                </h3>
+                                                {entry.author && entry.author !== "Colección" && (
+                                                    <p className="text-xs text-primary font-medium line-clamp-1 mb-1">
+                                                        {entry.author}
+                                                    </p>
+                                                )}
+                                                {/* Demographics and Genres display for folders/series */}
+                                                {(() => {
+                                                    if (!entry.categories || entry.categories.length === 0) return null;
+                                                    const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
+                                                    const demography = entry.categories.filter(tag => demographicsKeywords.some(keyword => tag.includes(keyword)));
+                                                    const genres = entry.categories.filter(tag => !demographicsKeywords.some(keyword => tag.includes(keyword)));
+
+                                                    return (
+                                                        <div className="flex flex-col gap-1.5">
+                                                            {demography.length > 0 && (
+                                                                <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
+                                                                    <span className="font-semibold text-foreground/70 not-italic mr-1">Demografía:</span>
+                                                                    {demography.join(", ")}
+                                                                </p>
+                                                            )}
+                                                            {genres.length > 0 && (
+                                                                <p className="text-[10px] text-muted-foreground line-clamp-2 italic">
+                                                                    <span className="font-semibold text-foreground/70 not-italic mr-1">Géneros:</span>
+                                                                    {genres.join(", ")}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                            <div className="flex items-center">
+                                                <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                            </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors mb-1">
-                                                {entry.title}
-                                            </h3>
-                                            {entry.author && entry.author !== "Colección" && (
-                                                <p className="text-xs text-primary font-medium line-clamp-1 mb-1">
-                                                    {entry.author}
-                                                </p>
-                                            )}
-                                            {/* Demographics and Genres display for folders/series */}
-                                            {(() => {
-                                                if (!entry.categories || entry.categories.length === 0) return null;
-                                                const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
-                                                const demography = entry.categories.filter(tag => demographicsKeywords.some(keyword => tag.includes(keyword)));
-                                                const genres = entry.categories.filter(tag => !demographicsKeywords.some(keyword => tag.includes(keyword)));
+                                    </Card>
+                                )
+                            }
 
-                                                return (
-                                                    <div className="flex flex-col gap-1.5">
-                                                        {demography.length > 0 && (
-                                                            <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
-                                                                <span className="font-semibold text-foreground/70 not-italic mr-1">Demografía:</span>
-                                                                {demography.join(", ")}
-                                                            </p>
+                            if (isBook) {
+                                return (
+                                    <Card
+                                        key={entry.id}
+                                        onClick={() => handleBookClick(entry)}
+                                        className={`p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98] animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
+                                            }`}
+                                        style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                                    >
+                                        <div className="flex gap-4">
+                                            <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                                                {dataSaver ? (
+                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
+                                                        <ImageOff className="w-7 h-7 mb-1 opacity-20" />
+                                                        <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
+                                                    </div>
+                                                ) : (
+                                                    <img
+                                                        src={entry.cover_url || "/placeholder.svg"}
+                                                        alt={entry.title}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0 flex flex-col">
+                                                {/* 1. Main Title & Italic Subtitle */}
+                                                <h3 className="font-semibold text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
+                                                    {(() => {
+                                                        // Prioritize Romaji as primary in cards
+                                                        let base = entry.romaji || entry.cleanTitle || (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+                                                        base = base.replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+
+                                                        // Add Type acronym suffix if it's a volume
+                                                        if (!entry.is_folder) {
+                                                            const typeTag = entry.tags?.find(t => ["NL", "NW", "WN"].includes(t.toUpperCase()));
+                                                            if (typeTag) base += ` [${typeTag.toUpperCase()}]`;
+                                                        }
+
+                                                        return base;
+                                                    })()}
+                                                </h3>
+                                                {/* Subtitle removed (English title is in header) */}
+
+                                                {/* 2. Team: Author - Illustrator */}
+                                                <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
+                                                    {entry.author}
+                                                    {entry.illustrator ? ` - ${entry.illustrator}` : ""}
+                                                </p>
+
+                                                {/* 3. Volume & Group Line */}
+                                                <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                                                    <span className="font-medium">
+                                                        {(() => {
+                                                            if (!entry.seriesIndex || ["unico", "único"].includes(String(entry.seriesIndex).toLowerCase())) {
+                                                                return "Volumen único";
+                                                            }
+                                                            const volNum = parseFloat(entry.seriesIndex);
+                                                            const padded = isNaN(volNum) ? entry.seriesIndex : (volNum < 10 ? `0${volNum}` : String(volNum));
+                                                            return `Volumen ${padded}`;
+                                                        })()}
+                                                    </span>
+                                                    {entry.publisher && (
+                                                        <span className="text-primary font-bold">[{entry.publisher}]</span>
+                                                    )}
+                                                </p>
+
+                                                {/* 4. Meta Badges: Format & Date - Only show for series folders, not volumes */}
+                                                {entry.is_folder && (
+                                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                        {entry.bookType && (
+                                                            <div className="px-1.5 py-0.5 bg-secondary text-[8px] font-bold text-secondary-foreground rounded uppercase tracking-wider">
+                                                                {entry.bookType}
+                                                            </div>
                                                         )}
-                                                        {genres.length > 0 && (
-                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 italic">
-                                                                <span className="font-semibold text-foreground/70 not-italic mr-1">Géneros:</span>
-                                                                {genres.join(", ")}
-                                                            </p>
+                                                        {(entry.publishedAt || entry.year) && (
+                                                            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-secondary/50 text-[8px] text-muted-foreground rounded">
+                                                                <Calendar className="w-2.5 h-2.5" />
+                                                                {entry.publishedAt || entry.year}
+                                                            </div>
                                                         )}
                                                     </div>
-                                                );
-                                            })()}
-                                        </div>
-                                        <div className="flex items-center">
-                                            <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                        </div>
-                                    </div>
-                                </Card>
-                            )
-                        }
-
-                        if (isBook) {
-                            return (
-                                <Card
-                                    key={entry.id}
-                                    onClick={() => handleBookClick(entry)}
-                                    className={`p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98] animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
-                                        }`}
-                                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
-                                >
-                                    <div className="flex gap-4">
-                                        <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                                            {dataSaver ? (
-                                                <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
-                                                    <ImageOff className="w-7 h-7 mb-1 opacity-20" />
-                                                    <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
-                                                </div>
-                                            ) : (
-                                                <img
-                                                    src={entry.cover_url || "/placeholder.svg"}
-                                                    alt={entry.title}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* 1. Main Title & Italic Subtitle */}
-                                            <h3 className="font-semibold text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
-                                                {(() => {
-                                                    // Prioritize Romaji as primary in cards
-                                                    let base = entry.romaji || entry.cleanTitle || (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
-                                                    base = base.replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
-
-                                                    // Add Type acronym suffix if it's a volume
-                                                    if (!entry.is_folder) {
-                                                        const typeTag = entry.tags?.find(t => ["NL", "NW", "WN"].includes(t.toUpperCase()));
-                                                        if (typeTag) base += ` [${typeTag.toUpperCase()}]`;
-                                                    }
-
-                                                    return base;
-                                                })()}
-                                            </h3>
-                                            {/* Subtitle removed (English title is in header) */}
-
-                                            {/* 2. Team: Author - Illustrator */}
-                                            <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
-                                                {entry.author}
-                                                {entry.illustrator ? ` - ${entry.illustrator}` : ""}
-                                            </p>
-
-                                            {/* 3. Volume & Group Line */}
-                                            <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                                                <span className="font-medium">
-                                                    {(() => {
-                                                        if (!entry.seriesIndex || ["unico", "único"].includes(String(entry.seriesIndex).toLowerCase())) {
-                                                            return "Volumen único";
-                                                        }
-                                                        const volNum = parseFloat(entry.seriesIndex);
-                                                        const padded = isNaN(volNum) ? entry.seriesIndex : (volNum < 10 ? `0${volNum}` : String(volNum));
-                                                        return `Volumen ${padded}`;
-                                                    })()}
-                                                </span>
-                                                {entry.publisher && (
-                                                    <span className="text-primary font-bold">[{entry.publisher}]</span>
                                                 )}
-                                            </p>
 
-                                            {/* 4. Meta Badges: Format & Date - Only show for series folders, not volumes */}
-                                            {entry.is_folder && (
-                                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                    {entry.bookType && (
-                                                        <div className="px-1.5 py-0.5 bg-secondary text-[8px] font-bold text-secondary-foreground rounded uppercase tracking-wider">
-                                                            {entry.bookType}
-                                                        </div>
-                                                    )}
-                                                    {(entry.publishedAt || entry.year) && (
-                                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-secondary/50 text-[8px] text-muted-foreground rounded">
-                                                            <Calendar className="w-2.5 h-2.5" />
-                                                            {entry.publishedAt || entry.year}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                                {/* Genres & Tags removed as per user feedback to keep cards cleaner */}
 
-                                            {/* Genres & Tags removed as per user feedback to keep cards cleaner */}
-
-                                            <Button
-                                                size="sm"
-                                                onClick={(e) => handleDownload(e, entry)}
-                                                className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
-                                            >
-                                                <Download className="w-3 h-3 mr-1.5" />
-                                                {t("book_download")}
-                                            </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={(e) => handleDownload(e, entry)}
+                                                    className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
+                                                >
+                                                    <Download className="w-3 h-3 mr-1.5" />
+                                                    {t("book_download")}
+                                                </Button>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                            </div>
                                         </div>
-                                        <div className="flex items-center">
-                                            <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                        </div>
-                                    </div>
-                                </Card>
-                            )
-                        }
+                                    </Card>
+                                )
+                            }
 
-                        return null
-                    })}
+                            return null
+                        })
+                    }
 
-                    {!searchQuery && currentFeed && (
-                        <Pagination
-                            currentPage={currentFeed.currentPage}
-                            totalPages={currentFeed.totalPages}
-                            hasNextPage={!!currentFeed.nextPage}
-                            hasPrevPage={!!currentFeed.prevPage}
-                            hasUpPage={true}
-                            onNextPage={() => currentFeed.nextPage && handleNavigate(currentFeed.nextPage)}
-                            onPrevPage={() => currentFeed.prevPage && handleNavigate(currentFeed.prevPage)}
-                            onUpPage={handleGoBack}
-                            isLoading={isLoading}
-                        />
-                    )}
-                </div>
+                    {
+                        !searchQuery && currentFeed && (
+                            <Pagination
+                                currentPage={currentFeed.currentPage}
+                                totalPages={currentFeed.totalPages}
+                                hasNextPage={!!currentFeed.nextPage}
+                                hasPrevPage={!!currentFeed.prevPage}
+                                hasUpPage={true}
+                                onNextPage={() => currentFeed.nextPage && handleNavigate(currentFeed.nextPage)}
+                                onPrevPage={() => currentFeed.prevPage && handleNavigate(currentFeed.prevPage)}
+                                onUpPage={handleGoBack}
+                                isLoading={isLoading}
+                            />
+                        )
+                    }
+                </div >
 
                 {searchQuery && (
                     <Pagination
@@ -713,16 +765,18 @@ function CatalogContent() {
                     />
                 )}
 
-                {!searchQuery && currentFeed && currentFeed.entries.length === 0 && !isLoading && (
-                    <div className="text-center py-16">
-                        <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
-                        <p className="text-muted-foreground">Esta sección está vacía</p>
-                    </div>
-                )}
+                {
+                    !searchQuery && currentFeed && currentFeed.entries.length === 0 && !isLoading && (
+                        <div className="text-center py-16">
+                            <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
+                            <p className="text-muted-foreground">Esta sección está vacía</p>
+                        </div>
+                    )
+                }
 
                 {/* Remove debug version footer for release */}
-            </main>
-        </div>
+            </main >
+        </div >
     )
 }
 

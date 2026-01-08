@@ -10,6 +10,19 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.43] - 2026-01-08
+### Added
+- **Search Filters**: Added dropdown filter for search type (all, title, author, illustrator, translator, genres).
+- **Series Folders in Search**: Search results now show series as folders with "Serie" badge when multiple books exist, clicking navigates to series catalog.
+- **Extended Search Scope**: Search now includes genres (tags) and demographics fields.
+
+### Changed
+- **Compact Search Cards**: Redesigned search result cards to be more compact, showing author and translator group prominently.
+- **Series Folder Logic**: Single-book series are shown as individual books, not folders.
+
+### Fixed
+- **Search Navigation**: Fixed click navigation to book details from search results.
+
 ## [v6.0.0-alpha.42] - 2026-01-08
 ### Added
 - **Maintenance Utilities**: Implemented database optimization (VACUUM/ANALYZE), orphaned cover cleanup, and detailed library statistics generation.

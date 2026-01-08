@@ -194,12 +194,12 @@ export class OpdsClient {
         }
     }
 
-    static async search(query: string, pageUrl?: string): Promise<any> {
+    static async search(query: string, pageUrl?: string, searchType: string = "all"): Promise<any> {
         const initData = getTelegramInitData()
         const useLocalLibrary = localStorage.getItem("useLocalLibrary") === "true"
 
         if (useLocalLibrary && !pageUrl?.startsWith("http")) {
-            const response = await fetch(`/api/library/search?q=${encodeURIComponent(query)}`, {
+            const response = await fetch(`/api/library/search?q=${encodeURIComponent(query)}&search_type=${searchType}`, {
                 headers: { "X-Telegram-Data": initData }
             })
             if (!response.ok) return { results: [] }

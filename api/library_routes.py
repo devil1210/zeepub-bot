@@ -39,10 +39,16 @@ async def get_sources(
 async def search_local_books(
     q: str = Query(..., min_length=1),
     source_id: Optional[int] = None,
+    search_type: str = Query("all", regex="^(all|title|author|illustrator|translator|genres)$"),
     user_data: dict = Depends(require_mini_app_access)
 ):
     """
-    Busca libros en la base de datos local.
+    Busca libros en la base de datos local con filtros opcionales.
+    
+    Args:
+        q: Término de búsqueda
+        source_id: Filtrar por fuente específica
+        search_type: Tipo de búsqueda (all, title, author, illustrator, translator, genres)
     """
     session = get_session()
     try:
@@ -51,16 +57,77 @@ async def search_local_books(
         if source_id:
             query = query.filter(LocalBook.source_id == source_id)
             
-        # Búsqueda simple por ahora (LIKE)
-        # TODO: Implementar FTS (Full Text Search) en Phase 5
         search_filter = f"%{q}%"
-        results = query.filter(
-            (LocalBook.title.ilike(search_filter)) |
-            (LocalBook.author.ilike(search_filter)) |
-            (LocalBook.series.ilike(search_filter))
-        ).limit(50).all()
         
-        return [b.to_dict() for b in results]
+        # Aplicar filtro según el tipo de búsqueda
+        if search_type == "title":
+            query = query.filter(LocalBook.title.ilike(search_filter))
+        elif search_type == "author":
+            query = query.filter(LocalBook.author.ilike(search_filter))
+        elif search_type == "illustrator":
+            query = query.filter(LocalBook.illustrator.ilike(search_filter))
+        elif search_type == "translator":
+            query = query.filter(LocalBook.publisher.ilike(search_filter))  # publisher = grupo traductor
+        elif search_type == "genres":
+            # Buscar en tags (géneros) y demographics
+            query = query.filter(
+                (LocalBook.tags.ilike(search_filter)) |
+                (LocalBook.demographics.ilike(search_filter))
+            )
+        else:  # "all"
+            # Búsqueda en todos los campos
+            query = query.filter(
+                (LocalBook.title.ilike(search_filter)) |
+                (LocalBook.author.ilike(search_filter)) |
+                (LocalBook.series.ilike(search_filter)) |
+                (LocalBook.illustrator.ilike(search_filter)) |
+                (LocalBook.publisher.ilike(search_filter)) |
+                (LocalBook.tags.ilike(search_filter)) |
+                (LocalBook.demographics.ilike(search_filter))
+            )
+        
+        results = query.limit(100).all()
+        
+        # Agrupar por series para detectar carpetas
+        series_map = {}
+        individual_books = []
+        
+        for book in results:
+            if book.series:
+                if book.series not in series_map:
+                    series_map[book.series] = []
+                series_map[book.series].append(book)
+            else:
+                individual_books.append(book.to_dict())
+        
+        # Crear respuesta con series y libros individuales
+        response = []
+        
+        # Agregar series como carpetas (solo si tienen más de 1 libro)
+        for series_name, books in series_map.items():
+            if len(books) > 1:
+                # Es una serie con múltiples libros - mostrar como carpeta
+                first_book = books[0]
+                response.append({
+                    "is_series_folder": True,
+                    "series": series_name,
+                    "title": series_name,
+                    "cover": first_book.cover_path,
+                    "author": first_book.author,
+                    "publisher": first_book.publisher,
+                    "tags": first_book.tags,
+                    "demographics": first_book.demographics,
+                    "book_count": len(books),
+                    "source_id": first_book.source_id
+                })
+            else:
+                # Serie con un solo libro - mostrar como libro normal
+                individual_books.append(books[0].to_dict())
+        
+        # Agregar libros individuales
+        response.extend(individual_books)
+        
+        return response
     finally:
         session.close()
 
