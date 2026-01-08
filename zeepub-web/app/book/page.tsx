@@ -460,7 +460,13 @@ function BookDetailContent() {
                                 <span className="flex items-center gap-1.5 text-muted-foreground">
                                     <Clock className="w-3.5 h-3.5" /> Tiempo de lectura
                                 </span>
-                                <span className="font-bold">{book.readingTime}</span>
+                                <span className="font-bold">
+                                    {(() => {
+                                        const minutes = typeof book.readingTime === 'number' ? book.readingTime : parseInt(book.readingTime);
+                                        const hours = (minutes / 60).toFixed(1);
+                                        return `${minutes} min / ${hours} horas`;
+                                    })()}
+                                </span>
                             </div>
                         )}
                         {(book.updatedDate || (book as any).modifiedAt) && (
