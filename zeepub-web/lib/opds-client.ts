@@ -78,7 +78,11 @@ export class OpdsClient {
             currentFolder = params.get("folder") || ""
             currentPageNum = parseInt(params.get("page") || "1")
 
-            apiPath += `?source_id=${currentSourceId}&folder=${encodeURIComponent(currentFolder)}&page=${currentPageNum}`
+            // Construct apiPath with parameters
+            if (currentSourceId || currentFolder || currentPageNum > 1) {
+                const useRandomCovers = localStorage.getItem("useRandomFolderCovers") !== "false"
+                apiPath += `?source_id=${currentSourceId}&folder=${encodeURIComponent(currentFolder)}&page=${currentPageNum}&use_random_covers=${useRandomCovers}`
+            }
         }
 
         try {

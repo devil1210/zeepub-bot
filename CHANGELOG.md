@@ -10,6 +10,17 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.37] - 2026-01-08
+### Added
+- **Performance Toggle**: New setting `useRandomFolderCovers` to disable random folder cover selection for faster catalog navigation. When disabled, folders use the first book's cover instead of a random selection.
+- **Publisher Display**: Volume cards now show the translation group/publisher in brackets next to the volume number (e.g., "Volumen 03 [Kikuslirus Project Team]").
+
+### Changed
+- Backend now supports `use_random_covers` query parameter for optimized folder cover retrieval.
+
+### Fixed
+- **Scanner**: Removed heuristic that replaced full publisher names with acronyms. Now always uses the complete publisher name from `<dc:publisher>` in EPUB metadata.
+
 ## [v6.0.0-alpha.36] - 2026-01-08
 ### Changed
 - **Book Header Cleanup**: Removed redundant `[NL]`, `[NW]`, `[WN]` tags from the main series title in book details to avoid duplication with the badge.

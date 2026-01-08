@@ -35,6 +35,8 @@ interface ThemeContextType {
   setDataSaver: (enabled: boolean) => void
   useLocalLibrary: boolean
   setUseLocalLibrary: (enabled: boolean) => void
+  useRandomFolderCovers: boolean
+  setUseRandomFolderCovers: (enabled: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -70,6 +72,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setDataSaver: () => { },
   useLocalLibrary: false,
   setUseLocalLibrary: () => { },
+  useRandomFolderCovers: true,
+  setUseRandomFolderCovers: () => { },
 })
 
 export function useTheme() {
@@ -145,6 +149,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [animationDistance, setAnimationDistance] = useState(4)
   const [disableDisplacement, setDisableDisplacement] = useState(false)
   const [useLocalLibrary, setUseLocalLibrary] = useState(false)
+  const [useRandomFolderCovers, setUseRandomFolderCovers] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
   const [shouldPersist, setShouldPersist] = useState(true)
   const [isResetting, setIsResetting] = useState(false)
@@ -167,6 +172,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedAnimDistance = localStorage.getItem("animationDistance")
     const savedDataSaver = localStorage.getItem("dataSaver")
     const savedUseLocalLibrary = localStorage.getItem("useLocalLibrary")
+    const savedUseRandomFolderCovers = localStorage.getItem("useRandomFolderCovers")
 
     // Sync with Backend (Role Defaults)
     const fetchRemoteDefaults = async () => {
@@ -254,6 +260,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setUseLocalLibrary(data.useLocalLibrary)
             localStorage.setItem("useLocalLibrary", String(data.useLocalLibrary))
           }
+          if (data.useRandomFolderCovers !== undefined) {
+            setUseRandomFolderCovers(data.useRandomFolderCovers)
+            localStorage.setItem("useRandomFolderCovers", String(data.useRandomFolderCovers))
+          }
         }
       } catch (error) {
         console.error("Error fetching UI defaults:", error)
@@ -278,6 +288,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedAnimDistance) setAnimationDistance(parseInt(savedAnimDistance))
     if (savedDataSaver !== null) setDataSaver(savedDataSaver === "true")
     if (savedUseLocalLibrary !== null) setUseLocalLibrary(savedUseLocalLibrary === "true")
+    if (savedUseRandomFolderCovers !== null) setUseRandomFolderCovers(savedUseRandomFolderCovers === "true")
 
     // Then fetch remote defaults for missing ones
     fetchRemoteDefaults()
@@ -465,6 +476,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [useLocalLibrary, isLoaded, shouldPersist])
 
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("useRandomFolderCovers", String(useRandomFolderCovers))
+    }
+  }, [useRandomFolderCovers, isLoaded, shouldPersist])
+
   const saveGlobalSettings = async (role: string) => {
     try {
       const { callBotAPI } = await import("@/lib/api")
@@ -483,7 +501,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         animationDistance,
         disableDisplacement,
         dataSaver,
-        useLocalLibrary
+        useLocalLibrary,
+        useRandomFolderCovers
       }
       await callBotAPI("ui_settings", { subAction: "set", role, settings })
     } catch (error) {
@@ -511,6 +530,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.disableDisplacement !== undefined) setDisableDisplacement(settings.disableDisplacement)
     if (settings.dataSaver !== undefined) setDataSaver(settings.dataSaver)
     if (settings.useLocalLibrary !== undefined) setUseLocalLibrary(settings.useLocalLibrary)
+    if (settings.useRandomFolderCovers !== undefined) setUseRandomFolderCovers(settings.useRandomFolderCovers)
 
     // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
     if (persistToLocal) {
@@ -529,6 +549,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("disableDisplacement", String(settings.disableDisplacement ?? false))
       localStorage.setItem("dataSaver", String(settings.dataSaver ?? false))
       localStorage.setItem("useLocalLibrary", String(settings.useLocalLibrary ?? false))
+      localStorage.setItem("useRandomFolderCovers", String(settings.useRandomFolderCovers ?? true))
     }
   }
 
@@ -565,6 +586,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setDataSaver,
         useLocalLibrary,
         setUseLocalLibrary,
+        useRandomFolderCovers,
+        setUseRandomFolderCovers,
         saveGlobalSettings,
         applySettings,
       }}

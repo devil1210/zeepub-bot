@@ -84,10 +84,11 @@ async def get_book_detail(
 
 @router.get("/api/library/catalog")
 async def get_catalog(
-    source_id: Optional[int] = None,
-    folder: Optional[str] = "",
+    source_id: Optional[int] = Query(None),
+    folder: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1),
+    use_random_covers: bool = Query(True),
     user_data: dict = Depends(require_mini_app_access)
 ):
     """
@@ -101,8 +102,8 @@ async def get_catalog(
             sources = session.query(LibrarySource).all()
             items = []
             for s in sources:
-                # Random cover for root source
-                random_book = session.query(LocalBook).filter(LocalBook.source_id == s.id).order_by(func.random()).first()
+                # Cover for root source (random or first based on setting)
+                random_book = session.query(LocalBook).filter(LocalBook.source_id == s.id).order_by(func.random() if use_random_covers else LocalBook.id).first()
                 items.append({
                     "id": f"source_{s.id}",
                     "title": s.name,
@@ -170,10 +171,13 @@ async def get_catalog(
 
             # Random cover from books in this subfolder
             current_sub_path = os.path.join(base_path, folder, f_name) if folder else os.path.join(base_path, f_name)
-            random_cover_book = session.query(LocalBook).filter(
+            
+            # Cover from books in this subfolder (random or first based on setting)
+            subfolder_book_query = session.query(LocalBook).filter(
                 LocalBook.source_id == source_id,
-                LocalBook.filepath.like(f"{current_sub_path}%")
-            ).order_by(func.random()).first()
+                LocalBook.filepath.like(f"{current_sub_path}{os.sep}%")
+            )
+            random_cover_book = subfolder_book_query.order_by(func.random() if use_random_covers else LocalBook.id).first()
 
             folders_list.append({
                 "id": f"dir_{source_id}_{f_name}",
@@ -183,10 +187,7 @@ async def get_catalog(
                 "source_id": source_id,
                 "cover": random_cover_book.cover_path if random_cover_book else rep.get("cover"),
                 "author": rep.get("author"),
-                "num_books": session.query(LocalBook).filter(
-                    LocalBook.source_id == source_id,
-                    LocalBook.filepath.like(f"{current_sub_path}%")
-                ).count(),
+                "num_books": subfolder_book_query.count(),
                 "tags": rep.get("tags"),
                 "series": rep.get("series")
             })
