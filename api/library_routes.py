@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 import os
 
@@ -19,14 +20,18 @@ async def get_sources(
     session = get_session()
     try:
         sources = session.query(LibrarySource).all()
-        return [
-            {
+        result = []
+        for s in sources:
+            # Pick a random book from this source to use as cover
+            random_book = session.query(LocalBook).filter(LocalBook.source_id == s.id).order_by(func.random()).first()
+            result.append({
                 "id": s.id,
                 "name": s.name,
                 "path": s.path,
+                "cover": random_book.cover_path if random_book else None,
                 "lastScanned": s.last_scanned.isoformat() if s.last_scanned else None
-            } for s in sources
-        ]
+            })
+        return result
     finally:
         session.close()
 
@@ -94,15 +99,18 @@ async def get_catalog(
         if not source_id:
             # Si no hay source_id, listar fuentes como carpetas raíz
             sources = session.query(LibrarySource).all()
-            items = [
-                {
+            items = []
+            for s in sources:
+                # Random cover for root source
+                random_book = session.query(LocalBook).filter(LocalBook.source_id == s.id).order_by(func.random()).first()
+                items.append({
                     "id": f"source_{s.id}",
                     "title": s.name,
                     "is_folder": True,
                     "folder_path": "",
-                    "source_id": s.id
-                } for s in sources
-            ]
+                    "source_id": s.id,
+                    "cover": random_book.cover_path if random_book else None
+                })
             # No paginamos las fuentes (suelen ser pocas)
             return {
                 "items": items,
@@ -160,15 +168,25 @@ async def get_catalog(
                 if series_name:
                     display_title = series_name
 
+            # Random cover from books in this subfolder
+            current_sub_path = os.path.join(base_path, folder, f_name) if folder else os.path.join(base_path, f_name)
+            random_cover_book = session.query(LocalBook).filter(
+                LocalBook.source_id == source_id,
+                LocalBook.filepath.like(f"{current_sub_path}%")
+            ).order_by(func.random()).first()
+
             folders_list.append({
                 "id": f"dir_{source_id}_{f_name}",
                 "title": display_title,
                 "is_folder": True,
                 "folder_path": os.path.join(folder, f_name) if folder else f_name,
                 "source_id": source_id,
-                # Representative metadata
-                "cover": rep.get("cover"),
+                "cover": random_cover_book.cover_path if random_cover_book else rep.get("cover"),
                 "author": rep.get("author"),
+                "num_books": session.query(LocalBook).filter(
+                    LocalBook.source_id == source_id,
+                    LocalBook.filepath.like(f"{current_sub_path}%")
+                ).count(),
                 "tags": rep.get("tags"),
                 "series": rep.get("series")
             })

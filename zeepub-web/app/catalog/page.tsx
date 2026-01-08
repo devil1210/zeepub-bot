@@ -525,14 +525,22 @@ function CatalogContent() {
                                     style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-20 h-28 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden border border-border/50 shadow-sm">
+                                        <div className="w-20 h-28 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden border border-border/50 shadow-sm relative">
                                             {dataSaver ? (
                                                 <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
                                                     <ImageOff className="w-7 h-7 mb-1 opacity-20" />
                                                     <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
                                                 </div>
                                             ) : entry.cover_url ? (
-                                                <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
+                                                <>
+                                                    <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
+                                                    {/* Folder Icon Overlay */}
+                                                    <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex items-end justify-start p-2">
+                                                        <div className="bg-primary/90 p-1 rounded shadow-lg backdrop-blur-sm">
+                                                            <Folder className="w-3.5 h-3.5 text-primary-foreground" />
+                                                        </div>
+                                                    </div>
+                                                </>
                                             ) : (
                                                 <Folder className="w-8 h-8 text-primary" />
                                             )}
