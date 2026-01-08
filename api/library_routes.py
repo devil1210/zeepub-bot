@@ -217,3 +217,88 @@ async def get_catalog(
         session.close()
 
 # Las portadas se servirán vía StaticFiles montado en api/main.py
+
+# ===== BACKUP ENDPOINTS =====
+from services.library_backup_service import LibraryBackupService
+from utils.library_db import DB_PATH
+
+# Inicializar servicio de backup
+backup_service = LibraryBackupService(db_path=DB_PATH)
+
+@router.post("/api/library/backup")
+async def create_backup(
+    compress: bool = Query(True),
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Crea un backup manual de la base de datos de la biblioteca.
+    Solo disponible para administradores.
+    """
+    try:
+        backup_path = backup_service.create_backup(compress=compress)
+        return {
+            "success": True,
+            "message": "Backup creado exitosamente",
+            "backup_path": backup_path
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating backup: {str(e)}")
+
+@router.get("/api/library/backups")
+async def list_backups(
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Lista todos los backups disponibles.
+    Solo disponible para administradores.
+    """
+    try:
+        backups = backup_service.list_backups()
+        stats = backup_service.get_backup_stats()
+        return {
+            "backups": backups,
+            "stats": stats
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing backups: {str(e)}")
+
+@router.post("/api/library/restore")
+async def restore_backup(
+    backup_filename: str = Query(...),
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Restaura la base de datos desde un backup.
+    Solo disponible para administradores.
+    """
+    try:
+        success = backup_service.restore_backup(backup_filename)
+        return {
+            "success": success,
+            "message": "Base de datos restaurada exitosamente"
+        }
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error restoring backup: {str(e)}")
+
+@router.delete("/api/library/backups/{backup_filename}")
+async def delete_backup(
+    backup_filename: str,
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Elimina un backup específico.
+    Solo disponible para administradores.
+    """
+    try:
+        success = backup_service.delete_backup(backup_filename)
+        if success:
+            return {
+                "success": True,
+                "message": "Backup eliminado exitosamente"
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Backup not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting backup: {str(e)}")

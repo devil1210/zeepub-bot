@@ -10,6 +10,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.40] - 2026-01-08
+### Added
+- **Backup System**: Implemented database backup system for the local library with compression, rotation (keeps last 10 backups), and restore capabilities.
+- **Backup API**: Added admin-only endpoints for backup management: `/api/library/backup` (create), `/api/library/backups` (list), `/api/library/restore` (restore), and DELETE `/api/library/backups/{filename}` (delete).
+
 ## [v6.0.0-alpha.39] - 2026-01-08
 ### Fixed
 - **Local Search**: Fixed search functionality by correcting the query parameter name from `query` to `q` to match the backend API endpoint. Search now returns results correctly.
