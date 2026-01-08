@@ -227,6 +227,10 @@ function CatalogContent() {
             setSearchQuery(q)
         } else {
             console.log("[Catalog] Unified loading effect triggered, feedUrl:", feedUrl || "root")
+            if (feedUrl) {
+                // Si estamos cargando un feed específico (evitando búsqueda persistente al navegar)
+                setSearchQuery("")
+            }
             loadFeed(feedUrl || undefined)
         }
     }, [searchParams, isAdminMode, loadFeed])
@@ -506,12 +510,6 @@ function CatalogContent() {
                                         <div className="flex gap-4">
                                             {/* Cover */}
                                             <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50 relative">
-                                                {/* Series Badge */}
-                                                {(isSeriesFolder || (book as any).is_series_folder) && (
-                                                    <div className="absolute top-1 right-1 z-10 px-1.5 py-0.5 bg-primary text-white text-[8px] font-bold uppercase rounded shadow-md">
-                                                        Serie
-                                                    </div>
-                                                )}
                                                 {/* Book Type Badge (NL/NW) */}
                                                 {book.bookType && (
                                                     <div className="absolute bottom-1 left-1 z-10 px-1 py-0.5 bg-black/60 backdrop-blur-sm text-white text-[7px] font-bold uppercase rounded border border-white/20">

@@ -113,8 +113,6 @@ async def search_local_books(
         
         # Agregar series como carpetas
         for series_name, books in series_map.items():
-            # SIEMPRE mostrar como carpeta si tiene nombre de serie, 
-            # para que el usuario pueda ir al listado completo de la serie.
             first_book = books[0]
             # Detectar tipo de libro de la serie si es posible
             series_book_type = next((b.book_type for b in books if b.book_type), first_book.book_type)
@@ -122,11 +120,12 @@ async def search_local_books(
             response.append({
                 "is_series_folder": True,
                 "series": series_name,
-                "title": series_name,
+                "title": series_name, # Título limpio: solo el nombre de la serie
                 "cover": first_book.cover_path,
                 "author": first_book.author,
                 "romaji": first_book.romaji_title,
-                "cleanTitle": first_book.title,
+                "cleanTitle": series_name,
+                "englishTitle": series_name, # Usar series_name como titulo principal
                 "publisher": first_book.publisher,
                 "tags": first_book.tags,
                 "demographics": first_book.demographics,

@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0-alpha.50] - 2026-01-08
+### Fixed
+- **Search Navigation**: Fixed a bug where search results would overlay the catalog content after clicking a series; navigating to a folder now correctly clears the search query.
+- **Title Refinement**: Cleaned up titles in search results. Series folders now use the clean series name as the primary headline (Line 1).
+- **Redundancy Removal**: Removed the "Serie" badge from covers in search results as it was redundant with the new grouped-first layout.
+- **Layout Consistency**: Ensured 4-line metadata format respects English title priority.
+
 ## [v6.0.0-alpha.49] - 2026-01-08
 ### Fixed
 - **Search Result UI**: Implemented a 4-line metadata format for search results (Title, Romaji, Author, Volume).
