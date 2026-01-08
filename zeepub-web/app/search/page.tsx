@@ -254,9 +254,33 @@ function SearchContent() {
                     )}
                   </div>
                   <p className="text-sm text-primary font-medium mb-1 line-clamp-1">{book.author}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-1 italic mb-1">
-                    {book.isFolder ? t("book_section") : t("book_details_hint")}
-                  </p>
+                  {/* Demographics and Genres display */}
+                  {(() => {
+                    const tags = book.categories || book.tags || [];
+                    if (tags.length === 0) return null;
+                    const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
+                    const demography = tags.filter(tag => demographicsKeywords.some(keyword => tag.includes(keyword)));
+                    const genres = tags.filter(tag => !demographicsKeywords.some(keyword => tag.includes(keyword)) && !["NL", "NW", "WN"].includes(tag));
+
+                    if (demography.length === 0 && genres.length === 0) return null;
+
+                    return (
+                      <div className="flex flex-col gap-1 mb-2">
+                        {demography.length > 0 && (
+                          <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
+                            <span className="font-semibold text-foreground/70 not-italic mr-1">Demografía:</span>
+                            {demography.join(", ")}
+                          </p>
+                        )}
+                        {genres.length > 0 && (
+                          <p className="text-[10px] text-muted-foreground line-clamp-2 italic">
+                            <span className="font-semibold text-foreground/70 not-italic mr-1">Géneros:</span>
+                            {genres.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {!book.isFolder && (
                     <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">

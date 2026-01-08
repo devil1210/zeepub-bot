@@ -504,12 +504,30 @@ function CatalogContent() {
                                                     {entry.author}
                                                 </p>
                                             )}
-                                            {/* Genres display for folders/series */}
-                                            {entry.categories && entry.categories.length > 0 && (
-                                                <p className="text-[10px] text-muted-foreground line-clamp-2 italic">
-                                                    {entry.categories.join(", ")}
-                                                </p>
-                                            )}
+                                            {/* Demographics and Genres display for folders/series */}
+                                            {(() => {
+                                                if (!entry.categories || entry.categories.length === 0) return null;
+                                                const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
+                                                const demography = entry.categories.filter(tag => demographicsKeywords.some(keyword => tag.includes(keyword)));
+                                                const genres = entry.categories.filter(tag => !demographicsKeywords.some(keyword => tag.includes(keyword)));
+
+                                                return (
+                                                    <div className="flex flex-col gap-1.5">
+                                                        {demography.length > 0 && (
+                                                            <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
+                                                                <span className="font-semibold text-foreground/70 not-italic mr-1">Demografía:</span>
+                                                                {demography.join(", ")}
+                                                            </p>
+                                                        )}
+                                                        {genres.length > 0 && (
+                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 italic">
+                                                                <span className="font-semibold text-foreground/70 not-italic mr-1">Géneros:</span>
+                                                                {genres.join(", ")}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="flex items-center">
                                             <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />

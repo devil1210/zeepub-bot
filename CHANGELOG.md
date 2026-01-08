@@ -10,6 +10,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.7] - 2026-01-08
+### Changed
+- **Metadata Separation**: Distinguish between "Demografía" (eg: Seinen, Shounen) and "Géneros" in catalog and search listings, displaying them on separate lines for better readability.
+
 ## [v6.0.0-alpha.5] - 2026-01-08
 ### Added
 - **Premium Folder UI**: Local library folders now display covers, authors, and genres by selecting a "representative" book from within the folder.
