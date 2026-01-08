@@ -74,8 +74,8 @@ function BookDetailContent() {
                 console.log("[v0] Loaded book from session storage:", parsed)
                 setBook(parsed)
                 setIsLoading(false)
-                // Clear it so it's not reused incorrectly
-                sessionStorage.removeItem("preview-book")
+                // Trigger visibility for cached data immediately
+                setTimeout(() => setIsVisible(true), 50)
             } catch (e) {
                 console.error("Error parsing saved book", e)
             }
@@ -90,6 +90,7 @@ function BookDetailContent() {
                 // Only show loading if we don't already have book data
                 if (!savedBook) {
                     setIsLoading(true)
+                    setIsVisible(false)
                 }
 
                 console.log("[v0] Fetching book detail for ID:", bookId)
@@ -105,95 +106,57 @@ function BookDetailContent() {
                     result = await callBotAPI("book-detail", { bookId: bookId })
                 }
 
-                console.log("[v0] Book detail result:", result)
                 if (result && result.title) {
                     setBook(prevBook => {
-                        // Intelligent merging: preserve preview data if API returns empty fields
                         if (!prevBook) return result;
+                        const merged = { ...prevBook, ...result };
 
-                        const merged = {
-                            ...prevBook,
-                            ...result,
-                        }
+                        // Preserve categories/tags if API returns empty
+                        if ((!result.categories || result.categories.length === 0) && prevBook.categories && prevBook.categories.length > 0) merged.categories = prevBook.categories;
+                        if ((!result.tags || result.tags.length === 0) && prevBook.tags && prevBook.tags.length > 0) merged.tags = prevBook.tags;
 
-                        // If API result has empty categories/tags but prevBook (preview) has them, preserve them
-                        if ((!result.categories || result.categories.length === 0) && prevBook.categories && prevBook.categories.length > 0) {
-                            merged.categories = prevBook.categories
-                        }
-                        if ((!result.tags || result.tags.length === 0) && prevBook.tags && prevBook.tags.length > 0) {
-                            merged.tags = prevBook.tags
-                        }
-                        if (!result.romaji && prevBook.romaji) {
-                            merged.romaji = prevBook.romaji
-                        }
-                        if (!result.cleanTitle && prevBook.cleanTitle) {
-                            merged.cleanTitle = prevBook.cleanTitle
-                        }
-                        if (!result.series && prevBook.series) {
-                            merged.series = prevBook.series
-                        }
-                        if (!result.seriesIndex && prevBook.seriesIndex) {
-                            merged.seriesIndex = prevBook.seriesIndex
-                        }
-                        if (!result.updatedDate && prevBook.updatedDate) {
-                            merged.updatedDate = prevBook.updatedDate
-                        }
+                        // Standardize metadata preservation
+                        merged.romaji = result.romaji || prevBook.romaji;
+                        merged.cleanTitle = result.cleanTitle || prevBook.cleanTitle;
+                        merged.series = result.series || prevBook.series;
+                        merged.seriesIndex = result.seriesIndex || prevBook.seriesIndex;
+                        merged.illustrator = result.illustrator || prevBook.illustrator;
+                        merged.translator = result.translator || prevBook.translator;
+                        merged.publisher = result.publisher || prevBook.publisher;
 
-                        // Enriched fields merge
-                        merged.illustrator = result.illustrator || prevBook.illustrator
-                        merged.translator = result.translator || prevBook.translator
-                        merged.layoutBy = result.layoutBy || prevBook.layoutBy
-                        merged.bookType = result.bookType || prevBook.bookType
-                        merged.publishedAt = result.publishedAt || prevBook.publishedAt
-                        merged.modifiedAtOpf = result.modifiedAtOpf || prevBook.modifiedAtOpf
-                        merged.asin = result.asin || prevBook.asin
-                        merged.isbn = result.isbn || prevBook.isbn
-                        merged.epubVersion = result.epubVersion || prevBook.epubVersion
-                        merged.fileSize = result.fileSize || prevBook.fileSize
-                        merged.demographics = result.demographics || prevBook.demographics
-                        merged.publisher = result.publisher || prevBook.publisher
-
-                        return merged
-                    })
+                        return merged;
+                    });
                 }
             } catch (error) {
                 console.error("[v0] Error fetching book details:", error)
-                // If we already have preview data, don't clear it on error
             } finally {
                 setIsLoading(false)
-                setTimeout(() => setIsVisible(true), 100)
+                requestAnimationFrame(() => {
+                    setTimeout(() => setIsVisible(true), 100)
+                });
             }
         }
 
         fetchBookDetail()
-
-        // Ensure we scroll to top on mount or book change
         window.scrollTo(0, 0)
     }, [bookId])
 
-    // Override Telegram BackButton to go to the last catalog URL
     useEffect(() => {
         if (!webApp?.BackButton) return
-
-        const handleBack = () => {
-            console.log("[Book] Back button clicked, using router.back()")
-            router.back()
-        }
-
+        const handleBack = () => router.back()
         webApp.BackButton.onClick(handleBack)
         webApp.BackButton.show()
         return () => {
             webApp.BackButton.offClick(handleBack)
             webApp.BackButton.hide()
         }
-    }, [webApp, router, book])
+    }, [webApp, router])
 
     const handleDownload = async () => {
         if (!book || !book.downloadUrl) {
             webApp?.showAlert?.("No se encontró link de descarga")
             return
         }
-
         setIsDownloading(true)
         try {
             webApp?.showPopup?.({
@@ -208,34 +171,23 @@ function BookDetailContent() {
                 threadId: threadId
             })
         } catch (error) {
-            console.error("[v0] Download error:", error)
             webApp?.showAlert?.("Error al descargar el libro")
         } finally {
             setIsDownloading(false)
         }
     }
 
-    // Process summary to remove <br> and redundant metadata labels
     const getCleanSummary = (summary?: string) => {
         if (!summary) return ""
-
-        // Replace <br> tags with newlines
         let clean = summary.replace(/<br\s*\/?>/gi, "\n")
-
-        // Remove redundant labels added by some OPDS servers (like Suwayomi)
-        // Patterns: "File Type: ... - Size: ... Summary: "
-        // Use [\s\S] instead of . with s flag for ES6 compatibility
         clean = clean.replace(/File Type:[\s\S]*?-[\s\S]*?Summary:\s*/i, "")
         clean = clean.replace(/^Summary:\s*/i, "")
-
-        // Compact excessive newlines (max 2)
         clean = clean.replace(/\n{3,}/g, "\n\n")
-
         return clean.trim()
     }
 
     const formatFileType = (type?: string) => {
-        if (!type) return ""
+        if (!type) return "Epub"
         const t = type.toLowerCase()
         if (t.includes("epub")) return "Epub"
         if (t.includes("pdf")) return "PDF"
@@ -256,7 +208,6 @@ function BookDetailContent() {
         return match ? match[1] : ""
     }
 
-
     if (isLoading && !book) {
         return (
             <div className="fixed inset-0 bg-background flex flex-col items-center justify-center p-4">
@@ -271,9 +222,7 @@ function BookDetailContent() {
                 <div className="text-center px-4">
                     <BookOpenSVG className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
                     <p className="text-muted-foreground mb-4">No se pudo encontrar la información del libro</p>
-                    <Button onClick={() => router.back()} variant="outline" className="border-border">
-                        Volver
-                    </Button>
+                    <Button onClick={() => router.back()} variant="outline" className="border-border">Volver</Button>
                 </div>
             </div>
         )
@@ -283,425 +232,104 @@ function BookDetailContent() {
     const displaySize = book.size || extractSizeFromSummary(book.summary)
 
     return (
-        <div className={`min-h-screen bg-background pt-safe pb-20 text-foreground transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`min-h-screen bg-background pt-safe pb-20 text-foreground transition-opacity duration-500 ease-in-out ${isVisible && !isLoading ? 'opacity-100' : 'opacity-0'}`}>
             <TransparentHeader />
 
-            {/* Fullscreen Cover Preview */}
             {isCoverFull && book.cover && (
-                <div
-                    className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200"
-                    onClick={() => setIsCoverFull(false)}
-                >
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-4 right-4 text-white/50 hover:text-white hover:bg-white/10 z-[110]"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            setIsCoverFull(false)
-                        }}
-                    >
-                        <X className="w-8 h-8" />
-                    </Button>
-                    <img
-                        src={book.cover}
-                        alt={book.title}
-                        className="max-w-full max-h-full object-contain shadow-2xl rounded-sm"
-                        onClick={(e) => e.stopPropagation()}
-                    />
+                <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4" onClick={() => setIsCoverFull(false)}>
+                    <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white/50" onClick={() => setIsCoverFull(false)}><X className="w-8 h-8" /></Button>
+                    <img src={book.cover} alt={book.title} className="max-w-full max-h-full object-contain shadow-2xl rounded-sm" />
                 </div>
             )}
 
-            {/* Header */}
-
             <div className="max-w-2xl mx-auto px-4 py-6">
-                {/* Book Cover and Basic Info */}
                 <Card className="p-6 border-border mb-4 bg-card shadow-lg">
                     <div className="flex gap-6 items-start">
-                        {/* Large Cover */}
                         <div className="w-32 h-48 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-xl border border-border/50">
                             {dataSaver ? (
-                                <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5">
                                     <ImageOff className="w-10 h-10 mb-2 opacity-20" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-30 px-2 text-center">Modo Ahorro</span>
+                                    <span className="text-[10px] font-bold opacity-30">Ahorro</span>
                                 </div>
                             ) : book.cover ? (
-                                <img
-                                    src={book.cover}
-                                    alt={book.title}
-                                    className="w-full h-full object-cover cursor-zoom-in active:scale-95 transition-transform"
-                                    onClick={() => setIsCoverFull(true)}
-                                />
+                                <img src={book.cover} alt={book.title} className="w-full h-full object-cover cursor-zoom-in" onClick={() => setIsCoverFull(true)} />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-primary/5">
-                                    <FileText className="w-12 h-12 text-primary/30" />
-                                </div>
+                                <div className="w-full h-full flex items-center justify-center bg-primary/5"><FileText className="w-12 h-12 text-primary/30" /></div>
                             )}
                         </div>
 
-                        {/* Title and Author */}
                         <div className="flex-1 min-w-0">
-                            {/* Main Title - Clean English/Common Header */}
-                            <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">
+                            <h1 className="text-2xl font-bold text-foreground leading-tight">
                                 {(book.series || (book.englishTitle || book.cleanTitle || book.title || "").split(' - ')[0]).replace(/\s*\[(NL|NW|WN)\]\s*/gi, "").trim()}
                             </h1>
-
-                            {/* Romaji Name as Sub-title */}
-                            {book.romaji && (
-                                <p className="text-sm text-muted-foreground/80 font-medium mb-1 line-clamp-1 italic">
-                                    {book.romaji}
-                                </p>
-                            )}
-
-                            {/* Authors - Combined Blue Line */}
-                            <p className="text-base text-primary font-medium mb-1">
-                                {book.author}
-                                {book.illustrator ? ` - ${book.illustrator}` : ""}
-                            </p>
-
-                            {/* Volume and Group [TAG] Line */}
-                            <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1.5 font-medium">
-                                <span>
-                                    {(() => {
-                                        if (!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())) {
-                                            return "Volumen único";
-                                        }
-                                        const volNum = parseFloat(book.seriesIndex);
-                                        const padded = isNaN(volNum) ? book.seriesIndex : (volNum < 10 ? `0${volNum}` : String(volNum));
-                                        return `Volumen ${padded}`;
-                                    })()}
-                                </span>
-                                {book.publisher && (
-                                    <span className="text-primary font-bold">[{book.publisher}]</span>
-                                )}
-                            </p>
-
-                            {/* Meta Badges: Format & Full Date */}
-                            <div className="flex flex-wrap items-center gap-2 mb-4">
-                                {book.bookType && (
-                                    <div className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded border border-primary/30 tracking-wider">
-                                        {book.bookType}
-                                    </div>
-                                )}
+                            {book.romaji && <p className="text-sm text-muted-foreground/80 font-medium italic mb-1">{book.romaji}</p>}
+                            <p className="text-base text-primary font-medium mb-1">{book.author}{book.illustrator ? ` - ${book.illustrator}` : ""}</p>
+                            <p className="text-sm text-muted-foreground mb-4 font-medium">
                                 {(() => {
-                                    const dateStr = book.publishedAt || book.modifiedAtOpf || book.year;
-                                    if (!dateStr) return null;
-
-                                    const raw = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
-                                    let formatted = raw;
-                                    if (raw.includes('-')) {
-                                        const parts = raw.split('-');
-                                        if (parts.length === 3) formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                                    }
-
-                                    return (
-                                        <div className="flex items-center gap-1 px-2 py-0.5 bg-secondary/50 text-[10px] text-muted-foreground rounded">
-                                            <Calendar className="w-3 h-3" />
-                                            {formatted}
-                                        </div>
-                                    );
+                                    if (!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())) return "Volumen único";
+                                    const volNum = parseFloat(book.seriesIndex);
+                                    return `Volumen ${isNaN(volNum) ? book.seriesIndex : (volNum < 10 ? `0${volNum}` : volNum)}`;
                                 })()}
-                            </div>
-
-                            {/* Back to Series Button */}
+                                {book.publisher && <span className="text-primary font-bold ml-1.5">[{book.publisher}]</span>}
+                            </p>
                             {book.upUrl && (
-                                <Button
-                                    variant="link"
-                                    size="sm"
-                                    className="p-0 h-auto text-xs text-primary/70 hover:text-primary flex items-center gap-1"
-                                    onClick={() => router.push(`/catalog?feed_url=${encodeURIComponent(book.upUrl!)}`)}
-                                >
-                                    <ChevronLeft className="w-3 h-3" />
-                                    Volver a la serie
+                                <Button variant="link" size="sm" className="p-0 h-auto text-xs text-primary/70" onClick={() => router.push(`/catalog?feed_url=${encodeURIComponent(book.upUrl!)}`)}>
+                                    <ChevronLeft className="w-3 h-3 mr-1" />Volver a la serie
                                 </Button>
                             )}
                         </div>
                     </div>
                 </Card>
 
-                {/* Summary */}
-                {
-                    book.summary && (
-                        <Card className="p-5 border-border mb-4 bg-card">
-                            <div className="flex items-center gap-2 mb-3 text-primary">
-                                <span className="p-1 bg-primary/10 rounded-full">
-                                    <Info className="w-3 h-3" />
-                                </span>
-                                <h3 className="text-xs font-bold uppercase tracking-wider">Sinopsis</h3>
-                            </div>
-                            <div className="text-sm text-foreground/80 leading-relaxed">
-                                {getCleanSummary(book.summary).split('\n').map((para, i) => (
-                                    para.trim() ? (
-                                        <p key={i} className="mb-2 last:mb-0">
-                                            {para.trim()}
-                                        </p>
-                                    ) : null
-                                ))}
-                            </div>
-                        </Card>
-                    )
-                }
-
-                {/* Genres Section */}
-                {(book.categories?.length || book.demographics?.length) && (
-                    <Card className="p-5 border-border mb-4 bg-card shadow-sm">
-                        <div className="flex items-center gap-2 mb-4 text-primary">
-                            <span className="p-1.5 bg-primary/10 rounded-full">
-                                <Tag className="w-3.5 h-3.5" />
-                            </span>
-                            <h3 className="text-xs font-bold uppercase tracking-widest">DEMOGRAFÍA Y GÉNEROS</h3>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {book.demographics?.map((cat, i) => (
-                                <span key={`demo-${i}`} className="px-3 py-1 bg-primary/20 text-primary text-xs rounded-full font-semibold border border-primary/20">
-                                    {cat}
-                                </span>
-                            ))}
-                            {[...(book.categories || []), ...(book.tags || [])]
-                                .filter((cat, index, self) =>
-                                    cat &&
-                                    !["NL", "NW", "WN", "EPUB"].includes(cat.toUpperCase()) &&
-                                    !book.demographics?.includes(cat) &&
-                                    self.indexOf(cat) === index
-                                )
-                                .map((cat, i) => (
-                                    <span key={`gen-${i}`} className="px-3 py-1 bg-secondary text-foreground text-xs rounded-full font-medium border border-border/50">
-                                        {cat}
-                                    </span>
-                                ))}
+                {book.summary && (
+                    <Card className="p-5 border-border mb-4 bg-card">
+                        <div className="flex items-center gap-2 mb-3 text-primary"><Info className="w-3 h-3" /><h3 className="text-xs font-bold uppercase">Sinopsis</h3></div>
+                        <div className="text-sm text-foreground/80 leading-relaxed">
+                            {getCleanSummary(book.summary).split('\n').map((para, i) => para.trim() ? <p key={i} className="mb-2 last:mb-0">{para.trim()}</p> : null)}
                         </div>
                     </Card>
                 )}
 
-                {/* Card 2: Detalles del Libro */}
-                <Card className="p-5 border-border mb-4 bg-card shadow-sm">
-                    <div className="flex items-center gap-2 mb-5 text-primary">
-                        <span className="p-1.5 bg-primary/10 rounded-full">
-                            <Library className="w-3.5 h-3.5" />
-                        </span>
-                        <h3 className="text-xs font-bold uppercase tracking-widest">DETALLES DEL LIBRO</h3>
-                    </div>
-                    <div className="space-y-3.5 text-sm">
-                        {book.series && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Serie</span>
-                                <span className="text-foreground font-semibold text-right ml-4">{book.series}</span>
-                            </div>
-                        )}
-                        {book.romaji && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Título</span>
-                                <span className="text-foreground font-semibold text-right ml-4 italic">{book.romaji}</span>
-                            </div>
-                        )}
-                        {book.seriesIndex && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Volumen</span>
-                                <span className="text-foreground font-bold text-right ml-4">
-                                    {["unico", "único"].includes(String(book.seriesIndex).toLowerCase()) ? "Único" : book.seriesIndex}
-                                </span>
-                            </div>
-                        )}
-                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                            <span className="text-muted-foreground">Autor</span>
-                            <span className="text-foreground font-semibold text-right ml-4">{book.author}</span>
+                {(book.categories?.length || book.demographics?.length) && (
+                    <Card className="p-5 border-border mb-4 bg-card">
+                        <div className="flex items-center gap-2 mb-4 text-primary"><Tag className="w-3.5 h-3.5" /><h3 className="text-xs font-bold uppercase">Categorías</h3></div>
+                        <div className="flex flex-wrap gap-2">
+                            {book.demographics?.map((cat, i) => <span key={`d-${i}`} className="px-3 py-1 bg-primary/20 text-primary text-xs rounded-full font-semibold">{cat}</span>)}
+                            {[...(book.categories || []), ...(book.tags || [])].filter((c, i, s) => c && s.indexOf(c) === i && !book.demographics?.includes(c)).map((cat, i) => (
+                                <span key={`g-${i}`} className="px-3 py-1 bg-secondary text-foreground text-xs rounded-full font-medium">{cat}</span>
+                            ))}
                         </div>
-                        {book.illustrator && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Ilustrador</span>
-                                <span className="text-foreground font-semibold text-right ml-4">{book.illustrator}</span>
-                            </div>
-                        )}
-                        {book.isbn && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">ISBN</span>
-                                <span className="text-foreground font-semibold font-mono tracking-tight">{book.isbn}</span>
-                            </div>
-                        )}
-                        {book.asin && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">ASIN (Amazon)</span>
-                                <span className="text-foreground font-semibold font-mono tracking-tight">{book.asin}</span>
-                            </div>
-                        )}
-                        {book.publishedAt && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground flex items-center gap-1.5">
-                                    <Calendar className="w-3.5 h-3.5" />
-                                    Fecha de publicación
-                                </span>
-                                <span className="text-foreground font-semibold text-right ml-4">
-                                    {(() => {
-                                        const raw = book.publishedAt.includes('T') ? book.publishedAt.split('T')[0] : book.publishedAt;
-                                        if (raw.includes('-')) {
-                                            const parts = raw.split('-');
-                                            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                                        }
-                                        return raw;
-                                    })()}
-                                </span>
-                            </div>
-                        )}
-                        {book.publisher && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Grupo Traductor</span>
-                                <span className="text-foreground font-semibold text-right ml-4">{book.publisher}</span>
-                            </div>
-                        )}
-                        {book.translator && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Traductor</span>
-                                <span className="text-foreground font-semibold text-right ml-4">{book.translator}</span>
-                            </div>
-                        )}
-                        {book.layoutBy && (
-                            <div className="flex justify-between items-center py-0.5 last:border-0">
-                                <span className="text-muted-foreground">Maquetador</span>
-                                <span className="text-foreground font-semibold text-right ml-4">{book.layoutBy}</span>
-                            </div>
-                        )}
+                    </Card>
+                )}
+
+                <Card className="p-5 border-border mb-4 bg-card">
+                    <div className="flex items-center gap-2 mb-5 text-primary"><Library className="w-3.5 h-3.5" /><h3 className="text-xs font-bold uppercase">Detalles</h3></div>
+                    <div className="space-y-3 text-sm">
+                        {book.series && <div className="flex justify-between border-b border-border/30 pb-2"><span className="text-muted-foreground">Serie</span><span className="font-semibold">{book.series}</span></div>}
+                        <div className="flex justify-between border-b border-border/30 pb-2"><span className="text-muted-foreground">Autor</span><span className="font-semibold">{book.author}</span></div>
+                        <div className="flex justify-between border-b border-border/30 pb-2"><span className="text-muted-foreground">Formato</span><span className="font-mono">{formatFileType(displayFileType)}</span></div>
+                        <div className="flex justify-between last:border-0 pb-2"><span className="text-muted-foreground">Tamaño</span><span className="font-bold">{book.fileSize ? `${(book.fileSize / (1024 * 1024)).toFixed(2)} MB` : (displaySize || "N/A")}</span></div>
                     </div>
                 </Card>
 
-                {/* Card 3: Información Técnica */}
-                <Card className="p-5 border-border mb-8 bg-card shadow-sm">
-                    <div className="flex items-center gap-2 mb-5 text-primary">
-                        <span className="p-1.5 bg-primary/10 rounded-full">
-                            <Info className="w-3.5 h-3.5" />
-                        </span>
-                        <h3 className="text-xs font-bold uppercase tracking-widest">INFORMACIÓN TÉCNICA</h3>
-                    </div>
-                    <div className="space-y-3.5 text-sm">
-                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                            <span className="text-muted-foreground">Tipo de Archivo</span>
-                            <span className="text-foreground font-semibold font-mono">{formatFileType(displayFileType || "Epub")}</span>
-                        </div>
-                        {book.epubVersion && (
-                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                                <span className="text-muted-foreground">Versión Epub</span>
-                                <span className="text-foreground font-bold">{book.epubVersion}</span>
-                            </div>
-                        )}
-                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                            <span className="text-muted-foreground">Tamaño</span>
-                            <span className="text-foreground font-bold">
-                                {book.fileSize
-                                    ? `${(book.fileSize / (1024 * 1024)).toFixed(2)} MB`
-                                    : (displaySize || "No disponible")}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                            <span className="text-muted-foreground">Cantidad de Páginas</span>
-                            <span className="text-foreground font-semibold">{book.pageCount || "No disponible"}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                            <span className="text-muted-foreground">Cantidad de Palabras</span>
-                            <span className="text-foreground font-semibold">
-                                {book.wordCount ? String(book.wordCount).replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "No disponible"}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 border-b border-border/30">
-                            <span className="text-muted-foreground">Tiempo de lectura</span>
-                            <span className="text-foreground font-semibold">
-                                {book.readingTime ? `${book.readingTime} min / ${(Number(book.readingTime) / 60).toFixed(1)} h` : "No disponible"}
-                            </span>
-                        </div>
-                        {(book.updatedDate || book.modifiedAtOpf) && (
-                            <div className="flex justify-between items-center py-0.5 last:border-0">
-                                <span className="text-muted-foreground flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5" />
-                                    Última actualización
-                                </span>
-                                <span className="text-foreground font-semibold whitespace-nowrap ml-4">
-                                    {(() => {
-                                        const updateDate = book.modifiedAtOpf || book.updatedDate || "";
-                                        const raw = updateDate.includes('T') ? updateDate.split('T')[0] : updateDate;
-                                        if (raw.includes('-')) {
-                                            const parts = raw.split('-');
-                                            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                                        }
-                                        return raw;
-                                    })()}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                </Card>
-
-                {/* Download Button */}
                 <div className="sticky bottom-6 z-50 px-2 pb-2">
-                    <Button
-                        onClick={handleDownload}
-                        disabled={isDownloading || !book.downloadUrl}
-                        className="w-full h-14 rounded-2xl text-lg font-bold shadow-2xl shadow-primary/40 border-2 border-primary/50 relative overflow-hidden group"
-                    >
-                        <div className="absolute inset-0 bg-primary/20 group-hover:bg-primary/30 transition-colors" />
-                        <span className="relative flex items-center justify-center gap-2">
-                            {isDownloading ? (
-                                <Loader2 className="w-6 h-6 animate-spin" />
-                            ) : (
-                                <>
-                                    <Download className="w-6 h-6" />
-                                    {t("book_download")}
-                                </>
-                            )}
-                        </span>
+                    <Button onClick={handleDownload} disabled={isDownloading || !book.downloadUrl} className="w-full h-14 rounded-2xl text-lg font-bold shadow-2xl relative border-2 border-primary/50">
+                        <span className="flex items-center gap-2">{isDownloading ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Download className="w-6 h-6" />{t("book_download")}</>}</span>
                     </Button>
-                    {!book.downloadUrl && (
-                        <p className="text-center text-xs text-destructive mt-3 font-medium bg-background/80 backdrop-blur-sm rounded-lg py-1">
-                            No hay link de descarga disponible para este libro
-                        </p>
-                    )}
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     )
 }
 
 export default function BookDetailPage() {
-    return (
-        <Suspense fallback={<div className="min-h-screen bg-background pt-safe" />}>
-            <BookDetailContent />
-        </Suspense>
-    )
+    return <Suspense fallback={<div className="min-h-screen bg-background pt-safe" />}><BookDetailContent /></Suspense>
 }
 
 function BookOpenSVG(props: any) {
     return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-        </svg>
-    )
-}
-
-function UserIcon(props: any) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
+        <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
         </svg>
     )
 }

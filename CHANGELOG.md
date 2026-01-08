@@ -10,6 +10,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.48] - 2026-01-08
+### Fixed
+- **Search Redirect**: Fixed `isLoading` state causing a black page when redirecting from Home to Catalog via search query.
+- **Series Folder UI**: Added a "Serie" badge to folder results in search and standardized volume counts (`book_count`).
+- **Series Navigation**: Corrected navigation logic for series folders in search results to correctly open the catalog series view.
+- **Search Persistence**: Synchronized the search query to the URL to ensure results are maintained when navigating back from book details.
+- **Transition Smoothness**: Refined the Book Detail fade-in animation to eliminate the "appear then vanish" flicker.
+
 ## [v6.0.0-alpha.47] - 2026-01-08
 ### Changed
 - **Search Consolidation**: Centered all search functionality in the Catalog page, removing the redundant `/search` page and redirecting all search entry points.
@@ -97,7 +105,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Header Priority**: The primary title in book details now displays the **Series/English Title** for better identification.
 - **Metadata Reordering**: Reordered fields in "Detalles del Libro" and "Información Técnica" to focus on the most relevant data first.
 - **Improved Nomenclature**: Renamed "Título Romaji" to just **"Título"** as requested.
-- **Technical Metrics Formatting**: 
+- **Technical Metrics Formatting**:
     - Word counts now use dot separators (e.g., `78.399`).
     - Reading time now displays both minutes and hours (e.g., `391 min / 6.5 h`).
 - **Catalog Aesthetics**: Removed the folder icon overlay from representative covers to maintain a cleaner grid layout.
@@ -152,6 +160,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Button Centering (v6.0.0-alpha.29)**:
     - Fixed regression where navigation buttons were not perfectly centered.
     - Symmetric layout for the control bar.
+# Walkthrough: Advanced Library Features (v6.0.0-alpha.48)
 - **Redundancy Cleanup (v6.0.0-alpha.28)**:
     - Romaji-only titles on cards inside series folders.
     - Zero redundancy with English header title.

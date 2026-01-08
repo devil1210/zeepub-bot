@@ -145,6 +145,11 @@ function CatalogContent() {
             clearTimeout(searchTimeout.current)
         }
 
+        // If we have a query, ensure we're not stuck in loading
+        if (searchQuery.trim()) {
+            setIsLoading(false)
+        }
+
         searchTimeout.current = setTimeout(() => {
             handleCatalogSearch()
         }, 600)
@@ -155,6 +160,20 @@ function CatalogContent() {
             }
         }
     }, [searchQuery, handleCatalogSearch])
+
+    // Sync search query to URL for back-button persistence
+    useEffect(() => {
+        if (searchQuery.trim()) {
+            const current = new URLSearchParams(Array.from(searchParams.entries()))
+            if (current.get("q") !== searchQuery) {
+                current.set("q", searchQuery)
+                // Use replace to avoid polluting history with every keystroke
+                const search = current.toString()
+                const query = search ? `?${search}` : ""
+                router.replace(`${window.location.pathname}${query}`, { scroll: false })
+            }
+        }
+    }, [searchQuery, router, searchParams])
 
     // Prefetch next page for smoother navigation
     useEffect(() => {
@@ -465,7 +484,8 @@ function CatalogContent() {
                                     <Card
                                         key={book.id || (book as any).series}
                                         onClick={() => {
-                                            if (isSeriesFolder) {
+                                            // Aggressive series folder detection from backend keys
+                                            if (isSeriesFolder || (book as any).is_series_folder) {
                                                 const sourceId = (book as any).source_id;
                                                 const seriesName = (book as any).series;
                                                 router.push(`/catalog?source=${sourceId}&folder=${encodeURIComponent(seriesName)}`);
@@ -479,7 +499,13 @@ function CatalogContent() {
                                     >
                                         <div className="flex gap-4">
                                             {/* Cover */}
-                                            <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                                            <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50 relative">
+                                                {/* Series Badge */}
+                                                {(isSeriesFolder || (book as any).is_series_folder) && (
+                                                    <div className="absolute top-1 right-1 z-10 px-1.5 py-0.5 bg-primary text-white text-[8px] font-bold uppercase rounded shadow-md">
+                                                        Serie
+                                                    </div>
+                                                )}
                                                 {dataSaver ? (
                                                     <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
                                                         <ImageOff className="w-7 h-7 mb-1 opacity-20" />
@@ -508,14 +534,14 @@ function CatalogContent() {
                                                     </p>
                                                 )}
 
-                                                {isSeriesFolder ? (
+                                                {isSeriesFolder || (book as any).is_series_folder ? (
                                                     <>
-                                                        {(book as any).numBooks !== undefined && (
+                                                        {((book as any).numBooks !== undefined || (book as any).book_count !== undefined) && (
                                                             <p className="text-[10px] text-muted-foreground/60 font-medium mb-1">
-                                                                {(book as any).numBooks} {(book as any).numBooks === 1 ? 'volumen' : 'volúmenes'}
+                                                                {(book as any).numBooks || (book as any).book_count} {((book as any).numBooks || (book as any).book_count) === 1 ? 'volumen' : 'volúmenes'}
                                                             </p>
                                                         )}
-                                                        <div className="flex flex-col gap-1.5 overflow-hidden">
+                                                        <div className="flex flex-col gap-1.5 overflow-hidden mt-auto">
                                                             {demography.length > 0 && (
                                                                 <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
                                                                     <span className="font-semibold text-foreground/70 not-italic mr-1">Demografía:</span>
