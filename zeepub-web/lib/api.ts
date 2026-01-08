@@ -36,7 +36,7 @@ export async function fetchBotFeed(url?: string) {
 
   return response.json()
 }
-export async function checkAccess(userId: number) {
+export async function checkAccess(userId: number, force: boolean = false) {
   const initData = getTelegramInitData()
 
   const response = await fetch("/api/user/access", {
@@ -45,7 +45,7 @@ export async function checkAccess(userId: number) {
       "Content-Type": "application/json",
       "x-telegram-init-data": initData,
     },
-    body: JSON.stringify({ user_id: userId }),
+    body: JSON.stringify({ user_id: userId, force }),
   })
 
   if (!response.ok) {
@@ -56,7 +56,7 @@ export async function checkAccess(userId: number) {
 }
 
 // Obtener información del nivel de usuario
-export async function getUserLevel(userId: number) {
+export async function getUserLevel(userId: number, force: boolean = false) {
   const initData = getTelegramInitData()
 
   const response = await fetch("/api/user/access", {
@@ -65,7 +65,7 @@ export async function getUserLevel(userId: number) {
       "Content-Type": "application/json",
       "x-telegram-init-data": initData,
     },
-    body: JSON.stringify({ user_id: userId }),
+    body: JSON.stringify({ user_id: userId, force }),
   })
 
   if (!response.ok) {

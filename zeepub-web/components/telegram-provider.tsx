@@ -20,6 +20,7 @@ interface TelegramContextType {
   threadId: string
   setThreadId: (val: string) => void
   userProfile: any | null
+  refreshAccess: (force?: boolean) => Promise<void>
 }
 
 const TelegramContext = createContext<TelegramContextType>({
@@ -37,6 +38,7 @@ const TelegramContext = createContext<TelegramContextType>({
   threadId: "",
   setThreadId: () => { },
   userProfile: null,
+  refreshAccess: async () => { },
 })
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
@@ -232,6 +234,32 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     }
   }, [isAdmin, isAdminMode])
 
+  const refreshAccess = async (force: boolean = false) => {
+    if (telegram.isReady && telegram.user) {
+      try {
+        const result = await checkAccess(telegram.user.id, force)
+        const accessValue = result.hasAccess || result.isAdmin
+
+        setHasAccess(accessValue)
+        setIsAdmin(result.isAdmin)
+        setUserProfile(result)
+
+        localStorage.setItem('access_status', JSON.stringify({
+          hasAccess: accessValue,
+          isAdmin: result.isAdmin,
+          userProfile: result,
+          timestamp: Date.now()
+        }))
+
+        if (accessValue && pathname === "/no-access") {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Manual refresh failed:", error)
+      }
+    }
+  }
+
   const value = {
     ...telegram,
     hasAccess,
@@ -244,7 +272,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     setTargetId: handleSetTargetId,
     threadId,
     setThreadId: handleSetThreadId,
-    userProfile
+    userProfile,
+    refreshAccess
   }
 
   return <TelegramContext.Provider value={value}>{children}</TelegramContext.Provider>

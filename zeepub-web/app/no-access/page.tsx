@@ -1,14 +1,27 @@
 "use client"
 
-import { ShieldX, MessageCircle, UserX } from "lucide-react"
+import { ShieldX, MessageCircle, UserX, RefreshCw } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { useTelegramContext } from "@/components/telegram-provider"
+import { useState } from "react"
 
 export default function NoAccessPage() {
+    const { refreshAccess } = useTelegramContext()
+    const [isRefreshing, setIsRefreshing] = useState(false)
+
     const handleContactAdmin = () => {
         if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
             (window as any).Telegram.WebApp.close()
         }
+    }
+
+    const handleRetry = async () => {
+        setIsRefreshing(true)
+        // Pedimos refresco forzado ignorando caché
+        await refreshAccess(true)
+        // Pequeño delay para feedback visual
+        setTimeout(() => setIsRefreshing(false), 1000)
     }
 
     return (
@@ -47,10 +60,17 @@ export default function NoAccessPage() {
                         </div>
                     </div>
 
-                    <Button onClick={handleContactAdmin} className="w-full" variant="default">
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Contactar Administrador
-                    </Button>
+                    <div className="space-y-3">
+                        <Button onClick={handleRetry} className="w-full" variant="outline" disabled={isRefreshing}>
+                            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                            {isRefreshing ? 'Verificando...' : 'Reintentar Acceso'}
+                        </Button>
+
+                        <Button onClick={handleContactAdmin} className="w-full" variant="default">
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Contactar Administrador
+                        </Button>
+                    </div>
 
                     <p className="text-xs text-muted-foreground mt-4">
                         Si crees que esto es un error, por favor contacta al soporte.

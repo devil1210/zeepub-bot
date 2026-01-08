@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 class AccessCheckRequest(BaseModel):
     user_id: int
+    force: bool = False
 
 
 class UserLevelModel(BaseModel):
@@ -910,9 +911,12 @@ async def check_user_access(
     current_uid = user_data.get("user_id", 0)
     # Priorizar el ID verificado por Telegram
     uid = current_uid or request.user_id
-    logger.info(f"Access check for UID: {uid}")
+    logger.info(f"Access check for UID: {uid} (Force: {request.force})")
+
     # 1. Obtener información efectiva (Roles config, expiración, etc)
-    eff = user_data if current_uid == uid else await get_effective_user(uid)
+    # Si force=True, ignoramos el caché del backend
+    use_cache = not request.force
+    eff = await get_effective_user(uid, use_cache=use_cache)
 
     # 2. Obtener información de niveles de la base de datos
     access_info = await user_repo.get_access_info(uid)

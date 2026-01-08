@@ -48,6 +48,7 @@ class UserManagerPlugin(BasePlugin):
             app.add_handler(CommandHandler("id", self.get_id))
             app.add_handler(CommandHandler("approve_donation", self.approve_donation))
             app.add_handler(CommandHandler("reject_donation", self.reject_donation))
+            app.add_handler(CommandHandler("refresh_user", self.refresh_user_command))
 
             logger.info("Plugin UserManager: Handlers registrados.")
             return True
@@ -555,4 +556,34 @@ class UserManagerPlugin(BasePlugin):
         await update.message.reply_text(
             f"❌ Donación rechazada para {target_id}.\nNotificación enviada.",
             message_thread_id=thread_id
+        )
+    async def refresh_user_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        /refresh_user <id>
+        Limpia el caché del bot para un usuario específico.
+        """
+        uid = update.effective_user.id
+        thread_id = get_thread_id(update)
+
+        if not self._is_admin(uid):
+            return
+
+        target_id, target_name = self._get_target_user(update, context)
+        if not target_id:
+            await update.message.reply_text(
+                "❌ Uso: /refresh_user <id> (o responde a un mensaje).",
+                message_thread_id=thread_id,
+            )
+            return
+
+        from services.user_service import invalidate_user_cache
+        await invalidate_user_cache(target_id)
+        
+        # Limpiar también el contador de descargas del state_manager para forzar re-lectura si fuera necesario
+        # Aunque state_manager no suele cachear roles permanently, invalidar el usuario asegura que el bot recargue todo.
+        
+        await update.message.reply_text(
+            f"✅ Caché limpiado para el usuario <code>{target_id}</code>. Los cambios de nivel deberían verse al reabrir la Mini App.",
+            parse_mode="HTML",
+            message_thread_id=thread_id,
         )

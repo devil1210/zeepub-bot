@@ -85,7 +85,7 @@ async def get_user_info(telegram_id: int) -> Optional[Dict[str, Any]]:
     return await user_repo.get_by_id(telegram_id)
 
 
-async def get_effective_user(uid: int) -> Dict[str, Any]:
+async def get_effective_user(uid: int, use_cache: bool = True) -> Dict[str, Any]:
     """
     Determina el rol efectivo del usuario y estado, considerando DB y Config (legacy).
     Retorna un dict con keys: role, status_label, expires_at (puede ser None).
@@ -93,9 +93,10 @@ async def get_effective_user(uid: int) -> Dict[str, Any]:
     """
     # 0. Check Cache
     cache_key = f"user_effective:{uid}"
-    cached = await user_cache.get(cache_key)
-    if cached:
-        return cached
+    if use_cache:
+        cached = await user_cache.get(cache_key)
+        if cached:
+            return cached
 
     result = {
         "role": "free",
