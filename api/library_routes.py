@@ -120,6 +120,8 @@ async def search_local_books(
                     "title": series_name,
                     "cover": first_book.cover_path,
                     "author": first_book.author,
+                    "romaji": first_book.romaji_title,
+                    "cleanTitle": first_book.title,
                     "publisher": first_book.publisher,
                     "tags": first_book.tags,
                     "demographics": first_book.demographics,

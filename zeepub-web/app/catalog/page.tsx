@@ -326,32 +326,33 @@ function CatalogContent() {
         const detailUrl = book.detailUrl || book.id
 
         if (detailUrl) {
-            const url = detailUrl.startsWith("http") ? detailUrl : null
-            if (url) {
-                // Also save preview for search results
-                // ENRICHED with new fields
-                sessionStorage.setItem("preview-book", JSON.stringify({
-                    id: book.id,
-                    title: book.title,
-                    author: book.author,
-                    cover: book.cover,
-                    summary: book.summary,
-                    year: book.year,
-                    publisher: book.publisher,
-                    language: book.language,
-                    downloadUrl: book.downloadUrl,
-                    size: book.size,
-                    fileType: book.fileType,
-                    // Metadata suite
-                    series: book.series,
-                    seriesIndex: book.seriesIndex,
-                    tags: book.tags,
-                    cleanTitle: book.cleanTitle,
-                    romaji: book.romaji,
-                    categories: book.categories,
-                    updatedDate: book.updatedDate
-                }))
-                router.push(`/book?id=${encodeURIComponent(url)}`)
+            // Save preview for all results (local and external)
+            sessionStorage.setItem("preview-book", JSON.stringify({
+                id: book.id,
+                title: book.title,
+                author: book.author,
+                cover: book.cover,
+                summary: book.summary,
+                year: book.year,
+                publisher: (book as any).publisher,
+                language: book.language,
+                downloadUrl: book.downloadUrl,
+                size: book.size,
+                fileType: book.fileType,
+                // Metadata suite
+                series: book.series,
+                seriesIndex: book.seriesIndex,
+                tags: book.tags,
+                cleanTitle: book.cleanTitle,
+                romaji: book.romaji,
+                categories: book.categories,
+                updatedDate: (book as any).updatedDate
+            }))
+
+            if (detailUrl.startsWith("http")) {
+                router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
+            } else {
+                router.push(`/book?id=${detailUrl}`)
             }
         }
     }

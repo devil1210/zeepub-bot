@@ -10,6 +10,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.46] - 2026-01-08
+### Changed
+- **Smooth Book Detail Transitions**: Added a fade-in animation to the Book Detail page to eliminate UI flickering during data loading.
+- **Metadata Standardization**: Standardized internal metadata keys (like `romaji`) across backend and frontend for consistent rendering.
+- **Improved Preview Cache**: Local books now properly utilize the session storage cache for instantaneous detail page previews.
+
 ## [v6.0.0-alpha.45] - 2026-01-08
 ### Changed
 - **Standardized Search UI**: Completely redesigned search result cards to match the catalog style, including larger covers, blue authors, and context-aware metadata for series and books.

@@ -114,8 +114,8 @@ export class OpdsClient {
                     }
 
                     let title = item.title || "Sin título";
-                    let romaji = item.romajiTitle;
-                    let seriesIndex = item.series_index != null ? String(item.series_index) : undefined;
+                    let romaji = item.romaji;
+                    let seriesIndex = item.seriesIndex != null ? String(item.seriesIndex) : undefined;
 
                     // Minimal title cleaning: just remove series prefix if present
                     if (item.series && title.toLowerCase().startsWith(item.series.toLowerCase())) {

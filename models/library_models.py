@@ -84,7 +84,7 @@ class LocalBook(Base):
             "id": f"local_{self.id}", # Prefijo para distinguir de Kavita IDs
             "title": self.title,
             "author": self.author,
-            "romajiTitle": self.romaji_title,
+            "romaji": self.romaji_title,
             "englishTitle": self.english_title,
             "series": self.series,
             "seriesIndex": self.volume,

@@ -59,6 +59,7 @@ function BookDetailContent() {
     const [book, setBook] = useState<BookDetail | null>(null)
     const { dataSaver } = useTheme()
     const [isLoading, setIsLoading] = useState(true)
+    const [isVisible, setIsVisible] = useState(false)
     const [isDownloading, setIsDownloading] = useState(false)
     const [isCoverFull, setIsCoverFull] = useState(false)
 
@@ -160,6 +161,7 @@ function BookDetailContent() {
                 // If we already have preview data, don't clear it on error
             } finally {
                 setIsLoading(false)
+                setTimeout(() => setIsVisible(true), 100)
             }
         }
 
@@ -281,7 +283,7 @@ function BookDetailContent() {
     const displaySize = book.size || extractSizeFromSummary(book.summary)
 
     return (
-        <div className="min-h-screen bg-background pt-safe pb-20 text-foreground">
+        <div className={`min-h-screen bg-background pt-safe pb-20 text-foreground transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
             <TransparentHeader />
 
             {/* Fullscreen Cover Preview */}
