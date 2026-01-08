@@ -1126,6 +1126,15 @@ async def enviar_libro_directo(
 
             # 8. Registrar descarga y notificar
             record_download(user_id)
+            logger.info(f"[enviar_libro_directo] Descarga registrada para user {user_id}")
+
+            # Gamificación: Incrementar contador total
+            from services.user_service import increment_download_count
+            try:
+                await increment_download_count(user_id)
+                logger.info(f"[enviar_libro_directo] Contador total incrementado para user {user_id}")
+            except Exception as e:
+                logger.error(f"[enviar_libro_directo] Error incrementando contador total: {e}")
 
             # Registrar en historial de descargas
             try:
@@ -1155,8 +1164,9 @@ async def enviar_libro_directo(
                     translator=translator,
                     clean_title=clean_title
                 )
+                logger.info(f"[enviar_libro_directo] Historial guardado para user {user_id}: {titulo_vol}")
             except Exception as e:
-                logger.error(f"Error saving download history: {e}")
+                logger.error(f"[enviar_libro_directo] Error saving download history for user {user_id}: {e}", exc_info=True)
 
             restantes = await downloads_left(user_id)
             if restantes != "ilimitadas":
