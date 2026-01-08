@@ -10,6 +10,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.45] - 2026-01-08
+### Changed
+- **Standardized Search UI**: Completely redesigned search result cards to match the catalog style, including larger covers, blue authors, and context-aware metadata for series and books.
+- **Improved Navigation**: Ensured card-wide clickability and consistent right chevrons in search results.
+
 ## [v6.0.0-alpha.44] - 2026-01-08
 ### Added
 - **FTS5 Search Optimization**: Implemented SQLite Full-Text Search for faster and more relevant results.

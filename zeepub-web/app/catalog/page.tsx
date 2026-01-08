@@ -445,13 +445,17 @@ function CatalogContent() {
                         <div className="space-y-3">
                             {searchResults.map((book, index) => {
                                 const isSeriesFolder = (book as any).is_series_folder;
+                                const categories = book.categories || [];
+
+                                const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
+                                const demography = categories.filter(tag => demographicsKeywords.some(keyword => tag.includes(keyword)));
+                                const genres = categories.filter(tag => !demographicsKeywords.some(keyword => tag.includes(keyword)));
 
                                 return (
                                     <Card
                                         key={book.id || (book as any).series}
                                         onClick={() => {
                                             if (isSeriesFolder) {
-                                                // Navigate to series folder in catalog
                                                 const sourceId = (book as any).source_id;
                                                 const seriesName = (book as any).series;
                                                 router.push(`/catalog?source=${sourceId}&folder=${encodeURIComponent(seriesName)}`);
@@ -459,87 +463,93 @@ function CatalogContent() {
                                                 handleSearchBookClick(book);
                                             }
                                         }}
-                                        className={`p-3 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
+                                        className={`p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
                                             }`}
                                         style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                                     >
-                                        <div className="flex gap-3">
-                                            {/* Cover - Compact */}
-                                            <div className="w-14 h-20 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
+                                        <div className="flex gap-4">
+                                            {/* Cover */}
+                                            <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
                                                 {dataSaver ? (
-                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40">
-                                                        <ImageOff className="w-5 h-5 opacity-20" />
+                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
+                                                        <ImageOff className="w-7 h-7 mb-1 opacity-20" />
+                                                        <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
                                                     </div>
                                                 ) : book.cover ? (
                                                     <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                                                        <BookOpen className="w-6 h-6 text-primary" />
+                                                        {isSeriesFolder ? <Folder className="w-8 h-8 text-primary" /> : <BookOpen className="w-8 h-8 text-primary" />}
                                                     </div>
                                                 )}
                                             </div>
 
-                                            {/* Content - Compact */}
-                                            <div className="flex-1 min-w-0 flex flex-col justify-between">
-                                                {/* Title */}
-                                                <div>
-                                                    <h3 className="font-bold text-foreground line-clamp-1 leading-tight group-hover:text-primary transition-colors text-base">
-                                                        {book.romaji || book.cleanTitle || book.title}
-                                                    </h3>
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0 flex flex-col">
+                                                <h3 className="font-semibold text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
+                                                    {book.romaji || book.cleanTitle || book.title}
+                                                </h3>
 
-                                                    {/* Author + Translator Group */}
-                                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                                                        {book.author && <span>{book.author}</span>}
-                                                        {book.author && (book as any).publisher && <span> - </span>}
-                                                        {(book as any).publisher && <span className="text-primary font-medium">[{(book as any).publisher}]</span>}
+                                                {/* Author */}
+                                                {(book.author || (book as any).illustrator) && (
+                                                    <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
+                                                        {book.author}
+                                                        {(!book.author && (book as any).illustrator) ? (book as any).illustrator : ((book as any).illustrator ? ` - ${(book as any).illustrator}` : "")}
                                                     </p>
+                                                )}
 
-                                                    {/* Volume Info (for books) or Book Count (for series) */}
-                                                    {!isSeriesFolder && (
-                                                        <p className="text-[10px] text-muted-foreground mt-1">
-                                                            <span className="font-medium">
+                                                {isSeriesFolder ? (
+                                                    <>
+                                                        {(book as any).numBooks !== undefined && (
+                                                            <p className="text-[10px] text-muted-foreground/60 font-medium mb-1">
+                                                                {(book as any).numBooks} {(book as any).numBooks === 1 ? 'volumen' : 'volúmenes'}
+                                                            </p>
+                                                        )}
+                                                        <div className="flex flex-col gap-1.5 overflow-hidden">
+                                                            {demography.length > 0 && (
+                                                                <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
+                                                                    <span className="font-semibold text-foreground/70 not-italic mr-1">Demografía:</span>
+                                                                    {demography.join(", ")}
+                                                                </p>
+                                                            )}
+                                                            {genres.length > 0 && (
+                                                                <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
+                                                                    <span className="font-semibold text-foreground/70 not-italic mr-1">Géneros:</span>
+                                                                    {genres.join(", ")}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {/* Volume & Group Line */}
+                                                        <p className="text-xs text-muted-foreground mb-1.5 flex flex-wrap items-center gap-1.5">
+                                                            <span className="font-medium whitespace-nowrap">
                                                                 {!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())
                                                                     ? "Volumen único"
                                                                     : `Volumen ${book.seriesIndex}`}
                                                             </span>
+                                                            {(book as any).publisher && (
+                                                                <span className="text-primary font-bold">[{(book as any).publisher}]</span>
+                                                            )}
                                                         </p>
-                                                    )}
-                                                    {isSeriesFolder && (
-                                                        <p className="text-[10px] text-muted-foreground mt-1">
-                                                            <span className="font-medium">{(book as any).numBooks || (book as any).book_count} volúmenes</span>
-                                                        </p>
-                                                    )}
 
-                                                    {/* Tags/Genres */}
-                                                    {book.categories && book.categories.length > 0 && (
-                                                        <div className="flex flex-wrap gap-1 mt-1">
-                                                            {book.categories.slice(0, 3).map((cat, i) => (
-                                                                <span key={i} className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary rounded border border-primary/20">
-                                                                    {cat}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                        {book.downloadUrl && (
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={(e) => handleSearchDownload(e, book)}
+                                                                className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start mt-auto"
+                                                            >
+                                                                <Download className="w-3 h-3 mr-1.5" />
+                                                                {t("book_download")}
+                                                            </Button>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
 
-                                                {/* Action Button */}
-                                                <div className="mt-2">
-                                                    {isSeriesFolder ? (
-                                                        <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded border border-primary/30">
-                                                            <BookOpen className="w-3 h-3" />
-                                                            Serie
-                                                        </div>
-                                                    ) : book.downloadUrl && (
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={(e) => handleSearchDownload(e, book)}
-                                                            className="h-7 text-[10px] px-2.5 bg-primary hover:bg-primary/90"
-                                                        >
-                                                            <Download className="w-3 h-3 mr-1" />
-                                                            {t("book_download")}
-                                                        </Button>
-                                                    )}
-                                                </div>
+                                            <div className="flex items-center">
+                                                <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                                             </div>
                                         </div>
                                     </Card>
