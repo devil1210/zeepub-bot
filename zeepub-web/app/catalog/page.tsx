@@ -599,12 +599,8 @@ function CatalogContent() {
                                             {/* 1. Main Title & Italic Subtitle */}
                                             <h3 className="font-semibold text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
                                                 {(() => {
-                                                    // In folder view (volumes), favor Romaji as primary title
-                                                    const useRomajiAsPrimary = !entry.is_folder && entry.romaji;
-                                                    let base = useRomajiAsPrimary ? entry.romaji : (entry.series || entry.title);
-
-                                                    // Clean base
-                                                    base = base!.replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+                                                    // English/Series title as primary
+                                                    let base = (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
 
                                                     // Add Type acronym suffix if it's a volume
                                                     if (!entry.is_folder) {
@@ -615,21 +611,11 @@ function CatalogContent() {
                                                     return base;
                                                 })()}
                                             </h3>
-                                            {(() => {
-                                                const useRomajiAsPrimary = !entry.is_folder && entry.romaji;
-                                                // If we used Romaji as primary, show cleaned English/Original title as sub-title
-                                                const subtitle = useRomajiAsPrimary
-                                                    ? (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim()
-                                                    : entry.romaji;
-
-                                                if (!subtitle || subtitle === (entry.romaji || entry.title)) return null;
-
-                                                return (
-                                                    <p className="text-xs text-muted-foreground/80 italic mb-1 line-clamp-1">
-                                                        {subtitle}
-                                                    </p>
-                                                );
-                                            })()}
+                                            {entry.romaji && (
+                                                <p className="text-xs text-muted-foreground/80 italic mb-1 line-clamp-1">
+                                                    {entry.romaji}
+                                                </p>
+                                            )}
 
                                             {/* 2. Team: Author - Illustrator */}
                                             <p className="text-sm text-primary font-medium mb-1 line-clamp-1">

@@ -305,10 +305,11 @@ function BookDetailContent() {
 
                         {/* Title and Author */}
                         <div className="flex-1 min-w-0">
-                            {/* Main Title - Clean Series/Name */}
+                            {/* Main Title - Clean English/Common Header */}
                             <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">
                                 {(() => {
-                                    const base = (book.cleanTitle || book.title).split(' - ')[0].replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+                                    // If we have Romaji, the main clean title is likely the English one we want on top
+                                    const base = (book.cleanTitle || book.title || "").split(' - ')[0].replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
                                     return base;
                                 })()}
                             </h1>
@@ -346,7 +347,7 @@ function BookDetailContent() {
                             {/* Meta Badges: Format & Full Date */}
                             <div className="flex flex-wrap items-center gap-2 mb-4">
                                 {book.bookType && (
-                                    <div className="px-2 py-0.5 bg-secondary text-[10px] font-bold text-secondary-foreground rounded uppercase tracking-wider">
+                                    <div className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded border border-primary/30 tracking-wider">
                                         {book.bookType}
                                     </div>
                                 )}

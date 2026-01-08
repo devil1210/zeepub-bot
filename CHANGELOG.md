@@ -10,8 +10,19 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.26] - 2026-01-08
+### Fixed
+- **Service Lockdown**: Disabled `docker` and `containerd` from starting automatically on LXC boot.
+- **Title Hierarchy Swap**: Swapped titles in both catalog and detail pages: English/Series title is now primary (top), and Romaji is secondary (italicized subtitle).
+- **Theme-Colored Badges**: The book type badge (e.g., NOVELA LIGERA) now uses the primary theme color (`bg-primary/20 text-primary`) for better visual integration.
+
 ## [v6.0.0-alpha.25] - 2026-01-08
 ### Fixed
+- **Service Lockdown & UI Swap (v6.0.0-alpha.26)**:
+    - Docker services disabled on boot for maximum authorization control.
+    - Title hierarchy: English on top, Romaji below (italicized).
+    - Theme-colored badges for book types.
+**Versión Final**: `v6.0.0-alpha.26`
 - **Book Detail Restructuring (v6.0.0-alpha.25)**:
     - Logical grouping into **Demografía y Géneros**, **Detalles del Libro**, and **Información Técnica**.
     - Explicit **Grupo Traductor** label.
