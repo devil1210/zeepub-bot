@@ -10,6 +10,21 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.3] - 2026-01-08
+
+### Fixed
+- Fixed **"Client-side exception"** in local library catalog by implementing defensive mapping for enriched metadata.
+- Implemented **alphabetical sorting** for local catalog (folders first, then books).
+- Implemented **pagination (20 items per page)** for the local library database.
+- Fixed `X-Telegram-Data` header validation in Book Detail page.
+- Improved URL encoding for folders with special characters.
+
+## [v6.0.0-alpha.2] - 2026-01-08
+### Fixed
+- **Local Indexing**: Fixed an issue where the local indexer would fail to process entries if `seriesIndex` was missing or `None`. Now defaults to `0` if not present.
+- **Local Indexing**: Improved robustness of local indexer to handle malformed or incomplete metadata from Kavita.
+- **UI**: Fixed a visual bug where the "Local First" toggle was not correctly reflecting its state.
+
 ## [v5.0.36] - 2026-01-07
 ### Added
 - **Botón Borrar Caché**: Nueva opción en configuración personal para borrar toda la caché local (`localStorage`, `sessionStorage`) y recargar la aplicación. Útil para resolver problemas de visualización tras actualizaciones.
