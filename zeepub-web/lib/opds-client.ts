@@ -199,7 +199,7 @@ export class OpdsClient {
         const useLocalLibrary = localStorage.getItem("useLocalLibrary") === "true"
 
         if (useLocalLibrary && !pageUrl?.startsWith("http")) {
-            const response = await fetch(`/api/library/search?query=${encodeURIComponent(query)}`, {
+            const response = await fetch(`/api/library/search?q=${encodeURIComponent(query)}`, {
                 headers: { "X-Telegram-Data": initData }
             })
             if (!response.ok) return { results: [] }
