@@ -315,7 +315,6 @@ function CatalogContent() {
             handleNavigate(subsectionLink.href)
         } else if (detailUrl) {
             // Save preview data for instant loading in detail page
-            // ENRICHED with new fields
             sessionStorage.setItem("preview-book", JSON.stringify({
                 id: entry.id,
                 title: entry.title,
@@ -385,7 +384,7 @@ function CatalogContent() {
                 updatedDate: (book as any).updatedDate
             }))
 
-            if (detailUrl.startsWith("http")) {
+            if (detailUrl.startsWith("http") || detailUrl.startsWith("local_")) {
                 router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
             } else {
                 router.push(`/book?id=${detailUrl}`)
@@ -492,16 +491,7 @@ function CatalogContent() {
                                     <Card
                                         key={book.id || (book as any).series}
                                         onClick={() => {
-                                            // Aggressive series folder detection from backend keys
-                                            if (book.is_series_folder) {
-                                                const sourceId = book.source_id;
-                                                const seriesName = book.series;
-                                                // Corregido: Usar feed_url para navegar correctamente al listado de la serie
-                                                const feedUrl = `local?source_id=${sourceId}&folder=${seriesName}`;
-                                                router.push(`/catalog?feed_url=${encodeURIComponent(feedUrl)}`);
-                                            } else {
-                                                handleSearchBookClick(book);
-                                            }
+                                            handleSearchBookClick(book);
                                         }}
                                         className={`p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
                                             }`}

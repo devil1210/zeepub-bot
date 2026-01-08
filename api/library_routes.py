@@ -96,46 +96,25 @@ async def search_local_books(
             id_to_book = {b.id: b for b in all_results}
             results = [id_to_book[id] for id in matching_ids if id in id_to_book][:100]
         
-        # Agrupar por series para detectar carpetas
-        series_map = {}
-        individual_books = []
-        
-        for book in results:
-            if book.series:
-                if book.series not in series_map:
-                    series_map[book.series] = []
-                series_map[book.series].append(book)
-            else:
-                individual_books.append(book.to_dict())
-        
-        # Crear respuesta con series y libros individuales
+        # Ya no agrupamos por serie para asegurar navegación directa y simple
         response = []
-        
-        # Agregar series como carpetas
-        for series_name, books in series_map.items():
-            first_book = books[0]
-            # Detectar tipo de libro de la serie si es posible
-            series_book_type = next((b.book_type for b in books if b.book_type), first_book.book_type)
+        for book in results:
+            d = book.to_dict()
+            # Asegurar que el título principal (cleanTitle/englishTitle) sea la serie si existe
+            # para mantener la estética de "Títulos limpios"
+            if book.series:
+                d["cleanTitle"] = book.series
+                d["englishTitle"] = book.series
+            else:
+                # Limpiar título de tags si no hay serie
+                import re
+                d["cleanTitle"] = re.sub(r'\s*\[(NL|NW|WN)\]\s*', '', book.title, flags=re.IGNORECASE).strip()
+                d["englishTitle"] = d["cleanTitle"]
             
-            response.append({
-                "is_series_folder": True,
-                "series": series_name,
-                "title": series_name, # Título limpio: solo el nombre de la serie
-                "cover": first_book.cover_path,
-                "author": first_book.author,
-                "romaji": first_book.romaji_title,
-                "cleanTitle": series_name,
-                "englishTitle": series_name, # Usar series_name como titulo principal
-                "publisher": first_book.publisher,
-                "tags": first_book.tags,
-                "demographics": first_book.demographics,
-                "book_count": len(books),
-                "source_id": first_book.source_id,
-                "bookType": series_book_type
-            })
-        
-        # Agregar libros individuales (los que NO tienen serie)
-        response.extend(individual_books)
+            # Asegurar compatibilidad con el frontend
+            d["is_series_folder"] = False
+            d["bookType"] = book.book_type
+            response.append(d)
         
         # Paginación manual de la respuesta combinada (series + libros)
         total_items = len(response)

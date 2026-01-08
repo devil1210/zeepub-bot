@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0-alpha.53] - 2026-01-08
+### Changed
+- **Search Results**: Reverted search result grouping to a list of individual books for better reliability and direct navigation to book details.
+- **Search UI**: Maintained the 4-line metadata format for individual search results, ensuring the clean Series Name is the primary headline.
+- **Navigation**: Clicked search results now lead directly to the Book Detail page, with a functional "Volver a la serie" button available there.
+
 ## [v6.0.0-alpha.52] - 2026-01-08
 ### Fixed
 - **Book Detail Page**: Restored missing metadata sections, including "Demografía y Géneros", "Detalles del Libro", and "Información Técnica".
