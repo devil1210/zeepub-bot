@@ -5,6 +5,14 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0-alpha.49] - 2026-01-08
+### Fixed
+- **Search Result UI**: Implemented a 4-line metadata format for search results (Title, Romaji, Author, Volume).
+- **Series Identification**: Aggressive grouping of search results into series folders even for single matches, enabling navigation to the full series volume list.
+- **Search Badges**: Added `Novela Ligera` / `Novela Web` badges and corrected `Serie` badges on search cards.
+- **Search Navigation**: Fixed broken navigation when clicking on series folders in search results; they now correctly open the series catalog.
+- **Metadata Enrichement**: Standardized metadata keys (is_series_folder, illustrator, publisher, bookType) across search and catalog APIs.
+
 ## [v6.0.0-alpha.1] - 2026-01-07
 ### Added
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.

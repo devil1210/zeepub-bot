@@ -111,30 +111,31 @@ async def search_local_books(
         # Crear respuesta con series y libros individuales
         response = []
         
-        # Agregar series como carpetas (solo si tienen más de 1 libro)
+        # Agregar series como carpetas
         for series_name, books in series_map.items():
-            if len(books) > 1:
-                # Es una serie con múltiples libros - mostrar como carpeta
-                first_book = books[0]
-                response.append({
-                    "is_series_folder": True,
-                    "series": series_name,
-                    "title": series_name,
-                    "cover": first_book.cover_path,
-                    "author": first_book.author,
-                    "romaji": first_book.romaji_title,
-                    "cleanTitle": first_book.title,
-                    "publisher": first_book.publisher,
-                    "tags": first_book.tags,
-                    "demographics": first_book.demographics,
-                    "book_count": len(books),
-                    "source_id": first_book.source_id
-                })
-            else:
-                # Serie con un solo libro - mostrar como libro normal
-                individual_books.append(books[0].to_dict())
+            # SIEMPRE mostrar como carpeta si tiene nombre de serie, 
+            # para que el usuario pueda ir al listado completo de la serie.
+            first_book = books[0]
+            # Detectar tipo de libro de la serie si es posible
+            series_book_type = next((b.book_type for b in books if b.book_type), first_book.book_type)
+            
+            response.append({
+                "is_series_folder": True,
+                "series": series_name,
+                "title": series_name,
+                "cover": first_book.cover_path,
+                "author": first_book.author,
+                "romaji": first_book.romaji_title,
+                "cleanTitle": first_book.title,
+                "publisher": first_book.publisher,
+                "tags": first_book.tags,
+                "demographics": first_book.demographics,
+                "book_count": len(books),
+                "source_id": first_book.source_id,
+                "bookType": series_book_type
+            })
         
-        # Agregar libros individuales
+        # Agregar libros individuales (los que NO tienen serie)
         response.extend(individual_books)
         
         # Paginación manual de la respuesta combinada (series + libros)

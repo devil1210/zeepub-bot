@@ -38,7 +38,6 @@ interface Book {
     detailUrl?: string
     isFolder: boolean
     year?: string
-    publisher?: string
     language?: string
     size?: string
     fileType?: string
@@ -47,9 +46,14 @@ interface Book {
     tags?: string[]
     cleanTitle?: string
     romaji?: string
+    bookType?: string
+    illustrator?: string
+    publisher?: string
     categories?: string[]
     updatedDate?: string
-    illustrator?: string
+    is_series_folder?: boolean
+    source_id?: number
+    numBooks?: number
 }
 
 interface PaginationState {
@@ -473,7 +477,7 @@ function CatalogContent() {
                     {searchQuery && (
                         <div className="space-y-3">
                             {searchResults.map((book, index) => {
-                                const isSeriesFolder = (book as any).is_series_folder;
+                                const isSeriesFolder = book.is_series_folder;
                                 const categories = book.categories || [];
 
                                 const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
@@ -485,10 +489,12 @@ function CatalogContent() {
                                         key={book.id || (book as any).series}
                                         onClick={() => {
                                             // Aggressive series folder detection from backend keys
-                                            if (isSeriesFolder || (book as any).is_series_folder) {
-                                                const sourceId = (book as any).source_id;
-                                                const seriesName = (book as any).series;
-                                                router.push(`/catalog?source=${sourceId}&folder=${encodeURIComponent(seriesName)}`);
+                                            if (book.is_series_folder) {
+                                                const sourceId = book.source_id;
+                                                const seriesName = book.series;
+                                                // Corregido: Usar feed_url para navegar correctamente al listado de la serie
+                                                const feedUrl = `local?source_id=${sourceId}&folder=${seriesName}`;
+                                                router.push(`/catalog?feed_url=${encodeURIComponent(feedUrl)}`);
                                             } else {
                                                 handleSearchBookClick(book);
                                             }
@@ -506,6 +512,12 @@ function CatalogContent() {
                                                         Serie
                                                     </div>
                                                 )}
+                                                {/* Book Type Badge (NL/NW) */}
+                                                {book.bookType && (
+                                                    <div className="absolute bottom-1 left-1 z-10 px-1 py-0.5 bg-black/60 backdrop-blur-sm text-white text-[7px] font-bold uppercase rounded border border-white/20">
+                                                        {book.bookType}
+                                                    </div>
+                                                )}
                                                 {dataSaver ? (
                                                     <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
                                                         <ImageOff className="w-7 h-7 mb-1 opacity-20" />
@@ -521,66 +533,54 @@ function CatalogContent() {
                                             </div>
 
                                             {/* Content */}
-                                            <div className="flex-1 min-w-0 flex flex-col">
-                                                <h3 className="font-semibold text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
-                                                    {book.romaji || book.cleanTitle || book.title}
+                                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                {/* Line 1: Title */}
+                                                <h3 className="font-bold text-sm text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
+                                                    {(book as any).englishTitle || book.cleanTitle || book.title}
                                                 </h3>
 
-                                                {/* Author */}
+                                                {/* Line 2: Romaji */}
+                                                {book.romaji && (
+                                                    <p className="text-[11px] text-muted-foreground/80 font-medium italic mb-1 line-clamp-1">
+                                                        {book.romaji}
+                                                    </p>
+                                                )}
+
+                                                {/* Line 3: Author */}
                                                 {(book.author || (book as any).illustrator) && (
-                                                    <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
+                                                    <p className="text-[11px] text-primary font-semibold mb-1 line-clamp-1">
                                                         {book.author}
                                                         {(!book.author && (book as any).illustrator) ? (book as any).illustrator : ((book as any).illustrator ? ` - ${(book as any).illustrator}` : "")}
                                                     </p>
                                                 )}
 
+                                                {/* Line 4: Volume Info */}
                                                 {isSeriesFolder || (book as any).is_series_folder ? (
-                                                    <>
-                                                        {((book as any).numBooks !== undefined || (book as any).book_count !== undefined) && (
-                                                            <p className="text-[10px] text-muted-foreground/60 font-medium mb-1">
-                                                                {(book as any).numBooks || (book as any).book_count} {((book as any).numBooks || (book as any).book_count) === 1 ? 'volumen' : 'volúmenes'}
-                                                            </p>
-                                                        )}
-                                                        <div className="flex flex-col gap-1.5 overflow-hidden mt-auto">
-                                                            {demography.length > 0 && (
-                                                                <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
-                                                                    <span className="font-semibold text-foreground/70 not-italic mr-1">Demografía:</span>
-                                                                    {demography.join(", ")}
-                                                                </p>
-                                                            )}
-                                                            {genres.length > 0 && (
-                                                                <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
-                                                                    <span className="font-semibold text-foreground/70 not-italic mr-1">Géneros:</span>
-                                                                    {genres.join(", ")}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </>
+                                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                                                        {(book as any).numBooks || (book as any).book_count} {((book as any).numBooks || (book as any).book_count) === 1 ? 'volumen' : 'volúmenes'}
+                                                    </p>
                                                 ) : (
-                                                    <>
-                                                        {/* Volume & Group Line */}
-                                                        <p className="text-xs text-muted-foreground mb-1.5 flex flex-wrap items-center gap-1.5">
-                                                            <span className="font-medium whitespace-nowrap">
-                                                                {!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())
-                                                                    ? "Volumen único"
-                                                                    : `Volumen ${book.seriesIndex}`}
-                                                            </span>
-                                                            {(book as any).publisher && (
-                                                                <span className="text-primary font-bold">[{(book as any).publisher}]</span>
-                                                            )}
-                                                        </p>
-
-                                                        {book.downloadUrl && (
-                                                            <Button
-                                                                size="sm"
-                                                                onClick={(e) => handleSearchDownload(e, book)}
-                                                                className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start mt-auto"
-                                                            >
-                                                                <Download className="w-3 h-3 mr-1.5" />
-                                                                {t("book_download")}
-                                                            </Button>
+                                                    <p className="text-[10px] text-muted-foreground font-bold flex items-center gap-1">
+                                                        <span>
+                                                            {!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())
+                                                                ? "Volumen único"
+                                                                : `Volumen ${book.seriesIndex}`}
+                                                        </span>
+                                                        {(book as any).publisher && (
+                                                            <span className="text-primary">[{(book as any).publisher}]</span>
                                                         )}
-                                                    </>
+                                                    </p>
+                                                )}
+
+                                                {!isSeriesFolder && !(book as any).is_series_folder && book.downloadUrl && (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={(e) => handleSearchDownload(e, book)}
+                                                        className="h-7 text-[9px] px-3 bg-primary hover:bg-primary/90 self-start mt-2"
+                                                    >
+                                                        <Download className="w-3 h-3 mr-1.5" />
+                                                        {t("book_download")}
+                                                    </Button>
                                                 )}
                                             </div>
 
