@@ -10,6 +10,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.38] - 2026-01-08
+### Added
+- **UI Toggle**: Added visual toggle for "Portadas Aleatorias" in the interface configuration page under the "Librería" section, allowing users to easily enable/disable random folder cover selection for better performance.
+
 ## [v6.0.0-alpha.37] - 2026-01-08
 ### Added
 - **Performance Toggle**: New setting `useRandomFolderCovers` to disable random folder cover selection for faster catalog navigation. When disabled, folders use the first book's cover instead of a random selection.

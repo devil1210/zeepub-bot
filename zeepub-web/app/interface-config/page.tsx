@@ -65,6 +65,8 @@ export default function InterfaceConfigPage() {
         setDataSaver,
         useLocalLibrary,
         setUseLocalLibrary,
+        useRandomFolderCovers,
+        setUseRandomFolderCovers,
     } = useTheme()
 
     const { isAdmin, userProfile } = useTelegramContext()
@@ -109,6 +111,7 @@ export default function InterfaceConfigPage() {
                 showSettingsInMenu: localStorage.getItem("showSettingsInMenu") === "true",
                 dataSaver: localStorage.getItem("dataSaver") === "true",
                 useLocalLibrary: localStorage.getItem("useLocalLibrary") === "true",
+                useRandomFolderCovers: localStorage.getItem("useRandomFolderCovers") !== "false",
                 enableAnimations: localStorage.getItem("enableAnimations") === "true",
                 animationDuration: parseInt(localStorage.getItem("animationDuration") || "200"),
                 animationDistance: parseInt(localStorage.getItem("animationDistance") || "4"),
@@ -625,6 +628,24 @@ export default function InterfaceConfigPage() {
                                         <Switch
                                             checked={useLocalLibrary}
                                             onCheckedChange={setUseLocalLibrary}
+                                        />
+                                    </div>
+                                </Card>
+
+                                <Card className="p-4 bg-muted/20 border-border/50">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-muted/30 flex items-center justify-center">
+                                                <ImageOff className="w-6 h-6 text-muted-foreground" />
+                                            </div>
+                                            <div>
+                                                <Label className="text-base font-bold">Portadas Aleatorias</Label>
+                                                <p className="text-xs text-muted-foreground">Cambia la portada de las carpetas en cada visita</p>
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            checked={useRandomFolderCovers}
+                                            onCheckedChange={setUseRandomFolderCovers}
                                         />
                                     </div>
                                 </Card>
