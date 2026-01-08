@@ -398,7 +398,7 @@ function CatalogContent() {
 
                 {/* Feed title */}
                 {currentFeed?.title && (
-                    <div className="pb-1">
+                    <div className="pb-1 flex items-center justify-between gap-3">
                         <h1 className="text-lg font-bold text-foreground">
                             {(() => {
                                 let title = currentFeed.title;
@@ -409,6 +409,17 @@ function CatalogContent() {
                                 return title;
                             })()}
                         </h1>
+                        {(() => {
+                            // Find book type from entries to show in header
+                            const firstEntry = currentFeed.entries.find(e => !e.is_folder && e.bookType);
+                            const bookType = firstEntry?.bookType || currentFeed.entries[0]?.bookType;
+                            if (!bookType) return null;
+                            return (
+                                <div className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded border border-primary/30 tracking-wider flex-shrink-0">
+                                    {bookType}
+                                </div>
+                            );
+                        })()}
                     </div>
                 )}
 
@@ -599,8 +610,8 @@ function CatalogContent() {
                                             {/* 1. Main Title & Italic Subtitle */}
                                             <h3 className="font-semibold text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
                                                 {(() => {
-                                                    // English/Series title as primary
-                                                    let base = (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+                                                    // Prioritize Romaji as primary in cards
+                                                    let base = entry.romaji || (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
 
                                                     // Add Type acronym suffix if it's a volume
                                                     if (!entry.is_folder) {
@@ -611,9 +622,9 @@ function CatalogContent() {
                                                     return base;
                                                 })()}
                                             </h3>
-                                            {entry.romaji && (
+                                            {entry.romaji && (entry.series || entry.title) && (
                                                 <p className="text-xs text-muted-foreground/80 italic mb-1 line-clamp-1">
-                                                    {entry.romaji}
+                                                    {(entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim()}
                                                 </p>
                                             )}
 
