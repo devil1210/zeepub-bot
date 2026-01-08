@@ -342,3 +342,47 @@ async def import_library(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error importing library: {str(e)}")
+
+# ===== MAINTENANCE ENDPOINTS =====
+from services.library_maintenance_service import LibraryMaintenanceService
+
+@router.post("/api/library/optimize")
+async def optimize_database(
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Optimiza la base de datos (VACUUM y ANALYZE).
+    Solo disponible para administradores.
+    """
+    try:
+        result = LibraryMaintenanceService.optimize_database()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error optimizing database: {str(e)}")
+
+@router.post("/api/library/cleanup")
+async def cleanup_orphaned_files(
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Elimina archivos de portada huérfanos.
+    Solo disponible para administradores.
+    """
+    try:
+        result = LibraryMaintenanceService.cleanup_orphaned_covers()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error cleaning up files: {str(e)}")
+
+@router.get("/api/library/stats")
+async def get_library_statistics(
+    user_data: dict = Depends(require_mini_app_access)
+):
+    """
+    Obtiene estadísticas detalladas de la biblioteca.
+    """
+    try:
+        stats = LibraryMaintenanceService.get_library_stats()
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting statistics: {str(e)}")

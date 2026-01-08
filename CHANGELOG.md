@@ -10,6 +10,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.42] - 2026-01-08
+### Added
+- **Maintenance Utilities**: Implemented database optimization (VACUUM/ANALYZE), orphaned cover cleanup, and detailed library statistics generation.
+- **Maintenance API**: Added admin-only endpoints: `/api/library/optimize` (database optimization), `/api/library/cleanup` (orphaned file removal), and `/api/library/stats` (library statistics for all users).
+- **Phase 4 Complete**: Backup & Utilities phase fully implemented with backup system, export/import functionality, and maintenance tools.
+
 ## [v6.0.0-alpha.41] - 2026-01-08
 ### Added
 - **Export/Import System**: Implemented JSON export/import functionality for library metadata with filtering by source or series and merge capabilities.
