@@ -10,6 +10,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.29] - 2026-01-08
+### Fixed
+- **Pagination Centering**: Re-centered navigation buttons (Anterior/Subir/Siguiente) by enforcing symmetric widths using `flex-1`.
+- **UI Stability**: Added label truncation to prevent navigation bar overflow on extremely narrow mobile screens.
+
 ## [v6.0.0-alpha.28] - 2026-01-08
 ### Fixed
 - **Redundancy Cleanup**: Removed English titles as subtitles in volume cards when they match the series header.
@@ -28,6 +33,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [v6.0.0-alpha.25] - 2026-01-08
 ### Fixed
+- **Button Centering (v6.0.0-alpha.29)**:
+    - Fixed regression where navigation buttons were not perfectly centered.
+    - Symmetric layout for the control bar.
 - **Redundancy Cleanup (v6.0.0-alpha.28)**:
     - Romaji-only titles on cards inside series folders.
     - Zero redundancy with English header title.
