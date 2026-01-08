@@ -23,7 +23,6 @@ interface BookDetail {
     cover?: string
     publisher?: string
     language?: string
-    isbn?: string
     downloadUrl?: string
     series?: string
     seriesIndex?: string
@@ -303,12 +302,12 @@ function BookDetailContent() {
 
                         {/* Title and Author */}
                         <div className="flex-1 min-w-0">
-                            {/* Main Title - English/Clean */}
+                            {/* Main Title - Clean Series/Name */}
                             <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">
-                                {book.cleanTitle || book.title}
-                                {book.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
-                                    ` [${book.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
-                                    : ""}
+                                {(() => {
+                                    const base = (book.cleanTitle || book.title).split(' - ')[0].replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+                                    return base;
+                                })()}
                             </h1>
 
                             {/* Romaji Name as Sub-title */}
@@ -318,38 +317,54 @@ function BookDetailContent() {
                                 </p>
                             )}
 
-                            {/* Authors */}
-                            <p className="text-base text-primary font-medium mb-1">{book.author}</p>
-
-                            {/* Book Type Badge */}
-                            {book.bookType && (
-                                <div className="mb-2">
-                                    <span className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded-md border border-primary/30">
-                                        {book.bookType}
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* Volume and Extra Tags (combined line) */}
-                            <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1 font-medium">
-                                <span>
-                                    {!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())
-                                        ? "Volumen único"
-                                        : `Volumen ${book.seriesIndex}`}
-                                </span>
-                                {book.tags?.filter(t => !["NL", "NW", "WN", "EPUB"].includes(t.toUpperCase())).map((tag, i) => (
-                                    <span key={i} className="text-primary font-bold">[{tag}]</span>
-                                ))}
+                            {/* Authors - Combined Blue Line */}
+                            <p className="text-base text-primary font-medium mb-1">
+                                {book.author}
+                                {book.illustrator ? ` - ${book.illustrator}` : ""}
                             </p>
 
-                            {/* Quick Info Chips */}
-                            <div className="flex flex-wrap gap-2 text-xs mb-3">
-                                {book.year && (
-                                    <span className="px-2 py-1 bg-secondary rounded-md text-muted-foreground flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" />
-                                        {book.year}
-                                    </span>
+                            {/* Volume and Group [TAG] Line */}
+                            <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1.5 font-medium">
+                                <span>
+                                    {(() => {
+                                        if (!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())) {
+                                            return "Volumen único";
+                                        }
+                                        const volNum = parseFloat(book.seriesIndex);
+                                        const padded = isNaN(volNum) ? book.seriesIndex : (volNum < 10 ? `0${volNum}` : String(volNum));
+                                        return `Volumen ${padded}`;
+                                    })()}
+                                </span>
+                                {book.publisher && (
+                                    <span className="text-primary font-bold">[{book.publisher}]</span>
                                 )}
+                            </p>
+
+                            {/* Meta Badges: Format & Full Date */}
+                            <div className="flex flex-wrap items-center gap-2 mb-4">
+                                {book.bookType && (
+                                    <div className="px-2 py-0.5 bg-secondary text-[10px] font-bold text-secondary-foreground rounded uppercase tracking-wider">
+                                        {book.bookType}
+                                    </div>
+                                )}
+                                {(() => {
+                                    const dateStr = book.publishedAt || book.modifiedAtOpf || book.year;
+                                    if (!dateStr) return null;
+
+                                    const raw = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+                                    let formatted = raw;
+                                    if (raw.includes('-')) {
+                                        const parts = raw.split('-');
+                                        if (parts.length === 3) formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                                    }
+
+                                    return (
+                                        <div className="flex items-center gap-1 px-2 py-0.5 bg-secondary/50 text-[10px] text-muted-foreground rounded">
+                                            <Calendar className="w-3 h-3" />
+                                            {formatted}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* Back to Series Button */}
@@ -496,7 +511,7 @@ function BookDetailContent() {
                                         const raw = book.publishedAt.includes('T') ? book.publishedAt.split('T')[0] : book.publishedAt;
                                         if (raw.includes('-')) {
                                             const parts = raw.split('-');
-                                            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                                            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
                                         }
                                         return raw;
                                     })()}
@@ -515,7 +530,7 @@ function BookDetailContent() {
                                         const raw = updateDate.includes('T') ? updateDate.split('T')[0] : updateDate;
                                         if (raw.includes('-')) {
                                             const parts = raw.split('-');
-                                            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                                            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
                                         }
                                         return raw;
                                     })()}
@@ -549,7 +564,7 @@ function BookDetailContent() {
                                         const raw = date.includes('T') ? date.split('T')[0] : date;
                                         if (raw.includes('-')) {
                                             const parts = raw.split('-');
-                                            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                                            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
                                         }
                                         return raw;
                                     })()}

@@ -599,15 +599,37 @@ function CatalogContent() {
                                             {/* 1. Main Title & Italic Subtitle */}
                                             <h3 className="font-semibold text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
                                                 {(() => {
-                                                    const base = (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+                                                    // In folder view (volumes), favor Romaji as primary title
+                                                    const useRomajiAsPrimary = !entry.is_folder && entry.romaji;
+                                                    let base = useRomajiAsPrimary ? entry.romaji : (entry.series || entry.title);
+
+                                                    // Clean base
+                                                    base = base!.replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+
+                                                    // Add Type acronym suffix if it's a volume
+                                                    if (!entry.is_folder) {
+                                                        const typeTag = entry.tags?.find(t => ["NL", "NW", "WN"].includes(t.toUpperCase()));
+                                                        if (typeTag) base += ` [${typeTag.toUpperCase()}]`;
+                                                    }
+
                                                     return base;
                                                 })()}
                                             </h3>
-                                            {entry.romaji && (
-                                                <p className="text-xs text-muted-foreground/80 italic mb-1 line-clamp-1">
-                                                    {entry.romaji}
-                                                </p>
-                                            )}
+                                            {(() => {
+                                                const useRomajiAsPrimary = !entry.is_folder && entry.romaji;
+                                                // If we used Romaji as primary, show cleaned English/Original title as sub-title
+                                                const subtitle = useRomajiAsPrimary
+                                                    ? (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim()
+                                                    : entry.romaji;
+
+                                                if (!subtitle || subtitle === (entry.romaji || entry.title)) return null;
+
+                                                return (
+                                                    <p className="text-xs text-muted-foreground/80 italic mb-1 line-clamp-1">
+                                                        {subtitle}
+                                                    </p>
+                                                );
+                                            })()}
 
                                             {/* 2. Team: Author - Illustrator */}
                                             <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
@@ -632,20 +654,22 @@ function CatalogContent() {
                                                 )}
                                             </p>
 
-                                            {/* 4. Meta Badges: Format & Date */}
-                                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                {entry.bookType && (
-                                                    <div className="px-1.5 py-0.5 bg-secondary text-[8px] font-bold text-secondary-foreground rounded uppercase tracking-wider">
-                                                        {entry.bookType}
-                                                    </div>
-                                                )}
-                                                {(entry.publishedAt || entry.year) && (
-                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-secondary/50 text-[8px] text-muted-foreground rounded">
-                                                        <Calendar className="w-2.5 h-2.5" />
-                                                        {entry.publishedAt || entry.year}
-                                                    </div>
-                                                )}
-                                            </div>
+                                            {/* 4. Meta Badges: Format & Date - Only show for series folders, not volumes */}
+                                            {entry.is_folder && (
+                                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                    {entry.bookType && (
+                                                        <div className="px-1.5 py-0.5 bg-secondary text-[8px] font-bold text-secondary-foreground rounded uppercase tracking-wider">
+                                                            {entry.bookType}
+                                                        </div>
+                                                    )}
+                                                    {(entry.publishedAt || entry.year) && (
+                                                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-secondary/50 text-[8px] text-muted-foreground rounded">
+                                                            <Calendar className="w-2.5 h-2.5" />
+                                                            {entry.publishedAt || entry.year}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
 
                                             {/* Genres & Tags removed as per user feedback to keep cards cleaner */}
 
