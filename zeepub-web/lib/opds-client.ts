@@ -112,30 +112,15 @@ export class OpdsClient {
                     let romaji = item.romajiTitle;
                     let seriesIndex = item.series_index != null ? String(item.series_index) : undefined;
 
-                    // 1. Aggressive Clean Title: If it's a series volume, keep only the volume part
-                    const volumeRegex = /(?:volumen|vol|v)\.?\s*\d+/i;
-                    if (item.series && (title.toLowerCase().includes("volumen") || title.toLowerCase().includes("vol ") || title.match(/v\d+/i))) {
-                        const match = title.match(volumeRegex);
-                        if (match) {
-                            title = title.substring(match.index!).trim();
-                        }
-                    } else if (item.series && title.toLowerCase().startsWith(item.series.toLowerCase())) {
-                        title = title.substring(item.series.length).replace(/^[\s\-:\.]+|[\s\-:\.]+$/g, '').trim();
+                    // Minimal title cleaning: just remove series prefix if present
+                    if (item.series && title.toLowerCase().startsWith(item.series.toLowerCase())) {
+                        const cleaned = title.substring(item.series.length).replace(/^[\s\-:\.]+/, '').trim();
+                        if (cleaned) title = cleaned;
                     }
 
-                    // 2. Clean Romaji Title if it contains volume info
-                    if (romaji && item.series && (romaji.toLowerCase().includes("volumen") || romaji.toLowerCase().includes("vol ") || romaji.match(/v\d+/i))) {
-                        const match = romaji.match(volumeRegex);
-                        if (match) {
-                            romaji = romaji.substring(match.index!).trim();
-                        }
-                    }
-
-                    // 3. Volume Extraction Fallback
+                    // Volume Extraction Fallback if missing
                     if (!seriesIndex || seriesIndex.toLowerCase() === "unico") {
-                        const originalTitle = item.title || "";
-                        const volMatch = originalTitle.match(/(?:volumen|vol|v)\.?\s*(\d+(?:\.\d+)?)/i) ||
-                            originalTitle.match(/\s(\d+(?:\.\d+)?)(?:\s|\[|$)/);
+                        const volMatch = title.match(/(?:volumen|vol|v)\.?\s*(\d+(?:\.\d+)?)/i);
                         if (volMatch && volMatch[1]) {
                             seriesIndex = volMatch[1];
                         }

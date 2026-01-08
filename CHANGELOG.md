@@ -10,6 +10,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.11] - 2026-01-08
+### Fixed
+- **Volume List UI (Final)**: Implemented exact reference design for series folders:
+  - Card title shows series name + [NL/NW/WN] tags only
+  - Volume line shows "Volumen XX [KKLS]" (quality/scanlation tags only)
+  - Completely hid all genre lists when inside series folders
+  - Clean, compact layout matching premium design
+
 ## [v6.0.0-alpha.10] - 2026-01-08
 ### Fixed
 - **Aggressive Title Cleaning**: Optimized volume lists to strip redundant series info and strictly focus on "Volumen XX" for both standard and Romaji titles.

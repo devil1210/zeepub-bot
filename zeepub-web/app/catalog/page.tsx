@@ -573,12 +573,23 @@ function CatalogContent() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Title - prioritize Romaji or Series for volumes in series folders */}
+                                            {/* Title: Show Series name + format tags (NL/NW/WN) when in folder */}
                                             <h3 className="font-semibold text-foreground mb-1 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                                {entry.romaji || (folder && entry.series ? entry.series : entry.title)}
-                                                {entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
-                                                    ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
-                                                    : ""}
+                                                {folder && entry.series ? (
+                                                    <>
+                                                        {entry.series}
+                                                        {entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
+                                                            ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
+                                                            : ""}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {entry.romaji || entry.title}
+                                                        {entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
+                                                            ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
+                                                            : ""}
+                                                    </>
+                                                )}
                                             </h3>
 
                                             {/* Authors + Illustrator */}
@@ -593,7 +604,7 @@ function CatalogContent() {
                                                 </p>
                                             )}
 
-                                            {/* Volume and Extra Tags (combined) */}
+                                            {/* Volume and Scanlation/Quality Tags ONLY (hide all other tags when in folder) */}
                                             <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1 flex-1">
                                                 <span className="font-medium">
                                                     {(() => {
@@ -605,9 +616,16 @@ function CatalogContent() {
                                                         return `Volumen ${padded}`;
                                                     })()}
                                                 </span>
-                                                {(!folder || entry.is_folder) && entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
-                                                    <span key={i} className="text-primary font-bold">[{tag}]</span>
-                                                ))}
+                                                {/* When in folder, only show non-format tags (like KKLS). Otherwise show all */}
+                                                {folder ? (
+                                                    entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
+                                                        <span key={i} className="text-primary font-bold">[{tag}]</span>
+                                                    ))
+                                                ) : (
+                                                    entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
+                                                        <span key={i} className="text-primary font-bold">[{tag}]</span>
+                                                    ))
+                                                )}
                                             </p>
 
                                             <Button
