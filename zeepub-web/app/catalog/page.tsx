@@ -622,11 +622,7 @@ function CatalogContent() {
                                                     return base;
                                                 })()}
                                             </h3>
-                                            {entry.romaji && (entry.series || entry.title) && (
-                                                <p className="text-xs text-muted-foreground/80 italic mb-1 line-clamp-1">
-                                                    {(entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim()}
-                                                </p>
-                                            )}
+                                            {/* Subtitle removed (English title is in header) */}
 
                                             {/* 2. Team: Author - Illustrator */}
                                             <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
