@@ -683,6 +683,10 @@ function CatalogContent() {
                         <p className="text-muted-foreground">Esta sección está vacía</p>
                     </div>
                 )}
+
+                <div className="text-xs text-center p-4 text-muted-foreground/30 font-mono">
+                    v6.0.0-alpha.13
+                </div>
             </main>
         </div>
     )
