@@ -1,6 +1,6 @@
 services:
   zeepubs_bot:
-    image: ghcr.io/devil1210/zeepub-bot:${BOT_IMAGE_TAG:-dev}
+    image: ghcr.io/devil1210/zeepub-bot:${BOT_IMAGE_TAG:-v6-alpha}
     container_name: zeepubs_bot_v6
     restart: unless-stopped
     env_file:
