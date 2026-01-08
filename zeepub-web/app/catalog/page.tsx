@@ -401,12 +401,12 @@ function CatalogContent() {
                         <h1 className="text-lg font-bold text-foreground">
                             {(() => {
                                 let title = currentFeed.title;
-                                // Clean title: remove " - Author" and [Tags]
+                                // Even more aggressive cleanup for the page title:
+                                // If it has " - " (author) or " [" (tags), cut it.
                                 title = title.split(" - ")[0].split(" [")[0];
+                                // Remove "Storyline" suffix as per user preference
                                 return title;
                             })()}
-                            {/* Heuristic: if we are in a folder and have books, it's likely a series storyline */}
-                            {folder && currentFeed.entries.some(e => !e.is_folder) && !currentFeed.title.includes("Storyline") ? " - Storyline" : ""}
                         </h1>
                     </div>
                 )}
@@ -595,11 +595,11 @@ function CatalogContent() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Title: Show Series name + format tags (NL/NW/WN) when in folder */}
+                                            {/* Title: Romaji (primary) + format tags (NL/NW/WN) */}
                                             <h3 className="font-semibold text-foreground mb-1 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                                {folder && entry.series ? (
+                                                {folder ? (
                                                     <>
-                                                        {entry.series}
+                                                        {entry.romaji || entry.series || entry.title}
                                                         {entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
                                                             ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
                                                             : ""}
@@ -619,8 +619,8 @@ function CatalogContent() {
                                                 {entry.author}{entry.illustrator ? ` - ${entry.illustrator}` : ""}
                                             </p>
 
-                                            {/* Hide Genres display if it's a series volume list to keep it compact */}
-                                            {(!folder || folder.length === 0 || entry.is_folder) && entry.categories && entry.categories.length > 0 && (
+                                            {/* Genres Line: HIDE ENTIRELY when inside a folder (Storyline view) */}
+                                            {!folder && entry.categories && entry.categories.length > 0 && (
                                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-1 italic">
                                                     {entry.categories.join(", ")}
                                                 </p>
@@ -638,9 +638,17 @@ function CatalogContent() {
                                                         return `Volumen ${padded}`;
                                                     })()}
                                                 </span>
-                                                {/* When in folder, only show non-format tags (like KKLS). Otherwise show all */}
+                                                {/* When in folder, only show scanlation/quality tags (exclude genres and formats) */}
                                                 {folder ? (
-                                                    entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
+                                                    entry.tags?.filter(t => {
+                                                        const lower = t.toLowerCase();
+                                                        // Hide formats
+                                                        if (["nl", "nw", "wn"].includes(lower)) return false;
+                                                        // Hide known genres from the tag line too
+                                                        const genres = ["juvenil", "chicos", "shounen", "acción", "accion", "bélico", "belico", "ciencia ficción", "ciencia ficcion", "drama", "misterio", "romance", "sobrenatural", "maduro", "adultos", "seinen", "fantasía", "fantasia", "historia", "shojo", "josei", "terror", "suspenso", "psicológico", "psicologico", "aventura", "comedia", "recuentos de la vida", "escolar", "harem", "ecchi", "isekai", "mecha", "yuri", "yaoi", "tragedia", "militar", "mágia", "magia", "artes marciales", "deportes"];
+                                                        if (genres.some(g => lower.includes(g))) return false;
+                                                        return true;
+                                                    }).map((tag, i) => (
                                                         <span key={i} className="text-primary font-bold">[{tag}]</span>
                                                     ))
                                                 ) : (
@@ -706,9 +714,7 @@ function CatalogContent() {
                     </div>
                 )}
 
-                <div className="text-xs text-center p-4 text-muted-foreground/30 font-mono">
-                    v6.0.0-alpha.13
-                </div>
+                {/* Remove debug version footer for release */}
             </main>
         </div>
     )
