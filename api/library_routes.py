@@ -87,7 +87,7 @@ async def search_local_books(
             matching_ids = session.execute(sql, {"q": f"{clean_q}*"}).scalars().all()
             
             if not matching_ids:
-                return []
+                return {"items": [], "total": 0, "page": page, "totalPages": 0}
                 
             query = session.query(LocalBook).filter(LocalBook.id.in_(matching_ids))
             if source_id:
@@ -98,7 +98,7 @@ async def search_local_books(
             id_to_book = {b.id: b for b in all_results}
             results = [id_to_book[id] for id in matching_ids if id in id_to_book][:100]
         
-        import re
+        response = []
         for book in results:
             d = book.to_dict()
             # Limpiar tags de tipo [NL], [NW], [WN] de cualquier campo de texto

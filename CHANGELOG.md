@@ -5,6 +5,10 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0-alpha.56] - 2026-01-08
+### Fixed
+- **Search API**: Fixed a `NameError` that broke search functionality due to a missing variable initialization.
+
 ## [v6.0.0-alpha.55] - 2026-01-08
 ### Added
 - **Image Optimization**: Implemented on-demand thumbnail generation (180x260px) in the backend to speed up catalog and search navigation.
