@@ -43,50 +43,56 @@ async def search_local_books(
     user_data: dict = Depends(require_mini_app_access)
 ):
     """
-    Busca libros en la base de datos local con filtros opcionales.
-    
-    Args:
-        q: Término de búsqueda
-        source_id: Filtrar por fuente específica
-        search_type: Tipo de búsqueda (all, title, author, illustrator, translator, genres)
+    Busca libros en la base de datos local con filtros opcionales usando FTS5.
     """
     session = get_session()
     try:
-        query = session.query(LocalBook)
+        from sqlalchemy import text
+        import re
         
-        if source_id:
-            query = query.filter(LocalBook.source_id == source_id)
-            
-        search_filter = f"%{q}%"
+        # Limpiar query para FTS5
+        clean_q = re.sub(r'[^\w\s]', ' ', q).strip()
         
-        # Aplicar filtro según el tipo de búsqueda
-        if search_type == "title":
+        if not clean_q:
+            # Fallback a LIKE si la query solo tiene símbolos
+            query = session.query(LocalBook)
+            if source_id:
+                query = query.filter(LocalBook.source_id == source_id)
+            search_filter = f"%{q}%"
             query = query.filter(LocalBook.title.ilike(search_filter))
-        elif search_type == "author":
-            query = query.filter(LocalBook.author.ilike(search_filter))
-        elif search_type == "illustrator":
-            query = query.filter(LocalBook.illustrator.ilike(search_filter))
-        elif search_type == "translator":
-            query = query.filter(LocalBook.publisher.ilike(search_filter))  # publisher = grupo traductor
-        elif search_type == "genres":
-            # Buscar en tags (géneros) y demographics
-            query = query.filter(
-                (LocalBook.tags.ilike(search_filter)) |
-                (LocalBook.demographics.ilike(search_filter))
-            )
-        else:  # "all"
-            # Búsqueda en todos los campos
-            query = query.filter(
-                (LocalBook.title.ilike(search_filter)) |
-                (LocalBook.author.ilike(search_filter)) |
-                (LocalBook.series.ilike(search_filter)) |
-                (LocalBook.illustrator.ilike(search_filter)) |
-                (LocalBook.publisher.ilike(search_filter)) |
-                (LocalBook.tags.ilike(search_filter)) |
-                (LocalBook.demographics.ilike(search_filter))
-            )
-        
-        results = query.limit(100).all()
+            results = query.limit(100).all()
+        else:
+            # Usar FTS5 MATCH
+            if search_type == "all":
+                # Búsqueda en todos los campos indexados
+                match_expr = "books_fts MATCH :q"
+            elif search_type == "title":
+                match_expr = "title MATCH :q"
+            elif search_type == "author":
+                match_expr = "author MATCH :q"
+            elif search_type == "illustrator":
+                match_expr = "illustrator MATCH :q"
+            elif search_type == "translator":
+                match_expr = "publisher MATCH :q"
+            elif search_type == "genres":
+                match_expr = "tags MATCH :q"
+            else:
+                match_expr = "books_fts MATCH :q"
+
+            sql = text(f"SELECT rowid FROM books_fts WHERE {match_expr} ORDER BY rank")
+            matching_ids = session.execute(sql, {"q": f"{clean_q}*"}).scalars().all()
+            
+            if not matching_ids:
+                return []
+                
+            query = session.query(LocalBook).filter(LocalBook.id.in_(matching_ids))
+            if source_id:
+                query = query.filter(LocalBook.source_id == source_id)
+            
+            # Mantener orden de FTS5 rank
+            all_results = query.all()
+            id_to_book = {b.id: b for b in all_results}
+            results = [id_to_book[id] for id in matching_ids if id in id_to_book][:100]
         
         # Agrupar por series para detectar carpetas
         series_map = {}
@@ -177,7 +183,8 @@ async def get_catalog(
                     "is_folder": True,
                     "folder_path": "",
                     "source_id": s.id,
-                    "cover": random_book.cover_path if random_book else None
+                    "cover": random_book.cover_path if random_book else None,
+                    "numBooks": session.query(LocalBook).filter(LocalBook.source_id == s.id).count()
                 })
             # No paginamos las fuentes (suelen ser pocas)
             return {
@@ -254,7 +261,7 @@ async def get_catalog(
                 "source_id": source_id,
                 "cover": random_cover_book.cover_path if random_cover_book else rep.get("cover"),
                 "author": rep.get("author"),
-                "num_books": subfolder_book_query.count(),
+                "numBooks": subfolder_book_query.count(),
                 "tags": rep.get("tags"),
                 "series": rep.get("series")
             })

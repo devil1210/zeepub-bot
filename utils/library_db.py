@@ -55,12 +55,82 @@ def check_migrations():
     except Exception as e:
         print(f"Error en migración automática: {e}")
 
+def init_fts():
+    """
+    Inicializa la búsqueda de texto completo (FTS5) y los triggers de sincronización.
+    """
+    import sqlite3
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Verificar si la tabla FTS ya existe
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books_fts'")
+        if not cursor.fetchone():
+            print("Inicializando búsqueda de texto completo (FTS5)...")
+            # Crear tabla virtual FTS5
+            # Usamos content='local_books' para una external content table (más eficiente en espacio)
+            cursor.execute("""
+                CREATE VIRTUAL TABLE books_fts USING fts5(
+                    title, 
+                    romaji_title, 
+                    english_title, 
+                    series, 
+                    author, 
+                    illustrator, 
+                    translator, 
+                    publisher, 
+                    tags, 
+                    content='local_books', 
+                    content_rowid='id'
+                )
+            """)
+            
+            # Poblar inicialmente
+            cursor.execute("""
+                INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, publisher, tags)
+                SELECT id, title, romaji_title, english_title, series, author, illustrator, translator, publisher, tags FROM local_books
+            """)
+            
+            # Triggers para sincronización automática
+            # INSERT
+            cursor.execute("""
+                CREATE TRIGGER IF NOT EXISTS books_ai AFTER INSERT ON local_books BEGIN
+                  INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, publisher, tags)
+                  VALUES (new.id, new.title, new.romaji_title, new.english_title, new.series, new.author, new.illustrator, new.translator, new.publisher, new.tags);
+                END;
+            """)
+            
+            # DELETE
+            cursor.execute("""
+                CREATE TRIGGER IF NOT EXISTS books_ad AFTER DELETE ON local_books BEGIN
+                  INSERT INTO books_fts(books_fts, rowid, title, romaji_title, english_title, series, author, illustrator, translator, publisher, tags)
+                  VALUES('delete', old.id, old.title, old.romaji_title, old.english_title, old.series, old.author, old.illustrator, old.translator, old.publisher, old.tags);
+                END;
+            """)
+            
+            # UPDATE
+            cursor.execute("""
+                CREATE TRIGGER IF NOT EXISTS books_au AFTER UPDATE ON local_books BEGIN
+                  INSERT INTO books_fts(books_fts, rowid, title, romaji_title, english_title, series, author, illustrator, translator, publisher, tags)
+                  VALUES('delete', old.id, old.title, old.romaji_title, old.english_title, old.series, old.author, old.illustrator, old.translator, old.publisher, old.tags);
+                  INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, publisher, tags)
+                  VALUES (new.id, new.title, new.romaji_title, new.english_title, new.series, new.author, new.illustrator, new.translator, new.publisher, new.tags);
+                END;
+            """)
+            
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error inicializando FTS5: {e}")
+
 def init_library_db():
     """
     Inicializa la base de datos creando las tablas si no existen.
     """
     Base.metadata.create_all(engine)
     check_migrations() # Asegurar que columnas nuevas existan
+    init_fts() # Inicializar búsqueda de texto completo
     print(f"Base de datos de librería inicializada en: {DB_PATH}")
 
 def get_session():

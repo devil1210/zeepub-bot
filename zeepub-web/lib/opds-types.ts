@@ -40,6 +40,7 @@ export interface OPDSEntry {
     wordCount?: number
     pageCount?: number
     readingTime?: number
+    numBooks?: number
 }
 
 export interface OPDSFeed {

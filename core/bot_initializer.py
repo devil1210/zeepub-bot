@@ -2,6 +2,7 @@ import logging
 from services.weekly_reports import start_weekly_scheduler
 from services.backup_scheduler import start_backup_scheduler
 from services.daily_reset_scheduler import start_daily_reset_scheduler
+from services.library_backup_scheduler import start_library_backup_scheduler
 from utils.download_limiter import load_downloads
 from utils.helpers import get_version_string, get_last_commit_message
 import os
@@ -27,6 +28,7 @@ class BotInitializer:
             ("weekly_reports", start_weekly_scheduler),
             ("backup", start_backup_scheduler),
             ("daily_reset", start_daily_reset_scheduler),
+            ("library_backup", start_library_backup_scheduler),
         ]
 
         # Pre-load needed data for schedulers if any

@@ -506,7 +506,7 @@ function CatalogContent() {
                                                     )}
                                                     {isSeriesFolder && (
                                                         <p className="text-[10px] text-muted-foreground mt-1">
-                                                            <span className="font-medium">{(book as any).book_count} volúmenes</span>
+                                                            <span className="font-medium">{(book as any).numBooks || (book as any).book_count} volúmenes</span>
                                                         </p>
                                                     )}
 
@@ -595,6 +595,12 @@ function CatalogContent() {
                                                         {entry.author}
                                                     </p>
                                                 )}
+                                                {entry.numBooks && (
+                                                    <p className="text-[10px] text-muted-foreground/60 font-medium">
+                                                        {entry.numBooks} {entry.numBooks === 1 ? 'libro' : 'libros'}
+                                                    </p>
+                                                )}
+
                                                 {/* Demographics and Genres display for folders/series */}
                                                 {(() => {
                                                     if (!entry.categories || entry.categories.length === 0) return null;
