@@ -118,9 +118,10 @@ class SystemManagerPlugin(BasePlugin):
         # 2. Remote
         remote_hash = "Desconocido"
         try:
+            branch = config.GIT_BRANCH or "main"
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.get(
-                    "https://api.github.com/repos/devil1210/zeepub-bot/commits/main",
+                    f"https://api.github.com/repos/devil1210/zeepub-bot/commits/{branch}",
                     headers={"User-Agent": "ZeePubBot/2.0"},
                 )
                 if resp.status_code == 200:

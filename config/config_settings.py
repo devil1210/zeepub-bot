@@ -136,6 +136,9 @@ class BotConfig:
     METRICS_PORT: int = int(os.getenv("METRICS_PORT", "9090"))
     ENABLE_METRICS: bool = os.getenv("ENABLE_METRICS", "true").lower() == "true"
 
+    # Updates
+    GIT_BRANCH: str = os.getenv("GIT_BRANCH", "main")
+
     # Optional SQLAlchemy URL.
     # Solo se carga si el plugin está habilitado explícitamente.
     # Esto asegura que SQLite sea el default incluso si DATABASE_URL existe en el entorno.
