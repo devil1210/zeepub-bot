@@ -34,6 +34,8 @@ export interface OPDSEntry {
     illustrator?: string
     translator?: string
     layoutBy?: string
+    epubVersion?: string
+    fileSize?: number
 }
 
 export interface OPDSFeed {

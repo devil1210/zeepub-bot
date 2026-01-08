@@ -56,6 +56,7 @@ class LocalBook(Base):
     published_at = Column(String(50))
     modified_at_opf = Column(String(50))
     book_type = Column(String(100))  # Ej: Novela Ligera, Novela Web
+    epub_version = Column(String(20)) # Ej: 2.0, 3.0
     
     # Contenido
     description = Column(String(5000))
@@ -102,5 +103,6 @@ class LocalBook(Base):
             "bookType": self.book_type,
             "isbn": self.isbn,
             "asin": self.asin,
-            "uriId": self.uri_id
+            "uriId": self.uri_id,
+            "epubVersion": self.epub_version
         }

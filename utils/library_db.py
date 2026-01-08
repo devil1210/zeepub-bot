@@ -38,7 +38,8 @@ def check_migrations():
             ('published_at', 'VARCHAR(50)'),
             ('modified_at_opf', 'VARCHAR(50)'),
             ('book_type', 'VARCHAR(100)'),
-            ('demographics', 'JSON')
+            ('demographics', 'JSON'),
+            ('epub_version', 'VARCHAR(20)')
         ]
         
         for col_name, col_type in new_cols:

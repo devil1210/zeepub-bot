@@ -142,10 +142,16 @@ export class OpdsClient {
                         romaji: romaji,
                         publishedAt: item.publishedAt,
                         publishedDate: item.publishedAt || item.modifiedAtOpf,
-                        year: item.publishedAt ? item.publishedAt.split("-")[0] : (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
+                        year: item.publishedAt ? item.publishedAt.split("-")[0] : item.modifiedAtOpf ? item.modifiedAtOpf.split("-")[0] : (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
                         illustrator: item.illustrator,
                         translator: item.translator,
                         layoutBy: item.layoutBy,
+                        epubVersion: item.epubVersion,
+                        fileSize: item.fileSize,
+                        publisher: item.publisher,
+                        asin: item.asin,
+                        isbn: item.isbn,
+                        uriId: item.uriId,
                         links: [
                             {
                                 rel: item.is_folder ? "subsection" : "http://opds-spec.org/acquisition",

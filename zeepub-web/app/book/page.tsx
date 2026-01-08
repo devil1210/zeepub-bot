@@ -42,6 +42,10 @@ interface BookDetail {
     publishedAt?: string
     modifiedAtOpf?: string
     asin?: string
+    isbn?: string
+    epubVersion?: string
+    fileSize?: number
+    demographics?: string[]
 }
 
 function BookDetailContent() {
@@ -138,6 +142,11 @@ function BookDetailContent() {
                         merged.publishedAt = result.publishedAt || prevBook.publishedAt
                         merged.modifiedAtOpf = result.modifiedAtOpf || prevBook.modifiedAtOpf
                         merged.asin = result.asin || prevBook.asin
+                        merged.isbn = result.isbn || prevBook.isbn
+                        merged.epubVersion = result.epubVersion || prevBook.epubVersion
+                        merged.fileSize = result.fileSize || prevBook.fileSize
+                        merged.demographics = result.demographics || prevBook.demographics
+                        merged.publisher = result.publisher || prevBook.publisher
 
                         return merged
                     })
@@ -382,20 +391,30 @@ function BookDetailContent() {
                     )
                 }
 
-                {/* Genres / Categories - New more visible section */}
-                {book.categories && book.categories.length > 0 && (
-                    <Card className="p-5 border-border mb-4 bg-card">
-                        <div className="flex items-center gap-2 mb-3 text-primary">
-                            <span className="p-1 bg-primary/10 rounded-full">
-                                <Tag className="w-3 h-3" />
+                {/* Genres Section */}
+                {(book.categories?.length || book.demographics?.length) && (
+                    <Card className="p-5 border-border mb-4 bg-card shadow-sm">
+                        <div className="flex items-center gap-2 mb-4 text-primary">
+                            <span className="p-1.5 bg-primary/10 rounded-full">
+                                <Tag className="w-3.5 h-3.5" />
                             </span>
-                            <h3 className="text-xs font-bold uppercase tracking-wider">Géneros</h3>
+                            <h3 className="text-xs font-bold uppercase tracking-widest">GÉNEROS</h3>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {book.categories
-                                .filter(cat => !book.tags?.includes(cat))
+                            {book.demographics?.map((cat, i) => (
+                                <span key={`demo-${i}`} className="px-3 py-1 bg-primary/20 text-primary text-xs rounded-full font-semibold border border-primary/20">
+                                    {cat}
+                                </span>
+                            ))}
+                            {[...(book.categories || []), ...(book.tags || [])]
+                                .filter((cat, index, self) =>
+                                    cat &&
+                                    !["NL", "NW", "WN", "EPUB"].includes(cat.toUpperCase()) &&
+                                    !book.demographics?.includes(cat) &&
+                                    self.indexOf(cat) === index
+                                )
                                 .map((cat, i) => (
-                                    <span key={i} className="px-2.5 py-1 bg-secondary text-foreground text-xs rounded-md font-medium">
+                                    <span key={`gen-${i}`} className="px-3 py-1 bg-secondary text-foreground text-xs rounded-full font-medium border border-border/50">
                                         {cat}
                                     </span>
                                 ))}
@@ -405,30 +424,30 @@ function BookDetailContent() {
 
                 {/* Credits Section */}
                 {(book.illustrator || book.translator || book.layoutBy) && (
-                    <Card className="p-5 border-border mb-4 bg-card">
-                        <div className="flex items-center gap-2 mb-3 text-primary">
-                            <span className="p-1 bg-primary/10 rounded-full">
-                                <UserIcon className="w-3 h-3" />
+                    <Card className="p-5 border-border mb-4 bg-card shadow-sm">
+                        <div className="flex items-center gap-2 mb-5 text-primary">
+                            <span className="p-1.5 bg-primary/10 rounded-full">
+                                <UserIcon className="w-3.5 h-3.5" />
                             </span>
-                            <h3 className="text-xs font-bold uppercase tracking-wider">Créditos</h3>
+                            <h3 className="text-xs font-bold uppercase tracking-widest">CRÉDITOS</h3>
                         </div>
-                        <div className="grid grid-cols-1 gap-3">
+                        <div className="space-y-4">
                             {book.illustrator && (
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Ilustrador</span>
-                                    <span className="text-sm font-medium">{book.illustrator}</span>
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Ilustrador</span>
+                                    <span className="text-sm font-semibold text-foreground">{book.illustrator}</span>
                                 </div>
                             )}
                             {book.translator && (
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Traductor</span>
-                                    <span className="text-sm font-medium">{book.translator}</span>
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Traductor</span>
+                                    <span className="text-sm font-semibold text-foreground">{book.translator}</span>
                                 </div>
                             )}
                             {book.layoutBy && (
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Maquetador</span>
-                                    <span className="text-sm font-medium">{book.layoutBy}</span>
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Maquetador</span>
+                                    <span className="text-sm font-semibold text-foreground">{book.layoutBy}</span>
                                 </div>
                             )}
                         </div>
@@ -436,80 +455,67 @@ function BookDetailContent() {
                 )}
 
                 {/* Additional Details */}
-                <Card className="p-5 border-border mb-6 bg-card">
-                    <div className="flex items-center gap-2 mb-4 text-primary">
-                        <span className="p-1 bg-primary/10 rounded-full">
-                            <Library className="w-3 h-3" />
+                <Card className="p-5 border-border mb-6 bg-card shadow-sm">
+                    <div className="flex items-center gap-2 mb-5 text-primary">
+                        <span className="p-1.5 bg-primary/10 rounded-full">
+                            <Library className="w-3.5 h-3.5" />
                         </span>
-                        <h3 className="text-xs font-bold uppercase tracking-wider">Detalles adicionales</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-widest">DETALLES ADICIONALES</h3>
                     </div>
-                    <div className="divide-y divide-border/50 text-sm">
+                    <div className="space-y-3.5 text-sm">
                         {book.publisher && (
-                            <div className="flex justify-between py-2">
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30 last:border-0">
                                 <span className="text-muted-foreground">Editorial</span>
-                                <span className="text-foreground font-medium text-right ml-4">{book.publisher}</span>
+                                <span className="text-foreground font-semibold text-right ml-4">{book.publisher}</span>
                             </div>
                         )}
-                        {displayFileType && (
-                            <div className="flex justify-between py-2">
-                                <span className="text-muted-foreground">Tipo de Archivo</span>
-                                <span className="text-foreground font-medium">{formatFileType(displayFileType)}</span>
-                            </div>
-                        )}
-                        {displaySize && (
-                            <div className="flex justify-between py-2">
-                                <span className="text-muted-foreground">Tamaño</span>
-                                <span className="text-foreground font-medium">{displaySize}</span>
-                            </div>
-                        )}
-                        {book.language && (
-                            <div className="flex justify-between py-2">
-                                <span className="text-muted-foreground flex items-center gap-1.5">
-                                    <Globe className="w-3.5 h-3.5" />
-                                    Idioma
-                                </span>
-                                <span className="text-foreground font-medium uppercase">{book.language}</span>
-                            </div>
-                        )}
+                        <div className="flex justify-between items-center py-0.5 border-b border-border/30 last:border-0">
+                            <span className="text-muted-foreground">Tipo de Archivo</span>
+                            <span className="text-foreground font-semibold">{formatFileType(displayFileType || "Epub")}</span>
+                        </div>
                         {book.isbn && (
-                            <div className="flex justify-between py-2">
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30 last:border-0">
                                 <span className="text-muted-foreground">ISBN</span>
-                                <span className="text-foreground font-medium font-mono">{book.isbn}</span>
+                                <span className="text-foreground font-semibold font-mono tracking-tight">{book.isbn}</span>
                             </div>
                         )}
                         {book.asin && (
-                            <div className="flex justify-between py-2">
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30 last:border-0">
                                 <span className="text-muted-foreground">ASIN (Amazon)</span>
-                                <span className="text-foreground font-medium font-mono">{book.asin}</span>
+                                <span className="text-foreground font-semibold font-mono tracking-tight">{book.asin}</span>
                             </div>
                         )}
                         {book.publishedAt && (
-                            <div className="flex justify-between py-2">
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30 last:border-0">
                                 <span className="text-muted-foreground flex items-center gap-1.5">
                                     <Calendar className="w-3.5 h-3.5" />
                                     Fecha de publicación
                                 </span>
-                                <span className="text-foreground font-medium text-right ml-4">
-                                    {book.publishedAt.includes('T') ? book.publishedAt.split('T')[0] : book.publishedAt}
+                                <span className="text-foreground font-semibold text-right ml-4">
+                                    {(() => {
+                                        const raw = book.publishedAt.includes('T') ? book.publishedAt.split('T')[0] : book.publishedAt;
+                                        if (raw.includes('-')) {
+                                            const parts = raw.split('-');
+                                            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                                        }
+                                        return raw;
+                                    })()}
                                 </span>
                             </div>
                         )}
                         {(book.updatedDate || book.modifiedAtOpf) && (
-                            <div className="flex justify-between py-2">
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30 last:border-0">
                                 <span className="text-muted-foreground flex items-center gap-1.5">
                                     <Clock className="w-3.5 h-3.5" />
                                     Última actualización
                                 </span>
-                                <span className="text-foreground font-medium whitespace-nowrap ml-4">
+                                <span className="text-foreground font-semibold whitespace-nowrap ml-4">
                                     {(() => {
                                         const updateDate = book.modifiedAtOpf || book.updatedDate || "";
                                         const raw = updateDate.includes('T') ? updateDate.split('T')[0] : updateDate;
                                         if (raw.includes('-')) {
                                             const parts = raw.split('-');
-                                            if (parts.length === 3) {
-                                                // yyyy-mm-dd to dd-mm-yyyy
-                                                return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                                            }
+                                            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
                                         }
                                         return raw;
                                     })()}
@@ -518,6 +524,51 @@ function BookDetailContent() {
                         )}
                     </div>
                 </Card>
+
+                {/* Technical Info (mini-pills) */}
+                <div className="space-y-2 mb-8 px-1">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground/60">
+                        <Info className="w-3 h-3" />
+                        <span className="uppercase tracking-widest">Información Técnica</span>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        {book.epubVersion && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80">
+                                <span className="text-primary opacity-60">ℹ️</span>
+                                <span className="font-medium">Versión Epub:</span>
+                                <span className="text-foreground font-bold">{book.epubVersion}</span>
+                            </div>
+                        )}
+                        {(book.updatedDate || book.modifiedAtOpf) && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80">
+                                <span className="text-primary opacity-60">📅</span>
+                                <span className="font-medium">Actualizado:</span>
+                                <span className="text-foreground font-bold">
+                                    {(() => {
+                                        const date = book.modifiedAtOpf || book.updatedDate || "";
+                                        const raw = date.includes('T') ? date.split('T')[0] : date;
+                                        if (raw.includes('-')) {
+                                            const parts = raw.split('-');
+                                            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                                        }
+                                        return raw;
+                                    })()}
+                                </span>
+                            </div>
+                        )}
+                        {(book.fileSize || displaySize) && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80">
+                                <span className="text-primary opacity-60">📦</span>
+                                <span className="font-medium">Tamaño:</span>
+                                <span className="text-foreground font-bold">
+                                    {book.fileSize
+                                        ? `${(book.fileSize / (1024 * 1024)).toFixed(2)} MB`
+                                        : displaySize}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 {/* Download Button */}
                 <div className="sticky bottom-6 z-50 px-2 pb-2">

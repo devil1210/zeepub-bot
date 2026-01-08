@@ -10,12 +10,18 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.22] - 2026-01-08
+### Added
+- **Detailed Book View Redesign**: New structured layout for the book detail page matching reference designs.
+- **Structured Sections**: Dedicated sections for GÉNEROS (including demographics), CRÉDITOS (Illustrator, Translator, Layout), and DETALLES ADICIONALES.
+- **Enriched Metadata**: Automated extraction of EPUB version from OPF metadata.
+- **Technical Footer**: New bottom info display including EPUB Version, File Size (MB), and Updated Date.
+- **Full Dates**: Improved date display using `DD-MM-YYYY` format throughout the detail view.
+
 ## [v6.0.0-alpha.21] - 2026-01-08
 ### Fixed
 - **Hybrid UI Design**: Merged the best elements from reference designs into a single, clean card view.
 - **Clean Titles**: Removed redundant format tags (like [NL]) from the main title.
-- **Improved Hierarchy**: Added italicized Romaji subtitles and combined team lines (Author - Illustrator).
-- **Metadata Badges**: Added uppercase format badges and full date badges with calendar icons.
 - **Cleaner Aesthetic**: Removed all demographic and genre tags from the card view to minimize visual clutter.
 
 ## [v6.0.0-alpha.20] - 2026-01-08

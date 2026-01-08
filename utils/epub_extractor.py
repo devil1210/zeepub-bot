@@ -34,6 +34,7 @@ class EpubMetadataExtractor:
                 # 2. Leer el OPF
                 opf_content = z.read(opf_path)
                 opf_root = ET.fromstring(opf_content)
+                self.metadata['version'] = opf_root.get('version')
                 
                 # 3. Extraer Metadatos Básicos
                 metadata_node = opf_root.find('opf:metadata', self.NAMESPACE)
