@@ -10,6 +10,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.9] - 2026-01-08
+### Fixed
+- **Clean Titles**: Improved title cleaning in the local library by removing redundant series prefixes (eg: "Toaru Majutsu no Index - Volumen 01" becomes just "Volumen 01").
+- **Volume Extraction**: Added fallback logic to extract volume numbers directly from "dirty" titles if metadata is missing.
+- **UI Clutter**: Strictly hidden Genres and Tags when browsing inside series folders (Storyline view) to match the premium reference design.
+
 ## [v6.0.0-alpha.8] - 2026-01-08
 ### Changed
 - **Series Volume UI**: Redesigned volume list within series folders to be more compact, prioritizing Romaji titles, including illustrators, and fixing volume padding (eg: "Volumen 01").

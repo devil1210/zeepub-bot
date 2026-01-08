@@ -108,19 +108,44 @@ export class OpdsClient {
                         if (filename) coverUrl = `/api/library/covers/${filename}`
                     }
 
+                    let title = item.title || "Sin título";
+                    let seriesIndex = item.series_index != null ? String(item.series_index) : undefined;
+
+                    // 1. Clean Title: Remove series prefix if redundant
+                    if (item.series && title.toLowerCase().startsWith(item.series.toLowerCase())) {
+                        const seriesLen = item.series.length;
+                        let cleaned = title.substring(seriesLen).trim();
+                        // Remove common separators like " - ", " : ", " volumen "
+                        cleaned = cleaned.replace(/^[\s\-:\.]+|[\s\-:\.]+$/g, '').trim();
+                        if (cleaned) {
+                            title = cleaned;
+                        }
+                    }
+
+                    // 2. Volume Extraction Fallback: If seriesIndex is missing, try to get it from the original title
+                    if (!seriesIndex || seriesIndex.toLowerCase() === "unico") {
+                        const originalTitle = item.title || "";
+                        // Match "Volumen 01", "Vol 01", "v01", " 01" at end or middle
+                        const volMatch = originalTitle.match(/(?:volumen|vol|v)\.?\s*(\d+(?:\.\d+)?)/i) ||
+                            originalTitle.match(/\s(\d+(?:\.\d+)?)(?:\s|\[|$)/);
+                        if (volMatch && volMatch[1]) {
+                            seriesIndex = volMatch[1];
+                        }
+                    }
+
                     return {
                         id: item.id || `local_${Math.random().toString(36).substr(2, 9)}`,
-                        title: item.title || "Sin título",
+                        title: title,
                         author: item.author || (item.is_folder ? "" : "Autor desconocido"),
                         summary: item.summary || item.description || "",
                         cover_url: coverUrl,
                         is_folder: !!item.is_folder,
                         series: item.series,
-                        seriesIndex: item.series_index != null ? String(item.series_index) : undefined,
+                        seriesIndex: seriesIndex,
                         tags: item.tags || [],
                         categories: item.tags || [],
                         romaji: item.romajiTitle,
-                        cleanTitle: item.title,
+                        cleanTitle: title, // use cleaned title
                         year: (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
                         illustrator: item.illustrator,
                         translator: item.translator,

@@ -568,9 +568,9 @@ function CatalogContent() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Title - prioritize Romaji for volumes in series */}
+                                            {/* Title - prioritize Romaji or Series for volumes in series folders */}
                                             <h3 className="font-semibold text-foreground mb-1 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                                {entry.romaji || entry.title}
+                                                {entry.romaji || (folder && entry.series ? entry.series : entry.title)}
                                                 {entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
                                                     ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
                                                     : ""}
@@ -600,7 +600,7 @@ function CatalogContent() {
                                                         return `Volumen ${padded}`;
                                                     })()}
                                                 </span>
-                                                {entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
+                                                {(!folder || entry.is_folder) && entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
                                                     <span key={i} className="text-primary font-bold">[{tag}]</span>
                                                 ))}
                                             </p>
