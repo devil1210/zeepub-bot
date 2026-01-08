@@ -12,6 +12,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [v6.0.0-alpha.19] - 2026-01-08
 ### Fixed
+- **Schemaless Migration**: Added a self-healing database migration logic to support new metadata columns without requiring a full DB reset.
 - **Deep OPF Integration**: Now extracting and storing all relevant OPF fields (ISBN13, Amazon ID, URI ID, Collection metadata).
 - **Metadata Classification**: Implemented automatic categorization of tags into Book Type (NL/NW/WN), Demographics (Seinen/Shounen), and Genres.
 - **Romaji Logic**: Refined Romaji title extraction and display to ensure a clean, consistent look.
