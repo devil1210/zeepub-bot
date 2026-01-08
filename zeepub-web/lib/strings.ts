@@ -76,6 +76,7 @@ export interface AppStrings {
     donate_tier_premium_name: string
     donate_tier_premium_price: string
     donate_tier_premium_downloads: string
+    available_libraries: string
 }
 
 export const DEFAULT_STRINGS: AppStrings = {
@@ -156,6 +157,7 @@ export const DEFAULT_STRINGS: AppStrings = {
     donate_tier_premium_name: "Premium",
     donate_tier_premium_price: "$12/mes",
     donate_tier_premium_downloads: "Ilimitado",
+    available_libraries: "Bibliotecas Disponibles",
 }
 
 let cachedStrings: AppStrings | null = null

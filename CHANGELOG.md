@@ -10,6 +10,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.35] - 2026-01-08
+### Changed
+- **Catalog Navigation Header**: Renamed the root page header from "Biblioteca Local" to **"Bibliotecas Disponibles"** as requested.
+- **Icon Removal Sweep**: ensured all folder icon overlays are removed from the root catalog and search listings to maintain a unified clean aesthetic.
+
 ## [v6.0.0-alpha.34] - 2026-01-08
 ### Changed
 - **Header Priority**: The primary title in book details now displays the **Series/English Title** for better identification.

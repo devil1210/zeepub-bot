@@ -402,10 +402,10 @@ function CatalogContent() {
                         <h1 className="text-lg font-bold text-foreground">
                             {(() => {
                                 let title = currentFeed.title;
+                                if (title === "Bibliotecas Disponibles") return t("available_libraries");
                                 // Even more aggressive cleanup for the page title:
                                 // If it has " - " (author) or " [" (tags), cut it.
                                 title = title.split(" - ")[0].split(" [")[0];
-                                // Remove "Storyline" suffix as per user preference
                                 return title;
                             })()}
                         </h1>

@@ -96,7 +96,7 @@ export class OpdsClient {
 
             // Map local items to OPDSFeed format
             const feed: OPDSFeed = {
-                title: currentFolder || "Biblioteca Local",
+                title: currentFolder || "Bibliotecas Disponibles",
                 currentPage: currentPage,
                 totalItems: totalItems,
                 totalPages: totalPages,
