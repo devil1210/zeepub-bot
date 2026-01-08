@@ -51,6 +51,15 @@ interface BookDetail {
     readingTime?: string
 }
 
+const getThumbnailUrl = (url?: string) => {
+    if (!url) return undefined
+    // Si es una URL de la librería local, cambiar covers por thumbnail
+    if (url.includes("/api/library/covers/")) {
+        return url.replace("/api/library/covers/", "/api/library/thumbnail/")
+    }
+    return url
+}
+
 function BookDetailContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -252,7 +261,7 @@ function BookDetailContent() {
                                     <span className="text-[10px] font-bold opacity-30">Ahorro</span>
                                 </div>
                             ) : book.cover ? (
-                                <img src={book.cover} alt={book.title} className="w-full h-full object-cover cursor-zoom-in" onClick={() => setIsCoverFull(true)} />
+                                <img src={getThumbnailUrl(book.cover)} alt={book.title} className="w-full h-full object-cover cursor-zoom-in" onClick={() => setIsCoverFull(true)} />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-primary/5"><FileText className="w-12 h-12 text-primary/30" /></div>
                             )}

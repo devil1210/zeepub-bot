@@ -63,6 +63,15 @@ interface PaginationState {
     totalPages?: number | null
 }
 
+const getThumbnailUrl = (url?: string) => {
+    if (!url) return undefined
+    // Si es una URL de la librería local, cambiar covers por thumbnail
+    if (url.includes("/api/library/covers/")) {
+        return url.replace("/api/library/covers/", "/api/library/thumbnail/")
+    }
+    return url
+}
+
 function CatalogContent() {
     const [currentFeed, setCurrentFeed] = useState<OPDSFeed | null>(null)
     const [isLoading, setIsLoading] = useState(true)
@@ -512,7 +521,7 @@ function CatalogContent() {
                                                         <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
                                                     </div>
                                                 ) : book.cover ? (
-                                                    <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                                                    <img src={getThumbnailUrl(book.cover)} alt={book.title} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center bg-primary/10">
                                                         {isSeriesFolder ? <Folder className="w-8 h-8 text-primary" /> : <BookOpen className="w-8 h-8 text-primary" />}
@@ -621,7 +630,7 @@ function CatalogContent() {
                                                         <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
                                                     </div>
                                                 ) : entry.cover_url ? (
-                                                    <img src={entry.cover_url} alt={entry.title} className="w-full h-full object-cover" />
+                                                    <img src={getThumbnailUrl(entry.cover_url)} alt={entry.title} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <Folder className="w-8 h-8 text-primary" />
                                                 )}
@@ -692,7 +701,7 @@ function CatalogContent() {
                                                     </div>
                                                 ) : (
                                                     <img
-                                                        src={entry.cover_url || "/placeholder.svg"}
+                                                        src={getThumbnailUrl(entry.cover_url) || "/placeholder.svg"}
                                                         alt={entry.title}
                                                         className="w-full h-full object-cover"
                                                     />

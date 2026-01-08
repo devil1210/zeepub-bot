@@ -7,10 +7,12 @@ from models.library_models import Base, LibrarySource
 DB_DIR = os.path.abspath("data/library")
 DB_PATH = os.path.join(DB_DIR, "library.db")
 COVERS_DIR = os.path.join(DB_DIR, "covers")
+THUMBNAILS_DIR = os.path.join(DB_DIR, "thumbnails")
 
 # Crear carpetas si no existen
 os.makedirs(DB_DIR, exist_ok=True)
 os.makedirs(COVERS_DIR, exist_ok=True)
+os.makedirs(THUMBNAILS_DIR, exist_ok=True)
 
 # Motor de base de datos
 engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)

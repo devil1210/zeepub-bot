@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
 import os
+from PIL import Image
 
-from utils.library_db import get_session, COVERS_DIR
+from utils.library_db import get_session, COVERS_DIR, THUMBNAILS_DIR
 from models.library_models import LocalBook, LibrarySource
 from api.deps import require_mini_app_access, require_admin
 
@@ -455,3 +457,31 @@ async def get_library_statistics(
         return stats
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting statistics: {str(e)}")
+@router.get("/api/library/thumbnail/{filename}")
+async def get_thumbnail(filename: str):
+    """
+    Genera y sirve una miniatura (thumbnail) de la portada solicitada.
+    """
+    original_path = os.path.join(COVERS_DIR, filename)
+    thumb_path = os.path.join(THUMBNAILS_DIR, filename)
+ 
+    # 1. Si ya existe la miniatura, servirla directamente
+    if os.path.exists(thumb_path):
+        return FileResponse(thumb_path)
+ 
+    # 2. Si no existe la original, 404
+    if not os.path.exists(original_path):
+        raise HTTPException(status_code=404, detail="Original cover not found")
+ 
+    # 3. Generar miniatura (Lazy Generation)
+    try:
+        with Image.open(original_path) as img:
+            # Dimensiones optimizadas para grid (aprox 180x260 manteniendo aspecto)
+            img.thumbnail((200, 300))
+            # Guardar como WebP si es posible para mejor compresión, o mantener original
+            img.save(thumb_path, optimize=True, quality=80)
+        
+        return FileResponse(thumb_path)
+    except Exception as e:
+        # Fallback a la original si falla la generación
+        return FileResponse(original_path)
