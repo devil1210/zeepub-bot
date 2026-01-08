@@ -10,6 +10,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.33] - 2026-01-08
+### Added
+- **Full-screen Cover Preview**: Users can now tap on any book cover in the details page to view it in full screen with a sleek interactive overlay.
+
 ## [v6.0.0-alpha.32] - 2026-01-08
 ### Added
 - **Dynamic Folder Covers**: Sources and folders now display a random book cover from their contents instead of a generic icon.

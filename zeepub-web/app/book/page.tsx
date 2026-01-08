@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock, ImageOff } from "lucide-react"
+import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock, ImageOff, X } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { Skeleton } from "@/components/ui/skeleton"
 import { callBotAPI } from "@/lib/api"
@@ -60,6 +60,7 @@ function BookDetailContent() {
     const { dataSaver } = useTheme()
     const [isLoading, setIsLoading] = useState(true)
     const [isDownloading, setIsDownloading] = useState(false)
+    const [isCoverFull, setIsCoverFull] = useState(false)
 
     const bookId = searchParams.get("id")
 
@@ -282,6 +283,33 @@ function BookDetailContent() {
     return (
         <div className="min-h-screen bg-background pt-safe pb-20 text-foreground">
             <TransparentHeader />
+
+            {/* Fullscreen Cover Preview */}
+            {isCoverFull && book.cover && (
+                <div
+                    className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200"
+                    onClick={() => setIsCoverFull(false)}
+                >
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-4 right-4 text-white/50 hover:text-white hover:bg-white/10 z-[110]"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setIsCoverFull(false)
+                        }}
+                    >
+                        <X className="w-8 h-8" />
+                    </Button>
+                    <img
+                        src={book.cover}
+                        alt={book.title}
+                        className="max-w-full max-h-full object-contain shadow-2xl rounded-sm"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
+
             {/* Header */}
 
             <div className="max-w-2xl mx-auto px-4 py-6">
@@ -296,7 +324,12 @@ function BookDetailContent() {
                                     <span className="text-[10px] font-bold uppercase tracking-widest opacity-30 px-2 text-center">Modo Ahorro</span>
                                 </div>
                             ) : book.cover ? (
-                                <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                                <img
+                                    src={book.cover}
+                                    alt={book.title}
+                                    className="w-full h-full object-cover cursor-zoom-in active:scale-95 transition-transform"
+                                    onClick={() => setIsCoverFull(true)}
+                                />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-primary/5">
                                     <FileText className="w-12 h-12 text-primary/30" />
