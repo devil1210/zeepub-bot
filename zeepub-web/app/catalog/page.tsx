@@ -377,7 +377,12 @@ function CatalogContent() {
                 {currentFeed?.title && (
                     <div className="pb-1">
                         <h1 className="text-lg font-bold text-foreground">
-                            {currentFeed.title}
+                            {(() => {
+                                let title = currentFeed.title;
+                                // Clean title: remove " - Author" and [Tags]
+                                title = title.split(" - ")[0].split(" [")[0];
+                                return title;
+                            })()}
                             {/* Heuristic: if we are in a folder and have books, it's likely a series storyline */}
                             {folder && currentFeed.entries.some(e => !e.is_folder) && !currentFeed.title.includes("Storyline") ? " - Storyline" : ""}
                         </h1>

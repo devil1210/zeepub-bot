@@ -109,23 +109,31 @@ export class OpdsClient {
                     }
 
                     let title = item.title || "Sin título";
+                    let romaji = item.romajiTitle;
                     let seriesIndex = item.series_index != null ? String(item.series_index) : undefined;
 
-                    // 1. Clean Title: Remove series prefix if redundant
-                    if (item.series && title.toLowerCase().startsWith(item.series.toLowerCase())) {
-                        const seriesLen = item.series.length;
-                        let cleaned = title.substring(seriesLen).trim();
-                        // Remove common separators like " - ", " : ", " volumen "
-                        cleaned = cleaned.replace(/^[\s\-:\.]+|[\s\-:\.]+$/g, '').trim();
-                        if (cleaned) {
-                            title = cleaned;
+                    // 1. Aggressive Clean Title: If it's a series volume, keep only the volume part
+                    const volumeRegex = /(?:volumen|vol|v)\.?\s*\d+/i;
+                    if (item.series && (title.toLowerCase().includes("volumen") || title.toLowerCase().includes("vol ") || title.match(/v\d+/i))) {
+                        const match = title.match(volumeRegex);
+                        if (match) {
+                            title = title.substring(match.index!).trim();
+                        }
+                    } else if (item.series && title.toLowerCase().startsWith(item.series.toLowerCase())) {
+                        title = title.substring(item.series.length).replace(/^[\s\-:\.]+|[\s\-:\.]+$/g, '').trim();
+                    }
+
+                    // 2. Clean Romaji Title if it contains volume info
+                    if (romaji && item.series && (romaji.toLowerCase().includes("volumen") || romaji.toLowerCase().includes("vol ") || romaji.match(/v\d+/i))) {
+                        const match = romaji.match(volumeRegex);
+                        if (match) {
+                            romaji = romaji.substring(match.index!).trim();
                         }
                     }
 
-                    // 2. Volume Extraction Fallback: If seriesIndex is missing, try to get it from the original title
+                    // 3. Volume Extraction Fallback
                     if (!seriesIndex || seriesIndex.toLowerCase() === "unico") {
                         const originalTitle = item.title || "";
-                        // Match "Volumen 01", "Vol 01", "v01", " 01" at end or middle
                         const volMatch = originalTitle.match(/(?:volumen|vol|v)\.?\s*(\d+(?:\.\d+)?)/i) ||
                             originalTitle.match(/\s(\d+(?:\.\d+)?)(?:\s|\[|$)/);
                         if (volMatch && volMatch[1]) {
@@ -135,7 +143,7 @@ export class OpdsClient {
 
                     return {
                         id: item.id || `local_${Math.random().toString(36).substr(2, 9)}`,
-                        title: title,
+                        title: title || item.title,
                         author: item.author || (item.is_folder ? "" : "Autor desconocido"),
                         summary: item.summary || item.description || "",
                         cover_url: coverUrl,
@@ -144,8 +152,8 @@ export class OpdsClient {
                         seriesIndex: seriesIndex,
                         tags: item.tags || [],
                         categories: item.tags || [],
-                        romaji: item.romajiTitle,
-                        cleanTitle: title, // use cleaned title
+                        romaji: romaji,
+                        cleanTitle: title || item.title, // use cleaned title
                         year: (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
                         illustrator: item.illustrator,
                         translator: item.translator,
