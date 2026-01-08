@@ -140,7 +140,11 @@ export class OpdsClient {
                         demographics: item.demographics || [],
                         bookType: item.bookType,
                         romaji: romaji,
+                        englishTitle: item.englishTitle,
                         publishedAt: item.publishedAt,
+                        wordCount: item.wordCount,
+                        pageCount: item.pageCount,
+                        readingTime: item.readingTime,
                         publishedDate: item.publishedAt || item.modifiedAtOpf,
                         year: item.publishedAt ? item.publishedAt.split("-")[0] : item.modifiedAtOpf ? item.modifiedAtOpf.split("-")[0] : (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
                         illustrator: item.illustrator,
@@ -215,8 +219,12 @@ export class OpdsClient {
                         series: item.series,
                         seriesIndex: item.seriesIndex != null ? String(item.seriesIndex) : undefined,
                         tags: item.tags || [],
-                        romaji: item.romajiTitle,
-                        cleanTitle: item.title
+                        romaji: item.romaji,
+                        englishTitle: item.englishTitle,
+                        cleanTitle: item.cleanTitle || item.title,
+                        wordCount: item.wordCount,
+                        pageCount: item.pageCount,
+                        readingTime: item.readingTime
                     }
                 }),
                 currentPage: 1,

@@ -10,6 +10,20 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.31] - 2026-01-08
+### Added
+- **Word Count Engine**: Implemented automated word and page counting during library scans.
+- **Reading Time Estimation**: Added estimated reading time calculation (based on words per minute).
+- **Technical Metrics UI**: Book details now display real word counts, page counts, and reading time in the "Información Técnica" section.
+- **Detailed Titles**: Added explicit "Título Inglés", "Título Romaji", and "Volumen" rows to the book details section.
+- **Title Refinement**: Enhanced title parsing to strip brackets from English/Series titles for a cleaner primary heading.
+
+## [v6.0.0-alpha.30] - 2026-01-08
+### Fixed
+- **Title Hierarchy**: Corrected display logic to prioritize English titles in book details and Romaji titles on catalog cards, satisfying user preference for better structural organization.
+- **Enhanced Parsing**: Updated the title metadata parser to support colons (`:`) and dots (`.`) as valid separators, improving extraction for titles like "Arifureta: From Commonplace to World's Strongest".
+- **Backend Standardization**: Synchronized `englishTitle` and `romajiTitle` fields across Local Library routes and the search/detail API actions.
+
 ## [v6.0.0-alpha.29] - 2026-01-08
 ### Fixed
 - **Pagination Centering**: Re-centered navigation buttons (Anterior/Subir/Siguiente) by enforcing symmetric widths using `flex-1`.

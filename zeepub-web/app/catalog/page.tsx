@@ -462,9 +462,6 @@ function CatalogContent() {
                                                     : ""}
                                             </h3>
 
-                                            {/* Authors */}
-                                            <p className="text-xs text-primary font-medium mb-1 truncate">{book.author}</p>
-
                                             {/* Genres display */}
                                             {book.categories && book.categories.length > 0 && (
                                                 <p className="text-[10px] text-muted-foreground line-clamp-2 italic mb-1">
@@ -611,7 +608,8 @@ function CatalogContent() {
                                             <h3 className="font-semibold text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
                                                 {(() => {
                                                     // Prioritize Romaji as primary in cards
-                                                    let base = entry.romaji || (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+                                                    let base = entry.romaji || entry.cleanTitle || (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+                                                    base = base.replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
 
                                                     // Add Type acronym suffix if it's a volume
                                                     if (!entry.is_folder) {

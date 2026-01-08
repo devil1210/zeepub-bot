@@ -4,6 +4,8 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from PIL import Image
 import io
+import re
+import html
 
 class EpubMetadataExtractor:
     """
@@ -119,7 +121,10 @@ class EpubMetadataExtractor:
                         elif prop == 'dcterms:modified':
                             self.metadata['modified_at_opf'] = meta.text
 
-                # 4. Encontrar la portada
+                # 4. Calcular métricas técnicas (palabras, páginas)
+                self._calculate_technical_metrics(z, opf_root, os.path.dirname(opf_path))
+
+                # 5. Encontrar la portada
                 self._extract_cover(z, opf_root, os.path.dirname(opf_path))
                 
                 return self.metadata
@@ -130,6 +135,50 @@ class EpubMetadataExtractor:
     def _get_dc_value(self, node, tag):
         found = node.find(f'dc:{tag}', self.NAMESPACE)
         return found.text if found is not None else None
+
+    def _calculate_technical_metrics(self, z, opf_root, base_dir):
+        """
+        Lee el contenido de texto del EPUB para contar palabras y estimar páginas.
+        """
+        try:
+            spine_nodes = opf_root.find('opf:spine', self.NAMESPACE)
+            manifest_node = opf_root.find('opf:manifest', self.NAMESPACE)
+            
+            if spine_nodes is None or manifest_node is None:
+                return
+
+            total_words = 0
+            
+            # Mapear itemref idref -> href
+            item_map = {}
+            for item in manifest_node.findall('opf:item', self.NAMESPACE):
+                item_map[item.get('id')] = item.get('href')
+
+            for itemref in spine_nodes.findall('opf:itemref', self.NAMESPACE):
+                idref = itemref.get('idref')
+                href = item_map.get(idref)
+                
+                if href and any(href.lower().endswith(ext) for ext in ['.xhtml', '.html', '.htm', '.xml']):
+                    try:
+                        full_href = os.path.join(base_dir, href).replace('\\', '/')
+                        content = z.read(full_href).decode('utf-8', errors='ignore')
+                        
+                        # Limpiar HTML básico y contar palabras
+                        text = re.sub(r'<[^>]+>', ' ', content) # Quitar tags
+                        text = html.unescape(text) # Unescape entidades
+                        words = len(re.findall(r'\w+', text))
+                        total_words += words
+                    except:
+                        continue
+
+            if total_words > 0:
+                self.metadata['word_count'] = total_words
+                # Heurística: 300 palabras por página es estándar para libros físicos
+                self.metadata['page_count'] = max(1, total_words // 300)
+                # Heurística: 200 palabras por minuto es una velocidad de lectura promedio
+                self.metadata['reading_time'] = max(1, total_words // 200)
+        except:
+            pass
 
     def _extract_cover(self, z, opf_root, base_dir):
         """

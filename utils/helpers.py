@@ -319,25 +319,47 @@ def parse_metadata_from_title(title_str: str) -> dict:
         # regex handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus)
         clean_no_vol = re.sub(rf"\s*[\-\–\—\−]?\s*{re.escape(full_vol_str)}.*", "", clean, flags=re.IGNORECASE).strip()
 
-    # 3. Split parts by various hyphen types to find English vs Romaji
+    # 3. Split parts by various hyphen types, colons, or dots to find English vs Romaji
     # re handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus), ― (horizontal bar)
-    # REQUIRE spaces around hyphens to avoid splitting names like Arya-san
-    parts = [p.strip() for p in re.split(r"\s+[\-\–\—\−\―]\s+", clean_no_vol) if p.strip()]
+    # Also support : and . as separators if followed by space
+    # REQUIRE spaces around hyphens/colons/dots to avoid splitting names like Arya-san or St. Louis
+    separators = r"\s+[\-\–\—\−\―\:\.]\s+|\s*[:]\s+"
+    parts = [p.strip() for p in re.split(separators, clean_no_vol) if p.strip()]
 
     romaji = ""
     series = clean_no_vol
 
     if len(parts) >= 2:
-        # Avoid taking "Storyline" or "Libro" as romaji
-        last_part = parts[-1]
-        if last_part.lower() not in ["storyline", "libro"]:
-            romaji = last_part
-            series = " - ".join(parts[:-1]) if len(parts) > 2 else parts[0]
-        elif len(parts) >= 3:
-            romaji = parts[-2]
-            series = " - ".join(parts[:-2]) if len(parts) > 3 else parts[0]
+        # If we have exactly 2 parts, we need to decide which is English (series) and which is Romaji
+        # Heuristic: The one with many non-ascii or Japanese characters is likely Romaji
+        # Or if one is "Arifureta" and other is "From Commonplace...", the shorter one usually is Romaji
+        p1, p2 = parts[0], parts[1]
+        
+        # Check for Japanese characters
+        has_jp = lambda s: bool(re.search(r'[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\uFF00-\uFFEF]', s))
+        
+        if has_jp(p2) and not has_jp(p1):
+            romaji = p2
+            series = p1
+        elif has_jp(p1) and not has_jp(p2):
+            romaji = p1
+            series = p2
+        else:
+            # Fallback heuristic: the last part is often the Romaji subtitle in our library
+            # UNLESS it's very long and the first part is short.
+            # For "Arifureta: From ...", p1="Arifureta", p2="From Commonplace..."
+            # Here "Arifureta" is Romaji.
+            if len(p1) < len(p2) * 0.5:
+                romaji = p1
+                series = p2
+            else:
+                romaji = p2
+                series = p1
 
-    # 4. Fallback for specific Romaji structures (Japanese characters)
+    # 4. Special case for "Storyline" or "Libro"
+    if romaji.lower() in ["storyline", "libro"] and len(parts) >= 3:
+        romaji = parts[-2]
+        series = " - ".join(parts[:-2])
     if not romaji:
         specific_romaji_pattern = r"\s+[\-\–\—\−]\s+([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s+[\-\–\—\−]\s+"
         sr_match = re.search(specific_romaji_pattern, clean, re.IGNORECASE)
@@ -355,14 +377,22 @@ def parse_metadata_from_title(title_str: str) -> dict:
         romaji = re.sub(r"^[^\w\(\)\[\]]+", "", romaji).strip()
         romaji = re.sub(r"[\-:\s]+$", "", romaji).strip()
 
-    # If we have Romaji, cleanTitle should be the English Part (series)
+    # REMOVE metadata brackets from series name for the "English Title" display
+    # (e.g. "Series [NL]" -> "Series")
+    series_clean = re.sub(r"\s*\[.*?\]\s*", " ", series).strip()
+    # Also remove trailing punctuation if any remained after bracket removal
+    series_clean = re.sub(r"[\-:\s]+$", "", series_clean).strip()
+
+    # If we have Romaji, cleanTitle should be the English Part (series_clean)
     # This allows the frontend to show English as main title if romaji exists
-    clean_title_result = series if romaji else clean_no_vol
-    # Final cleaning of clean_title_result
-    clean_title_result = re.sub(r"^[^\w\(\)\[\]]+", "", clean_title_result).strip()
+    clean_title_result = series_clean if romaji else series_clean or clean_no_vol
+    
+    # Ensure no double spaces
+    clean_title_result = re.sub(r"\s+", " ", clean_title_result).strip()
 
     return {
         "series": series,
+        "series_clean": series_clean, # New field for explicit clean English series
         "volume": volume,
         "clean_title": clean_title_result,
         "tags": tags,

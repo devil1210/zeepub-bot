@@ -58,6 +58,11 @@ class LocalBook(Base):
     book_type = Column(String(100))  # Ej: Novela Ligera, Novela Web
     epub_version = Column(String(20)) # Ej: 2.0, 3.0
     
+    # Advanced metrics
+    word_count = Column(Integer)
+    page_count = Column(Integer)
+    reading_time = Column(Integer) # in minutes
+    
     # Contenido
     description = Column(String(5000))
     demographics = Column(JSON)  # Ej: ["Seinen", "Adultos"]
@@ -104,5 +109,8 @@ class LocalBook(Base):
             "isbn": self.isbn,
             "asin": self.asin,
             "uriId": self.uri_id,
-            "epubVersion": self.epub_version
+            "epubVersion": self.epub_version,
+            "wordCount": self.word_count,
+            "pageCount": self.page_count,
+            "readingTime": self.reading_time
         }

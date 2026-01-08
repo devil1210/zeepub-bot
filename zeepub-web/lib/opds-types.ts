@@ -26,6 +26,7 @@ export interface OPDSEntry {
     tags?: string[]
     cleanTitle?: string
     romaji?: string
+    englishTitle?: string
     demographics?: string[]
     bookType?: string
     categories?: string[]
@@ -36,6 +37,9 @@ export interface OPDSEntry {
     layoutBy?: string
     epubVersion?: string
     fileSize?: number
+    wordCount?: number
+    pageCount?: number
+    readingTime?: number
 }
 
 export interface OPDSFeed {

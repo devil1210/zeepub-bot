@@ -163,6 +163,9 @@ class ScannerService:
             book.modified_at_opf = meta.get('modified_at_opf')
             book.book_type = meta.get('book_type')
             book.epub_version = meta.get('version')
+            book.word_count = meta.get('word_count')
+            book.page_count = meta.get('page_count')
+            book.reading_time = meta.get('reading_time')
             
             # Guardar Portada
             if extractor.cover_data:

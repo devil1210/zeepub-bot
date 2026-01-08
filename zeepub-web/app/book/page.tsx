@@ -29,6 +29,7 @@ interface BookDetail {
     categories?: string[]
     upUrl?: string
     romaji?: string
+    englishTitle?: string
     cleanTitle?: string
     tags?: string[]
     updatedDate?: string
@@ -308,8 +309,10 @@ function BookDetailContent() {
                             {/* Main Title - Clean English/Common Header */}
                             <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">
                                 {(() => {
-                                    // If we have Romaji, the main clean title is likely the English one we want on top
-                                    const base = (book.cleanTitle || book.title || "").split(' - ')[0].replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+                                    // Búsqueda inteligente: Priorizar título en inglés o título limpio
+                                    // Si tenemos englishTitle explícito, lo usamos.
+                                    // Si no, usamos cleanTitle (que suele ser la parte inglesa tras el split).
+                                    const base = (book.englishTitle || book.cleanTitle || book.title || "").split(' - ')[0].replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
                                     return base;
                                 })()}
                             </h1>
@@ -460,6 +463,26 @@ function BookDetailContent() {
                                 <span className="text-foreground font-semibold text-right ml-4">{book.illustrator}</span>
                             </div>
                         )}
+                        {book.englishTitle && (
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                                <span className="text-muted-foreground">Título Inglés</span>
+                                <span className="text-foreground font-semibold text-right ml-4">{book.englishTitle}</span>
+                            </div>
+                        )}
+                        {book.romaji && (
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                                <span className="text-muted-foreground">Título Romaji</span>
+                                <span className="text-foreground font-semibold text-right ml-4 italic">{book.romaji}</span>
+                            </div>
+                        )}
+                        {book.seriesIndex && (
+                            <div className="flex justify-between items-center py-0.5 border-b border-border/30">
+                                <span className="text-muted-foreground">Volumen</span>
+                                <span className="text-foreground font-bold text-right ml-4">
+                                    {["unico", "único"].includes(String(book.seriesIndex).toLowerCase()) ? "Único" : book.seriesIndex}
+                                </span>
+                            </div>
+                        )}
                         {book.isbn && (
                             <div className="flex justify-between items-center py-0.5 border-b border-border/30">
                                 <span className="text-muted-foreground">ISBN</span>
@@ -563,11 +586,15 @@ function BookDetailContent() {
                         </div>
                         <div className="flex justify-between items-center py-0.5 border-b border-border/30">
                             <span className="text-muted-foreground">Cantidad de Palabras</span>
-                            <span className="text-foreground font-semibold">{book.wordCount || "No disponible"}</span>
+                            <span className="text-foreground font-semibold">
+                                {book.wordCount ? book.wordCount.toLocaleString() : "No disponible"}
+                            </span>
                         </div>
                         <div className="flex justify-between items-center py-0.5 last:border-0">
                             <span className="text-muted-foreground">Tiempo de lectura</span>
-                            <span className="text-foreground font-semibold">{book.readingTime || "No disponible"}</span>
+                            <span className="text-foreground font-semibold">
+                                {book.readingTime ? `${book.readingTime} min` : "No disponible"}
+                            </span>
                         </div>
                     </div>
                 </Card>

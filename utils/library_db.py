@@ -39,7 +39,10 @@ def check_migrations():
             ('modified_at_opf', 'VARCHAR(50)'),
             ('book_type', 'VARCHAR(100)'),
             ('demographics', 'JSON'),
-            ('epub_version', 'VARCHAR(20)')
+            ('epub_version', 'VARCHAR(20)'),
+            ('word_count', 'INTEGER'),
+            ('page_count', 'INTEGER'),
+            ('reading_time', 'INTEGER')
         ]
         
         for col_name, col_type in new_cols:
