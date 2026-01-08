@@ -81,17 +81,20 @@ async def get_book_detail(
 async def get_catalog(
     source_id: Optional[int] = None,
     folder: Optional[str] = "",
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1),
     user_data: dict = Depends(require_mini_app_access)
 ):
     """
     Navega por la librería local simulando carpetas.
+    Soporta paginación y ordenamiento (carpetas primero, luego libros).
     """
     session = get_session()
     try:
         if not source_id:
             # Si no hay source_id, listar fuentes como carpetas raíz
             sources = session.query(LibrarySource).all()
-            return [
+            items = [
                 {
                     "id": f"source_{s.id}",
                     "title": s.name,
@@ -100,6 +103,13 @@ async def get_catalog(
                     "source_id": s.id
                 } for s in sources
             ]
+            # No paginamos las fuentes (suelen ser pocas)
+            return {
+                "items": items,
+                "total": len(items),
+                "page": 1,
+                "totalPages": 1
+            }
         
         source = session.query(LibrarySource).filter(LibrarySource.id == source_id).first()
         if not source:
@@ -108,8 +118,8 @@ async def get_catalog(
         # Buscar todos los libros en esta fuente
         books = session.query(LocalBook).filter(LocalBook.source_id == source_id).all()
         
-        results = []
-        folders = set()
+        books_in_folder = []
+        folders_set = set()
         
         base_path = source.path.rstrip("/")
         if folder:
@@ -122,21 +132,44 @@ async def get_catalog(
             
             if rel_path == ".":
                 # Libro en la carpeta actual
-                results.append(b.to_dict())
+                books_in_folder.append(b.to_dict())
             elif not rel_path.startswith(".."):
                 # Carpeta hija
                 subfolder = rel_path.split(os.sep)[0]
-                if subfolder not in folders:
-                    folders.add(subfolder)
-                    results.append({
-                        "id": f"dir_{source_id}_{subfolder}",
-                        "title": subfolder,
-                        "is_folder": True,
-                        "folder_path": os.path.join(folder, subfolder) if folder else subfolder,
-                        "source_id": source_id
-                    })
+                if subfolder not in folders_set:
+                    folders_set.add(subfolder)
         
-        return results
+        # Convertir carpetas a objetos
+        folders_list = []
+        for f_name in sorted(list(folders_set), key=lambda x: x.lower()):
+            folders_list.append({
+                "id": f"dir_{source_id}_{f_name}",
+                "title": f_name,
+                "is_folder": True,
+                "folder_path": os.path.join(folder, f_name) if folder else f_name,
+                "source_id": source_id
+            })
+            
+        # Ordenar libros
+        books_in_folder.sort(key=lambda x: x["title"].lower())
+        
+        # Combinar: Carpetas primero, luego libros
+        all_items = folders_list + books_in_folder
+        total = len(all_items)
+        
+        # Paginación
+        start = (page - 1) * page_size
+        end = start + page_size
+        paged_items = all_items[start:end]
+        
+        total_pages = (total + page_size - 1) // page_size
+        
+        return {
+            "items": paged_items,
+            "total": total,
+            "page": page,
+            "totalPages": total_pages
+        }
     finally:
         session.close()
 

@@ -87,7 +87,7 @@ function BookDetailContent() {
                 let result;
                 if (bookId.startsWith("local_")) {
                     const response = await fetch(`/api/library/books/${bookId}`, {
-                        headers: { "X-Telegram-Data": JSON.stringify(webApp?.initData || "") }
+                        headers: { "X-Telegram-Data": webApp?.initData || "" }
                     });
                     if (response.ok) {
                         result = await response.json();

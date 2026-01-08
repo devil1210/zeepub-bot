@@ -67,10 +67,18 @@ export class OpdsClient {
         const initData = getTelegramInitData()
 
         let apiPath = "/api/library/catalog"
+        let currentSourceId = ""
+        let currentFolder = ""
+        let currentPageNum = 1
+
         if (url && url.includes("source_id=")) {
             // Re-use source_id and folder from simulated "URL"
-            const params = new URLSearchParams(url.split("?")[1])
-            apiPath += `?source_id=${params.get("source_id")}&folder=${params.get("folder") || ""}`
+            const params = new URLSearchParams(url.includes("?") ? url.split("?")[1] : url)
+            currentSourceId = params.get("source_id") || ""
+            currentFolder = params.get("folder") || ""
+            currentPageNum = parseInt(params.get("page") || "1")
+
+            apiPath += `?source_id=${currentSourceId}&folder=${encodeURIComponent(currentFolder)}&page=${currentPageNum}`
         }
 
         try {
@@ -78,37 +86,68 @@ export class OpdsClient {
                 headers: { "X-Telegram-Data": initData }
             })
             if (!response.ok) return null
-            const items = await response.json()
+            const data = await response.json()
+
+            // Handle both old (array) and new (paginated object) response formats
+            const items = Array.isArray(data) ? data : (data.items || [])
+            const totalItems = Array.isArray(data) ? data.length : (data.total || data.items?.length || 0)
+            const totalPages = Array.isArray(data) ? 1 : (data.totalPages || 1)
+            const currentPage = Array.isArray(data) ? 1 : (data.page || 1)
 
             // Map local items to OPDSFeed format
-            return {
-                title: "Biblioteca Local",
-                currentPage: 1,
-                totalItems: items.length,
-                totalPages: 1,
-                entries: items.map((item: any) => ({
-                    id: item.id,
-                    title: item.title,
-                    author: item.author,
-                    summary: item.summary,
-                    cover_url: item.cover ? `/api/library/covers/${item.cover.split('/').pop()}` : undefined,
-                    is_folder: item.is_folder,
-                    series: item.series,
-                    seriesIndex: item.seriesIndex,
-                    tags: item.tags,
-                    year: item.modifiedAt?.split("-")[0],
-                    links: [
-                        {
-                            rel: item.is_folder ? "subsection" : "http://opds-spec.org/acquisition",
-                            href: item.is_folder
-                                ? `local?source_id=${item.source_id}&folder=${item.folder_path}`
-                                : item.downloadUrl,
-                            type: item.is_folder ? "application/atom+xml;profile=opds-catalog;kind=navigation" : "application/epub+zip"
-                        }
-                    ]
-                })),
+            const feed: OPDSFeed = {
+                title: currentFolder || "Biblioteca Local",
+                currentPage: currentPage,
+                totalItems: totalItems,
+                totalPages: totalPages,
+                entries: items.map((item: any) => {
+                    // Safe cover extracting
+                    let coverUrl = undefined
+                    if (item.cover && typeof item.cover === 'string') {
+                        const filename = item.cover.split(/[\\/]/).pop()
+                        if (filename) coverUrl = `/api/library/covers/${filename}`
+                    }
+
+                    return {
+                        id: item.id || `local_${Math.random().toString(36).substr(2, 9)}`,
+                        title: item.title || "Sin título",
+                        author: item.author || (item.is_folder ? "" : "Autor desconocido"),
+                        summary: item.summary || item.description || "",
+                        cover_url: coverUrl,
+                        is_folder: !!item.is_folder,
+                        series: item.series,
+                        seriesIndex: item.seriesIndex,
+                        tags: item.tags || [],
+                        romaji: item.romajiTitle,
+                        cleanTitle: item.title,
+                        year: (item.modifiedAt && typeof item.modifiedAt === 'string') ? item.modifiedAt.split("-")[0] : undefined,
+                        links: [
+                            {
+                                rel: item.is_folder ? "subsection" : "http://opds-spec.org/acquisition",
+                                href: item.is_folder
+                                    ? `local?source_id=${item.source_id}&folder=${encodeURIComponent(item.folder_path || "")}`
+                                    : item.downloadUrl,
+                                type: item.is_folder ? "application/atom+xml;profile=opds-catalog;kind=navigation" : "application/epub+zip"
+                            }
+                        ]
+                    }
+                }),
                 links: []
-            } as any as OPDSFeed
+            }
+
+            // Add pagination links if needed
+            if (currentSourceId) {
+                if (currentPage < totalPages) {
+                    feed.nextPage = `local?source_id=${currentSourceId}&folder=${encodeURIComponent(currentFolder)}&page=${currentPage + 1}`
+                    feed.links.push({ rel: "next", href: feed.nextPage, type: "" })
+                }
+                if (currentPage > 1) {
+                    feed.prevPage = `local?source_id=${currentSourceId}&folder=${encodeURIComponent(currentFolder)}&page=${currentPage - 1}`
+                    feed.links.push({ rel: "prev", href: feed.prevPage, type: "" })
+                }
+            }
+
+            return feed
         } catch (e) {
             console.error("[OpdsClient] Local fetch error:", e)
             return null
@@ -126,20 +165,29 @@ export class OpdsClient {
             if (!response.ok) return { results: [] }
             const items = await response.json()
             return {
-                results: items.map((item: any) => ({
-                    id: item.id,
-                    title: item.title,
-                    author: item.author,
-                    summary: item.summary,
-                    cover: item.cover ? `/api/library/covers/${item.cover.split('/').pop()}` : undefined,
-                    isFolder: false,
-                    downloadUrl: item.downloadUrl,
-                    series: item.series,
-                    seriesIndex: item.seriesIndex,
-                    tags: item.tags,
-                    romaji: item.romajiTitle,
-                    cleanTitle: item.title
-                })),
+                results: items.map((item: any) => {
+                    // Safe cover extracting
+                    let coverUrl = undefined
+                    if (item.cover && typeof item.cover === 'string') {
+                        const filename = item.cover.split(/[\\/]/).pop()
+                        if (filename) coverUrl = `/api/library/covers/${filename}`
+                    }
+
+                    return {
+                        id: item.id || `local_${Math.random().toString(36).substr(2, 9)}`,
+                        title: item.title || "Sin título",
+                        author: item.author || "Autor desconocido",
+                        summary: item.summary || item.description || "",
+                        cover: coverUrl,
+                        isFolder: false,
+                        downloadUrl: item.downloadUrl,
+                        series: item.series,
+                        seriesIndex: item.seriesIndex,
+                        tags: item.tags || [],
+                        romaji: item.romajiTitle,
+                        cleanTitle: item.title
+                    }
+                }),
                 currentPage: 1,
                 totalPages: 1
             }

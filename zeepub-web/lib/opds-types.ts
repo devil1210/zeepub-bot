@@ -37,4 +37,5 @@ export interface OPDSFeed {
     prevPage?: string | null
     currentPage: number
     totalPages?: number | null
+    totalItems?: number
 }

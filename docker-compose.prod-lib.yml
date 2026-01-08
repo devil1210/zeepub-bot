@@ -7,16 +7,19 @@ services:
       - .env
     volumes:
       - ./data:/app/data
-      - ./config:/app/config
-      - ./plugins:/app/plugins
       # La ruta del host se define en el .env como HOST_LIB_PATH
       - ${HOST_LIB_PATH}:/library:ro
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       - DATABASE_URL=sqlite:////app/data/url_cache.db
       - URL_CACHE_DB_PATH=data/url_cache.db
       - LOG_LEVEL=INFO
     ports:
       - "${DEV_PORT:-8001}:8000"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     logging:
       driver: "json-file"
       options:
