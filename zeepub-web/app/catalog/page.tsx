@@ -105,6 +105,7 @@ function CatalogContent() {
 
     // URL-based navigation: track current feed URL
     const [currentFeedUrl, setCurrentFeedUrl] = useState<string>("")
+    const [lastFeedUrlBeforeSearch, setLastFeedUrlBeforeSearch] = useState<string>("")
 
     // Replicando funcionalidad v3.13.8: Búsqueda reactiva en catálogo (inline)
     const { disableDisplacement, dataSaver } = useTheme()
@@ -123,6 +124,11 @@ function CatalogContent() {
             setSearchResults([])
             setIsSearching(false)
             return
+        }
+
+        // Save current feed URL before first search
+        if (!lastFeedUrlBeforeSearch && currentFeedUrl) {
+            setLastFeedUrlBeforeSearch(currentFeedUrl)
         }
 
         setIsSearching(true)
@@ -145,12 +151,21 @@ function CatalogContent() {
         } finally {
             setIsSearching(false)
         }
-    }, [searchQuery, searchType])
+    }, [searchQuery, searchType, lastFeedUrlBeforeSearch, currentFeedUrl])
 
     useEffect(() => {
         if (!searchQuery.trim()) {
             setSearchResults([])
             setIsSearching(false)
+            // Reload the last feed location when search is cleared
+            if (lastFeedUrlBeforeSearch) {
+                const feedUrl = searchParams.get("feed_url")
+                // Only reload if we're not already on that feed
+                if (feedUrl !== lastFeedUrlBeforeSearch && !currentFeed) {
+                    router.push(lastFeedUrlBeforeSearch ? `/catalog?feed_url=${encodeURIComponent(lastFeedUrlBeforeSearch)}` : '/catalog')
+                }
+                setLastFeedUrlBeforeSearch("")
+            }
             return
         }
 
@@ -172,7 +187,7 @@ function CatalogContent() {
                 clearTimeout(searchTimeout.current)
             }
         }
-    }, [searchQuery, handleCatalogSearch])
+    }, [searchQuery, handleCatalogSearch, lastFeedUrlBeforeSearch, currentFeed, searchParams, router])
 
     // Sync search query to URL for back-button persistence
     useEffect(() => {
