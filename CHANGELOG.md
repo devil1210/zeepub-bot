@@ -10,6 +10,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.18] - 2026-01-08
+### Fixed
+- **Translator Acronym Detection**: Added a heuristic to extract short translator acronyms from the end of titles (e.g., `[TFP]` from `... [TFP]`) and prioritize them over long `dc:publisher` names for a cleaner UI.
+- **Metadata Refinement**: Corrected the logic to ensure the UI matches the clean, compact reference design.
+
 ## [v6.0.0-alpha.17] - 2026-01-08
 ### Fixed
 - **Metadata Extraction**: Improved intelligent extraction of Romaji titles from DC:Title when using patterns like "Romaji - ...".

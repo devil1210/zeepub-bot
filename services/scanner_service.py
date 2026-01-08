@@ -107,7 +107,21 @@ class ScannerService:
             book.illustrator = meta.get('illustrator')
             book.translator = meta.get('translator')
             book.layout_by = meta.get('layout_by')
-            book.publisher = meta.get('publisher')
+            
+            # Publisher / Translation Group logic
+            publisher = meta.get('publisher')
+            # Heuristic: if title ends in [GROUP], and group is shorter than publisher, it's likely the acronym the user wants
+            if book.title and '[' in book.title and book.title.endswith(']'):
+                import re
+                match = re.search(r'\[([^\]]+)\]$', book.title)
+                if match:
+                    group_acronym = match.group(1).strip()
+                    # If we have no publisher, or the acronym is much shorter than the full name,
+                    # we prefer the acronym for the 'publisher' field used in the UI list
+                    if not publisher or len(group_acronym) < len(publisher) / 2:
+                        publisher = group_acronym
+            
+            book.publisher = publisher
             book.description = meta.get('description')
             book.language = meta.get('language') or 'es'
             book.tags = meta.get('tags', [])
