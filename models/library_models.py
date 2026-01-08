@@ -49,7 +49,8 @@ class LocalBook(Base):
     
     # Identificadores
     isbn = Column(String(20))
-    asin = Column(String(20))  # Amazon ID
+    asin = Column(String(50))  # Amazon ID
+    uri_id = Column(String(512)) # URI identifer
     
     # Fechas y Tipo
     published_at = Column(String(50))
@@ -58,6 +59,7 @@ class LocalBook(Base):
     
     # Contenido
     description = Column(String(5000))
+    demographics = Column(JSON)  # Ej: ["Seinen", "Adultos"]
     tags = Column(JSON)  # Lista de géneros/etiquetas
     language = Column(String(10), default='es')
     
@@ -81,6 +83,7 @@ class LocalBook(Base):
             "series": self.series,
             "seriesIndex": self.volume,
             "tags": self.tags,
+            "demographics": self.demographics,
             "description": self.description,
             "summary": self.description, # Alias para compatibilidad
             "fileSize": self.file_size,
@@ -98,5 +101,6 @@ class LocalBook(Base):
             "modifiedAtOpf": self.modified_at_opf,
             "bookType": self.book_type,
             "isbn": self.isbn,
-            "asin": self.asin
+            "asin": self.asin,
+            "uriId": self.uri_id
         }

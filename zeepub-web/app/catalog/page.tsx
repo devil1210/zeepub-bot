@@ -600,16 +600,18 @@ function CatalogContent() {
                                                 {folder ? (
                                                     <>
                                                         {entry.romaji || entry.series || entry.title}
-                                                        {entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
-                                                            ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
-                                                            : ""}
+                                                        {entry.bookType ? ` [${entry.bookType}]` :
+                                                            entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
+                                                                ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
+                                                                : ""}
                                                     </>
                                                 ) : (
                                                     <>
                                                         {entry.romaji || entry.title}
-                                                        {entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
-                                                            ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
-                                                            : ""}
+                                                        {entry.bookType ? ` [${entry.bookType}]` :
+                                                            entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
+                                                                ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
+                                                                : ""}
                                                     </>
                                                 )}
                                             </h3>
@@ -619,10 +621,10 @@ function CatalogContent() {
                                                 {entry.author}{entry.illustrator ? ` - ${entry.illustrator}` : ""}
                                             </p>
 
-                                            {/* Genres Line: HIDE ENTIRELY when inside a folder (Storyline view) */}
-                                            {!folder && entry.categories && entry.categories.length > 0 && (
+                                            {/* Genres & Demographics Line: HIDE ENTIRELY when inside a folder (Storyline view) */}
+                                            {!folder && (entry.categories?.length || entry.demographics?.length) && (
                                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-1 italic">
-                                                    {entry.categories.join(", ")}
+                                                    {[...(entry.demographics || []), ...(entry.categories || [])].join(", ")}
                                                 </p>
                                             )}
 

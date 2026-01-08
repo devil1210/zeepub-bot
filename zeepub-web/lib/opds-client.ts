@@ -137,6 +137,8 @@ export class OpdsClient {
                         seriesIndex: seriesIndex,
                         tags: item.tags || [],
                         categories: item.tags || [],
+                        demographics: item.demographics || [],
+                        bookType: item.bookType,
                         romaji: romaji,
                         publisher: item.publisher,
                         cleanTitle: title || item.title, // use cleaned title

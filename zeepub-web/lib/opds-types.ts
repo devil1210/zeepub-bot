@@ -26,9 +26,10 @@ export interface OPDSEntry {
     tags?: string[]
     cleanTitle?: string
     romaji?: string
+    demographics?: string[]
+    bookType?: string
     categories?: string[]
     updatedDate?: string
-    // Added for local library enriched metadata
     illustrator?: string
     translator?: string
     layoutBy?: string

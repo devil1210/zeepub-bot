@@ -10,6 +10,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Arquitectura v6 (Local First)**: Inicio de la migración hacia un sistema de indexación local propia.
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
+## [v6.0.0-alpha.19] - 2026-01-08
+### Fixed
+- **Deep OPF Integration**: Now extracting and storing all relevant OPF fields (ISBN13, Amazon ID, URI ID, Collection metadata).
+- **Metadata Classification**: Implemented automatic categorization of tags into Book Type (NL/NW/WN), Demographics (Seinen/Shounen), and Genres.
+- **Romaji Logic**: Refined Romaji title extraction and display to ensure a clean, consistent look.
+
 ## [v6.0.0-alpha.18] - 2026-01-08
 ### Fixed
 - **Translator Acronym Detection**: Added a heuristic to extract short translator acronyms from the end of titles (e.g., `[TFP]` from `... [TFP]`) and prioritize them over long `dc:publisher` names for a cleaner UI.

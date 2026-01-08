@@ -124,13 +124,41 @@ class ScannerService:
             book.publisher = publisher
             book.description = meta.get('description')
             book.language = meta.get('language') or 'es'
-            book.tags = meta.get('tags', [])
+            
+            # Smart Tag Categorization
+            raw_tags = meta.get('tags', [])
+            classified_type = meta.get('book_type')
+            classified_demographics = []
+            final_genres = []
+            
+            type_mapping = {"nl": "Novela Ligera", "nw": "Novela Web", "wn": "Web Novel"}
+            known_demographics = ["shounen", "seinen", "shoujo", "josei", "kodomo", "seijin", "adultos", "mature", "maduro"]
+            
+            for tag in raw_tags:
+                t_lower = tag.lower().strip()
+                # 1. Book Type?
+                if t_lower in type_mapping:
+                    if not classified_type: classified_type = type_mapping[t_lower]
+                elif "novela" in t_lower:
+                    if not classified_type: classified_type = tag
+                # 2. Demographic?
+                elif any(d in t_lower for d in known_demographics):
+                    classified_demographics.append(tag)
+                # 3. Otherwise a Genre
+                else:
+                    final_genres.append(tag)
+
+            book.book_type = classified_type
+            book.demographics = classified_demographics
+            book.tags = final_genres
+            
             book.series = meta.get('series')
             book.volume = meta.get('volume')
             
             # Enriched identifiers and dates
             book.isbn = meta.get('isbn')
             book.asin = meta.get('asin')
+            book.uri_id = meta.get('uri')
             book.published_at = meta.get('published_at')
             book.modified_at_opf = meta.get('modified_at_opf')
             book.book_type = meta.get('book_type')

@@ -79,14 +79,18 @@ class EpubMetadataExtractor:
                         elif role == 'ill' and not self.metadata.get('illustrator'):
                             self.metadata['illustrator'] = text
 
-                    # 3.2 Identificadores (ISBN, ASIN)
+                    # 3.2 Identificadores (ISBN, ASIN, URI)
                     for ident in metadata_node.findall('dc:identifier', self.NAMESPACE):
                         id_text = ident.text or ""
                         lower_id = id_text.lower()
-                        if 'isbn' in lower_id:
+                        if 'isbn:978' in lower_id: # Prioritize ISBN13
+                            self.metadata['isbn'] = id_text.split(':')[-1]
+                        elif 'isbn' in lower_id and not self.metadata.get('isbn'):
                             self.metadata['isbn'] = id_text.split(':')[-1]
                         elif 'amazon' in lower_id or 'asin' in lower_id:
                             self.metadata['asin'] = id_text.split(':')[-1]
+                        elif 'uri' in lower_id:
+                            self.metadata['uri'] = id_text.split('urn:uri:')[-1]
 
                     # 3.3 Etiquetas (Géneros)
                     tags = []
@@ -106,8 +110,9 @@ class EpubMetadataExtractor:
                             try: self.metadata['volume'] = float(meta.get('content'))
                             except: pass
                         elif prop == 'belongs-to-collection':
-                            self.metadata['series'] = meta.text
-                        elif prop == 'group-position':
+                            val = meta.text or metadata_node.find(f'.//opf:meta[@id="{meta.get("id")}"]', self.NAMESPACE).text
+                            self.metadata['series'] = val
+                        elif prop == 'group-position' and meta.get('refines') == '#serie':
                             try: self.metadata['volume'] = float(meta.text)
                             except: pass
                         elif prop == 'dcterms:modified':
