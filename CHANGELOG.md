@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0-alpha.51] - 2026-01-08
+### Changed
+- **Catalog Folder UI**: Cleaned up folder titles by removing redundant type tags (e.g., [NL]).
+- **Catalog Folder Badges**: Added book type badges (Novela Ligera/Novela Web) directly to catalog folder covers for better visual categorization.
+
 ## [v6.0.0-alpha.50] - 2026-01-08
 ### Fixed
 - **Search Navigation**: Fixed a bug where search results would overlay the catalog content after clicking a series; navigating to a folder now correctly clears the search query.

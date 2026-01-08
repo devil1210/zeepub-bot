@@ -619,6 +619,12 @@ function CatalogContent() {
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="w-20 h-28 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden border border-border/50 shadow-sm relative">
+                                                {/* Book Type Badge (NL/NW) */}
+                                                {entry.bookType && (
+                                                    <div className="absolute bottom-1 left-1 z-10 px-1 py-0.5 bg-black/60 backdrop-blur-sm text-white text-[7px] font-bold uppercase rounded border border-white/20">
+                                                        {entry.bookType}
+                                                    </div>
+                                                )}
                                                 {dataSaver ? (
                                                     <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
                                                         <ImageOff className="w-7 h-7 mb-1 opacity-20" />
@@ -632,7 +638,7 @@ function CatalogContent() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors mb-1">
-                                                    {entry.title}
+                                                    {entry.title.replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim()}
                                                 </h3>
                                                 {entry.author && entry.author !== "Colección" && (
                                                     <p className="text-xs text-primary font-medium line-clamp-1 mb-1">
