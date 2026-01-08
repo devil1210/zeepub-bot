@@ -118,6 +118,7 @@ export class OpdsClient {
                         series: item.series,
                         seriesIndex: item.series_index != null ? String(item.series_index) : undefined,
                         tags: item.tags || [],
+                        categories: item.tags || [],
                         romaji: item.romajiTitle,
                         cleanTitle: item.title,
                         year: (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,

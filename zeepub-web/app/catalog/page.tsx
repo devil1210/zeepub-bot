@@ -506,12 +506,14 @@ function CatalogContent() {
                                             )}
                                             {/* Genres display for folders/series */}
                                             {entry.categories && entry.categories.length > 0 && (
-                                                <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                                                <p className="text-[10px] text-muted-foreground line-clamp-2 italic">
                                                     {entry.categories.join(", ")}
                                                 </p>
                                             )}
                                         </div>
-                                        <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                        <div className="flex items-center">
+                                            <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                        </div>
                                     </div>
                                 </Card>
                             )

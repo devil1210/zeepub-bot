@@ -119,35 +119,58 @@ async def get_catalog(
         books = session.query(LocalBook).filter(LocalBook.source_id == source_id).all()
         
         books_in_folder = []
-        folders_set = set()
+        folders_map = {} # f_name -> representative_book (dict)
         
+        # Sort books by volume/title to get a good representative (like Vol 1)
+        sorted_books = sorted(books, key=lambda x: (x.series or "", x.volume or 0, x.title.lower()))
+
         base_path = source.path.rstrip("/")
         if folder:
             current_lookup = os.path.join(base_path, folder.strip("/"))
         else:
             current_lookup = base_path
 
-        for b in books:
+        for b in sorted_books:
+            b_dict = b.to_dict()
             rel_path = os.path.relpath(os.path.dirname(b.filepath), current_lookup)
             
             if rel_path == ".":
                 # Libro en la carpeta actual
-                books_in_folder.append(b.to_dict())
+                books_in_folder.append(b_dict)
             elif not rel_path.startswith(".."):
                 # Carpeta hija
                 subfolder = rel_path.split(os.sep)[0]
-                if subfolder not in folders_set:
-                    folders_set.add(subfolder)
+                if subfolder not in folders_map:
+                    folders_map[subfolder] = {
+                        "representative": b_dict,
+                        "all_series": {b.series} if b.series else set()
+                    }
+                else:
+                    if b.series:
+                        folders_map[subfolder]["all_series"].add(b.series)
         
-        # Convertir carpetas a objetos
+        # Convertir carpetas a objetos con metadatos de su "representante"
         folders_list = []
-        for f_name in sorted(list(folders_set), key=lambda x: x.lower()):
+        for f_name, meta in sorted(folders_map.items(), key=lambda x: x[0].lower()):
+            rep = meta["representative"]
+            # Si todos los libros en la carpeta pertenecen a una misma serie, usar el nombre de la serie como título
+            display_title = f_name
+            if len(meta["all_series"]) == 1:
+                series_name = list(meta["all_series"])[0]
+                if series_name:
+                    display_title = series_name
+
             folders_list.append({
                 "id": f"dir_{source_id}_{f_name}",
-                "title": f_name,
+                "title": display_title,
                 "is_folder": True,
                 "folder_path": os.path.join(folder, f_name) if folder else f_name,
-                "source_id": source_id
+                "source_id": source_id,
+                # Representative metadata
+                "cover": rep.get("cover"),
+                "author": rep.get("author"),
+                "tags": rep.get("tags"),
+                "series": rep.get("series")
             })
             
         # Ordenar libros
