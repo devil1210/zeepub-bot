@@ -122,6 +122,9 @@ export class OpdsClient {
                         romaji: item.romajiTitle,
                         cleanTitle: item.title,
                         year: (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
+                        illustrator: item.illustrator,
+                        translator: item.translator,
+                        layoutBy: item.layoutBy,
                         links: [
                             {
                                 rel: item.is_folder ? "subsection" : "http://opds-spec.org/acquisition",

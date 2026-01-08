@@ -48,6 +48,7 @@ interface Book {
     romaji?: string
     categories?: string[]
     updatedDate?: string
+    illustrator?: string
 }
 
 interface PaginationState {
@@ -63,6 +64,7 @@ function CatalogContent() {
     const { webApp, isAdminMode } = useTelegramContext()
     const { t } = useStrings()
     const searchParams = useSearchParams()
+    const folder = searchParams.get("folder")
     const router = useRouter()
 
     // URL-based navigation: track current feed URL
@@ -374,7 +376,11 @@ function CatalogContent() {
                 {/* Feed title */}
                 {currentFeed?.title && (
                     <div className="pb-1">
-                        <h1 className="text-lg font-bold text-foreground">{currentFeed.title}</h1>
+                        <h1 className="text-lg font-bold text-foreground">
+                            {currentFeed.title}
+                            {/* Heuristic: if we are in a folder and have books, it's likely a series storyline */}
+                            {folder && currentFeed.entries.some(e => !e.is_folder) && !currentFeed.title.includes("Storyline") ? " - Storyline" : ""}
+                        </h1>
                     </div>
                 )}
 
@@ -562,21 +568,21 @@ function CatalogContent() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Title - prioritize Romaji for cards */}
+                                            {/* Title - prioritize Romaji for volumes in series */}
                                             <h3 className="font-semibold text-foreground mb-1 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                                {entry.romaji || entry.series || entry.cleanTitle || entry.title}
+                                                {entry.romaji || entry.title}
                                                 {entry.tags?.some(t => ["NL", "NW", "WN"].includes(t)) ?
                                                     ` [${entry.tags.filter(t => ["NL", "NW", "WN"].includes(t)).join("] [")}]`
                                                     : ""}
                                             </h3>
 
-                                            {/* Authors */}
+                                            {/* Authors + Illustrator */}
                                             <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
-                                                {entry.author}
+                                                {entry.author}{entry.illustrator ? ` - ${entry.illustrator}` : ""}
                                             </p>
 
-                                            {/* Genres display */}
-                                            {entry.categories && entry.categories.length > 0 && (
+                                            {/* Hide Genres display if it's a series volume list to keep it compact */}
+                                            {(!folder || entry.is_folder) && entry.categories && entry.categories.length > 0 && (
                                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-1 italic">
                                                     {entry.categories.join(", ")}
                                                 </p>
@@ -585,9 +591,14 @@ function CatalogContent() {
                                             {/* Volume and Extra Tags (combined) */}
                                             <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1 flex-1">
                                                 <span className="font-medium">
-                                                    {!entry.seriesIndex || ["unico", "único"].includes(String(entry.seriesIndex).toLowerCase())
-                                                        ? "Volumen único"
-                                                        : `Volumen ${entry.seriesIndex}`}
+                                                    {(() => {
+                                                        if (!entry.seriesIndex || ["unico", "único"].includes(String(entry.seriesIndex).toLowerCase())) {
+                                                            return "Volumen único";
+                                                        }
+                                                        const volNum = parseFloat(entry.seriesIndex);
+                                                        const padded = isNaN(volNum) ? entry.seriesIndex : (volNum < 10 ? `0${volNum}` : String(volNum));
+                                                        return `Volumen ${padded}`;
+                                                    })()}
                                                 </span>
                                                 {entry.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
                                                     <span key={i} className="text-primary font-bold">[{tag}]</span>

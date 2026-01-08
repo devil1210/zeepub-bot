@@ -12,6 +12,7 @@ export interface OPDSEntry {
     title: string
     author: string
     summary: string
+    is_folder?: boolean
     cover_url?: string
     detail_url?: string
     subsection_url?: string // Added for explicit navigation support
@@ -27,6 +28,10 @@ export interface OPDSEntry {
     romaji?: string
     categories?: string[]
     updatedDate?: string
+    // Added for local library enriched metadata
+    illustrator?: string
+    translator?: string
+    layoutBy?: string
 }
 
 export interface OPDSFeed {

@@ -38,6 +38,7 @@ interface Book {
   romaji?: string
   categories?: string[]
   updatedDate?: string
+  illustrator?: string
 }
 
 interface PaginationState {
@@ -245,7 +246,7 @@ function SearchContent() {
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                      {book.title}
+                      {book.romaji || book.title}
                     </h3>
                     {book.isFolder && (
                       <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
@@ -253,7 +254,7 @@ function SearchContent() {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-primary font-medium mb-1 line-clamp-1">{book.author}</p>
+                  <p className="text-sm text-primary font-medium mb-1 line-clamp-1">{book.author}{book.illustrator ? ` - ${book.illustrator}` : ""}</p>
                   {/* Demographics and Genres display */}
                   {(() => {
                     const tags = book.categories || book.tags || [];
@@ -285,9 +286,14 @@ function SearchContent() {
                   {!book.isFolder && (
                     <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
                       <span className="font-medium">
-                        {!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())
-                          ? "Volumen único"
-                          : `Volumen ${book.seriesIndex}`}
+                        {(() => {
+                          if (!book.seriesIndex || ["unico", "único"].includes(String(book.seriesIndex).toLowerCase())) {
+                            return "Volumen único";
+                          }
+                          const volNum = parseFloat(book.seriesIndex);
+                          const padded = isNaN(volNum) ? book.seriesIndex : (volNum < 10 ? `0${volNum}` : String(volNum));
+                          return `Volumen ${padded}`;
+                        })()}
                       </span>
                       {book.tags?.filter(t => !["NL", "NW", "WN"].includes(t)).map((tag, i) => (
                         <span key={i} className="text-primary font-semibold">[{tag}]</span>
