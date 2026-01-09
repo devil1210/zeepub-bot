@@ -14,6 +14,7 @@ import {
     Search,
     ImageOff,
     Calendar,
+    X,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { OpdsClient } from "@/lib/opds-client"
@@ -457,6 +458,20 @@ function CatalogContent() {
                             className="pl-12 h-12 bg-card border-border rounded-xl shadow-sm focus:ring-primary/20"
                         />
                     </div>
+                    {searchQuery && (
+                        <Button
+                            onClick={() => {
+                                setSearchQuery("")
+                                setSearchResults([])
+                                router.push('/catalog')
+                            }}
+                            variant="outline"
+                            size="icon"
+                            className="h-12 w-12 rounded-xl border-border"
+                        >
+                            <X className="w-5 h-5" />
+                        </Button>
+                    )}
                     <select
                         value={searchType}
                         onChange={(e) => setSearchType(e.target.value)}
