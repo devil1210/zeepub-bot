@@ -24,7 +24,7 @@ def upgrade():
         sa.Column('name', sa.String(50), nullable=False),
         sa.Column('priority', sa.Integer(), nullable=False),
         sa.Column('color', sa.String(20), nullable=True),
-        sa.Column('has_mini_app_access', sa.Boolean(), nullable=False, server_default='0'),
+        sa.Column('has_mini_app_access', sa.Boolean(), nullable=False, server_default=sa.text('false')),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.PrimaryKeyConstraint('id')
@@ -33,12 +33,12 @@ def upgrade():
     # Insert default levels
     op.execute("""
         INSERT INTO user_levels (id, name, priority, color, has_mini_app_access) VALUES
-        (1, 'Administrador', 100, '#FF6B6B', 1),
-        (2, 'Staff', 90, '#4ECDC4', 1),
-        (3, 'Premium', 80, '#FFD93D', 1),
-        (4, 'VIP', 70, '#A8E6CF', 1),
-        (5, 'Patrocinador', 60, '#C7CEEA', 1),
-        (6, 'Lector', 50, '#B4B4B4', 0)
+        (1, 'Administrador', 100, '#FF6B6B', TRUE),
+        (2, 'Staff', 90, '#4ECDC4', TRUE),
+        (3, 'Premium', 80, '#FFD93D', TRUE),
+        (4, 'VIP', 70, '#A8E6CF', TRUE),
+        (5, 'Patrocinador', 60, '#C7CEEA', TRUE),
+        (6, 'Lector', 50, '#B4B4B4', FALSE)
     """)
 
     # Add level_id column to users table
