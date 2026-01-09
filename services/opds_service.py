@@ -196,10 +196,9 @@ async def mostrar_colecciones(
             titulo_boton = col["titulo"]
 
             if (
-                uid not in config.ADMIN_USERS
-                and col["titulo"] == "Todas las bibliotecas"
+                col["titulo"] == "Todas las bibliotecas"
             ):
-                titulo_boton = "📚 Biblioteca ZeePubs"
+                titulo_boton = "📚 Mi Catálogo"
 
             keyboard.append(
                 [InlineKeyboardButton(titulo_boton, callback_data=f"col|{i}")]

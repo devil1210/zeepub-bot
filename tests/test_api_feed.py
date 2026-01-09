@@ -103,7 +103,7 @@ async def test_get_feed_renaming_logic():
         )
 
         # Verify renaming
-        assert result["entries"][0]["title"] == "Biblioteca Zeepubs"
+        assert result["entries"][0]["title"] == "Mi Catálogo"
         # Verify link override
         assert result["entries"][0]["subsection_url"] == "http://final-deep-link"
 
@@ -131,8 +131,8 @@ async def test_get_feed_no_renaming_for_admin():
             url="http://root", user_data={"role": "admin", "has_mini_app_access": True}
         )
 
-        # Verify NO renaming
-        assert result["entries"][0]["title"] == "Todas las bibliotecas"
+        # Verify Unified renaming (now everyone sees Mi Catálogo)
+        assert result["entries"][0]["title"] == "Mi Catálogo"
 
 
 @pytest.mark.asyncio

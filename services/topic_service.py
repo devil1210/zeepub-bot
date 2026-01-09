@@ -4,7 +4,7 @@ import logging
 from typing import Dict, Optional
 from telegram import Bot
 from config.config_settings import config
-from repositories.user_repository import user_repo
+# from repositories.user_repository import user_repo (moved to methods)
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ class TopicService:
         # o para recuperar IDs existentes.
         # Por ahora, simulamos el almacenamiento en el estado o DB.
 
+        from repositories.user_repository import user_repo
         user_data = await user_repo.get_user_by_id(user_id)
         if not user_data:
             return {}
@@ -61,6 +62,7 @@ class TopicService:
 
     async def get_topic_id(self, user_id: int, slug: str) -> Optional[int]:
         """Recupera el thread_id para un slug específico."""
+        from repositories.user_repository import user_repo
         user_data = await user_repo.get_user_by_id(user_id)
         if not user_data:
             return None

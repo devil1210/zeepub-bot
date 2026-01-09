@@ -18,11 +18,14 @@ class BotInitializer:
     """Maneja la inicialización de schedulers y notificaciones."""
 
     @staticmethod
-    async def initialize_schedulers(bot):
+    async def initialize_schedulers(application):
         """Inicializa todos los schedulers del sistema y métricas."""
         # Iniciar servidor de métricas
         if config.ENABLE_METRICS:
             metrics.start_server(config.METRICS_PORT)
+
+        # Bot instance for legacy compatibility if needed by funcs
+        bot = application.bot
 
         schedulers = [
             ("weekly_reports", start_weekly_scheduler),
@@ -39,7 +42,13 @@ class BotInitializer:
 
         for name, scheduler_func in schedulers:
             try:
-                scheduler_func(bot)
+                # Some funcs expect bot, some expect application. 
+                # Weekly, Backup, Daily expect bot (legacy behavior)
+                # Recommendations now expects application for job_queue
+                if name == "recommendations":
+                    scheduler_func(application)
+                else:
+                    scheduler_func(bot)
                 logger.info(f"{name} scheduler iniciado")
             except Exception as e:
                 logger.error(f"Error iniciando {name}: {e}", exc_info=True)

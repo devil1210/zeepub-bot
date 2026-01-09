@@ -4,7 +4,7 @@ import logging
 import os
 from config.config_settings import config
 from utils.security import validate_telegram_data
-from services.user_service import get_effective_user, user_repo
+from services.user_service import get_effective_user
 
 logger = logging.getLogger(__name__)
 

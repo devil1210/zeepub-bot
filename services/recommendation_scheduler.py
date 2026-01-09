@@ -2,7 +2,7 @@ import logging
 import asyncio
 from typing import List, Dict, Any
 from telegram.ext import ContextTypes
-from services.user_service import user_repo
+# from repositories.user_repository import user_repo (moved to function to avoid circular import)
 from services.recommendation_service import RecommendationService
 from config.config_settings import config
 import json
@@ -21,6 +21,7 @@ async def job_weekly_recommendations(context: ContextTypes.DEFAULT_TYPE):
     # Optimización: Podríamos buscar solo aquellos con settings LIKE '%recommendations_enabled": true%' 
     # pero JSON en texto es frágil. Mejor iterar en Python o añadir columna dedicada si escala.
     try:
+        from repositories.user_repository import user_repo
         # Recuperamos IDs raw desde repo o DB directa
         async with user_repo.db.connection() as conn:
             cursor = await conn.execute("SELECT telegram_id, settings FROM users")
@@ -77,26 +78,24 @@ async def send_recommendation_to_user(context: ContextTypes.DEFAULT_TYPE, uid: i
     except Exception as e:
         logger.debug(f"No se pudo enviar recomendación a {uid} (bloqueado?): {e}")
 
-def start_recommendations_scheduler(bot):
+def start_recommendations_scheduler(application):
     """
     Inicia el scheduler si no está ya corriendo.
-    Se añade al JobQueue del bot.
+    Se añade al JobQueue del application.
     """
-    if not bot.job_queue:
+    if not application.job_queue:
         logger.warning("No JobQueue available for recommendations.")
         return
 
-    # Ejecutar cada Viernes a las 18:00 (por ejemplo)
-    # O cada 7 días. Para simplificar, usamos run_repeating con intervalo de 1 semana.
-    # En producción ideal: usar run_daily con days=(5,)
+    # ... rest of the logic ...
     import datetime
     time_to_run = datetime.time(hour=17, minute=00)  # 5 PM
     
     # Check if job exists named 'weekly_recs'
-    current_jobs = bot.job_queue.get_jobs_by_name('weekly_recs')
+    current_jobs = application.job_queue.get_jobs_by_name('weekly_recs')
     if not current_jobs:
         # Run every Friday (5)
-        bot.job_queue.run_daily(
+        application.job_queue.run_daily(
             job_weekly_recommendations,
             time=time_to_run,
             days=(4,),  # 0=Monday, 4=Friday

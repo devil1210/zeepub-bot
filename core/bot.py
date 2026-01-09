@@ -252,7 +252,7 @@ class ZeePubBot:
                     raise
 
         # Inicializar schedulers y updates usando BotInitializer
-        await BotInitializer.initialize_schedulers(self.app.bot)
+        await BotInitializer.initialize_schedulers(self.app)
         await BotInitializer.check_update_state(self.app.bot)
 
     async def stop_async(self):

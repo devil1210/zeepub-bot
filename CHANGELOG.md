@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.1] - 2026-01-09
+### Arreglado
+- **Crash Crítico**: Corregido `UnboundLocalError` en el manejador cada vez que se intentaba abrir un libro.
+- **Scheduler**: Corregido `AttributeError` al intentar acceder a `job_queue` desde el objeto bot (ahora usa la aplicación).
+- **Importaciones Circulares**: Resueltos problemas de dependencias circulares en los servicios de recomendaciones y tópicos.
+- **Mi Catálogo**: Restaurada la sección "Mi Catálogo" con nombre unificado y botón de acceso directo en el menú de administrador.
+
 ## [v6.0.0] - 2026-01-09
 ### Añadido
 - **Versión Estable**: Lanzamiento oficial de la versión 6.0.0.

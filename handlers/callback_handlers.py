@@ -48,6 +48,26 @@ async def set_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         return
 
+
+async def ver_catalogo_normal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Acceso directo al catálogo normal para administradores."""
+    query = update.callback_query
+    try:
+        await query.answer()
+    except Exception:
+        pass
+    uid = update.effective_user.id
+    st = state_manager.get_user_state(uid)
+
+    root = config.OPDS_ROOT_START
+    st["opds_root"] = root
+    st["opds_root_base"] = root
+    st["historial"] = []
+    st["ultima_pagina"] = root
+    st["titulo"] = "📚 Categorías"
+
+    await mostrar_colecciones(update, context, root, from_collection=False)
+
     # Destino manual
     if destino == "otro":
         st["esperando_destino_manual"] = True
@@ -241,6 +261,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ):
             st.pop(k, None)
         key = data.split("|", 1)[1]
+        libro = None
         if key.startswith("local_"):
             # Stateless lookup from DB (for recommendations/scheduler)
             try:
@@ -1182,6 +1203,7 @@ async def cancelar_donacion(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def register_handlers(app):
     # CallbackQuery handlers
     app.add_handler(CallbackQueryHandler(set_destino, pattern="^destino\\|"))
+    app.add_handler(CallbackQueryHandler(ver_catalogo_normal, pattern="^ver_catalogo_normal$"))
     app.add_handler(CallbackQueryHandler(buscar_epub, pattern="^buscar$"))
     app.add_handler(
         CallbackQueryHandler(

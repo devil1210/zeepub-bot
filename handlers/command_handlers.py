@@ -183,6 +183,7 @@ class CommandHandlers:
                     )
                 ],
                 [InlineKeyboardButton("📣 ZeePubs", callback_data="destino|@ZeePubs")],
+                [InlineKeyboardButton("📚 Mi Catálogo", callback_data="ver_catalogo_normal")],
                 [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
             ]
 

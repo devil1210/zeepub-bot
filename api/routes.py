@@ -101,6 +101,8 @@ async def get_feed(
             "añadido recientemente",
             "todas las bibliotecas",
             "all libraries",
+            "mi catálogo",
+            "biblioteca zeepubs",
         }
 
         is_root = not url or url == "/"
@@ -120,10 +122,10 @@ async def get_feed(
 
             # Special handling for "Todas las bibliotecas"
             entry_override_url = None
-            if not is_admin and (
+            if (
                 title == "Todas las bibliotecas" or title == "All libraries"
             ):
-                title = "Biblioteca Zeepubs"
+                title = "Mi Catálogo"
                 try:
                     libraries_url = None
                     for link in getattr(entry, "links", []):
