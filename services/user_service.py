@@ -47,7 +47,7 @@ async def remove_user(telegram_id: int):
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
-async def update_user_status_label(telegram_id: int, new_label: Optional[str]):
+async def update_user_status_label(telegram_id: int, new_label: Optional[str]) -> None:
     # Check if user exists first
     info = await get_user_info(telegram_id)
     if not info:
@@ -55,7 +55,7 @@ async def update_user_status_label(telegram_id: int, new_label: Optional[str]):
         eff = await get_effective_user(telegram_id)
         role = eff.get("role", "free")
         # Upsert with new label
-        await upsert_user(telegram_id, role=role, custom_status=new_label)
+        await upsert_user(telegram_id, role=str(role), custom_status=new_label)
     else:
         # Just update
         await user_repo.update_status(telegram_id, new_label)
@@ -63,7 +63,7 @@ async def update_user_status_label(telegram_id: int, new_label: Optional[str]):
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
-async def update_user_nickname(telegram_id: int, new_nickname: Optional[str]):
+async def update_user_nickname(telegram_id: int, new_nickname: Optional[str]) -> None:
     # Check if user exists first
     info = await get_user_info(telegram_id)
     if not info:
@@ -71,7 +71,7 @@ async def update_user_nickname(telegram_id: int, new_nickname: Optional[str]):
         eff = await get_effective_user(telegram_id)
         role = eff.get("role", "free")
         # Upsert with new nickname
-        await upsert_user(telegram_id, role=role, nickname=new_nickname)
+        await upsert_user(telegram_id, role=str(role), nickname=new_nickname)
     else:
         await user_repo.update_nickname(telegram_id, new_nickname)
 
@@ -118,10 +118,10 @@ async def get_effective_user(uid: int, use_cache: bool = True) -> Dict[str, Any]
         return result
 
     # 2. Check DB (Async)
-    info = await get_user_info(uid)
+    info: Optional[Dict[str, Any]] = await get_user_info(uid)
     if info:
         # Check expiration
-        expires_at = info.get("expires_at")
+        expires_at: Optional[datetime] = info.get("expires_at")
         if expires_at and expires_at < datetime.now():
             # Expired
             result = {
@@ -129,18 +129,22 @@ async def get_effective_user(uid: int, use_cache: bool = True) -> Dict[str, Any]
                 "status_label": "Expirado",
                 "expires_at": expires_at,
                 "nickname": info.get("nickname"),
+                "custom_status": None,
+                "has_mini_app_access": False,
             }
         else:
-            role = info.get("role", "free").lower()
+            role_db = info.get("role", "free")
+            role_str = role_db.lower() if isinstance(role_db, str) else "free"
             custom_status = info.get("custom_status")
 
             # Normalize DB roles to internal standards just in case
             result = {
-                "role": role,
-                "status_label": custom_status or role.capitalize(),
+                "role": role_str,
+                "status_label": custom_status or role_str.capitalize(),
                 "expires_at": expires_at,
                 "nickname": info.get("nickname"),
                 "custom_status": custom_status,
+                # has_mini_app_access will be set by default logic below
             }
 
     # 4. Fallback default policy for non-DB users
@@ -224,7 +228,7 @@ async def get_users_by_role(role: str) -> list[Dict[str, Any]]:
     return await user_repo.get_by_role(role)
 
 
-async def upgrade_user_level(telegram_id: int, new_level_name: str):
+async def upgrade_user_level(telegram_id: int, new_level_name: str) -> None:
     """
     Actualiza el nivel de un usuario buscando por nombre de nivel.
     """

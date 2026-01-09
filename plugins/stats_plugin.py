@@ -132,34 +132,49 @@ class StatsPlugin(BasePlugin):
             )
             return
 
-        # Modo Resumen Diario
-        data = await get_daily_stats()
-
-        # Formatear desglose por roles
-        by_role = data.get("by_role", {})
-        roles_txt = ""
-        if by_role:
-            roles_txt = "\n🏷️ <b>Por Nivel (Activos):</b>\n"
-            for r, count in by_role.items():
-                roles_txt += f"  • {r.capitalize()}: {count}\n"
+        # Modo Resumen Diario (Dashboard Completo)
+        from services.stats_service import get_stats_summary
+        
+        # Obtener métricas paralelas
+        stats_day = await get_stats_summary("day")
+        stats_month = await get_stats_summary("month")
+        stats_year = await get_stats_summary("year")
+        stats_all = await get_stats_summary("all")
 
         cms = context.application.plugin_manager.get_plugin("custom_messages")
+        
+        # Definir emojis
+        e_dl = "⬇️"
+        e_us = "👥"
+        e_new = "🆕"
+
         base_summary = (
-            "📊 <b>Estadísticas Diarias (Hoy)</b>\n\n"
-            f"👥 <b>Usuarios Únicos:</b> {data['unique_users']}\n"
-            f"⬇️ <b>Descargas Totales:</b> {data['total_downloads']}\n"
-            f"{roles_txt}"
+            "📊 <b>Panel de Estadísticas</b>\n\n"
+            "<b>Hoy:</b>\n"
+            f"{e_dl} Descargas: {stats_day['total_downloads']}\n"
+            f"{e_us} Activos: {stats_day['unique_users']}\n"
+            f"{e_new} Nuevos: {stats_day['new_users']}\n\n"
+            
+            "<b>Este Mes:</b>\n"
+            f"{e_dl} Descargas: {stats_month['total_downloads']}\n"
+            f"{e_us} Activos: {stats_month['unique_users']}\n"
+            f"{e_new} Nuevos: {stats_month['new_users']}\n\n"
+            
+            "<b>Este Año:</b>\n"
+            f"{e_dl} Descargas: {stats_year['total_downloads']}\n"
+            f"{e_us} Activos: {stats_year['unique_users']}\n\n"
+            
+            "<b>Histórico Total:</b>\n"
+            f"{e_dl} Descargas: {stats_all['total_downloads']}\n"
+            f"{e_new} Usuarios Totales: {stats_all['new_users']}\n"
         )
-        text = (
-            await cms.get_text(
-                "stats_daily_summary",
-                UniqueUsers=data['unique_users'],
-                TotalDownloads=data['total_downloads'],
-                RolesBreakdown=roles_txt
-            )
-            if (cms and cms.enabled)
-            else base_summary
-        )
+        
+        # Intentar usar template si existe (opcional)
+        text = base_summary
+        if cms and cms.enabled:
+             # Check if template exists before trying to use it to avoid errors if user hasn't added it yet
+             # For now, we stick to the hardcoded enhanced format or update template later
+             pass
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,

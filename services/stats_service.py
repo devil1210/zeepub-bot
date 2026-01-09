@@ -52,31 +52,27 @@ def record_activity(uid: int, activity_type: str = "download"):
     _save_stats(data)
 
 
-async def get_daily_stats() -> Dict[str, Any]:
-    data = _load_stats()
-
-    unique_users = data["users"]
-    total_downloads = data["downloads"]
-
-    # Calculate breakdown by role
-    by_role = {}
-    if unique_users:
-        # Avoid circular import at top level if possible, or handle inside function
-        from services.user_service import get_effective_user
-
-        for uid in unique_users:
-            try:
-                user_info = await get_effective_user(uid)
-                role = user_info.get("role", "free")
-                by_role[role] = by_role.get(role, 0) + 1
-            except Exception as e:
-                logger.error(f"Error getting effective user for stats {uid}: {e}")
-
+async def get_stats_summary(period: str = "day") -> Dict[str, Any]:
+    """
+    Obtiene métricas del periodo solicitado consultando la BD real via db_manager.
+    period: 'day', 'month', 'year', 'all'
+    """
+    from core.db_manager import db_manager
+    
+    # Obtener conteos crudos (Descargas, Usuarios Activos, Nuevos Usuarios)
+    counts = await db_manager.get_stats_counts(period)
+    
+    # Para consistencia con el plugin anterior, mapeamos las keys
     return {
-        "unique_users": len(unique_users),
-        "total_downloads": total_downloads,
-        "by_role": by_role,
+        "unique_users": counts["active_users"],
+        "total_downloads": counts["downloads"],
+        "new_users": counts["new_users"],
+        "by_role": {} # TODO: Implementar desglose por rol si es crítico, pero para rendimiento es mejor omitir en queries masivos
     }
+
+async def get_daily_stats() -> Dict[str, Any]:
+    """Compatibility wrapper for existing calls."""
+    return await get_stats_summary("day")
 
 
 def reset_stats():

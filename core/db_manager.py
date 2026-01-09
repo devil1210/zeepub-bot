@@ -141,8 +141,58 @@ class DatabaseManager:
                     if "duplicate column" not in str(e).lower():
                         logger.debug(f"Notice during migration (download_history {col[0]}): {e}")
 
+            # Optimización: Índices para estadísticas
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_download_history_stats 
+                ON download_history(downloaded_at)
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_users_added_at 
+                ON users(added_at)
+            """)
+
             await conn.commit()
             logger.info(f"Database initialized and schema verified at {self.db_path}")
+
+    async def get_stats_counts(self, period: str = "day") -> dict:
+        """
+        Obtiene contadores de descargas y usuarios para un periodo dado.
+        period: 'day', 'month', 'year', 'all'
+        """
+        async with self.connection() as conn:
+            if period == "all":
+                time_filter = "1=1"
+                params = ()
+            else:
+                # SQLite modifier strings
+                modifiers = {
+                    "day": "start of day",
+                    "month": "start of month",
+                    "year": "start of year"
+                }
+                mod = modifiers.get(period, "start of day")
+                
+                time_filter = f"downloaded_at >= datetime('now', '{mod}')"
+                params = ()
+
+            # Total Downloads
+            cursor = await conn.execute(f"SELECT COUNT(*) FROM download_history WHERE {time_filter}", params)
+            downloads = (await cursor.fetchone())[0]
+
+            # Unique Users (Downloaders)
+            cursor = await conn.execute(f"SELECT COUNT(DISTINCT user_id) FROM download_history WHERE {time_filter}", params)
+            active_users = (await cursor.fetchone())[0]
+
+            # New Users joined
+            user_time_filter = time_filter.replace("downloaded_at", "added_at")
+            cursor = await conn.execute(f"SELECT COUNT(*) FROM users WHERE {user_time_filter}", params)
+            new_users = (await cursor.fetchone())[0]
+
+            return {
+                "downloads": downloads,
+                "active_users": active_users,
+                "new_users": new_users
+            }
 
     @asynccontextmanager
     async def connection(self):
