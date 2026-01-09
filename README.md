@@ -1,287 +1,87 @@
 # Zeepub Bot
 
 **Zeepub Bot** es un bot de Telegram avanzado que permite buscar y descargar libros electrónicos en formato EPUB. Integra una **Mini App** (Web App) para una experiencia de usuario moderna, búsqueda por palabra clave, navegación por catálogos OPDS y un sistema robusto de límites de descarga.
-![Bot Version](https://img.shields.io/badge/ZeePub_Bot-v4.20.11-blue?style=for-the-badge&logo=telegram)
+
+![Bot Version](https://img.shields.io/badge/ZeePub_Bot-v6.0.0-blue?style=for-the-badge&logo=telegram)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.9%2B-yellow)
 ![Docker](https://img.shields.io/badge/docker-enabled-blue)
 
 ***
 
-## 📋 Características
+## 📋 Características v6 (Estable)
 
-- **Gestión de Libros**: Búsqueda, descarga y organización de metadatos EPUB.
-- **Opción "Evil"**: Publicación directa a canales (Admin only).
-- **Integración OPDS**: Navegación fluida por catálogos.
-- **Sistema de Actualizaciones**: Actualización automática vía Watchtower con comando `/update_system` y modo forzado `/update_system force`.
-- **Gestión de Usuarios**: Niveles, baneos, y límites de descarga.
-- **Reportes**: Estadísticas diarias y semanales.
-- **Plugins**: Arquitectura extensible.
-- **Soporte para Grupos**: Funciona en grupos con topics/forums, respondiendo en el hilo correcto.
-- **Seguridad**: Validación criptográfica de `initData` para prevenir suplantación de identidad.
-- **Modo Administrador**:
-  - Acceso a bibliotecas restringidas (Evil Mode).
-  - Selector de destino para publicar libros en canales o chats específicos.
-- **Límites de Descarga**: 
-  - Sistema de niveles (Lector, VIP, Premium) con cuotas configurables.
-  - Persistencia de contadores de descarga que sobreviven reinicios del bot.
-  - Reset automático diario a medianoche (00:00).
-  - Visualización del tiempo restante hasta el próximo reset en `/status`.
-- **Comandos Dinámicos**:
-  - `/help` muestra comandos específicos según el rol del usuario (Lector, Publisher, Admin).
-  - Todas las descripciones en español.
-  - Comandos básicos para todos los usuarios.
-  - Comandos adicionales para Publishers (backup, links, exportación).
-  - Comandos administrativos exclusivos para Admins (evil mode, reset, debug).
-- **Arquitectura Moderna**:
-  - **Backend**: Python (FastAPI + python-telegram-bot) asíncrono.
-  - **Frontend**: React (Vite) servido estáticamente.
-  - **Infraestructura**: Docker + Cloudflare Tunnel (sin abrir puertos).
-  - **Base de Datos**: SQLite por defecto (v6), con soporte opcional para PostgreSQL.
-- **Arquitectura Modular (Plugins)**:
-  - **Custom Messages**: Almacena y envía mensajes/media frecuentas, bienvenidas y saludos custom.
-  - **Links Manager**: Gestión y auditoría de links acortados.
-  - **Donations**: Información de donaciones y niveles.
-  - **Maintenance**: Herramientas de backup, restore y gestión de historial.
+- **Librería Local (Local First)**: Indexación propia de metadatos para una búsqueda ultra-rápida e independiente.
+- **Búsqueda Instantánea**: Motor SQLite FTS5 para encontrar libros por título, autor, serie o género.
+- **UI Premium Minimalista**: Interfaz de Mini App pulida con efectos de cristal (Glassmorphism) y animaciones suaves.
+- **Optimización de Imágenes**: Generación automática de miniaturas (thumbnails) para acelerar la carga en móviles.
+- **Métricas Técnicas**: Conteo automático de palabras, páginas y estimación de tiempo de lectura.
+- **Exportación Unificada**: Programador diario configurable que respalda tanto la caché de URLs como la base de datos de la librería.
+- **Gestión de Niveles**: Sistema de cuotas para usuarios VIP y Premium con límites persistentes.
+- **Arquitectura Modular (Plugins)**: Plugins activables para Mensajes Personalizados, Donaciones, Mantenimiento y más.
 
-## 🧩 Plugins y Comandos
+## 🧩 Plugins y Comandos Destacados
 
-El bot se ha dividido en módulos activables.
+### 1. Mantenimiento y Datos (`ENABLE_DB_MAINTENANCE`)
+- `/scan_library [force]`: (Admin) Escanea e indexa la biblioteca local.
+- `/set_export_time HH:MM`: (Admin) Configura la hora de la exportación diaria (def: 04:00).
+- `/export_db`: (Admin/Pub) Genera CSV de los enlaces registrados.
+- `/verify`: (Admin) Verifica la consistencia de la base de datos de la librería.
+- `/backup_db`: (Admin) Respaldo manual de la base de datos central.
 
-### 1. Mensajes Personalizados (`ENABLE_CUSTOM_MESSAGES`)
-Permite guardar mensajes (con fotos/ficheros) y usarlos como respuestas rápidas o bienvenidas.
-- `/add_msge <id>`: Guarda el mensaje respondido.
-- `/list_msge [id]`: Lista o previsualiza mensajes.
-- `/send_msge <id> <chat>`: Envía un mensaje a otro chat.
-- `/saludo <chat> <id|txt>`: Envía saludo o mensaje guardado.
-- `/set_welcome <id|off>`: Configura mensaje de bienvenida para el grupo actual.
+### 2. Gestión de Usuarios (`ENABLE_USER_MANAGER`)
+- `/refresh_user <uid>`: (Admin) Actualiza el perfil de un usuario desde Telegram.
+- `/reset <uid>`: (Admin) Resetea el límite diario de descargas de un usuario.
+- `/status`: Consulta el estado, nivel y cuota restante.
 
-### 2. Gestión de Links (`ENABLE_LINKS_MANAGER`)
-Herramientas para publishers y admins.
-- `/status_links`: Estado de links y validación.
-- `/link_list`: Últimos links acortados.
-- `/purge_link <hash>`: Eliminar un link.
+### 3. Mensajes y Grupos (`ENABLE_CUSTOM_MESSAGES`)
+- `/set_welcome <slug>`: Configura mensaje de bienvenida dinámico.
+- `/add_msge <id>`: Guarda el mensaje respondido para uso futuro.
+- `/list_msge`: Lista mensajes guardados editables.
 
-### 3. Mantenimiento (`ENABLE_DB_MAINTENANCE`)
-Gestión de base de datos e historial.
-- `/backup_db`, `/restore_db`: (Admin) Backup completo.
-- `/export_db`: (Pub) CSV de links.
-- `/import_history`, `/export_history`: (Admin) Gestión de historial.
-- `/latest_books`: Ver últimos publicados.
-- `/clear_history`: Limpiar historial.
-
-### 4. Donaciones (`ENABLE_DONATIONS`)
-- `/donar`, `/niveles`.
-- `/set_price`: Configurar precio.
-
-### 5. Comandos Core (Siempre activos)
-- `/start`, `/help`: Inicio y ayuda dinámica.
-- `/status`: Estado del bot y cuotas.
-- `/update_system`: (Admin) Actualización vía Watchtower.
-- `/reset <uid>`: (Admin) Resetear cuota de usuario.
-
+### 4. Core y Sistema
+- `/start`, `/help`: Inicio y ayuda dinámica por niveles.
+- `/menu`: Menú interactivo principal.
+- `/update_system [force]`: (Admin) Actualización automática vía Watchtower.
 
 ***
 
 ## 📁 Estructura del Proyecto
 
 ```text
-├── main.py                    # Punto de entrada (Polling mode - Legacy)
 ├── run_with_api.py            # Punto de entrada Principal (API + Bot)
-├── Dockerfile                 # Construcción Multi-Etapa (Node + Python)
-├── docker-compose.yml         # Orquestación (Bot + Cloudflare Tunnel)
-├── config/                    # Configuración
-│   └── config_settings.py     # Variables de entorno y validación
-├── core/                      # Lógica central
-│   ├── bot.py                 # Inicialización del bot
-│   └── state_manager.py       # Gestión de estado en memoria
-├── api/                       # Backend FastAPI
-│   ├── routes.py              # Endpoints de la Mini App
-│   └── main.py                # Definición de la app FastAPI
+├── config/                    # Configuración central (Pydantic-like stats)
+├── core/                      # Lógica de inicialización y estados
+├── api/                       # Backend FastAPI (Rutas Mini App y OPDS)
 ├── zeepub-web/                # Frontend React (Mini App)
-│   ├── src/                   # Código fuente React
-│   └── vite.config.js         # Configuración de build
-├── services/                  # Servicios del bot
-│   ├── telegram_service.py    # Lógica de envío de EPUBs y FB posts
-│   ├── epub_service.py        # Extracción de metadatos y títulos internos
-│   ├── opds_service.py        # Navegación de catálogos OPDS
-│   ├── history_service.py     # Registro y gestión de historial de libros
-│   ├── weekly_reports.py      # Sistema de reportes automáticos semanales
-│   ├── backup_scheduler.py    # Scheduler de backups diarios
-│   └── daily_reset_scheduler.py # Scheduler de reset de descargas a medianoche
-├── utils/                     # Utilidades
-│   ├── security.py            # Validación de seguridad (HMAC)
-│   ├── url_cache.py           # Gestión de URLs acortadas (SQLite/PostgreSQL)
-│   ├── url_validator.py       # Validación periódica de links
-│   └── download_limiter.py    # Sistema de límites y persistencia de descargas
-└── tests/                     # Pruebas unitarias
+├── plugins/                   # Arquitectura modular de comandos y features
+│   ├── maintenance_plugin.py  # Escaneo, exportación y backups
+│   ├── custom_messages_plugin.py # Gestión de plantillas y bienvenidas
+│   └── user_manager_plugin.py # Gestión de niveles y límites
+├── services/                  # Business Logic (Backups, Schedulers, Reports)
+├── utils/                     # Utilidades (Caché, Limiter, Helpers)
+├── data/                      # Persistencia (SQLite .db y Thumbnails)
+└── tests/                     # Suite de pruebas unitarias
 ```
 
 ***
 
-## 🛠️ Requisitos
+## 🛠️ Requisitos e Instalación
 
-- **Docker** y **Docker Compose**
-- Token de Telegram (BotFather)
-- Token de Cloudflare Tunnel (Zero Trust)
-- URL de un catálogo OPDS compatible
-
-***
-
-## 🔧 Instalación y Despliegue
-
-La forma recomendada de desplegar es usando **Docker** y **Cloudflare Tunnel**. Esto garantiza que la Mini App tenga acceso HTTPS seguro sin necesidad de abrir puertos en tu router ni configurar certificados SSL manualmente.
-
-### 1. Clonar el repositorio
-
-```bash
-git clone https://github.com/devil1210/zeepub-bot.git
-cd zeepub-bot
-```
-
-### 2. Configurar Variables de Entorno
-
-Crea un archivo `.env` basado en el ejemplo:
-
-```bash
-cp .env.example .env
-nano .env
-```
-
-**Variables Críticas:**
-
-```env
-# Telegram
-TELEGRAM_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
-ADMIN_USERS=123456789,987654321 # IDs de admins separados por coma
-
-# Cloudflare Tunnel
-TUNNEL_TOKEN=eyJhIjoi... (Token obtenido del panel Zero Trust)
-PUBLIC_DOMAIN=tu-dominio.com (Ej: bot.midominio.com)
-
-# OPDS
-OPDS_SERVER_URL=https://tu-biblioteca-opds.com
-OPDS_ROOT_START=/opds-root
-OPDS_ROOT_EVIL=/opds-evil # Ruta para administradores
-
-# Configuración
-LOG_LEVEL=INFO
-MAX_DOWNLOADS_PER_DAY=5
-
-# Publishers (para comandos admin y reportes)
-FACEBOOK_PUBLISHERS=123456789,987654321
-FACEBOOK_PAGE_ACCESS_TOKEN=tu_token_de_fb
-FACEBOOK_GROUP_ID=tu_group_id
-
-# Dominio para links acortados
-DL_DOMAIN=https://tu-dominio.com
-
-# ZITADEL Actions
-ZITADEL_SIGNING_KEY=tu_clave_de_firma_zitadel
-
-# Plugins (Opcional - True por defecto)
-ENABLE_CUSTOM_MESSAGES=True
-ENABLE_DONATIONS=True
-ENABLE_LINKS_MANAGER=True
-ENABLE_DB_MAINTENANCE=True
-ENABLE_MINI_APP=True
-ENABLE_POSTGRES_PLUGIN=False
-
-```
-
-### 3. Desplegar con Docker
-
-El proyecto usa una construcción multi-etapa. Docker se encargará de:
-1.  Compilar el frontend (React) usando Node.js.
-2.  Copiar los archivos estáticos al contenedor de Python.
-3.  Iniciar el bot y el túnel de Cloudflare.
-
-```bash
-docker compose up -d --build
-```
-
-### 8. Plugins (Group Manager)
-**Variables:** `ENABLE_GROUP_MANAGER=True/False`
-- `/authorize_group [id]`: (Admin) Autoriza al bot a gestionar el grupo actual o el ID especificado via DM.
-- `/revoke_group [id]`: (Admin) Revoca la autorización.
-- `/set_group_welcome <slug>`: (Admin) Define el mensaje de bienvenida. Soporta `[Nombre]` para sustitución.
-- `/reglas`, `/rules`: Muestra las reglas del grupo (buscará mensaje con slug 'reglas').
-
-
-
----
-
-### 4. Configurar Cloudflare Tunnel
-
-En tu panel de [Cloudflare Zero Trust](https://one.dash.cloudflare.com/):
-1.  Ve a **Access** > **Tunnels**.
-2.  Selecciona tu túnel y ve a **Public Hostname**.
-3.  Añade un nuevo hostname:
-    *   **Public Hostname**: `tu-dominio.com` (El mismo que pusiste en `PUBLIC_DOMAIN`)
-    *   **Service**: `HTTP` -> `zeepubs_bot:8000` (Nota: usa el nombre del servicio Docker, no localhost)
+1. **Requisitos**: Docker, Docker Compose, un VPS con puerto 80/443 (o Cloudflare Tunnel).
+2. **Configuración**: Copia `.env.example` a `.env` y rellena `TELEGRAM_TOKEN`, `ADMIN_USERS` y `OPDS_SERVER_URL`.
+3. **Despliegue**:
+   ```bash
+   docker compose up -d --build
+   ```
 
 ***
 
-## 🛡️ Seguridad
+## 🛡️ Seguridad y Verificación
 
-El bot implementa medidas de seguridad para proteger la API de la Mini App:
-
-- **Validación de `initData`**: El backend verifica la firma criptográfica de Telegram en cada petición (`X-Telegram-Data`). Esto impide que usuarios malintencionados suplanten la identidad de otros.
-- **Sin Puertos Expuestos**: Gracias a Cloudflare Tunnel, no es necesario exponer el puerto 8000 a internet. Todo el tráfico entra cifrado por el túnel.
-
-***
-
-## 🔄 Sistema de Actualizaciones
-
-El bot integra **Watchtower** para facilitar la actualización de imágenes Docker.
-
-- **Comando**: `/update_system` (Solo Admin)
-- **Funcionamiento**: Verifica versiones consultando la API de GitHub (sin dependencias de git local) y solicita a Watchtower que busque nuevas imágenes. Si encuentra una nueva versión, descarga la imagen y reinicia el contenedor automáticamente.
-- **Filtrado Inteligente**: Configurado para que Watchtower solo supervise el contenedor del bot (`zeepubs_bot`), ignorando otros servicios del VPS.
-- **Resiliencia**: Incluye mecanismo de "suicide fallback" que fuerza el reinicio del contenedor si Watchtower falla al detenerlo tras una actualización exitosa.
-- **Verificación**: Persistencia robusta del estado para asegurar que el bot notifique el éxito tras el reinicio.
-
-## 🛠 Desarrollo
-
-El proyecto incluye pruebas unitarias para verificar la API y el comportamiento del bot.
-
-```bash
-# Ejecutar tests dentro del contenedor
-docker exec zeepub_bot pytest tests/
-```
-
-***
-
-## 🤝 Contribuciones
-
-1.  Haz fork del repositorio.
-2.  Crea una rama (`git checkout -b feature/nueva-funcion`).
-3.  Haz tus cambios y commits.
-4.  Envía un Pull Request.
-
-***
+- **Validación HMAC**: Cada petición desde la Mini App se valida con la firma de Telegram (`initData`).
+- **SQLite Engine**: Motor por defecto para máxima portabilidad (v6).
+- **PEP8 Compliance**: Código 100% formateado con Black y verificado con Flake8.
 
 ## 📜 Licencia
-
 Este proyecto está bajo la licencia **MIT**.
-
-## 🧱 Persistencia: SQLite (Default) y Postgres (Opcional)
-
-Por defecto, **ZeePub Bot v6 usa SQLite** (`url_cache.db`) para facilitar el despliegue rápido y sin dependencias externas. Es la opción recomendada para la mayoría de los casos.
-
-### Soporte para Postgres (Opcional/Futuro)
-Para entornos que requieran un DBMS gestionado, el proyecto mantiene compatibilidad con PostgreSQL mediante SQLAlchemy. Alembic está incluido para gestionar las migraciones.
-
-Ejemplo mínimo:
-
-```bash
-# en .env
-DATABASE_URL=postgresql+psycopg2://zeepub:zeepub@db:5432/zeepub
-
-# crear migraciones (en dev)
-pip install -r requirements-dev.txt
-alembic -c alembic.ini upgrade head
-```
-
-El `docker-compose.yml` del repo añade un servicio `db` (Postgres) y puedes
-usar la variable `DATABASE_URL` para que la app use Postgres durante el runtime.

@@ -5,6 +5,7 @@ import sqlite3
 import csv
 import io
 import shutil
+import re
 from datetime import datetime
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler
@@ -50,6 +51,7 @@ class MaintenancePlugin(BasePlugin):
             # Publisher/Admin commands
             app.add_handler(CommandHandler("export_db", self.export_db))
             app.add_handler(CommandHandler("export_history", self.export_history))
+            app.add_handler(CommandHandler("set_export_time", self.set_export_time))
 
             logger.info("Plugin Maintenance: Handlers registrados.")
             return True
@@ -665,3 +667,33 @@ class MaintenancePlugin(BasePlugin):
                 message_id=msg.message_id,
                 text=f"❌ Error durante el escaneo: {str(e)}"
             )
+
+    async def set_export_time(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Configura la hora de la exportación diaria (solo admins)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            return
+
+        if not context.args:
+            await update.message.reply_text("⚠️ Uso: /set_export_time HH:MM (ej: 04:00)")
+            return
+
+        time_str = context.args[0]
+        # Validar formato HH:MM
+        if not re.match(r"^\d{2}:\d{2}$", time_str):
+            await update.message.reply_text("❌ Formato inválido. Usa HH:MM (ej: 04:30).")
+            return
+
+        try:
+            from services.settings_service import set_setting
+            set_setting("export_time", time_str)
+
+            await update.message.reply_text(
+                f"✅ Hora de exportación configurada a las <b>{time_str}</b>.",
+                parse_mode="HTML"
+            )
+            logger.info(f"Admin {uid} cambió la hora de exportación a {time_str}")
+        except Exception as e:
+            logger.error(f"Error en set_export_time: {e}")
+            await update.message.reply_text("❌ Error al guardar la configuración.")

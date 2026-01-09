@@ -136,6 +136,13 @@ COMMANDS_REGISTRY = {
         "usage": "/reset <user_id>",
         "example": "/reset 123456789",
     },
+    "refresh_user": {
+        "cat": "user_mgmt",
+        "desc": "Refrescar usuario",
+        "long_desc": "Busca y actualiza los datos del usuario (id, nombre, alias) directamente desde los servidores de Telegram.",
+        "usage": "/refresh_user <user_id>",
+        "example": "/refresh_user 123456789",
+    },
     "id": {
         "cat": "user_mgmt",
         "desc": "Info ID",
@@ -249,6 +256,13 @@ COMMANDS_REGISTRY = {
         "usage": "/latest_books [chat_id]",
         "example": "/latest_books -100123456",
     },
+    "scan_library": {
+        "cat": "data",
+        "desc": "Escanear librería",
+        "long_desc": "Inicia un escaneo completo de la carpeta de libros local para indexar títulos, autores, series y generar miniaturas.",
+        "usage": "/scan_library",
+        "example": "/scan_library",
+    },
     "clear_history": {
         "cat": "data",
         "desc": "Borrar historial",
@@ -269,6 +283,13 @@ COMMANDS_REGISTRY = {
         "long_desc": "Exporta el historial completo de libros publicados a un archivo CSV.",
         "usage": "/export_history",
         "example": "/export_history",
+    },
+    "set_export_time": {
+        "cat": "data",
+        "desc": "Hora exportación diaria",
+        "long_desc": "Configura la hora (formato HH:MM) para la exportación automática diaria de las bases de datos.",
+        "usage": "/set_export_time <HH:MM>",
+        "example": "/set_export_time 04:00",
     },
     # --- Custom Messages (Plugins) ---
     "add_msge": {
@@ -440,6 +461,13 @@ COMMANDS_REGISTRY = {
         "long_desc": "Establece el avatar del bot en la Mini App usando una foto enviada o URL.",
         "usage": "Responder a una foto con /set_bot_avatar",
         "example": "/set_bot_avatar",
+    },
+    "verify": {
+        "cat": "home",
+        "desc": "Verificar cuenta",
+        "long_desc": "Proceso de verificación para nuevos usuarios mediante retos sencillos.",
+        "usage": "/verify",
+        "example": "/verify",
     },
 }
 

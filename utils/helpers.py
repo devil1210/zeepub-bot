@@ -635,7 +635,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v6.0.0-alpha.57"
+CURRENT_VERSION = "v6.0.0"
 
 
 def get_current_version() -> str:
@@ -643,14 +643,29 @@ def get_current_version() -> str:
 
 
 def get_commit_hash() -> str:
+    # 1. Try file (Watchtower/Production)
     try:
         import os
-
         if os.path.exists("version_hash.txt"):
             with open("version_hash.txt", "r") as f:
                 return f.read().strip()[:7]
     except Exception:
         pass
+
+    # 2. Try Git
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+
     return "unknown"
 
 

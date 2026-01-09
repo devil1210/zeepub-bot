@@ -5,73 +5,85 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0] - 2026-01-09
+### Añadido
+- **Versión Estable**: Lanzamiento oficial de la versión 6.0.0.
+- **Menú de Comandos**: Añadidos comandos administrativos (`scan_library`, `refresh_user`, `verify`, `set_export_time`) al menú de Telegram.
+- **Plantillas Completas**: Todas las ayudas y mensajes nuevos ahora son personalizables mediante plantillas.
+- **Exportación Unificada**: Programador diario configurable que exporta ambas bases de datos.
+- **Configuración Horaria**: Nuevo comando `/set_export_time` (por defecto 04:00 AM).
+- **Notificaciones**: Las alertas de actualización ahora muestran versión y hash del commit.
+- **Documentación**: README.md actualizado con estructura de proyecto y requisitos detallados.
+
+### Cambiado
+- **Changelog**: Traducción completa al español.
+
 ## [v6.0.0-alpha.61] - 2026-01-09
-### Added
-- **Premium Minimalist UI**: Applied a high-end aesthetic polish to the search and catalog interfaces.
-- **Glassmorphism**: Enhanced search bar with rounded category selectors and improved glass backgrounds.
-### Changed
-- **Book Detail Layout**: Removed redundant "Subir" button from the bottom navigation for a cleaner focus on primary actions.
-- **Unified Search Style**: Search results now use the "Premium-Sutil" download buttons, consistent with the main catalog.
-### Fixed
-- **Database Migration**: Corrected a critical `psycopg2.errors.DatatypeMismatch` in PostgreSQL migrations involving boolean columns.
-- **PEP8 Compliance**: Achieved a 100% clean code state (formatted with Black, zero Flake8 errors).
-- **Bare Excepts**: Replaced all dangerous bare `except:` clauses with explicit `except Exception:` for robust error handling.
-- **Deduplication**: Removed duplicate translation keys in the messaging system.
+### Añadido
+- **UI Minimalista Premium**: Aplicación de un pulido estético de alta gama a las interfaces de búsqueda y catálogo.
+- **Glassmorphism**: Barra de búsqueda mejorada con selectores de categoría redondeados y fondos de cristal.
+### Cambiado
+- **Diseño de Detalles**: Eliminado el botón "Subir" redundante del menú inferior para mayor enfoque en acciones primarias.
+- **Estilo de Búsqueda Unificado**: Los resultados de búsqueda ahora usan botones de descarga "Premium-Sutil".
+### Arreglado
+- **Migración de DB**: Corregido un error crítico de `DatatypeMismatch` en PostgreSQL.
+- **Cumplimiento PEP8**: Estado de código 100% limpio (formateado con Black, cero errores Flake8).
+- **Excepciones**: Reemplazados todos los `except:` genéricos por `except Exception:`.
+- **Deduplicación**: Eliminadas claves de traducción duplicadas.
 
 ## [v6.0.0-alpha.57] - 2026-01-08
-### Added
-- **Metadata Refinements**: Standardized book metadata formatting across the app.
-### Changed
-- **Date Formatting**: All dates are now displayed in `dd/mm/yyyy` format, removing time and timezone data.
-- **Volume Logic**: Volumes `0`, `00`, or missing are now consistently labeled as "Volumen único".
-- **Clean Titles**: Aggressively removed bracketed tags (e.g., `[NL]`, `[UkuTL]`) from series and title fields in the book detail section for a cleaner look.
+### Añadido
+- **Refinamiento de Metadatos**: Estandarización del formato de metadatos en toda la app.
+### Cambiado
+- **Formato de Fecha**: Todas las fechas se muestran ahora en formato `dd/mm/yyyy`.
+- **Lógica de Volumen**: Los volúmenes `0`, `00` o faltantes se etiquetan como "Volumen único".
+- **Limpieza de Títulos**: Eliminación agresiva de etiquetas entre corchetes (ej: `[NL]`) en títulos y series.
 
 ## [v6.0.0-alpha.56] - 2026-01-08
-### Fixed
-- **Search API**: Fixed a `NameError` that broke search functionality due to a missing variable initialization.
+### Arreglado
+- **API de Búsqueda**: Corregido un `NameError` que rompía la búsqueda por una variable no inicializada.
 
 ## [v6.0.0-alpha.55] - 2026-01-08
-### Added
-- **Image Optimization**: Implemented on-demand thumbnail generation (180x260px) in the backend to speed up catalog and search navigation.
-- **Smart Loading**: Frontend now uses lightweight thumbnails for listing views, reserving full-resolution covers only for the book detail zoom.
-### Changed
-- **Covers Cache**: Added a dedicated `/thumbnails` directory in the library data folder to store and serve generated covers.
+### Añadido
+- **Optimización de Imágenes**: Generación de miniaturas bajo demanda (180x260px) para acelerar navegación.
+- **Carga Inteligente**: Uso de miniaturas ligeras en listados, reservando alta resolución para el detalle.
+### Cambiado
+- **Caché de Portadas**: Añadido directorio `/thumbnails` dedicado.
 
 ## [v6.0.0-alpha.54] - 2026-01-08
-### Changed
-- **Search Polish**: Cleaned up the primary search headlines by removing redundant brackets (e.g., [NL]).
-- **Search Layout**: Enabled text wrapping for search results (Line 1, 2, and 3) to prevent awkward truncation and ensure all details fit within the card.
+### Cambiado
+- **Pulido de Búsqueda**: Eliminación de corchetes redundantes (ej: [NL]) en títulos primarios.
+- **Diseño de Búsqueda**: Activado el ajuste de línea (Text Wrapping) para resultados para evitar truncamientos incómodos.
 
 ## [v6.0.0-alpha.53] - 2026-01-08
-### Changed
-- **Search Results**: Reverted search result grouping to a list of individual books for better reliability and direct navigation to book details.
-- **Search UI**: Maintained the 4-line metadata format for individual search results, ensuring the clean Series Name is the primary headline.
-- **Navigation**: Clicked search results now lead directly to the Book Detail page, with a functional "Volver a la serie" button available there.
+### Cambiado
+- **Resultados de Búsqueda**: Revertido el agrupamiento a lista individual para mejor fiabilidad.
+- **IU de Búsqueda**: Mantenido formato de 4 líneas de metadatos.
+- **Navegación**: Clics en resultados llevan directo al detalle, con botón de "Volver a la serie" funcional.
 
 ## [v6.0.0-alpha.52] - 2026-01-08
-### Fixed
-- **Book Detail Page**: Restored missing metadata sections, including "Demografía y Géneros", "Detalles del Libro", and "Información Técnica".
-- **Enhanced Metadata**: Fixed rendering of Illustrator, ISBN, ASIN, Word Count, Page Count, and Reading Time in the details view.
+### Arreglado
+- **Hoja de Detalles**: Restauradas secciones de "Demografía y Géneros", "Detalles del Libro" e "Información Técnica".
+- **Metadatos Mejorados**: Corrección en renderizado de Ilustrador, ISBN, ASIN, contador de palabras y tiempo de lectura.
 
 ## [v6.0.0-alpha.51] - 2026-01-08
-### Changed
-- **Catalog Folder UI**: Cleaned up folder titles by removing redundant type tags (e.g., [NL]).
-- **Catalog Folder Badges**: Added book type badges (Novela Ligera/Novela Web) directly to catalog folder covers for better visual categorization.
+### Cambiado
+- **IU de Carpetas**: Limpieza de etiquetas de tipo redundantes en títulos.
+- **Insignias en Carpetas**: Añadidas insignias de tipo (Novela Ligera/Web) directamente en las portadas.
 
 ## [v6.0.0-alpha.50] - 2026-01-08
-### Fixed
-- **Search Navigation**: Fixed a bug where search results would overlay the catalog content after clicking a series; navigating to a folder now correctly clears the search query.
-- **Title Refinement**: Cleaned up titles in search results. Series folders now use the clean series name as the primary headline (Line 1).
-- **Redundancy Removal**: Removed the "Serie" badge from covers in search results as it was redundant with the new grouped-first layout.
-- **Layout Consistency**: Ensured 4-line metadata format respects English title priority.
+### Arreglado
+- **Navegación de Búsqueda**: Corregido bug donde los resultados se superponían al navegar; ahora se limpia la consulta al abrir una carpeta.
+- **Refinamiento de Títulos**: Títulos limpios en búsqueda; carpetas de serie usan el nombre limpio como cabecera.
+- **Limpieza de Redundancia**: Eliminada insignia "Serie" de portadas en búsqueda.
 
 ## [v6.0.0-alpha.49] - 2026-01-08
-### Fixed
-- **Search Result UI**: Implemented a 4-line metadata format for search results (Title, Romaji, Author, Volume).
-- **Series Identification**: Aggressive grouping of search results into series folders even for single matches, enabling navigation to the full series volume list.
-- **Search Badges**: Added `Novela Ligera` / `Novela Web` badges and corrected `Serie` badges on search cards.
-- **Search Navigation**: Fixed broken navigation when clicking on series folders in search results; they now correctly open the series catalog.
-- **Metadata Enrichement**: Standardized metadata keys (is_series_folder, illustrator, publisher, bookType) across search and catalog APIs.
+### Arreglado
+- **IU de Resultados**: Implementado formato de 4 líneas (Título, Romaji, Autor, Volumen).
+- **Identificación de Series**: Agrupamiento agresivo en carpetas de serie.
+- **Insignias**: Corregidas insignias de tipo de novela y serie.
+- **Navegación**: Corregido acceso a catálogo de serie desde búsqueda.
+- **Metadatos**: Estandarización de claves internas (`illustrator`, `publisher`, `bookType`).
 
 ## [v6.0.0-alpha.1] - 2026-01-07
 ### Added
@@ -79,306 +91,278 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **Rama de desarrollo**: Creada rama `feat/v6-local-index` para el desarrollo del motor de búsqueda y metadatos independiente de Kavita.
 
 ## [v6.0.0-alpha.48] - 2026-01-08
-### Fixed
-- **Search Redirect**: Fixed `isLoading` state causing a black page when redirecting from Home to Catalog via search query.
-- **Series Folder UI**: Added a "Serie" badge to folder results in search and standardized volume counts (`book_count`).
-- **Series Navigation**: Corrected navigation logic for series folders in search results to correctly open the catalog series view.
-- **Search Persistence**: Synchronized the search query to the URL to ensure results are maintained when navigating back from book details.
-- **Transition Smoothness**: Refined the Book Detail fade-in animation to eliminate the "appear then vanish" flicker.
+### Arreglado
+- **Redirección de Búsqueda**: Corregido estado `isLoading` que causaba pantalla negra al redirigir desde Inicio.
+- **IU de Carpetas**: Añadida insignia "Serie" y estandarización de conteo de libros.
+- **Navegación**: Corregida lógica para abrir el catálogo desde búsqueda.
+- **Persistencia**: Sincronización de consulta en la URL para mantener resultados al usar el botón atrás.
+- **Transiciones**: Refinada animación fade-in en detalles para evitar parpadeos.
 
 ## [v6.0.0-alpha.47] - 2026-01-08
-### Changed
-- **Search Consolidation**: Centered all search functionality in the Catalog page, removing the redundant `/search` page and redirecting all search entry points.
-- **Mobile-Optimized Pagination**: Standardized page size to 10 items per page across catalog and search for better mobile visibility.
-- **Improved Deep-Linking**: Supported search query parameters in the catalog URL for seamless redirects from home and bottom navigation.
+### Cambiado
+- **Consolidación de Búsqueda**: Centralizada toda la búsqueda en la página de Catálogo.
+- **Paginación Móvil**: Estandarizados 10 items por página.
+- **Deep-Linking**: Soporte para parámetros de búsqueda en la URL.
 
 ## [v6.0.0-alpha.46] - 2026-01-08
-### Changed
-- **Smooth Book Detail Transitions**: Added a fade-in animation to the Book Detail page to eliminate UI flickering during data loading.
-- **Metadata Standardization**: Standardized internal metadata keys (like `romaji`) across backend and frontend for consistent rendering.
-- **Improved Preview Cache**: Local books now properly utilize the session storage cache for instantaneous detail page previews.
+### Cambiado
+- **Transiciones Suaves**: Añadida animación fade-in a la página de detalles del libro.
+- **Estandarización de Metadatos**: Sincronización de claves internas como `romaji`.
+- **Caché de Previsualización**: Uso de `sessionStorage` para vistas instantáneas.
 
 ## [v6.0.0-alpha.45] - 2026-01-08
-### Changed
-- **Standardized Search UI**: Completely redesigned search result cards to match the catalog style, including larger covers, blue authors, and context-aware metadata for series and books.
-- **Improved Navigation**: Ensured card-wide clickability and consistent right chevrons in search results.
+### Cambiado
+- **IU de Búsqueda Estándar**: Rediseño de tarjetas de búsqueda para coincidir con el catálogo (portadas grandes, autores en azul).
+- **Navegación Mejorada**: Clicabilidad en toda la tarjeta y flechas consistentes.
 
 ## [v6.0.0-alpha.44] - 2026-01-08
-### Added
-- **FTS5 Search Optimization**: Implemented SQLite Full-Text Search for faster and more relevant results.
-- **Automated Library Backups**: Added background scheduler for daily automatic backups of the library database.
-- **Folder Book Counts**: Both catalog and search results now display the number of books in a folder or series.
+### Añadido
+- **Optimización FTS5**: Implementación de Full-Text Search en SQLite para búsquedas ultra-rápidas.
+- **Backups Automatizados**: Programador en segundo plano para respaldos diarios.
+- **Conteo de Libros**: Las carpetas y series muestran ahora el número de libros contenidos.
 
 ## [v6.0.0-alpha.43] - 2026-01-08
-### Added
-- **Search Filters**: Added dropdown filter for search type (all, title, author, illustrator, translator, genres).
-- **Series Folders in Search**: Search results now show series as folders with "Serie" badge when multiple books exist, clicking navigates to series catalog.
-- **Extended Search Scope**: Search now includes genres (tags) and demographics fields.
-
-### Changed
-- **Compact Search Cards**: Redesigned search result cards to be more compact, showing author and translator group prominently.
-- **Series Folder Logic**: Single-book series are shown as individual books, not folders.
-
-### Fixed
-- **Search Navigation**: Fixed click navigation to book details from search results.
+### Añadido
+- **Filtros de Búsqueda**: Dropdown para filtrar por título, autor, ilustrador, traductor o géneros.
+- **Carpetas en Búsqueda**: Resultados agrupados por serie con insignia "Serie".
+- **Ámbito Extendido**: Búsqueda incluye ahora etiquetas de género y demografía.
+### Cambiado
+- **Tarjetas Compactas**: Rediseño más compacto mostrando autor y grupo traductor de forma prominente.
+- **Lógica de Carpetas**: Series de un solo libro se muestran individualmente.
+### Arreglado
+- **Navegación de Búsqueda**: Corregida la navegación al hacer clic en los detalles del libro desde los resultados de búsqueda.
 
 ## [v6.0.0-alpha.42] - 2026-01-08
-### Added
-- **Maintenance Utilities**: Implemented database optimization (VACUUM/ANALYZE), orphaned cover cleanup, and detailed library statistics generation.
-- **Maintenance API**: Added admin-only endpoints: `/api/library/optimize` (database optimization), `/api/library/cleanup` (orphaned file removal), and `/api/library/stats` (library statistics for all users).
-- **Phase 4 Complete**: Backup & Utilities phase fully implemented with backup system, export/import functionality, and maintenance tools.
+### Añadido
+- **Utilidades de Mantenimiento**: Optimización de base de datos (VACUUM/ANALYZE), limpieza de portadas huérfanas y estadísticas detalladas.
+- **API de Mantenimiento**: Endpoints para optimización, limpieza y estadísticas globales.
+- **Fase 4 Completada**: Implementación total del sistema de backup, exportación/importación y herramientas de mantenimiento.
 
 ## [v6.0.0-alpha.41] - 2026-01-08
-### Added
-- **Export/Import System**: Implemented JSON export/import functionality for library metadata with filtering by source or series and merge capabilities.
-- **Export/Import API**: Added admin-only endpoints: `/api/library/export` (export metadata) and `/api/library/import` (import metadata with merge option).
+### Añadido
+- **Sistema de Exportación/Importación**: Funcionalidad para exportar/importar metadatos en JSON con filtrado por fuente o serie y capacidades de fusión.
+- **API de Exp/Imp**: Endpoints administrativos para gestión de metadatos.
 
 ## [v6.0.0-alpha.40] - 2026-01-08
-### Added
-- **Backup System**: Implemented database backup system for the local library with compression, rotation (keeps last 10 backups), and restore capabilities.
-- **Backup API**: Added admin-only endpoints for backup management: `/api/library/backup` (create), `/api/library/backups` (list), `/api/library/restore` (restore), and DELETE `/api/library/backups/{filename}` (delete).
+### Añadido
+- **Sistema de Backup**: Implementación de respaldos para la librería local con compresión, rotación (10 archivos) y restauración.
+- **API de Backup**: Endpoints para gestión de archivos de respaldo.
 
 ## [v6.0.0-alpha.39] - 2026-01-08
-### Fixed
-- **Local Search**: Fixed search functionality by correcting the query parameter name from `query` to `q` to match the backend API endpoint. Search now returns results correctly.
+### Arreglado
+- **Búsqueda Local**: Corregido nombre de parámetro de `query` a `q` para coincidir con el endpoint de la API.
 
 ## [v6.0.0-alpha.38] - 2026-01-08
-### Added
-- **UI Toggle**: Added visual toggle for "Portadas Aleatorias" in the interface configuration page under the "Librería" section, allowing users to easily enable/disable random folder cover selection for better performance.
+### Añadido
+- **Ajuste de IU**: Selector visual para "Portadas Aleatorias" en la configuración de librería.
 
 ## [v6.0.0-alpha.37] - 2026-01-08
-### Added
-- **Performance Toggle**: New setting `useRandomFolderCovers` to disable random folder cover selection for faster catalog navigation. When disabled, folders use the first book's cover instead of a random selection.
-- **Publisher Display**: Volume cards now show the translation group/publisher in brackets next to the volume number (e.g., "Volumen 03 [Kikuslirus Project Team]").
-
-### Changed
-- Backend now supports `use_random_covers` query parameter for optimized folder cover retrieval.
-
-### Fixed
-- **Scanner**: Removed heuristic that replaced full publisher names with acronyms. Now always uses the complete publisher name from `<dc:publisher>` in EPUB metadata.
+### Añadido
+- **Interruptor de Rendimiento**: Ajuste `useRandomFolderCovers` para desactivar selección aleatoria de portadas y acelerar el catálogo.
+- **Visualización de Traductor**: Las tarjetas de volumen muestran el grupo traductor entre corchetes (ej: `[Kikuslirus]`).
+### Cambiado
+- Backend soporta parámetro `use_random_covers`.
+### Arreglado
+- **Escáner**: Siempre usa el nombre completo del editor/traductor desde `<dc:publisher>`.
 
 ## [v6.0.0-alpha.36] - 2026-01-08
-### Changed
-- **Book Header Cleanup**: Removed redundant `[NL]`, `[NW]`, `[WN]` tags from the main series title in book details to avoid duplication with the badge.
-- **Dynamic Library Names**: The catalog now displays the actual library/source name (e.g., "ZeePubs [ES]") instead of the generic "Biblioteca Local" when browsing a specific source.
-- **Version Footer**: Added bot version display at the bottom of the home page for better transparency.
+### Cambiado
+- **Limpieza de Cabeceras**: Eliminación de etiquetasredundantes `[NL]`, `[NW]` del título principal.
+- **Nombres Dinámicos**: El catálogo muestra el nombre real de la fuente (ej: `ZeePubs [ES]`).
+- **Pie de Página**: Versión del bot visible en el inicio.
 
 ## [v6.0.0-alpha.35] - 2026-01-08
-### Changed
-- **Catalog Navigation Header**: Renamed the root page header from "Biblioteca Local" to **"Bibliotecas Disponibles"** as requested.
-- **Icon Removal Sweep**: ensured all folder icon overlays are removed from the root catalog and search listings to maintain a unified clean aesthetic.
+### Cambiado
+- **Cabecera de Catálogo**: Renombrada raíz a **"Bibliotecas Disponibles"**.
+- **Limpieza de Iconos**: Eliminados overlays de iconos de carpeta para una estética más limpia.
 
 ## [v6.0.0-alpha.34] - 2026-01-08
-### Changed
-- **Header Priority**: The primary title in book details now displays the **Series/English Title** for better identification.
-- **Metadata Reordering**: Reordered fields in "Detalles del Libro" and "Información Técnica" to focus on the most relevant data first.
-- **Improved Nomenclature**: Renamed "Título Romaji" to just **"Título"** as requested.
-- **Technical Metrics Formatting**:
-    - Word counts now use dot separators (e.g., `78.399`).
-    - Reading time now displays both minutes and hours (e.g., `391 min / 6.5 h`).
-- **Catalog Aesthetics**: Removed the folder icon overlay from representative covers to maintain a cleaner grid layout.
+### Cambiado
+- **Prioridad de Títulos**: Se muestra primero el nombre en Inglés/Serie.
+- **Reordenación de Metadatos**: Secciones de detalles reordenadas por relevancia.
+- **Métricas Técnicas**:
+    - Conteo de palabras con separador de puntos (`78.399`).
+    - Tiempo de lectura en minutos y horas (`391 min / 6.5 h`).
 
 ## [v6.0.0-alpha.33] - 2026-01-08
-### Added
-- **Full-screen Cover Preview**: Users can now tap on any book cover in the details page to view it in full screen with a sleek interactive overlay.
+### Añadido
+- **Previsualización a Pantalla Completa**: Posibilidad de ver la portada en grande al tocarla.
 
 ## [v6.0.0-alpha.32] - 2026-01-08
-### Added
-- **Dynamic Folder Covers**: Sources and folders now display a random book cover from their contents instead of a generic icon.
-- **Folder Identity Overlay**: Added a small folder icon overlay to folder covers on the catalog page for visual distinction.
-- **Enhanced Root Listing**: Root sources (e.g., "Zeepubs [ES]") now also feature random representative covers.
+### Añadido
+- **Portadas Dinámicas**: Carpetas muestran una portada aleatoria de su contenido.
+- **Listado Raíz**: Fuentes raíz también cuentan con portadas aleatorias representativas.
 
 ## [v6.0.0-alpha.31] - 2026-01-08
-### Added
-- **Word Count Engine**: Implemented automated word and page counting during library scans.
-- **Reading Time Estimation**: Added estimated reading time calculation (based on words per minute).
-- **Technical Metrics UI**: Book details now display real word counts, page counts, and reading time in the "Información Técnica" section.
-- **Detailed Titles**: Added explicit "Título Inglés", "Título Romaji", and "Volumen" rows to the book details section.
-- **Title Refinement**: Enhanced title parsing to strip brackets from English/Series titles for a cleaner primary heading.
+### Añadido
+- **Motor de Conteo de Palabras**: Implementado durante el escaneo.
+- **Tiempo de Lectura**: Cálculo basado en palabras por minuto.
+- **Métricas en UI**: Visualización de conteo de palabras, páginas y tiempo en la hoja de detalles.
+- **Títulos Detallados**: Filas explícitas para Título Inglés, Romaji y Volumen.
 
 ## [v6.0.0-alpha.30] - 2026-01-08
-### Fixed
-- **Title Hierarchy**: Corrected display logic to prioritize English titles in book details and Romaji titles on catalog cards, satisfying user preference for better structural organization.
-- **Enhanced Parsing**: Updated the title metadata parser to support colons (`:`) and dots (`.`) as valid separators, improving extraction for titles like "Arifureta: From Commonplace to World's Strongest".
-- **Backend Standardization**: Synchronized `englishTitle` and `romajiTitle` fields across Local Library routes and the search/detail API actions.
+### Arreglado
+- **Jerarquía de Títulos**: Priorización de títulos en Inglés para detalles y Romaji para tarjetas.
+- **Parsing Mejorado**: Soporte para dos puntos (`:`) y puntos (`.`) en títulos complejos.
+- **Estandarización Backend**: Sincronización de campos `englishTitle` y `romajiTitle`.
 
 ## [v6.0.0-alpha.29] - 2026-01-08
-### Fixed
-- **Pagination Centering**: Re-centered navigation buttons (Anterior/Subir/Siguiente) by enforcing symmetric widths using `flex-1`.
-- **UI Stability**: Added label truncation to prevent navigation bar overflow on extremely narrow mobile screens.
+### Arreglado
+- **Centrado de Paginación**: Re-centrado de botones mediante `flex-1`.
+- **Estabilidad de IU**: Truncado de etiquetas para evitar desbordamientos en móviles.
 
 ## [v6.0.0-alpha.28] - 2026-01-08
-### Fixed
-- **Redundancy Cleanup**: Removed English titles as subtitles in volume cards when they match the series header.
-- **Card Title Priority**: Volume cards inside folders now show ONLY the Romaji title (with [TYPE] suffix), emphasizing a cleaner, localized feel.
+### Arreglado
+- **Limpieza de Redundancia**: Eliminación de títulos en inglés como subtítulos si coinciden con la serie.
+- **Prioridad en Tarjetas**: Solo se muestra título Romaji en volúmenes internos.
 
 ## [v6.0.0-alpha.27] - 2026-01-08
-### Fixed
-- **Catalog Header Polish**: Added book type badge (e.g., [NOVELA LIGERA]) to the catalog header next to the English series title.
-- **Card Title Priority**: Swapped volume card titles to prioritize Romaji as the main title, moving the English title to the italicized subtitle.
+### Arreglado
+- **Cabecera de Catálogo**: Añadida insignia de tipo (ej: [NL]) a la cabecera.
+- **Jerarquía**: Swapping de títulos para prioritizar Romaji en tarjetas.
 
 ## [v6.0.0-alpha.26] - 2026-01-08
-### Fixed
-- **Service Lockdown**: Disabled `docker` and `containerd` from starting automatically on LXC boot.
-- **Title Hierarchy Swap**: Swapped titles in both catalog and detail pages: English/Series title is now primary (top), and Romaji is secondary (italicized subtitle).
-- **Theme-Colored Badges**: The book type badge (e.g., NOVELA LIGERA) now uses the primary theme color (`bg-primary/20 text-primary`) for better visual integration.
+### Arreglado
+- **Bloqueo de Servicios**: Desactiva `docker` y `containerd` de forma automática al arranque en LXC.
+- **Jerarquía de Títulos**: Inglés arriba, Romaji en cursiva debajo.
+- **Insignias Tematizadas**: Uso de colores del tema para insignias de tipo.
 
 ## [v6.0.0-alpha.25] - 2026-01-08
-### Fixed
-- **Button Centering (v6.0.0-alpha.29)**:
-    - Fixed regression where navigation buttons were not perfectly centered.
-    - Symmetric layout for the control bar.
-# Walkthrough: Advanced Library Features (v6.0.0-alpha.48)
-- **Redundancy Cleanup (v6.0.0-alpha.28)**:
-    - Romaji-only titles on cards inside series folders.
-    - Zero redundancy with English header title.
-- **Catalog Polish (v6.0.0-alpha.27)**:
-    - Romaji prioritization on volume cards.
-    - Title + Badge integration in the catalog header.
-- **Service Lockdown & UI Swap (v6.0.0-alpha.26)**:
-    - Docker services disabled on boot for maximum authorization control.
-    - Title hierarchy: English on top, Romaji below (italicized).
-    - Theme-colored badges for book types.
-**Versión Final**: `v6.0.0-alpha.28`
-- **Book Detail Restructuring (v6.0.0-alpha.25)**:
-    - Logical grouping into **Demografía y Géneros**, **Detalles del Libro**, and **Información Técnica**.
-    - Explicit **Grupo Traductor** label.
-    - Statistics: Page count, Word count, and Reading time (placeholders).
+### Arreglado
+- **Centrado de Botones**: Corrección de regresión en la barra de control.
+- **Limpieza de Redundancia**: Títulos Romaji únicos en tarjetas internas.
+- **Pulido de Catálogo**: Integración de título + insignia en cabeceras.
+- **Jerarquía Refinada**: Inglés como título primario.
+- **Reestructuración de Detalles**: Agrupamiento lógico en secciones de Demografía, Detalles e Información Técnica.
 
 ## [v6.0.0-alpha.24] - 2026-01-08
-### Fixed
-- **Details Header Refinements (v6.0.0-alpha.24)**:
-- **Hybrid UI for Details Header**: Unified the design of the book detail header with the hybrid catalog cards.
-- **Clean Title**: Automatically strips volume info and tags (like `[NL]`) from the main heading.
-- **Subtitle Romaji**: Added italicized Romaji subtitles.
-- **Team Line**: Merged Author and Illustrator into a single primary-colored line.
-- **Improved Dates**: Standardized all dates to `DD/MM/YYYY` format as requested (no time).
-- **Clean Aesthetic**: Removed redundant genre/demographic tags from the details header card.
+### Arreglado
+- **IU Híbrida para Cabeceras**: Unificación de diseño con tarjetas de catálogo.
+- **Títulos Limpios**: Eliminado info de volumen y etiquetas de la cabecera principal.
+- **Subtítulos Romaji**: Añadidos en cursiva.
+- **Línea de Equipo**: Fusión de Autor e Ilustrador en una sola línea.
+- **Fechas Mejoradas**: Estandarización a `DD/MM/YYYY`.
+- **Estética Limpia**: Eliminadas etiquetas redundantes de la cabecera.
 
 ## [v6.0.0-alpha.23] - 2026-01-08
-### Fixed
-- **Volume Card UI Refinements**:
-    - Prioritized Romaji titles for volumes within series folders.
-    - Added book type acronym suffix (`[NL]`, `[NW]`, `[WN]`) to primary titles.
-    - Simplified metadata logic: moved English titles to sub-titles when Romaji is available.
-    - Removed redundant "Novela Ligera" and "Fecha" badges for volumes to maintain a cleaner look.
+### Arreglado
+- **Refinamiento de Tarjetas**:
+    - Priorización de títulos Romaji para volúmenes.
+    - Añadidos acrónimos de tipo ([NL], [NW], [WN]).
+    - Eliminadas insignias redundantes de "Novela Ligera" y "Fecha" en tarjetas pequeñas.
 
 ## [v6.0.0-alpha.22] - 2026-01-08
-### Added
-- **Detailed Book View Redesign**: New structured layout for the book detail page matching reference designs.
-- **Structured Sections**: Dedicated sections for GÉNEROS (including demographics), CRÉDITOS (Illustrator, Translator, Layout), and DETALLES ADICIONALES.
-- **Enriched Metadata**: Automated extraction of EPUB version from OPF metadata.
-- **Technical Footer**: New bottom info display including EPUB Version, File Size (MB), and Updated Date.
-- **Full Dates**: Improved date display using `DD-MM-YYYY` format throughout the detail view.
+### Añadido
+- **Rediseño de Vista Detallada**: Nueva estructura que coincide con los diseños de referencia.
+- **Secciones Estructuradas**: GÉNEROS, CRÉDITOS e INFORMACIÓN TÉCNICA.
+- **Metadatos Enriquecidos**: Extracción de versión EPUB desde el OPF.
+- **Pie Técnico**: Visualización de versión de archivo, tamaño y fecha.
 
 ## [v6.0.0-alpha.21] - 2026-01-08
-### Fixed
-- **Hybrid UI Design**: Merged the best elements from reference designs into a single, clean card view.
-- **Clean Titles**: Removed redundant format tags (like [NL]) from the main title.
-- **Cleaner Aesthetic**: Removed all demographic and genre tags from the card view to minimize visual clutter.
+### Arreglado
+- **Diseño Híbrido**: Fusión de elementos premium en tarjetas limpias.
+- **Limpieza de Títulos**: Eliminados tags de formato de los títulos principales.
+- **Estética Minimalista**: Eliminadas etiquetas de géneros de la vista en tarjetas para reducir ruido visual.
 
 ## [v6.0.0-alpha.20] - 2026-01-08
-### Added
-- **Forced Re-scan**: Added support for `/scan_library force` to bypass date checks and re-process all library metadata.
+### Añadido
+- **Escaneo Forzado**: Soporte para `/scan_library force` para ignorar fechas y re-indexar todo.
 
 ## [v6.0.0-alpha.19] - 2026-01-08
-### Fixed
-- **Schemaless Migration**: Added a self-healing database migration logic to support new metadata columns without requiring a full DB reset.
-- **Deep OPF Integration**: Now extracting and storing all relevant OPF fields (ISBN13, Amazon ID, URI ID, Collection metadata).
-- **Metadata Classification**: Implemented automatic categorization of tags into Book Type (NL/NW/WN), Demographics (Seinen/Shounen), and Genres.
-- **Romaji Logic**: Refined Romaji title extraction and display to ensure a clean, consistent look.
+### Arreglado
+- **Migración Schemaless**: Lógica de auto-sanación de DB para nuevas columnas sin reinicios.
+- **Integración OPF Profunda**: Extracción de ISBN13, Amazon ID, IDs de URI y metadatos de Colección.
+- **Clasificación de Metadatos**: Categorización automática en Tipo, Demografía y Géneros.
+- **Lógica Romaji**: Extracción refinada para consistencia visual.
 
 ## [v6.0.0-alpha.18] - 2026-01-08
-### Fixed
-- **Translator Acronym Detection**: Added a heuristic to extract short translator acronyms from the end of titles (e.g., `[TFP]` from `... [TFP]`) and prioritize them over long `dc:publisher` names for a cleaner UI.
-- **Metadata Refinement**: Corrected the logic to ensure the UI matches the clean, compact reference design.
+### Arreglado
+- **Detección de Acrónimos**: Heurística para extraer acrónimos cortos de traductores (ej: `[TFP]`) y prioritizarlos sobre nombres largos para una IU más limpia.
 
 ## [v6.0.0-alpha.17] - 2026-01-08
-### Fixed
-- **Metadata Extraction**: Improved intelligent extraction of Romaji titles from DC:Title when using patterns like "Romaji - ...".
-- **Scanlation Groups**: The UI now prioritizes and displays the Publisher (`dc:publisher`) as the scanlation/translator group in the volume line.
-- **Backend Sync**: Ensure `publisher` and `romaji_title` are correctly mapped and exposed through the OPDS API.
+### Arreglado
+- **Extracción de Metadatos**: Mejora en identificación de títulos Romaji desde DC:Title.
+- **Grupos de Escaneo**: Priorización del editor (`dc:publisher`) como grupo traductor.
+- **Sincronización Backend**: Mapeo correcto de `publisher` y `romaji_title`.
 
 ## [v6.0.0-alpha.16] - 2026-01-08
-### Fixed
-- **Build Recovery**: Retrying build after GitHub flakiness (502 error).
-- **UI Polish**: Confirmed Romaji prefix and combined Author-Illustrator line to match exact reference.
-- **Scanlation Filter**: Improved tag filtering to ensure only translation group tags appear in the volume line.
+### Arreglado
+- **Recuperación de Build**: Reintento tras fallo en GitHub (error 502).
+- **Pulido de IU**: Confirmación de prefijo Romaji y línea combinada de Autor/Ilustrador.
+- **Filtro de Traductores**: Solo etiquetas de grupos de traducción en la línea de volumen.
 
 ## [v6.0.0-alpha.15] - 2026-01-08
-### Fixed
-- **Local Library UI (Final Refinement)**:
-  - Prioritized Romaji titles in cards.
-  - Aggressively cleaned page headers (labels).
-  - Completely removed genre text and filtered genre tags from volume cards in storyline view.
-  - Unified Author and Illustrator line.
+### Arreglado
+- **Librería Local (Pulido Final)**:
+  - Títulos Romaji prioritarios.
+  - Limpieza agresiva de cabeceras.
+  - Eliminado texto de géneros en tarjetas.
+  - Línea unificada de Autor e Ilustrador.
 
 ## [v6.0.0-alpha.14] - 2026-01-08
-### Fixed
-- **Folder Detection**: Hardened the logic to detect if the user is inside a series folder, even if the URL parameters are nested within `feed_url` (fixing the "genres showing" bug).
+### Arreglado
+- **Detección de Carpetas**: Mejora en lógica para detectar si se está dentro de una serie incluso con parámetros anidados.
 
 ## [v6.0.0-alpha.13] - 2026-01-08
-### Changed
-- **Debug UI**: Added visible version footer to catalog page to verify update status.
+### Cambiado
+- **IU de Depuración**: Pie de página con versión en el catálogo.
 
 ## [v6.0.0-alpha.12] - 2026-01-08
-### Fixed
-- **Cache Busting**: Bumped version to `alpha.12` to force a clean build and UI refresh.
-- **Robust UI Logic**: Strengthened folder detection logic to ensure compact view persists.
+### Arreglado
+- **Limpieza de Caché**: Salto de versión para forzar refresco de IU.
+- **Lógica Robusta**: Fortaleza en detección de carpetas.
 
 ## [v6.0.0-alpha.11] - 2026-01-08
-### Fixed
-- **Volume List UI (Final)**: Implemented exact reference design for series folders:
-  - Card title shows series name + [NL/NW/WN] tags only
-  - Volume line shows "Volumen XX [KKLS]" (quality/scanlation tags only)
-  - Completely hid all genre lists when inside series folders
-  - Clean, compact layout matching premium design
+### Arreglado
+- **IU de Lista de Volúmenes (Final)**: Implementación de diseño premium exacto:
+  - Título muestra Serie + tags [NL/NW].
+  - Línea de volumen muestra "Volumen XX [KKLS]".
+  - Ocultos todos los géneros dentro de carpetas de serie.
 
 ## [v6.0.0-alpha.10] - 2026-01-08
-### Fixed
-- **Aggressive Title Cleaning**: Optimized volume lists to strip redundant series info and strictly focus on "Volumen XX" for both standard and Romaji titles.
-- **Header Polish**: Cleaned up the Storyline header by removing author names and trailing tags (eg: "[NL]").
-- **Auto-Update Support**: Fixed `/update_system` by facilitating a shift to moving image tags (`v6-alpha`).
+### Arreglado
+- **Limpieza de Títulos Agresiva**: Enfoque estricto en "Volumen XX".
+- **Pulido de Cabeceras**: Eliminación de autores y etiquetas redundantes.
+- **Soporte de Auto-Update**: Facilidad para mover tags de imagen (`v6-alpha`).
 
 ## [v6.0.0-alpha.9] - 2026-01-08
-### Fixed
-- **Clean Titles**: Improved title cleaning in the local library by removing redundant series prefixes (eg: "Toaru Majutsu no Index - Volumen 01" becomes just "Volumen 01").
-- **Volume Extraction**: Added fallback logic to extract volume numbers directly from "dirty" titles if metadata is missing.
-- **UI Clutter**: Strictly hidden Genres and Tags when browsing inside series folders (Storyline view) to match the premium reference design.
+### Arreglado
+- **Títulos Limpios**: Eliminado prefijo de serie redundante.
+- **Extracción de Volumen**: Lógica fallback para títulos "sucios".
+- **Ruido Visual**: Ocultación de géneros en vistas Storyline.
 
 ## [v6.0.0-alpha.8] - 2026-01-08
-### Changed
-- **Series Volume UI**: Redesigned volume list within series folders to be more compact, prioritizing Romaji titles, including illustrators, and fixing volume padding (eg: "Volumen 01").
-- **Storyline Header**: Added " - Storyline" to series folder titles in the catalog.
+### Cambiado
+- **IU de Volúmenes**: Rediseño compacto prioritizando Romaji y arreglando padding de volumen (ej: "Volumen 01").
+- **Cabecera Storyline**: Añadido " - Storyline" a los títulos de carpetas.
 
 ## [v6.0.0-alpha.7] - 2026-01-08
-### Changed
-- **Metadata Separation**: Distinguish between "Demografía" (eg: Seinen, Shounen) and "Géneros" in catalog and search listings, displaying them on separate lines for better readability.
+### Cambiado
+- **Separación de Metadatos**: Distinción entre "Demografía" (Seinen, Shounen) y "Géneros" en líneas separadas.
 
 ## [v6.0.0-alpha.5] - 2026-01-08
-### Added
-- **Premium Folder UI**: Local library folders now display covers, authors, and genres by selecting a "representative" book from within the folder.
-- **Series Title Detection**: Folders will now use the shared series name as their display title if all contained books belong to the same series.
+### Añadido
+- **IU de Carpetas Premium**: Visualización de portadas, autores y géneros mediante selección de libro "representante".
+- **Detección de Títulos de Serie**: Uso automático del nombre compartido como título de carpeta.
 
 ## [v6.0.0-alpha.4] - 2026-01-08
-### Fixed
-- **Client-Side Exception**: Resolved a critical crash caused by calling `.toLowerCase()` on numeric `seriesIndex` values (Float/Int) from the local database.
-- **Data Mapping**: Hardened `OpdsClient` to cast `seriesIndex` to string and handle potentially malformed `modifiedAt` dates in scanning.
+### Arreglado
+- **Excepción en Cliente**: Resolución de crash al usar `.toLowerCase()` en valores numéricos de `seriesIndex`.
+- **Mapeo de Datos**: Hardening de `OpdsClient` para fechas `modifiedAt` malformadas.
 
 ## [v6.0.0-alpha.3] - 2026-01-08
-
-### Fixed
-- Fixed **"Client-side exception"** in local library catalog by implementing defensive mapping for enriched metadata.
-- Implemented **alphabetical sorting** for local catalog (folders first, then books).
-- Implemented **pagination (20 items per page)** for the local library database.
-- Fixed `X-Telegram-Data` header validation in Book Detail page.
-- Improved URL encoding for folders with special characters.
+### Arreglado
+- Corregida **excepción en cliente** en el catálogo mediante mapeo defensivo.
+- Implementado **orden alfabético** (carpetas primero).
+- Implementada **paginación (20 items)**.
+- Arreglada validación de cabecera `X-Telegram-Data`.
+- Mejora en codificación de URLs para caracteres especiales.
 
 ## [v6.0.0-alpha.2] - 2026-01-08
-### Fixed
-- **Local Indexing**: Fixed an issue where the local indexer would fail to process entries if `seriesIndex` was missing or `None`. Now defaults to `0` if not present.
-- **Local Indexing**: Improved robustness of local indexer to handle malformed or incomplete metadata from Kavita.
-- **UI**: Fixed a visual bug where the "Local First" toggle was not correctly reflecting its state.
+### Arreglado
+- **Indexación Local**: Robustez ante `seriesIndex` faltantes (por defecto 0).
+- **Indexación Local**: Mejora en manejo de metadatos de Kavita incompletos.
+- **IU**: Corregido estado visual del interruptor "Local First".
 
 ## [v5.0.36] - 2026-01-07
 ### Added

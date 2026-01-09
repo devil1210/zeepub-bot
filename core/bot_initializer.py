@@ -2,7 +2,6 @@ import logging
 from services.weekly_reports import start_weekly_scheduler
 from services.backup_scheduler import start_backup_scheduler
 from services.daily_reset_scheduler import start_daily_reset_scheduler
-from services.library_backup_scheduler import start_library_backup_scheduler
 from utils.download_limiter import load_downloads
 from utils.helpers import get_version_string, get_last_commit_message
 import os
@@ -28,7 +27,6 @@ class BotInitializer:
             ("weekly_reports", start_weekly_scheduler),
             ("backup", start_backup_scheduler),
             ("daily_reset", start_daily_reset_scheduler),
-            ("library_backup", start_library_backup_scheduler),
         ]
 
         # Pre-load needed data for schedulers if any
@@ -72,7 +70,7 @@ class BotInitializer:
                     text=(
                         f"✅ <b>¡Actualización Completada!</b>\n"
                         f"🤖 ZeePub Bot {v} está en línea. 🚀\n\n"
-                        f"📝 <i>Cambios:</i> {commit_msg}"
+                        f"📝 <b>Cambios:</b> {commit_msg}"
                     ),
                     parse_mode="HTML",
                     message_thread_id=thread_id,

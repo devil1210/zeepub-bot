@@ -499,6 +499,26 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "ℹ️ <b>Comando: /import_history</b>\n\n📝 <b>Descripción:</b>\nImporta historial de publicaciones desde un JSON exportado de Telegram.\n\n⌨️ <b>Uso:</b> Responder a archivo JSON con <code>/import_history</code>\n💡 <b>Ejemplo:</b> <code>/import_history</code>",
     },
+    "help_cmd_refresh_user": {
+        "desc": "Ayuda: /refresh_user",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /refresh_user</b>\n\n📝 <b>Descripción:</b>\nBusca y actualiza los datos del usuario (id, nombre, alias) directamente desde los servidores de Telegram. Útil si un usuario ha cambiado su alias o nombre.\n\n⌨️ <b>Uso:</b> <code>/refresh_user &lt;user_id&gt;</code>\n💡 <b>Ejemplo:</b> <code>/refresh_user 123456789</code>",
+    },
+    "help_cmd_scan_library": {
+        "desc": "Ayuda: /scan_library",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /scan_library</b>\n\n📝 <b>Descripción:</b>\nInicia un escaneo completo de la carpeta de libros local para indexar nuevos títulos, autores, series y generar miniaturas.\n\n⌨️ <b>Uso:</b> <code>/scan_library</code>\n💡 <b>Ejemplo:</b> <code>/scan_library</code>",
+    },
+    "help_cmd_verify": {
+        "desc": "Ayuda: /verify",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /verify</b>\n\n📝 <b>Descripción:</b>\nInicia el proceso de verificación para nuevos usuarios mediante retos sencillos para confirmar que no son bots.\n\n⌨️ <b>Uso:</b> <code>/verify</code>\n💡 <b>Ejemplo:</b> <code>/verify</code>",
+    },
+    "help_cmd_set_export_time": {
+        "desc": "Ayuda: /set_export_time",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /set_export_time</b>\n\n📝 <b>Descripción:</b>\nConfigura la hora para la exportación automática diaria de las bases de datos (url_cache.db y library.db).\n\n⌨️ <b>Uso:</b> <code>/set_export_time &lt;HH:MM&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_export_time 04:00</code>",
+    },
     "help_cmd_latest_books": {
         "desc": "Ayuda: /latest_books",
         "vars": [],
