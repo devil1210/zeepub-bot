@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, ChevronLeft, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock, ImageOff, X } from "lucide-react"
+import { Download, ChevronLeft, ArrowLeft, ArrowUpCircle, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock, ImageOff, X } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { Skeleton } from "@/components/ui/skeleton"
 import { callBotAPI } from "@/lib/api"
@@ -488,10 +488,65 @@ function BookDetailContent() {
                     </div>
                 </Card>
 
-                <div className="sticky bottom-6 z-50 px-2 pb-2">
-                    <Button onClick={handleDownload} disabled={isDownloading || !book.downloadUrl} className="w-full h-14 rounded-2xl text-lg font-bold shadow-2xl relative border-2 border-primary/50">
-                        <span className="flex items-center gap-2">{isDownloading ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Download className="w-6 h-6" />{t("book_download")}</>}</span>
-                    </Button>
+                <div className="sticky bottom-4 z-50 px-0">
+                    <div className="flex items-center w-full max-w-[440px] mx-auto bg-background/60 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden group/nav">
+                        {/* Active Action Highlight */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
+
+                        {/* Botón Volver */}
+                        <Button
+                            variant="ghost"
+                            onClick={() => router.back()}
+                            className="flex-1 h-10 hover:bg-white/5 text-foreground rounded-xl transition-all active:scale-95 px-0"
+                        >
+                            <div className="flex flex-col items-center justify-center gap-0.5">
+                                <ArrowLeft className="w-4 h-4" />
+                                <span className="text-[9px] uppercase tracking-[0.1em] font-bold opacity-70">
+                                    Volver
+                                </span>
+                            </div>
+                        </Button>
+
+                        <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
+
+                        {/* Botón Subir */}
+                        <Button
+                            variant="ghost"
+                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                            className="flex-1 h-10 hover:bg-white/5 text-muted-foreground rounded-xl transition-all active:scale-95 px-0"
+                        >
+                            <div className="flex flex-col items-center justify-center gap-0.5">
+                                <ArrowUpCircle className="w-4 h-4" />
+                                <span className="text-[9px] uppercase tracking-[0.1em] font-bold opacity-70">
+                                    Subir
+                                </span>
+                            </div>
+                        </Button>
+
+                        <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
+
+                        {/* Botón Descargar */}
+                        <Button
+                            variant="ghost"
+                            onClick={handleDownload}
+                            disabled={isDownloading || !book.downloadUrl}
+                            className={`flex-[1.5] h-10 rounded-xl transition-all active:scale-95 disabled:opacity-20 px-0 ${book.downloadUrl
+                                    ? "bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)] border border-primary/20"
+                                    : "hover:bg-white/5 text-foreground"
+                                }`}
+                        >
+                            <div className="flex flex-col items-center justify-center gap-0.5">
+                                {isDownloading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Download className="w-4 h-4" />
+                                )}
+                                <span className="text-[9px] uppercase tracking-[0.1em] font-bold">
+                                    {isDownloading ? "Enviando..." : t("book_download")}
+                                </span>
+                            </div>
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
