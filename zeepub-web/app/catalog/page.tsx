@@ -889,7 +889,7 @@ function CatalogContent() {
                                 onPrevPage={() => currentFeed.prevPage && handleNavigate(currentFeed.prevPage)}
                                 onUpPage={handleGoBack}
                                 onSort={() => setShowSortModal(true)}
-                                showSort={true}
+                                showSort={currentFeed?.entries.some((e) => e.links.some((l) => l.rel === "subsection")) || false}
                                 isLoading={isLoading}
                             />
                         )
