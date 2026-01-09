@@ -314,7 +314,13 @@ TEMPLATE_REGISTRY = {
     },
     "status_message": {
         "desc": "Mensaje de estado (/status)",
-        "vars": ["[Nivel]", "[Descargas]", "[ResetTime]", "[Expires]", "[TotalDescargas]"],
+        "vars": [
+            "[Nivel]",
+            "[Descargas]",
+            "[ResetTime]",
+            "[Expires]",
+            "[TotalDescargas]",
+        ],
         "default": "🤖 <b>ZeePub Bot</b> [VersionBot]\n\n📊 <b>Tu Estado</b>\n\n👤 <b>Usuario:</b> [Nombre]\n🆔 <b>ID:</b> [ID]\n⭐ <b>Nivel:</b> [Nivel]\n{{if Rol}}👨🏻‍💻 <b>Rol:</b> [Rol]\n{{endif}}{{if Apodo}}👨🏻‍💻 <b>Apodo:</b> [Apodo]\n{{endif}}{{if Expires}}📅 <b>Vence:</b> [Expires]\n{{endif}}📉 <b>Descargas Hoy:</b> [Descargas]\n📈 <b>Descargas Totales:</b> [TotalDescargas]\n{{if ResetTime}}⏳ <b>Reinicio en:</b> [ResetTime]\n{{endif}}",
     },
     "help_cat_header": {
@@ -664,11 +670,6 @@ TEMPLATE_REGISTRY = {
         "desc": "Web: Precio nivel Premium",
         "vars": [],
         "default": "$12/mes",
-    },
-    "web_donate_tier_premium_downloads": {
-        "desc": "Web: Descargas nivel Premium",
-        "vars": [],
-        "default": "Ilimitado",
     },
     "help_cmd_set_group_welcome": {
         "desc": "Ayuda: /set_group_welcome",
@@ -1499,7 +1500,9 @@ class CustomMessagesPlugin(BasePlugin):
         # 1.1 Inject Bot Info (if available)
         if self.bot:
             vars_to_use["BotNombre"] = self.bot.first_name
-            vars_to_use["BotAlias"] = f"@{self.bot.username}" if self.bot.username else "Bot"
+            vars_to_use["BotAlias"] = (
+                f"@{self.bot.username}" if self.bot.username else "Bot"
+            )
 
         # 1.2 Inject Chat context if replacements has it or try to infer?
         # Often 'chat_id' is passed as extra or available in update
@@ -1563,6 +1566,7 @@ class CustomMessagesPlugin(BasePlugin):
             final_text = final_text.replace(placeholder, safe_value)
 
         return final_text
+
     async def get_web_strings(self) -> Dict[str, str]:
         """
         Recupera todos los strings destinados a la Mini App.
@@ -1644,7 +1648,9 @@ class CustomMessagesPlugin(BasePlugin):
         # 2. No arguments: show first page of list
         await self._show_message_list(update, context, 1)
 
-    async def _preview_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE, slug: str):
+    async def _preview_message(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE, slug: str
+    ):
         """Internal helper to preview a specific message by slug."""
         msg = self._get_message(slug)
         entry = TEMPLATE_REGISTRY.get(slug)
@@ -1674,7 +1680,9 @@ class CustomMessagesPlugin(BasePlugin):
             try:
                 user = None
                 try:
-                    member = await context.bot.get_chat_member(update.effective_chat.id, target_uid)
+                    member = await context.bot.get_chat_member(
+                        update.effective_chat.id, target_uid
+                    )
                     user = member.user
                 except Exception:
                     chat = await context.bot.get_chat(target_uid)
@@ -1692,7 +1700,11 @@ class CustomMessagesPlugin(BasePlugin):
                 logger.warning(f"Preview test vars failed: {e}")
 
         if source == "default" or (msg and msg.text_content):
-            prefix = "⚠️ <b>Por defecto:</b>\n" if source == "default" else f"📂 <b>Personalizado ({slug}):</b>\n"
+            prefix = (
+                "⚠️ <b>Por defecto:</b>\n"
+                if source == "default"
+                else f"📂 <b>Personalizado ({slug}):</b>\n"
+            )
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=f"{prefix}\n{html.escape(text_content)}",
@@ -1709,9 +1721,13 @@ class CustomMessagesPlugin(BasePlugin):
                     message_thread_id=get_thread_id(update),
                 )
             except Exception as e:
-                await update.message.reply_text(f"❌ Error al previsualizar multimedia: {e}")
+                await update.message.reply_text(
+                    f"❌ Error al previsualizar multimedia: {e}"
+                )
 
-    async def _show_message_list(self, update: Update, context: ContextTypes.DEFAULT_TYPE, page: int):
+    async def _show_message_list(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE, page: int
+    ):
         """Internal helper to show a paginated list of slugs."""
         msgs_db = self._list_messages()
         db_slugs = {m.slug for m in msgs_db}
@@ -1727,7 +1743,7 @@ class CustomMessagesPlugin(BasePlugin):
         page = max(1, min(page, total_pages))
 
         start_idx = (page - 1) * page_size
-        paged_slugs = all_slugs[start_idx:start_idx + page_size]
+        paged_slugs = all_slugs[start_idx : start_idx + page_size]
 
         text = f"📂 <b>Mensajes Disponibles</b> (Pág {page}/{total_pages})\n\n"
         for s in paged_slugs:
@@ -1751,7 +1767,7 @@ class CustomMessagesPlugin(BasePlugin):
                 "📖 <b>Uso:</b> <code>/view_msge &lt;slug&gt;</code>\n\n"
                 "Muestra el template renderizado (con HTML procesado).\n"
                 "Usa <code>/list_msge</code> para ver la lista de templates disponibles.",
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
             )
             return
 
@@ -1768,7 +1784,7 @@ class CustomMessagesPlugin(BasePlugin):
             await update.message.reply_text(
                 f"❌ Template '{slug}' no encontrado.\n\n"
                 "Usa <code>/list_msge</code> para ver templates disponibles.",
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
             )
             return
 
@@ -2171,7 +2187,9 @@ class CustomMessagesPlugin(BasePlugin):
             keyboard = self._build_templates_keyboard(
                 current_cat=cat_name, page=page, has_more=has_more
             )
-            await query.edit_message_text(text, reply_markup=keyboard, parse_mode="HTML")
+            await query.edit_message_text(
+                text, reply_markup=keyboard, parse_mode="HTML"
+            )
             return
 
     async def set_var(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -17,7 +17,7 @@ class PostgresPlugin(BasePlugin):
 
     @property
     def description(self) -> str:
-        return "Integra PostgreSQL como base de datos principal (si está configurada)."
+        return "Soporte opcional para PostgreSQL (Actualmente el bot usa SQLite por defecto)."
 
     async def initialize(self, bot_instance) -> bool:
         # La lógica principal de activación ocurre en config_settings.py y url_cache.py

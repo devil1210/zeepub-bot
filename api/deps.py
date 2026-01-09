@@ -39,7 +39,9 @@ async def get_telegram_user_id(
     return 0
 
 
-async def get_current_user_data(user_id: int = Depends(get_telegram_user_id)) -> Dict[str, Any]:
+async def get_current_user_data(
+    user_id: int = Depends(get_telegram_user_id),
+) -> Dict[str, Any]:
     """
     Dependency that returns the full effective user data.
     """
@@ -60,13 +62,15 @@ async def require_admin(user_data: Dict[str, Any] = Depends(get_current_user_dat
     return user_data
 
 
-async def require_mini_app_access(user_data: Dict[str, Any] = Depends(get_current_user_data)):
+async def require_mini_app_access(
+    user_data: Dict[str, Any] = Depends(get_current_user_data)
+):
     """
     Dependency that enforces Mini App access permissions.
     """
     if not user_data.get("has_mini_app_access") and user_data.get("role") != "admin":
         raise HTTPException(
             status_code=403,
-            detail="⛔ El acceso a la Mini App está restringido actualmente."
+            detail="⛔ El acceso a la Mini App está restringido actualmente.",
         )
     return user_data

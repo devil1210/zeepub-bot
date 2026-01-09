@@ -2,6 +2,7 @@ import sys
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 
+
 @pytest.fixture
 def client(monkeypatch):
     with patch("core.bot.ZeePubBot") as mock_bot:
@@ -13,15 +14,19 @@ def client(monkeypatch):
 
         import importlib
         import api.main
+
         importlib.reload(api.main)
         from api.main import app
 
         from fastapi.testclient import TestClient
+
         return TestClient(app)
+
 
 @pytest.fixture
 def mock_opds_roots(monkeypatch):
     from config.config_settings import config
+
     monkeypatch.setattr(config, "OPDS_ROOT_START_SUFFIX", "/start")
     monkeypatch.setattr(config, "OPDS_ROOT_EVIL_SUFFIX", "/evil")
     monkeypatch.setattr(config, "OPDS_SERVER_URL", "http://opds.test")
@@ -29,6 +34,7 @@ def mock_opds_roots(monkeypatch):
     monkeypatch.setattr(config, "VIP_LIST", {456})
     monkeypatch.setattr(config, "PREMIUM_LIST", {789})
     monkeypatch.setattr(config, "WHITELIST", {111})
+
 
 def test_role_based_access_admin(mock_opds_roots, client):
     with patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_feed:
@@ -41,6 +47,7 @@ def test_role_based_access_admin(mock_opds_roots, client):
         assert response.status_code == 200
         assert response.json()["title"] == "Evil Root"
 
+
 def test_role_based_access_vip(mock_opds_roots, client):
     with patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_feed:
         mock_feed_obj = MagicMock()
@@ -51,6 +58,7 @@ def test_role_based_access_vip(mock_opds_roots, client):
         response = client.get("/api/feed?uid=456")
         assert response.status_code == 200
         assert response.json()["title"] == "Start Root"
+
 
 def test_role_based_access_whitelist(mock_opds_roots, client):
     with patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_feed:
@@ -63,29 +71,40 @@ def test_role_based_access_whitelist(mock_opds_roots, client):
         assert response.status_code == 200
         assert response.json()["title"] == "Start Root"
 
+
 def test_role_based_access_denied(mock_opds_roots, client):
     with patch("api.deps.get_effective_user", new_callable=AsyncMock) as mock_get_user:
         mock_get_user.return_value = {"role": "free", "has_mini_app_access": False}
         response = client.get("/api/feed?uid=999")
         assert response.status_code == 403
 
+
 def test_book_detail_parsing(client, monkeypatch):
-    with patch("api.miniapp_routes.get_cached_feed", new_callable=AsyncMock) as mock_feed:
+    with patch(
+        "api.miniapp_routes.get_cached_feed", new_callable=AsyncMock
+    ) as mock_feed:
         mock_feed_obj = MagicMock()
         mock_feed_obj.entries = []
         mock_feed_obj.feed.title = "Test Book"
         mock_feed_obj.feed.links = [
             {"rel": "self", "href": "http://opds.test/book/1"},
-            {"rel": "http://opds-spec.org/acquisition", "href": "http://opds.test/download.epub", "type": "application/epub+zip"},
-            {"rel": "http://opds-spec.org/image", "href": "http://opds.test/cover.jpg"}
+            {
+                "rel": "http://opds-spec.org/acquisition",
+                "href": "http://opds.test/download.epub",
+                "type": "application/epub+zip",
+            },
+            {"rel": "http://opds-spec.org/image", "href": "http://opds.test/cover.jpg"},
         ]
         mock_feed_obj.feed.get = lambda k, d=None: getattr(mock_feed_obj.feed, k, d)
         mock_feed.return_value = mock_feed_obj
 
         monkeypatch.setenv("DEV_MODE", "True")
-        response = client.post("/api/bot?uid=123", json={
-            "action": "book-detail",
-            "data": {"bookId": "http://opds.test/book/1"}
-        })
+        response = client.post(
+            "/api/bot?uid=123",
+            json={
+                "action": "book-detail",
+                "data": {"bookId": "http://opds.test/book/1"},
+            },
+        )
         assert response.status_code == 200
         assert response.json()["title"] == "Test Book"

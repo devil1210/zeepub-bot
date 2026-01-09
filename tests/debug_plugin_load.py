@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 import sys
@@ -21,14 +20,17 @@ logger = logging.getLogger(__name__)
 # Let's try to import without mocking config first, assuming dependencies are present.
 # If that fails, we fallback.
 
+
 async def test_load():
     try:
         print("Importing CustomMessagesPlugin...")
         from plugins.custom_messages_plugin import CustomMessagesPlugin
+
         plugin = CustomMessagesPlugin()
 
         # Real config mock
         from config.config_settings import config
+
         # config might define enablement for custom messages?
 
         print("Initializing CustomMessagesPlugin...")
@@ -39,7 +41,9 @@ async def test_load():
     except Exception as e:
         print(f"FAILED: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     asyncio.run(test_load())

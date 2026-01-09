@@ -2,6 +2,7 @@ import sys
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 
+
 @pytest.fixture(autouse=True)
 def mock_dependencies():
     """Patch dependencies in sys.modules ONLY for the duration of the test."""
@@ -19,11 +20,17 @@ def mock_dependencies():
         "services.user_service": MagicMock(),
         "services.opds_service": MagicMock(),
         "services.telegram_service": MagicMock(),
-        "services.topic_service": MagicMock(topic_service=MagicMock(ensure_topics=AsyncMock())),
+        "services.topic_service": MagicMock(
+            topic_service=MagicMock(ensure_topics=AsyncMock())
+        ),
     }
     # Ensure they are AsyncMocks if awaited
-    modules_to_patch["utils.download_limiter"].downloads_left = AsyncMock(return_value="ilimitadas")
-    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
+    modules_to_patch["utils.download_limiter"].downloads_left = AsyncMock(
+        return_value="ilimitadas"
+    )
+    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(
+        return_value={"role": "free"}
+    )
     modules_to_patch["services.opds_service"].mostrar_colecciones = AsyncMock()
     modules_to_patch["services.telegram_service"].publicar_libro = AsyncMock()
 
@@ -32,8 +39,10 @@ def mock_dependencies():
     with patch.dict(sys.modules, modules_to_patch):
         yield
 
+
 import importlib.util
 from pathlib import Path
+
 
 def load_callback_handlers():
     cb_path = Path(__file__).resolve().parents[1] / "handlers" / "callback_handlers.py"
@@ -41,6 +50,7 @@ def load_callback_handlers():
     cb = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cb)
     return cb
+
 
 def setup_mocks(update, context):
     context.bot.send_message = AsyncMock()
@@ -50,6 +60,7 @@ def setup_mocks(update, context):
         update.callback_query.message.edit_message_text = AsyncMock()
         update.callback_query.answer = AsyncMock()
         update.callback_query.edit_message_text = AsyncMock()
+
 
 @pytest.mark.asyncio
 async def test_set_publish_temp_stores_one_time_choice(monkeypatch):
@@ -78,10 +89,13 @@ async def test_set_publish_temp_stores_one_time_choice(monkeypatch):
 
     monkeypatch.setattr(cb, "mostrar_colecciones", AsyncMock())
 
-    with patch("services.user_service.get_effective_user", new_callable=AsyncMock) as mock_get:
+    with patch(
+        "services.user_service.get_effective_user", new_callable=AsyncMock
+    ) as mock_get:
         mock_get.return_value = {"role": "free"}
         await cb.button_handler(update, context)
         assert st.get("publish_target_temp") == "telegram"
+
 
 @pytest.mark.asyncio
 async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch):
@@ -95,13 +109,17 @@ async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch
     query.answer = AsyncMock()
     update.callback_query = query
     update.effective_user.id = uid
-    libro = {"titulo": "Mi Libro", "portada": "http://x/cover.jpg", "descarga": "http://x/book.epub"}
+    libro = {
+        "titulo": "Mi Libro",
+        "portada": "http://x/cover.jpg",
+        "descarga": "http://x/book.epub",
+    }
     st = {
         "libros": {libro_key: libro},
         "publish_target_temp": "telegram",
         "chat_origen": uid,
         "url": "http://example.com/feed",
-        "message_thread_id": None
+        "message_thread_id": None,
     }
     mock_state = MagicMock()
     mock_state.get_user_state.return_value = st
@@ -122,11 +140,14 @@ async def test_publish_temp_consumed_on_lib_selection_calls_telegram(monkeypatch
         mock_cms.get_text = AsyncMock(return_value="Publicado con éxito")
         context.application.plugin_manager.get_plugin.return_value = mock_cms
 
-        with patch("services.user_service.get_effective_user", new_callable=AsyncMock) as mock_get:
+        with patch(
+            "services.user_service.get_effective_user", new_callable=AsyncMock
+        ) as mock_get:
             mock_get.return_value = {"role": "free"}
             await cb.button_handler(update, context)
             assert pub.called
             assert "publish_target_temp" not in st
+
 
 @pytest.mark.asyncio
 async def test_admin_publisher_set_publish_temp_fb_enters_evil(monkeypatch):
@@ -161,11 +182,14 @@ async def test_admin_publisher_set_publish_temp_fb_enters_evil(monkeypatch):
     mock_cms.get_text = AsyncMock(return_value="Modo Evil")
     context.application.plugin_manager.get_plugin.return_value = mock_cms
 
-    with patch("services.user_service.get_effective_user", new_callable=AsyncMock) as mock_get:
+    with patch(
+        "services.user_service.get_effective_user", new_callable=AsyncMock
+    ) as mock_get:
         mock_get.return_value = {"role": "staff", "custom_status": "Publicador"}
         await cb.button_handler(update, context)
         assert st.get("opds_root") == "/opds-evil"
         assert mc.called
+
 
 @pytest.mark.asyncio
 async def test_start_publisher_does_not_show_collections_immediately(monkeypatch):
@@ -193,7 +217,7 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
 
     update = MagicMock()
     update.effective_user.id = uid
-    update.effective_chat.type = 'private'
+    update.effective_chat.type = "private"
     context = MagicMock()
     setup_mocks(update, context)
     mock_cms = MagicMock()
@@ -201,7 +225,9 @@ async def test_start_publisher_does_not_show_collections_immediately(monkeypatch
     mock_cms.get_text = AsyncMock(return_value="Bienvenido")
     context.application.plugin_manager.get_plugin.return_value = mock_cms
 
-    with patch("services.user_service.get_effective_user", new_callable=AsyncMock) as mock_get:
+    with patch(
+        "services.user_service.get_effective_user", new_callable=AsyncMock
+    ) as mock_get:
         mock_get.return_value = {"role": "staff", "custom_status": "Publicador"}
         await ch.CommandHandlers(MagicMock()).start(update, context)
         assert not mc.called

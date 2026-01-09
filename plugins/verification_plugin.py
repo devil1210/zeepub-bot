@@ -8,6 +8,7 @@ from config.config_settings import config
 
 logger = logging.getLogger(__name__)
 
+
 class VerificationPlugin(BasePlugin):
     @property
     def name(self) -> str:

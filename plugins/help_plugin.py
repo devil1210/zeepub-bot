@@ -807,7 +807,7 @@ class HelpPlugin(BasePlugin):
         """Registra los comandos en el menú nativo de Telegram (/)."""
         # Introduce an initial delay to let the bot stabilize (deleteWebhook etc)
         await asyncio.sleep(5)
-        
+
         from telegram import (
             BotCommand,
             BotCommandScopeDefault,
@@ -837,12 +837,12 @@ class HelpPlugin(BasePlugin):
                         fallback_desc = COMMANDS_REGISTRY.get(c_name, {}).get(
                             "desc", "Comando bot"
                         )
-                        
+
                         desc = fallback_desc
                         if cms and cms.enabled:
                             # Use get_text with slug cmd_menu_desc_{command}
                             desc = await cms.get_text(f"cmd_menu_desc_{c_name}", default_text=fallback_desc)
-                        
+
                         public_cmds.append(BotCommand(c_name, desc))
                 except Exception as ex:
                     logger.error(f"Error parseando menu_public_commands: {ex}")
@@ -874,12 +874,12 @@ class HelpPlugin(BasePlugin):
             for cmd_name in sorted(COMMANDS_REGISTRY.keys()):
                 if len(all_cmds) >= 100:
                     break
-                
+
                 fallback_desc = COMMANDS_REGISTRY[cmd_name]["desc"]
                 desc = fallback_desc
                 if cms and cms.enabled:
                     desc = await cms.get_text(f"cmd_menu_desc_{cmd_name}", default_text=fallback_desc)
-                    
+
                 all_cmds.append(BotCommand(cmd_name, desc))
 
             count_admins = 0
@@ -918,14 +918,14 @@ class HelpPlugin(BasePlugin):
             ("status", "Mi estado"),
             ("cancel", "Cancelar acción"),
         ]
-        
+
         cmds = []
         for c_name, fallback_desc in default_list:
             desc = fallback_desc
             if cms and cms.enabled:
                 desc = await cms.get_text(f"cmd_menu_desc_{c_name}", default_text=fallback_desc)
             cmds.append(BotCommand(c_name, desc))
-            
+
         return cmds
 
     def _get_default_public_cmds(self):

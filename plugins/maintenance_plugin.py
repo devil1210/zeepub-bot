@@ -615,6 +615,7 @@ class MaintenancePlugin(BasePlugin):
             await update.message.reply_text(
                 "❌ Error generando exportación de historial."
             )
+
     async def scan_library(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Inicia el escaneo de la biblioteca local (solo admins)."""
         uid = update.effective_user.id
@@ -624,7 +625,7 @@ class MaintenancePlugin(BasePlugin):
 
         force = context.args and context.args[0].lower() == "force"
         thread_id = get_thread_id(update)
-        
+
         scan_type = " (FORZADO)" if force else ""
         msg = await update.message.reply_text(
             f"🔍 <b>Iniciando escaneo de biblioteca local{scan_type}...</b>\nEsto puede tardar unos minutos.",
@@ -634,7 +635,7 @@ class MaintenancePlugin(BasePlugin):
 
         try:
             from services.scanner_service import ScannerService
-            
+
             libs_json = os.getenv("LOCAL_LIBRARIES")
             if not libs_json:
                 await context.bot.edit_message_text(

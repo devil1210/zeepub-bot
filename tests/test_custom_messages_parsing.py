@@ -5,11 +5,12 @@ from telegram.ext import ContextTypes
 import plugins.custom_messages_plugin as plugin_mod
 from plugins.custom_messages_plugin import CustomMessagesPlugin
 
+
 @pytest.mark.asyncio
 async def test_saludo_parsing(monkeypatch):
     mock_config = MagicMock()
     mock_config.ADMIN_USERS = [123]
-    monkeypatch.setattr(plugin_mod, 'config', mock_config)
+    monkeypatch.setattr(plugin_mod, "config", mock_config)
 
     plugin = CustomMessagesPlugin()
     update = MagicMock(spec=Update)

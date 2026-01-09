@@ -37,7 +37,7 @@
   - **Backend**: Python (FastAPI + python-telegram-bot) asíncrono.
   - **Frontend**: React (Vite) servido estáticamente.
   - **Infraestructura**: Docker + Cloudflare Tunnel (sin abrir puertos).
-  - **Base de Datos**: Soporte para PostgreSQL y SQLite con gestión de URLs acortadas.
+  - **Base de Datos**: SQLite por defecto (v6), con soporte opcional para PostgreSQL.
 - **Arquitectura Modular (Plugins)**:
   - **Custom Messages**: Almacena y envía mensajes/media frecuentas, bienvenidas y saludos custom.
   - **Links Manager**: Gestión y auditoría de links acortados.
@@ -265,12 +265,12 @@ docker exec zeepub_bot pytest tests/
 
 Este proyecto está bajo la licencia **MIT**.
 
-## 🧱 Persistencia opcional con Postgres + Alembic
+## 🧱 Persistencia: SQLite (Default) y Postgres (Opcional)
 
-Para entornos de producción recomendamos usar un DBMS gestionado (Postgres) en
-vez del SQLite embebido. El proyecto incluye soporte para SQLAlchemy cuando la
-variable `DATABASE_URL` está configurada; alembic está incluido para gestionar
-las migraciones del esquema de `url_mappings`.
+Por defecto, **ZeePub Bot v6 usa SQLite** (`url_cache.db`) para facilitar el despliegue rápido y sin dependencias externas. Es la opción recomendada para la mayoría de los casos.
+
+### Soporte para Postgres (Opcional/Futuro)
+Para entornos que requieran un DBMS gestionado, el proyecto mantiene compatibilidad con PostgreSQL mediante SQLAlchemy. Alembic está incluido para gestionar las migraciones.
 
 Ejemplo mínimo:
 

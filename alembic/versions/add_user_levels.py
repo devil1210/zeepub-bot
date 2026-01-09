@@ -70,13 +70,18 @@ def upgrade():
 
     # Add settings and total_downloads columns if they don't exist
     try:
-        op.add_column('users', sa.Column('settings', sa.Text(), nullable=True))
-    except:
+        op.add_column("users", sa.Column("settings", sa.Text(), nullable=True))
+    except Exception:
         pass  # Column might already exist
-    
+
     try:
-        op.add_column('users', sa.Column('total_downloads', sa.Integer(), nullable=False, server_default='0'))
-    except:
+        op.add_column(
+            "users",
+            sa.Column(
+                "total_downloads", sa.Integer(), nullable=False, server_default="0"
+            ),
+        )
+    except Exception:
         pass  # Column might already exist
 
 

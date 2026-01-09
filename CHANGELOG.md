@@ -5,6 +5,19 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.0.0-alpha.61] - 2026-01-09
+### Added
+- **Premium Minimalist UI**: Applied a high-end aesthetic polish to the search and catalog interfaces.
+- **Glassmorphism**: Enhanced search bar with rounded category selectors and improved glass backgrounds.
+### Changed
+- **Book Detail Layout**: Removed redundant "Subir" button from the bottom navigation for a cleaner focus on primary actions.
+- **Unified Search Style**: Search results now use the "Premium-Sutil" download buttons, consistent with the main catalog.
+### Fixed
+- **Database Migration**: Corrected a critical `psycopg2.errors.DatatypeMismatch` in PostgreSQL migrations involving boolean columns.
+- **PEP8 Compliance**: Achieved a 100% clean code state (formatted with Black, zero Flake8 errors).
+- **Bare Excepts**: Replaced all dangerous bare `except:` clauses with explicit `except Exception:` for robust error handling.
+- **Deduplication**: Removed duplicate translation keys in the messaging system.
+
 ## [v6.0.0-alpha.57] - 2026-01-08
 ### Added
 - **Metadata Refinements**: Standardized book metadata formatting across the app.

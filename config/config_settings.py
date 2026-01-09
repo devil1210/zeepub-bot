@@ -149,8 +149,11 @@ class BotConfig:
         raw_db_url = os.getenv("DATABASE_URL", "")
         if self.ENABLE_POSTGRES_PLUGIN and raw_db_url:
             self.DATABASE_URL = raw_db_url
+            # No imprimimos aquí porque config se carga al importar,
+            # el log se hará en el logger oficial si es posible.
         else:
             self.DATABASE_URL = ""
+            # SQLite es el default por diseño si no se activa Postgres
 
     @property
     def OPDS_ROOT_START(self) -> str:

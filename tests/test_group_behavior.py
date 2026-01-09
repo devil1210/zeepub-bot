@@ -2,6 +2,7 @@ import sys
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 
+
 @pytest.fixture(autouse=True)
 def mock_dependencies():
     """Patch dependencies in sys.modules ONLY for the duration of the test."""
@@ -20,23 +21,28 @@ def mock_dependencies():
         "utils.helpers": MagicMock(),
         "config": MagicMock(),
     }
-    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
+    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(
+        return_value={"role": "free"}
+    )
 
     with patch.dict(sys.modules, modules_to_patch):
         # We need to ensure handlers.message_handlers is reloaded if already imported
         if "handlers.message_handlers" in sys.modules:
             import importlib
+
             importlib.reload(sys.modules["handlers.message_handlers"])
         yield
+
 
 @pytest.mark.asyncio
 async def test_recibir_texto_group_chat_suppression(monkeypatch):
     from handlers.message_handlers import recibir_texto
+
     update = MagicMock()
     context = MagicMock()
     update.effective_user.id = 123
     update.effective_chat.id = 456
-    update.effective_chat.type = 'group'
+    update.effective_chat.type = "group"
     update.message.text = "some random text"
 
     mock_state_manager = MagicMock()
@@ -44,6 +50,7 @@ async def test_recibir_texto_group_chat_suppression(monkeypatch):
 
     # Use a local reference to state_manager in the module
     import handlers.message_handlers as mh
+
     monkeypatch.setattr(mh, "state_manager", mock_state_manager)
 
     mock_config = MagicMock()
@@ -54,15 +61,17 @@ async def test_recibir_texto_group_chat_suppression(monkeypatch):
     await recibir_texto(update, context)
     context.bot.send_message.assert_not_called()
 
+
 @pytest.mark.asyncio
 async def test_recibir_texto_group_chat_with_active_state(monkeypatch):
     from handlers.message_handlers import recibir_texto
     import handlers.message_handlers as mh
+
     update = MagicMock()
     context = MagicMock()
     update.effective_user.id = 123
     update.effective_chat.id = 456
-    update.effective_chat.type = 'group'
+    update.effective_chat.type = "group"
     update.message.text = "password"
 
     mock_state_manager = MagicMock()
@@ -78,15 +87,17 @@ async def test_recibir_texto_group_chat_with_active_state(monkeypatch):
     await recibir_texto(update, context)
     context.bot.send_message.assert_called()
 
+
 @pytest.mark.asyncio
 async def test_recibir_texto_private_chat_response(monkeypatch):
     from handlers.message_handlers import recibir_texto
     import handlers.message_handlers as mh
+
     update = MagicMock()
     context = MagicMock()
     update.effective_user.id = 123
     update.effective_chat.id = 456
-    update.effective_chat.type = 'private'
+    update.effective_chat.type = "private"
     update.message.text = "some random text"
 
     mock_state_manager = MagicMock()
@@ -106,4 +117,4 @@ async def test_recibir_texto_private_chat_response(monkeypatch):
     await recibir_texto(update, context)
     context.bot.send_message.assert_called_once()
     args, kwargs = context.bot.send_message.call_args
-    assert "Usa /start para comenzar" in kwargs.get('text', '')
+    assert "Usa /start para comenzar" in kwargs.get("text", "")

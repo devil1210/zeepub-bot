@@ -90,9 +90,13 @@ class SystemManagerPlugin(BasePlugin):
 
                 for admin_id in config.ADMIN_USERS:
                     try:
-                        await context.bot.send_message(chat_id=admin_id, text=msg, parse_mode="HTML")
+                        await context.bot.send_message(
+                            chat_id=admin_id, text=msg, parse_mode="HTML"
+                        )
                     except Exception as e:
-                        logger.warning(f"Could not notify admin {admin_id} about update: {e}")
+                        logger.warning(
+                            f"Could not notify admin {admin_id} about update: {e}"
+                        )
         except Exception as e:
             logger.error(f"Error in check_for_updates_job: {e}")
 
@@ -429,6 +433,7 @@ class SystemManagerPlugin(BasePlugin):
 
         try:
             import re
+
             with open(compose_path, "r") as f:
                 content = f.read()
 
@@ -438,8 +443,8 @@ class SystemManagerPlugin(BasePlugin):
             pattern = r"(image:\s+ghcr\.io/devil1210/zeepub-bot:)(.*)"
 
             if not re.search(pattern, content):
-                 # Fallback for standard docker hub image if ghcr is not used or commented
-                 pattern = r"(image:\s+devil1210/zeepub-bot:)(.*)"
+                # Fallback for standard docker hub image if ghcr is not used or commented
+                pattern = r"(image:\s+devil1210/zeepub-bot:)(.*)"
 
             if not re.search(pattern, content):
                 await context.bot.send_message(
@@ -464,7 +469,9 @@ class SystemManagerPlugin(BasePlugin):
                 parse_mode="HTML",
                 message_thread_id=thread_id,
             )
-            logger.info(f"Admin {uid} cambió la versión en docker-compose.yml a: {new_tag}")
+            logger.info(
+                f"Admin {uid} cambió la versión en docker-compose.yml a: {new_tag}"
+            )
         except Exception as e:
             logger.error(f"Error en set_version: {e}")
             await context.bot.send_message(

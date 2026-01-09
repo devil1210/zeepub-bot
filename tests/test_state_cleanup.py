@@ -2,6 +2,7 @@ import sys
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 
+
 @pytest.fixture(autouse=True)
 def mock_dependencies():
     """Patch dependencies in sys.modules ONLY for the duration of the test."""
@@ -21,15 +22,19 @@ def mock_dependencies():
         "config.config_settings": MagicMock(),
         "services.user_service": MagicMock(),
     }
-    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
+    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(
+        return_value={"role": "free"}
+    )
     modules_to_patch["utils"].__path__ = []
     modules_to_patch["utils.decorators"] = MagicMock()
 
     with patch.dict(sys.modules, modules_to_patch):
         yield
 
+
 import importlib.util
 from pathlib import Path
+
 
 def load_callback_handlers():
     cb_path = Path(__file__).resolve().parents[1] / "handlers" / "callback_handlers.py"
@@ -37,6 +42,7 @@ def load_callback_handlers():
     cb = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cb)
     return cb
+
 
 @pytest.mark.asyncio
 async def test_state_cleanup_on_new_book(monkeypatch):
@@ -60,7 +66,7 @@ async def test_state_cleanup_on_new_book(monkeypatch):
         "libros": {"k1": {"titulo": "Nuevo", "portada": "url", "descarga": "epub"}},
         "chat_origen": uid,
         "url": "http://example.com/feed",
-        "message_thread_id": None
+        "message_thread_id": None,
     }
     mock_state = MagicMock()
     mock_state.get_user_state.return_value = st
@@ -87,5 +93,11 @@ async def test_state_cleanup_on_new_book(monkeypatch):
         await cb.button_handler(update, context)
 
         # All temp keys should be gone
-        for k in ("epub_buffer", "meta_pendiente", "portada_pendiente", "titulo_pendiente", "fb_caption"):
+        for k in (
+            "epub_buffer",
+            "meta_pendiente",
+            "portada_pendiente",
+            "titulo_pendiente",
+            "fb_caption",
+        ):
             assert k not in st, f"Key '{k}' should have been cleaned up"

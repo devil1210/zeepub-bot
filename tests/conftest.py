@@ -2,6 +2,7 @@
 Pytest configuration file.
 Adds the project root to sys.path so tests can import project modules.
 """
+
 import sys
 import os
 import pytest
@@ -12,17 +13,20 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+
 @pytest.fixture(scope="session", autouse=True)
 def mock_staff_ids():
     """
     Ensures some default IDs are always in the staff lists for easy testing.
     """
     from config.config_settings import config
+
     config.ADMIN_USERS.add(12345)
     config.WHITELIST.add(11111)
     yield
     config.ADMIN_USERS.discard(12345)
     config.WHITELIST.discard(11111)
+
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
@@ -67,6 +71,7 @@ def setup_test_db():
             if os.path.exists(test_db_path + suffix):
                 os.remove(test_db_path + suffix)
 
+
 @pytest.fixture(scope="session", autouse=True)
 def global_cleanup():
     """
@@ -82,6 +87,7 @@ def global_cleanup():
     except Exception:
         pass
 
+
 @pytest.fixture(autouse=True)
 def cleanup_sys_modules():
     """
@@ -91,6 +97,7 @@ def cleanup_sys_modules():
     yield
     import sys
     from unittest.mock import MagicMock
+
     for name in list(sys.modules.keys()):
         try:
             if isinstance(sys.modules.get(name), MagicMock):

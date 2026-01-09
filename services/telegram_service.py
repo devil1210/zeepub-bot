@@ -72,7 +72,9 @@ async def send_photo_bytes(
                     )
                 raise e
 
-        elif isinstance(data_or_path, str) and await asyncio.to_thread(os.path.exists, data_or_path):
+        elif isinstance(data_or_path, str) and await asyncio.to_thread(
+            os.path.exists, data_or_path
+        ):
             # Read image file asynchronously into memory (covers are small)
             try:
                 import aiofiles
@@ -178,7 +180,9 @@ async def send_doc_bytes(
                         message_thread_id=None,
                     )
                 raise e
-        elif isinstance(data_or_path, str) and await asyncio.to_thread(os.path.exists, data_or_path):
+        elif isinstance(data_or_path, str) and await asyncio.to_thread(
+            os.path.exists, data_or_path
+        ):
             # Decide whether to load to memory or stream from disk
             try:
                 size = await asyncio.to_thread(os.path.getsize, data_or_path)
@@ -287,6 +291,7 @@ async def publicar_libro(
         # API 9.3: Si es chat privado y es el origen, usar tópico de Catálogo
         if uid == destino:
             from services.topic_service import topic_service
+
             topic_id = await topic_service.get_topic_id(uid, "catalogo")
             if topic_id:
                 thread_id_destino = topic_id
@@ -442,8 +447,12 @@ async def publicar_libro(
             # Calcular tamaño: fetch_bytes puede devolver bytes o ruta de archivo
             if isinstance(epub_downloaded, (bytes, bytearray)):
                 size_mb = len(epub_downloaded) / (1024 * 1024)
-            elif isinstance(epub_downloaded, str) and await asyncio.to_thread(os.path.exists, epub_downloaded):
-                size_mb = (await asyncio.to_thread(os.path.getsize, epub_downloaded)) / (1024 * 1024)
+            elif isinstance(epub_downloaded, str) and await asyncio.to_thread(
+                os.path.exists, epub_downloaded
+            ):
+                size_mb = (
+                    await asyncio.to_thread(os.path.getsize, epub_downloaded)
+                ) / (1024 * 1024)
             else:
                 size_mb = 0.0
 
@@ -548,6 +557,7 @@ async def descargar_epub_pendiente(
     # API 9.3: Si es chat privado y es el origen, usar tópico de 'Mis Libros' para el archivo
     if uid == destino:
         from services.topic_service import topic_service
+
         topic_id = await topic_service.get_topic_id(uid, "mis_libros")
         if topic_id:
             thread_id_destino = topic_id
@@ -622,8 +632,12 @@ async def descargar_epub_pendiente(
         # Calcular tamaño: epub_buffer puede ser bytes o ruta de archivo
         if isinstance(epub_buffer, (bytes, bytearray)):
             size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
-            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
+        elif isinstance(epub_buffer, str) and await asyncio.to_thread(
+            os.path.exists, epub_buffer
+        ):
+            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (
+                1024 * 1024
+            )
         else:
             size_mb = 0.0
         version = meta.get("epub_version", "2.0")  # Default a 2.0 si no se encuentra
@@ -712,6 +726,7 @@ async def descargar_epub_pendiente(
 
         # Gamificación: Incrementar contador y verificar hitos
         from services.user_service import increment_download_count, check_milestones
+
         await increment_download_count(uid)
         milestone_msg = await check_milestones(uid, context)
         if milestone_msg:
@@ -720,7 +735,7 @@ async def descargar_epub_pendiente(
                     chat_id=destino,
                     text=milestone_msg,
                     parse_mode="HTML",
-                    message_thread_id=thread_id_destino
+                    message_thread_id=thread_id_destino,
                 )
             except Exception as e:
                 logger.warning(f"Error enviando mensaje de hito: {e}")
@@ -733,11 +748,16 @@ async def descargar_epub_pendiente(
 
             # Enrich metadata if needed from title
             from utils.helpers import parse_metadata_from_title
+
             title_meta = parse_metadata_from_title(titulo_vol)
 
             romaji = meta.get("romaji_title") or title_meta.get("romaji")
             series = meta.get("titulo_serie") or title_meta.get("series")
-            volume = meta.get("volumen") or meta.get("series_index") or title_meta.get("volume")
+            volume = (
+                meta.get("volumen")
+                or meta.get("series_index")
+                or title_meta.get("volume")
+            )
             clean_title = meta.get("internal_title") or title_meta.get("clean_title")
             translator = meta.get("traductor") or meta.get("publisher")
 
@@ -751,7 +771,7 @@ async def descargar_epub_pendiente(
                 series=series,
                 volume=volume,
                 translator=translator,
-                clean_title=clean_title
+                clean_title=clean_title,
             )
         except Exception as e:
             logger.error(f"Error saving download history: {e}")
@@ -840,10 +860,11 @@ async def enviar_libro_directo(
         # Detectar si es ruta local absoluta
         if download_url.startswith("/") and os.path.exists(download_url):
             logger.info(f"Usando archivo local: {download_url}")
-            epub_bytes = download_url # send_doc_bytes acepta rutas
+            epub_bytes = download_url  # send_doc_bytes acepta rutas
         else:
             logger.info(f"Descargando EPUB desde: {download_url}")
             import aiohttp
+
             auth = None
             if config.OPDS_AUTH:
                 auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
@@ -859,9 +880,7 @@ async def enviar_libro_directo(
             )
             return False
 
-        logger.info(
-            f"EPUB listo para procesar: {download_url}"
-        )
+        logger.info(f"EPUB listo para procesar: {download_url}")
 
         # 4. Parsear metadatos del EPUB
         meta = {
@@ -920,8 +939,12 @@ async def enviar_libro_directo(
             # 3. Info del archivo (Actualizado, Tamaño)
             if isinstance(epub_bytes, (bytes, bytearray)):
                 size_mb = len(epub_bytes) / (1024 * 1024)
-            elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
-                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
+            elif isinstance(epub_bytes, str) and await asyncio.to_thread(
+                os.path.exists, epub_bytes
+            ):
+                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (
+                    1024 * 1024
+                )
             else:
                 size_mb = 0.0
 
@@ -1070,8 +1093,12 @@ async def enviar_libro_directo(
             # Calcular tamaño
             if isinstance(epub_bytes, (bytes, bytearray)):
                 size_mb = len(epub_bytes) / (1024 * 1024)
-            elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
-                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
+            elif isinstance(epub_bytes, str) and await asyncio.to_thread(
+                os.path.exists, epub_bytes
+            ):
+                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (
+                    1024 * 1024
+                )
             else:
                 size_mb = 0.0
             version = meta.get("epub_version", "2.0")
@@ -1126,15 +1153,22 @@ async def enviar_libro_directo(
 
             # 8. Registrar descarga y notificar
             record_download(user_id)
-            logger.info(f"[enviar_libro_directo] Descarga registrada para user {user_id}")
+            logger.info(
+                f"[enviar_libro_directo] Descarga registrada para user {user_id}"
+            )
 
             # Gamificación: Incrementar contador total
             from services.user_service import increment_download_count
+
             try:
                 await increment_download_count(user_id)
-                logger.info(f"[enviar_libro_directo] Contador total incrementado para user {user_id}")
+                logger.info(
+                    f"[enviar_libro_directo] Contador total incrementado para user {user_id}"
+                )
             except Exception as e:
-                logger.error(f"[enviar_libro_directo] Error incrementando contador total: {e}")
+                logger.error(
+                    f"[enviar_libro_directo] Error incrementando contador total: {e}"
+                )
 
             # Registrar en historial de descargas
             try:
@@ -1144,12 +1178,15 @@ async def enviar_libro_directo(
 
                 # Enrich metadata if needed from title
                 from utils.helpers import parse_metadata_from_title
+
                 title_meta = parse_metadata_from_title(titulo_vol)
 
                 romaji = meta.get("romaji_title") or title_meta.get("romaji")
                 series = meta.get("titulo_serie") or title_meta.get("series")
                 volume = meta.get("series_index") or title_meta.get("volume")
-                clean_title = meta.get("internal_title") or title_meta.get("clean_title")
+                clean_title = meta.get("internal_title") or title_meta.get(
+                    "clean_title"
+                )
                 translator = meta.get("traductor") or meta.get("publisher")
 
                 await download_repo.add_download(
@@ -1162,11 +1199,16 @@ async def enviar_libro_directo(
                     series=series,
                     volume=volume,
                     translator=translator,
-                    clean_title=clean_title
+                    clean_title=clean_title,
                 )
-                logger.info(f"[enviar_libro_directo] Historial guardado para user {user_id}: {titulo_vol}")
+                logger.info(
+                    f"[enviar_libro_directo] Historial guardado para user {user_id}: {titulo_vol}"
+                )
             except Exception as e:
-                logger.error(f"[enviar_libro_directo] Error saving download history for user {user_id}: {e}", exc_info=True)
+                logger.error(
+                    f"[enviar_libro_directo] Error saving download history for user {user_id}: {e}",
+                    exc_info=True,
+                )
 
             restantes = await downloads_left(user_id)
             if restantes != "ilimitadas":
@@ -1243,8 +1285,12 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     if epub_buffer:
         if isinstance(epub_buffer, (bytes, bytearray)):
             size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
-            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
+        elif isinstance(epub_buffer, str) and await asyncio.to_thread(
+            os.path.exists, epub_buffer
+        ):
+            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (
+                1024 * 1024
+            )
         else:
             size_mb = 0.0
     else:
@@ -1574,8 +1620,12 @@ async def _publish_choice_telegram(
     if epub_buffer:
         if isinstance(epub_buffer, (bytes, bytearray)):
             size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
-            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
+        elif isinstance(epub_buffer, str) and await asyncio.to_thread(
+            os.path.exists, epub_buffer
+        ):
+            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (
+                1024 * 1024
+            )
         else:
             size_mb = 0.0
 

@@ -7,6 +7,7 @@ from telegram.ext import ContextTypes
 import plugins.custom_messages_plugin as plugin_mod
 from plugins.custom_messages_plugin import CustomMessagesPlugin
 
+
 @pytest.mark.asyncio
 async def test_welcome_handler_uses_fallback(monkeypatch):
     mock_config = MagicMock()
@@ -38,5 +39,5 @@ async def test_welcome_handler_uses_fallback(monkeypatch):
     await plugin.welcome_handler(update, context)
     assert context.bot.send_message.called
     args, kwargs = context.bot.send_message.call_args
-    assert kwargs['chat_id'] == -1001
-    assert "Soy ZeePub Bot" in kwargs['text']
+    assert kwargs["chat_id"] == -1001
+    assert "Soy ZeePub Bot" in kwargs["text"]

@@ -334,10 +334,16 @@ def parse_metadata_from_title(title_str: str) -> dict:
         # Heuristic: The one with many non-ascii or Japanese characters is likely Romaji
         # Or if one is "Arifureta" and other is "From Commonplace...", the shorter one usually is Romaji
         p1, p2 = parts[0], parts[1]
-        
+
         # Check for Japanese characters
-        has_jp = lambda s: bool(re.search(r'[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\uFF00-\uFFEF]', s))
-        
+        def has_jp(s):
+            return bool(
+                re.search(
+                    r"[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\uFF00-\uFFEF]",
+                    s,
+                )
+            )
+
         if has_jp(p2) and not has_jp(p1):
             romaji = p2
             series = p1
@@ -386,13 +392,13 @@ def parse_metadata_from_title(title_str: str) -> dict:
     # If we have Romaji, cleanTitle should be the English Part (series_clean)
     # This allows the frontend to show English as main title if romaji exists
     clean_title_result = series_clean if romaji else series_clean or clean_no_vol
-    
+
     # Ensure no double spaces
     clean_title_result = re.sub(r"\s+", " ", clean_title_result).strip()
 
     return {
         "series": series,
-        "series_clean": series_clean, # New field for explicit clean English series
+        "series_clean": series_clean,  # New field for explicit clean English series
         "volume": volume,
         "clean_title": clean_title_result,
         "tags": tags,
@@ -469,7 +475,7 @@ def formatear_mensaje_portada(meta: dict, include_slug: bool = True) -> str:
     ilustrador = meta.get("ilustrador") or "Desconocido"
     maqus = meta.get("maquetadores") or []
     if not maqus:
-        maqu_line = "<b>Maquetado por:</b> #ZeePub"
+        maqu_line = "<b>Maquetado por:</b>  #ZeePub"
     else:
         maqu_line = "<b>Maquetado por:</b> " + " ".join(
             f"#{m.replace(' ', '')}" for m in maqus
@@ -558,7 +564,7 @@ def formatear_metadata_fb(meta: dict) -> str:
     maqus = meta.get("maquetadores") or []
 
     if not maqus:
-        maqu_line = "<b>Maquetado por:</b> #ZeePub"
+        maqu_line = "<b>Maquetado por:</b>  #ZeePub"
     else:
         maqu_line = "<b>Maquetado por:</b> " + " ".join(
             f"#{m.replace(' ', '')}" for m in maqus

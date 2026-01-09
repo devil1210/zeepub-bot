@@ -5,6 +5,7 @@ import sys
 import pytest
 from unittest.mock import MagicMock, AsyncMock
 
+
 # Ensure we have the real config, not a mock from other tests
 @pytest.fixture(autouse=True)
 def ensure_real_config():
@@ -17,6 +18,7 @@ def ensure_real_config():
                 del sys.modules[mod_name]
     # Now import the real module
     from config.config_settings import config as real_config
+
     # Save original DATABASE_URL and force to None for tests
     original_db_url = real_config.DATABASE_URL
     real_config.DATABASE_URL = None
@@ -24,12 +26,13 @@ def ensure_real_config():
     # Restore original value after test
     real_config.DATABASE_URL = original_db_url
 
+
 from config.config_settings import config
 
 
 def test_create_and_get_short_url(tmp_path, monkeypatch):
     # Force SQLite mode by clearing DATABASE_URL BEFORE module load
-    monkeypatch.setattr(config, 'DATABASE_URL', None)
+    monkeypatch.setattr(config, "DATABASE_URL", None)
 
     # Use a temporary DB path for isolation
     db_file = tmp_path / "url_cache_test.db"
@@ -38,7 +41,11 @@ def test_create_and_get_short_url(tmp_path, monkeypatch):
 
     # Load module directly from file to avoid importing the whole `utils` package
     from importlib.util import spec_from_file_location, module_from_spec
-    spec = spec_from_file_location("url_cache_test", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
+
+    spec = spec_from_file_location(
+        "url_cache_test",
+        os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"),
+    )
     url_cache = module_from_spec(spec)
     spec.loader.exec_module(url_cache)
 
@@ -48,7 +55,7 @@ def test_create_and_get_short_url(tmp_path, monkeypatch):
     # This implies create_engine IS called.
     # url_cache.py calls create_engine if config.DATABASE_URL and _HAS_SQLALCHEMY
     # Force SQLite mode by clearing DATABASE_URL
-    monkeypatch.setattr(config, 'DATABASE_URL', None)
+    monkeypatch.setattr(config, "DATABASE_URL", None)
 
     url_cache.init_db()
 
@@ -66,7 +73,11 @@ def test_create_and_get_short_url(tmp_path, monkeypatch):
 
     # Load a fresh module instance (simulating a restart) and verify persistence
     from importlib.util import spec_from_file_location, module_from_spec
-    spec = spec_from_file_location("url_cache_test_reload", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
+
+    spec = spec_from_file_location(
+        "url_cache_test_reload",
+        os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"),
+    )
     new_mod = module_from_spec(spec)
     spec.loader.exec_module(new_mod)
     assert new_mod.get_url_from_hash(h) == url
@@ -83,11 +94,17 @@ def test_create_and_get_short_url_sqlalchemy(tmp_path):
     try:
         # Set both DATABASE_URL and URL_CACHE_DB_PATH to ensure complete isolation
         config.DATABASE_URL = f"sqlite:///{db_file}"  # use absolute path
-        config.URL_CACHE_DB_PATH = str(tmp_path / "fallback.db")  # Won't be used but ensures no sharing
+        config.URL_CACHE_DB_PATH = str(
+            tmp_path / "fallback.db"
+        )  # Won't be used but ensures no sharing
 
         # Load a fresh module instance (SQLAlchemy path)
         from importlib.util import spec_from_file_location, module_from_spec
-        spec = spec_from_file_location("url_cache_sa", os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"))
+
+        spec = spec_from_file_location(
+            "url_cache_sa",
+            os.path.join(os.path.dirname(__file__), "..", "utils", "url_cache.py"),
+        )
         sa_mod = module_from_spec(spec)
         spec.loader.exec_module(sa_mod)
 

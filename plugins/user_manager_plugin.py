@@ -5,7 +5,12 @@ from telegram.ext import ContextTypes, CommandHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
-from services.user_service import upsert_user, remove_user, update_user_status_label, update_user_nickname
+from services.user_service import (
+    upsert_user,
+    remove_user,
+    update_user_status_label,
+    update_user_nickname,
+)
 from services.settings_service import SettingsService, get_setting
 from utils.download_limiter import save_download
 from core.state_manager import state_manager
@@ -101,13 +106,13 @@ class UserManagerPlugin(BasePlugin):
         if update.message.reply_to_message:
             # Usage: Reply + /add_user <rol> [meses]
             if not target_id:
-                 # Should not happen if _get_target_user check passed, but safety first
-                 return
+                # Should not happen if _get_target_user check passed, but safety first
+                return
 
             if not context.args or len(context.args) < 1:
                 await update.message.reply_text(
                     "❌ Al responder, indica al menos el rol.\nEj: /add_user vip",
-                    message_thread_id=thread_id
+                    message_thread_id=thread_id,
                 )
                 return
             role = context.args[0].lower()
@@ -123,17 +128,26 @@ class UserManagerPlugin(BasePlugin):
                 return
 
             if len(context.args) < 2:
-                 await update.message.reply_text(
+                await update.message.reply_text(
                     "❌ Faltan argumentos. Uso: /add_user <id> <rol> [meses]",
                     message_thread_id=thread_id,
                 )
-                 return
+                return
 
             role = context.args[1].lower()
             if len(context.args) > 2:
                 duration_arg_idx = 2
 
-        valid_roles = ["white", "vip", "premium", "staff", "admin", "banned", "free", "user"]
+        valid_roles = [
+            "white",
+            "vip",
+            "premium",
+            "staff",
+            "admin",
+            "banned",
+            "free",
+            "user",
+        ]
         if role not in valid_roles:
             await update.message.reply_text(
                 f"❌ Rol inválido. Use: {', '.join(valid_roles)}",
@@ -146,13 +160,13 @@ class UserManagerPlugin(BasePlugin):
         duration_days = None
 
         if duration_arg_idx != -1 and len(context.args) > duration_arg_idx:
-             val_str = context.args[duration_arg_idx]
-             if val_str.isdigit():
-                 val = int(val_str)
-                 if role == "banned":
-                     duration_days = val
-                 else:
-                     duration = val
+            val_str = context.args[duration_arg_idx]
+            if val_str.isdigit():
+                val = int(val_str)
+                if role == "banned":
+                    duration_days = val
+                else:
+                    duration = val
         else:
             # Use default from settings if not provided
             if role != "staff" and role != "banned":
@@ -211,9 +225,7 @@ class UserManagerPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def set_rol(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def set_rol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /set_rol <id> <label>
         Cambia el 'custom_status' de un usuario (ej: 'El Chambeador', 'Editor Jefe').
@@ -229,11 +241,11 @@ class UserManagerPlugin(BasePlugin):
         target_id, target_name = self._get_target_user(update, context)
 
         if not target_id:
-             await msg.reply_text(
+            await msg.reply_text(
                 "❌ Uso: /set_rol <id> <label> (o responde a un mensaje).",
-                message_thread_id=thread_id
+                message_thread_id=thread_id,
             )
-             return
+            return
 
         # Parse label
         # If reply, everything in args is label
@@ -241,15 +253,20 @@ class UserManagerPlugin(BasePlugin):
 
         args_start_idx = 0
         if not update.message.reply_to_message:
-             # First arg was consumed as ID
-             args_start_idx = 1
-             if len(context.args) < 2:
-                 await msg.reply_text("❌ Indica el label/status.", message_thread_id=thread_id)
-                 return
+            # First arg was consumed as ID
+            args_start_idx = 1
+            if len(context.args) < 2:
+                await msg.reply_text(
+                    "❌ Indica el label/status.", message_thread_id=thread_id
+                )
+                return
         else:
-             if len(context.args) < 1:
-                 await msg.reply_text("❌ Al responder, indica el label/status.", message_thread_id=thread_id)
-                 return
+            if len(context.args) < 1:
+                await msg.reply_text(
+                    "❌ Al responder, indica el label/status.",
+                    message_thread_id=thread_id,
+                )
+                return
 
         # Check for deletion keywords
         delete_keywords = ["borrar", "eliminar", "none", "null", "remove", "off"]
@@ -259,7 +276,9 @@ class UserManagerPlugin(BasePlugin):
         # If only one word and it is a delete keyword
         if len(context.args) == args_start_idx + 1 and first_word in delete_keywords:
             new_label = None
-            success_msg = f"✅ Status eliminado para <code>{target_id}</code> (vuelve a default)."
+            success_msg = (
+                f"✅ Status eliminado para <code>{target_id}</code> (vuelve a default)."
+            )
         else:
             new_label = " ".join(context.args[args_start_idx:])
             success_msg = f"✅ Status actualizado para <code>{target_id}</code> ({target_name}): <b>{new_label}</b>"
@@ -275,9 +294,7 @@ class UserManagerPlugin(BasePlugin):
             logger.error(f"Error set_rol: {e}")
             await msg.reply_text(f"❌ Error: {str(e)}", message_thread_id=thread_id)
 
-    async def set_apodo(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def set_apodo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /set_apodo <id> <apodo>
         Establece el nickname/apodo de un usuario.
@@ -301,15 +318,16 @@ class UserManagerPlugin(BasePlugin):
         # Parse Apodo
         args_start_idx = 0
         if not update.message.reply_to_message:
-             args_start_idx = 1
-             if len(context.args) < 2:
-                  await msg.reply_text("❌ Indica el apodo", message_thread_id=thread_id)
-                  return
+            args_start_idx = 1
+            if len(context.args) < 2:
+                await msg.reply_text("❌ Indica el apodo", message_thread_id=thread_id)
+                return
         else:
-             if len(context.args) < 1:
-                  await msg.reply_text("❌ Al responder, indica el apodo.", message_thread_id=thread_id)
-                  return
-
+            if len(context.args) < 1:
+                await msg.reply_text(
+                    "❌ Al responder, indica el apodo.", message_thread_id=thread_id
+                )
+                return
 
         # Check for deletion keywords
         delete_keywords = ["borrar", "eliminar", "none", "null", "remove", "off"]
@@ -413,7 +431,9 @@ class UserManagerPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def approve_donation(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def approve_donation(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """
         /approve_donation <id> <rol> [meses]
         Aprueba una donación, actualiza el nivel del usuario y le notifica.
@@ -434,7 +454,7 @@ class UserManagerPlugin(BasePlugin):
             if not context.args or len(context.args) < 1:
                 await update.message.reply_text(
                     "❌ Al responder, indica al menos el rol.\nEj: /approve_donation vip 30",
-                    message_thread_id=thread_id
+                    message_thread_id=thread_id,
                 )
                 return
             role = context.args[0].lower()
@@ -489,16 +509,12 @@ class UserManagerPlugin(BasePlugin):
 
         if cms and cms.enabled:
             text = await cms.get_text(
-                "donation_approved",
-                Nivel=nivel_text,
-                Duración=duracion_text
+                "donation_approved", Nivel=nivel_text, Duración=duracion_text
             )
 
         try:
             await context.bot.send_message(
-                chat_id=target_id,
-                text=text,
-                parse_mode="HTML"
+                chat_id=target_id, text=text, parse_mode="HTML"
             )
         except Exception as e:
             logger.warning(f"No se pudo notificar al usuario {target_id}: {e}")
@@ -510,7 +526,7 @@ class UserManagerPlugin(BasePlugin):
         # Confirm to admin
         await update.message.reply_text(
             f"✅ Donación aprobada para {target_id}.\nNivel: {role}\nNotificación enviada.",
-            message_thread_id=thread_id
+            message_thread_id=thread_id,
         )
 
     async def reject_donation(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -528,7 +544,7 @@ class UserManagerPlugin(BasePlugin):
         if not target_id:
             await update.message.reply_text(
                 "❌ Uso: /reject_donation <id> (o responde a un mensaje)",
-                message_thread_id=thread_id
+                message_thread_id=thread_id,
             )
             return
 
@@ -542,9 +558,7 @@ class UserManagerPlugin(BasePlugin):
 
         try:
             await context.bot.send_message(
-                chat_id=target_id,
-                text=text,
-                parse_mode="HTML"
+                chat_id=target_id, text=text, parse_mode="HTML"
             )
         except Exception as e:
             logger.warning(f"No se pudo notificar al usuario {target_id}: {e}")
@@ -555,9 +569,12 @@ class UserManagerPlugin(BasePlugin):
 
         await update.message.reply_text(
             f"❌ Donación rechazada para {target_id}.\nNotificación enviada.",
-            message_thread_id=thread_id
+            message_thread_id=thread_id,
         )
-    async def refresh_user_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    async def refresh_user_command(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """
         /refresh_user <id>
         Limpia el caché del bot para un usuario específico.
@@ -577,11 +594,12 @@ class UserManagerPlugin(BasePlugin):
             return
 
         from services.user_service import invalidate_user_cache
+
         await invalidate_user_cache(target_id)
-        
+
         # Limpiar también el contador de descargas del state_manager para forzar re-lectura si fuera necesario
         # Aunque state_manager no suele cachear roles permanently, invalidar el usuario asegura que el bot recargue todo.
-        
+
         await update.message.reply_text(
             f"✅ Caché limpiado para el usuario <code>{target_id}</code>. Los cambios de nivel deberían verse al reabrir la Mini App.",
             parse_mode="HTML",

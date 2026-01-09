@@ -3,11 +3,13 @@
 
 import asyncio
 import sys
-sys.path.insert(0, '/app')
+
+sys.path.insert(0, "/app")
 
 from utils.http_client import fetch_bytes
 from services.epub_service import parse_opf_from_epub, extract_internal_title
 from urllib.parse import unquote, urlparse
+
 
 async def test_epub_metadata():
     # Bofuri URL from logs
@@ -22,7 +24,7 @@ async def test_epub_metadata():
 
     if isinstance(epub_bytes, str):
         print(f"EPUB saved to temp file: {epub_bytes}")
-        with open(epub_bytes, 'rb') as f:
+        with open(epub_bytes, "rb") as f:
             epub_bytes = f.read()
 
     print(f"\nEPUB size: {len(epub_bytes)} bytes")
@@ -48,18 +50,21 @@ async def test_epub_metadata():
 
     # Check what would be used
     print("\n=== Format Check ===")
-    print(f"titulo_serie (collection): {opf_meta.get('titulo_serie') if opf_meta else None}")
+    print(
+        f"titulo_serie (collection): {opf_meta.get('titulo_serie') if opf_meta else None}"
+    )
     print(f"internal_title: {internal_title}")
 
-    if internal_title and opf_meta and opf_meta.get('titulo_serie'):
+    if internal_title and opf_meta and opf_meta.get("titulo_serie"):
         print("\n✅ Would use NEW format (Epub de: ...)")
     else:
         print("\n❌ Would use OLD format (fallback)")
         print(f"Missing: ", end="")
         if not internal_title:
             print("internal_title ", end="")
-        if not opf_meta or not opf_meta.get('titulo_serie'):
+        if not opf_meta or not opf_meta.get("titulo_serie"):
             print("titulo_serie")
+
 
 if __name__ == "__main__":
     asyncio.run(test_epub_metadata())

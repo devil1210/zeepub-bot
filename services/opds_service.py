@@ -6,10 +6,16 @@ from urllib.parse import urlparse, unquote
 from difflib import SequenceMatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
+
 # from core.state_manager import state_manager (Moved to local scope)
 from config.config_settings import config
 from utils.http_client import parse_feed_from_url
-from utils.helpers import abs_url, find_zeepubs_destino, extract_author, parse_metadata_from_title
+from utils.helpers import (
+    abs_url,
+    find_zeepubs_destino,
+    extract_author,
+    parse_metadata_from_title,
+)
 from services.cache_service import AsyncTTLCache
 
 logger = logging.getLogger(__name__)
@@ -42,6 +48,7 @@ async def mostrar_colecciones(
     """Mostrar colecciones o libros basados en un feed OPDS."""
     uid = update.effective_user.id
     from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
 
     # Inicializar historial si no existe
@@ -104,7 +111,9 @@ async def mostrar_colecciones(
         title = getattr(entry, "title", "")
 
         # Check if folder for correct fallback
-        has_subsection = any(getattr(l, "rel", "") == "subsection" for l in getattr(entry, "links", []))
+        has_subsection = any(
+            getattr(l, "rel", "") == "subsection" for l in getattr(entry, "links", [])
+        )
         author = extract_author(entry, is_folder=has_subsection)
         href_entry = getattr(entry, "link", "")
         href_sub, portada = None, None
@@ -149,6 +158,7 @@ async def mostrar_colecciones(
 
         parts = first_book_title.split(" - ")
         if len(parts) >= 2:
+
             def clean_title_part(s):
                 s = re.sub(r"\[.*?\]", "", s)
                 s = re.sub(r"^[^\w\(\)]+", "", s)
@@ -157,7 +167,11 @@ async def mostrar_colecciones(
             p0_clean = clean_title_part(parts[0])
             feed_clean = clean_title_part(clean_feed_title_part)
 
-            if p0_clean == feed_clean or p0_clean in feed_clean or feed_clean in p0_clean:
+            if (
+                p0_clean == feed_clean
+                or p0_clean in feed_clean
+                or feed_clean in p0_clean
+            ):
                 known_romaji = parts[1].strip()
                 known_english = re.sub(r"^[^\w\(\)]+", "", parts[0]).strip()
 
@@ -177,10 +191,15 @@ async def mostrar_colecciones(
             st["colecciones"][i] = col
             titulo_boton = col["titulo"]
 
-            if uid not in config.ADMIN_USERS and col["titulo"] == "Todas las bibliotecas":
+            if (
+                uid not in config.ADMIN_USERS
+                and col["titulo"] == "Todas las bibliotecas"
+            ):
                 titulo_boton = "📚 Biblioteca ZeePubs"
 
-            keyboard.append([InlineKeyboardButton(titulo_boton, callback_data=f"col|{i}")])
+            keyboard.append(
+                [InlineKeyboardButton(titulo_boton, callback_data=f"col|{i}")]
+            )
     else:
         for b in libros:
             key = uuid.uuid4().hex[:8]
@@ -234,7 +253,11 @@ async def mostrar_colecciones(
 
                     # 3. Last chance: check if the full original title contains the Romaji name
                     # (Useful if tag parsing failed)
-                    if not is_redundant and s_romaji and s_romaji in simplify(b["titulo"]):
+                    if (
+                        not is_redundant
+                        and s_romaji
+                        and s_romaji in simplify(b["titulo"])
+                    ):
                         is_redundant = True
 
             if is_redundant:
@@ -248,16 +271,22 @@ async def mostrar_colecciones(
                     s_name = s_name[:27] + "..."
                 display_title = f"{s_name}{tags_str}"
 
-            keyboard.append([InlineKeyboardButton(display_title, callback_data=f"lib|{key}")])
+            keyboard.append(
+                [InlineKeyboardButton(display_title, callback_data=f"lib|{key}")]
+            )
 
     # 3. Botones de navegación (Subir nivel, Anterior, Siguiente)
     nav_buttons = []
     if st["historial"]:
-        nav_buttons.append(InlineKeyboardButton("⬆️ Subir nivel", callback_data="subir_nivel"))
+        nav_buttons.append(
+            InlineKeyboardButton("⬆️ Subir nivel", callback_data="subir_nivel")
+        )
     if st["nav"]["prev"]:
         nav_buttons.append(InlineKeyboardButton("⬅️ Anterior", callback_data="nav|prev"))
     if st["nav"]["next"]:
-        nav_buttons.append(InlineKeyboardButton("➡️ Siguiente", callback_data="nav|next"))
+        nav_buttons.append(
+            InlineKeyboardButton("➡️ Siguiente", callback_data="nav|next")
+        )
 
     if nav_buttons:
         keyboard.append(nav_buttons)
@@ -290,6 +319,7 @@ async def mostrar_colecciones(
 async def buscar_zeepubs_directo(update, context, uid: int):
     """Acceso directo a ZeePubs [ES] detectándolo en el feed."""
     from core.state_manager import state_manager
+
     st = state_manager.get_user_state(uid)
     url = st.get("opds_root")
     logger.debug("Intentando acceso directo a ZeePubs desde %s", url)

@@ -46,10 +46,7 @@ class TopicService:
         for slug, name in TOPICS_SCHEMA.items():
             try:
                 # API 9.3: createForumTopic ahora funciona en private chats
-                topic = await bot.create_forum_topic(
-                    chat_id=user_id,
-                    name=name
-                )
+                topic = await bot.create_forum_topic(chat_id=user_id, name=name)
                 new_topics[slug] = topic.message_thread_id
             except Exception as e:
                 logger.error(f"Error al crear tópico {slug} para {user_id}: {e}")
@@ -68,5 +65,6 @@ class TopicService:
         if not user_data:
             return None
         return user_data.get("settings", {}).get("topics", {}).get(slug)
+
 
 topic_service = TopicService()

@@ -7,6 +7,7 @@ from models.library_models import LibrarySource, LocalBook
 from utils.epub_extractor import EpubMetadataExtractor
 from sqlalchemy import select
 
+
 class ScannerService:
     """
     Servicio encargado de sincronizar las carpetas físicas con la base de datos.
@@ -21,7 +22,7 @@ class ScannerService:
         except Exception as e:
             print(f"Error parseando configuración de librerías: {e}")
             self.libraries = {}
-        
+
         init_library_db()
 
     def sync_all(self, force_scan=False):
@@ -32,19 +33,19 @@ class ScannerService:
         try:
             for name, path in self.libraries.items():
                 print(f"Iniciando escaneo de fuente: {name} ({path})")
-                
+
                 # 1. Asegurar que la fuente existe en DB
                 source = session.query(LibrarySource).filter_by(path=path).first()
                 if not source:
                     source = LibrarySource(name=name, path=path)
                     session.add(source)
                     session.commit()
-                
+
                 self._scan_directory(source, session, force_scan)
-                
+
                 source.last_scanned = datetime.utcnow()
                 session.commit()
-            
+
             print("Escaneo completado exitosamente.")
         finally:
             session.close()
@@ -55,7 +56,7 @@ class ScannerService:
         """
         for root, dirs, files in os.walk(source.path):
             for file in files:
-                if file.lower().endswith('.epub'):
+                if file.lower().endswith(".epub"):
                     full_path = os.path.join(root, file)
                     self._process_book(full_path, source, session, force_scan)
 
@@ -67,20 +68,25 @@ class ScannerService:
             stat = os.stat(filepath)
             mtime = datetime.fromtimestamp(stat.st_mtime)
             size = stat.st_size
-            
+
             # Buscar si ya existe en DB
             book = session.query(LocalBook).filter_by(filepath=filepath).first()
-            
+
             # Si ya existe y no ha cambiado el mtime ni el tamaño, saltar (a menos que sea force_scan)
-            if not force_scan and book and book.file_modified_at == mtime and book.file_size == size:
+            if (
+                not force_scan
+                and book
+                and book.file_modified_at == mtime
+                and book.file_size == size
+            ):
                 return
 
             print(f"Procesando: {filepath}")
-            
+
             # Extraer Metadatos
             extractor = EpubMetadataExtractor(filepath)
             meta = extractor.extract()
-            
+
             if not meta:
                 return
 
@@ -93,43 +99,58 @@ class ScannerService:
             book.file_size = size
             book.file_modified_at = mtime
             book.file_created_at = datetime.fromtimestamp(stat.st_ctime)
-            
-            book.title = meta.get('title') or book.filename
-            
+
+            book.title = meta.get("title") or book.filename
+
             # Extract Romaji Title from main Title if it follows "Romaji - ...Volumen" pattern
-            romaji = meta.get('romaji_title')
-            if not romaji and book.title and ' - ' in book.title:
+            romaji = meta.get("romaji_title")
+            if not romaji and book.title and " - " in book.title:
                 # If title is "Romaji - Volume...", take the first part
-                romaji = book.title.split(' - ')[0].strip()
-            
+                romaji = book.title.split(" - ")[0].strip()
+
             book.romaji_title = romaji
-            book.author = meta.get('author')
-            book.illustrator = meta.get('illustrator')
-            book.translator = meta.get('translator')
-            book.layout_by = meta.get('layout_by')
-            
-            
+            book.author = meta.get("author")
+            book.illustrator = meta.get("illustrator")
+            book.translator = meta.get("translator")
+            book.layout_by = meta.get("layout_by")
+
             # Publisher / Translation Group - use full name from OPF
-            book.publisher = meta.get('publisher')
-            book.description = meta.get('description')
-            book.language = meta.get('language') or 'es'
-            
+            book.publisher = meta.get("publisher")
+            book.description = meta.get("description")
+            book.language = meta.get("language") or "es"
+
             # Smart Tag Categorization
-            raw_tags = meta.get('tags', [])
-            classified_type = meta.get('book_type')
+            raw_tags = meta.get("tags", [])
+            classified_type = meta.get("book_type")
             classified_demographics = []
             final_genres = []
-            
-            type_mapping = {"nl": "Novela Ligera", "nw": "Novela Web", "wn": "Web Novel"}
-            known_demographics = ["shounen", "seinen", "shoujo", "josei", "kodomo", "seijin", "adultos", "mature", "maduro"]
-            
+
+            type_mapping = {
+                "nl": "Novela Ligera",
+                "nw": "Novela Web",
+                "wn": "Web Novel",
+            }
+            known_demographics = [
+                "shounen",
+                "seinen",
+                "shoujo",
+                "josei",
+                "kodomo",
+                "seijin",
+                "adultos",
+                "mature",
+                "maduro",
+            ]
+
             for tag in raw_tags:
                 t_lower = tag.lower().strip()
                 # 1. Book Type?
                 if t_lower in type_mapping:
-                    if not classified_type: classified_type = type_mapping[t_lower]
+                    if not classified_type:
+                        classified_type = type_mapping[t_lower]
                 elif "novela" in t_lower:
-                    if not classified_type: classified_type = tag
+                    if not classified_type:
+                        classified_type = tag
                 # 2. Demographic?
                 elif any(d in t_lower for d in known_demographics):
                     classified_demographics.append(tag)
@@ -140,22 +161,22 @@ class ScannerService:
             book.book_type = classified_type
             book.demographics = classified_demographics
             book.tags = final_genres
-            
-            book.series = meta.get('series')
-            book.volume = meta.get('volume')
-            
+
+            book.series = meta.get("series")
+            book.volume = meta.get("volume")
+
             # Enriched identifiers and dates
-            book.isbn = meta.get('isbn')
-            book.asin = meta.get('asin')
-            book.uri_id = meta.get('uri')
-            book.published_at = meta.get('published_at')
-            book.modified_at_opf = meta.get('modified_at_opf')
-            book.book_type = meta.get('book_type')
-            book.epub_version = meta.get('version')
-            book.word_count = meta.get('word_count')
-            book.page_count = meta.get('page_count')
-            book.reading_time = meta.get('reading_time')
-            
+            book.isbn = meta.get("isbn")
+            book.asin = meta.get("asin")
+            book.uri_id = meta.get("uri")
+            book.published_at = meta.get("published_at")
+            book.modified_at_opf = meta.get("modified_at_opf")
+            book.book_type = meta.get("book_type")
+            book.epub_version = meta.get("version")
+            book.word_count = meta.get("word_count")
+            book.page_count = meta.get("page_count")
+            book.reading_time = meta.get("reading_time")
+
             # Guardar Portada
             if extractor.cover_data:
                 cover_filename = f"{hashlib.md5(filepath.encode()).hexdigest()}.jpg"

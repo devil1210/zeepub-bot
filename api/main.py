@@ -26,6 +26,10 @@ app_state = {}
 async def lifespan(app: FastAPI):
     # Startup: Iniciar el bot
     logger.info("Iniciando ZeePub Bot junto con la API...")
+    if config.DATABASE_URL:
+        logger.info("📦 Base de Datos: PostgreSQL (Configurada)")
+    else:
+        logger.info("📦 Base de Datos: SQLite (Activa por defecto)")
     try:
         await bot.initialize()
 
@@ -98,11 +102,16 @@ if enable_miniapp:
     # Montar archivos estáticos del frontend
     from fastapi.staticfiles import StaticFiles
     from fastapi.responses import FileResponse
-    
+
     # Montar portadas de la librería local
     from utils.library_db import COVERS_DIR
+
     if os.path.exists(COVERS_DIR):
-        app.mount("/api/library/covers", StaticFiles(directory=COVERS_DIR), name="library_covers")
+        app.mount(
+            "/api/library/covers",
+            StaticFiles(directory=COVERS_DIR),
+            name="library_covers",
+        )
 
     # Ruta al directorio de build del frontend
     frontend_dist = os.path.join(

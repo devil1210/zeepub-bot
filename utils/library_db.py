@@ -19,6 +19,7 @@ engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
 session_factory = sessionmaker(bind=engine)
 Session = scoped_session(session_factory)
 
+
 def check_migrations():
     """
     Añade columnas nuevas a tablas existentes para evitar OperationalError
@@ -30,7 +31,7 @@ def check_migrations():
         cursor = conn.cursor()
         cursor.execute("PRAGMA table_info(local_books)")
         existing_cols = [row[1] for row in cursor.fetchall()]
-        
+
         # Mapa de columnas nuevas: (nombre, tipo)
         new_cols = [
             ('layout_by', 'VARCHAR(255)'),
@@ -46,16 +47,17 @@ def check_migrations():
             ('page_count', 'INTEGER'),
             ('reading_time', 'INTEGER')
         ]
-        
+
         for col_name, col_type in new_cols:
             if col_name not in existing_cols:
                 print(f"Migración: Añadiendo columna '{col_name}' a local_books...")
                 cursor.execute(f"ALTER TABLE local_books ADD COLUMN {col_name} {col_type}")
-        
+
         conn.commit()
         conn.close()
     except Exception as e:
         print(f"Error en migración automática: {e}")
+
 
 def init_fts():
     """
@@ -65,7 +67,7 @@ def init_fts():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        
+
         # Verificar si la tabla FTS ya existe
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books_fts'")
         if not cursor.fetchone():
@@ -74,26 +76,26 @@ def init_fts():
             # Usamos content='local_books' para una external content table (más eficiente en espacio)
             cursor.execute("""
                 CREATE VIRTUAL TABLE books_fts USING fts5(
-                    title, 
-                    romaji_title, 
-                    english_title, 
-                    series, 
-                    author, 
-                    illustrator, 
-                    translator, 
-                    publisher, 
-                    tags, 
-                    content='local_books', 
+                    title,
+                    romaji_title,
+                    english_title,
+                    series,
+                    author,
+                    illustrator,
+                    translator,
+                    publisher,
+                    tags,
+                    content='local_books',
                     content_rowid='id'
                 )
             """)
-            
+
             # Poblar inicialmente
             cursor.execute("""
                 INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, publisher, tags)
                 SELECT id, title, romaji_title, english_title, series, author, illustrator, translator, publisher, tags FROM local_books
             """)
-            
+
             # Triggers para sincronización automática
             # INSERT
             cursor.execute("""
@@ -102,7 +104,7 @@ def init_fts():
                   VALUES (new.id, new.title, new.romaji_title, new.english_title, new.series, new.author, new.illustrator, new.translator, new.publisher, new.tags);
                 END;
             """)
-            
+
             # DELETE
             cursor.execute("""
                 CREATE TRIGGER IF NOT EXISTS books_ad AFTER DELETE ON local_books BEGIN
@@ -110,7 +112,7 @@ def init_fts():
                   VALUES('delete', old.id, old.title, old.romaji_title, old.english_title, old.series, old.author, old.illustrator, old.translator, old.publisher, old.tags);
                 END;
             """)
-            
+
             # UPDATE
             cursor.execute("""
                 CREATE TRIGGER IF NOT EXISTS books_au AFTER UPDATE ON local_books BEGIN
@@ -120,20 +122,22 @@ def init_fts():
                   VALUES (new.id, new.title, new.romaji_title, new.english_title, new.series, new.author, new.illustrator, new.translator, new.publisher, new.tags);
                 END;
             """)
-            
+
         conn.commit()
         conn.close()
     except Exception as e:
         print(f"Error inicializando FTS5: {e}")
+
 
 def init_library_db():
     """
     Inicializa la base de datos creando las tablas si no existen.
     """
     Base.metadata.create_all(engine)
-    check_migrations() # Asegurar que columnas nuevas existan
-    init_fts() # Inicializar búsqueda de texto completo
+    check_migrations()  # Asegurar que columnas nuevas existan
+    init_fts()  # Inicializar búsqueda de texto completo
     print(f"Base de datos de librería inicializada en: {DB_PATH}")
+
 
 def get_session():
     """

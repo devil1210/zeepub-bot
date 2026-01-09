@@ -279,7 +279,9 @@ async def handle_bot_request(
                         "size": size,
                         "fileType": file_type,
                         "is_folder": subsection_url is not None,
-                        "updatedDate": entry.get("updated") or entry.get("published") or "",
+                        "updatedDate": entry.get("updated")
+                        or entry.get("published")
+                        or "",
                         # Enhanced metadata for better UI display
                         "series": final_series,
                         "seriesIndex": final_series_index,
@@ -367,10 +369,11 @@ async def handle_bot_request(
             if not feed:
                 logger.error(f"[book-detail] No feed data returned from {book_id_url}")
                 # Use a more descriptive error if we can detect it's a 500
-                # Since get_cached_feed hides the status, we assume if it's None and it was a valid-looking URL, 
+                # Since get_cached_feed hides the status, we assume if it's None and it was a valid-looking URL,
                 # it's likely a server error from source.
                 raise HTTPException(
-                    status_code=502, detail="Error en el servidor de origen (OPDS). Intenta más tarde."
+                    status_code=502,
+                    detail="Error en el servidor de origen (OPDS). Intenta más tarde.",
                 )
 
             # OPDS entries can be at the top level or in feed.entries
@@ -517,7 +520,8 @@ async def handle_bot_request(
                 "updatedDate": entry.get("updated", "") or entry.get("published", ""),
                 # Enhanced metadata
                 "romaji": extracted_meta.get("romaji", ""),
-                "cleanTitle": extracted_meta.get("clean_title") or entry.get("title", ""),
+                "cleanTitle": extracted_meta.get("clean_title")
+                or entry.get("title", ""),
                 "tags": extracted_meta.get("tags", []),
             }
 
@@ -605,18 +609,20 @@ async def handle_bot_request(
                 # Map to frontend expected format
                 formatted = []
                 for d in downloads:
-                    formatted.append({
-                        "id": d["id"],
-                        "title": d["title"],
-                        "author": d["author"],
-                        "downloaded_at": d["downloaded_at"],
-                        "file_size": d["file_size"],
-                        "romaji_title": d.get("romaji_title"),
-                        "series": d.get("series"),
-                        "volume": d.get("volume"),
-                        "translator": d.get("translator"),
-                        "clean_title": d.get("clean_title")
-                    })
+                    formatted.append(
+                        {
+                            "id": d["id"],
+                            "title": d["title"],
+                            "author": d["author"],
+                            "downloaded_at": d["downloaded_at"],
+                            "file_size": d["file_size"],
+                            "romaji_title": d.get("romaji_title"),
+                            "series": d.get("series"),
+                            "volume": d.get("volume"),
+                            "translator": d.get("translator"),
+                            "clean_title": d.get("clean_title"),
+                        }
+                    )
 
                 logger.info(
                     f"[user_downloads_history] User {user_id} - Retrieved {len(formatted)} downloads"

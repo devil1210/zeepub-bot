@@ -21,6 +21,12 @@ def main():
         logger.error(f"Faltan variables de entorno: {', '.join(missing)}")
         return
 
+    # Informar sobre la base de datos activa
+    if config.DATABASE_URL:
+        logger.info("📦 Base de Datos: PostgreSQL (Configurada)")
+    else:
+        logger.info("📦 Base de Datos: SQLite (Activa por defecto)")
+
     bot = ZeePubBot()
     bot.start()
     logger.info("Bot detenido.")

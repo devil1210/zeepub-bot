@@ -9,6 +9,7 @@ from repositories.user_repository import user_repo
 
 logger = logging.getLogger(__name__)
 
+
 class StarsPaymentPlugin(BasePlugin):
     @property
     def name(self) -> str:
@@ -100,7 +101,7 @@ class StarsPaymentPlugin(BasePlugin):
             title=title,
             description=description,
             payload=payload,
-            provider_token="", # Vacío para Stars
+            provider_token="",  # Vacío para Stars
             currency="XTR",
             prices=prices
         )

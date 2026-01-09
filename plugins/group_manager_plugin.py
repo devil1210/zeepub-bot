@@ -416,12 +416,12 @@ class GroupManagerPlugin(BasePlugin):
         # Check authorization strictly
         session = self.Session()
         try:
-             group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
-             if not group or not group.is_authorized or not group.welcome_msg_slug:
-                 return
-             slug = group.welcome_msg_slug
+            group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
+            if not group or not group.is_authorized or not group.welcome_msg_slug:
+                return
+            slug = group.welcome_msg_slug
         finally:
-             session.close()
+            session.close()
 
         msg_data = self._get_stored_message(slug)
         if not msg_data:

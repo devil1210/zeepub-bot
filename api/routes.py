@@ -27,7 +27,11 @@ from services.user_service import get_effective_user, get_user_info
 import logging
 
 
-from api.deps import get_telegram_user_id, get_current_user_data, require_mini_app_access
+from api.deps import (
+    get_telegram_user_id,
+    get_current_user_data,
+    require_mini_app_access,
+)
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
@@ -116,7 +120,9 @@ async def get_feed(
 
             # Special handling for "Todas las bibliotecas"
             entry_override_url = None
-            if not is_admin and (title == "Todas las bibliotecas" or title == "All libraries"):
+            if not is_admin and (
+                title == "Todas las bibliotecas" or title == "All libraries"
+            ):
                 title = "Biblioteca Zeepubs"
                 try:
                     libraries_url = None
@@ -126,7 +132,9 @@ async def get_feed(
                             break
                     if libraries_url:
                         lib_feed = await get_cached_feed(libraries_url)
-                        direct_url = find_zeepubs_destino(lib_feed, prefer_libraries=True)
+                        direct_url = find_zeepubs_destino(
+                            lib_feed, prefer_libraries=True
+                        )
                         if direct_url:
                             sub_lib_feed = await get_cached_feed(direct_url)
                             deep_link = None
@@ -147,10 +155,16 @@ async def get_feed(
             for link in getattr(entry, "links", []):
                 link_type = link.get("type", "")
                 link_rel = link.get("rel", "")
-                if "image" in link_type or "cover" in link_rel or link_rel == "http://opds-spec.org/image":
+                if (
+                    "image" in link_type
+                    or "cover" in link_rel
+                    or link_rel == "http://opds-spec.org/image"
+                ):
                     cover_url = normalize_url(link.get("href"))
                 elif link_rel == "subsection":
-                    subsection_url = entry_override_url or normalize_url(link.get("href"))
+                    subsection_url = entry_override_url or normalize_url(
+                        link.get("href")
+                    )
 
             if not cover_url and hasattr(entry, "content"):
                 for content in entry.content:
@@ -455,12 +469,14 @@ async def bot_avatar_proxy(file_id: str = Query(...)):
     Proxies the bot's profile photo from Telegram.
     """
     from api.main import bot
+
     try:
         logger.info(f"Proxying bot avatar for file_id: {file_id}")
         file = await bot.app.bot.get_file(file_id)
         if not file.file_path:
             logger.error(f"No file_path found for file_id: {file_id}")
             from fastapi.responses import RedirectResponse
+
             return RedirectResponse(url="/robot-librarian.jpg")
 
         # Use httpx to download and stream to client
@@ -471,13 +487,16 @@ async def bot_avatar_proxy(file_id: str = Query(...)):
             return Response(
                 content=resp.content,
                 media_type="image/jpeg",
-                headers={"Cache-Control": "public, max-age=31536000"},  # Cache for a year
+                headers={
+                    "Cache-Control": "public, max-age=31536000"
+                },  # Cache for a year
             )
     except Exception as e:
         logger.error(f"Error proxying bot avatar {file_id}: {e}", exc_info=True)
         # Fallback to the local librarian image via redirect or local read
         # For simplicity and robustness, lets just tell the browser to use the local one
         from fastapi.responses import RedirectResponse
+
         return RedirectResponse(url="/robot-librarian.jpg")
 
 
