@@ -789,6 +789,24 @@ async def handle_bot_request(
             res = RatingService.rate_book(user_id, book_id, rating)
             return res
 
+        elif action == "remove_rating":
+            from services.rating_service import RatingService
+            
+            book_id_raw = data.get("bookId")
+            if not book_id_raw:
+                raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
+            
+            try:
+                if isinstance(book_id_raw, str) and book_id_raw.startswith("local_"):
+                    book_id = int(book_id_raw.replace("local_", ""))
+                else:
+                    book_id = int(book_id_raw)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="ID de libro inválido")
+                
+            res = RatingService.remove_rating(user_id, book_id)
+            return res
+
         elif action == "status":
             return {"status": "online", "version": os.getenv("BOT_VERSION", "4.0.0")}
 

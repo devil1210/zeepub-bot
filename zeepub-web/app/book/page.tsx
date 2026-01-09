@@ -237,19 +237,41 @@ function BookDetailContent() {
         setIsRating(true)
         try {
             const res = await callBotAPI("rate_book", { bookId: bookId, rating })
-            if (res.success) {
+            if (res.user_rating) {
                 setUserRating(rating)
                 webApp?.showAlert?.(`¡Gracias por tu voto de ${rating} estrellas!`)
 
                 // Update local book average if returned
-                if (res.new_average && book) {
-                    setBook({ ...book, rating_average: res.new_average } as any)
+                if (res.new_average !== undefined && book) {
+                    setBook({ ...book, rating_average: res.new_average, rating_count: res.total_votes } as any)
                 }
             }
         } catch (error) {
             webApp?.showAlert?.("Error al guardar tu calificación")
         } finally {
             setIsRating(false)
+        }
+    }
+
+    const handleRemoveRating = async () => {
+        if (!book || !bookId) return
+        setIsRating(true)
+        try {
+            const res = await callBotAPI("remove_rating", { bookId: bookId })
+            if (res.success) {
+                setUserRating(null)
+                webApp?.showAlert?.("Valoración eliminada")
+
+                // Update local book average
+                if (res.new_average !== undefined && book) {
+                    setBook({ ...book, rating_average: res.new_average, rating_count: res.total_votes } as any)
+                }
+            }
+        } catch (error) {
+            webApp?.showAlert?.("Error al eliminar la valoración")
+        } finally {
+            setIsRating(false)
+            setShowRateModal(false)
         }
     }
 
@@ -321,7 +343,7 @@ function BookDetailContent() {
             <div className="max-w-2xl mx-auto px-4 py-6">
                 <Card className="p-6 border-border mb-4 bg-card shadow-lg">
                     <div className="flex gap-6 items-start">
-                        <div className="w-32 h-48 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-xl border border-border/50">
+                        <div className="w-32 h-48 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-xl border border-border/50 relative group">
                             {dataSaver ? (
                                 <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5">
                                     <ImageOff className="w-10 h-10 mb-2 opacity-20" />
@@ -331,6 +353,14 @@ function BookDetailContent() {
                                 <img src={getThumbnailUrl(book.cover)} alt={book.title} className="w-full h-full object-cover cursor-zoom-in" onClick={() => setIsCoverFull(true)} />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-primary/5"><FileText className="w-12 h-12 text-primary/30" /></div>
+                            )}
+
+                            {/* Average Rating Badge */}
+                            {book.rating_average !== undefined && book.rating_average > 0 && (
+                                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg">
+                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                    <span className="text-[10px] font-bold text-white">{book.rating_average.toFixed(1)}</span>
+                                </div>
                             )}
                         </div>
 
@@ -620,25 +650,37 @@ function BookDetailContent() {
                                         setTimeout(() => setShowRateModal(false), 600);
                                     }}
                                     disabled={isRating}
-                                    className="p-1 transition-all active:scale-110"
+                                    className="p-1 transition-all active:scale-125 group/star"
                                 >
                                     <Star
-                                        className={`w-10 h-10 ${star <= (userRating || 0)
-                                            ? "fill-primary text-primary"
-                                            : "text-muted-foreground/20"
+                                        className={`w-10 h-10 transition-colors ${star <= (userRating || 0)
+                                            ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]"
+                                            : "text-muted-foreground/20 hover:text-yellow-400/50"
                                             } ${isRating ? "opacity-50" : ""}`}
                                     />
                                 </button>
                             ))}
                         </div>
 
-                        <Button
-                            variant="outline"
-                            className="w-full h-12 rounded-xl border-border"
-                            onClick={() => setShowRateModal(false)}
-                        >
-                            Cancelar
-                        </Button>
+                        <div className="space-y-3">
+                            {userRating && (
+                                <Button
+                                    variant="ghost"
+                                    className="w-full h-12 rounded-xl text-destructive hover:bg-destructive/10 font-bold"
+                                    onClick={handleRemoveRating}
+                                    disabled={isRating}
+                                >
+                                    Quitar mi valoración
+                                </Button>
+                            )}
+                            <Button
+                                variant="outline"
+                                className="w-full h-12 rounded-xl border-border font-bold"
+                                onClick={() => setShowRateModal(false)}
+                            >
+                                Cancelar
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}

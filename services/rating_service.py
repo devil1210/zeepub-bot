@@ -64,6 +64,49 @@ class RatingService:
             session.close()
 
     @staticmethod
+    def remove_rating(user_id: int, book_id: int) -> Dict[str, Any]:
+        """
+        Elimina el voto de un usuario y recalcula el promedio.
+        """
+        session = get_session()
+        try:
+            # 1. Delete rating
+            existing = session.query(UserRating).filter_by(user_id=user_id, book_id=book_id).first()
+            if existing:
+                session.delete(existing)
+                session.commit()
+            
+            # 2. Recalculate Book Average
+            stats = session.query(
+                func.avg(UserRating.rating),
+                func.count(UserRating.rating)
+            ).filter_by(book_id=book_id).first()
+            
+            new_avg = round(stats[0], 2) if stats[0] else 0.0
+            new_count = stats[1] if stats[1] else 0
+            
+            # 3. Update LocalBook
+            book = session.query(LocalBook).filter_by(id=book_id).first()
+            if book:
+                book.rating_average = new_avg
+                book.rating_count = new_count
+                session.commit()
+                
+            return {
+                "success": True,
+                "book_id": book_id,
+                "new_average": new_avg,
+                "total_votes": new_count,
+                "user_rating": None
+            }
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Error removing rating for book {book_id}: {e}")
+            raise
+        finally:
+            session.close()
+
+    @staticmethod
     def get_user_rating(user_id: int, book_id: int) -> Optional[int]:
         """Retorna el voto previo del usuario si existe."""
         session = get_session()
