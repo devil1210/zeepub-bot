@@ -205,7 +205,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Recomendaciones (v6.1.0)
     if data == "rec|ver":
-        await mostrar_recomendaciones(update, context)
+        if user_info.get("role") in ("admin", "staff"):
+            await mostrar_recomendaciones(update, context)
+        else:
+            await query.answer("⛔ Esta función está en Beta exclusiva para Staff.", show_alert=True)
         return
 
     # Selección de colección

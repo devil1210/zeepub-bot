@@ -67,9 +67,12 @@ export default function InterfaceConfigPage() {
         setUseLocalLibrary,
         useRandomFolderCovers,
         setUseRandomFolderCovers,
+        showRecsCard,
+        setShowRecsCard,
     } = useTheme()
 
     const { isAdmin, userProfile } = useTelegramContext()
+    const { t } = useStrings()
     const [editTarget, setEditTarget] = useState("personal")
     const [isSaving, setIsSaving] = useState(false)
     const [forceOverwrite, setForceOverwrite] = useState(false)
@@ -112,6 +115,7 @@ export default function InterfaceConfigPage() {
                 dataSaver: localStorage.getItem("dataSaver") === "true",
                 useLocalLibrary: localStorage.getItem("useLocalLibrary") === "true",
                 useRandomFolderCovers: localStorage.getItem("useRandomFolderCovers") !== "false",
+                showRecsCard: localStorage.getItem("showRecsCard") !== "false",
                 enableAnimations: localStorage.getItem("enableAnimations") === "true",
                 animationDuration: parseInt(localStorage.getItem("animationDuration") || "200"),
                 animationDistance: parseInt(localStorage.getItem("animationDistance") || "4"),
@@ -610,6 +614,14 @@ export default function InterfaceConfigPage() {
                                         <Label htmlFor="show-help-card" className="font-medium">Tarjeta de Ayuda</Label>
                                     </div>
                                     <Switch id="show-help-card" checked={showHelpCard} onCheckedChange={setShowHelpCard} />
+                                </div>
+
+                                <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <Heart className="w-5 h-5 text-primary" />
+                                        <Label htmlFor="show-recs-card" className="font-medium">{t("config_show_recs_label")}</Label>
+                                    </div>
+                                    <Switch id="show-recs-card" checked={showRecsCard} onCheckedChange={setShowRecsCard} />
                                 </div>
 
                                 <Separator className="my-4" />

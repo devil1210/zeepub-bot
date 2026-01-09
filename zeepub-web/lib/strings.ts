@@ -77,6 +77,11 @@ export interface AppStrings {
     donate_tier_premium_price: string
     donate_tier_premium_downloads: string
     available_libraries: string
+    menu_recs_label: string
+    menu_recs_desc: string
+    book_rating_title: string
+    config_show_recs_label: string
+    config_show_recs_desc: string
 }
 
 export const DEFAULT_STRINGS: AppStrings = {
@@ -158,6 +163,11 @@ export const DEFAULT_STRINGS: AppStrings = {
     donate_tier_premium_price: "$12/mes",
     donate_tier_premium_downloads: "Ilimitado",
     available_libraries: "Bibliotecas Disponibles",
+    menu_recs_label: "Para ti (Beta)",
+    menu_recs_desc: "Descubre libros recomendados",
+    book_rating_title: "Califica este libro",
+    config_show_recs_label: "Tarjeta de Recomendaciones",
+    config_show_recs_desc: "Mostrar u ocultar la tarjeta de libros sugeridos",
 }
 
 let cachedStrings: AppStrings | null = null

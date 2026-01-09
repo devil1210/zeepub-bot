@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, ChevronLeft, ArrowLeft, ArrowUpCircle, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock, ImageOff, X } from "lucide-react"
+import { Download, ChevronLeft, ArrowLeft, ArrowUpCircle, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock, ImageOff, X, Star } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { Skeleton } from "@/components/ui/skeleton"
 import { callBotAPI } from "@/lib/api"
@@ -49,6 +49,9 @@ interface BookDetail {
     pageCount?: string
     wordCount?: string
     readingTime?: string
+    rating_average?: number
+    user_rating?: number
+    is_downloaded?: boolean
 }
 
 const getThumbnailUrl = (url?: string) => {
@@ -68,6 +71,9 @@ function BookDetailContent() {
     const [book, setBook] = useState<BookDetail | null>(null)
     const { dataSaver } = useTheme()
     const [isLoading, setIsLoading] = useState(true)
+    const [userRating, setUserRating] = useState<number | null>(null)
+    const [isRating, setIsRating] = useState(false)
+    const [showRateModal, setShowRateModal] = useState(false)
 
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return "N/A";
@@ -155,6 +161,19 @@ function BookDetailContent() {
 
                         return merged;
                     });
+
+                    // Fetch user rating if local book
+                    if (bookId && bookId.startsWith("local_")) {
+                        try {
+                            const status = await callBotAPI("user_status");
+                            const user_id = status.id || webApp?.initDataUnsafe?.user?.id;
+                            if (user_id) {
+                                if (result && result.user_rating) {
+                                    setUserRating(result.user_rating);
+                                }
+                            }
+                        } catch (e) { }
+                    }
                 }
             } catch (error) {
                 console.error("[v0] Error fetching book details:", error)
@@ -203,6 +222,27 @@ function BookDetailContent() {
             webApp?.showAlert?.("Error al descargar el libro")
         } finally {
             setIsDownloading(false)
+        }
+    }
+
+    const handleRate = async (rating: number) => {
+        if (!book || !bookId) return
+        setIsRating(true)
+        try {
+            const res = await callBotAPI("rate_book", { bookId: bookId, rating })
+            if (res.success) {
+                setUserRating(rating)
+                webApp?.showAlert?.(`¡Gracias por tu voto de ${rating} estrellas!`)
+
+                // Update local book average if returned
+                if (res.new_average && book) {
+                    setBook({ ...book, rating_average: res.new_average } as any)
+                }
+            }
+        } catch (error) {
+            webApp?.showAlert?.("Error al guardar tu calificación")
+        } finally {
+            setIsRating(false)
         }
     }
 
@@ -509,6 +549,25 @@ function BookDetailContent() {
 
                         <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
 
+                        {/* Botón Valorar (Solo si está descargado) */}
+                        {book.is_downloaded && (
+                            <>
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setShowRateModal(true)}
+                                    className="flex-1 h-10 hover:bg-white/5 text-foreground rounded-xl transition-all active:scale-95 px-0"
+                                >
+                                    <div className="flex flex-col items-center justify-center gap-0.5">
+                                        <Star className={`w-4 h-4 ${userRating ? "fill-primary text-primary" : ""}`} />
+                                        <span className="text-[9px] uppercase tracking-[0.1em] font-bold opacity-70">
+                                            Valorar
+                                        </span>
+                                    </div>
+                                </Button>
+                                <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
+                            </>
+                        )}
+
                         {/* Botón Descargar */}
                         <Button
                             variant="ghost"
@@ -533,6 +592,49 @@ function BookDetailContent() {
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Votación */}
+            {showRateModal && (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowRateModal(false)}>
+                    <div
+                        className="w-full max-w-[440px] bg-card border-t border-border rounded-t-3xl p-6 pb-12 shadow-2xl animate-in slide-in-from-bottom duration-300"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-6" />
+                        <h3 className="text-center font-bold text-lg mb-2">{t("book_rating_title")}</h3>
+                        <p className="text-center text-xs text-muted-foreground mb-6">Comparte tu opinión sobre este libro</p>
+
+                        <div className="flex justify-center gap-3 mb-8">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    onClick={() => {
+                                        handleRate(star);
+                                        setTimeout(() => setShowRateModal(false), 600);
+                                    }}
+                                    disabled={isRating}
+                                    className="p-1 transition-all active:scale-110"
+                                >
+                                    <Star
+                                        className={`w-10 h-10 ${star <= (userRating || 0)
+                                            ? "fill-primary text-primary"
+                                            : "text-muted-foreground/20"
+                                            } ${isRating ? "opacity-50" : ""}`}
+                                    />
+                                </button>
+                            ))}
+                        </div>
+
+                        <Button
+                            variant="outline"
+                            className="w-full h-12 rounded-xl border-border"
+                            onClick={() => setShowRateModal(false)}
+                        >
+                            Cancelar
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -42,6 +42,13 @@ class RecommendationPlugin(BasePlugin):
     async def command_recommend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Genera recomendaciones inmediatas."""
         uid = update.effective_user.id
+        from services.user_service import get_effective_user
+        user_info = await get_effective_user(uid)
+        
+        if user_info.get("role") not in ("admin", "staff"):
+             await update.message.reply_text("⛔ Esta función está en Beta exclusiva para Staff.")
+             return
+
         await update.message.reply_text("🤔 Analizando tus gustos...")
         
         recs = await RecommendationService.get_recommendations(uid, limit=3)

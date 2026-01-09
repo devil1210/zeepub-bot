@@ -21,6 +21,8 @@ interface ThemeContextType {
   setShowHelpCard: (show: boolean) => void
   showSettingsInMenu: boolean
   setShowSettingsInMenu: (show: boolean) => void
+  showRecsCard: boolean
+  setShowRecsCard: (show: boolean) => void
   saveGlobalSettings: (role: string) => Promise<void>
   applySettings: (settings: any, persistToLocal?: boolean) => void
   enableAnimations: boolean
@@ -58,6 +60,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setShowHelpCard: () => { },
   showSettingsInMenu: false,
   setShowSettingsInMenu: () => { },
+  showRecsCard: true,
+  setShowRecsCard: () => { },
   saveGlobalSettings: async () => { },
   applySettings: () => { },
   enableAnimations: false,
@@ -143,6 +147,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [showDonateCard, setShowDonateCard] = useState(true)
   const [showHelpCard, setShowHelpCard] = useState(true)
   const [showSettingsInMenu, setShowSettingsInMenu] = useState(false)
+  const [showRecsCard, setShowRecsCard] = useState(true)
   const [dataSaver, setDataSaver] = useState(false)
   const [enableAnimations, setEnableAnimations] = useState(false)
   const [animationDuration, setAnimationDuration] = useState(200)
@@ -167,6 +172,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedShowDonateCard = localStorage.getItem("showDonateCard")
     const savedShowHelpCard = localStorage.getItem("showHelpCard")
     const savedShowSettingsInMenu = localStorage.getItem("showSettingsInMenu")
+    const savedShowRecsCard = localStorage.getItem("showRecsCard")
     const savedEnableAnimations = localStorage.getItem("enableAnimations")
     const savedAnimDuration = localStorage.getItem("animationDuration")
     const savedAnimDistance = localStorage.getItem("animationDistance")
@@ -237,6 +243,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setShowSettingsInMenu(data.showSettingsInMenu)
             localStorage.setItem("showSettingsInMenu", String(data.showSettingsInMenu))
           }
+          if (data.showRecsCard !== undefined) {
+            setShowRecsCard(data.showRecsCard)
+            localStorage.setItem("showRecsCard", String(data.showRecsCard))
+          }
 
           if (data.enableAnimations !== undefined) {
             setEnableAnimations(data.enableAnimations)
@@ -283,6 +293,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedShowDonateCard !== null) setShowDonateCard(savedShowDonateCard === "true")
     if (savedShowHelpCard !== null) setShowHelpCard(savedShowHelpCard === "true")
     if (savedShowSettingsInMenu !== null) setShowSettingsInMenu(savedShowSettingsInMenu === "true")
+    if (savedShowRecsCard !== null) setShowRecsCard(savedShowRecsCard === "true")
     if (savedEnableAnimations !== null) setEnableAnimations(savedEnableAnimations === "true")
     if (savedAnimDuration) setAnimationDuration(parseInt(savedAnimDuration))
     if (savedAnimDistance) setAnimationDistance(parseInt(savedAnimDistance))
@@ -426,6 +437,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("showRecsCard", String(showRecsCard))
+    }
+  }, [showRecsCard, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
     const html = document.documentElement
     if (enableAnimations) {
       html.classList.add("animations-enabled")
@@ -502,7 +520,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         disableDisplacement,
         dataSaver,
         useLocalLibrary,
-        useRandomFolderCovers
+        useRandomFolderCovers,
+        showRecsCard
       }
       await callBotAPI("ui_settings", { subAction: "set", role, settings })
     } catch (error) {
@@ -531,6 +550,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.dataSaver !== undefined) setDataSaver(settings.dataSaver)
     if (settings.useLocalLibrary !== undefined) setUseLocalLibrary(settings.useLocalLibrary)
     if (settings.useRandomFolderCovers !== undefined) setUseRandomFolderCovers(settings.useRandomFolderCovers)
+    if (settings.showRecsCard !== undefined) setShowRecsCard(settings.showRecsCard)
 
     // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
     if (persistToLocal) {
@@ -550,6 +570,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("dataSaver", String(settings.dataSaver ?? false))
       localStorage.setItem("useLocalLibrary", String(settings.useLocalLibrary ?? false))
       localStorage.setItem("useRandomFolderCovers", String(settings.useRandomFolderCovers ?? true))
+      localStorage.setItem("showRecsCard", String(settings.showRecsCard ?? true))
     }
   }
 
@@ -588,6 +609,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setUseLocalLibrary,
         useRandomFolderCovers,
         setUseRandomFolderCovers,
+        showRecsCard,
+        setShowRecsCard,
         saveGlobalSettings,
         applySettings,
       }}

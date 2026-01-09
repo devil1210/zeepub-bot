@@ -186,9 +186,15 @@ async def mostrar_colecciones(
     # 2. Construir teclado
     keyboard = [[InlineKeyboardButton("🔍 Buscar EPUB", callback_data="buscar")]]
 
-    # Botón Recomendaciones (v6.1.0) - Solo en raíz o menú principal
+    # Botón Recomendaciones (v6.1.0) - Solo en raíz o menú principal y solo para Admin/Staff
     if not st.get("historial") or title in ("📚 Categorías", "📁 Biblioteca ZeePubs", "📁 ZeePubs [ES]"):
-        keyboard.append([InlineKeyboardButton("💡 Para ti (Beta)", callback_data="rec|ver")])
+        try:
+            from services.user_service import get_effective_user
+            user_info = await get_effective_user(uid)
+            if user_info.get("role") in ("admin", "staff"):
+                keyboard.append([InlineKeyboardButton("💡 Para ti (Beta)", callback_data="rec|ver")])
+        except Exception as e:
+            logger.error(f"Error checking role for recommendations: {e}")
 
     if colecciones:
         for i, col in enumerate(colecciones):

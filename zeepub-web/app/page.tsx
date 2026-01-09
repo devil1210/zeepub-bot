@@ -40,7 +40,7 @@ export default function HomePage() {
     userProfile
   } = useTelegramContext()
   const { t } = useStrings()
-  const { avatarScale, showSearchCard, showSearchBar, showDonateCard, showHelpCard, showSettingsInMenu } = useTheme()
+  const { avatarScale, showSearchCard, showSearchBar, showDonateCard, showHelpCard, showSettingsInMenu, showRecsCard } = useTheme()
   const router = useRouter()
   const [homeSearchQuery, setHomeSearchQuery] = useState("")
 
@@ -147,6 +147,25 @@ export default function HomePage() {
                     </Button>
                   )}
                 </div>
+              )}
+              {showRecsCard && (userProfile?.level?.id === '1' || userProfile?.level?.id === '2') && (
+                <Card
+                  className="p-4 bg-primary/10 border-primary/20 cursor-pointer hover:bg-primary/20 transition-all border-dashed relative overflow-hidden group mb-4"
+                  onClick={() => router.push("/recommendations")}
+                >
+                  <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform">
+                    <Heart className="w-12 h-12 text-primary" />
+                  </div>
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                      <Heart className="w-6 h-6 text-primary-foreground fill-primary-foreground/20" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg leading-tight">{t("menu_recs_label")}</h3>
+                      <p className="text-xs text-muted-foreground">{t("menu_recs_desc")}</p>
+                    </div>
+                  </div>
+                </Card>
               )}
 
               <h3 className="text-xl font-bold mb-4">{t("home_functions")}</h3>
