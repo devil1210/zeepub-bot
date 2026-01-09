@@ -489,7 +489,7 @@ function CatalogContent() {
                     <select
                         value={searchType}
                         onChange={(e) => setSearchType(e.target.value)}
-                        className="h-11 px-3 bg-white/5 border-l border-white/10 text-[10px] uppercase tracking-wider font-bold text-primary focus:ring-0 outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors"
+                        className="h-11 px-3 bg-white/5 border-l border-white/10 text-[10px] uppercase tracking-wider font-bold text-primary focus:ring-0 outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors rounded-r-xl"
                     >
                         <option className="bg-background" value="all">TODOS</option>
                         <option className="bg-background" value="title">TÍTULO</option>
@@ -665,12 +665,17 @@ function CatalogContent() {
 
                                                 {!isSeriesFolder && !(book as any).is_series_folder && book.downloadUrl && (
                                                     <Button
+                                                        variant="ghost"
                                                         size="sm"
                                                         onClick={(e) => handleSearchDownload(e, book)}
-                                                        className="h-7 text-[9px] px-3 bg-primary hover:bg-primary/90 self-start mt-2"
+                                                        className="h-8 px-3 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 rounded-xl self-start mt-2 transition-all active:scale-95 group/btn"
                                                     >
-                                                        <Download className="w-3 h-3 mr-1.5" />
-                                                        {t("book_download")}
+                                                        <div className="flex items-center gap-2">
+                                                            <Download className="w-3.5 h-3.5 opacity-70 group-hover/btn:scale-110 transition-transform" />
+                                                            <span className="text-[10px] uppercase tracking-[0.1em] font-bold">
+                                                                {t("book_download")}
+                                                            </span>
+                                                        </div>
                                                     </Button>
                                                 )}
                                             </div>

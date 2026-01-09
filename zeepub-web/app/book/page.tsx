@@ -509,30 +509,14 @@ function BookDetailContent() {
 
                         <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
 
-                        {/* Botón Subir */}
-                        <Button
-                            variant="ghost"
-                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                            className="flex-1 h-10 hover:bg-white/5 text-muted-foreground rounded-xl transition-all active:scale-95 px-0"
-                        >
-                            <div className="flex flex-col items-center justify-center gap-0.5">
-                                <ArrowUpCircle className="w-4 h-4" />
-                                <span className="text-[9px] uppercase tracking-[0.1em] font-bold opacity-70">
-                                    Subir
-                                </span>
-                            </div>
-                        </Button>
-
-                        <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
-
                         {/* Botón Descargar */}
                         <Button
                             variant="ghost"
                             onClick={handleDownload}
                             disabled={isDownloading || !book.downloadUrl}
                             className={`flex-[1.5] h-10 rounded-xl transition-all active:scale-95 disabled:opacity-20 px-0 ${book.downloadUrl
-                                    ? "bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)] border border-primary/20"
-                                    : "hover:bg-white/5 text-foreground"
+                                ? "bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)] border border-primary/20"
+                                : "hover:bg-white/5 text-foreground"
                                 }`}
                         >
                             <div className="flex flex-col items-center justify-center gap-0.5">
