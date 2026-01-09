@@ -52,6 +52,7 @@ interface BookDetail {
     rating_average?: number
     user_rating?: number
     is_downloaded?: boolean
+    [key: string]: any; // Permite indexación dinámica para el merge
 }
 
 const getThumbnailUrl = (url?: string) => {
@@ -146,18 +147,24 @@ function BookDetailContent() {
                         if (!prevBook) return result;
                         const merged = { ...prevBook, ...result };
 
+                        // Robustly prioritize non-empty values for metadata fields
+                        const preserveIfEmpty = [
+                            'romaji', 'cleanTitle', 'series', 'seriesIndex',
+                            'illustrator', 'translator', 'publisher', 'layoutBy',
+                            'isbn', 'asin', 'publishedAt', 'year',
+                            'pageCount', 'wordCount', 'readingTime', 'epubVersion'
+                        ];
+
+                        preserveIfEmpty.forEach(field => {
+                            if (!result[field] && prevBook[field]) {
+                                (merged as any)[field] = prevBook[field];
+                            }
+                        });
+
                         // Preserve categories/tags if API returns empty
                         if ((!result.categories || result.categories.length === 0) && prevBook.categories && prevBook.categories.length > 0) merged.categories = prevBook.categories;
                         if ((!result.tags || result.tags.length === 0) && prevBook.tags && prevBook.tags.length > 0) merged.tags = prevBook.tags;
-
-                        // Standardize metadata preservation
-                        merged.romaji = result.romaji || prevBook.romaji;
-                        merged.cleanTitle = result.cleanTitle || prevBook.cleanTitle;
-                        merged.series = result.series || prevBook.series;
-                        merged.seriesIndex = result.seriesIndex || prevBook.seriesIndex;
-                        merged.illustrator = result.illustrator || prevBook.illustrator;
-                        merged.translator = result.translator || prevBook.translator;
-                        merged.publisher = result.publisher || prevBook.publisher;
+                        if ((!result.demographics || result.demographics.length === 0) && prevBook.demographics && prevBook.demographics.length > 0) merged.demographics = prevBook.demographics;
 
                         return merged;
                     });

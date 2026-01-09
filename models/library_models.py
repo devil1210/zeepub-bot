@@ -129,8 +129,9 @@ class LocalBook(Base):
             "pageCount": self.page_count,
 
             "readingTime": self.reading_time,
-            "rating": self.rating_average,
-            "votes": self.rating_count,
+            "rating_average": self.rating_average,
+            "rating_count": self.rating_count,
+            "votes": self.rating_count,  # Alias
         }
 
 

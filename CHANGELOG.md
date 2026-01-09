@@ -5,6 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.1.0] - 2026-01-09
+### Añadido
+- **Sistema de Calificaciones**: Ahora los usuarios pueden puntuar los libros (1-5 estrellas) desde la Mini App.
+- **Recomendaciones "Para ti"**: Nueva tarjeta en la Home con sugerencias personalizadas (Beta Staff).
+- **Métricas Técnicas**: Agregada información de páginas, palabras y tiempo de lectura según el escaneo del EPUB.
+
+### Arreglado
+- **Restauración de Metadatos**: Corregido el problema por el cual el Ilustrador e ISBN no se mostraban en la ficha del libro.
+- **Prioridad de DB SQL**: La Mini App ahora prioriza la base de datos local (SQL) sobre OPDS para garantizar metadatos completos y mayor velocidad en la búsqueda.
+- **Merge de Frontend**: Corregida la lógica de actualización en la ficha del libro para evitar que se pierdan datos al navegar.
+
 ## [v6.0.1] - 2026-01-09
 ### Arreglado
 - **Crash Crítico**: Corregido `UnboundLocalError` en el manejador cada vez que se intentaba abrir un libro.

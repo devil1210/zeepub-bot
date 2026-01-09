@@ -29,6 +29,7 @@ from utils.helpers import (
     build_search_url,
     abs_url,
     extract_author,
+    extract_creators_by_role,
     parse_metadata_from_title,
 )
 
@@ -106,26 +107,73 @@ async def handle_bot_request(
         if action == "search":
             query = data.get("query")
             page_url = data.get("pageUrl")
+            page = data.get("page", 1)
 
             if not query and not page_url:
                 return {"results": []}
 
+            # [NEW] Prioritize Local DB Search for ZeePub library
+            is_local_search = not page_url or (
+                page_url == config.OPDS_ROOT_START or 
+                page_url == config.OPDS_ROOT_EVIL or 
+                page_url == "root" or
+                "/api/library/catalog" in page_url
+            )
+
+            if is_local_search and query:
+                logger.info(f"[search] Using NATIVE SQL search for query: {query}")
+                from utils.library_db import get_session
+                from sqlalchemy import text
+                import re
+
+                session = get_session()
+                try:
+                    clean_q = re.sub(r"[^\w\s]", " ", query).strip()
+                    if not clean_q:
+                        books = session.query(LocalBook).filter(LocalBook.title.ilike(f"%{query}%")).limit(100).all()
+                    else:
+                        match_expr = "books_fts MATCH :q"
+                        sql = text(f"SELECT rowid FROM books_fts WHERE {match_expr} ORDER BY rank")
+                        params = {"q": f"{clean_q}*"}
+                        matching_ids = session.execute(sql, params).scalars().all()
+                        books = session.query(LocalBook).filter(LocalBook.id.in_(matching_ids)).all()
+                        id_to_book = {b.id: b for b in books}
+                        books = [id_to_book[id] for id in matching_ids if id in id_to_book]
+
+                    items_per_page = 10
+                    start = (page - 1) * items_per_page
+                    end = start + items_per_page
+                    paginated = books[start:end]
+
+                    results = []
+                    for b in paginated:
+                        d = b.to_dict()
+                        d["is_folder"] = False
+                        results.append(d)
+                    
+                    return {
+                        "results": results,
+                        "currentPage": page,
+                        "totalPages": (len(books) + items_per_page - 1) // items_per_page,
+                        "totalItems": len(books)
+                    }
+                except Exception as e:
+                    logger.error(f"[search] Native search failed: {e}")
+                finally:
+                    session.close()
+
+            # OPDS Fallback
             target_url = (
                 page_url
                 if page_url
                 else build_search_url(query, uid=user_id, role=user_role)
             )
 
-            # API 9.3: Feedback en streaming vía borrador de mensaje
-            if not page_url:  # Solo en búsqueda inicial, no en paginación
+            # API 9.3: Feedback en streaming
+            if not page_url:
                 from utils.streaming import send_message_draft
                 from api.main import bot
-
-                await send_message_draft(
-                    bot=bot.app.bot,
-                    chat_id=user_id,
-                    text=f"🔍 <b>Buscando:</b> {query}...",
-                )
+                await send_message_draft(bot=bot.app.bot, chat_id=user_id, text=f"🔍 <b>Buscando:</b> {query}...")
 
             feed = await get_cached_feed(target_url)
 
@@ -262,11 +310,20 @@ async def handle_bot_request(
                 final_series = entry_series or title_meta.get("series", "")
                 final_series_index = entry_series_index or title_meta.get("volume", "")
 
+                # Extra technical and role metadata
+                illustrator = extract_creators_by_role(entry, "ill")
+                translator = extract_creators_by_role(entry, "trl")
+                word_count = entry.get("kavita_wordcount") or entry.get("calibre_wordcount")
+                page_count = entry.get("kavita_pagecount") or entry.get("calibre_pagecount")
+                reading_time = entry.get("kavita_readingtime") or entry.get("calibre_readingtime")
+
                 results.append(
                     {
                         "id": book_id,
                         "title": title,
                         "author": author,
+                        "illustrator": illustrator,
+                        "translator": translator,
                         "summary": summary,
                         "cover": cover_url,
                         "downloadUrl": download_url,
@@ -289,6 +346,9 @@ async def handle_bot_request(
                         "cleanTitle": title_meta.get("clean_title", title),
                         "romaji": title_meta.get("romaji", ""),
                         "categories": categories,
+                        "wordCount": word_count,
+                        "pageCount": page_count,
+                        "readingTime": reading_time,
                     }
                 )
 
@@ -336,15 +396,34 @@ async def handle_bot_request(
             }
 
         elif action == "book-detail":
-            book_id_url = data.get("bookId")
-            logger.info(f"[book-detail] Request received - bookId: {book_id_url}")
+            book_id_raw = data.get("bookId")
+            logger.info(f"[book-detail] Request received - bookId: {book_id_raw}")
 
+            if not book_id_raw:
+                raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
+
+            # 1. Check if it's a LOCAL book (id or local_ prefix)
+            local_book = None
+            if isinstance(book_id_raw, str) and (book_id_raw.startswith("local_") or book_id_raw.isdigit()):
+                from utils.library_db import get_session
+                session = get_session()
+                try:
+                    clean_id = book_id_raw.replace("local_", "")
+                    local_book = session.query(LocalBook).filter(LocalBook.id == int(clean_id)).first()
+                    if local_book:
+                        logger.info(f"[book-detail] Found local book in DB: {local_book.title}")
+                        result = local_book.to_dict()
+                        result["is_downloaded"] = await download_repo.has_user_downloaded(user_id, local_book.title)
+                        return result
+                except Exception as e:
+                    logger.warning(f"[book-detail] Local DB lookup failed for {book_id_raw}: {e}")
+                finally:
+                    session.close()
+
+            # 2. Traditional OPDS Flow (for remote or unmapped books)
+            book_id_url = book_id_raw
             # Initialize for extraction fallback
             subsection_url = None
-
-            if not book_id_url:
-                logger.error("[book-detail] Missing bookId parameter")
-                raise HTTPException(status_code=400, detail="Missing bookId (URL)")
 
             # Ensure we have a valid URL (sometimes frontend might pass raw ID)
             if not book_id_url.startswith("http"):
@@ -431,6 +510,26 @@ async def handle_bot_request(
                 cat.get("term") for cat in entry.get("tags", []) if cat.get("term")
             ]
 
+            # Enriched Roles
+            illustrator = extract_creators_by_role(entry, "ill")
+            translator = extract_creators_by_role(entry, "trl")
+            layout_by = extract_creators_by_role(entry, "bkp")
+            
+            # ASIN Extraction
+            asin = None
+            for ident in entry.get("identifiers", []):
+                if isinstance(ident, dict) and ident.get("scheme", "").upper() == "ASIN":
+                    asin = ident.get("value")
+                    break
+            if not asin and identifier and "asin" in identifier.lower():
+                asin = identifier.split(":")[-1].strip()
+            
+            # Tech metrics
+            epub_version = entry.get("dc_version") or entry.get("kavita_format_version")
+            word_count = entry.get("kavita_wordcount") or entry.get("calibre_wordcount")
+            page_count = entry.get("kavita_pagecount") or entry.get("calibre_pagecount")
+            reading_time = entry.get("kavita_readingtime") or entry.get("calibre_readingtime")
+
             # [NEW] Smart Tags & Series Extraction Fallback
             extracted_meta = parse_metadata_from_title(entry.get("title", ""))
 
@@ -510,6 +609,7 @@ async def handle_bot_request(
                 "publisher": publisher,
                 "language": language,
                 "isbn": isbn,
+                "asin": asin,
                 "series": series or "",
                 "seriesIndex": series_index or "",
                 "categories": categories,
@@ -518,7 +618,14 @@ async def handle_bot_request(
                 "fileType": file_type,
                 "upUrl": subsection_url,
                 "updatedDate": entry.get("updated", "") or entry.get("published", ""),
-                # Enhanced metadata
+                # Enriched metadata
+                "illustrator": illustrator,
+                "translator": translator,
+                "layoutBy": layout_by,
+                "epubVersion": epub_version,
+                "wordCount": word_count,
+                "pageCount": page_count,
+                "readingTime": reading_time,
                 "romaji": extracted_meta.get("romaji", ""),
                 "cleanTitle": extracted_meta.get("clean_title")
                 or entry.get("title", ""),

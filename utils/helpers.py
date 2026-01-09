@@ -4,39 +4,54 @@ from urllib.parse import urljoin, urlparse
 from config.config_settings import config
 
 
+def extract_creators_by_role(entry, role_code: str) -> Optional[str]:
+    """Extrae personas de una entrada OPDS filtrando por rol (ill, trl, bkp, etc)."""
+    creators = []
+    
+    # 1. Buscar en authors con atributo role
+    authors = getattr(entry, "authors", [])
+    for a in authors:
+        role = getattr(a, "role", None)
+        if role == role_code:
+            name = getattr(a, "name", None)
+            if name: creators.append(name)
+
+    # 2. Buscar en namespaces dc:creator o dc:contributor
+    # Algunas fuentes usan dc_creator_ill, dc_creator_trl o similar si se mapean
+    if hasattr(entry, "get"):
+        val = entry.get(f"dc_creator_{role_code}") or entry.get(f"dc_contributor_{role_code}")
+        if val: creators.append(val)
+
+    if creators:
+        return " - ".join(creators)
+    return None
+
 def extract_author(entry, is_folder=False) -> str:
     """Extrae el autor de una entrada OPDS de forma robusta."""
+    # Intentar autores sin rol o con rol aut/author
+    creators = []
+    authors = getattr(entry, "authors", [])
+    for a in authors:
+        role = getattr(a, "role", None)
+        if not role or role in ("aut", "author"):
+            name = getattr(a, "name", None)
+            if name: creators.append(name)
+    
+    if creators:
+        return " - ".join(creators)
+
+    # Fallback legacy logic
     author = None
-
-    # 1. FIRST: Try entry.authors (list) - this captures multiple authors
-    authors = (
-        entry.get("authors", [])
-        if hasattr(entry, "get")
-        else getattr(entry, "authors", [])
+    single_author = (
+        entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
     )
+    if hasattr(single_author, "name"):
+        author = single_author.name
+    elif isinstance(single_author, dict):
+        author = single_author.get("name")
+    elif isinstance(single_author, str) and single_author:
+        author = single_author
 
-    if authors:
-        author = " - ".join(
-            [
-                a.get("name", "") if hasattr(a, "get") else getattr(a, "name", "")
-                for a in authors
-                if (hasattr(a, "get") and a.get("name")) or hasattr(a, "name")
-            ]
-        )
-
-    # 2. Fallback: Try entry.author directo (si es objeto, buscar .name)
-    if not author:
-        single_author = (
-            entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
-        )
-        if hasattr(single_author, "name"):
-            author = single_author.name
-        elif isinstance(single_author, dict):
-            author = single_author.get("name")
-        elif isinstance(single_author, str) and single_author:
-            author = single_author
-
-    # 3. Intentar entry.author_detail
     if not author:
         detail = (
             entry.get("author_detail")
@@ -50,7 +65,6 @@ def extract_author(entry, is_folder=False) -> str:
                 else getattr(detail, "name", None)
             )
 
-    # 4. Intentar namespaces (dc:creator, dcterms:creator)
     if not author:
         if hasattr(entry, "get"):
             author = entry.get("dc_creator") or entry.get("dcterms_creator")
@@ -59,7 +73,6 @@ def extract_author(entry, is_folder=False) -> str:
                 entry, "dcterms_creator", None
             )
 
-    # 5. Fallback final
     if not author:
         author = "Colección" if is_folder else "Desconocido"
 
