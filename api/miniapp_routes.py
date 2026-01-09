@@ -748,7 +748,7 @@ async def handle_bot_request(
             # Security: Only for admin/staff to see the button, but we allow users to see their own recs if they know the action?
             # Actually, per user request, the feature is in Beta for Staff.
             if user_role not in ("admin", "staff"):
-            raise HTTPException(status_code=403, detail="Beta exclusiva para Staff")
+                raise HTTPException(status_code=403, detail="Beta exclusiva para Staff")
 
             limit = data.get("limit", 10)
             recs = await RecommendationService.get_recommendations(user_id, limit=limit)
