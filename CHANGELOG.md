@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.1.1] - 2026-01-09
+
+### Arreglado
+- **Actualización del Sistema**: Mejorada la resiliencia del comando `/update_system`. 
+  - Sustitución de `aiohttp` por `httpx`.
+  - Implementación de 3 reintentos automáticos con backoff exponencial.
+  - Aumento de timeouts para evitar `TimeoutError` en redes Docker.
+  - Manejo inteligente de `ReadTimeout` para confirmar el inicio de la actualización.
+
 ## [v6.1.0] - 2026-01-09
 ### Añadido
 - **Sistema de Calificaciones**: Ahora los usuarios pueden puntuar los libros (1-5 estrellas) desde la Mini App.
