@@ -331,16 +331,24 @@ function BookDetailContent() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {book.demographics?.map((cat, i) => (
-                                <span key={`d-${i}`} className="px-3 py-1 bg-primary/20 text-primary text-[10px] rounded-full font-bold uppercase tracking-tight border border-primary/20">
+                                <button
+                                    key={`d-${i}`}
+                                    onClick={() => router.push(`/catalog?q=${encodeURIComponent(cat)}`)}
+                                    className="px-3 py-1 bg-primary/20 text-primary text-[10px] rounded-full font-bold uppercase tracking-tight border border-primary/20 hover:bg-primary/30 transition-colors active:scale-95 cursor-pointer"
+                                >
                                     {cat}
-                                </span>
+                                </button>
                             ))}
                             {[...(book.categories || []), ...(book.tags || [])]
                                 .filter((c, i, s) => c && s.indexOf(c) === i && !book.demographics?.includes(c))
                                 .map((cat, i) => (
-                                    <span key={`g-${i}`} className="px-3 py-1 bg-secondary text-foreground text-[10px] rounded-full font-semibold border border-border/50">
+                                    <button
+                                        key={`g-${i}`}
+                                        onClick={() => router.push(`/catalog?q=${encodeURIComponent(cat)}`)}
+                                        className="px-3 py-1 bg-secondary text-foreground text-[10px] rounded-full font-semibold border border-border/50 hover:bg-secondary/80 transition-colors active:scale-95 cursor-pointer"
+                                    >
                                         {cat}
-                                    </span>
+                                    </button>
                                 ))}
                         </div>
                     </Card>
