@@ -63,7 +63,7 @@ export class OpdsClient {
         }
     }
 
-    static async fetchLocalLibrary(url?: string): Promise<OPDSFeed | null> {
+    static async fetchLocalLibrary(url?: string, sortBy: string = "alpha"): Promise<OPDSFeed | null> {
         const initData = getTelegramInitData()
 
         let apiPath = "/api/library/catalog"
@@ -81,7 +81,7 @@ export class OpdsClient {
             // Construct apiPath with parameters
             if (currentSourceId || currentFolder || currentPageNum > 1) {
                 const useRandomCovers = localStorage.getItem("useRandomFolderCovers") !== "false"
-                apiPath += `?source_id=${currentSourceId}&folder=${encodeURIComponent(currentFolder)}&page=${currentPageNum}&use_random_covers=${useRandomCovers}`
+                apiPath += `?source_id=${currentSourceId}&folder=${encodeURIComponent(currentFolder)}&page=${currentPageNum}&use_random_covers=${useRandomCovers}&sort_by=${sortBy}`
             }
         }
 

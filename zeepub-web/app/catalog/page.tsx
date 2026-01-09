@@ -112,6 +112,7 @@ function CatalogContent() {
     const { disableDisplacement, dataSaver } = useTheme()
     const [searchQuery, setSearchQuery] = useState("")
     const [searchType, setSearchType] = useState("all")
+    const [sortBy, setSortBy] = useState("alpha")
     const [searchResults, setSearchResults] = useState<Book[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [searchPagination, setSearchPagination] = useState<PaginationState>({
@@ -222,7 +223,8 @@ function CatalogContent() {
     const loadFeed = useCallback(async (url?: string, isPagination = false) => {
         setIsLoading(true)
         try {
-            const data = await OpdsClient.fetchFeed(url, isAdminMode)
+            // Use fetchLocalLibrary directly with sortBy parameter
+            const data = await OpdsClient.fetchLocalLibrary(url, sortBy)
             if (!data) {
                 console.error("[Catalog] No data received from feed")
                 return
@@ -241,7 +243,7 @@ function CatalogContent() {
         } finally {
             setIsLoading(false)
         }
-    }, [isAdminMode])
+    }, [isAdminMode, sortBy])
 
     // Unified feed loader: handle searchParams and isAdminMode changes
     useEffect(() => {
@@ -258,7 +260,15 @@ function CatalogContent() {
             }
             loadFeed(feedUrl || undefined)
         }
-    }, [searchParams, isAdminMode, loadFeed])
+    }, [searchParams, isAdminMode, loadFeed, sortBy])
+
+    // Reload feed when sortBy changes
+    useEffect(() => {
+        if (!searchQuery) {
+            const feedUrl = searchParams.get("feed_url")
+            loadFeed(feedUrl || undefined)
+        }
+    }, [sortBy])
 
     // Go back in internal history or via OPDS hierarchy
     // Go back via native browser history
@@ -485,6 +495,22 @@ function CatalogContent() {
                         <option value="genres">Géneros</option>
                     </select>
                 </div>
+
+                {/* Sort selector - only show when not searching */}
+                {!searchQuery && (
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">Ordenar por:</span>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="h-10 px-3 bg-card border border-border rounded-xl text-sm font-medium text-foreground focus:ring-2 focus:ring-primary/20 outline-none flex-1"
+                        >
+                            <option value="alpha">Alfabético (A-Z)</option>
+                            <option value="date_added">Fecha de añadido</option>
+                            <option value="date_updated">Última actualización</option>
+                        </select>
+                    </div>
+                )}
 
                 {/* Feed title */}
                 {currentFeed?.title && (

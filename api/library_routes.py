@@ -159,6 +159,7 @@ async def get_catalog(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
     use_random_covers: bool = Query(True),
+    sort_by: str = Query("alpha", regex="^(alpha|date_added|date_updated)$"),
     user_data: dict = Depends(require_mini_app_access)
 ):
     """
@@ -261,8 +262,19 @@ async def get_catalog(
                 "numBooks": subfolder_book_query.count(),
                 "tags": rep.get("tags"),
                 "series": rep.get("series"),
-                "bookType": random_cover_book.book_type if random_cover_book else rep.get("book_type")
+                "bookType": random_cover_book.book_type if random_cover_book else rep.get("book_type"),
+                # Add date fields for sorting
+                "created_at": random_cover_book.created_at if random_cover_book and hasattr(random_cover_book, 'created_at') else None,
+                "modified_at": random_cover_book.modified_at if random_cover_book and hasattr(random_cover_book, 'modified_at') else None
             })
+            
+        # Sort folders based on sort_by parameter
+        if sort_by == "date_added":
+            folders_list.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+        elif sort_by == "date_updated":
+            folders_list.sort(key=lambda x: x.get("modified_at") or "", reverse=True)
+        else:  # alpha (default)
+            folders_list.sort(key=lambda x: x["title"].lower())
             
         # Ordenar libros
         books_in_folder.sort(key=lambda x: x["title"].lower())
