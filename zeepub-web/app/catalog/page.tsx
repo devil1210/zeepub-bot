@@ -457,45 +457,7 @@ function CatalogContent() {
 
     return (
         <div className="min-h-screen bg-background pt-safe pb-20">
-            {/* Custom Navigation Bar */}
-            <div className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border pt-safe">
-                <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={goBack}
-                        className="flex items-center gap-1.5 text-foreground hover:bg-secondary"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">Atrás</span>
-                    </Button>
-
-                    {!searchQuery && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowSortModal(true)}
-                            className="flex items-center gap-1.5 text-foreground hover:bg-secondary"
-                        >
-                            <Library className="w-4 h-4" />
-                            <span className="text-sm font-medium">Ordenar</span>
-                        </Button>
-                    )}
-
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                        className="flex items-center gap-1.5 text-foreground hover:bg-secondary"
-                    >
-                        <ArrowUpCircle className="w-4 h-4" />
-                        <span className="text-sm font-medium">Subir</span>
-                    </Button>
-                </div>
-            </div>
-
-            {/* Spacer for fixed header */}
-            <div className="h-14" />
+            <TransparentHeader />
             <main className="max-w-2xl mx-auto px-4 py-6 space-y-4 text-foreground">
                 {/* Replicando funcionalidad v3.13.8: Buscador reactivo en catálogo */}
                 <div className="flex gap-2 mb-2">
@@ -575,8 +537,8 @@ function CatalogContent() {
                                             setShowSortModal(false)
                                         }}
                                         className={`w-full text-left px-4 py-3 rounded-xl transition-colors ${sortBy === option.value
-                                                ? "bg-primary text-primary-foreground font-semibold"
-                                                : "bg-card hover:bg-secondary text-foreground"
+                                            ? "bg-primary text-primary-foreground font-semibold"
+                                            : "bg-card hover:bg-secondary text-foreground"
                                             }`}
                                     >
                                         {option.label}
