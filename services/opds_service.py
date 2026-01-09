@@ -4,7 +4,7 @@ from functools import wraps
 import re
 from urllib.parse import urlparse, unquote
 from difflib import SequenceMatcher
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 # from core.state_manager import state_manager (Moved to local scope)
