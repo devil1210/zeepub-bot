@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronUp, ArrowUpDown } from "lucide-react"
 import { useStrings } from "@/components/strings-provider"
 
 interface PaginationProps {
@@ -13,6 +13,8 @@ interface PaginationProps {
     onNextPage: () => void
     onPrevPage: () => void
     onUpPage?: () => void
+    onSort?: () => void
+    showSort?: boolean
     isLoading?: boolean
 }
 
@@ -25,6 +27,8 @@ export function Pagination({
     onNextPage,
     onPrevPage,
     onUpPage,
+    onSort,
+    showSort = false,
     isLoading = false,
 }: PaginationProps) {
     const { t } = useStrings()
@@ -51,6 +55,24 @@ export function Pagination({
                             <span className="truncate">{t("pagination_prev")}</span>
                         </span>
                     </Button>
+
+                    {showSort && onSort && (
+                        <>
+                            <div className="w-px h-8 bg-primary/20 mx-1 opacity-50 flex-shrink-0" />
+
+                            <Button
+                                variant="default"
+                                onClick={onSort}
+                                disabled={isLoading}
+                                className="flex-1 h-12 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl relative overflow-hidden group transition-all active:scale-90 disabled:opacity-30 border border-primary/20 px-0"
+                            >
+                                <span className="relative flex items-center justify-center gap-1.5 font-bold text-sm px-2">
+                                    <ArrowUpDown className="w-5 h-5 flex-shrink-0" />
+                                    <span className="truncate">Ordenar</span>
+                                </span>
+                            </Button>
+                        </>
+                    )}
 
                     <div className="w-px h-8 bg-primary/20 mx-1 opacity-50 flex-shrink-0" />
 

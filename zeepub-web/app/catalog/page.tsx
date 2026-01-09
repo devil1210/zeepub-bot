@@ -15,6 +15,8 @@ import {
     ImageOff,
     Calendar,
     X,
+    ArrowUpCircle,
+    ArrowLeft,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { OpdsClient } from "@/lib/opds-client"
@@ -113,6 +115,7 @@ function CatalogContent() {
     const [searchQuery, setSearchQuery] = useState("")
     const [searchType, setSearchType] = useState("all")
     const [sortBy, setSortBy] = useState("alpha")
+    const [showSortModal, setShowSortModal] = useState(false)
     const [searchResults, setSearchResults] = useState<Book[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [searchPagination, setSearchPagination] = useState<PaginationState>({
@@ -454,7 +457,45 @@ function CatalogContent() {
 
     return (
         <div className="min-h-screen bg-background pt-safe pb-20">
-            <TransparentHeader />
+            {/* Custom Navigation Bar */}
+            <div className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border pt-safe">
+                <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={goBack}
+                        className="flex items-center gap-1.5 text-foreground hover:bg-secondary"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span className="text-sm font-medium">Atrás</span>
+                    </Button>
+
+                    {!searchQuery && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowSortModal(true)}
+                            className="flex items-center gap-1.5 text-foreground hover:bg-secondary"
+                        >
+                            <Library className="w-4 h-4" />
+                            <span className="text-sm font-medium">Ordenar</span>
+                        </Button>
+                    )}
+
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        className="flex items-center gap-1.5 text-foreground hover:bg-secondary"
+                    >
+                        <ArrowUpCircle className="w-4 h-4" />
+                        <span className="text-sm font-medium">Subir</span>
+                    </Button>
+                </div>
+            </div>
+
+            {/* Spacer for fixed header */}
+            <div className="h-14" />
             <main className="max-w-2xl mx-auto px-4 py-6 space-y-4 text-foreground">
                 {/* Replicando funcionalidad v3.13.8: Buscador reactivo en catálogo */}
                 <div className="flex gap-2 mb-2">
@@ -496,22 +537,53 @@ function CatalogContent() {
                     </select>
                 </div>
 
-                {/* Sort selector - only show when not searching */}
-                {!searchQuery && (
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">Ordenar por:</span>
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            className="h-10 px-3 bg-card border border-border rounded-xl text-sm font-medium text-foreground focus:ring-2 focus:ring-primary/20 outline-none flex-1"
+                {/* Sort Modal */}
+                {showSortModal && (
+                    <div
+                        className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end justify-center"
+                        onClick={() => setShowSortModal(false)}
+                    >
+                        <div
+                            className="bg-background w-full max-w-2xl rounded-t-3xl p-6 pb-safe animate-in slide-in-from-bottom duration-300"
+                            onClick={(e) => e.stopPropagation()}
                         >
-                            <option value="alpha">Alfabético (A-Z)</option>
-                            <option value="alpha_desc">Alfabético (Z-A)</option>
-                            <option value="date_added">Más recientes</option>
-                            <option value="date_added_desc">Más antiguos</option>
-                            <option value="date_updated">Actualizados recientemente</option>
-                            <option value="date_updated_desc">Sin actualizar hace tiempo</option>
-                        </select>
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold">Ordenar por</h3>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowSortModal(false)}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {[
+                                    { value: "alpha", label: "Alfabético (A-Z)" },
+                                    { value: "alpha_desc", label: "Alfabético (Z-A)" },
+                                    { value: "date_added", label: "Más recientes" },
+                                    { value: "date_added_desc", label: "Más antiguos" },
+                                    { value: "date_updated", label: "Actualizados recientemente" },
+                                    { value: "date_updated_desc", label: "Sin actualizar hace tiempo" },
+                                ].map((option) => (
+                                    <button
+                                        key={option.value}
+                                        onClick={() => {
+                                            setSortBy(option.value)
+                                            setShowSortModal(false)
+                                        }}
+                                        className={`w-full text-left px-4 py-3 rounded-xl transition-colors ${sortBy === option.value
+                                                ? "bg-primary text-primary-foreground font-semibold"
+                                                : "bg-card hover:bg-secondary text-foreground"
+                                            }`}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -854,6 +926,8 @@ function CatalogContent() {
                                 onNextPage={() => currentFeed.nextPage && handleNavigate(currentFeed.nextPage)}
                                 onPrevPage={() => currentFeed.prevPage && handleNavigate(currentFeed.prevPage)}
                                 onUpPage={handleGoBack}
+                                onSort={() => setShowSortModal(true)}
+                                showSort={true}
                                 isLoading={isLoading}
                             />
                         )
