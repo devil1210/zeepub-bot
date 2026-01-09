@@ -144,6 +144,8 @@ async def get_effective_user(uid: int, use_cache: bool = True) -> Dict[str, Any]
                 "expires_at": expires_at,
                 "nickname": info.get("nickname"),
                 "custom_status": custom_status,
+                "custom_status": custom_status,
+                "settings": info.get("settings", {}),
                 # has_mini_app_access will be set by default logic below
             }
 
@@ -289,6 +291,30 @@ async def check_milestones(uid: int, context) -> Optional[str]:
 async def invalidate_user_cache(telegram_id: int):
     """Limpia la caché de un usuario específico."""
     await user_cache.invalidate(f"user_effective:{telegram_id}")
+
+
+async def get_user_settings(telegram_id: int) -> Dict[str, Any]:
+    """Obtiene la configuración personal del usuario."""
+    info = await get_user_info(telegram_id)
+    if info:
+        return info.get("settings", {})
+    return {}
+
+
+async def update_user_setting(telegram_id: int, key: str, value: Any) -> Dict[str, Any]:
+    """Actualiza una clave específica de la configuración del usuario."""
+    current_settings = await get_user_settings(telegram_id)
+    current_settings[key] = value
+    
+    # Ensure user exists (if not, upsert first)
+    info = await get_user_info(telegram_id)
+    if not info:
+         eff = await get_effective_user(telegram_id)
+         await upsert_user(telegram_id, role=str(eff.get("role", "free")))
+    
+    await user_repo.update_user_settings(telegram_id, current_settings)
+    await user_cache.invalidate(f"user_effective:{telegram_id}")
+    return current_settings
 
 
 # Init DB is handled by DatabaseManager/UserRepository instantiation

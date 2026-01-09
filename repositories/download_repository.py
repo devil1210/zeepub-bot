@@ -174,6 +174,17 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             row = await cursor.fetchone()
             return row[0] if row else 0
 
+    async def has_user_downloaded(self, user_id: int, title: str) -> bool:
+        """
+        Check if a user has previously downloaded a book by title.
+        """
+        async with self.db_manager.connection() as conn:
+            cursor = await conn.execute(
+                "SELECT 1 FROM download_history WHERE user_id = ? AND title = ?",
+                (user_id, title)
+            )
+            return await cursor.fetchone() is not None
+
 
 # Global instance
 from core.db_manager import db_manager

@@ -9,7 +9,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMe
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, CallbackQueryHandler, MessageHandler, filters
 from core.state_manager import state_manager
-from services.opds_service import mostrar_colecciones, buscar_zeepubs_directo
+from services.opds_service import mostrar_colecciones, buscar_zeepubs_directo, mostrar_recomendaciones
 from services.telegram_service import publicar_libro
 from config.config_settings import config
 from utils.helpers import find_zeepubs_destino
@@ -180,6 +180,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if expires_at:
             msg += f" Hasta: <b>{expires_at.strftime('%Y-%m-%d %H:%M')}</b>"
         await query.answer(msg.replace("<b>", "").replace("</b>", ""), show_alert=True)
+        await query.answer(msg.replace("<b>", "").replace("</b>", ""), show_alert=True)
+        return
+
+    # Recomendaciones (v6.1.0)
+    if data == "rec|ver":
+        await mostrar_recomendaciones(update, context)
         return
 
     # Selección de colección
@@ -235,8 +241,37 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ):
             st.pop(k, None)
         key = data.split("|", 1)[1]
-        libro = st["libros"].get(key)
+        if key.startswith("local_"):
+            # Stateless lookup from DB (for recommendations/scheduler)
+            try:
+                local_id = int(key.split("_")[1])
+                from utils.library_db import get_session
+                from models.library_models import LocalBook
+                
+                session = get_session()
+                book_db = session.query(LocalBook).filter_by(id=local_id).first()
+                if book_db:
+                    # Construct pseudo 'libro' dict
+                    libro = {
+                         "titulo": book_db.title,
+                         "portada": book_db.cover_path,
+                         "descarga": book_db.filepath,
+                         "href": book_db.filepath 
+                    }
+                session.close()
+            except Exception as e:
+                logger.error(f"Error fetching local book {key}: {e}")
+
+        # Fallback to session state if not found via stateless or not local key
         if not libro:
+             libro = st["libros"].get(key)
+        
+        if not libro:
+            # Try refreshing if session expired? Or just fail gracefully
+            try:
+                await query.answer("⚠️ Sesión expirada o libro no encontrado.", show_alert=True)
+            except:
+                pass
             return
 
         href = libro.get("descarga") or libro.get("href")
@@ -665,6 +700,76 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await descargar_epub_pendiente(
             update, context, uid, job_queue=context.job_queue
         )
+        return
+
+        return
+    
+    # Rating Handler
+    if data.startswith("rate_book|"):
+        # Format: rate_book|book_id|rating (or 'cancel')
+        parts = data.split("|")
+        if len(parts) >= 3:
+            try:
+                book_id_str = parts[1]
+                # Check for cancel
+                if parts[2] == "cancel":
+                     try:
+                        await query.delete_message()
+                     except Exception:
+                        pass
+                     return
+
+                rating_val = int(parts[2])
+                import services.rating_service as rs
+                # Strip prefix "local_" if present, though IDs should be int usually 
+                # but local_books use int IDs. 
+                # If ID comes as "local_123", strip "local_"
+                clean_id = int(book_id_str.replace("local_", ""))
+                
+                result = rs.RatingService.rate_book(uid, clean_id, rating_val)
+                
+                # Feedback to user
+                await query.answer(f"⭐ ¡Gracias! Votaste {rating_val}/5.", show_alert=False)
+                
+                # Update message to show current status (remove keyboard or show static stars)
+                # We can replace keyboard with a "Thanks" button or remove it
+                new_kb = [] # Remove buttons
+                msg_text = query.message.text_html
+                # Append user rating info if not present
+                if "Tu voto:" not in msg_text:
+                    msg_text += f"\n\n✅ <b>Tu voto:</b> {rating_val} ⭐"
+                
+                try:
+                    await query.edit_message_text(msg_text, parse_mode="HTML", reply_markup=None)
+                except Exception:
+                    pass
+                    
+            except ValueError:
+                await query.answer("❌ Error al procesar voto.")
+        return
+
+    # Trigger Rating Prompt (e.g. from "Calificar" button)
+    if data.startswith("prompt_rate|"):
+        book_id = data.split("|")[1]
+        
+        # Build 1-5 Scale Keyboard
+        keyboard = [
+            [
+                InlineKeyboardButton("1 ⭐", callback_data=f"rate_book|{book_id}|1"),
+                InlineKeyboardButton("2 ⭐", callback_data=f"rate_book|{book_id}|2"),
+                InlineKeyboardButton("3 ⭐", callback_data=f"rate_book|{book_id}|3"),
+                InlineKeyboardButton("4 ⭐", callback_data=f"rate_book|{book_id}|4"),
+                InlineKeyboardButton("5 ⭐", callback_data=f"rate_book|{book_id}|5"),
+            ],
+            [InlineKeyboardButton("❌ Cancelar", callback_data=f"rate_book|{book_id}|cancel")]
+        ]
+        
+        await query.message.reply_text(
+            "⭐ <b>Califica este libro:</b>\n¿Qué te pareció?",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML"
+        )
+        await query.answer()
         return
 
     # Facebook handlers

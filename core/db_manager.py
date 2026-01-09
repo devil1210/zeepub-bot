@@ -64,9 +64,17 @@ class DatabaseManager:
                     custom_status TEXT,
                     created_by INTEGER,
                     nickname TEXT,
+                    settings JSON DEFAULT '{}',
                     FOREIGN KEY (level_id) REFERENCES user_levels(id)
                 )
             """)
+
+            # Migración: Verificar y añadir columna settings si no existe
+            cursor = await conn.execute("PRAGMA table_info(users)")
+            cols = [row[1] for row in await cursor.fetchall()]
+            if 'settings' not in cols:
+                print("Migración: Añadiendo columna 'settings' a tabla users...")
+                await conn.execute("ALTER TABLE users ADD COLUMN settings JSON DEFAULT '{}'")
 
             # Crear tabla de admins si no existe
             await conn.execute("""

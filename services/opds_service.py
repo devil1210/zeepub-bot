@@ -186,6 +186,10 @@ async def mostrar_colecciones(
     # 2. Construir teclado
     keyboard = [[InlineKeyboardButton("🔍 Buscar EPUB", callback_data="buscar")]]
 
+    # Botón Recomendaciones (v6.1.0) - Solo en raíz o menú principal
+    if not st.get("historial") or title in ("📚 Categorías", "📁 Biblioteca ZeePubs", "📁 ZeePubs [ES]"):
+         keyboard.append([InlineKeyboardButton("💡 Para ti (Beta)", callback_data="rec|ver")])
+
     if colecciones:
         for i, col in enumerate(colecciones):
             st["colecciones"][i] = col
@@ -347,3 +351,82 @@ async def get_zeepubs_first_library(url: str) -> str:
                 return abs_url(config.BASE_URL, link.href)
 
     return libraries_url
+
+
+async def mostrar_recomendaciones(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Muestra lista de libros recomendados usando la UI del catálogo."""
+    from services.recommendation_service import RecommendationService
+    from core.state_manager import state_manager
+    
+    uid = update.effective_user.id
+    st = state_manager.get_user_state(uid)
+    
+    # 1. Obtener recomendaciones
+    recs = await RecommendationService.get_recommendations(uid, limit=5)
+    
+    if not recs:
+        msg = "😢 No tengo suficientes datos para recomendarte algo aún. ¡Descarga algunos libros y vuelve!"
+        if hasattr(update, "callback_query"):
+             await update.callback_query.answer(msg, show_alert=True)
+        else:
+             await update.message.reply_text(msg)
+        return
+
+    # 2. Preparar estado para la vista de lista
+    st["libros"] = {}
+    st["colecciones"] = {}
+    st["titulo"] = "💡 Recomendaciones para ti"
+    
+    # Simular estructura de navigation (sin opds real)
+    st["nav"] = {"prev": None, "next": None}
+    
+    # Añadir al historial para permitir "Volver"
+    if "historial" not in st:
+         st["historial"] = []
+    
+    # Guardar página actual antes de cambiar (pero es especial, mejor no, 
+    # solo el botón 'Volver' del teclado hará history.pop si implementamos 'atras')
+    # En este caso, tratamos esto como una colección nueva.
+    
+    keyboard = []
+    
+    for book in recs:
+        key = uuid.uuid4().hex[:8]
+        # Adaptar dict de recommendation_service al formato esperado por mostrar_colecciones/handlers
+        # RecommendationService devuelve: title, author, id, cover_path...
+        # State espera: titulo, autor, href, descarga, portada...
+        
+        # Necesitamos la URL de descarga o algo para 'lib|key' handler.
+        # El handler 'lib|' usa 'libro.get("descarga")' o 'href'.
+        # Y busca series/volume ids en href.
+        # Si es libro local, el href debe ser file:///... o handled special.
+        
+        # Hack: Si es local, path en 'href' y handler detecta.
+        # Pero mostrar_colecciones usa 'buscar_zeepubs_directo' logic? No, 'lib|' handler.
+        
+        b_state = {
+            "titulo": book["title"],
+            "autor": book["author"],
+            "href": book.get("filepath") or book.get("download_url", ""), # Local path
+            "descarga": book.get("filepath"), 
+            "portada": book.get("cover_path"),
+            "rating_average": book.get("rating_average")
+        }
+        st["libros"][key] = b_state
+        
+        rating_str = f" ⭐ {book.get('rating_average'):.1f}" if book.get('rating_average') else ""
+        display_text = f"{book['title']} ({book['author']}){rating_str}"
+        keyboard.append([InlineKeyboardButton(display_text, callback_data=f"lib|{key}")])
+
+    # Botón Volver
+    # Si venimos de un menú, 'Subir Nivel' o 'Volver'
+    keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    text = "💡 <b>Basado en tus lecturas recientes:</b>"
+    
+    if hasattr(update, "callback_query"):
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode="HTML")
+    else:
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="HTML")

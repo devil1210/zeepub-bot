@@ -70,6 +70,10 @@ class LocalBook(Base):
     word_count = Column(Integer)
     page_count = Column(Integer)
     reading_time = Column(Integer)  # in minutes
+    
+    # Ratings
+    rating_average = Column(Float, default=0.0)
+    rating_count = Column(Integer, default=0)
 
     # Contenido
     description = Column(String(5000))
@@ -123,5 +127,23 @@ class LocalBook(Base):
             "epubVersion": self.epub_version,
             "wordCount": self.word_count,
             "pageCount": self.page_count,
+            "pageCount": self.page_count,
             "readingTime": self.reading_time,
+            "rating": self.rating_average,
+            "votes": self.rating_count,
         }
+
+
+class UserRating(Base):
+    """
+    Votos individuales de usuarios para libros.
+    """
+    __tablename__ = "user_ratings"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, nullable=False)
+    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=False)
+    rating = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    book = relationship("LocalBook")

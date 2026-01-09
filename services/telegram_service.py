@@ -459,12 +459,21 @@ async def publicar_libro(
             version = meta.get("epub_version", "2.0")
             fecha = meta.get("fecha_modificacion", "Desconocida")
             titulo_vol = meta.get("titulo_volumen") or titulo or "Desconocido"
+            
+            # --- Stars Display (v6.1.0) ---
+            rating_txt = ""
+            if meta.get("rating_average"):
+                avg = meta.get("rating_average")
+                count = meta.get("rating_count", 0)
+                if avg > 0:
+                     rating_txt = f"\n⭐ {avg:.1f} ({count} votos)"
+            # ------------------------------
 
             info_text = (
                 f"📂 <b>{titulo_vol}</b>\n"
                 f"ℹ️ Versión Epub: {version}\n"
                 f"📅 Actualizado: {fecha}\n"
-                f"📦 Tamaño: {size_mb:.2f} MB"
+                f"📦 Tamaño: {size_mb:.2f} MB{rating_txt}"
             )
 
             slug = generar_slug_from_meta(meta)
@@ -787,6 +796,53 @@ async def descargar_epub_pendiente(
             )
 
         cleanup_tmp(epub_buffer)
+        
+        # --- Interactive Feedback (v6.1.0) ---
+        # Mostrar botón de calificar si tenemos book_id local
+        # Intentamos obtener el book_id desde el enlace o metadatos
+        # Por ahora, usamos el ID si está embebido en el callback o metadatos.
+        # En la implementación actual, 'series_id' y 'volume_id' son de OPDS.
+        # Si descargamos desde la libreria local (buscar_zeepubs_directo -> lib|local_ID),
+        # entonces 'user_state["url"]' o 'epub_url' podría tener pistas.
+        
+        # TODO: Para el soporte completo de "Rate", necesitamos el ID de local_books.
+        # Si esta descarga vino de una búsqueda local, deberíamos tener el ID.
+        # Si vino de OPDS remoto, no tenemos 'local_book_id' para la tabla user_ratings.
+        # Asumiremos que esto funciona principalmente para libros locales por ahora.
+        
+        # Intento de extraer ID local del epub_url si es file:///.../local_library
+        # O si el callback data original tenía el ID.
+        
+        # Solución simple: Si el epub_url es un path local, buscar el libro en DB por path
+        if epub_url and "local_library" in epub_url or os.path.exists(epub_url):
+             try:
+                from utils.library_db import get_session
+                from models.library_models import LocalBook
+                from repositories.download_repository import download_repo
+                
+                session = get_session()
+                # filepath in db matches epub_url
+                book_db = session.query(LocalBook).filter_by(filepath=epub_url).first()
+                if book_db:
+                    # Check if user actually downloaded it before prompts (already confirmed by this flow generally, 
+                    # but good to use common logic if moved elsewhere)
+                    # For this flow (post-download), we know they just downloaded it.
+                    # But if we move this button to the initial card, we need `has_user_downloaded`.
+                    
+                    kb_rate = [[InlineKeyboardButton("⭐ Calificar Libro", callback_data=f"prompt_rate|{book_db.id}")]]
+                    try:
+                        await bot.send_message(
+                            chat_id=destino,
+                            text="¿Qué te pareció este libro?",
+                            reply_markup=InlineKeyboardMarkup(kb_rate),
+                            message_thread_id=thread_id_destino
+                        )
+                    except Exception:
+                        pass
+                session.close()
+             except Exception as e:
+                logger.error(f"Error finding local book for rating: {e}")
+        # -------------------------------------
 
     finally:
         # Eliminar mensaje de preparación

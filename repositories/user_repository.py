@@ -109,13 +109,14 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if nickname is not None:
                     fields.append("nickname = ?")
                     params.append(nickname)
+                # settings is not updated via upsert usually, use update_user_settings
 
                 params.append(telegram_id)
                 sql = f"UPDATE users SET {', '.join(fields)} WHERE telegram_id = ?"
                 await conn.execute(sql, tuple(params))
             else:
                 await conn.execute(
-                    "INSERT INTO users (telegram_id, role, level_id, added_at, expires_at, custom_status, created_by, nickname) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO users (telegram_id, role, level_id, added_at, expires_at, custom_status, created_by, nickname, settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '{}')",
                     (
                         telegram_id,
                         role,

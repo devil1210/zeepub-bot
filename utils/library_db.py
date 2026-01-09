@@ -45,13 +45,32 @@ def check_migrations():
             ('epub_version', 'VARCHAR(20)'),
             ('word_count', 'INTEGER'),
             ('page_count', 'INTEGER'),
-            ('reading_time', 'INTEGER')
+            ('reading_time', 'INTEGER'),
+            ('rating_average', 'FLOAT DEFAULT 0.0'),
+            ('rating_count', 'INTEGER DEFAULT 0')
         ]
 
+        # 1. Migración de columnas (local_books)
         for col_name, col_type in new_cols:
             if col_name not in existing_cols:
                 print(f"Migración: Añadiendo columna '{col_name}' a local_books...")
                 cursor.execute(f"ALTER TABLE local_books ADD COLUMN {col_name} {col_type}")
+
+        # 2. Migración: Crear tabla de ratings si no existe
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_ratings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                book_id INTEGER NOT NULL,
+                rating INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (book_id) REFERENCES local_books(id)
+            )
+        """)
+        
+        # Índice para evitar votos duplicados y búsquedas rápidas
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings_unique ON user_ratings(user_id, book_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_ratings_book ON user_ratings(book_id)")
 
         conn.commit()
         conn.close()
