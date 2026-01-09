@@ -460,15 +460,16 @@ function CatalogContent() {
             <TransparentHeader />
             <main className="max-w-2xl mx-auto px-4 py-6 space-y-4 text-foreground">
                 {/* Replicando funcionalidad v3.13.8: Buscador reactivo en catálogo */}
-                <div className="flex gap-2 mb-2">
+                <div className="flex gap-2 mb-2 p-1 bg-background/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg relative overflow-hidden group/search-bar">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
                     <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-60" />
                         <Input
                             type="text"
                             placeholder={t("search_placeholder")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-12 h-12 bg-card border-border rounded-xl shadow-sm focus:ring-primary/20"
+                            className="bg-transparent border-none pl-11 h-11 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
                         />
                     </div>
                     {searchQuery && (
@@ -478,24 +479,24 @@ function CatalogContent() {
                                 setSearchResults([])
                                 router.push('/catalog')
                             }}
-                            variant="outline"
+                            variant="ghost"
                             size="icon"
-                            className="h-12 w-12 rounded-xl border-border"
+                            className="h-11 w-11 hover:bg-white/5 text-muted-foreground transition-all active:scale-95"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-4 h-4" />
                         </Button>
                     )}
                     <select
                         value={searchType}
                         onChange={(e) => setSearchType(e.target.value)}
-                        className="h-12 px-4 bg-card border border-border rounded-xl text-sm font-medium text-foreground focus:ring-2 focus:ring-primary/20 outline-none"
+                        className="h-11 px-3 bg-white/5 border-l border-white/10 text-[10px] uppercase tracking-wider font-bold text-primary focus:ring-0 outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors"
                     >
-                        <option value="all">Todos</option>
-                        <option value="title">Título</option>
-                        <option value="author">Autor</option>
-                        <option value="illustrator">Ilustrador</option>
-                        <option value="translator">Grupo Traductor</option>
-                        <option value="genres">Géneros</option>
+                        <option className="bg-background" value="all">TODOS</option>
+                        <option className="bg-background" value="title">TÍTULO</option>
+                        <option className="bg-background" value="author">AUTOR</option>
+                        <option className="bg-background" value="illustrator">ILUSTRADOR</option>
+                        <option className="bg-background" value="translator">TRADUCTOR</option>
+                        <option className="bg-background" value="genres">GÉNEROS</option>
                     </select>
                 </div>
 
@@ -839,15 +840,15 @@ function CatalogContent() {
 
                                                 {/* 4. Meta Badges: Format & Date - Only show for series folders, not volumes */}
                                                 {entry.is_folder && (
-                                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                    <div className="flex flex-wrap items-center gap-1.5 mb-2">
                                                         {entry.bookType && (
-                                                            <div className="px-1.5 py-0.5 bg-secondary text-[8px] font-bold text-secondary-foreground rounded uppercase tracking-wider">
+                                                            <div className="px-2 py-0.5 bg-primary/20 text-primary text-[9px] font-bold uppercase tracking-[0.1em] rounded-md border border-primary/20 shadow-[0_0_10px_rgba(var(--primary),0.1)]">
                                                                 {entry.bookType}
                                                             </div>
                                                         )}
                                                         {(entry.publishedAt || entry.year) && (
-                                                            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-secondary/50 text-[8px] text-muted-foreground rounded">
-                                                                <Calendar className="w-2.5 h-2.5" />
+                                                            <div className="flex items-center gap-1 px-2 py-0.5 bg-white/5 text-muted-foreground text-[9px] uppercase tracking-[0.12em] font-bold rounded-md border border-white/5">
+                                                                <Calendar className="w-3 h-3 opacity-50" />
                                                                 {entry.publishedAt || entry.year}
                                                             </div>
                                                         )}
@@ -857,12 +858,17 @@ function CatalogContent() {
                                                 {/* Genres & Tags removed as per user feedback to keep cards cleaner */}
 
                                                 <Button
+                                                    variant="ghost"
                                                     size="sm"
                                                     onClick={(e) => handleDownload(e, entry)}
-                                                    className="h-8 text-[10px] px-3 bg-primary hover:bg-primary/90 self-start group/btn"
+                                                    className="h-9 px-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 rounded-xl self-start transition-all active:scale-95 group/btn"
                                                 >
-                                                    <Download className="w-3 h-3 mr-1.5" />
-                                                    {t("book_download")}
+                                                    <div className="flex items-center gap-2">
+                                                        <Download className="w-4 h-4 opacity-70 group-hover/btn:scale-110 transition-transform" />
+                                                        <span className="text-[10px] uppercase tracking-[0.1em] font-bold">
+                                                            {t("book_download")}
+                                                        </span>
+                                                    </div>
                                                 </Button>
                                             </div>
                                             <div className="flex items-center">
