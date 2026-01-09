@@ -4,13 +4,15 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, ChevronLeft, ArrowLeft, ArrowUpCircle, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock, ImageOff, X, Star } from "lucide-react"
+import { Download, ChevronLeft, ArrowLeft, ArrowUpCircle, FileText, Calendar, Library, Globe, Info, Loader2, Tag, Clock, ImageOff, X, Star, Settings, Layout } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { Skeleton } from "@/components/ui/skeleton"
 import { callBotAPI } from "@/lib/api"
 import { useTelegramContext } from "@/components/telegram-provider"
 import { useStrings } from "@/components/strings-provider"
 import { TransparentHeader } from "@/components/transparent-header"
+import { Slider } from "@/components/ui/slider"
+import { Label } from "@/components/ui/label"
 
 interface BookDetail {
     id: string
@@ -75,6 +77,9 @@ function BookDetailContent() {
     const [userRating, setUserRating] = useState<number | null>(null)
     const [isRating, setIsRating] = useState(false)
     const [showRateModal, setShowRateModal] = useState(false)
+    const [isAdmin, setIsAdmin] = useState(false)
+    const [badgePos, setBadgePos] = useState({ top: 8, right: 8 })
+    const [showAdminPanel, setShowAdminPanel] = useState(false)
 
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return "N/A";
@@ -174,6 +179,7 @@ function BookDetailContent() {
                         try {
                             const status = await callBotAPI("user_status");
                             const user_id = status.id || webApp?.initDataUnsafe?.user?.id;
+                            if (status.isAdmin) setIsAdmin(true);
                             if (user_id) {
                                 if (result && result.user_rating) {
                                     setUserRating(result.user_rating);
@@ -357,7 +363,13 @@ function BookDetailContent() {
 
                             {/* Average Rating Badge */}
                             {book.rating_average !== undefined && book.rating_average > 0 && (
-                                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg">
+                                <div
+                                    className="absolute bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg z-10"
+                                    style={{
+                                        top: `${badgePos.top}px`,
+                                        right: `${badgePos.right}px`
+                                    }}
+                                >
                                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                                     <span className="text-[10px] font-bold text-white">{book.rating_average.toFixed(1)}</span>
                                 </div>
@@ -365,9 +377,21 @@ function BookDetailContent() {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl font-bold text-foreground leading-tight">
-                                {(book.series || (book.englishTitle || book.cleanTitle || book.title || "").split(' - ')[0]).replace(/\s*\[(NL|NW|WN)\]\s*/gi, "").trim()}
-                            </h1>
+                            <div className="flex justify-between items-start gap-2">
+                                <h1 className="text-2xl font-bold text-foreground leading-tight">
+                                    {(book.series || (book.englishTitle || book.cleanTitle || book.title || "").split(' - ')[0]).replace(/\s*\[(NL|NW|WN)\]\s*/gi, "").trim()}
+                                </h1>
+                                {isAdmin && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-primary/40 hover:text-primary active:scale-90 transition-all"
+                                        onClick={() => setShowAdminPanel(!showAdminPanel)}
+                                    >
+                                        <Settings className="w-4 h-4" />
+                                    </Button>
+                                )}
+                            </div>
                             {book.romaji && <p className="text-sm text-muted-foreground/80 font-medium italic mb-1">{book.romaji}</p>}
                             <p className="text-base text-primary font-medium mb-1">{book.author}{book.illustrator ? ` - ${book.illustrator}` : ""}</p>
                             <p className="text-sm text-muted-foreground mb-4 font-medium">
@@ -680,6 +704,62 @@ function BookDetailContent() {
                             >
                                 Cancelar
                             </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Admin Positioning Panel */}
+            {isAdmin && showAdminPanel && (
+                <div className="fixed top-20 right-4 left-4 z-[60] bg-card/95 backdrop-blur-md border border-primary/20 rounded-2xl p-5 shadow-2xl animate-in fade-in zoom-in duration-200">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2 text-primary">
+                            <Layout className="w-4 h-4" />
+                            <h4 className="text-sm font-bold uppercase tracking-wider">Ajuste de Posición</h4>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowAdminPanel(false)}>
+                            <X className="w-4 h-4" />
+                        </Button>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-xs font-semibold">
+                                <Label>Superior (Top)</Label>
+                                <span className="text-primary">{badgePos.top}px</span>
+                            </div>
+                            <Slider
+                                value={[badgePos.top]}
+                                min={-10}
+                                max={150}
+                                step={1}
+                                onValueChange={([val]) => setBadgePos(prev => ({ ...prev, top: val }))}
+                            />
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-xs font-semibold">
+                                <Label>Derecha (Right)</Label>
+                                <span className="text-primary">{badgePos.right}px</span>
+                            </div>
+                            <Slider
+                                value={[badgePos.right]}
+                                min={-10}
+                                max={110}
+                                step={1}
+                                onValueChange={([val]) => setBadgePos(prev => ({ ...prev, right: val }))}
+                            />
+                        </div>
+
+                        <div className="pt-2 border-t border-border/50">
+                            <div className="bg-secondary/50 rounded-lg p-3 family-mono text-[10px] text-muted-foreground whitespace-pre overflow-x-auto">
+                                <code>
+                                    style={`{{`}
+                                    {"\n  "}top: "{badgePos.top}px",
+                                    {"\n  "}right: "{badgePos.right}px"
+                                    {"\n"}{`}}`}
+                                </code>
+                            </div>
+                            <p className="text-[9px] text-center mt-2 opacity-50 italic">Copia estos valores para el código final</p>
                         </div>
                     </div>
                 </div>

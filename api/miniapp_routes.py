@@ -698,6 +698,8 @@ async def handle_bot_request(
                 "timeUntilReset": f"{hours}h {minutes}m",
                 "hasUnlimitedDownloads": max_dl is None and role_key != "banned",
                 "isBanned": role_key == "banned",
+                "isAdmin": role_key == "admin",
+                "role": role_key
             }
 
             logger.info(
