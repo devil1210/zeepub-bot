@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v6.1.2] - 2026-01-09
+
+### Arreglado
+- **Descubrimiento de Watchtower**: Implementado sistema de detección automática de rutas (Smart Discovery). Ahora el bot intenta contactar con Watchtower en múltiples rutas (`watchtower:8080`, `localhost:8081`, `192.168.1.1:8081`) para asegurar compatibilidad en entornos mixtos Docker/LXC.
+
 ## [v6.1.1] - 2026-01-09
 
 ### Arreglado
