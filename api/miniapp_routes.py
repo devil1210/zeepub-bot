@@ -809,6 +809,27 @@ async def handle_bot_request(
             res = RatingService.remove_rating(user_id, book_id)
             return res
 
+        elif action == "save_badge_config":
+            from services.settings_service import set_setting
+            
+            # Only admins can save global badge configuration
+            if user_role != "admin":
+                raise HTTPException(status_code=403, detail="Solo administradores pueden guardar configuración global")
+            
+            badge_top = data.get("badgeTop", 8)
+            badge_right = data.get("badgeRight", 8)
+            show_tool = data.get("showPosTool", False)
+            
+            # Save to bot_settings
+            set_setting("badge_pos_top", str(badge_top))
+            set_setting("badge_pos_right", str(badge_right))
+            set_setting("show_pos_tool", str(show_tool))
+            
+            return {
+                "success": True,
+                "message": "Configuración de badge guardada correctamente"
+            }
+
         elif action == "status":
             return {"status": "online", "version": os.getenv("BOT_VERSION", "4.0.0")}
 
@@ -917,7 +938,22 @@ async def handle_bot_request(
                     "showHelpCard": True,
                     "showSettingsInMenu": False,
                     "dataSaver": False,
+                    "badgePosTop": 8,
+                    "badgePosRight": 8,
+                    "showPosTool": False
                 }
+
+                # Load badge config from bot_settings
+                try:
+                    badge_top = get_setting("badge_pos_top", "8")
+                    badge_right = get_setting("badge_pos_right", "8")
+                    show_tool = get_setting("show_pos_tool", "false")
+                    
+                    final_settings["badgePosTop"] = int(badge_top)
+                    final_settings["badgePosRight"] = int(badge_right)
+                    final_settings["showPosTool"] = show_tool.lower() == "true"
+                except Exception as e:
+                    logger.error(f"Error loading badge config: {e}")
 
                 try:
                     global_raw = get_setting("ui_defaults_global", "{}")

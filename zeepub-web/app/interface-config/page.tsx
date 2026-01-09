@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
-import { Info, Moon, Sun, Monitor, Type, UserCircle, BookOpen, Heart, HelpCircle, Palette, Save, Globe, AlertTriangle, Search, CreditCard, RotateCcw, Check, ImageOff } from "lucide-react"
+import { Info, Moon, Sun, Monitor, Type, UserCircle, BookOpen, Heart, HelpCircle, Palette, Save, Globe, AlertTriangle, Search, CreditCard, RotateCcw, Check, ImageOff, Settings } from "lucide-react"
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
 import { useTheme } from "@/components/theme-provider"
@@ -69,6 +69,12 @@ export default function InterfaceConfigPage() {
         setUseRandomFolderCovers,
         showRecsCard,
         setShowRecsCard,
+        badgePosTop,
+        setBadgePosTop,
+        badgePosRight,
+        setBadgePosRight,
+        showPosTool,
+        setShowPosTool,
     } = useTheme()
 
     const { isAdmin, userProfile } = useTelegramContext()
@@ -672,6 +678,20 @@ export default function InterfaceConfigPage() {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Admin Badge Positioning Tool */}
+                            {isAdmin && (
+                                <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl mt-4">
+                                    <div className="flex items-center gap-3">
+                                        <Settings className="w-5 h-5 text-amber-500" />
+                                        <div>
+                                            <Label htmlFor="show-pos-tool" className="font-medium text-amber-500">Herramienta de Posicionamiento</Label>
+                                            <p className="text-xs text-amber-200/80">Activa el engranaje para ajustar la estrella en las fichas de libros</p>
+                                        </div>
+                                    </div>
+                                    <Switch id="show-pos-tool" checked={showPosTool} onCheckedChange={setShowPosTool} />
+                                </div>
+                            )}
                         </TabsContent>
                     </Tabs>
 

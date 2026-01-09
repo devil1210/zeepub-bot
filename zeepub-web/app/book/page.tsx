@@ -78,8 +78,10 @@ function BookDetailContent() {
     const [isRating, setIsRating] = useState(false)
     const [showRateModal, setShowRateModal] = useState(false)
     const [isAdmin, setIsAdmin] = useState(false)
-    const [badgePos, setBadgePos] = useState({ top: 8, right: 8 })
+    const { badgePosTop, badgePosRight, showPosTool } = useTheme()
+    const [localBadgePos, setLocalBadgePos] = useState({ top: 8, right: 8 })
     const [showAdminPanel, setShowAdminPanel] = useState(false)
+    const [isSavingBadge, setIsSavingBadge] = useState(false)
 
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return "N/A";
@@ -202,6 +204,11 @@ function BookDetailContent() {
         window.scrollTo(0, 0)
     }, [bookId])
 
+    // Sync global badge position to local state
+    useEffect(() => {
+        setLocalBadgePos({ top: badgePosTop, right: badgePosRight })
+    }, [badgePosTop, badgePosRight])
+
     useEffect(() => {
         if (!webApp?.BackButton) return
         const handleBack = () => router.back()
@@ -278,6 +285,23 @@ function BookDetailContent() {
         } finally {
             setIsRating(false)
             setShowRateModal(false)
+        }
+    }
+
+    const handleSaveBadgeConfig = async () => {
+        setIsSavingBadge(true)
+        try {
+            await callBotAPI("save_badge_config", {
+                badgeTop: localBadgePos.top,
+                badgeRight: localBadgePos.right,
+                showPosTool: showPosTool
+            })
+            webApp?.showAlert?.("✅ Posición guardada para todos los usuarios")
+            setShowAdminPanel(false)
+        } catch (error) {
+            webApp?.showAlert?.("Error al guardar la configuración")
+        } finally {
+            setIsSavingBadge(false)
         }
     }
 
@@ -366,8 +390,8 @@ function BookDetailContent() {
                                 <div
                                     className="absolute bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg z-10"
                                     style={{
-                                        top: `${badgePos.top}px`,
-                                        right: `${badgePos.right}px`
+                                        top: `${localBadgePos.top}px`,
+                                        right: `${localBadgePos.right}px`
                                     }}
                                 >
                                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
@@ -381,7 +405,7 @@ function BookDetailContent() {
                                 <h1 className="text-2xl font-bold text-foreground leading-tight">
                                     {(book.series || (book.englishTitle || book.cleanTitle || book.title || "").split(' - ')[0]).replace(/\s*\[(NL|NW|WN)\]\s*/gi, "").trim()}
                                 </h1>
-                                {isAdmin && (
+                                {isAdmin && showPosTool && (
                                     <Button
                                         variant="ghost"
                                         size="icon"
@@ -725,28 +749,28 @@ function BookDetailContent() {
                         <div className="space-y-3">
                             <div className="flex justify-between text-xs font-semibold">
                                 <Label>Superior (Top)</Label>
-                                <span className="text-primary">{badgePos.top}px</span>
+                                <span className="text-primary">{localBadgePos.top}px</span>
                             </div>
                             <Slider
-                                value={[badgePos.top]}
+                                value={[localBadgePos.top]}
                                 min={-10}
                                 max={150}
                                 step={1}
-                                onValueChange={([val]) => setBadgePos(prev => ({ ...prev, top: val }))}
+                                onValueChange={([val]) => setLocalBadgePos(prev => ({ ...prev, top: val }))}
                             />
                         </div>
 
                         <div className="space-y-3">
                             <div className="flex justify-between text-xs font-semibold">
                                 <Label>Derecha (Right)</Label>
-                                <span className="text-primary">{badgePos.right}px</span>
+                                <span className="text-primary">{localBadgePos.right}px</span>
                             </div>
                             <Slider
-                                value={[badgePos.right]}
+                                value={[localBadgePos.right]}
                                 min={-10}
                                 max={110}
                                 step={1}
-                                onValueChange={([val]) => setBadgePos(prev => ({ ...prev, right: val }))}
+                                onValueChange={([val]) => setLocalBadgePos(prev => ({ ...prev, right: val }))}
                             />
                         </div>
 
@@ -754,13 +778,20 @@ function BookDetailContent() {
                             <div className="bg-secondary/50 rounded-lg p-3 family-mono text-[10px] text-muted-foreground whitespace-pre overflow-x-auto">
                                 <code>
                                     style={`{{`}
-                                    {"\n  "}top: "{badgePos.top}px",
-                                    {"\n  "}right: "{badgePos.right}px"
+                                    {"\n  "}top: "{localBadgePos.top}px",
+                                    {"\n  "}right: "{localBadgePos.right}px"
                                     {"\n"}{`}}`}
                                 </code>
                             </div>
-                            <p className="text-[9px] text-center mt-2 opacity-50 italic">Copia estos valores para el código final</p>
                         </div>
+
+                        <Button
+                            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold mt-4"
+                            onClick={handleSaveBadgeConfig}
+                            disabled={isSavingBadge}
+                        >
+                            {isSavingBadge ? "Guardando..." : "💾 Guardar para Todos"}
+                        </Button>
                     </div>
                 </div>
             )}

@@ -39,6 +39,12 @@ interface ThemeContextType {
   setUseLocalLibrary: (enabled: boolean) => void
   useRandomFolderCovers: boolean
   setUseRandomFolderCovers: (enabled: boolean) => void
+  badgePosTop: number
+  setBadgePosTop: (val: number) => void
+  badgePosRight: number
+  setBadgePosRight: (val: number) => void
+  showPosTool: boolean
+  setShowPosTool: (enabled: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -78,6 +84,12 @@ const ThemeContext = createContext<ThemeContextType>({
   setUseLocalLibrary: () => { },
   useRandomFolderCovers: true,
   setUseRandomFolderCovers: () => { },
+  badgePosTop: 8,
+  setBadgePosTop: () => { },
+  badgePosRight: 8,
+  setBadgePosRight: () => { },
+  showPosTool: false,
+  setShowPosTool: () => { },
 })
 
 export function useTheme() {
@@ -155,6 +167,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [disableDisplacement, setDisableDisplacement] = useState(false)
   const [useLocalLibrary, setUseLocalLibrary] = useState(false)
   const [useRandomFolderCovers, setUseRandomFolderCovers] = useState(true)
+  const [badgePosTop, setBadgePosTop] = useState(8)
+  const [badgePosRight, setBadgePosRight] = useState(8)
+  const [showPosTool, setShowPosTool] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [shouldPersist, setShouldPersist] = useState(true)
   const [isResetting, setIsResetting] = useState(false)
@@ -179,6 +194,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedDataSaver = localStorage.getItem("dataSaver")
     const savedUseLocalLibrary = localStorage.getItem("useLocalLibrary")
     const savedUseRandomFolderCovers = localStorage.getItem("useRandomFolderCovers")
+    const savedBadgePosTop = localStorage.getItem("badgePosTop")
+    const savedBadgePosRight = localStorage.getItem("badgePosRight")
+    const savedShowPosTool = localStorage.getItem("showPosTool")
 
     // Sync with Backend (Role Defaults)
     const fetchRemoteDefaults = async () => {
@@ -274,6 +292,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setUseRandomFolderCovers(data.useRandomFolderCovers)
             localStorage.setItem("useRandomFolderCovers", String(data.useRandomFolderCovers))
           }
+          if (data.badgePosTop !== undefined) {
+            setBadgePosTop(data.badgePosTop)
+            localStorage.setItem("badgePosTop", String(data.badgePosTop))
+          }
+          if (data.badgePosRight !== undefined) {
+            setBadgePosRight(data.badgePosRight)
+            localStorage.setItem("badgePosRight", String(data.badgePosRight))
+          }
+          if (data.showPosTool !== undefined) {
+            setShowPosTool(data.showPosTool)
+            localStorage.setItem("showPosTool", String(data.showPosTool))
+          }
         }
       } catch (error) {
         console.error("Error fetching UI defaults:", error)
@@ -300,6 +330,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedDataSaver !== null) setDataSaver(savedDataSaver === "true")
     if (savedUseLocalLibrary !== null) setUseLocalLibrary(savedUseLocalLibrary === "true")
     if (savedUseRandomFolderCovers !== null) setUseRandomFolderCovers(savedUseRandomFolderCovers === "true")
+    if (savedBadgePosTop) setBadgePosTop(parseInt(savedBadgePosTop))
+    if (savedBadgePosRight) setBadgePosRight(parseInt(savedBadgePosRight))
+    if (savedShowPosTool !== null) setShowPosTool(savedShowPosTool === "true")
 
     // Then fetch remote defaults for missing ones
     fetchRemoteDefaults()
@@ -521,7 +554,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         dataSaver,
         useLocalLibrary,
         useRandomFolderCovers,
-        showRecsCard
+        showRecsCard,
+        badgePosTop,
+        badgePosRight,
+        showPosTool
       }
       await callBotAPI("ui_settings", { subAction: "set", role, settings })
     } catch (error) {
@@ -551,6 +587,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.useLocalLibrary !== undefined) setUseLocalLibrary(settings.useLocalLibrary)
     if (settings.useRandomFolderCovers !== undefined) setUseRandomFolderCovers(settings.useRandomFolderCovers)
     if (settings.showRecsCard !== undefined) setShowRecsCard(settings.showRecsCard)
+    if (settings.badgePosTop !== undefined) setBadgePosTop(settings.badgePosTop)
+    if (settings.badgePosRight !== undefined) setBadgePosRight(settings.badgePosRight)
+    if (settings.showPosTool !== undefined) setShowPosTool(settings.showPosTool)
 
     // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
     if (persistToLocal) {
@@ -571,6 +610,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("useLocalLibrary", String(settings.useLocalLibrary ?? false))
       localStorage.setItem("useRandomFolderCovers", String(settings.useRandomFolderCovers ?? true))
       localStorage.setItem("showRecsCard", String(settings.showRecsCard ?? true))
+      localStorage.setItem("badgePosTop", String(settings.badgePosTop ?? 8))
+      localStorage.setItem("badgePosRight", String(settings.badgePosRight ?? 8))
+      localStorage.setItem("showPosTool", String(settings.showPosTool ?? false))
     }
   }
 
@@ -611,6 +653,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setUseRandomFolderCovers,
         showRecsCard,
         setShowRecsCard,
+        badgePosTop,
+        setBadgePosTop,
+        badgePosRight,
+        setBadgePosRight,
+        showPosTool,
+        setShowPosTool,
         saveGlobalSettings,
         applySettings,
       }}
