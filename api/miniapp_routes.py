@@ -757,16 +757,16 @@ async def handle_bot_request(
             results = []
             for r in recs:
                 results.append({
-                    "id": f"local_{r.id}",
-                    "title": r.title,
-                    "author": r.author,
-                    "cover": f"/api/library/covers/{r.id}" if r.cover_path else None,
-                    "downloadUrl": f"local_{r.id}",
+                    "id": f"local_{r['id']}" if isinstance(r, dict) else f"local_{r.id}",
+                    "title": r.get("title") if isinstance(r, dict) else r.title,
+                    "author": r.get("author") if isinstance(r, dict) else r.author,
+                    "cover": f"/api/library/covers/{r.get('id') if isinstance(r, dict) else r.id}" if (r.get("cover_path") if isinstance(r, dict) else r.cover_path) else None,
+                    "downloadUrl": f"local_{r.get('id') if isinstance(r, dict) else r.id}",
                     "is_folder": False,
-                    "series": r.series,
-                    "seriesIndex": r.series_index,
-                    "cleanTitle": r.title,
-                    "rating_average": r.rating_average or 0
+                    "series": r.get("series") if isinstance(r, dict) else r.series,
+                    "seriesIndex": r.get("series_index") if isinstance(r, dict) else r.series_index,
+                    "cleanTitle": r.get("title") if isinstance(r, dict) else r.title,
+                    "rating_average": (r.get("rating_average") if isinstance(r, dict) else r.rating_average) or 0
                 })
             return {"results": results}
 

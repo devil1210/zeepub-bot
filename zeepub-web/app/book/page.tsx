@@ -734,7 +734,7 @@ function BookDetailContent() {
             )}
             {/* Admin Positioning Panel */}
             {isAdmin && showAdminPanel && (
-                <div className="fixed top-20 right-4 left-4 z-[60] bg-card/95 backdrop-blur-md border border-primary/20 rounded-2xl p-5 shadow-2xl animate-in fade-in zoom-in duration-200">
+                <div className="fixed bottom-20 right-4 left-4 z-[60] bg-card/95 backdrop-blur-md border border-primary/20 rounded-2xl p-5 shadow-2xl animate-in fade-in slide-in-from-bottom duration-200">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2 text-primary">
                             <Layout className="w-4 h-4" />
