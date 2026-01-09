@@ -809,6 +809,24 @@ async def handle_bot_request(
             res = RatingService.remove_rating(user_id, book_id)
             return res
 
+        elif action == "rating_breakdown":
+            from services.rating_service import RatingService
+
+            book_id_raw = data.get("bookId")
+            if not book_id_raw:
+                raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
+
+            try:
+                if isinstance(book_id_raw, str) and book_id_raw.startswith("local_"):
+                    book_id = int(book_id_raw.replace("local_", ""))
+                else:
+                    book_id = int(book_id_raw)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="ID de libro inválido")
+
+            breakdown = RatingService.get_rating_breakdown(book_id)
+            return {"breakdown": breakdown}
+
         elif action == "save_badge_config":
             from services.settings_service import set_setting
 

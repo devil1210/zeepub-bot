@@ -115,3 +115,27 @@ class RatingService:
             return rating.rating if rating else None
         finally:
             session.close()
+
+    @staticmethod
+    def get_rating_breakdown(book_id: int) -> Dict[int, int]:
+        """
+        Retorna el desglose de votos por estrella.
+        Returns: {1: count, 2: count, 3: count, 4: count, 5: count}
+        """
+        session = get_session()
+        try:
+            # Get count for each rating value
+            breakdown = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+            
+            results = session.query(
+                UserRating.rating,
+                func.count(UserRating.id)
+            ).filter_by(book_id=book_id).group_by(UserRating.rating).all()
+            
+            for rating, count in results:
+                if 1 <= rating <= 5:
+                    breakdown[rating] = count
+                    
+            return breakdown
+        finally:
+            session.close()

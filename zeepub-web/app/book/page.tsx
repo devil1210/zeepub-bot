@@ -830,6 +830,106 @@ function BookDetailContent() {
                     </div>
                 </div>
             )}
+
+            {/* Rating Breakdown Popup */}
+            {showRatingPopup && book && (
+                <div
+                    className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+                    onClick={() => setShowRatingPopup(false)}
+                >
+                    <div
+                        className="bg-background border border-border rounded-2xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold">Valoraciones</h3>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setShowRatingPopup(false)}
+                            >
+                                <X className="w-4 h-4" />
+                            </Button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {/* Overall Rating */}
+                            <div className="text-center pb-4 border-b border-border">
+                                <div className="text-4xl font-bold text-primary">{book.rating_average?.toFixed(1) || "0.0"}</div>
+                                <div className="flex items-center justify-center gap-1 mt-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <Star
+                                            key={star}
+                                            className={`w-4 h-4 ${star <= Math.round(book.rating_average || 0)
+                                                ? "fill-yellow-400 text-yellow-400"
+                                                : "text-muted-foreground"
+                                                }`}
+                                        />
+                                    ))}
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {book.rating_count || 0} {(book.rating_count || 0) === 1 ? "voto" : "votos"}
+                                </p>
+                            </div>
+
+                            {/* Breakdown by Stars */}
+                            <RatingBreakdownBars bookId={book.id} totalVotes={book.rating_count || 0} />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+// Rating Breakdown Bars Component
+function RatingBreakdownBars({ bookId, totalVotes }: { bookId: string; totalVotes: number }) {
+    const [breakdown, setBreakdown] = useState<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 })
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchBreakdown = async () => {
+            try {
+                const response = await callBotAPI("rating_breakdown", { bookId })
+                if (response.breakdown) {
+                    setBreakdown(response.breakdown)
+                }
+            } catch (error) {
+                console.error("Error fetching rating breakdown:", error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        fetchBreakdown()
+    }, [bookId])
+
+    if (isLoading) {
+        return <div className="text-center text-sm text-muted-foreground">Cargando...</div>
+    }
+
+    return (
+        <div className="space-y-2">
+            {[5, 4, 3, 2, 1].map((stars) => {
+                const count = breakdown[stars] || 0
+                const percentage = totalVotes > 0 ? (count / totalVotes) * 100 : 0
+
+                return (
+                    <div key={stars} className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 w-12">
+                            <span className="text-xs font-medium">{stars}</span>
+                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                        </div>
+                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-primary transition-all duration-300"
+                                style={{ width: `${percentage}%` }}
+                            />
+                        </div>
+                        <span className="text-xs text-muted-foreground w-8 text-right">{count}</span>
+                    </div>
+                )
+            })}
         </div>
     )
 }
