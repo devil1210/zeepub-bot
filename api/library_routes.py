@@ -182,7 +182,7 @@ async def get_catalog(
     use_random_covers: bool = Query(True),
     sort_by: str = Query(
         "alpha",
-        regex="^(alpha|alpha_desc|date_added|date_added_desc|date_updated|date_updated_desc)$",
+        regex="^(alpha|alpha_desc|date_added|date_added_desc|date_updated|date_updated_desc|downloads_desc|rating_desc)$",
     ),
     user_data: dict = Depends(require_mini_app_access),
 ):
@@ -337,9 +337,33 @@ async def get_catalog(
             folders_list.sort(key=lambda x: x.get("modified_at") or "", reverse=True)
         elif sort_by == "date_updated_desc":
             folders_list.sort(key=lambda x: x.get("modified_at") or "")
+        elif sort_by == "downloads_desc":
+            # Sort by download count using SQL query
+            from sqlalchemy import func, select
+            from models.download_models import DownloadHistory
+            
+            # Get download counts for all books
+            download_counts_query = (
+                session.query(
+                    DownloadHistory.title,
+                    func.count(DownloadHistory.id).label("download_count")
+                )
+                .group_by(DownloadHistory.title)
+            )
+            download_counts = {row.title: row.download_count for row in download_counts_query.all()}
+            
+            # Sort books by download count
+            books_in_folder.sort(
+                key=lambda x: download_counts.get(x.get("title", ""), 0),
+                reverse=True
+            )
+        elif sort_by == "rating_desc":
+            # Sort by rating average, then by rating count
+            books_in_folder.sort(key=lambda x: (x.get("rating_average") or 0, x.get("rating_count") or 0), reverse=True)
 
-        # Ordenar libros
-        books_in_folder.sort(key=lambda x: x["title"].lower())
+        # Ordenar libros alfabéticamente solo si no se aplicó otro ordenamiento
+        if sort_by not in ("downloads_desc", "rating_desc"):
+            books_in_folder.sort(key=lambda x: x["title"].lower())
 
         # Combinar: Carpetas primero, luego libros
         all_items = folders_list + books_in_folder

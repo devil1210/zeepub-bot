@@ -17,6 +17,8 @@ import {
     X,
     ArrowUpCircle,
     ArrowLeft,
+    ArrowUp,
+    ArrowDown,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { OpdsClient } from "@/lib/opds-client"
@@ -115,7 +117,7 @@ function CatalogContent() {
     const [searchQuery, setSearchQuery] = useState("")
     const [searchType, setSearchType] = useState("all")
     const [sortBy, setSortBy] = useState("alpha")
-    const [showSortModal, setShowSortModal] = useState(false)
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
     const [searchResults, setSearchResults] = useState<Book[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [searchPagination, setSearchPagination] = useState<PaginationState>({
@@ -500,53 +502,48 @@ function CatalogContent() {
                     </select>
                 </div>
 
-                {/* Sort Modal */}
-                {showSortModal && (
-                    <div
-                        className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end justify-center"
-                        onClick={() => setShowSortModal(false)}
-                    >
-                        <div
-                            className="bg-background w-full max-w-2xl rounded-t-3xl p-6 pb-safe animate-in slide-in-from-bottom duration-300"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-bold">Ordenar por</h3>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setShowSortModal(false)}
-                                    className="h-8 w-8 p-0"
-                                >
-                                    <X className="w-4 h-4" />
-                                </Button>
-                            </div>
+                {/* Compact Sort Chips */}
+                {!searchQuery && currentFeed && currentFeed.entries.some((e) => e.links.some((l) => l.rel === "subsection")) && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                        {[
+                            { key: "alpha", label: "A-Z", icon: null },
+                            { key: "date_added", label: "Fecha", icon: Calendar },
+                            { key: "downloads", label: "Descargas", icon: Download },
+                            { key: "rating", label: "Valoración", icon: null },
+                        ].map((option) => {
+                            const isActive = sortBy === option.key
+                            const currentSort = isActive ? `${option.key}_${sortDirection === "desc" ? "desc" : ""}` : `${option.key}_desc`
+                            const Icon = option.icon
 
-                            <div className="space-y-2">
-                                {[
-                                    { value: "alpha", label: "Alfabético (A-Z)" },
-                                    { value: "alpha_desc", label: "Alfabético (Z-A)" },
-                                    { value: "date_added", label: "Más recientes" },
-                                    { value: "date_added_desc", label: "Más antiguos" },
-                                    { value: "date_updated", label: "Actualizados recientemente" },
-                                    { value: "date_updated_desc", label: "Sin actualizar hace tiempo" },
-                                ].map((option) => (
-                                    <button
-                                        key={option.value}
-                                        onClick={() => {
-                                            setSortBy(option.value)
-                                            setShowSortModal(false)
-                                        }}
-                                        className={`w-full text-left px-4 py-3 rounded-xl transition-colors ${sortBy === option.value
-                                            ? "bg-primary text-primary-foreground font-semibold"
-                                            : "bg-card hover:bg-secondary text-foreground"
-                                            }`}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                            return (
+                                <button
+                                    key={option.key}
+                                    onClick={() => {
+                                        if (isActive) {
+                                            // Toggle direction
+                                            setSortDirection(prev => prev === "asc" ? "desc" : "asc")
+                                            setSortBy(option.key === "alpha" && sortDirection === "asc" ? "alpha_desc" : option.key === "alpha" ? "alpha" : `${option.key}_${sortDirection === "asc" ? "desc" : ""}`.replace("__", "_"))
+                                        } else {
+                                            // Change criterion, default to desc for new selections
+                                            setSortBy(option.key)
+                                            setSortDirection("desc")
+                                        }
+                                    }}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${isActive
+                                        ? "bg-primary text-primary-foreground shadow-lg scale-105"
+                                        : "bg-card text-muted-foreground hover:bg-secondary border border-border"
+                                        }`}
+                                >
+                                    {Icon && <Icon className="w-3 h-3" />}
+                                    <span>{option.label}</span>
+                                    {isActive && (
+                                        sortDirection === "desc" ?
+                                            <ArrowDown className="w-3 h-3" /> :
+                                            <ArrowUp className="w-3 h-3" />
+                                    )}
+                                </button>
+                            )
+                        })}
                     </div>
                 )}
 
@@ -899,8 +896,6 @@ function CatalogContent() {
                                 onNextPage={() => currentFeed.nextPage && handleNavigate(currentFeed.nextPage)}
                                 onPrevPage={() => currentFeed.prevPage && handleNavigate(currentFeed.prevPage)}
                                 onUpPage={handleGoBack}
-                                onSort={() => setShowSortModal(true)}
-                                showSort={currentFeed?.entries.some((e) => e.links.some((l) => l.rel === "subsection")) || false}
                                 isLoading={isLoading}
                             />
                         )
