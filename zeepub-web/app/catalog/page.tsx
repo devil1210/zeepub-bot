@@ -506,8 +506,11 @@ function CatalogContent() {
                             className="h-10 px-3 bg-card border border-border rounded-xl text-sm font-medium text-foreground focus:ring-2 focus:ring-primary/20 outline-none flex-1"
                         >
                             <option value="alpha">Alfabético (A-Z)</option>
-                            <option value="date_added">Fecha de añadido</option>
-                            <option value="date_updated">Última actualización</option>
+                            <option value="alpha_desc">Alfabético (Z-A)</option>
+                            <option value="date_added">Más recientes</option>
+                            <option value="date_added_desc">Más antiguos</option>
+                            <option value="date_updated">Actualizados recientemente</option>
+                            <option value="date_updated_desc">Sin actualizar hace tiempo</option>
                         </select>
                     </div>
                 )}
