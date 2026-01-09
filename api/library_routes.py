@@ -339,7 +339,6 @@ async def get_catalog(
             folders_list.sort(key=lambda x: x.get("modified_at") or "")
         elif sort_by == "downloads_desc":
             # Sort by download count using SQL query
-            from sqlalchemy import func, select
             from models.download_models import DownloadHistory
 
             # Get download counts for all books
