@@ -264,8 +264,8 @@ async def get_catalog(
                 "series": rep.get("series"),
                 "bookType": random_cover_book.book_type if random_cover_book else rep.get("book_type"),
                 # Add date fields for sorting
-                "created_at": random_cover_book.created_at if random_cover_book and hasattr(random_cover_book, 'created_at') else None,
-                "modified_at": random_cover_book.modified_at if random_cover_book and hasattr(random_cover_book, 'modified_at') else None
+                "created_at": random_cover_book.file_created_at.isoformat() if random_cover_book and random_cover_book.file_created_at else None,
+                "modified_at": random_cover_book.file_modified_at.isoformat() if random_cover_book and random_cover_book.file_modified_at else None
             })
             
         # Sort folders based on sort_by parameter
