@@ -163,7 +163,7 @@ async def get_book_detail(
         book = session.query(LocalBook).filter(LocalBook.id == int(clean_id)).first()
         if not book:
             raise HTTPException(status_code=404, detail="Libro no encontrado")
-        
+
         d = book.to_dict()
         # Check if user has downloaded this book
         from repositories.download_repository import download_repo
@@ -341,7 +341,7 @@ async def get_catalog(
             # Sort by download count using SQL query
             from sqlalchemy import func, select
             from models.download_models import DownloadHistory
-            
+
             # Get download counts for all books
             download_counts_query = (
                 session.query(
@@ -351,7 +351,7 @@ async def get_catalog(
                 .group_by(DownloadHistory.title)
             )
             download_counts = {row.title: row.download_count for row in download_counts_query.all()}
-            
+
             # Sort books by download count
             books_in_folder.sort(
                 key=lambda x: download_counts.get(x.get("title", ""), 0),

@@ -150,7 +150,7 @@ async def handle_bot_request(
                         d = b.to_dict()
                         d["is_folder"] = False
                         results.append(d)
-                    
+
                     return {
                         "results": results,
                         "currentPage": page,
@@ -514,7 +514,7 @@ async def handle_bot_request(
             illustrator = extract_creators_by_role(entry, "ill")
             translator = extract_creators_by_role(entry, "trl")
             layout_by = extract_creators_by_role(entry, "bkp")
-            
+
             # ASIN Extraction
             asin = None
             for ident in entry.get("identifiers", []):
@@ -523,7 +523,7 @@ async def handle_bot_request(
                     break
             if not asin and identifier and "asin" in identifier.lower():
                 asin = identifier.split(":")[-1].strip()
-            
+
             # Tech metrics
             epub_version = entry.get("dc_version") or entry.get("kavita_format_version")
             word_count = entry.get("kavita_wordcount") or entry.get("calibre_wordcount")
@@ -744,15 +744,15 @@ async def handle_bot_request(
 
         elif action == "recommendations":
             from services.recommendation_service import RecommendationService
-            
+
             # Security: Only for admin/staff to see the button, but we allow users to see their own recs if they know the action?
             # Actually, per user request, the feature is in Beta for Staff.
             if user_role not in ("admin", "staff"):
-                 raise HTTPException(status_code=403, detail="Beta exclusiva para Staff")
-            
+            raise HTTPException(status_code=403, detail="Beta exclusiva para Staff")
+
             limit = data.get("limit", 10)
             recs = await RecommendationService.get_recommendations(user_id, limit=limit)
-            
+
             # Formatear para el feed de la Mini App
             results = []
             for r in recs:
@@ -772,13 +772,13 @@ async def handle_bot_request(
 
         elif action == "rate_book":
             from services.rating_service import RatingService
-            
+
             book_id_raw = data.get("bookId")
             rating = data.get("rating")
-            
+
             if not book_id_raw or rating is None:
                 raise HTTPException(status_code=400, detail="Faltan parámetros bookId o rating")
-            
+
             # Handle local_ prefix
             try:
                 if isinstance(book_id_raw, str) and book_id_raw.startswith("local_"):
@@ -787,17 +787,17 @@ async def handle_bot_request(
                     book_id = int(book_id_raw)
             except ValueError:
                 raise HTTPException(status_code=400, detail="ID de libro inválido para votación")
-                
+
             res = RatingService.rate_book(user_id, book_id, rating)
             return res
 
         elif action == "remove_rating":
             from services.rating_service import RatingService
-            
+
             book_id_raw = data.get("bookId")
             if not book_id_raw:
                 raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
-            
+
             try:
                 if isinstance(book_id_raw, str) and book_id_raw.startswith("local_"):
                     book_id = int(book_id_raw.replace("local_", ""))
@@ -805,26 +805,26 @@ async def handle_bot_request(
                     book_id = int(book_id_raw)
             except ValueError:
                 raise HTTPException(status_code=400, detail="ID de libro inválido")
-                
+
             res = RatingService.remove_rating(user_id, book_id)
             return res
 
         elif action == "save_badge_config":
             from services.settings_service import set_setting
-            
+
             # Only admins can save global badge configuration
             if user_role != "admin":
                 raise HTTPException(status_code=403, detail="Solo administradores pueden guardar configuración global")
-            
+
             badge_top = data.get("badgeTop", 8)
             badge_right = data.get("badgeRight", 8)
             show_tool = data.get("showPosTool", False)
-            
+
             # Save to bot_settings
             set_setting("badge_pos_top", str(badge_top))
             set_setting("badge_pos_right", str(badge_right))
             set_setting("show_pos_tool", str(show_tool))
-            
+
             return {
                 "success": True,
                 "message": "Configuración de badge guardada correctamente"
@@ -948,7 +948,7 @@ async def handle_bot_request(
                     badge_top = get_setting("badge_pos_top", "8")
                     badge_right = get_setting("badge_pos_right", "8")
                     show_tool = get_setting("show_pos_tool", "false")
-                    
+
                     final_settings["badgePosTop"] = int(badge_top)
                     final_settings["badgePosRight"] = int(badge_right)
                     final_settings["showPosTool"] = show_tool.lower() == "true"

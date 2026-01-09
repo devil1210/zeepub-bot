@@ -507,7 +507,8 @@ function CatalogContent() {
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                         {[
                             { key: "alpha", label: "A-Z", icon: null },
-                            { key: "date_added", label: "Fecha", icon: Calendar },
+                            { key: "date_added", label: "Añadido", icon: Calendar },
+                            { key: "date_updated", label: "Actualizado", icon: Calendar },
                             { key: "downloads", label: "Descargas", icon: Download },
                             { key: "rating", label: "Valoración", icon: null },
                         ].map((option) => {
