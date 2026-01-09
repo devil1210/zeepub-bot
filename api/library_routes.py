@@ -167,7 +167,7 @@ async def get_book_detail(
         d = book.to_dict()
         # Check if user has downloaded this book
         from repositories.download_repository import download_repo
-        d["is_downloaded"] = await download_repo.has_user_downloaded(user_data["id"], book.title)
+        d["is_downloaded"] = await download_repo.has_user_downloaded(user_data["user_id"], book.title)
         return d
     finally:
         session.close()
