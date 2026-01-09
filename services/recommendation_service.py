@@ -8,6 +8,7 @@ from core.db_manager import db_manager
 
 logger = logging.getLogger(__name__)
 
+
 class RecommendationService:
     @staticmethod
     async def get_recommendations(user_id: int, limit: int = 3) -> List[Dict[str, Any]]:
@@ -63,9 +64,9 @@ class RecommendationService:
             candidates = query.order_by(desc(LocalBook.rating_average)).limit(limit * 3).all()
             
             if not candidates:
-                 # Fallback to popular if no specific matches
-                 session.close()
-                 return RecommendationService._get_popular_recommendations(limit, downloaded_titles)
+                # Fallback to popular if no specific matches
+                session.close()
+                return RecommendationService._get_popular_recommendations(limit, downloaded_titles)
                  
             # Shuffle and pick
             random.shuffle(candidates)

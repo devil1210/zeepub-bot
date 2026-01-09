@@ -188,7 +188,7 @@ async def mostrar_colecciones(
 
     # Botón Recomendaciones (v6.1.0) - Solo en raíz o menú principal
     if not st.get("historial") or title in ("📚 Categorías", "📁 Biblioteca ZeePubs", "📁 ZeePubs [ES]"):
-         keyboard.append([InlineKeyboardButton("💡 Para ti (Beta)", callback_data="rec|ver")])
+        keyboard.append([InlineKeyboardButton("💡 Para ti (Beta)", callback_data="rec|ver")])
 
     if colecciones:
         for i, col in enumerate(colecciones):
@@ -367,9 +367,9 @@ async def mostrar_recomendaciones(update: Update, context: ContextTypes.DEFAULT_
     if not recs:
         msg = "😢 No tengo suficientes datos para recomendarte algo aún. ¡Descarga algunos libros y vuelve!"
         if hasattr(update, "callback_query"):
-             await update.callback_query.answer(msg, show_alert=True)
+            await update.callback_query.answer(msg, show_alert=True)
         else:
-             await update.message.reply_text(msg)
+            await update.message.reply_text(msg)
         return
 
     # 2. Preparar estado para la vista de lista
@@ -382,7 +382,7 @@ async def mostrar_recomendaciones(update: Update, context: ContextTypes.DEFAULT_
     
     # Añadir al historial para permitir "Volver"
     if "historial" not in st:
-         st["historial"] = []
+        st["historial"] = []
     
     # Guardar página actual antes de cambiar (pero es especial, mejor no, 
     # solo el botón 'Volver' del teclado hará history.pop si implementamos 'atras')

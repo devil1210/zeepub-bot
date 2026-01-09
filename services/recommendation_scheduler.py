@@ -9,6 +9,7 @@ import json
 
 logger = logging.getLogger(__name__)
 
+
 async def job_weekly_recommendations(context: ContextTypes.DEFAULT_TYPE):
     """
     Tarea programada para enviar recomendaciones semanales.
@@ -33,7 +34,7 @@ async def job_weekly_recommendations(context: ContextTypes.DEFAULT_TYPE):
                     # Generar y enviar
                     await send_recommendation_to_user(context, uid)
                     count_sent += 1
-                    await asyncio.sleep(0.5) # Throttle para no saturar
+                    await asyncio.sleep(0.5)  # Throttle para no saturar
             except Exception as e:
                 logger.error(f"Error procesando user {uid} para recomendaciones: {e}")
                 
@@ -89,7 +90,7 @@ def start_recommendations_scheduler(bot):
     # O cada 7 días. Para simplificar, usamos run_repeating con intervalo de 1 semana.
     # En producción ideal: usar run_daily con days=(5,)
     import datetime
-    time_to_run = datetime.time(hour=17, minute=00) # 5 PM
+    time_to_run = datetime.time(hour=17, minute=00)  # 5 PM
     
     # Check if job exists named 'weekly_recs'
     current_jobs = bot.job_queue.get_jobs_by_name('weekly_recs')
@@ -98,7 +99,7 @@ def start_recommendations_scheduler(bot):
         bot.job_queue.run_daily(
             job_weekly_recommendations,
             time=time_to_run,
-            days=(4,), # 0=Monday, 4=Friday
+            days=(4,),  # 0=Monday, 4=Friday
             name='weekly_recs'
         )
         logger.info("Scheduler de recomendaciones (Viernes 17:00) configurado.")

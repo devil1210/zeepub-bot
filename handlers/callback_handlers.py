@@ -253,10 +253,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if book_db:
                     # Construct pseudo 'libro' dict
                     libro = {
-                         "titulo": book_db.title,
-                         "portada": book_db.cover_path,
-                         "descarga": book_db.filepath,
-                         "href": book_db.filepath 
+                        "titulo": book_db.title,
+                        "portada": book_db.cover_path,
+                        "descarga": book_db.filepath,
+                        "href": book_db.filepath,
                     }
                 session.close()
             except Exception as e:
@@ -270,7 +270,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Try refreshing if session expired? Or just fail gracefully
             try:
                 await query.answer("⚠️ Sesión expirada o libro no encontrado.", show_alert=True)
-            except:
+            except Exception:
                 pass
             return
 
@@ -713,11 +713,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 book_id_str = parts[1]
                 # Check for cancel
                 if parts[2] == "cancel":
-                     try:
+                    try:
                         await query.delete_message()
-                     except Exception:
+                    except Exception:
                         pass
-                     return
+                    return
 
                 rating_val = int(parts[2])
                 import services.rating_service as rs

@@ -127,7 +127,7 @@ class LocalBook(Base):
             "epubVersion": self.epub_version,
             "wordCount": self.word_count,
             "pageCount": self.page_count,
-            "pageCount": self.page_count,
+
             "readingTime": self.reading_time,
             "rating": self.rating_average,
             "votes": self.rating_count,

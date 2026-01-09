@@ -466,7 +466,7 @@ async def publicar_libro(
                 avg = meta.get("rating_average")
                 count = meta.get("rating_count", 0)
                 if avg > 0:
-                     rating_txt = f"\n⭐ {avg:.1f} ({count} votos)"
+                    rating_txt = f"\n⭐ {avg:.1f} ({count} votos)"
             # ------------------------------
 
             info_text = (
@@ -815,20 +815,20 @@ async def descargar_epub_pendiente(
         
         # Solución simple: Si el epub_url es un path local, buscar el libro en DB por path
         if epub_url and "local_library" in epub_url or os.path.exists(epub_url):
-             try:
+            try:
                 from utils.library_db import get_session
                 from models.library_models import LocalBook
                 from repositories.download_repository import download_repo
-                
+
                 session = get_session()
                 # filepath in db matches epub_url
                 book_db = session.query(LocalBook).filter_by(filepath=epub_url).first()
                 if book_db:
-                    # Check if user actually downloaded it before prompts (already confirmed by this flow generally, 
+                    # Check if user actually downloaded it before prompts (already confirmed by this flow generally,
                     # but good to use common logic if moved elsewhere)
                     # For this flow (post-download), we know they just downloaded it.
                     # But if we move this button to the initial card, we need `has_user_downloaded`.
-                    
+
                     kb_rate = [[InlineKeyboardButton("⭐ Calificar Libro", callback_data=f"prompt_rate|{book_db.id}")]]
                     try:
                         await bot.send_message(
@@ -840,7 +840,7 @@ async def descargar_epub_pendiente(
                     except Exception:
                         pass
                 session.close()
-             except Exception as e:
+            except Exception as e:
                 logger.error(f"Error finding local book for rating: {e}")
         # -------------------------------------
 

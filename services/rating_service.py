@@ -7,6 +7,7 @@ from models.library_models import UserRating, LocalBook
 
 logger = logging.getLogger(__name__)
 
+
 class RatingService:
     @staticmethod
     def rate_book(user_id: int, book_id: int, rating: int) -> Dict[str, Any]:

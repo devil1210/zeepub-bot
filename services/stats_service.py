@@ -52,6 +52,7 @@ def record_activity(uid: int, activity_type: str = "download"):
     _save_stats(data)
 
 
+
 async def get_stats_summary(period: str = "day") -> Dict[str, Any]:
     """
     Obtiene métricas del periodo solicitado consultando la BD real via db_manager.
@@ -67,7 +68,7 @@ async def get_stats_summary(period: str = "day") -> Dict[str, Any]:
         "unique_users": counts["active_users"],
         "total_downloads": counts["downloads"],
         "new_users": counts["new_users"],
-        "by_role": {} # TODO: Implementar desglose por rol si es crítico, pero para rendimiento es mejor omitir en queries masivos
+        "by_role": {}  # TODO: Implementar desglose por rol si es crítico, pero para rendimiento es mejor omitir en queries masivos
     }
 
 async def get_daily_stats() -> Dict[str, Any]:
