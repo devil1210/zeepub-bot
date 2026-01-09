@@ -819,11 +819,13 @@ async def handle_bot_request(
             badge_top = data.get("badgeTop", 8)
             badge_right = data.get("badgeRight", 8)
             show_tool = data.get("showPosTool", False)
+            badge_mode = data.get("badgePosMode", "relative")
 
             # Save to bot_settings
             set_setting("badge_pos_top", str(badge_top))
             set_setting("badge_pos_right", str(badge_right))
             set_setting("show_pos_tool", str(show_tool))
+            set_setting("badge_pos_mode", badge_mode)
 
             return {
                 "success": True,
@@ -948,10 +950,12 @@ async def handle_bot_request(
                     badge_top = get_setting("badge_pos_top", "8")
                     badge_right = get_setting("badge_pos_right", "8")
                     show_tool = get_setting("show_pos_tool", "false")
+                    badge_mode = get_setting("badge_pos_mode", "relative")
 
                     final_settings["badgePosTop"] = int(badge_top)
                     final_settings["badgePosRight"] = int(badge_right)
                     final_settings["showPosTool"] = show_tool.lower() == "true"
+                    final_settings["badgePosMode"] = badge_mode
                 except Exception as e:
                     logger.error(f"Error loading badge config: {e}")
 

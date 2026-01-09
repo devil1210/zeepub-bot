@@ -78,10 +78,12 @@ function BookDetailContent() {
     const [isRating, setIsRating] = useState(false)
     const [showRateModal, setShowRateModal] = useState(false)
     const [isAdmin, setIsAdmin] = useState(false)
-    const { badgePosTop, badgePosRight, showPosTool } = useTheme()
+    const { badgePosTop, badgePosRight, showPosTool, badgePosMode, setBadgePosMode } = useTheme()
     const [localBadgePos, setLocalBadgePos] = useState({ top: 8, right: 8 })
+    const [localBadgeMode, setLocalBadgeMode] = useState<"relative" | "absolute">("relative")
     const [showAdminPanel, setShowAdminPanel] = useState(false)
     const [isSavingBadge, setIsSavingBadge] = useState(false)
+    const [showRatingPopup, setShowRatingPopup] = useState(false)
 
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return "N/A";
@@ -207,7 +209,8 @@ function BookDetailContent() {
     // Sync global badge position to local state
     useEffect(() => {
         setLocalBadgePos({ top: badgePosTop, right: badgePosRight })
-    }, [badgePosTop, badgePosRight])
+        setLocalBadgeMode(badgePosMode)
+    }, [badgePosTop, badgePosRight, badgePosMode])
 
     useEffect(() => {
         if (!webApp?.BackButton) return
@@ -294,7 +297,8 @@ function BookDetailContent() {
             await callBotAPI("save_badge_config", {
                 badgeTop: localBadgePos.top,
                 badgeRight: localBadgePos.right,
-                showPosTool: showPosTool
+                showPosTool: showPosTool,
+                badgePosMode: localBadgeMode
             })
             webApp?.showAlert?.("✅ Posición guardada para todos los usuarios")
             setShowAdminPanel(false)
@@ -386,13 +390,19 @@ function BookDetailContent() {
                             )}
 
                             {/* Average Rating Badge */}
-                            {book.rating_average !== undefined && book.rating_average > 0 && (
+                            {/* Rating Badge */}
+                            {book.rating_average > 0 && (
                                 <div
-                                    className="absolute bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg z-10"
-                                    style={{
+                                    className={`${localBadgeMode === "absolute" ? "absolute" : ""} bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg z-10 cursor-pointer hover:bg-black/70 transition-colors`}
+                                    style={localBadgeMode === "relative" ? {
+                                        position: "absolute",
+                                        top: `${localBadgePos.top}px`,
+                                        right: `${localBadgePos.right}px`
+                                    } : {
                                         top: `${localBadgePos.top}px`,
                                         right: `${localBadgePos.right}px`
                                     }}
+                                    onClick={() => setShowRatingPopup(true)}
                                 >
                                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                                     <span className="text-[10px] font-bold text-white">{book.rating_average.toFixed(1)}</span>
@@ -738,14 +748,39 @@ function BookDetailContent() {
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2 text-primary">
                             <Layout className="w-4 h-4" />
-                            <h4 className="text-sm font-bold uppercase tracking-wider">Ajuste de Posición</h4>
+                            <h3 className="text-sm font-bold uppercase tracking-wider">Ajustar Posición</h3>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowAdminPanel(false)}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setShowAdminPanel(false)}
+                        >
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
 
-                    <div className="space-y-6">
+                    {/* Positioning Mode Toggle */}
+                    <div className="mb-4 p-3 bg-secondary/30 rounded-xl">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <Label className="text-xs font-bold">Modo de Posicionamiento</Label>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">
+                                    {localBadgeMode === "relative" ? "Relativo a la portada" : "Relativo a la tarjeta"}
+                                </p>
+                            </div>
+                            <Button
+                                variant={localBadgeMode === "absolute" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setLocalBadgeMode(prev => prev === "relative" ? "absolute" : "relative")}
+                                className="text-xs"
+                            >
+                                {localBadgeMode === "absolute" ? "Absoluto" : "Relativo"}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
                         <div className="space-y-3">
                             <div className="flex justify-between text-xs font-semibold">
                                 <Label>Superior (Top)</Label>
@@ -754,7 +789,7 @@ function BookDetailContent() {
                             <Slider
                                 value={[localBadgePos.top]}
                                 min={-10}
-                                max={150}
+                                max={localBadgeMode === "absolute" ? 300 : 150}
                                 step={1}
                                 onValueChange={([val]) => setLocalBadgePos(prev => ({ ...prev, top: val }))}
                             />
@@ -768,7 +803,7 @@ function BookDetailContent() {
                             <Slider
                                 value={[localBadgePos.right]}
                                 min={-10}
-                                max={110}
+                                max={localBadgeMode === "absolute" ? 400 : 110}
                                 step={1}
                                 onValueChange={([val]) => setLocalBadgePos(prev => ({ ...prev, right: val }))}
                             />

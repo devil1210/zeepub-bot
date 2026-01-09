@@ -45,6 +45,8 @@ interface ThemeContextType {
   setBadgePosRight: (val: number) => void
   showPosTool: boolean
   setShowPosTool: (enabled: boolean) => void
+  badgePosMode: "relative" | "absolute"
+  setBadgePosMode: (mode: "relative" | "absolute") => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -90,6 +92,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setBadgePosRight: () => { },
   showPosTool: false,
   setShowPosTool: () => { },
+  badgePosMode: "relative",
+  setBadgePosMode: () => { },
 })
 
 export function useTheme() {
@@ -170,6 +174,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [badgePosTop, setBadgePosTop] = useState(8)
   const [badgePosRight, setBadgePosRight] = useState(8)
   const [showPosTool, setShowPosTool] = useState(false)
+  const [badgePosMode, setBadgePosMode] = useState<"relative" | "absolute">("relative")
   const [isLoaded, setIsLoaded] = useState(false)
   const [shouldPersist, setShouldPersist] = useState(true)
   const [isResetting, setIsResetting] = useState(false)
@@ -197,6 +202,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedBadgePosTop = localStorage.getItem("badgePosTop")
     const savedBadgePosRight = localStorage.getItem("badgePosRight")
     const savedShowPosTool = localStorage.getItem("showPosTool")
+    const savedBadgePosMode = localStorage.getItem("badgePosMode")
 
     // Sync with Backend (Role Defaults)
     const fetchRemoteDefaults = async () => {
@@ -304,6 +310,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setShowPosTool(data.showPosTool)
             localStorage.setItem("showPosTool", String(data.showPosTool))
           }
+          if (data.badgePosMode !== undefined) {
+            setBadgePosMode(data.badgePosMode)
+            localStorage.setItem("badgePosMode", data.badgePosMode)
+          }
         }
       } catch (error) {
         console.error("Error fetching UI defaults:", error)
@@ -333,6 +343,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedBadgePosTop) setBadgePosTop(parseInt(savedBadgePosTop))
     if (savedBadgePosRight) setBadgePosRight(parseInt(savedBadgePosRight))
     if (savedShowPosTool !== null) setShowPosTool(savedShowPosTool === "true")
+    if (savedBadgePosMode) setBadgePosMode(savedBadgePosMode as "relative" | "absolute")
 
     // Then fetch remote defaults for missing ones
     fetchRemoteDefaults()
@@ -557,7 +568,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         showRecsCard,
         badgePosTop,
         badgePosRight,
-        showPosTool
+        showPosTool,
+        badgePosMode
       }
       await callBotAPI("ui_settings", { subAction: "set", role, settings })
     } catch (error) {
@@ -590,6 +602,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.badgePosTop !== undefined) setBadgePosTop(settings.badgePosTop)
     if (settings.badgePosRight !== undefined) setBadgePosRight(settings.badgePosRight)
     if (settings.showPosTool !== undefined) setShowPosTool(settings.showPosTool)
+    if (settings.badgePosMode !== undefined) setBadgePosMode(settings.badgePosMode)
 
     // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
     if (persistToLocal) {
@@ -613,6 +626,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("badgePosTop", String(settings.badgePosTop ?? 8))
       localStorage.setItem("badgePosRight", String(settings.badgePosRight ?? 8))
       localStorage.setItem("showPosTool", String(settings.showPosTool ?? false))
+      localStorage.setItem("badgePosMode", settings.badgePosMode ?? "relative")
     }
   }
 
@@ -659,6 +673,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setBadgePosRight,
         showPosTool,
         setShowPosTool,
+        badgePosMode,
+        setBadgePosMode,
         saveGlobalSettings,
         applySettings,
       }}
