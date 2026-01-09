@@ -36,71 +36,83 @@ export function Pagination({
     if (!hasNextPage && !hasPrevPage && !hasUpPage) return null
 
     return (
-        <div className="mt-10 pb-6 sticky bottom-6 z-50">
-            {/* Navigación Premium - Diseño Sólido / Segmentado */}
+        <div className="mt-6 pb-8 sticky bottom-4 z-50">
+            {/* Movil-First Premium Navigation */}
             <div className="flex items-center justify-center px-4 w-full">
-                <div className="flex items-center w-full max-w-[420px] bg-background/80 backdrop-blur-2xl border-2 border-primary/30 rounded-2xl p-1 shadow-2xl shadow-primary/40 relative overflow-hidden group/nav">
-                    {/* Subtle glow effect */}
-                    <div className="absolute inset-0 bg-primary/5 group-hover/nav:bg-primary/10 transition-colors pointer-events-none" />
+                <div className="flex items-center w-full max-w-[440px] bg-background/60 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden group/nav">
+                    {/* Active Action Highlight - Subtle gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
 
+                    {/* Botón Anterior */}
                     <Button
-                        variant="default"
+                        variant="ghost"
                         onClick={onPrevPage}
                         disabled={!hasPrevPage || isLoading}
-                        className="flex-1 h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl relative overflow-hidden group shadow-lg shadow-primary/20 transition-all active:scale-90 disabled:opacity-30 disabled:grayscale px-0"
+                        className="flex-1 h-10 hover:bg-white/5 text-foreground rounded-xl transition-all active:scale-95 disabled:opacity-20 px-0"
                     >
-                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <span className="relative flex items-center justify-center gap-1.5 font-bold text-sm px-2">
-                            <ChevronLeft className="w-5 h-5 flex-shrink-0" />
-                            <span className="truncate">{t("pagination_prev")}</span>
-                        </span>
+                        <div className="flex flex-col items-center justify-center gap-0.5">
+                            <ChevronLeft className="w-4 h-4" />
+                            <span className="text-[9px] uppercase tracking-[0.1em] font-bold opacity-70">
+                                {t("pagination_prev")}
+                            </span>
+                        </div>
                     </Button>
 
                     {showSort && onSort && (
                         <>
-                            <div className="w-px h-8 bg-primary/20 mx-1 opacity-50 flex-shrink-0" />
+                            <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
 
                             <Button
-                                variant="default"
+                                variant="ghost"
                                 onClick={onSort}
                                 disabled={isLoading}
-                                className="flex-1 h-12 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl relative overflow-hidden group transition-all active:scale-90 disabled:opacity-30 border border-primary/20 px-0"
+                                className="flex-1 h-10 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-95 disabled:opacity-20 px-0"
                             >
-                                <span className="relative flex items-center justify-center gap-1.5 font-bold text-sm px-2">
-                                    <ArrowUpDown className="w-5 h-5 flex-shrink-0" />
-                                    <span className="truncate">Ordenar</span>
-                                </span>
+                                <div className="flex flex-col items-center justify-center gap-0.5">
+                                    <ArrowUpDown className="w-4 h-4" />
+                                    <span className="text-[9px] uppercase tracking-[0.1em] font-bold">
+                                        Ordenar
+                                    </span>
+                                </div>
                             </Button>
                         </>
                     )}
 
-                    <div className="w-px h-8 bg-primary/20 mx-1 opacity-50 flex-shrink-0" />
+                    <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
 
+                    {/* Botón Subir */}
                     <Button
-                        variant="default"
+                        variant="ghost"
                         onClick={onUpPage}
                         disabled={!hasUpPage || isLoading || !onUpPage}
-                        className="flex-1 h-12 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl relative overflow-hidden group transition-all active:scale-90 disabled:opacity-30 border border-primary/20 px-0"
+                        className="flex-1 h-10 hover:bg-white/5 text-muted-foreground rounded-xl transition-all active:scale-95 disabled:opacity-20 px-0"
                     >
-                        <span className="relative flex items-center justify-center gap-1.5 font-bold text-sm px-2">
-                            <ChevronUp className="w-5 h-5 flex-shrink-0" />
-                            <span className="truncate">{t("pagination_up")}</span>
-                        </span>
+                        <div className="flex flex-col items-center justify-center gap-0.5">
+                            <ChevronUp className="w-4 h-4" />
+                            <span className="text-[9px] uppercase tracking-[0.1em] font-bold opacity-70">
+                                {t("pagination_up")}
+                            </span>
+                        </div>
                     </Button>
 
-                    <div className="w-px h-8 bg-primary/20 mx-1 opacity-50 flex-shrink-0" />
+                    <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
 
+                    {/* Botón Siguiente */}
                     <Button
-                        variant="default"
+                        variant="ghost"
                         onClick={onNextPage}
                         disabled={!hasNextPage || isLoading}
-                        className="flex-1 h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl relative overflow-hidden group shadow-lg shadow-primary/20 transition-all active:scale-90 disabled:opacity-30 disabled:grayscale px-0"
+                        className={`flex-1 h-10 rounded-xl transition-all active:scale-95 disabled:opacity-20 px-0 ${hasNextPage
+                                ? "bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)] border border-primary/20"
+                                : "hover:bg-white/5 text-foreground"
+                            }`}
                     >
-                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <span className="relative flex items-center justify-center gap-1.5 font-bold text-sm px-2">
-                            <span className="truncate">{t("pagination_next")}</span>
-                            <ChevronRight className="w-5 h-5 flex-shrink-0" />
-                        </span>
+                        <div className="flex flex-col items-center justify-center gap-0.5">
+                            <ChevronRight className="w-4 h-4" />
+                            <span className="text-[9px] uppercase tracking-[0.1em] font-bold">
+                                {t("pagination_next")}
+                            </span>
+                        </div>
                     </Button>
                 </div>
             </div >
