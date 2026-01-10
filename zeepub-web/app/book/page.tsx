@@ -418,7 +418,7 @@ function BookDetailContent() {
                             )}
 
                             {/* Rating Badge - RELATIVE mode (dentro de la portada) */}
-                            {localBadgeMode === "relative" && book.rating_average > 0 && (
+                            {localBadgeMode === "relative" && book.rating_average && book.rating_average > 0 && (
                                 <div
                                     className="absolute bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg z-10 cursor-pointer hover:bg-black/70 transition-colors"
                                     style={{
@@ -469,7 +469,7 @@ function BookDetailContent() {
                     </div>
 
                     {/* Rating Badge - ABSOLUTE mode (relativo a toda la tarjeta) */}
-                    {localBadgeMode === "absolute" && book.rating_average > 0 && (
+                    {localBadgeMode === "absolute" && book.rating_average && book.rating_average > 0 && (
                         <div
                             className="absolute bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg z-20 cursor-pointer hover:bg-black/70 transition-colors"
                             style={{
