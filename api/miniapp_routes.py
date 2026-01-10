@@ -32,6 +32,9 @@ from utils.helpers import (
     extract_creators_by_role,
     parse_metadata_from_title,
 )
+from sqlalchemy import func
+from models.library_models import LocalBook, DownloadHistory
+from repositories.download_repository import download_repo
 
 router = APIRouter(tags=["miniapp"])
 logger = logging.getLogger(__name__)
@@ -114,10 +117,10 @@ async def handle_bot_request(
 
             # [NEW] Prioritize Local DB Search for ZeePub library
             is_local_search = not page_url or (
-                page_url == config.OPDS_ROOT_START or 
-                page_url == config.OPDS_ROOT_EVIL or 
-                page_url == "root" or
-                "/api/library/catalog" in page_url
+                page_url == config.OPDS_ROOT_START
+                or page_url == config.OPDS_ROOT_EVIL
+                or page_url == "root"
+                or "/api/library/catalog" in page_url
             )
 
             if is_local_search and query:
@@ -712,7 +715,7 @@ async def handle_bot_request(
         elif action == "user_downloads_history":
             # Return user's recent download history
             try:
-                from repositories.download_repository import download_repo
+                # Use top-level import
 
                 downloads = await download_repo.get_user_downloads(user_id, limit=20)
 

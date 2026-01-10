@@ -134,7 +134,7 @@ class StatsPlugin(BasePlugin):
 
         # Modo Resumen Diario (Dashboard Completo)
         from services.stats_service import get_stats_summary
-        
+
         # Obtener métricas paralelas
         stats_day = await get_stats_summary("day")
         stats_month = await get_stats_summary("month")
@@ -142,7 +142,7 @@ class StatsPlugin(BasePlugin):
         stats_all = await get_stats_summary("all")
 
         cms = context.application.plugin_manager.get_plugin("custom_messages")
-        
+
         # Definir emojis
         e_dl = "⬇️"
         e_us = "👥"
@@ -154,21 +154,21 @@ class StatsPlugin(BasePlugin):
             f"{e_dl} Descargas: {stats_day['total_downloads']}\n"
             f"{e_us} Activos: {stats_day['unique_users']}\n"
             f"{e_new} Nuevos: {stats_day['new_users']}\n\n"
-            
+
             "<b>Este Mes:</b>\n"
             f"{e_dl} Descargas: {stats_month['total_downloads']}\n"
             f"{e_us} Activos: {stats_month['unique_users']}\n"
             f"{e_new} Nuevos: {stats_month['new_users']}\n\n"
-            
+
             "<b>Este Año:</b>\n"
             f"{e_dl} Descargas: {stats_year['total_downloads']}\n"
             f"{e_us} Activos: {stats_year['unique_users']}\n\n"
-            
+
             "<b>Histórico Total:</b>\n"
             f"{e_dl} Descargas: {stats_all['total_downloads']}\n"
             f"{e_new} Usuarios Totales: {stats_all['new_users']}\n"
         )
-        
+
         # Intentar usar template si existe (opcional)
         text = base_summary
         if cms and cms.enabled:

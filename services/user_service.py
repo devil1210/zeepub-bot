@@ -305,13 +305,13 @@ async def update_user_setting(telegram_id: int, key: str, value: Any) -> Dict[st
     """Actualiza una clave específica de la configuración del usuario."""
     current_settings = await get_user_settings(telegram_id)
     current_settings[key] = value
-    
+
     # Ensure user exists (if not, upsert first)
     info = await get_user_info(telegram_id)
     if not info:
         eff = await get_effective_user(telegram_id)
         await upsert_user(telegram_id, role=str(eff.get("role", "free")))
-    
+
     await user_repo.update_user_settings(telegram_id, current_settings)
     await user_cache.invalidate(f"user_effective:{telegram_id}")
     return current_settings

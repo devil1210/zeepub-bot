@@ -8,24 +8,27 @@ from config.config_settings import config
 def extract_creators_by_role(entry, role_code: str) -> Optional[str]:
     """Extrae personas de una entrada OPDS filtrando por rol (ill, trl, bkp, etc)."""
     creators = []
-    
+
     # 1. Buscar en authors con atributo role
     authors = getattr(entry, "authors", [])
     for a in authors:
         role = getattr(a, "role", None)
         if role == role_code:
             name = getattr(a, "name", None)
-            if name: creators.append(name)
+            if name:
+                creators.append(name)
 
     # 2. Buscar en namespaces dc:creator o dc:contributor
     # Algunas fuentes usan dc_creator_ill, dc_creator_trl o similar si se mapean
     if hasattr(entry, "get"):
         val = entry.get(f"dc_creator_{role_code}") or entry.get(f"dc_contributor_{role_code}")
-        if val: creators.append(val)
+        if val:
+            creators.append(val)
 
     if creators:
         return " - ".join(creators)
     return None
+
 
 def extract_author(entry, is_folder=False) -> str:
     """Extrae el autor de una entrada OPDS de forma robusta."""
@@ -36,8 +39,9 @@ def extract_author(entry, is_folder=False) -> str:
         role = getattr(a, "role", None)
         if not role or role in ("aut", "author"):
             name = getattr(a, "name", None)
-            if name: creators.append(name)
-    
+            if name:
+                creators.append(name)
+
     if creators:
         return " - ".join(creators)
 

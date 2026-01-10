@@ -151,11 +151,11 @@ class DatabaseManager:
 
             # Optimización: Índices para estadísticas
             await conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_download_history_stats 
+                CREATE INDEX IF NOT EXISTS idx_download_history_stats
                 ON download_history(downloaded_at)
             """)
             await conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_users_added_at 
+                CREATE INDEX IF NOT EXISTS idx_users_added_at
                 ON users(added_at)
             """)
 
@@ -179,7 +179,7 @@ class DatabaseManager:
                     "year": "start of year"
                 }
                 mod = modifiers.get(period, "start of day")
-                
+
                 time_filter = f"downloaded_at >= datetime('now', '{mod}')"
                 params = ()
 

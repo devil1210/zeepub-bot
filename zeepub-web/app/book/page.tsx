@@ -894,7 +894,9 @@ function BookDetailContent() {
                         <div className="space-y-3">
                             {/* Overall Rating */}
                             <div className="text-center pb-4 border-b border-border">
-                                <div className="text-4xl font-bold text-primary">{book.rating_average?.toFixed(1) || "0.0"}</div>
+                                <div className="text-4xl font-bold text-primary">
+                                    {book.rating_average && book.rating_average > 0 ? book.rating_average.toFixed(1) : t("no_rating")}
+                                </div>
                                 <div className="flex items-center justify-center gap-1 mt-2">
                                     {[1, 2, 3, 4, 5].map((star) => (
                                         <Star
@@ -907,7 +909,11 @@ function BookDetailContent() {
                                     ))}
                                 </div>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    {book.rating_count || 0} {(book.rating_count || 0) === 1 ? "voto" : "votos"}
+                                    {book.rating_count && book.rating_count > 0 ? (
+                                        <>
+                                            {book.rating_count} {book.rating_count === 1 ? "voto" : "votos"}
+                                        </>
+                                    ) : t("no_votes")}
                                 </p>
                             </div>
 

@@ -90,6 +90,8 @@ export interface AppStrings {
     search_type_genres: string
     search_type_title_drawer: string
     close: string
+    no_rating: string
+    no_votes: string
 }
 
 export const DEFAULT_STRINGS: AppStrings = {
@@ -184,6 +186,8 @@ export const DEFAULT_STRINGS: AppStrings = {
     search_type_genres: "GÉNEROS",
     search_type_title_drawer: "Tipo de Búsqueda",
     close: "Cerrar",
+    no_rating: "Sin puntuación",
+    no_votes: "Sin votos",
 }
 
 let cachedStrings: AppStrings | null = null

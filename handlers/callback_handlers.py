@@ -48,6 +48,19 @@ async def set_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         return
 
+    # Destino manual
+    if destino == "otro":
+        st["esperando_destino_manual"] = True
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_manual = "✏️ Escribe @usuario o chat_id para publicar:"
+        text_manual = (
+            await cms.get_text("manual_destination_prompt")
+            if (cms and cms.enabled)
+            else base_manual
+        )
+        await query.edit_message_text(text_manual)
+        return
+
 
 async def ver_catalogo_normal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Acceso directo al catálogo normal para administradores."""
@@ -67,19 +80,6 @@ async def ver_catalogo_normal(update: Update, context: ContextTypes.DEFAULT_TYPE
     st["titulo"] = "📚 Categorías"
 
     await mostrar_colecciones(update, context, root, from_collection=False)
-
-    # Destino manual
-    if destino == "otro":
-        st["esperando_destino_manual"] = True
-        cms = context.application.plugin_manager.get_plugin("custom_messages")
-        base_manual = "✏️ Escribe @usuario o chat_id para publicar:"
-        text_manual = (
-            await cms.get_text("manual_destination_prompt")
-            if (cms and cms.enabled)
-            else base_manual
-        )
-        await query.edit_message_text(text_manual)
-        return
 
 
 async def handle_manual_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -271,7 +271,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 local_id = int(key.split("_")[1])
                 from utils.library_db import get_session
                 from models.library_models import LocalBook
-                
+
                 session = get_session()
                 book_db = session.query(LocalBook).filter_by(id=local_id).first()
                 if book_db:
@@ -288,8 +288,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Fallback to session state if not found via stateless or not local key
         if not libro:
-             libro = st["libros"].get(key)
-        
+            libro = st["libros"].get(key)
+
         if not libro:
             # Try refreshing if session expired? Or just fail gracefully
             try:
@@ -727,7 +727,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
         return
-    
+
     # Rating Handler
     if data.startswith("rate_book|"):
         # Format: rate_book|book_id|rating (or 'cancel')
@@ -745,29 +745,29 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 rating_val = int(parts[2])
                 import services.rating_service as rs
-                # Strip prefix "local_" if present, though IDs should be int usually 
-                # but local_books use int IDs. 
+                # Strip prefix "local_" if present, though IDs should be int usually
+                # but local_books use int IDs.
                 # If ID comes as "local_123", strip "local_"
                 clean_id = int(book_id_str.replace("local_", ""))
-                
+
                 result = rs.RatingService.rate_book(uid, clean_id, rating_val)
-                
+
                 # Feedback to user
                 await query.answer(f"⭐ ¡Gracias! Votaste {rating_val}/5.", show_alert=False)
-                
+
                 # Update message to show current status (remove keyboard or show static stars)
                 # We can replace keyboard with a "Thanks" button or remove it
-                new_kb = [] # Remove buttons
+                new_kb = []  # Remove buttons
                 msg_text = query.message.text_html
                 # Append user rating info if not present
                 if "Tu voto:" not in msg_text:
                     msg_text += f"\n\n✅ <b>Tu voto:</b> {rating_val} ⭐"
-                
+
                 try:
                     await query.edit_message_text(msg_text, parse_mode="HTML", reply_markup=None)
                 except Exception:
                     pass
-                    
+
             except ValueError:
                 await query.answer("❌ Error al procesar voto.")
         return
@@ -775,7 +775,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Trigger Rating Prompt (e.g. from "Calificar" button)
     if data.startswith("prompt_rate|"):
         book_id = data.split("|")[1]
-        
+
         # Build 1-5 Scale Keyboard
         keyboard = [
             [
@@ -787,7 +787,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ],
             [InlineKeyboardButton("❌ Cancelar", callback_data=f"rate_book|{book_id}|cancel")]
         ]
-        
+
         await query.message.reply_text(
             "⭐ <b>Califica este libro:</b>\n¿Qué te pareció?",
             reply_markup=InlineKeyboardMarkup(keyboard),

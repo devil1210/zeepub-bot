@@ -383,7 +383,7 @@ class SystemManagerPlugin(BasePlugin):
             else:
                 message += "\n\n⏳ <b>El sistema se reiniciará en breve...</b>"
                 await status_msg.edit_text(message, parse_mode="HTML")
-                
+
                 # Watchtower will detect the new image and restart the container automatically
                 # Waiting a bit to let Watchtower do its job
                 import asyncio

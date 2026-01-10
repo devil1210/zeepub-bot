@@ -459,7 +459,7 @@ async def publicar_libro(
             version = meta.get("epub_version", "2.0")
             fecha = meta.get("fecha_modificacion", "Desconocida")
             titulo_vol = meta.get("titulo_volumen") or titulo or "Desconocido"
-            
+
             # --- Stars Display (v6.1.0) ---
             rating_txt = ""
             if meta.get("rating_average"):
@@ -796,7 +796,7 @@ async def descargar_epub_pendiente(
             )
 
         cleanup_tmp(epub_buffer)
-        
+
         # --- Interactive Feedback (v6.1.0) ---
         # Mostrar botón de calificar si tenemos book_id local
         # Intentamos obtener el book_id desde el enlace o metadatos
@@ -804,15 +804,15 @@ async def descargar_epub_pendiente(
         # En la implementación actual, 'series_id' y 'volume_id' son de OPDS.
         # Si descargamos desde la libreria local (buscar_zeepubs_directo -> lib|local_ID),
         # entonces 'user_state["url"]' o 'epub_url' podría tener pistas.
-        
+
         # TODO: Para el soporte completo de "Rate", necesitamos el ID de local_books.
         # Si esta descarga vino de una búsqueda local, deberíamos tener el ID.
         # Si vino de OPDS remoto, no tenemos 'local_book_id' para la tabla user_ratings.
         # Asumiremos que esto funciona principalmente para libros locales por ahora.
-        
+
         # Intento de extraer ID local del epub_url si es file:///.../local_library
         # O si el callback data original tenía el ID.
-        
+
         # Solución simple: Si el epub_url es un path local, buscar el libro en DB por path
         if epub_url and "local_library" in epub_url or os.path.exists(epub_url):
             try:

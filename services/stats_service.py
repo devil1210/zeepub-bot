@@ -52,17 +52,16 @@ def record_activity(uid: int, activity_type: str = "download"):
     _save_stats(data)
 
 
-
 async def get_stats_summary(period: str = "day") -> Dict[str, Any]:
     """
     Obtiene métricas del periodo solicitado consultando la BD real via db_manager.
     period: 'day', 'month', 'year', 'all'
     """
     from core.db_manager import db_manager
-    
+
     # Obtener conteos crudos (Descargas, Usuarios Activos, Nuevos Usuarios)
     counts = await db_manager.get_stats_counts(period)
-    
+
     # Para consistencia con el plugin anterior, mapeamos las keys
     return {
         "unique_users": counts["active_users"],
@@ -70,6 +69,7 @@ async def get_stats_summary(period: str = "day") -> Dict[str, Any]:
         "new_users": counts["new_users"],
         "by_role": {}  # TODO: Implementar desglose por rol si es crítico, pero para rendimiento es mejor omitir en queries masivos
     }
+
 
 async def get_daily_stats() -> Dict[str, Any]:
     """Compatibility wrapper for existing calls."""

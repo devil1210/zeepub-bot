@@ -42,7 +42,7 @@ class BotInitializer:
 
         for name, scheduler_func in schedulers:
             try:
-                # Some funcs expect bot, some expect application. 
+                # Some funcs expect bot, some expect application.
                 # Weekly, Backup, Daily expect bot (legacy behavior)
                 # Recommendations now expects application for job_queue
                 if name == "recommendations":

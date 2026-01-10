@@ -67,7 +67,7 @@ def check_migrations():
                 FOREIGN KEY (book_id) REFERENCES local_books(id)
             )
         """)
-        
+
         # Índice para evitar votos duplicados y búsquedas rápidas
         cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings_unique ON user_ratings(user_id, book_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_ratings_book ON user_ratings(book_id)")

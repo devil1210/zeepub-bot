@@ -70,7 +70,7 @@ class LocalBook(Base):
     word_count = Column(Integer)
     page_count = Column(Integer)
     reading_time = Column(Integer)  # in minutes
-    
+
     # Ratings
     rating_average = Column(Float, default=0.0)
     rating_count = Column(Integer, default=0)
