@@ -376,29 +376,51 @@ function BookDetailContent() {
 
             <div className="max-w-2xl mx-auto px-4 py-6">
                 <Card className="p-6 border-border mb-4 bg-card shadow-lg">
-                    <div className="flex gap-6 items-start">
-                        <div className="w-32 h-48 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-xl border border-border/50 relative group">
-                            {dataSaver ? (
-                                <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5">
-                                    <ImageOff className="w-10 h-10 mb-2 opacity-20" />
-                                    <span className="text-[10px] font-bold opacity-30">Ahorro</span>
-                                </div>
-                            ) : book.cover ? (
-                                <img src={getThumbnailUrl(book.cover)} alt={book.title} className="w-full h-full object-cover cursor-zoom-in" onClick={() => setIsCoverFull(true)} />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-primary/5"><FileText className="w-12 h-12 text-primary/30" /></div>
-                            )}
+                    <div className="flex flex-col md:flex-row gap-6 mb-6">
+                        {/* Book Cover Card - Relative positioning container */}
+                        <div className="relative flex-shrink-0">
+                            <Card className="overflow-hidden border-border/50 shadow-2xl w-48 mx-auto md:mx-0">
+                                <div className="relative aspect-[2/3] bg-gradient-to-br from-primary/5 to-primary/10">
+                                    {dataSaver ? (
+                                        <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5">
+                                            <ImageOff className="w-10 h-10 mb-2 opacity-20" />
+                                            <span className="text-[10px] font-bold opacity-30">Ahorro</span>
+                                        </div>
+                                    ) : book.cover ? (
+                                        <img
+                                            src={getThumbnailUrl(book.cover)}
+                                            alt={book.title}
+                                            className="w-full h-full object-cover cursor-zoom-in"
+                                            onClick={() => setIsCoverFull(true)}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <FileText className="w-12 h-12 text-primary/30" />
+                                        </div>
+                                    )}
 
-                            {/* Average Rating Badge */}
-                            {/* Rating Badge */}
-                            {book.rating_average > 0 && (
+                                    {/* Rating Badge - Only when in RELATIVE mode */}
+                                    {localBadgeMode === "relative" && book.rating_average > 0 && (
+                                        <div
+                                            className="absolute bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg z-10 cursor-pointer hover:bg-black/70 transition-colors"
+                                            style={{
+                                                top: `${localBadgePos.top}px`,
+                                                right: `${localBadgePos.right}px`
+                                            }}
+                                            onClick={() => setShowRatingPopup(true)}
+                                        >
+                                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                            <span className="text-[10px] font-bold text-white">{book.rating_average.toFixed(1)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+
+                            {/* Rating Badge - ABSOLUTE mode (relative to entire card area) */}
+                            {localBadgeMode === "absolute" && book.rating_average > 0 && (
                                 <div
-                                    className={`${localBadgeMode === "absolute" ? "absolute" : ""} bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg z-10 cursor-pointer hover:bg-black/70 transition-colors`}
-                                    style={localBadgeMode === "relative" ? {
-                                        position: "absolute",
-                                        top: `${localBadgePos.top}px`,
-                                        right: `${localBadgePos.right}px`
-                                    } : {
+                                    className="absolute bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-white/10 shadow-lg z-20 cursor-pointer hover:bg-black/70 transition-colors"
+                                    style={{
                                         top: `${localBadgePos.top}px`,
                                         right: `${localBadgePos.right}px`
                                     }}
