@@ -203,7 +203,34 @@ function BookDetailContent() {
             }
         }
 
+        const fetchUserRating = async () => {
+            if (!bookId) return
+            try {
+                const response = await callBotAPI("user_status", {})
+                const book_rating = response.user_ratings?.find((r: any) => r.book_id === parseInt(bookId))
+                if (book_rating) {
+                    setUserRating(book_rating.rating)
+                }
+            } catch (error) {
+                console.error("Error fetching user rating:", error)
+            }
+        }
+
+        const fetchDownloadCount = async () => {
+            if (!bookId) return
+            try {
+                const response = await callBotAPI("get_download_count", { bookId })
+                if (response.count !== undefined) {
+                    setDownloadCount(response.count)
+                }
+            } catch (error) {
+                console.error("Error fetching download count:", error)
+            }
+        }
+
         fetchBookDetail()
+        fetchUserRating()
+        fetchDownloadCount()
         window.scrollTo(0, 0)
     }, [bookId])
 

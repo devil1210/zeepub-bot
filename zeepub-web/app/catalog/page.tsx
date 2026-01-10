@@ -228,8 +228,15 @@ function CatalogContent() {
     const loadFeed = useCallback(async (url?: string, isPagination = false) => {
         setIsLoading(true)
         try {
-            // Use fetchLocalLibrary directly with sortBy parameter
-            const data = await OpdsClient.fetchLocalLibrary(url, sortBy)
+            // Construct sort parameter based on  sortBy and sortDirection
+            let sortParam = sortBy
+            if (sortDirection === "desc") {
+                sortParam = sortBy === "alpha" ? "alpha_desc" : `${sortBy}_desc`
+            }
+            // For ascending, keep as is (alpha, date_added, downloads, rating)
+
+            // Use fetchLocalLibrary directly with constructed sortParam
+            const data = await OpdsClient.fetchLocalLibrary(url, sortParam)
             if (!data) {
                 console.error("[Catalog] No data received from feed")
                 return
@@ -248,7 +255,7 @@ function CatalogContent() {
         } finally {
             setIsLoading(false)
         }
-    }, [isAdminMode, sortBy])
+    }, [isAdminMode, sortBy, sortDirection])
 
     // Unified feed loader: handle searchParams and isAdminMode changes
     useEffect(() => {
