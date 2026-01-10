@@ -82,6 +82,14 @@ export interface AppStrings {
     book_rating_title: string
     config_show_recs_label: string
     config_show_recs_desc: string
+    search_type_all: string
+    search_type_title: string
+    search_type_author: string
+    search_type_illustrator: string
+    search_type_translator: string
+    search_type_genres: string
+    search_type_title_drawer: string
+    close: string
 }
 
 export const DEFAULT_STRINGS: AppStrings = {
@@ -168,6 +176,14 @@ export const DEFAULT_STRINGS: AppStrings = {
     book_rating_title: "Califica este libro",
     config_show_recs_label: "Tarjeta de Recomendaciones",
     config_show_recs_desc: "Mostrar u ocultar la tarjeta de libros sugeridos",
+    search_type_all: "TODOS",
+    search_type_title: "TÍTULO",
+    search_type_author: "AUTOR",
+    search_type_illustrator: "ILUSTRADOR",
+    search_type_translator: "TRADUCTOR",
+    search_type_genres: "GÉNEROS",
+    search_type_title_drawer: "Tipo de Búsqueda",
+    close: "Cerrar",
 }
 
 let cachedStrings: AppStrings | null = null

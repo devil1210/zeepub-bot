@@ -31,6 +31,15 @@ import { useStrings } from "@/components/strings-provider"
 import { Pagination } from "@/components/pagination"
 import { TransparentHeader } from "@/components/transparent-header"
 import { Input } from "@/components/ui/input"
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
+    DrawerClose,
+} from "@/components/ui/drawer"
+import { Check } from "lucide-react"
 
 interface Book {
     id: string
@@ -119,6 +128,7 @@ function CatalogContent() {
     const [sortBy, setSortBy] = useState("alpha")
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
     const [showFilters, setShowFilters] = useState(false)
+    const [isSearchDrawerOpen, setIsSearchDrawerOpen] = useState(false)
     const [searchResults, setSearchResults] = useState<Book[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [searchPagination, setSearchPagination] = useState<PaginationState>({
@@ -469,45 +479,96 @@ function CatalogContent() {
         <div className="min-h-screen bg-background pt-safe pb-20">
             <TransparentHeader />
             <main className="max-w-2xl mx-auto px-4 py-6 space-y-4 text-foreground">
-                {/* Replicando funcionalidad v3.13.8: Buscador reactivo en catálogo */}
-                <div className="flex gap-2 mb-2 p-1 bg-background/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg relative overflow-hidden group/search-bar">
+                {/* Buscador Versión Premium Redondeada Style Capsule */}
+                <div className="flex gap-2 mb-2 p-1.5 bg-background/60 backdrop-blur-xl border border-white/10 rounded-full shadow-lg relative overflow-hidden group/search-bar">
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
-                    <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-60" />
+                    <div className="relative flex-1 flex items-center">
+                        <Search className="absolute left-4 w-4 h-4 text-primary opacity-60" />
                         <Input
                             type="text"
                             placeholder={t("search_placeholder")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-transparent border-none pl-11 h-11 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
+                            className="bg-transparent border-none pl-11 h-10 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50 rounded-full"
                         />
                     </div>
-                    {searchQuery && (
-                        <Button
-                            onClick={() => {
-                                setSearchQuery("")
-                                setSearchResults([])
-                                router.push('/catalog')
-                            }}
-                            variant="ghost"
-                            size="icon"
-                            className="h-11 w-11 hover:bg-white/5 text-muted-foreground transition-all active:scale-95"
-                        >
-                            <X className="w-4 h-4" />
-                        </Button>
-                    )}
-                    <select
-                        value={searchType}
-                        onChange={(e) => setSearchType(e.target.value)}
-                        className="h-11 px-3 bg-white/5 border-l border-white/10 text-[10px] uppercase tracking-wider font-bold text-primary focus:ring-0 outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors rounded-r-xl"
-                    >
-                        <option className="bg-background" value="all">TODOS</option>
-                        <option className="bg-background" value="title">TÍTULO</option>
-                        <option className="bg-background" value="author">AUTOR</option>
-                        <option className="bg-background" value="illustrator">ILUSTRADOR</option>
-                        <option className="bg-background" value="translator">TRADUCTOR</option>
-                        <option className="bg-background" value="genres">GÉNEROS</option>
-                    </select>
+
+                    <div className="flex items-center gap-1 pr-1">
+                        {searchQuery && (
+                            <Button
+                                onClick={() => {
+                                    setSearchQuery("")
+                                    setSearchResults([])
+                                    router.push('/catalog')
+                                }}
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 hover:bg-white/5 text-muted-foreground transition-all active:scale-95 rounded-full"
+                            >
+                                <X className="w-4 h-4" />
+                            </Button>
+                        )}
+
+                        <Drawer open={isSearchDrawerOpen} onOpenChange={setIsSearchDrawerOpen}>
+                            <DrawerTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    className="h-10 px-4 bg-primary/10 hover:bg-primary/20 border border-primary/20 text-[10px] uppercase tracking-wider font-bold text-primary rounded-full transition-all active:scale-95"
+                                >
+                                    {searchType === "all" ? t("search_type_all") || "TODOS" :
+                                        searchType === "title" ? t("search_type_title") || "TÍTULO" :
+                                            searchType === "author" ? t("search_type_author") || "AUTOR" :
+                                                searchType === "illustrator" ? t("search_type_illustrator") || "ILUSTRADOR" :
+                                                    searchType === "translator" ? t("search_type_translator") || "TRADUCTOR" :
+                                                        t("search_type_genres") || "GÉNEROS"}
+                                </Button>
+                            </DrawerTrigger>
+                            <DrawerContent className="border-t border-white/10 bg-background/80 backdrop-blur-2xl">
+                                <div className="mx-auto w-full max-w-sm">
+                                    <DrawerHeader>
+                                        <DrawerTitle className="text-center text-sm font-bold uppercase tracking-widest text-primary pt-2">
+                                            {t("search_type_title_drawer") || "Tipo de Búsqueda"}
+                                        </DrawerTitle>
+                                    </DrawerHeader>
+                                    <div className="p-4 grid grid-cols-1 gap-2">
+                                        {[
+                                            { id: "all", label: "TODOS", icon: Library },
+                                            { id: "title", label: "TÍTULO", icon: BookOpen },
+                                            { id: "author", label: "AUTOR", icon: Search },
+                                            { id: "illustrator", label: "ILUSTRADOR", icon: Search },
+                                            { id: "translator", label: "TRADUCTOR", icon: Search },
+                                            { id: "genres", label: "GÉNEROS", icon: Folder }
+                                        ].map((option) => (
+                                            <Button
+                                                key={option.id}
+                                                variant={searchType === option.id ? "secondary" : "ghost"}
+                                                className={`justify-between h-12 rounded-2xl px-4 transition-all ${searchType === option.id ? 'bg-primary/20 border border-primary/30' : ''}`}
+                                                onClick={() => {
+                                                    setSearchType(option.id)
+                                                    setIsSearchDrawerOpen(false)
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <option.icon className={`w-4 h-4 ${searchType === option.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                                                    <span className={`text-xs font-bold ${searchType === option.id ? 'text-primary' : 'text-foreground'}`}>
+                                                        {option.label}
+                                                    </span>
+                                                </div>
+                                                {searchType === option.id && <Check className="w-4 h-4 text-primary" />}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                    <div className="p-4 pt-0">
+                                        <DrawerClose asChild>
+                                            <Button variant="outline" className="w-full rounded-2xl border-white/10 h-12 text-xs font-bold uppercase tracking-widest">
+                                                {t("close") || "Cerrar"}
+                                            </Button>
+                                        </DrawerClose>
+                                    </div>
+                                </div>
+                            </DrawerContent>
+                        </Drawer>
+                    </div>
                 </div>
 
 
@@ -850,7 +911,7 @@ function CatalogContent() {
                     }
 
                     {!searchQuery && currentFeed && (
-                        <div className="sticky bottom-4 z-[60] space-y-2 pointer-events-none">
+                        <div className="sticky bottom-4 z-[60] space-y-2 pointer-events-auto">
                             {/* Compact Sort Chips - Moved to bottom */}
                             {showFilters && (
                                 <div className="flex justify-center gap-2 overflow-x-auto pb-2 px-4 scrollbar-hide pointer-events-auto animate-in slide-in-from-bottom-4 duration-300">
