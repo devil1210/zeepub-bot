@@ -383,16 +383,11 @@ class SystemManagerPlugin(BasePlugin):
             else:
                 message += "\n\n⏳ <b>El sistema se reiniciará en breve...</b>"
                 await status_msg.edit_text(message, parse_mode="HTML")
-
-                # Fallback suicida
+                
+                # Watchtower will detect the new image and restart the container automatically
+                # Waiting a bit to let Watchtower do its job
                 import asyncio
-                import sys
-
                 await asyncio.sleep(10)
-                logger.warning(
-                    "Watchtower didn't kill us in time. Committing sudoku..."
-                )
-                sys.exit(0)
 
         else:
             await status_msg.edit_text(
