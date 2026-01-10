@@ -573,31 +573,35 @@ function CatalogContent() {
 
 
                 {/* Feed title */}
-                {currentFeed?.title && (
-                    <div className="pb-1 flex items-center justify-between gap-3">
-                        <h1 className="text-lg font-bold text-foreground">
+                {currentFeed?.title && (() => {
+                    const rawTitle = currentFeed.title;
+                    const displayTitle = (rawTitle === "Bibliotecas Disponibles")
+                        ? t("available_libraries")
+                        : rawTitle.split(" - ")[0].split(" [")[0];
+
+                    return (
+                        <div className="pb-1 flex items-center justify-between gap-3">
+                            <h1 className="text-lg font-bold text-foreground">
+                                {displayTitle}
+                            </h1>
                             {(() => {
-                                let title = currentFeed.title;
-                                if (title === "Bibliotecas Disponibles") return t("available_libraries");
-                                // Even more aggressive cleanup for the page title:
-                                // If it has " - " (author) or " [" (tags), cut it.
-                                title = title.split(" - ")[0].split(" [")[0];
-                                return title;
+                                // If title is "Zeepubs", don't show the badge at all as per user feedback
+                                if (displayTitle === "Zeepubs") return null;
+
+                                // Find book type from entries to show in header
+                                const firstEntry = currentFeed.entries.find(e => !e.is_folder && e.bookType);
+                                const bookType = firstEntry?.bookType || currentFeed.entries[0]?.bookType;
+                                if (!bookType) return null;
+
+                                return (
+                                    <div className="px-3 py-1 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded-full border border-primary/30 tracking-wider flex-shrink-0 animate-in fade-in zoom-in duration-300">
+                                        {bookType}
+                                    </div>
+                                );
                             })()}
-                        </h1>
-                        {(() => {
-                            // Find book type from entries to show in header
-                            const firstEntry = currentFeed.entries.find(e => !e.is_folder && e.bookType);
-                            const bookType = firstEntry?.bookType || currentFeed.entries[0]?.bookType;
-                            if (!bookType) return null;
-                            return (
-                                <div className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded border border-primary/30 tracking-wider flex-shrink-0">
-                                    {bookType}
-                                </div>
-                            );
-                        })()}
-                    </div>
-                )}
+                        </div>
+                    );
+                })()}
 
                 {/* Content Container */}
                 <div className="space-y-4">
