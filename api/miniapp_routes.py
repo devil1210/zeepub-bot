@@ -827,6 +827,35 @@ async def handle_bot_request(
             breakdown = RatingService.get_rating_breakdown(book_id)
             return {"breakdown": breakdown}
 
+        elif action == "get_download_count":
+            from models.download_models import DownloadHistory
+            from sqlalchemy import func
+
+            book_id_raw = data.get("bookId")
+            if not book_id_raw:
+                raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
+
+            # Get book title from LocalBook
+            try:
+                if isinstance(book_id_raw, str) and book_id_raw.startswith("local_"):
+                    book_id = int(book_id_raw.replace("local_", ""))
+                else:
+                    book_id = int(book_id_raw)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="ID de libro inválido")
+
+            session = get_session()
+            try:
+                book = session.query(LocalBook).filter_by(id=book_id).first()
+                if not book:
+                    return {"count": 0}
+
+                # Count downloads by title
+                count = session.query(func.count(DownloadHistory.id)).filter_by(title=book.title).scalar() or 0
+                return {"count": count}
+            finally:
+                session.close()
+
         elif action == "save_badge_config":
             from services.settings_service import set_setting
 

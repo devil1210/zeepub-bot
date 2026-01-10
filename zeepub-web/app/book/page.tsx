@@ -84,6 +84,7 @@ function BookDetailContent() {
     const [showAdminPanel, setShowAdminPanel] = useState(false)
     const [isSavingBadge, setIsSavingBadge] = useState(false)
     const [showRatingPopup, setShowRatingPopup] = useState(false)
+    const [downloadCount, setDownloadCount] = useState<number>(0)
 
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return "N/A";
@@ -579,391 +580,39 @@ function BookDetailContent() {
                                 <span className="font-semibold text-right">{book.translator}</span>
                             </div>
                         )}
-                        {book.layoutBy && (
-                            <div className="flex justify-between items-start gap-4 last:border-0 pb-3">
-                                <span className="text-muted-foreground shrink-0">Maquetador</span>
-                                <span className="font-semibold text-right">{book.layoutBy}</span>
-                            </div>
-                        )}
-                    </div>
-                </Card>
+                        <div className="space-y-2">
+                            {[5, 4, 3, 2, 1].map((stars) => {
+                                const count = breakdown[stars] || 0
+                                const percentage = totalVotes > 0 ? (count / totalVotes) * 100 : 0
 
-                <Card className="p-5 border-border mb-4 bg-card">
-                    <div className="flex items-center gap-2 mb-5 text-primary">
-                        <Info className="w-3.5 h-3.5" />
-                        <h3 className="text-xs font-bold uppercase tracking-wider">Información Técnica</h3>
-                    </div>
-                    <div className="space-y-4 text-sm">
-                        <div className="flex justify-between items-center border-b border-border/30 pb-3">
-                            <span className="text-muted-foreground">Tipo de Archivo</span>
-                            <span className="font-bold">{formatFileType(displayFileType)}</span>
-                        </div>
-                        {book.epubVersion && (
-                            <div className="flex justify-between items-center border-b border-border/30 pb-3">
-                                <span className="text-muted-foreground">Versión Epub</span>
-                                <span className="font-bold">{book.epubVersion}</span>
-                            </div>
-                        )}
-                        <div className="flex justify-between items-center border-b border-border/30 pb-3">
-                            <span className="text-muted-foreground">Tamaño</span>
-                            <span className="font-bold">{book.fileSize ? `${(book.fileSize / (1024 * 1024)).toFixed(2)} MB` : (displaySize || "N/A")}</span>
-                        </div>
-                        {book.pageCount && (
-                            <div className="flex justify-between items-center border-b border-border/30 pb-3">
-                                <span className="text-muted-foreground">Cantidad de Páginas</span>
-                                <span className="font-bold">{book.pageCount}</span>
-                            </div>
-                        )}
-                        {book.wordCount && (
-                            <div className="flex justify-between items-center border-b border-border/30 pb-3">
-                                <span className="text-muted-foreground">Cantidad de Palabras</span>
-                                <span className="font-bold">{book.wordCount}</span>
-                            </div>
-                        )}
-                        {book.readingTime && (
-                            <div className="flex justify-between items-center border-b border-border/30 pb-3">
-                                <span className="flex items-center gap-1.5 text-muted-foreground">
-                                    <Clock className="w-3.5 h-3.5" /> Tiempo de lectura
-                                </span>
-                                <span className="font-bold">
-                                    {(() => {
-                                        const minutes = typeof book.readingTime === 'number' ? book.readingTime : parseInt(book.readingTime);
-                                        const hours = (minutes / 60).toFixed(1);
-                                        return `${minutes} min / ${hours} horas`;
-                                    })()}
-                                </span>
-                            </div>
-                        )}
-                        {(book.updatedDate || (book as any).modifiedAt) && (
-                            <div className="flex justify-between items-center last:border-0 pb-3">
-                                <span className="flex items-center gap-1.5 text-muted-foreground">
-                                    <Clock className="w-3.5 h-3.5" /> Última actualización
-                                </span>
-                                <span className="font-semibold text-right">{formatDate(book.updatedDate || (book as any).modifiedAt)}</span>
-                            </div>
-                        )}
-                    </div>
-                </Card>
-
-                <div className="sticky bottom-4 z-50 px-0">
-                    <div className="flex items-center w-full max-w-[440px] mx-auto bg-background/60 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden group/nav">
-                        {/* Active Action Highlight */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
-
-                        {/* Botón Volver */}
-                        <Button
-                            variant="ghost"
-                            onClick={() => router.back()}
-                            className="flex-1 h-10 hover:bg-white/5 text-foreground rounded-xl transition-all active:scale-95 px-0"
-                        >
-                            <div className="flex flex-col items-center justify-center gap-0.5">
-                                <ArrowLeft className="w-4 h-4" />
-                                <span className="text-[9px] uppercase tracking-[0.1em] font-bold opacity-70">
-                                    Volver
-                                </span>
-                            </div>
-                        </Button>
-
-                        <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
-
-                        {/* Botón Valorar (Solo si está descargado) */}
-                        {book.is_downloaded && (
-                            <>
-                                <Button
-                                    variant="ghost"
-                                    onClick={() => setShowRateModal(true)}
-                                    className="flex-1 h-10 hover:bg-white/5 text-foreground rounded-xl transition-all active:scale-95 px-0"
-                                >
-                                    <div className="flex flex-col items-center justify-center gap-0.5">
-                                        <Star className={`w-4 h-4 ${userRating ? "fill-primary text-primary" : ""}`} />
-                                        <span className="text-[9px] uppercase tracking-[0.1em] font-bold opacity-70">
-                                            Valorar
-                                        </span>
+                                return (
+                                    <div key={stars} className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1 w-12">
+                                            <span className="text-xs font-medium">{stars}</span>
+                                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                        </div>
+                                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-primary transition-all duration-300"
+                                                style={{ width: `${percentage}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-xs text-muted-foreground w-8 text-right">{count}</span>
                                     </div>
-                                </Button>
-                                <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
-                            </>
-                        )}
-
-                        {/* Botón Descargar */}
-                        <Button
-                            variant="ghost"
-                            onClick={handleDownload}
-                            disabled={isDownloading || !book.downloadUrl}
-                            className={`flex-[1.5] h-10 rounded-xl transition-all active:scale-95 disabled:opacity-20 px-0 ${book.downloadUrl
-                                ? "bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)] border border-primary/20"
-                                : "hover:bg-white/5 text-foreground"
-                                }`}
-                        >
-                            <div className="flex flex-col items-center justify-center gap-0.5">
-                                {isDownloading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Download className="w-4 h-4" />
-                                )}
-                                <span className="text-[9px] uppercase tracking-[0.1em] font-bold">
-                                    {isDownloading ? "Enviando..." : t("book_download")}
-                                </span>
-                            </div>
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Modal de Votación */}
-            {showRateModal && (
-                <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowRateModal(false)}>
-                    <div
-                        className="w-full max-w-[440px] bg-card border-t border-border rounded-t-3xl p-6 pb-12 shadow-2xl animate-in slide-in-from-bottom duration-300"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-6" />
-                        <h3 className="text-center font-bold text-lg mb-2">{t("book_rating_title")}</h3>
-                        <p className="text-center text-xs text-muted-foreground mb-6">Comparte tu opinión sobre este libro</p>
-
-                        <div className="flex justify-center gap-3 mb-8">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                    key={star}
-                                    onClick={() => {
-                                        handleRate(star);
-                                        setTimeout(() => setShowRateModal(false), 600);
-                                    }}
-                                    disabled={isRating}
-                                    className="p-1 transition-all active:scale-125 group/star"
-                                >
-                                    <Star
-                                        className={`w-10 h-10 transition-colors ${star <= (userRating || 0)
-                                            ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]"
-                                            : "text-muted-foreground/20 hover:text-yellow-400/50"
-                                            } ${isRating ? "opacity-50" : ""}`}
-                                    />
-                                </button>
-                            ))}
+                                )
+                            })}
                         </div>
-
-                        <div className="space-y-3">
-                            {userRating && (
-                                <Button
-                                    variant="ghost"
-                                    className="w-full h-12 rounded-xl text-destructive hover:bg-destructive/10 font-bold"
-                                    onClick={handleRemoveRating}
-                                    disabled={isRating}
-                                >
-                                    Quitar mi valoración
-                                </Button>
-                            )}
-                            <Button
-                                variant="outline"
-                                className="w-full h-12 rounded-xl border-border font-bold"
-                                onClick={() => setShowRateModal(false)}
-                            >
-                                Cancelar
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {/* Admin Positioning Panel */}
-            {isAdmin && showAdminPanel && (
-                <div className="fixed bottom-20 right-4 left-4 z-[60] bg-card/95 backdrop-blur-md border border-primary/20 rounded-2xl p-5 shadow-2xl animate-in fade-in slide-in-from-bottom duration-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2 text-primary">
-                            <Layout className="w-4 h-4" />
-                            <h3 className="text-sm font-bold uppercase tracking-wider">Ajustar Posición</h3>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setShowAdminPanel(false)}
-                        >
-                            <X className="w-4 h-4" />
-                        </Button>
-                    </div>
-
-                    {/* Positioning Mode Toggle */}
-                    <div className="mb-4 p-3 bg-secondary/30 rounded-xl">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <Label className="text-xs font-bold">Modo de Posicionamiento</Label>
-                                <p className="text-[10px] text-muted-foreground mt-0.5">
-                                    {localBadgeMode === "relative" ? "Relativo a la portada" : "Relativo a la tarjeta"}
-                                </p>
-                            </div>
-                            <Button
-                                variant={localBadgeMode === "absolute" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setLocalBadgeMode(prev => prev === "relative" ? "absolute" : "relative")}
-                                className="text-xs"
-                            >
-                                {localBadgeMode === "absolute" ? "Absoluto" : "Relativo"}
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-xs font-semibold">
-                                <Label>Superior (Top)</Label>
-                                <span className="text-primary">{localBadgePos.top}px</span>
-                            </div>
-                            <Slider
-                                value={[localBadgePos.top]}
-                                min={-10}
-                                max={localBadgeMode === "absolute" ? 300 : 150}
-                                step={1}
-                                onValueChange={([val]) => setLocalBadgePos(prev => ({ ...prev, top: val }))}
-                            />
-                        </div>
-
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-xs font-semibold">
-                                <Label>Derecha (Right)</Label>
-                                <span className="text-primary">{localBadgePos.right}px</span>
-                            </div>
-                            <Slider
-                                value={[localBadgePos.right]}
-                                min={-10}
-                                max={localBadgeMode === "absolute" ? 400 : 110}
-                                step={1}
-                                onValueChange={([val]) => setLocalBadgePos(prev => ({ ...prev, right: val }))}
-                            />
-                        </div>
-
-                        <div className="pt-2 border-t border-border/50">
-                            <div className="bg-secondary/50 rounded-lg p-3 family-mono text-[10px] text-muted-foreground whitespace-pre overflow-x-auto">
-                                <code>
-                                    style={`{{`}
-                                    {"\n  "}top: "{localBadgePos.top}px",
-                                    {"\n  "}right: "{localBadgePos.right}px"
-                                    {"\n"}{`}}`}
-                                </code>
-                            </div>
-                        </div>
-
-                        <Button
-                            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold mt-4"
-                            onClick={handleSaveBadgeConfig}
-                            disabled={isSavingBadge}
-                        >
-                            {isSavingBadge ? "Guardando..." : "💾 Guardar para Todos"}
-                        </Button>
-                    </div>
-                </div>
-            )}
-
-            {/* Rating Breakdown Popup */}
-            {showRatingPopup && book && (
-                <div
-                    className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-                    onClick={() => setShowRatingPopup(false)}
-                >
-                    <div
-                        className="bg-background border border-border rounded-2xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold">Valoraciones</h3>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => setShowRatingPopup(false)}
-                            >
-                                <X className="w-4 h-4" />
-                            </Button>
-                        </div>
-
-                        <div className="space-y-3">
-                            {/* Overall Rating */}
-                            <div className="text-center pb-4 border-b border-border">
-                                <div className="text-4xl font-bold text-primary">{book.rating_average?.toFixed(1) || "0.0"}</div>
-                                <div className="flex items-center justify-center gap-1 mt-2">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <Star
-                                            key={star}
-                                            className={`w-4 h-4 ${star <= Math.round(book.rating_average || 0)
-                                                ? "fill-yellow-400 text-yellow-400"
-                                                : "text-muted-foreground"
-                                                }`}
-                                        />
-                                    ))}
-                                </div>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    {book.rating_count || 0} {(book.rating_count || 0) === 1 ? "voto" : "votos"}
-                                </p>
-                            </div>
-
-                            {/* Breakdown by Stars */}
-                            <RatingBreakdownBars bookId={book.id} totalVotes={book.rating_count || 0} />
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    )
+                        )
 }
 
-// Rating Breakdown Bars Component
-function RatingBreakdownBars({ bookId, totalVotes }: { bookId: string; totalVotes: number }) {
-    const [breakdown, setBreakdown] = useState<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 })
-    const [isLoading, setIsLoading] = useState(true)
-
-    useEffect(() => {
-        const fetchBreakdown = async () => {
-            try {
-                const response = await callBotAPI("rating_breakdown", { bookId })
-                if (response.breakdown) {
-                    setBreakdown(response.breakdown)
-                }
-            } catch (error) {
-                console.error("Error fetching rating breakdown:", error)
-            } finally {
-                setIsLoading(false)
-            }
-        }
-        fetchBreakdown()
-    }, [bookId])
-
-    if (isLoading) {
-        return <div className="text-center text-sm text-muted-foreground">Cargando...</div>
-    }
-
-    return (
-        <div className="space-y-2">
-            {[5, 4, 3, 2, 1].map((stars) => {
-                const count = breakdown[stars] || 0
-                const percentage = totalVotes > 0 ? (count / totalVotes) * 100 : 0
-
-                return (
-                    <div key={stars} className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 w-12">
-                            <span className="text-xs font-medium">{stars}</span>
-                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        </div>
-                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-primary transition-all duration-300"
-                                style={{ width: `${percentage}%` }}
-                            />
-                        </div>
-                        <span className="text-xs text-muted-foreground w-8 text-right">{count}</span>
-                    </div>
-                )
-            })}
-        </div>
-    )
-}
-
-export default function BookDetailPage() {
+                        export default function BookDetailPage() {
     return <Suspense fallback={<div className="min-h-screen bg-background pt-safe" />}><BookDetailContent /></Suspense>
 }
 
-function BookOpenSVG(props: any) {
+                        function BookOpenSVG(props: any) {
     return (
-        <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-        </svg>
-    )
+                        <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                        </svg>
+                        )
 }
