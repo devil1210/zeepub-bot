@@ -117,7 +117,8 @@ function CatalogContent() {
     const [searchQuery, setSearchQuery] = useState("")
     const [searchType, setSearchType] = useState("all")
     const [sortBy, setSortBy] = useState("alpha")
-    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+    const [showFilters, setShowFilters] = useState(false)
     const [searchResults, setSearchResults] = useState<Book[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [searchPagination, setSearchPagination] = useState<PaginationState>({
@@ -509,50 +510,6 @@ function CatalogContent() {
                     </select>
                 </div>
 
-                {/* Compact Sort Chips */}
-                {!searchQuery && currentFeed && currentFeed.entries.some((e) => e.links.some((l) => l.rel === "subsection")) && (
-                    <div className="flex justify-center gap-2 overflow-x-auto pb-2 pt-2 px-4 scrollbar-hide">
-                        {[
-                            { key: "alpha", label: "A-Z", icon: null },
-                            { key: "date_added", label: "Añadido", icon: Calendar },
-                            { key: "date_updated", label: "Actualizado", icon: Calendar },
-                            { key: "downloads", label: "Descargas", icon: Download },
-                            { key: "rating", label: "Valoración", icon: null },
-                        ].map((option) => {
-                            const isActive = sortBy === option.key
-                            const Icon = option.icon
-
-                            // Dynamic label for alpha: A-Z when asc, Z-A when desc
-                            const displayLabel = option.key === "alpha"
-                                ? (isActive && sortDirection === "asc" ? "A-Z" : "Z-A")
-                                : option.label
-
-                            return (
-                                <button
-                                    key={option.key}
-                                    onClick={() => {
-                                        if (isActive) {
-                                            // Toggle direction if clicking the same button
-                                            setSortDirection(prev => prev === "asc" ? "desc" : "asc")
-                                        } else {
-                                            // Change to this filter with default desc direction
-                                            setSortBy(option.key)
-                                            setSortDirection("desc")
-                                        }
-                                    }}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${isActive
-                                        ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                                        : "bg-card text-muted-foreground hover:bg-secondary border border-border"
-                                        }`}
-                                >
-                                    {Icon && <Icon className="w-3 h-3" />}
-                                    <span>{displayLabel}</span>
-                                    <ArrowDown className="w-3 h-3" />
-                                </button>
-                            )
-                        })}
-                    </div>
-                )}
 
                 {/* Feed title */}
                 {currentFeed?.title && (
@@ -892,8 +849,56 @@ function CatalogContent() {
                         })
                     }
 
-                    {
-                        !searchQuery && currentFeed && (
+                    {!searchQuery && currentFeed && (
+                        <div className="sticky bottom-4 z-[60] space-y-2 pointer-events-none">
+                            {/* Compact Sort Chips - Moved to bottom */}
+                            {showFilters && (
+                                <div className="flex justify-center gap-2 overflow-x-auto pb-2 px-4 scrollbar-hide pointer-events-auto animate-in slide-in-from-bottom-4 duration-300">
+                                    <div className="flex gap-2 bg-background/80 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-2xl">
+                                        {[
+                                            { key: "alpha", label: "A-Z", icon: null },
+                                            { key: "date_added", label: "Añadido", icon: Calendar },
+                                            { key: "date_updated", label: "Actualizado", icon: Calendar },
+                                            { key: "downloads", label: "Descargas", icon: Download },
+                                            { key: "rating", label: "Valoración", icon: null },
+                                        ].map((option) => {
+                                            const isActive = sortBy === option.key
+                                            const Icon = option.icon
+
+                                            // Dynamic label for alpha: A-Z when asc, Z-A when desc
+                                            // Fixed: If not active, show A-Z. If active, show current setting.
+                                            const displayLabel = option.key === "alpha"
+                                                ? (isActive ? (sortDirection === "asc" ? "A-Z" : "Z-A") : "A-Z")
+                                                : option.label
+
+                                            return (
+                                                <button
+                                                    key={option.key}
+                                                    onClick={() => {
+                                                        if (isActive) {
+                                                            setSortDirection(prev => prev === "asc" ? "desc" : "asc")
+                                                        } else {
+                                                            setSortBy(option.key)
+                                                            setSortDirection(option.key === "alpha" ? "asc" : "desc")
+                                                        }
+                                                    }}
+                                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${isActive
+                                                        ? "bg-primary text-primary-foreground shadow-lg scale-105"
+                                                        : "bg-card/50 text-muted-foreground hover:bg-secondary border border-border/50"
+                                                        }`}
+                                                >
+                                                    {Icon && <Icon className="w-3.5 h-3.5" />}
+                                                    <span>{displayLabel}</span>
+                                                    {isActive && (
+                                                        sortDirection === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                                    )}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                             <Pagination
                                 currentPage={currentFeed.currentPage}
                                 totalPages={currentFeed.totalPages}
@@ -903,10 +908,12 @@ function CatalogContent() {
                                 onNextPage={() => currentFeed.nextPage && handleNavigate(currentFeed.nextPage)}
                                 onPrevPage={() => currentFeed.prevPage && handleNavigate(currentFeed.prevPage)}
                                 onUpPage={handleGoBack}
+                                onSort={() => setShowFilters(!showFilters)}
+                                showSort={true}
                                 isLoading={isLoading}
                             />
-                        )
-                    }
+                        </div>
+                    )}
                 </div >
 
                 {searchQuery && (

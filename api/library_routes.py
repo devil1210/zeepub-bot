@@ -327,16 +327,22 @@ async def get_catalog(
         # Sort folders based on sort_by parameter
         if sort_by == "alpha":
             folders_list.sort(key=lambda x: x["title"].lower())
+            books_in_folder.sort(key=lambda x: x["title"].lower())
         elif sort_by == "alpha_desc":
             folders_list.sort(key=lambda x: x["title"].lower(), reverse=True)
+            books_in_folder.sort(key=lambda x: x["title"].lower(), reverse=True)
         elif sort_by == "date_added":
             folders_list.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+            books_in_folder.sort(key=lambda x: x.get("file_created_at") or "", reverse=True)
         elif sort_by == "date_added_desc":
             folders_list.sort(key=lambda x: x.get("created_at") or "")
+            books_in_folder.sort(key=lambda x: x.get("file_created_at") or "")
         elif sort_by == "date_updated":
             folders_list.sort(key=lambda x: x.get("modified_at") or "", reverse=True)
+            books_in_folder.sort(key=lambda x: x.get("file_modified_at") or "", reverse=True)
         elif sort_by == "date_updated_desc":
             folders_list.sort(key=lambda x: x.get("modified_at") or "")
+            books_in_folder.sort(key=lambda x: x.get("file_modified_at") or "")
         elif sort_by == "downloads_desc":
             # Sort by download count using SQL query
             from models.download_models import DownloadHistory
@@ -351,17 +357,22 @@ async def get_catalog(
             )
             download_counts = {row.title: row.download_count for row in download_counts_query.all()}
 
-            # Sort books by download count
+            # Sort both books and folders by download count (folders use representative book title)
+            folders_list.sort(
+                key=lambda x: download_counts.get(x.get("title", ""), 0),
+                reverse=True
+            )
             books_in_folder.sort(
                 key=lambda x: download_counts.get(x.get("title", ""), 0),
                 reverse=True
             )
         elif sort_by == "rating_desc":
             # Sort by rating average, then by rating count
+            folders_list.sort(key=lambda x: (x.get("rating_average") or 0, x.get("rating_count") or 0), reverse=True)
             books_in_folder.sort(key=lambda x: (x.get("rating_average") or 0, x.get("rating_count") or 0), reverse=True)
 
-        # Ordenar libros alfabéticamente solo si no se aplicó otro ordenamiento
-        if sort_by not in ("downloads_desc", "rating_desc"):
+        # Final alpha sort for books only if not already sorted by specialized criteria
+        if sort_by not in ("alpha", "alpha_desc", "date_added", "date_added_desc", "date_updated", "date_updated_desc", "downloads_desc", "rating_desc"):
             books_in_folder.sort(key=lambda x: x["title"].lower())
 
         # Combinar: Carpetas primero, luego libros
