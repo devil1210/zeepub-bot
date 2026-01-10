@@ -511,7 +511,7 @@ function CatalogContent() {
 
                 {/* Compact Sort Chips */}
                 {!searchQuery && currentFeed && currentFeed.entries.some((e) => e.links.some((l) => l.rel === "subsection")) && (
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    <div className="flex justify-center gap-2 overflow-x-auto pb-2 pt-2 px-4 scrollbar-hide">
                         {[
                             { key: "alpha", label: "A-Z", icon: null },
                             { key: "date_added", label: "Añadido", icon: Calendar },
@@ -520,19 +520,22 @@ function CatalogContent() {
                             { key: "rating", label: "Valoración", icon: null },
                         ].map((option) => {
                             const isActive = sortBy === option.key
-                            const currentSort = isActive ? `${option.key}_${sortDirection === "desc" ? "desc" : ""}` : `${option.key}_desc`
                             const Icon = option.icon
+
+                            // Dynamic label for alpha: A-Z when asc, Z-A when desc
+                            const displayLabel = option.key === "alpha"
+                                ? (isActive && sortDirection === "asc" ? "A-Z" : "Z-A")
+                                : option.label
 
                             return (
                                 <button
                                     key={option.key}
                                     onClick={() => {
                                         if (isActive) {
-                                            // Toggle direction
+                                            // Toggle direction if clicking the same button
                                             setSortDirection(prev => prev === "asc" ? "desc" : "asc")
-                                            setSortBy(option.key === "alpha" && sortDirection === "asc" ? "alpha_desc" : option.key === "alpha" ? "alpha" : `${option.key}_${sortDirection === "asc" ? "desc" : ""}`.replace("__", "_"))
                                         } else {
-                                            // Change criterion, default to desc for new selections
+                                            // Change to this filter with default desc direction
                                             setSortBy(option.key)
                                             setSortDirection("desc")
                                         }
@@ -543,12 +546,8 @@ function CatalogContent() {
                                         }`}
                                 >
                                     {Icon && <Icon className="w-3 h-3" />}
-                                    <span>{option.label}</span>
-                                    {isActive && (
-                                        sortDirection === "desc" ?
-                                            <ArrowDown className="w-3 h-3" /> :
-                                            <ArrowUp className="w-3 h-3" />
-                                    )}
+                                    <span>{displayLabel}</span>
+                                    <ArrowDown className="w-3 h-3" />
                                 </button>
                             )
                         })}
