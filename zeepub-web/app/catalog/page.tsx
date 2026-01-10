@@ -117,7 +117,7 @@ function CatalogContent() {
     const [searchQuery, setSearchQuery] = useState("")
     const [searchType, setSearchType] = useState("all")
     const [sortBy, setSortBy] = useState("alpha")
-    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
     const [searchResults, setSearchResults] = useState<Book[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [searchPagination, setSearchPagination] = useState<PaginationState>({
