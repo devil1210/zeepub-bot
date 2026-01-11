@@ -165,6 +165,7 @@ class LibraryService:
             d = book.to_dict()
 
             from repositories.download_repository import download_repo
+
             d["download_count"] = await download_repo.get_total_download_count(
                 book.title, book_hash=book.content_hash
             )
@@ -190,6 +191,7 @@ class LibraryService:
         """
         session = get_session()
         from repositories.metrics_repository import metrics_repo
+
         try:
             # 1. Listar Fuentes (Raíz)
             if not source_id:
@@ -197,14 +199,39 @@ class LibraryService:
                 items = []
                 for s in sources:
                     # Get metrics for the source
-                    source_metrics = session.query(
-                        func.count(LocalBook.series_hash.distinct()).label("num_series"),
-                        func.avg(func.nullif(LocalBook.rating_average, 0.0)).label("avg_rating"),
-                        func.sum(LocalBook.rating_count).label("total_votes")
-                    ).filter(LocalBook.source_id == s.id).first()
+                    source_metrics = (
+                        session.query(
+                            func.count(LocalBook.series_hash.distinct()).label(
+                                "num_series"
+                            ),
+                            func.avg(func.nullif(LocalBook.rating_average, 0.0)).label(
+                                "avg_rating"
+                            ),
+                            func.sum(LocalBook.rating_count).label("total_votes"),
+                        )
+                        .filter(LocalBook.source_id == s.id)
+                        .first()
+                    )
 
-                    # Get total downloads for the source
-                    source_downloads = await metrics_repo.get_source_downloads(s.id)
+                    # Get total downloads for the source by collecting all series hashes
+                    series_hashes = [
+                        r[0]
+                        for r in session.query(LocalBook.series_hash)
+                        .filter_by(source_id=s.id)
+                        .distinct()
+                        .all()
+                    ]
+                    source_downloads = await metrics_repo.get_total_downloads_by_hashes(
+                        series_hashes
+                    )
+
+                    # Get a representative book for the source cover
+                    random_book = (
+                        session.query(LocalBook)
+                        .filter_by(source_id=s.id)
+                        .order_by(func.random() if use_random_covers else LocalBook.id)
+                        .first()
+                    )
 
                     items.append(
                         {
@@ -215,7 +242,9 @@ class LibraryService:
                             "source_id": s.id,
                             "cover": random_book.cover_path if random_book else None,
                             "numBooks": source_metrics.num_series or 0,
-                            "rating_average": round(float(source_metrics.avg_rating or 0), 1),
+                            "rating_average": round(
+                                float(source_metrics.avg_rating or 0), 1
+                            ),
                             "rating_count": int(source_metrics.total_votes or 0),
                             "download_count": source_downloads,
                         }
@@ -254,10 +283,15 @@ class LibraryService:
 
                 results = []
                 from repositories.metrics_repository import metrics_repo
+
                 for b in books:
                     d = b.to_dict()
                     d["is_folder"] = False
-                    d["download_count"] = await metrics_repo.get_total_downloads(b.content_hash) if b.content_hash else 0
+                    d["download_count"] = (
+                        await metrics_repo.get_total_downloads(b.content_hash)
+                        if b.content_hash
+                        else 0
+                    )
                     results.append(d)
 
                 return {
@@ -275,7 +309,9 @@ class LibraryService:
                     LocalBook.series_hash,
                     func.min(LocalBook.id).label("rep_id"),
                     func.count(LocalBook.id).label("num_volumenes"),
-                    func.avg(func.nullif(LocalBook.rating_average, 0.0)).label("avg_rating"),
+                    func.avg(func.nullif(LocalBook.rating_average, 0.0)).label(
+                        "avg_rating"
+                    ),
                     func.sum(LocalBook.rating_count).label("total_votes"),
                 )
                 .filter(LocalBook.source_id == source_id)
