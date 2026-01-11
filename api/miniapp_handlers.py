@@ -657,33 +657,34 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
     # Try to find book by content_hash first (most reliable)
     if book_id and not book_id.startswith("http"):
         try:
-            from services.library_service import LibraryService
+            from utils.library_db import get_session
+            from models.library_models import LocalBook
 
-            async with LibraryService._session_scope() as session:
-                from models.library_models import LocalBook
+            session = get_session()
+            lb = None
 
-                # Try by content_hash first
-                lb = session.query(LocalBook).filter_by(content_hash=book_id).first()
+            # Try by content_hash first
+            lb = session.query(LocalBook).filter_by(content_hash=book_id).first()
 
-                # Fallback: try by ID if it's numeric
-                if not lb and (book_id.startswith("local_") or book_id.isdigit()):
-                    local_id = int(str(book_id).replace("local_", ""))
-                    lb = session.query(LocalBook).get(local_id)
+            # Fallback: try by ID if it's numeric
+            if not lb and (book_id.startswith("local_") or book_id.isdigit()):
+                local_id = int(str(book_id).replace("local_", ""))
+                lb = session.query(LocalBook).get(local_id)
 
-                # Fallback: try by filepath
-                if not lb and (
-                    book_id.startswith("/library/") or book_id.startswith("library/")
-                ):
-                    lb = session.query(LocalBook).filter_by(filepath=book_id).first()
+            # Fallback: try by filepath
+            if not lb and (
+                book_id.startswith("/library/") or book_id.startswith("library/")
+            ):
+                lb = session.query(LocalBook).filter_by(filepath=book_id).first()
 
-                if lb:
-                    metadata_override = lb.to_dict()
-                    actual_download_url = lb.filepath
-                    logger.debug(
-                        f"Local book found: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}"
-                    )
-                else:
-                    logger.warning(f"Book not found in library: {book_id}")
+            if lb:
+                metadata_override = lb.to_dict()
+                actual_download_url = lb.filepath
+                logger.debug(
+                    f"Local book found: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}"
+                )
+            else:
+                logger.warning(f"Book not found in library: {book_id}")
         except Exception as e:
             logger.error(f"Error fetching metadata for handle_download: {e}")
 
