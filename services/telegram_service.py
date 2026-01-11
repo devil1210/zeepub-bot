@@ -1294,6 +1294,20 @@ async def enviar_libro_directo(
                     clean_title=clean_title,
                     book_hash=book_hash,
                 )
+                
+                # Also record in centralized metrics DB
+                from repositories.metrics_repository import metrics_repo
+                series_hash = meta.get("series_hash") or (
+                    generate_series_hash(series, meta.get("book_type") or meta.get("categoria"))
+                    if series else None
+                )
+                await metrics_repo.add_download(
+                    user_id=user_id,
+                    content_hash=book_hash,
+                    series_hash=series_hash,
+                    title=titulo_vol
+                )
+                
                 logger.info(
                     f"[enviar_libro_directo] Historial guardado para user {user_id}: {titulo_vol}"
                 )

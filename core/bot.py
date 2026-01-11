@@ -125,8 +125,10 @@ class ZeePubBot:
         """Inicializa la aplicación (para uso con API)."""
         # 0. Inicializar Base de Datos primero
         from core.db_manager import db_manager
+        from core.metrics_db import metrics_db
         try:
             await db_manager.initialize()
+            await metrics_db.initialize()
         except Exception as e:
             logger.error(f"Error inicializando base de datos: {e}")
             # Continuamos, pero es probable que fallen cosas después

@@ -248,12 +248,11 @@ class LibraryService:
                 from repositories.download_repository import download_repo
 
                 results = []
+                from repositories.metrics_repository import metrics_repo
                 for b in books:
                     d = b.to_dict()
                     d["is_folder"] = False
-                    d["download_count"] = await download_repo.get_total_download_count(
-                        b.title, book_hash=b.content_hash
-                    )
+                    d["download_count"] = await metrics_repo.get_total_downloads(b.content_hash) if b.content_hash else 0
                     results.append(d)
 
                 return {
@@ -289,19 +288,9 @@ class LibraryService:
                 if not rep:
                     continue
 
-                # Sumar descargas de toda la serie
-                # Nota: Esto puede ser lento si hay miles de libros, pero para grupos de series es manejable
-                # Mejoraremos esto con una query directa a download_history por series_hash en el futuro
-                vols = (
-                    session.query(LocalBook.content_hash, LocalBook.title)
-                    .filter_by(series_hash=s_hash)
-                    .all()
-                )
-                total_downloads = 0
-                for v_hash, v_title in vols:
-                    total_downloads += await download_repo.get_total_download_count(
-                        v_title, book_hash=v_hash
-                    )
+                # Get series-level downloads from centralized metrics DB
+                from repositories.metrics_repository import metrics_repo
+                total_downloads = await metrics_repo.get_series_downloads(s_hash)
 
                 items.append(
                     {
