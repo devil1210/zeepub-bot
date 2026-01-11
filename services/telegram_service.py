@@ -1,5 +1,8 @@
-# services/telegram_service.py
-
+import io
+import os
+import logging
+import asyncio
+from urllib.parse import urlparse, unquote
 from typing import List, Dict, Any, Optional
 from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest, Forbidden
