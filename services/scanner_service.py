@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import hashlib
 from datetime import datetime
