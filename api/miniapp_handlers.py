@@ -580,6 +580,8 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
     metadata_override = None
     actual_download_url = book_id  # Default to book_id for remote books
 
+    logger.debug(f"handle_download called with book_id: {book_id}, type: {type(book_id)}")
+
     if book_id.startswith("local_") or book_id.isdigit():
         try:
             local_id = int(str(book_id).replace("local_", ""))
