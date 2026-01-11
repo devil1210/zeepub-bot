@@ -56,20 +56,23 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
 
     if is_local_search and query:
         logger.info(f"[search] Using LibraryService for native SQL search: {query}")
-        return await LibraryService.search_books(query, page=page, search_type=data.get("type", "all"))
+        return await LibraryService.search_books(
+            query, page=page, search_type=data.get("type", "all")
+        )
 
     # OPDS Fallback
     target_url = (
-        page_url
-        if page_url
-        else build_search_url(query, uid=user_id, role=user_role)
+        page_url if page_url else build_search_url(query, uid=user_id, role=user_role)
     )
 
     # API 9.3: Feedback en streaming
     if not page_url:
         from utils.streaming import send_message_draft
         from api.main import bot
-        await send_message_draft(bot=bot.app.bot, chat_id=user_id, text=f"🔍 <b>Buscando:</b> {query}...")
+
+        await send_message_draft(
+            bot=bot.app.bot, chat_id=user_id, text=f"🔍 <b>Buscando:</b> {query}..."
+        )
 
     feed = await get_cached_feed(target_url)
 
@@ -115,7 +118,9 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
     items_per_page = feed.feed.get("opensearch_itemsperpage")
     if total_results and items_per_page:
         try:
-            total_pages = (int(total_results) + int(items_per_page) - 1) // int(items_per_page)
+            total_pages = (int(total_results) + int(items_per_page) - 1) // int(
+                items_per_page
+            )
         except Exception:
             pass
 
@@ -123,12 +128,19 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
         book_id = entry.get("id", "")
         title = entry.get("title", "Sin título")
 
-        is_folder = any(link.get("rel") == "subsection" for link in getattr(entry, "links", []))
+        is_folder = any(
+            link.get("rel") == "subsection" for link in getattr(entry, "links", [])
+        )
         author = extract_author(entry, is_folder=is_folder)
 
         summary = entry.get("summary", "")
         if summary:
-            summary = summary.replace("Format: Epub Summary: ", "").replace("Format: Epub ", "").replace("Summary: ", "").strip()
+            summary = (
+                summary.replace("Format: Epub Summary: ", "")
+                .replace("Format: Epub ", "")
+                .replace("Summary: ", "")
+                .strip()
+            )
 
         publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
         language = entry.get("dc_language") or entry.get("dcterms_language")
@@ -168,7 +180,11 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
             detail_url = abs_url(feed_base_url, book_id)
 
         raw_tags = getattr(entry, "tags", [])
-        categories = [tag.get("label") or tag.get("term") for tag in raw_tags if tag.get("label") or tag.get("term")]
+        categories = [
+            tag.get("label") or tag.get("term")
+            for tag in raw_tags
+            if tag.get("label") or tag.get("term")
+        ]
 
         title_meta = parse_metadata_from_title(title)
         entry_series = entry.get("calibre_series") or entry.get("schema_series")
@@ -177,35 +193,40 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
         final_series = entry_series or title_meta.get("series", "")
         final_series_index = entry_series_index or title_meta.get("volume", "")
 
-        results.append({
-            "id": book_id,
-            "title": title,
-            "author": author,
-            "illustrator": extract_creators_by_role(entry, "ill"),
-            "translator": extract_creators_by_role(entry, "trl"),
-            "summary": summary,
-            "cover": cover_url,
-            "downloadUrl": download_url,
-            "subsectionUrl": subsection_url,
-            "detailUrl": detail_url,
-            "publisher": publisher,
-            "language": language,
-            "isbn": isbn,
-            "year": year,
-            "size": size,
-            "fileType": file_type,
-            "is_folder": subsection_url is not None,
-            "updatedDate": entry.get("updated") or entry.get("published") or "",
-            "series": final_series,
-            "seriesIndex": final_series_index,
-            "tags": title_meta.get("tags", []),
-            "cleanTitle": title_meta.get("clean_title", title),
-            "romaji": title_meta.get("romaji", ""),
-            "categories": categories,
-            "wordCount": entry.get("kavita_wordcount") or entry.get("calibre_wordcount"),
-            "pageCount": entry.get("kavita_pagecount") or entry.get("calibre_pagecount"),
-            "readingTime": entry.get("kavita_readingtime") or entry.get("calibre_readingtime"),
-        })
+        results.append(
+            {
+                "id": book_id,
+                "title": title,
+                "author": author,
+                "illustrator": extract_creators_by_role(entry, "ill"),
+                "translator": extract_creators_by_role(entry, "trl"),
+                "summary": summary,
+                "cover": cover_url,
+                "downloadUrl": download_url,
+                "subsectionUrl": subsection_url,
+                "detailUrl": detail_url,
+                "publisher": publisher,
+                "language": language,
+                "isbn": isbn,
+                "year": year,
+                "size": size,
+                "fileType": file_type,
+                "is_folder": subsection_url is not None,
+                "updatedDate": entry.get("updated") or entry.get("published") or "",
+                "series": final_series,
+                "seriesIndex": final_series_index,
+                "tags": title_meta.get("tags", []),
+                "cleanTitle": title_meta.get("clean_title", title),
+                "romaji": title_meta.get("romaji", ""),
+                "categories": categories,
+                "wordCount": entry.get("kavita_wordcount")
+                or entry.get("calibre_wordcount"),
+                "pageCount": entry.get("kavita_pagecount")
+                or entry.get("calibre_pagecount"),
+                "readingTime": entry.get("kavita_readingtime")
+                or entry.get("calibre_readingtime"),
+            }
+        )
 
     async def fetch_folder_cover(res):
         if res["is_folder"] and not res["cover"]:
@@ -221,7 +242,9 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
             except Exception:
                 pass
 
-    folder_tasks = [fetch_folder_cover(r) for r in results if r["is_folder"] and not r["cover"]]
+    folder_tasks = [
+        fetch_folder_cover(r) for r in results if r["is_folder"] and not r["cover"]
+    ]
     if folder_tasks:
         await asyncio.gather(*folder_tasks[:10])
 
@@ -246,16 +269,25 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
 
     # 1. Local Book
-    if isinstance(book_id_raw, str) and (book_id_raw.startswith("local_") or book_id_raw.isdigit()):
+    if isinstance(book_id_raw, str) and (
+        book_id_raw.startswith("local_") or book_id_raw.isdigit()
+    ):
         clean_id = int(book_id_raw.replace("local_", ""))
         local_book = await LibraryService.get_book_by_id(clean_id)
         if local_book:
-            logger.info(f"[book-detail] Found local book via LibraryService: {local_book['title']}")
+            logger.info(
+                f"[book-detail] Found local book via LibraryService: {local_book['title']}"
+            )
             local_book["is_downloaded"] = await download_repo.has_user_downloaded(
-                user_id, local_book["title"], local_book.get("cleanTitle"), local_book.get("content_hash")
+                user_id,
+                local_book["title"],
+                local_book.get("cleanTitle"),
+                local_book.get("content_hash"),
             )
             local_book["download_count"] = await download_repo.get_total_download_count(
-                local_book["title"], local_book.get("cleanTitle"), local_book.get("content_hash")
+                local_book["title"],
+                local_book.get("cleanTitle"),
+                local_book.get("content_hash"),
             )
             return local_book
 
@@ -272,10 +304,15 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         raise HTTPException(status_code=400, detail=f"Invalid book URL: {book_id_url}")
 
     if not feed:
-        raise HTTPException(status_code=502, detail="Error en el servidor de origen (OPDS). Intenta más tarde.")
+        raise HTTPException(
+            status_code=502,
+            detail="Error en el servidor de origen (OPDS). Intenta más tarde.",
+        )
 
     entries = getattr(feed, "entries", [])
-    entry = entries[0] if entries else (feed.feed if getattr(feed, "feed", None) else None)
+    entry = (
+        entries[0] if entries else (feed.feed if getattr(feed, "feed", None) else None)
+    )
 
     if not entry:
         raise HTTPException(status_code=404, detail="Book detail not found")
@@ -375,20 +412,24 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         "epubVersion": entry.get("dc_version") or entry.get("kavita_format_version"),
         "wordCount": entry.get("kavita_wordcount") or entry.get("calibre_wordcount"),
         "pageCount": entry.get("kavita_pagecount") or entry.get("calibre_pagecount"),
-        "readingTime": entry.get("kavita_readingtime") or entry.get("calibre_readingtime"),
+        "readingTime": entry.get("kavita_readingtime")
+        or entry.get("calibre_readingtime"),
         "romaji": extracted_meta.get("romaji", ""),
         "cleanTitle": extracted_meta.get("clean_title") or entry.get("title", ""),
         "tags": extracted_meta.get("tags", []),
         "content_hash": entry.get("content_hash") or entry.get("hash"),
         "is_downloaded": False,
-        "download_count": 0
+        "download_count": 0,
     }
 
     # Get metrics from centralized DB
     from repositories.metrics_repository import metrics_repo
+
     content_hash = entry.get("content_hash") or entry.get("hash")
     if content_hash:
-        result["is_downloaded"] = await metrics_repo.has_downloaded(user_id, content_hash)
+        result["is_downloaded"] = await metrics_repo.has_downloaded(
+            user_id, content_hash
+        )
         result["download_count"] = await metrics_repo.get_total_downloads(content_hash)
         rating_stats = await metrics_repo.get_rating_stats(content_hash)
         result["rating_average"] = rating_stats["average"]
@@ -400,6 +441,7 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
 async def handle_bot_info(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Devuelve información básica del bot y configuración de UI global."""
     from api.main import bot
+
     bot_user = await bot.app.bot.get_me()
     avatar_url = "/robot-librarian.jpg"
 
@@ -427,9 +469,13 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
     st = state_manager.get_user_state(user_id)
 
     roles_display = {
-        "admin": "Admin 🛠️", "staff": "Staff 🛡️", "premium": "Premium ✨",
-        "vip": "VIP ⭐️", "white": "Patrocinador 🤍", "free": "Lector 📚",
-        "banned": "🚫 Baneado"
+        "admin": "Admin 🛠️",
+        "staff": "Staff 🛡️",
+        "premium": "Premium ✨",
+        "vip": "VIP ⭐️",
+        "white": "Patrocinador 🤍",
+        "free": "Lector 📚",
+        "banned": "🚫 Baneado",
     }
 
     system_role_text = roles_display.get(role_key, "Lector")
@@ -448,7 +494,9 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
 
     # Calculate time until next reset (midnight)
     now = datetime.now()
-    next_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    next_midnight = (now + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
     time_left = next_midnight - now
     hours, remainder = divmod(int(time_left.total_seconds()), 3600)
     minutes, _ = divmod(remainder, 60)
@@ -461,11 +509,13 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
         "hasUnlimitedDownloads": max_dl is None and role_key != "banned",
         "isBanned": role_key == "banned",
         "isAdmin": role_key == "admin",
-        "role": role_key
+        "role": role_key,
     }
 
 
-async def handle_user_downloads_history(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_user_downloads_history(
+    data: Dict[str, Any], user_data: Dict[str, Any]
+):
     """Devuelve el historial reciente de descargas del usuario."""
     user_id = user_data.get("user_id")
     try:
@@ -479,6 +529,7 @@ async def handle_user_downloads_history(data: Dict[str, Any], user_data: Dict[st
 async def handle_recommendations(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Devuelve recomendaciones personalizadas (Beta exclusiva Staff)."""
     from services.recommendation_service import RecommendationService
+
     user_id = user_data.get("user_id")
     user_role = user_data.get("role", "free")
 
@@ -492,18 +543,27 @@ async def handle_recommendations(data: Dict[str, Any], user_data: Dict[str, Any]
     for r in recs:
         is_dict = isinstance(r, dict)
         r_id = r.get("id") if is_dict else r.id
-        results.append({
-            "id": f"local_{r_id}",
-            "title": r.get("title") if is_dict else r.title,
-            "author": r.get("author") if is_dict else r.author,
-            "cover": f"/api/library/covers/{r_id}" if (r.get("cover_path") if is_dict else r.cover_path) else None,
-            "downloadUrl": f"local_{r_id}",
-            "is_folder": False,
-            "series": r.get("series") if is_dict else r.series,
-            "seriesIndex": r.get("series_index") if is_dict else r.series_index,
-            "cleanTitle": r.get("title") if is_dict else r.title,
-            "rating_average": (r.get("rating_average") if is_dict else r.rating_average) or 0
-        })
+        results.append(
+            {
+                "id": f"local_{r_id}",
+                "title": r.get("title") if is_dict else r.title,
+                "author": r.get("author") if is_dict else r.author,
+                "cover": (
+                    f"/api/library/covers/{r_id}"
+                    if (r.get("cover_path") if is_dict else r.cover_path)
+                    else None
+                ),
+                "downloadUrl": f"local_{r_id}",
+                "is_folder": False,
+                "series": r.get("series") if is_dict else r.series,
+                "seriesIndex": r.get("series_index") if is_dict else r.series_index,
+                "cleanTitle": r.get("title") if is_dict else r.title,
+                "rating_average": (
+                    r.get("rating_average") if is_dict else r.rating_average
+                )
+                or 0,
+            }
+        )
     return {"results": results}
 
 
@@ -519,7 +579,9 @@ async def handle_rate_book(data: Dict[str, Any], user_data: Dict[str, Any]):
     try:
         book_id = int(str(book_id_raw).replace("local_", ""))
     except ValueError:
-        raise HTTPException(status_code=400, detail="ID de libro inválido para votación")
+        raise HTTPException(
+            status_code=400, detail="ID de libro inválido para votación"
+        )
 
     return RatingService.rate_book(user_id, book_id, rating)
 
@@ -543,7 +605,10 @@ async def handle_save_badge_config(data: Dict[str, Any], user_data: Dict[str, An
     """Guarda la configuración global de los badges (solo Admin)."""
     user_role = user_data.get("role", "free")
     if user_role != "admin":
-        raise HTTPException(status_code=403, detail="Solo administradores pueden guardar configuración global")
+        raise HTTPException(
+            status_code=403,
+            detail="Solo administradores pueden guardar configuración global",
+        )
 
     set_setting("badge_pos_top", str(data.get("badgeTop", 8)))
     set_setting("badge_pos_right", str(data.get("badgeRight", 8)))
@@ -566,43 +631,82 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
         raise HTTPException(status_code=400, detail="Missing bookId")
 
     from api.main import bot
+
     target_chat_id = user_id
     message_thread_id = None
     is_admin = user_id in config.ADMIN_USERS
 
     if is_admin:
         if target == "channel":
-            target_chat_id = target_id_override or get_setting("mini_app_channel_id", "@ZeePubs")
+            target_chat_id = target_id_override or get_setting(
+                "mini_app_channel_id", "@ZeePubs"
+            )
         elif target == "group":
-            target_chat_id = target_id_override or get_setting("mini_app_group_id", "@ZeePubBotTest")
+            target_chat_id = target_id_override or get_setting(
+                "mini_app_group_id", "@ZeePubBotTest"
+            )
             message_thread_id = thread_id_override
 
     metadata_override = None
     actual_download_url = book_id  # Default to book_id for remote books
 
-    logger.debug(f"handle_download called with book_id: {book_id}, type: {type(book_id)}")
+    logger.debug(
+        f"handle_download called with book_id: {book_id}, type: {type(book_id)}"
+    )
 
-    if book_id.startswith("local_") or book_id.isdigit():
+    # Check if it's a local book (either by ID or by file path)
+    is_local_id = book_id.startswith("local_") or book_id.isdigit()
+    is_local_path = book_id.startswith("/library/") or book_id.startswith("library/")
+
+    if is_local_id:
         try:
             local_id = int(str(book_id).replace("local_", ""))
             local_book_obj = await LibraryService.get_book_by_id(local_id)
             if local_book_obj:
                 # Get the actual file path
-                actual_download_url = local_book_obj.get("downloadUrl") or local_book_obj.get("filepath")
+                actual_download_url = local_book_obj.get(
+                    "downloadUrl"
+                ) or local_book_obj.get("filepath")
 
                 # We need the full dict with hashes
                 from services.library_service import LibraryService
+
                 async with LibraryService._session_scope() as session:
                     from models.library_models import LocalBook
+
                     lb = session.query(LocalBook).get(local_id)
                     if lb:
                         metadata_override = lb.to_dict()
                         # Ensure the file path is set
                         if not actual_download_url:
                             actual_download_url = lb.filepath
-                        logger.debug(f"Local book metadata: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}")
+                        logger.debug(
+                            f"Local book metadata: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}"
+                        )
         except Exception as e:
             logger.error(f"Error fetching metadata for handle_download: {e}")
+    elif is_local_path:
+        # book_id is already a file path, need to find it in the library
+        try:
+            from services.library_service import LibraryService
+
+            async with LibraryService._session_scope() as session:
+                from models.library_models import LocalBook
+
+                # Search by filepath
+                lb = session.query(LocalBook).filter_by(filepath=book_id).first()
+                if lb:
+                    metadata_override = lb.to_dict()
+                    actual_download_url = lb.filepath
+                    logger.debug(
+                        f"Local book found by path: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}"
+                    )
+                else:
+                    logger.warning(
+                        f"Local file path provided but not found in library: {book_id}"
+                    )
+        except Exception as e:
+            logger.error(f"Error fetching metadata by filepath: {e}")
 
     success = await enviar_libro_directo(
         bot=bot.app.bot,
@@ -611,7 +715,7 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
         download_url=actual_download_url,
         target_chat_id=target_chat_id,
         message_thread_id=message_thread_id,
-        metadata_override=metadata_override
+        metadata_override=metadata_override,
     )
     return {"success": success}
 
@@ -628,21 +732,33 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
             target_role = user_role
 
         final_settings = {
-            "primaryColor": "#3b82f6", "uiScale": 1.0, "avatarScale": 1.0,
-            "isDarkMode": True, "showSearchCard": True, "showSearchBar": False,
-            "showDonateCard": True, "showHelpCard": True, "showSettingsInMenu": False,
-            "dataSaver": False, "badgePosTop": 8, "badgePosRight": 8,
-            "showPosTool": False, "badgePosMode": "relative"
+            "primaryColor": "#3b82f6",
+            "uiScale": 1.0,
+            "avatarScale": 1.0,
+            "isDarkMode": True,
+            "showSearchCard": True,
+            "showSearchBar": False,
+            "showDonateCard": True,
+            "showHelpCard": True,
+            "showSettingsInMenu": False,
+            "dataSaver": False,
+            "badgePosTop": 8,
+            "badgePosRight": 8,
+            "showPosTool": False,
+            "badgePosMode": "relative",
         }
 
         # Load global and badge config
         try:
-            final_settings.update({
-                "badgePosTop": int(get_setting("badge_pos_top", "8")),
-                "badgePosRight": int(get_setting("badge_pos_right", "8")),
-                "showPosTool": get_setting("show_pos_tool", "false").lower() == "true",
-                "badgePosMode": get_setting("badge_pos_mode", "relative")
-            })
+            final_settings.update(
+                {
+                    "badgePosTop": int(get_setting("badge_pos_top", "8")),
+                    "badgePosRight": int(get_setting("badge_pos_right", "8")),
+                    "showPosTool": get_setting("show_pos_tool", "false").lower()
+                    == "true",
+                    "badgePosMode": get_setting("badge_pos_mode", "relative"),
+                }
+            )
             global_raw = get_setting("ui_defaults_global", "{}")
             final_settings.update(json.loads(global_raw))
         except Exception:
@@ -687,18 +803,31 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
             return {"success": True, "message": "Configuración personal guardada"}
         else:
             if user_role != "admin":
-                raise HTTPException(status_code=403, detail="Solo administradores pueden cambiar la configuración global")
+                raise HTTPException(
+                    status_code=403,
+                    detail="Solo administradores pueden cambiar la configuración global",
+                )
 
             settings_obj["ui_version"] = int(time.time())
             set_setting(f"ui_defaults_{target_role}", json.dumps(settings_obj))
 
             if data.get("forceOverwrite"):
-                role_to_level = {"admin": 1, "staff": 2, "premium": 3, "vip": 4, "white": 5, "free": 6}
+                role_to_level = {
+                    "admin": 1,
+                    "staff": 2,
+                    "premium": 3,
+                    "vip": 4,
+                    "white": 5,
+                    "free": 6,
+                }
                 l_id = role_to_level.get(target_role)
                 if l_id:
                     await user_repo.reset_level_users_settings(l_id)
 
-            return {"success": True, "message": f"Configuración para {target_role} guardada (v{settings_obj['ui_version']})"}
+            return {
+                "success": True,
+                "message": f"Configuración para {target_role} guardada (v{settings_obj['ui_version']})",
+            }
 
 
 async def handle_create_stars_invoice(data: Dict[str, Any], user_data: Dict[str, Any]):
@@ -706,6 +835,7 @@ async def handle_create_stars_invoice(data: Dict[str, Any], user_data: Dict[str,
     tier = data.get("tier", "premium")
     amount = data.get("amount", 100)
     from api.main import bot
+
     stars_plugin = bot.plugin_manager.get_plugin("stars_payment")
     cms_plugin = bot.plugin_manager.get_plugin("custom_messages")
     if not stars_plugin:
@@ -714,7 +844,9 @@ async def handle_create_stars_invoice(data: Dict[str, Any], user_data: Dict[str,
     title = f"Nivel {tier.capitalize()}"
     desc = f"Suscripción al nivel {tier.capitalize()}"
     if cms_plugin:
-        desc = await cms_plugin.get_text("star_payment_invoice_desc", Nivel=tier.capitalize())
+        desc = await cms_plugin.get_text(
+            "star_payment_invoice_desc", Nivel=tier.capitalize()
+        )
 
     invoice_link = await stars_plugin.create_stars_invoice_link(
         title=title, description=desc, payload=f"upgrade_{tier}", amount=amount
@@ -751,7 +883,11 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
             feed = await get_cached_feed(book_id)
             if feed:
                 entries = getattr(feed, "entries", [])
-                entry = entries[0] if entries else (feed.feed if getattr(feed, "feed", None) else None)
+                entry = (
+                    entries[0]
+                    if entries
+                    else (feed.feed if getattr(feed, "feed", None) else None)
+                )
                 if entry:
                     title_for_query = entry.get("title")
                     meta = parse_metadata_from_title(title_for_query)
@@ -760,13 +896,20 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
                     # but we can simulate one if we want consistency across scanners.
                     # For now, title-based fallback in repository will handle it.
         except Exception as e:
-            logger.error(f"[handle_get_download_count] Error resolving OPDS title for {book_id}: {e}")
+            logger.error(
+                f"[handle_get_download_count] Error resolving OPDS title for {book_id}: {e}"
+            )
 
     if not title_for_query and not book_hash_for_query:
         return {"count": 0}
 
     from repositories.metrics_repository import metrics_repo
-    count = await metrics_repo.get_total_downloads(book_hash_for_query) if book_hash_for_query else 0
+
+    count = (
+        await metrics_repo.get_total_downloads(book_hash_for_query)
+        if book_hash_for_query
+        else 0
+    )
     return {"count": count}
 
 
