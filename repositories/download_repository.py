@@ -196,9 +196,14 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             cursor = await conn.execute(
                 """
                 SELECT 1 FROM download_history 
-                WHERE user_id = ? AND (title = ? OR clean_title = ? OR title = ?)
+                WHERE user_id = ? AND (
+                    title = ? OR 
+                    clean_title = ? OR 
+                    title = ? OR 
+                    clean_title = ?
+                )
                 """,
-                (user_id, title, search_clean, search_clean)
+                (user_id, title, search_clean, search_clean, title)
             )
             return await cursor.fetchone() is not None
 
@@ -224,9 +229,9 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             cursor = await conn.execute(
                 """
                 SELECT COUNT(*) FROM download_history 
-                WHERE title = ? OR clean_title = ? OR title = ?
+                WHERE title = ? OR clean_title = ? OR title = ? OR clean_title = ?
                 """,
-                (title, search_clean, search_clean)
+                (title, search_clean, search_clean, title)
             )
             row = await cursor.fetchone()
             return row[0] if row else 0

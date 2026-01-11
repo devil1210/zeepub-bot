@@ -379,11 +379,17 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         "romaji": extracted_meta.get("romaji", ""),
         "cleanTitle": extracted_meta.get("clean_title") or entry.get("title", ""),
         "tags": extracted_meta.get("tags", []),
+        "content_hash": entry.get("content_hash") or entry.get("hash"),
         "is_downloaded": await download_repo.has_user_downloaded(
-            user_id, entry.get("title", ""), extracted_meta.get("clean_title"), entry.get("series_hash") or entry.get("content_hash")
+            user_id, 
+            entry.get("title", ""), 
+            extracted_meta.get("clean_title"), 
+            entry.get("content_hash") or entry.get("hash")
         ),
         "download_count": await download_repo.get_total_download_count(
-            entry.get("title", ""), extracted_meta.get("clean_title"), entry.get("series_hash") or entry.get("content_hash")
+            entry.get("title", ""), 
+            extracted_meta.get("clean_title"), 
+            entry.get("content_hash") or entry.get("hash")
         )
     }
     return result

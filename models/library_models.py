@@ -138,6 +138,15 @@ class LocalBook(Base):
             "pageCount": self.page_count,
 
             "readingTime": self.reading_time,
+            
+            # Key mappings for telegram_service / search consistency
+            "titulo": self.title,
+            "autor": self.author,
+            "categoria": self.book_type,
+            "book_type": self.book_type,
+            "clean_title": self.series_clean,
+            "series_hash": self.series_hash,
+            "titulo_serie": self.series,
             "rating_average": self.rating_average,
             "rating_count": self.rating_count,
             "votes": self.rating_count,  # Alias

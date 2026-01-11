@@ -164,24 +164,10 @@ class LibraryService:
                 return None
             d = book.to_dict()
 
-            # Get download count from zeepub.db using sqlite3
-            import sqlite3
-            from config.config_settings import config
-
-            download_count = 0
-            try:
-                conn = sqlite3.connect(config.URL_CACHE_DB_PATH)
-                cursor = conn.execute(
-                    "SELECT COUNT(*) FROM download_history WHERE title = ?",
-                    (book.title,),
-                )
-                row = cursor.fetchone()
-                download_count = row[0] if row else 0
-                conn.close()
-            except Exception as e:
-                logger.error(f"Error fetching download count for book {book.id}: {e}")
-
-            d["download_count"] = download_count
+            from repositories.download_repository import download_repo
+            d["download_count"] = await download_repo.get_total_download_count(
+                book.title, book_hash=book.content_hash
+            )
             return d
         except Exception as e:
             logger.error(f"[LibraryService.get_book_by_id] Error: {e}")
