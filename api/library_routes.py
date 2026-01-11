@@ -61,16 +61,18 @@ async def get_book_detail(
 async def get_catalog(
     source_id: Optional[int] = Query(None),
     folder: Optional[str] = Query(None),
+    series_hash: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
     use_random_covers: bool = Query(True),
     sort_by: str = Query("alpha", pattern="^(alpha|alpha_desc|date_added|date_added_desc|date_updated|date_updated_desc|downloads_desc|rating_desc)$"),
     user_data: dict = Depends(require_mini_app_access),
 ):
-    """Navega por la librería local simulando carpetas."""
+    """Navega por la librería local simulando carpetas o agrupando por serie."""
     return await LibraryService.get_catalog(
         source_id=source_id,
         folder=folder,
+        series_hash=series_hash,
         page=page,
         page_size=page_size,
         sort_by=sort_by,

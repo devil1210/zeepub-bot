@@ -69,20 +69,28 @@ export class OpdsClient {
         let apiPath = "/api/library/catalog"
         let currentSourceId = ""
         let currentFolder = ""
+        let currentSeriesHash = ""
         let currentPageNum = 1
 
-        if (url && url.includes("source_id=")) {
-            // Re-use source_id and folder from simulated "URL"
+        if (url && (url.includes("source_id=") || url.includes("series_hash="))) {
+            // Re-use source_id, folder and series_hash from simulated "URL"
             const params = new URLSearchParams(url.includes("?") ? url.split("?")[1] : url)
             currentSourceId = params.get("source_id") || ""
             currentFolder = params.get("folder") || ""
+            currentSeriesHash = params.get("series_hash") || ""
             currentPageNum = parseInt(params.get("page") || "1")
 
             // Construct apiPath with parameters
-            if (currentSourceId || currentFolder || currentPageNum > 1) {
-                const useRandomCovers = localStorage.getItem("useRandomFolderCovers") !== "false"
-                apiPath += `?source_id=${currentSourceId}&folder=${encodeURIComponent(currentFolder)}&page=${currentPageNum}&use_random_covers=${useRandomCovers}&sort_by=${sortBy}`
-            }
+            const useRandomCovers = localStorage.getItem("useRandomFolderCovers") !== "false"
+            const queryParams = new URLSearchParams()
+            if (currentSourceId) queryParams.append("source_id", currentSourceId)
+            if (currentFolder) queryParams.append("folder", currentFolder)
+            if (currentSeriesHash) queryParams.append("series_hash", currentSeriesHash)
+            if (currentPageNum > 1) queryParams.append("page", String(currentPageNum))
+            queryParams.append("use_random_covers", String(useRandomCovers))
+            queryParams.append("sort_by", sortBy)
+
+            apiPath += `?${queryParams.toString()}`
         }
 
         try {
@@ -101,7 +109,7 @@ export class OpdsClient {
 
             // Map local items to OPDSFeed format
             const feed: OPDSFeed = {
-                title: currentFolder || sourceName || "Bibliotecas Disponibles",
+                title: currentSeriesHash ? (items[0]?.series_clean || items[0]?.series || "Volúmenes") : (currentFolder || sourceName || "Bibliotecas Disponibles"),
                 currentPage: currentPage,
                 totalItems: totalItems,
                 totalPages: totalPages,
@@ -141,6 +149,7 @@ export class OpdsClient {
                         numBooks: item.numBooks || item.book_count || 0,
                         series: item.series,
                         series_clean: item.series_clean,
+                        series_hash: item.series_hash,
                         seriesIndex: seriesIndex,
                         tags: item.tags || [],
                         categories: item.tags || [],
@@ -170,7 +179,9 @@ export class OpdsClient {
                             {
                                 rel: item.is_folder ? "subsection" : "http://opds-spec.org/acquisition",
                                 href: item.is_folder
-                                    ? `local?source_id=${item.source_id}&folder=${encodeURIComponent(item.folder_path || "")}`
+                                    ? (item.series_hash
+                                        ? `local?source_id=${item.source_id}&series_hash=${item.series_hash}`
+                                        : `local?source_id=${item.source_id}&folder=${encodeURIComponent(item.folder_path || "")}`)
                                     : item.downloadUrl,
                                 type: item.is_folder ? "application/atom+xml;profile=opds-catalog;kind=navigation" : "application/epub+zip"
                             }

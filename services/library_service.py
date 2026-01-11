@@ -19,7 +19,9 @@ def _get_download_counts_from_zeepub_db() -> Dict[str, int]:
     try:
         conn = sqlite3.connect(config.URL_CACHE_DB_PATH)
         # Fetch both title and clean_title
-        cursor = conn.execute("SELECT title, clean_title, COUNT(*) as c FROM download_history GROUP BY title, clean_title")
+        cursor = conn.execute(
+            "SELECT title, clean_title, COUNT(*) as c FROM download_history GROUP BY title, clean_title"
+        )
         for row in cursor.fetchall():
             dirty_title, clean_title_db, count = row
             # If clean_title is already in DB use it, else clean the dirty title
@@ -38,7 +40,7 @@ class LibraryService:
         page: int = 1,
         items_per_page: int = 10,
         search_type: str = "all",
-        source_id: Optional[int] = None
+        source_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Realiza una búsqueda de libros utilizando FTS5 si está disponible,
@@ -68,20 +70,34 @@ class LibraryService:
                 elif search_type == "author":
                     match_expr = "author MATCH :q"
                 elif search_type in ("illustrator", "translator", "genres"):
-                    field_map = {"illustrator": "illustrator", "translator": "translator", "genres": "tags"}
+                    field_map = {
+                        "illustrator": "illustrator",
+                        "translator": "translator",
+                        "genres": "tags",
+                    }
                     match_expr = f"{field_map[search_type]} MATCH :q"
                 else:
                     match_expr = "books_fts MATCH :q"
 
-                sql = text(f"SELECT rowid FROM books_fts WHERE {match_expr} ORDER BY rank")
+                sql = text(
+                    f"SELECT rowid FROM books_fts WHERE {match_expr} ORDER BY rank"
+                )
                 params = {"q": f"{clean_q}*"}
 
                 matching_ids = session.execute(sql, params).scalars().all()
 
                 if not matching_ids:
-                    return {"results": [], "currentPage": page, "totalPages": 0, "totalItems": 0, "items": []}
+                    return {
+                        "results": [],
+                        "currentPage": page,
+                        "totalPages": 0,
+                        "totalItems": 0,
+                        "items": [],
+                    }
 
-                books_query = session.query(LocalBook).filter(LocalBook.id.in_(matching_ids))
+                books_query = session.query(LocalBook).filter(
+                    LocalBook.id.in_(matching_ids)
+                )
                 if source_id:
                     books_query = books_query.filter(LocalBook.source_id == source_id)
 
@@ -104,23 +120,34 @@ class LibraryService:
                 d["is_folder"] = False
                 d["download_count"] = dl_counts.get(b.title, 0)
                 # Cleaning for legacy compatibility
-                d["cleanTitle"] = b.series_clean or re.sub(r"\s*\[.*?\]\s*", " ", b.series or b.title).strip()
+                d["cleanTitle"] = (
+                    b.series_clean
+                    or re.sub(r"\s*\[.*?\]\s*", " ", b.series or b.title).strip()
+                )
                 results.append(d)
 
             total_pages = (total_items + items_per_page - 1) // items_per_page
 
             return {
-                "results": results,      # Mini App format
-                "items": results,        # Library API format
+                "results": results,  # Mini App format
+                "items": results,  # Library API format
                 "currentPage": page,
-                "page": page,            # Library API alias
+                "page": page,  # Library API alias
                 "totalPages": total_pages,
                 "totalItems": total_items,
-                "total": total_items     # Library API alias
+                "total": total_items,  # Library API alias
             }
         except Exception as e:
             logger.error(f"[LibraryService.search_books] Error: {e}")
-            return {"results": [], "items": [], "currentPage": page, "page": page, "totalPages": 0, "totalItems": 0, "total": 0}
+            return {
+                "results": [],
+                "items": [],
+                "currentPage": page,
+                "page": page,
+                "totalPages": 0,
+                "totalItems": 0,
+                "total": 0,
+            }
         finally:
             session.close()
 
@@ -137,10 +164,14 @@ class LibraryService:
             # Get download count from zeepub.db using sqlite3
             import sqlite3
             from config.config_settings import config
+
             download_count = 0
             try:
                 conn = sqlite3.connect(config.URL_CACHE_DB_PATH)
-                cursor = conn.execute("SELECT COUNT(*) FROM download_history WHERE title = ?", (book.title,))
+                cursor = conn.execute(
+                    "SELECT COUNT(*) FROM download_history WHERE title = ?",
+                    (book.title,),
+                )
                 row = cursor.fetchone()
                 download_count = row[0] if row else 0
                 conn.close()
@@ -159,121 +190,183 @@ class LibraryService:
     async def get_catalog(
         source_id: Optional[int] = None,
         folder: Optional[str] = None,
+        series_hash: Optional[str] = None,
         page: int = 1,
         page_size: int = 10,
         sort_by: str = "alpha",
-        use_random_covers: bool = True
+        use_random_covers: bool = True,
     ) -> Dict[str, Any]:
         """
-        Lógica para navegar por el catálogo local simulando carpetas.
+        Navega por el catálogo agrupando por series_hash o mostrando volúmenes.
         """
         session = get_session()
         try:
-            dl_counts = _get_download_counts_from_zeepub_db()
-
+            # 1. Listar Fuentes (Raíz)
             if not source_id:
                 sources = session.query(LibrarySource).all()
                 items = []
                 for s in sources:
-                    random_book = session.query(LocalBook).filter_by(source_id=s.id).order_by(func.random() if use_random_covers else LocalBook.id).first()
-                    items.append({
-                        "id": f"source_{s.id}",
-                        "title": s.name,
-                        "is_folder": True,
-                        "folder_path": "",
-                        "source_id": s.id,
-                        "cover": random_book.cover_path if random_book else None,
-                        "numBooks": session.query(LocalBook.series).filter(LocalBook.source_id == s.id, LocalBook.series != None).distinct().count(),
-                    })
+                    random_book = (
+                        session.query(LocalBook)
+                        .filter_by(source_id=s.id)
+                        .order_by(func.random() if use_random_covers else LocalBook.id)
+                        .first()
+                    )
+                    items.append(
+                        {
+                            "id": f"source_{s.id}",
+                            "title": s.name,
+                            "is_folder": True,
+                            "folder_path": "",
+                            "source_id": s.id,
+                            "cover": random_book.cover_path if random_book else None,
+                            "numBooks": session.query(LocalBook.series_hash)
+                            .filter(LocalBook.source_id == s.id)
+                            .distinct()
+                            .count(),
+                        }
+                    )
                 return {"items": items, "total": len(items), "page": 1, "totalPages": 1}
 
             source = session.query(LibrarySource).filter_by(id=source_id).first()
             if not source:
                 return {"items": [], "total": 0, "page": page, "totalPages": 0}
 
-            books = session.query(LocalBook).filter_by(source_id=source_id).all()
-            books_in_folder = []
-            folders_map = {}  # subfolder -> {rep, all_series}
+            # 2. Listar Volúmenes de una Serie (Drill-down)
+            if series_hash:
+                books_query = session.query(LocalBook).filter_by(
+                    source_id=source_id, series_hash=series_hash
+                )
+                total_items = books_query.count()
 
-            base_path = source.path.rstrip("/")
-            current_lookup = os.path.join(base_path, folder.strip("/")) if folder else base_path
+                # Sorting para volúmenes
+                if sort_by == "alpha":
+                    books_query = books_query.order_by(LocalBook.title.asc())
+                elif sort_by == "alpha_desc":
+                    books_query = books_query.order_by(LocalBook.title.desc())
+                elif "date" in sort_by:
+                    order = (
+                        LocalBook.file_created_at.desc()
+                        if "desc" in sort_by
+                        else LocalBook.file_created_at.asc()
+                    )
+                    books_query = books_query.order_by(order)
 
-            for b in books:
-                rel_path = os.path.relpath(os.path.dirname(b.filepath), current_lookup)
-                if rel_path == ".":
+                books = (
+                    books_query.offset((page - 1) * page_size).limit(page_size).all()
+                )
+
+                from repositories.download_repository import download_repo
+
+                results = []
+                for b in books:
                     d = b.to_dict()
-                    d["download_count"] = dl_counts.get(b.title, 0)
-                    books_in_folder.append(d)
-                elif not rel_path.startswith(".."):
-                    sub = rel_path.split(os.sep)[0]
-                    if sub not in folders_map:
-                        folders_map[sub] = {"rep": b, "all_series": {b.series} if b.series else set()}
-                    else:
-                        if b.series:
-                            folders_map[sub]["all_series"].add(b.series)
+                    d["is_folder"] = False
+                    d["download_count"] = await download_repo.get_total_download_count(
+                        b.title, book_hash=b.content_hash
+                    )
+                    results.append(d)
 
-            folders_list = []
-            for f_name, meta in folders_map.items():
-                rep = meta["rep"]
-                display_title = f_name
-                if len(meta["all_series"]) == 1:
-                    s_name = list(meta["all_series"])[0]
-                    if s_name:
-                        display_title = rep.series_clean or s_name
+                return {
+                    "items": results,
+                    "total": total_items,
+                    "page": page,
+                    "totalPages": (total_items + page_size - 1) // page_size,
+                    "source_name": source.name,
+                }
 
-                sub_path = os.path.join(base_path, folder, f_name) if folder else os.path.join(base_path, f_name)
-                sub_query = session.query(LocalBook).filter(LocalBook.source_id == source_id, LocalBook.filepath.like(f"{sub_path}{os.sep}%"))
-                rnd_book = sub_query.order_by(func.random() if use_random_covers else LocalBook.id).first()
+            # 3. Listar Series Agrupadas (Vista por defecto del source)
+            # Agrupar por series_hash y obtener métricas
+            group_query = (
+                session.query(
+                    LocalBook.series_hash,
+                    func.min(LocalBook.id).label("rep_id"),
+                    func.count(LocalBook.id).label("num_volumenes"),
+                    func.avg(LocalBook.rating_average).label("avg_rating"),
+                    func.sum(LocalBook.rating_count).label("total_votes"),
+                )
+                .filter(LocalBook.source_id == source_id)
+                .group_by(LocalBook.series_hash)
+            )
 
-                folders_list.append({
-                    "id": f"dir_{source_id}_{f_name}",
-                    "title": display_title,
-                    "is_folder": True,
-                    "folder_path": os.path.join(folder, f_name) if folder else f_name,
-                    "source_id": source_id,
-                    "cover": rnd_book.cover_path if rnd_book else rep.cover_path,
-                    "author": rep.author,
-                    "numBooks": sub_query.count(),
-                    "series": rep.series,
-                    "series_clean": rep.series_clean,
-                    "tags": rep.tags,
-                    "demographics": rep.demographics,
-                    "book_type": rep.book_type,
-                    "created_at": rnd_book.file_created_at.isoformat() if rnd_book and rnd_book.file_created_at else None,
-                    "modified_at": rnd_book.file_modified_at.isoformat() if rnd_book and rnd_book.file_modified_at else None,
-                })
+            all_series_meta = group_query.all()
 
-            # Sorting
+            # Obtener detalles de los representantes de cada serie
+            items = []
+            from repositories.download_repository import download_repo
+
+            for s_hash, rep_id, num_vols, rating, votes in all_series_meta:
+                rep = session.query(LocalBook).get(rep_id)
+                if not rep:
+                    continue
+
+                # Sumar descargas de toda la serie
+                # Nota: Esto puede ser lento si hay miles de libros, pero para grupos de series es manejable
+                # Mejoraremos esto con una query directa a download_history por series_hash en el futuro
+                vols = (
+                    session.query(LocalBook.content_hash, LocalBook.title)
+                    .filter_by(series_hash=s_hash)
+                    .all()
+                )
+                total_downloads = 0
+                for v_hash, v_title in vols:
+                    total_downloads += await download_repo.get_total_download_count(
+                        v_title, book_hash=v_hash
+                    )
+
+                items.append(
+                    {
+                        "id": f"series_{s_hash}",
+                        "title": rep.series_clean or rep.series or rep.title,
+                        "is_folder": True,
+                        "series_hash": s_hash,
+                        "source_id": source_id,
+                        "cover": rep.cover_path,
+                        "author": rep.author,
+                        "numBooks": num_vols,
+                        "series": rep.series,
+                        "series_clean": rep.series_clean,
+                        "tags": rep.tags,
+                        "demographics": rep.demographics,
+                        "book_type": rep.book_type,
+                        "rating_average": round(float(rating or 0), 1),
+                        "rating_count": int(votes or 0),
+                        "download_count": total_downloads,
+                        "created_at": (
+                            rep.file_created_at.isoformat()
+                            if rep.file_created_at
+                            else None
+                        ),
+                        "modified_at": (
+                            rep.file_modified_at.isoformat()
+                            if rep.file_modified_at
+                            else None
+                        ),
+                    }
+                )
+
+            # Sorting para series
             if sort_by == "alpha":
-                folders_list.sort(key=lambda x: x["title"].lower())
-                books_in_folder.sort(key=lambda x: x["title"].lower())
+                items.sort(key=lambda x: x["title"].lower())
             elif sort_by == "alpha_desc":
-                folders_list.sort(key=lambda x: x["title"].lower(), reverse=True)
-                books_in_folder.sort(key=lambda x: x["title"].lower(), reverse=True)
-            elif "date_added" in sort_by:
-                rev = "desc" not in sort_by
-                folders_list.sort(key=lambda x: x.get("created_at") or "", reverse=rev)
-                books_in_folder.sort(key=lambda x: x.get("file_created_at") or "", reverse=rev)
-            elif "date_updated" in sort_by:
-                rev = "desc" not in sort_by
-                folders_list.sort(key=lambda x: x.get("modified_at") or "", reverse=rev)
-                books_in_folder.sort(key=lambda x: x.get("file_modified_at") or "", reverse=rev)
-            elif sort_by == "downloads_desc":
-                from models.download_models import DownloadHistory
-                dl_counts = {r.title: r.c for r in session.query(DownloadHistory.title, func.count(DownloadHistory.id).label("c")).group_by(DownloadHistory.title).all()}
-                folders_list.sort(key=lambda x: dl_counts.get(x["title"], 0), reverse=True)
-                books_in_folder.sort(key=lambda x: dl_counts.get(x["title"], 0), reverse=True)
+                items.sort(key=lambda x: x["title"].lower(), reverse=True)
+            elif "downloads" in sort_by:
+                items.sort(key=lambda x: x["download_count"], reverse=True)
+            elif "rating" in sort_by:
+                items.sort(key=lambda x: x["rating_average"], reverse=True)
+            elif "date" in sort_by:
+                rev = "desc" in sort_by
+                items.sort(key=lambda x: x.get("created_at") or "", reverse=rev)
 
-            all_items = folders_list + books_in_folder
             start = (page - 1) * page_size
             end = start + page_size
 
             return {
-                "items": all_items[start:end],
-                "total": len(all_items),
+                "items": items[start:end],
+                "total": len(items),
                 "page": page,
-                "totalPages": (len(all_items) + page_size - 1) // page_size,
-                "source_name": source.name
+                "totalPages": (len(items) + page_size - 1) // page_size,
+                "source_name": source.name,
             }
         finally:
             session.close()
