@@ -654,59 +654,38 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
         f"handle_download called with book_id: {book_id}, type: {type(book_id)}"
     )
 
-    # Check if it's a local book (either by ID or by file path)
-    is_local_id = book_id.startswith("local_") or book_id.isdigit()
-    is_local_path = book_id.startswith("/library/") or book_id.startswith("library/")
-
-    if is_local_id:
-        try:
-            local_id = int(str(book_id).replace("local_", ""))
-            local_book_obj = await LibraryService.get_book_by_id(local_id)
-            if local_book_obj:
-                # Get the actual file path
-                actual_download_url = local_book_obj.get(
-                    "downloadUrl"
-                ) or local_book_obj.get("filepath")
-
-                # We need the full dict with hashes
-                from services.library_service import LibraryService
-
-                async with LibraryService._session_scope() as session:
-                    from models.library_models import LocalBook
-
-                    lb = session.query(LocalBook).get(local_id)
-                    if lb:
-                        metadata_override = lb.to_dict()
-                        # Ensure the file path is set
-                        if not actual_download_url:
-                            actual_download_url = lb.filepath
-                        logger.debug(
-                            f"Local book metadata: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}"
-                        )
-        except Exception as e:
-            logger.error(f"Error fetching metadata for handle_download: {e}")
-    elif is_local_path:
-        # book_id is already a file path, need to find it in the library
+    # Try to find book by content_hash first (most reliable)
+    if book_id and not book_id.startswith("http"):
         try:
             from services.library_service import LibraryService
 
             async with LibraryService._session_scope() as session:
                 from models.library_models import LocalBook
 
-                # Search by filepath
-                lb = session.query(LocalBook).filter_by(filepath=book_id).first()
+                # Try by content_hash first
+                lb = session.query(LocalBook).filter_by(content_hash=book_id).first()
+
+                # Fallback: try by ID if it's numeric
+                if not lb and (book_id.startswith("local_") or book_id.isdigit()):
+                    local_id = int(str(book_id).replace("local_", ""))
+                    lb = session.query(LocalBook).get(local_id)
+
+                # Fallback: try by filepath
+                if not lb and (
+                    book_id.startswith("/library/") or book_id.startswith("library/")
+                ):
+                    lb = session.query(LocalBook).filter_by(filepath=book_id).first()
+
                 if lb:
                     metadata_override = lb.to_dict()
                     actual_download_url = lb.filepath
                     logger.debug(
-                        f"Local book found by path: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}"
+                        f"Local book found: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}"
                     )
                 else:
-                    logger.warning(
-                        f"Local file path provided but not found in library: {book_id}"
-                    )
+                    logger.warning(f"Book not found in library: {book_id}")
         except Exception as e:
-            logger.error(f"Error fetching metadata by filepath: {e}")
+            logger.error(f"Error fetching metadata for handle_download: {e}")
 
     success = await enviar_libro_directo(
         bot=bot.app.bot,
