@@ -46,6 +46,7 @@ class LocalBook(Base):
     romaji_title = Column(String(512))
     english_title = Column(String(512))
     series = Column(String(255))
+    series_clean = Column(String(255))
     volume = Column(Float)  # Soporta 1, 1.5, etc
 
     # Personas
@@ -101,6 +102,7 @@ class LocalBook(Base):
             "romaji": self.romaji_title,
             "englishTitle": self.english_title,
             "series": self.series,
+            "series_clean": self.series_clean,
             "seriesIndex": self.volume,
             "tags": self.tags,
             "demographics": self.demographics,

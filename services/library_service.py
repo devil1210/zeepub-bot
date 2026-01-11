@@ -83,9 +83,7 @@ class LibraryService:
                 d["is_folder"] = False
                 d["download_count"] = dl_counts.get(b.title, 0)
                 # Cleaning for legacy compatibility
-                clean_regex = r"\s*\[(NL|NW|WN)\]\s*"
-                label = b.series or b.title
-                d["cleanTitle"] = re.sub(clean_regex, "", label, flags=re.IGNORECASE).strip()
+                d["cleanTitle"] = b.series_clean or re.sub(r"\s*\[.*?\]\s*", " ", b.series or b.title).strip()
                 results.append(d)
 
             total_pages = (total_items + items_per_page - 1) // items_per_page
@@ -185,7 +183,8 @@ class LibraryService:
                 display_title = f_name
                 if len(meta["all_series"]) == 1:
                     s_name = list(meta["all_series"])[0]
-                    if s_name: display_title = s_name
+                    if s_name:
+                        display_title = rep.series_clean or s_name
 
                 sub_path = os.path.join(base_path, folder, f_name) if folder else os.path.join(base_path, f_name)
                 sub_query = session.query(LocalBook).filter(LocalBook.source_id == source_id, LocalBook.filepath.like(f"{sub_path}{os.sep}%"))
@@ -201,6 +200,7 @@ class LibraryService:
                     "author": rep.author,
                     "numBooks": sub_query.count(),
                     "series": rep.series,
+                    "series_clean": rep.series_clean,
                     "tags": rep.tags,
                     "demographics": rep.demographics,
                     "book_type": rep.book_type,

@@ -22,6 +22,7 @@ export interface OPDSEntry {
     year?: string
     // Enhanced metadata for better display
     series?: string
+    series_clean?: string
     seriesIndex?: string
     tags?: string[]
     cleanTitle?: string

@@ -32,9 +32,9 @@ export function CatalogItem({
     const bookType = entry.bookType;
     const coverUrl = entry.cover_url || entry.cover;
 
-    // Title cleaning (remove [NL], [NW], etc.)
-    const displayTitle = (entry.englishTitle || entry.cleanTitle || entry.title || "")
-        .replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
+    // Title cleaning (use persistent series_clean if available)
+    const displayTitle = (entry.series_clean || entry.englishTitle || entry.cleanTitle || entry.title || "")
+        .replace(/\s*\[.*?\]\s*/g, " ").replace(/\s\s+/g, ' ').trim();
 
     const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
     const tags = entry.categories || entry.tags || [];
@@ -151,7 +151,7 @@ export function CatalogItem({
                                     </Button>
 
                                     {bookType && (
-                                        <div className="px-2 py-1 bg-secondary/50 border border-border text-muted-foreground text-[8px] font-black uppercase rounded-lg">
+                                        <div className="h-8 px-2.5 flex items-center bg-secondary/30 border border-border/50 text-muted-foreground/70 text-[8px] font-black uppercase rounded-xl tracking-wider">
                                             {bookType}
                                         </div>
                                     )}

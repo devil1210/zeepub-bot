@@ -5,6 +5,7 @@ from datetime import datetime
 from utils.library_db import get_session, init_library_db, COVERS_DIR
 from models.library_models import LibrarySource, LocalBook
 from utils.epub_extractor import EpubMetadataExtractor
+from utils.helpers import parse_metadata_from_title
 from sqlalchemy import select
 
 
@@ -164,6 +165,14 @@ class ScannerService:
 
             book.series = meta.get("series")
             book.volume = meta.get("volume")
+
+            # Smart Clean Series Title
+            if book.title:
+                parsed_meta = parse_metadata_from_title(book.title)
+                book.series_clean = parsed_meta.get("series_clean") or parsed_meta.get("clean_title")
+            elif book.series:
+                parsed_meta = parse_metadata_from_title(book.series)
+                book.series_clean = parsed_meta.get("series_clean") or parsed_meta.get("clean_title")
 
             # Enriched identifiers and dates
             book.isbn = meta.get("isbn")
