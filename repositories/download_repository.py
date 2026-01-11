@@ -174,16 +174,42 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             row = await cursor.fetchone()
             return row[0] if row else 0
 
-    async def has_user_downloaded(self, user_id: int, title: str) -> bool:
+    async def has_user_downloaded(self, user_id: int, title: str, clean_title: Optional[str] = None) -> bool:
         """
-        Check if a user has previously downloaded a book by title.
+        Check if a user has previously downloaded a book by title or clean_title.
         """
+        from utils.epub_extractor import clean_metadata_tags
+
+        search_clean = clean_title or clean_metadata_tags(title)
+
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
-                "SELECT 1 FROM download_history WHERE user_id = ? AND title = ?",
-                (user_id, title)
+                """
+                SELECT 1 FROM download_history 
+                WHERE user_id = ? AND (title = ? OR clean_title = ? OR title = ?)
+                """,
+                (user_id, title, search_clean, search_clean)
             )
             return await cursor.fetchone() is not None
+
+    async def get_total_download_count(self, title: str, clean_title: Optional[str] = None) -> int:
+        """
+        Get total download count for a book across all users, using both dirty and clean titles.
+        """
+        from utils.epub_extractor import clean_metadata_tags
+
+        search_clean = clean_title or clean_metadata_tags(title)
+
+        async with self.db_manager.connection() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT COUNT(*) FROM download_history 
+                WHERE title = ? OR clean_title = ? OR title = ?
+                """,
+                (title, search_clean, search_clean)
+            )
+            row = await cursor.fetchone()
+            return row[0] if row else 0
 
 
 # Global instance

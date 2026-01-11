@@ -251,7 +251,12 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         local_book = await LibraryService.get_book_by_id(clean_id)
         if local_book:
             logger.info(f"[book-detail] Found local book via LibraryService: {local_book['title']}")
-            local_book["is_downloaded"] = await download_repo.has_user_downloaded(user_id, local_book["title"])
+            local_book["is_downloaded"] = await download_repo.has_user_downloaded(
+                user_id, local_book["title"], local_book.get("cleanTitle")
+            )
+            local_book["download_count"] = await download_repo.get_total_download_count(
+                local_book["title"], local_book.get("cleanTitle")
+            )
             return local_book
 
     # 2. OPDS detail
@@ -374,7 +379,12 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         "romaji": extracted_meta.get("romaji", ""),
         "cleanTitle": extracted_meta.get("clean_title") or entry.get("title", ""),
         "tags": extracted_meta.get("tags", []),
-        "is_downloaded": await download_repo.has_user_downloaded(user_id, entry.get("title", ""))
+        "is_downloaded": await download_repo.has_user_downloaded(
+            user_id, entry.get("title", ""), extracted_meta.get("clean_title")
+        ),
+        "download_count": await download_repo.get_total_download_count(
+            entry.get("title", ""), extracted_meta.get("clean_title")
+        )
     }
     return result
 
@@ -687,20 +697,35 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
     if not book_id_raw:
         raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
 
-    try:
-        book_id = int(str(book_id_raw).replace("local_", ""))
-    except ValueError:
-        raise HTTPException(status_code=400, detail="ID de libro inválido")
+    book_id = str(book_id_raw)
+    title_for_query = None
+    clean_title_for_query = None
 
-    session = get_session()
-    try:
-        book = session.query(LocalBook).filter_by(id=book_id).first()
-        if not book:
-            return {"count": 0}
-        count = session.query(func.count(DownloadHistory.id)).filter_by(title=book.title).scalar() or 0
-        return {"count": count}
-    finally:
-        session.close()
+    if book_id.startswith("local_") or book_id.isdigit():
+        clean_id_int = int(book_id.replace("local_", ""))
+        local_book = await LibraryService.get_book_by_id(clean_id_int)
+        if local_book:
+            title_for_query = local_book["title"]
+            clean_title_for_query = local_book.get("cleanTitle")
+    else:
+        # It's a URL (OPDS)
+        try:
+            feed = await get_cached_feed(book_id)
+            if feed:
+                entries = getattr(feed, "entries", [])
+                entry = entries[0] if entries else (feed.feed if getattr(feed, "feed", None) else None)
+                if entry:
+                    title_for_query = entry.get("title")
+                    meta = parse_metadata_from_title(title_for_query)
+                    clean_title_for_query = meta.get("clean_title")
+        except Exception as e:
+            logger.error(f"[handle_get_download_count] Error resolving OPDS title for {book_id}: {e}")
+
+    if not title_for_query:
+        return {"count": 0}
+
+    count = await download_repo.get_total_download_count(title_for_query, clean_title_for_query)
+    return {"count": count}
 
 
 async def handle_rating_breakdown(data: Dict[str, Any], user_data: Dict[str, Any]):

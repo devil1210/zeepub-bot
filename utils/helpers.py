@@ -15,14 +15,14 @@ def extract_creators_by_role(entry, role_code: str) -> Optional[str]:
         role = getattr(a, "role", None)
         if role == role_code:
             name = getattr(a, "name", None)
-            if name:
+            if isinstance(name, str):
                 creators.append(name)
 
     # 2. Buscar en namespaces dc:creator o dc:contributor
     # Algunas fuentes usan dc_creator_ill, dc_creator_trl o similar si se mapean
     if hasattr(entry, "get"):
         val = entry.get(f"dc_creator_{role_code}") or entry.get(f"dc_contributor_{role_code}")
-        if val:
+        if isinstance(val, str):
             creators.append(val)
 
     if creators:

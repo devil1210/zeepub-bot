@@ -23,7 +23,7 @@ async def search_local_books(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
     source_id: Optional[int] = None,
-    search_type: str = Query("all", regex="^(all|title|author|illustrator|translator|genres)$"),
+    search_type: str = Query("all", pattern="^(all|title|author|illustrator|translator|genres)$"),
     user_data: dict = Depends(require_mini_app_access),
 ):
     """Busca libros en la base de datos local con filtros opcionales."""
@@ -48,7 +48,12 @@ async def get_book_detail(
 
     # Check if user has downloaded this book
     from repositories.download_repository import download_repo
-    book["is_downloaded"] = await download_repo.has_user_downloaded(user_data["user_id"], book["title"])
+    book["is_downloaded"] = await download_repo.has_user_downloaded(
+        user_data["user_id"], book["title"], book.get("cleanTitle")
+    )
+    book["download_count"] = await download_repo.get_total_download_count(
+        book["title"], book.get("cleanTitle")
+    )
     return book
 
 
@@ -59,7 +64,7 @@ async def get_catalog(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
     use_random_covers: bool = Query(True),
-    sort_by: str = Query("alpha", regex="^(alpha|alpha_desc|date_added|date_added_desc|date_updated|date_updated_desc|downloads_desc|rating_desc)$"),
+    sort_by: str = Query("alpha", pattern="^(alpha|alpha_desc|date_added|date_added_desc|date_updated|date_updated_desc|downloads_desc|rating_desc)$"),
     user_data: dict = Depends(require_mini_app_access),
 ):
     """Navega por la librería local simulando carpetas."""

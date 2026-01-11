@@ -81,11 +81,13 @@ def test_role_based_access_denied(mock_opds_roots, client):
 
 def test_book_detail_parsing(client, monkeypatch):
     with patch(
-        "api.miniapp_routes.get_cached_feed", new_callable=AsyncMock
+        "api.miniapp_handlers.get_cached_feed", new_callable=AsyncMock
     ) as mock_feed:
         mock_feed_obj = MagicMock()
         mock_feed_obj.entries = []
         mock_feed_obj.feed.title = "Test Book"
+        mock_feed_obj.feed.authors = []
+        mock_feed_obj.feed.content = []
         mock_feed_obj.feed.links = [
             {"rel": "self", "href": "http://opds.test/book/1"},
             {
