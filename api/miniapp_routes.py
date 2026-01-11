@@ -33,7 +33,8 @@ from utils.helpers import (
     parse_metadata_from_title,
 )
 from sqlalchemy import func
-from models.library_models import LocalBook, DownloadHistory
+from models.library_models import LocalBook
+from models.download_models import DownloadHistory
 from repositories.download_repository import download_repo
 
 router = APIRouter(tags=["miniapp"])
