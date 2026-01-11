@@ -1271,7 +1271,7 @@ async def enviar_libro_directo(
                 # Generate stable hashes (only if not provided in override)
                 from utils.helpers import generate_book_hash, generate_series_hash
                 
-                book_hash = meta.get("content_hash") or generate_book_hash(
+                book_hash = meta.get("content_hash") or meta.get("hash") or generate_book_hash(
                     title=titulo_vol,
                     author=author,
                     series=series,

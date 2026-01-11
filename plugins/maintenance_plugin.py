@@ -47,6 +47,7 @@ class MaintenancePlugin(BasePlugin):
             app.add_handler(CommandHandler("latest_books", self.latest_books))
             app.add_handler(CommandHandler("clear_history", self.clear_history))
             app.add_handler(CommandHandler("scan_library", self.scan_library, block=False))
+            app.add_handler(CommandHandler("reset_stats", self.reset_stats))
 
             # Publisher/Admin commands
             app.add_handler(CommandHandler("export_db", self.export_db))
@@ -697,3 +698,52 @@ class MaintenancePlugin(BasePlugin):
         except Exception as e:
             logger.error(f"Error en set_export_time: {e}")
             await update.message.reply_text("❌ Error al guardar la configuración.")
+    async def reset_stats(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Reinicia globalmente los contadores de descarga y valoraciones (solo admins)."""
+        uid = update.effective_user.id
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            return
+
+        if not context.args or context.args[0].lower() != "confirm":
+            await update.message.reply_text(
+                "⚠️ <b>¡ATENCIÓN!</b> Esto borrará TODO el historial de descargas y valoraciones.\n"
+                "Para confirmar, usa: <code>/reset_stats confirm</code>",
+                parse_mode="HTML"
+            )
+            return
+
+        try:
+            from core.db_manager import db_manager
+            from utils.library_db import get_session
+            from models.library_models import LocalBook
+
+            # 1. Clear Download History (zeepub.db)
+            async with db_manager.connection() as conn:
+                await conn.execute("DELETE FROM download_history")
+                await conn.commit()
+
+            # 2. Clear Ratings (library.db)
+            session = get_session()
+            try:
+                # Actualizar todos los libros a 0
+                session.query(LocalBook).update({
+                    "rating_average": 0,
+                    "rating_count": 0
+                })
+                # También borrar la tabla de valoraciones si existe (asumiendo BookRating model)
+                try:
+                    from models.library_models import BookRating
+                    session.query(BookRating).delete()
+                except ImportError:
+                    pass
+                
+                session.commit()
+            finally:
+                session.close()
+
+            await update.message.reply_text("✅ <b>Contadores y valoraciones reiniciados exitosamente.</b>", parse_mode="HTML")
+            logger.info(f"Admin {uid} reinició contadores y valoraciones globalmente.")
+        except Exception as e:
+            logger.error(f"Error en reset_stats: {e}", exc_info=True)
+            await update.message.reply_text(f"❌ Error al reiniciar: {str(e)}")

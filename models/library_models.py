@@ -102,6 +102,7 @@ class LocalBook(Base):
         return {
             "id": f"local_{self.id}",  # Prefijo para distinguir de Kavita IDs
             "hash": self.content_hash,
+            "content_hash": self.content_hash,
             "title": self.title,
             "author": self.author,
             "romaji": self.romaji_title,
