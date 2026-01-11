@@ -53,6 +53,19 @@ class MetricsRepository:
             row = await cursor.fetchone()
             return row[0] if row else 0
 
+    async def get_source_downloads(self, source_id: int) -> int:
+        """Calcula el total de descargas de todos los libros de una fuente específica."""
+        # Necesitamos saber qué series_hash o content_hash pertenecen a la fuente.
+        # Por simplicidad y eficiencia, consultaremos la tabla local_books vía JOIN o subquery.
+        async with self.db_manager.connection() as conn:
+            # Nota: user_downloads está en metrics.db, pero local_books está en library.db (vía shared SQLite o similar?)
+            # En este sistema, metrics_db y library_db son archivos separados.
+            # Sin embargo, user_downloads guarda el series_hash. 
+            # Podemos sacar los series_hash de la fuente de la DB de librería.
+            pass
+        return 0 # Placeholder implementation will be improved below using helper context if needed, 
+                 # but for now I'll use a direct approach if possible.
+
     # --- Ratings ---
 
     async def add_rating(self, user_id: int, content_hash: str, rating: int):

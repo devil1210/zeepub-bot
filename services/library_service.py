@@ -196,12 +196,16 @@ class LibraryService:
                 sources = session.query(LibrarySource).all()
                 items = []
                 for s in sources:
-                    random_book = (
-                        session.query(LocalBook)
-                        .filter_by(source_id=s.id)
-                        .order_by(func.random() if use_random_covers else LocalBook.id)
-                        .first()
-                    )
+                    # Get metrics for the source
+                    source_metrics = session.query(
+                        func.count(LocalBook.series_hash.distinct()).label("num_series"),
+                        func.avg(func.nullif(LocalBook.rating_average, 0.0)).label("avg_rating"),
+                        func.sum(LocalBook.rating_count).label("total_votes")
+                    ).filter(LocalBook.source_id == s.id).first()
+
+                    # Get total downloads for the source
+                    source_downloads = await metrics_repo.get_source_downloads(s.id)
+
                     items.append(
                         {
                             "id": f"source_{s.id}",
@@ -210,10 +214,10 @@ class LibraryService:
                             "folder_path": "",
                             "source_id": s.id,
                             "cover": random_book.cover_path if random_book else None,
-                            "numBooks": session.query(LocalBook.series_hash)
-                            .filter(LocalBook.source_id == s.id)
-                            .distinct()
-                            .count(),
+                            "numBooks": source_metrics.num_series or 0,
+                            "rating_average": round(float(source_metrics.avg_rating or 0), 1),
+                            "rating_count": int(source_metrics.total_votes or 0),
+                            "download_count": source_downloads,
                         }
                     )
                 return {"items": items, "total": len(items), "page": 1, "totalPages": 1}
@@ -271,7 +275,7 @@ class LibraryService:
                     LocalBook.series_hash,
                     func.min(LocalBook.id).label("rep_id"),
                     func.count(LocalBook.id).label("num_volumenes"),
-                    func.avg(LocalBook.rating_average).label("avg_rating"),
+                    func.avg(func.nullif(LocalBook.rating_average, 0.0)).label("avg_rating"),
                     func.sum(LocalBook.rating_count).label("total_votes"),
                 )
                 .filter(LocalBook.source_id == source_id)

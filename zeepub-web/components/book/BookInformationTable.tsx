@@ -46,20 +46,20 @@ export function BookInformationTable({
                 </div>
                 <div className="space-y-4 text-sm">
                     {book.series && (
-                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-2">
                             <span className="text-muted-foreground shrink-0">Serie</span>
                             <span className="font-semibold text-right">{cleanMetadataTitle(book.series)}</span>
                         </div>
                     )}
-                    <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                    <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-2">
                         <span className="text-muted-foreground shrink-0">Título</span>
                         <span className="font-bold italic text-right">{cleanMetadataTitle(book.romaji || book.cleanTitle || book.title)}</span>
                     </div>
-                    <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                    <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-2">
                         <span className="text-muted-foreground shrink-0">Volumen</span>
                         <span className="font-bold text-right">{getVolumeLabel()}</span>
                     </div>
-                    <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                    <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-2">
                         <span className="text-muted-foreground shrink-0">Autor</span>
                         <span
                             className={`font-semibold text-right transition-colors ${onSearch ? "cursor-pointer hover:text-primary active:scale-95" : ""}`}
@@ -69,7 +69,7 @@ export function BookInformationTable({
                         </span>
                     </div>
                     {book.illustrator && (
-                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-2">
                             <span className="text-muted-foreground shrink-0">Ilustrador</span>
                             <span
                                 className={`font-semibold text-right transition-colors ${onSearch ? "cursor-pointer hover:text-primary active:scale-95" : ""}`}
@@ -80,19 +80,19 @@ export function BookInformationTable({
                         </div>
                     )}
                     {book.isbn && (
-                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-2">
                             <span className="text-muted-foreground shrink-0">ISBN</span>
                             <span className="font-mono text-[11px] text-right">{book.isbn}</span>
                         </div>
                     )}
                     {book.asin && (
-                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-2">
                             <span className="text-muted-foreground shrink-0">ASIN (Amazon)</span>
                             <span className="font-mono text-[11px] text-right">{book.asin}</span>
                         </div>
                     )}
                     {book.publisher && (
-                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-2">
                             <span className="text-muted-foreground shrink-0">Grupo Traductor</span>
                             <span
                                 className={`font-bold text-primary text-right transition-opacity ${onSearch ? "cursor-pointer hover:opacity-70 active:scale-95" : ""}`}
@@ -103,7 +103,7 @@ export function BookInformationTable({
                         </div>
                     )}
                     {book.translator && (
-                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
+                        <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-2">
                             <span className="text-muted-foreground shrink-0">Traductor</span>
                             <span
                                 className={`font-semibold text-right transition-colors ${onSearch ? "cursor-pointer hover:text-primary active:scale-95" : ""}`}
@@ -114,7 +114,7 @@ export function BookInformationTable({
                         </div>
                     )}
                     {book.layoutBy && (
-                        <div className="flex justify-between items-start gap-4 last:border-0 pb-3">
+                        <div className="flex justify-between items-start gap-4 last:border-0 pb-2">
                             <span className="text-muted-foreground shrink-0">Maquetador</span>
                             <span
                                 className={`font-semibold text-right transition-colors ${onSearch ? "cursor-pointer hover:text-primary active:scale-95" : ""}`}

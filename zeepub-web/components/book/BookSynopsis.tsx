@@ -20,8 +20,12 @@ export function BookSynopsis({ book, onTagClick }: BookSynopsisProps) {
                         <ScrollText className="w-3.5 h-3.5" />
                         <h3 className="text-[10px] font-black uppercase tracking-widest">Sinopsis</h3>
                     </div>
-                    <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-medium">
-                        {book.summary}
+                    <div className="text-[13px] leading-[1.6] text-foreground/90 font-normal tracking-tight">
+                        {book.summary ? book.summary.split(/<br\s*\/?>|\n\n/).map((paragraph: string, i: number) => (
+                            <p key={i} className={i > 0 ? "mt-3" : ""}>
+                                {paragraph.trim()}
+                            </p>
+                        )) : null}
                     </div>
                 </Card>
             )}
