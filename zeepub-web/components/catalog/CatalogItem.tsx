@@ -43,6 +43,19 @@ export function CatalogItem({
         ""
     ).replace(/\s*\[.*?\]\s*/g, " ").replace(/\s\s+/g, ' ').trim();
 
+    // DEBUG: Log para ver qué campos están disponibles
+    if (!isFolder) {
+        console.log('Entry data:', {
+            title: entry.title,
+            series: entry.series,
+            series_clean: entry.series_clean,
+            romaji: entry.romaji,
+            englishTitle: entry.englishTitle,
+            cleanTitle: entry.cleanTitle,
+            displayTitle: displayTitle
+        });
+    }
+
     const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
     const tags = entry.categories || entry.tags || [];
     const demography = tags.filter((tag: string) => demographicsKeywords.some(keyword => tag.includes(keyword)));
