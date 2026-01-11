@@ -305,10 +305,13 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
 
     extracted_meta = parse_metadata_from_title(entry.get("title", ""))
     for ttag in extracted_meta.get("tags", []):
-        if ttag not in categories: categories.append(ttag)
+        if ttag not in categories:
+            categories.append(ttag)
 
-    if not series and extracted_meta.get("series"): series = extracted_meta["series"]
-    if not series_index and extracted_meta.get("volume"): series_index = extracted_meta["volume"]
+    if not series and extracted_meta.get("series"):
+        series = extracted_meta["series"]
+    if not series_index and extracted_meta.get("volume"):
+        series_index = extracted_meta["volume"]
 
     download_url = None
     cover_url = None
@@ -327,9 +330,11 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
                 file_type = l_type
                 size = link.get("contentlength") or link.get("length")
         elif "image" in rel or "cover" in rel or "thumbnail" in rel:
-            if not cover_url or "image" in rel: cover_url = href
+            if not cover_url or "image" in rel:
+                cover_url = href
         elif rel in ["up", "collection", "ancestor", "index", "breadcrumb"]:
-            if not up_url or rel == "up": up_url = href
+            if not up_url or rel == "up":
+                up_url = href
 
     if not cover_url and "content" in entry:
         for content in entry.get("content", []):
@@ -573,7 +578,8 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
 
     if sub_action == "get":
         target_role = data.get("role", "global")
-        if target_role == "auto": target_role = user_role
+        if target_role == "auto":
+            target_role = user_role
 
         final_settings = {
             "primaryColor": "#3b82f6", "uiScale": 1.0, "avatarScale": 1.0,
@@ -593,7 +599,8 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
             })
             global_raw = get_setting("ui_defaults_global", "{}")
             final_settings.update(json.loads(global_raw))
-        except Exception: pass
+        except Exception:
+            pass
 
         # Load role settings
         role_version = 0
@@ -603,7 +610,8 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
                 role_data = json.loads(role_raw)
                 role_version = role_data.get("ui_version", 0)
                 final_settings.update(role_data)
-            except Exception: pass
+            except Exception:
+                pass
 
         # Personal overrides
         if data.get("role") == "auto":
@@ -641,7 +649,8 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
             if data.get("forceOverwrite"):
                 role_to_level = {"admin": 1, "staff": 2, "premium": 3, "vip": 4, "white": 5, "free": 6}
                 l_id = role_to_level.get(target_role)
-                if l_id: await user_repo.reset_level_users_settings(l_id)
+                if l_id:
+                    await user_repo.reset_level_users_settings(l_id)
 
             return {"success": True, "message": f"Configuración para {target_role} guardada (v{settings_obj['ui_version']})"}
 
@@ -686,7 +695,8 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
     session = get_session()
     try:
         book = session.query(LocalBook).filter_by(id=book_id).first()
-        if not book: return {"count": 0}
+        if not book:
+            return {"count": 0}
         count = session.query(func.count(DownloadHistory.id)).filter_by(title=book.title).scalar() or 0
         return {"count": count}
     finally:

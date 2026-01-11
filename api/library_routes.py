@@ -28,10 +28,10 @@ async def search_local_books(
 ):
     """Busca libros en la base de datos local con filtros opcionales."""
     return await LibraryService.search_books(
-        query=q, 
-        page=page, 
-        items_per_page=page_size, 
-        search_type=search_type, 
+        query=q,
+        page=page,
+        items_per_page=page_size,
+        search_type=search_type,
         source_id=source_id
     )
 
@@ -133,11 +133,14 @@ async def get_library_statistics(user_data: dict = Depends(require_mini_app_acce
 async def get_thumbnail(filename: str):
     original_path = os.path.join(COVERS_DIR, filename)
     thumb_path = os.path.join(THUMBNAILS_DIR, filename)
-    if os.path.exists(thumb_path): return FileResponse(thumb_path)
-    if not os.path.exists(original_path): raise HTTPException(status_code=404)
+    if os.path.exists(thumb_path):
+        return FileResponse(thumb_path)
+    if not os.path.exists(original_path):
+        raise HTTPException(status_code=404)
     try:
         with Image.open(original_path) as img:
             img.thumbnail((200, 300))
             img.save(thumb_path, optimize=True, quality=80)
         return FileResponse(thumb_path)
-    except Exception: return FileResponse(original_path)
+    except Exception:
+        return FileResponse(original_path)

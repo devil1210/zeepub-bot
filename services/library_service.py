@@ -14,7 +14,7 @@ def _get_download_counts_from_zeepub_db() -> Dict[str, int]:
     import sqlite3
     from config.config_settings import config
     from utils.epub_extractor import clean_metadata_tags
-    
+
     dl_counts = {}
     try:
         conn = sqlite3.connect(config.URL_CACHE_DB_PATH)
@@ -34,14 +34,14 @@ def _get_download_counts_from_zeepub_db() -> Dict[str, int]:
 class LibraryService:
     @staticmethod
     async def search_books(
-        query: str, 
-        page: int = 1, 
+        query: str,
+        page: int = 1,
         items_per_page: int = 10,
         search_type: str = "all",
         source_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Realiza una búsqueda de libros utilizando FTS5 si está disponible, 
+        Realiza una búsqueda de libros utilizando FTS5 si está disponible,
         o fallback a ILIKE.
         """
         session = get_session()
@@ -130,9 +130,10 @@ class LibraryService:
         session = get_session()
         try:
             book = session.query(LocalBook).filter_by(id=book_id).first()
-            if not book: return None
+            if not book:
+                return None
             d = book.to_dict()
-            
+
             # Get download count from zeepub.db using sqlite3
             import sqlite3
             from config.config_settings import config
@@ -145,7 +146,7 @@ class LibraryService:
                 conn.close()
             except Exception as e:
                 logger.error(f"Error fetching download count for book {book.id}: {e}")
-            
+
             d["download_count"] = download_count
             return d
         except Exception as e:
@@ -208,7 +209,8 @@ class LibraryService:
                     if sub not in folders_map:
                         folders_map[sub] = {"rep": b, "all_series": {b.series} if b.series else set()}
                     else:
-                        if b.series: folders_map[sub]["all_series"].add(b.series)
+                        if b.series:
+                            folders_map[sub]["all_series"].add(b.series)
 
             folders_list = []
             for f_name, meta in folders_map.items():
