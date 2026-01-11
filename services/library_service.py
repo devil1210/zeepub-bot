@@ -188,6 +188,9 @@ class LibraryService:
                     "author": rep.author,
                     "numBooks": sub_query.count(),
                     "series": rep.series,
+                    "tags": rep.tags,
+                    "demographics": rep.demographics,
+                    "book_type": rep.book_type,
                     "created_at": rnd_book.file_created_at.isoformat() if rnd_book and rnd_book.file_created_at else None,
                     "modified_at": rnd_book.file_modified_at.isoformat() if rnd_book and rnd_book.file_modified_at else None,
                 })

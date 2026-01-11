@@ -83,26 +83,33 @@ export function CatalogItem({
                     )}
 
                     {(entry.author || entry.illustrator) && (
-                        <p className="text-[11px] text-primary font-semibold mb-1 line-clamp-1">
+                        <p className="text-[11px] text-primary font-semibold mb-0 px-0.5 line-clamp-1">
                             {entry.author}
                             {(!entry.author && entry.illustrator) ? entry.illustrator : (entry.illustrator ? ` - ${entry.illustrator}` : "")}
                         </p>
                     )}
 
+                    {isFolder && genres.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground/60 line-clamp-1 mt-0.5 mb-1 px-0.5">
+                            <span className="font-bold text-foreground/40 mr-1 uppercase text-[9px]">Géneros:</span>
+                            <span className="italic">{genres.join(", ")}</span>
+                        </p>
+                    )}
+
                     {isFolder ? (
-                        <div className="space-y-1">
-                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                                {entry.numBooks || entry.book_count || 0} {(entry.numBooks || entry.book_count) === 1 ? 'volumen' : 'volúmenes'}
+                        <div className="space-y-1 px-0.5">
+                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider flex items-center gap-2">
+                                <span>{entry.numBooks || entry.book_count || 0} {(entry.numBooks || entry.book_count) === 1 ? 'volumen' : 'volúmenes'}</span>
+                                {bookType && (
+                                    <span className="px-1.5 py-0.5 bg-primary/20 text-primary text-[8px] font-black rounded-md border border-primary/20">
+                                        {bookType}
+                                    </span>
+                                )}
                             </p>
                             {demography.length > 0 && (
                                 <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
                                     <span className="font-semibold text-foreground/70 not-italic mr-1">Demografía:</span>
                                     {demography.join(", ")}
-                                </p>
-                            )}
-                            {genres.length > 0 && (
-                                <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
-                                    {genres.slice(0, 3).join(", ")}
                                 </p>
                             )}
                         </div>
