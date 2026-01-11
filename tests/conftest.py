@@ -45,11 +45,19 @@ def setup_test_db():
     # Ensure data directory exists
     os.makedirs(os.path.dirname(test_db_path), exist_ok=True)
 
+    # Setup metrics database for testing
+    test_metrics_db_path = os.path.join(project_root, "data/test_metrics.db")
+    config.METRICS_DB_PATH = test_metrics_db_path
+
     # Run database initialization
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
         loop.run_until_complete(db_manager.initialize())
+        # Initialize metrics database
+        from core.metrics_db import metrics_db
+        metrics_db.db_path = test_metrics_db_path
+        loop.run_until_complete(metrics_db.initialize())
     finally:
         loop.close()
 
@@ -70,6 +78,13 @@ def setup_test_db():
         for suffix in ["-shm", "-wal"]:
             if os.path.exists(test_db_path + suffix):
                 os.remove(test_db_path + suffix)
+
+    # Cleanup metrics database
+    if os.path.exists(test_metrics_db_path):
+        os.remove(test_metrics_db_path)
+        for suffix in ["-shm", "-wal"]:
+            if os.path.exists(test_metrics_db_path + suffix):
+                os.remove(test_metrics_db_path + suffix)
 
 
 @pytest.fixture(scope="session", autouse=True)

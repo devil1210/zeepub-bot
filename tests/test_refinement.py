@@ -82,7 +82,7 @@ def test_role_based_access_denied(mock_opds_roots, client):
 def test_book_detail_parsing(client, monkeypatch):
     with patch(
         "api.miniapp_handlers.get_cached_feed", new_callable=AsyncMock
-    ) as mock_feed:
+    ) as mock_feed, patch("repositories.metrics_repository.metrics_repo") as mock_metrics:
         mock_feed_obj = MagicMock()
         mock_feed_obj.entries = []
         mock_feed_obj.feed.title = "Test Book"
@@ -100,7 +100,15 @@ def test_book_detail_parsing(client, monkeypatch):
         mock_feed_obj.feed.get = lambda k, d=None: getattr(mock_feed_obj.feed, k, d)
         mock_feed.return_value = mock_feed_obj
 
+        # Mock metrics_repo
+        mock_metrics.has_downloaded = AsyncMock(return_value=False)
+        mock_metrics.get_total_downloads = AsyncMock(return_value=0)
+        mock_metrics.get_rating_stats = AsyncMock(return_value={"average": 0.0, "count": 0})
+
         monkeypatch.setenv("DEV_MODE", "True")
+        from config.config_settings import config
+        config.WHITELIST.add(123)
+
         response = client.post(
             "/api/bot?uid=123",
             json={
