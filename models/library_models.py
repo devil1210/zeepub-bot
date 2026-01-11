@@ -138,7 +138,7 @@ class LocalBook(Base):
             "pageCount": self.page_count,
 
             "readingTime": self.reading_time,
-            
+
             # Key mappings for telegram_service / search consistency
             "titulo": self.title,
             "autor": self.author,

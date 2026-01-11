@@ -1271,11 +1271,11 @@ async def enviar_libro_directo(
 
                 # Generate stable hashes (only if not provided in override)
                 from utils.helpers import generate_book_hash, generate_series_hash
-                
+
                 # CRITICAL: Prioritize hash from library (metadata_override)
                 book_hash = meta.get("content_hash") or meta.get("hash")
                 logger.debug(f"Hash from meta: {book_hash}")
-                
+
                 if not book_hash:
                     book_hash = generate_book_hash(
                         title=titulo_vol,
@@ -1301,7 +1301,7 @@ async def enviar_libro_directo(
                     clean_title=clean_title,
                     book_hash=book_hash,
                 )
-                
+
                 # Also record in centralized metrics DB
                 from repositories.metrics_repository import metrics_repo
                 series_hash = meta.get("series_hash") or (
@@ -1314,7 +1314,7 @@ async def enviar_libro_directo(
                     series_hash=series_hash,
                     title=titulo_vol
                 )
-                
+
                 logger.info(
                     f"[enviar_libro_directo] Historial guardado para user {user_id}: {titulo_vol}"
                 )

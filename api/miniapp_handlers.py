@@ -383,7 +383,7 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         "is_downloaded": False,
         "download_count": 0
     }
-    
+
     # Get metrics from centralized DB
     from repositories.metrics_repository import metrics_repo
     content_hash = entry.get("content_hash") or entry.get("hash")
@@ -393,7 +393,7 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         rating_stats = await metrics_repo.get_rating_stats(content_hash)
         result["rating_average"] = rating_stats["average"]
         result["rating_count"] = rating_stats["count"]
-    
+
     return result
 
 
@@ -748,7 +748,7 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
                     title_for_query = entry.get("title")
                     meta = parse_metadata_from_title(title_for_query)
                     clean_title_for_query = meta.get("clean_title")
-                    # For OPDS books we don't have a stable binary hash, 
+                    # For OPDS books we don't have a stable binary hash,
                     # but we can simulate one if we want consistency across scanners.
                     # For now, title-based fallback in repository will handle it.
         except Exception as e:

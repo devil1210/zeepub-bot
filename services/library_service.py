@@ -289,7 +289,6 @@ class LibraryService:
                     continue
 
                 # Get series-level downloads from centralized metrics DB
-                from repositories.metrics_repository import metrics_repo
                 total_downloads = await metrics_repo.get_series_downloads(s_hash)
 
                 items.append(

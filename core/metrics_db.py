@@ -6,6 +6,7 @@ from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
+
 class MetricsDatabaseManager:
     """Gestión de la base de datos de métricas de usuario (descargas y valoraciones)."""
 
@@ -17,7 +18,7 @@ class MetricsDatabaseManager:
         """Inicializa las tablas de métricas basadas en hashes."""
         async with self.connection() as conn:
             await conn.execute("PRAGMA journal_mode=WAL")
-            
+
             # Tabla de descargas
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS user_downloads (

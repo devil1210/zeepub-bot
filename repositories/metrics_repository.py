@@ -4,6 +4,7 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+
 class MetricsRepository:
     """Repositorio centralizado para descargas y valoraciones basadas en hashes."""
 
@@ -21,7 +22,8 @@ class MetricsRepository:
             await conn.commit()
 
     async def has_downloaded(self, user_id: int, content_hash: str) -> bool:
-        if not content_hash: return False
+        if not content_hash:
+            return False
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 "SELECT 1 FROM user_downloads WHERE user_id = ? AND content_hash = ? LIMIT 1",
@@ -30,7 +32,8 @@ class MetricsRepository:
             return await cursor.fetchone() is not None
 
     async def get_total_downloads(self, content_hash: str) -> int:
-        if not content_hash: return 0
+        if not content_hash:
+            return 0
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 "SELECT COUNT(*) FROM user_downloads WHERE content_hash = ?",
@@ -40,7 +43,8 @@ class MetricsRepository:
             return row[0] if row else 0
 
     async def get_series_downloads(self, series_hash: str) -> int:
-        if not series_hash: return 0
+        if not series_hash:
+            return 0
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 "SELECT COUNT(*) FROM user_downloads WHERE series_hash = ?",
@@ -66,7 +70,8 @@ class MetricsRepository:
             await conn.commit()
 
     async def get_rating_stats(self, content_hash: str) -> Dict[str, Any]:
-        if not content_hash: return {"average": 0.0, "count": 0}
+        if not content_hash:
+            return {"average": 0.0, "count": 0}
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 "SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE content_hash = ?",
@@ -80,12 +85,13 @@ class MetricsRepository:
 
     async def get_series_rating_stats(self, series_hash: str) -> Dict[str, Any]:
         """Calcula el promedio y conteo de ratings de todos los libros de una serie."""
-        if not series_hash: return {"average": 0.0, "count": 0}
-        
+        if not series_hash:
+            return {"average": 0.0, "count": 0}
+
         # Necesitamos unir con la tabla de libros para saber qué hashes pertenecen a la serie
         # Pero podemos simplificarlo si guardamos series_hash en user_ratings también.
         # Por ahora lo haremos vía JOIN indirecto o asumiendo que el buscador ya nos da los hashes.
-        return {"average": 0.0, "count": 0} # Placeholder until series link is established
+        return {"average": 0.0, "count": 0}  # Placeholder until series link is established
 
 # Singleton
 from core.metrics_db import metrics_db
