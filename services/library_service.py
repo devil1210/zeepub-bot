@@ -248,6 +248,7 @@ class LibraryService:
 
                 from repositories.download_repository import download_repo
 
+                results = []
                 from repositories.metrics_repository import metrics_repo
                 for b in books:
                     d = b.to_dict()

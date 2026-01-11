@@ -579,7 +579,7 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
 
     metadata_override = None
     actual_download_url = book_id  # Default to book_id for remote books
-    
+
     if book_id.startswith("local_") or book_id.isdigit():
         try:
             local_id = int(str(book_id).replace("local_", ""))
@@ -587,7 +587,7 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
             if local_book_obj:
                 # Get the actual file path
                 actual_download_url = local_book_obj.get("downloadUrl") or local_book_obj.get("filepath")
-                
+
                 # We need the full dict with hashes
                 from services.library_service import LibraryService
                 async with LibraryService._session_scope() as session:
