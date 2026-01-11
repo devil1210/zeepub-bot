@@ -174,8 +174,21 @@ class ScannerService:
             book.series = meta.get("series")
             book.volume = meta.get("volume")
 
-            # series_clean is just the series name (already cleaned by extractor)
-            book.series_clean = book.series
+            # series_clean: use series if available, otherwise use cleaned title
+            if book.series:
+                book.series_clean = book.series
+            elif book.title:
+                # Extract series name from title by removing volume info
+                import re
+                # Remove "Volumen XX" or similar patterns
+                clean = re.sub(r'\s*-\s*Volumen\s+\d+.*$', '', book.title, flags=re.IGNORECASE).strip()
+                # Remove translator tags
+                clean = re.sub(r'\s*\[.*?\]\s*', ' ', clean).strip()
+                # Remove multiple spaces
+                clean = re.sub(r'\s+', ' ', clean).strip()
+                book.series_clean = clean
+            else:
+                book.series_clean = None
 
             # Enriched identifiers and dates
             book.isbn = meta.get("isbn")
