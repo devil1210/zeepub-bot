@@ -6,7 +6,7 @@ import logging
 import asyncio
 from urllib.parse import urlparse, unquote
 from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.error import BadRequest
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import ContextTypes
 
 # from core.state_manager import state_manager (Moved to local scope)
@@ -627,12 +627,31 @@ async def descargar_epub_pendiente(
         )
         return
 
-    # Preparar envío
-    prep = await bot.send_message(
-        chat_id=destino,
-        text="⏳ Preparando archivo...",
-        message_thread_id=thread_id_destino,
-    )
+    # Preparar envío - intentar enviar al destino
+    try:
+        prep = await bot.send_message(
+            chat_id=destino,
+            text="⏳ Preparando archivo...",
+            message_thread_id=thread_id_destino,
+        )
+    except Forbidden:
+        # El bot no puede iniciar conversación con el usuario
+        # Mostrar botón para que inicie el bot primero
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+        
+        bot_username = (await bot.get_me()).username
+        start_link = f"https://t.me/{bot_username}?start=download"
+        
+        keyboard = [[InlineKeyboardButton("🤖 Iniciar Bot", url=start_link)]]
+        
+        await bot.send_message(
+            chat_id=chat_origen,
+            text="⚠️ Para recibir el archivo, primero debes iniciar una conversación privada con el bot.\n\n"
+                 "👉 Haz clic en el botón de abajo para iniciar el bot y luego intenta descargar nuevamente.",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            message_thread_id=thread_id_origen,
+        )
+        return
 
     try:
         # Enviar EPUB
