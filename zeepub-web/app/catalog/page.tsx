@@ -236,7 +236,7 @@ function CatalogContent() {
     return (
         <div className="min-h-screen bg-background pt-safe pb-20">
             <TransparentHeader />
-            <main className="max-w-2xl mx-auto px-4 py-6 space-y-4 text-foreground">
+            <main className="max-w-2xl mx-auto px-4 pt-20 pb-6 space-y-4 text-foreground">
                 <SearchBar
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}

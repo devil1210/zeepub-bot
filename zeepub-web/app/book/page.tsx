@@ -268,7 +268,7 @@ function BookDetailContent() {
                 ) : undefined}
             />
 
-            <div className="p-4 pt-20 max-w-[480px] mx-auto">
+            <div className="p-4 pt-28 max-w-[480px] mx-auto">
                 <BookHeader
                     book={book}
                     getThumbnailUrl={getThumbnailUrl}
