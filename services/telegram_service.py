@@ -960,6 +960,7 @@ async def enviar_libro_directo(
         # 4. Parsear metadatos del EPUB
         if metadata_override:
             logger.info(f"Usando metadatos proporcionados para: {title}")
+            logger.debug(f"metadata_override content_hash: {metadata_override.get('content_hash')}")
             meta = metadata_override
         else:
             meta = {
@@ -1271,15 +1272,21 @@ async def enviar_libro_directo(
                 # Generate stable hashes (only if not provided in override)
                 from utils.helpers import generate_book_hash, generate_series_hash
                 
-                book_hash = meta.get("content_hash") or meta.get("hash") or generate_book_hash(
-                    title=titulo_vol,
-                    author=author,
-                    series=series,
-                    volume=volume,
-                    book_type=meta.get("book_type") or meta.get("categoria"),
-                    language=meta.get("language"),
-                    translator=translator
-                )
+                # CRITICAL: Prioritize hash from library (metadata_override)
+                book_hash = meta.get("content_hash") or meta.get("hash")
+                logger.debug(f"Hash from meta: {book_hash}")
+                
+                if not book_hash:
+                    book_hash = generate_book_hash(
+                        title=titulo_vol,
+                        author=author,
+                        series=series,
+                        volume=volume,
+                        book_type=meta.get("book_type") or meta.get("categoria"),
+                        language=meta.get("language"),
+                        translator=translator
+                    )
+                    logger.warning(f"Generated new hash (should use library hash): {book_hash}")
 
                 await download_repo.add_download(
                     user_id=user_id,
