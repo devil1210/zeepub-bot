@@ -57,6 +57,7 @@ interface BookDetail {
     rating_average?: number
     user_rating?: number
     is_downloaded?: boolean
+    download_count?: number
     [key: string]: any;
 }
 
@@ -155,6 +156,13 @@ function BookDetailContent() {
                 threadId: threadId
             })
             if (webApp) webApp.HapticFeedback.notificationOccurred("success")
+
+            // Update book state to reflect download
+            setBook(prev => prev ? {
+                ...prev,
+                is_downloaded: true,
+                download_count: (prev.download_count || 0) + 1
+            } : null)
         } catch (error) {
             console.error("Error downloading book:", error)
         } finally {
