@@ -8,7 +8,7 @@ import re
 import html
 
 
-def _clean_metadata_tags(text):
+def clean_metadata_tags(text):
     """Remove tags like [NL], [NW], [ShinsengumiTL], etc. from metadata"""
     if not text:
         return text
@@ -55,7 +55,7 @@ class EpubMetadataExtractor:
                 if metadata_node is not None:
                     # Clean title from tags like [ShinsengumiTL]
                     raw_title = self._get_dc_value(metadata_node, 'title')
-                    self.metadata['title'] = _clean_metadata_tags(raw_title)
+                    self.metadata['title'] = clean_metadata_tags(raw_title)
                     self.metadata['publisher'] = self._get_dc_value(metadata_node, 'publisher')
                     self.metadata['language'] = self._get_dc_value(metadata_node, 'language')
                     self.metadata['description'] = self._get_dc_value(metadata_node, 'description')
@@ -127,7 +127,7 @@ class EpubMetadataExtractor:
 
                         if name == 'calibre:series':
                             # Clean series name from tags
-                            self.metadata['series'] = _clean_metadata_tags(meta.get('content'))
+                            self.metadata['series'] = clean_metadata_tags(meta.get('content'))
                         elif name == "calibre:series_index":
                             try:
                                 self.metadata["volume"] = float(meta.get("content"))
@@ -136,7 +136,7 @@ class EpubMetadataExtractor:
                         elif prop == 'belongs-to-collection':
                             val = meta.text or metadata_node.find(f'.//opf:meta[@id="{meta.get("id")}"]', self.NAMESPACE).text
                             # Clean series name from tags like [NL], [NW]
-                            self.metadata['series'] = _clean_metadata_tags(val)
+                            self.metadata['series'] = clean_metadata_tags(val)
                         elif prop == "group-position" and meta.get("refines") == "#serie":
                             try:
                                 self.metadata["volume"] = float(meta.text)

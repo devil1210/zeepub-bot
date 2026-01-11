@@ -13,12 +13,18 @@ def _get_download_counts_from_zeepub_db() -> Dict[str, int]:
     """Helper function to get download counts from zeepub.db"""
     import sqlite3
     from config.config_settings import config
+    from utils.epub_extractor import clean_metadata_tags
     
     dl_counts = {}
     try:
         conn = sqlite3.connect(config.URL_CACHE_DB_PATH)
-        cursor = conn.execute("SELECT title, COUNT(*) as c FROM download_history GROUP BY title")
-        dl_counts = {row[0]: row[1] for row in cursor.fetchall()}
+        # Fetch both title and clean_title
+        cursor = conn.execute("SELECT title, clean_title, COUNT(*) as c FROM download_history GROUP BY title, clean_title")
+        for row in cursor.fetchall():
+            dirty_title, clean_title_db, count = row
+            # If clean_title is already in DB use it, else clean the dirty title
+            key = clean_title_db or clean_metadata_tags(dirty_title)
+            dl_counts[key] = dl_counts.get(key, 0) + count
         conn.close()
     except Exception as e:
         logger.error(f"Error fetching download counts from zeepub.db: {e}")
