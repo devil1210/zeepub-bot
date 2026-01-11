@@ -17,7 +17,6 @@ import { TransparentHeader } from "@/components/transparent-header"
 import { CatalogItem } from "@/components/catalog/CatalogItem"
 import { SearchBar } from "@/components/catalog/SearchBar"
 import { SortingChips } from "@/components/catalog/SortingChips"
-import { BottomNav } from "@/components/bottom-nav"
 
 interface Book {
     id: string
@@ -330,7 +329,7 @@ function CatalogContent() {
                 </div>
 
                 {/* Sticky Navigation Area */}
-                <div className="sticky bottom-4 z-[60] pt-4 space-y-4 pointer-events-none">
+                <div className="sticky bottom-4 z-[60] pt-4">
                     {currentFeed && (currentFeed.totalPages || 0) > 1 && !searchQuery && (
                         <div className="max-w-[440px] mx-auto pointer-events-auto">
                             <Pagination
@@ -377,10 +376,6 @@ function CatalogContent() {
                             />
                         </div>
                     )}
-
-                    <div className="max-w-[440px] mx-auto pointer-events-auto">
-                        <BottomNav />
-                    </div>
                 </div>
             </main >
         </div >

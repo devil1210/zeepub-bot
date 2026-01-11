@@ -17,7 +17,6 @@ import { BookSynopsis } from "@/components/book/BookSynopsis"
 import { BookInformationTable } from "@/components/book/BookInformationTable"
 import { BookAdminPanel } from "@/components/book/BookAdminPanel"
 import { RatingBreakdownPopup } from "@/components/book/RatingBreakdownPopup"
-import { BottomNav } from "@/components/bottom-nav"
 
 interface BookDetail {
     id: string
@@ -294,7 +293,7 @@ function BookDetailContent() {
                 />
 
                 {/* Floating Action Bar */}
-                <div className="sticky bottom-4 z-50 px-0 space-y-4 pointer-events-none">
+                <div className="sticky bottom-4 z-50 px-0 pointer-events-none">
                     <div className="flex items-center w-full max-w-[440px] mx-auto bg-background/60 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-[0_8px_32px_rgba(0,0,0,0.4)] pointer-events-auto">
                         <Button
                             variant="ghost"
@@ -303,7 +302,7 @@ function BookDetailContent() {
                         >
                             <div className="flex flex-col items-center justify-center gap-0.5">
                                 <ArrowLeft className="w-4 h-4" />
-                                <span className="text-[9px] uppercase tracking-[0.1em] font-bold opacity-70">Volver</span>
+                                <span className="text-[9px] uppercase tracking-[0.1em] font-black opacity-70">VOLVER</span>
                             </div>
                         </Button>
 
@@ -318,7 +317,7 @@ function BookDetailContent() {
                                 >
                                     <div className="flex flex-col items-center justify-center gap-0.5">
                                         <Star className={`w-4 h-4 ${userRating ? "fill-primary text-primary" : ""}`} />
-                                        <span className="text-[9px] uppercase tracking-[0.1em] font-bold opacity-70">Valorar</span>
+                                        <span className="text-[9px] uppercase tracking-[0.1em] font-black opacity-70">VALORAR</span>
                                     </div>
                                 </Button>
                                 <div className="w-px h-6 bg-white/10 mx-0.5 opacity-50 flex-shrink-0" />
@@ -329,17 +328,13 @@ function BookDetailContent() {
                             variant="ghost"
                             onClick={handleDownload}
                             disabled={isDownloading || !book.downloadUrl}
-                            className={`flex-[1.5] h-10 rounded-xl transition-all active:scale-95 disabled:opacity-20 px-0 ${book.downloadUrl ? "bg-primary/20 text-primary shadow-lg border border-primary/20" : "hover:bg-white/5 text-foreground"}`}
+                            className={`flex-[1.5] h-10 rounded-xl transition-all active:scale-95 disabled:opacity-20 px-0 ${book.downloadUrl ? "bg-primary/20 text-primary border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.2)]" : "hover:bg-white/5 text-foreground"}`}
                         >
                             <div className="flex flex-col items-center justify-center gap-0.5">
                                 {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                                <span className="text-[9px] uppercase tracking-[0.1em] font-bold">{isDownloading ? "Enviando..." : t("book_download")}</span>
+                                <span className="text-[9px] uppercase tracking-[0.1em] font-black">{isDownloading ? "ENVIANDO..." : "DESCARGAR"}</span>
                             </div>
                         </Button>
-                    </div>
-
-                    <div className="max-w-[440px] mx-auto pointer-events-auto">
-                        <BottomNav />
                     </div>
                 </div>
             </div>
