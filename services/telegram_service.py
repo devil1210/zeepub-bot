@@ -1263,7 +1263,7 @@ async def enviar_libro_directo(
                     "clean_title"
                 )
                 translator = meta.get("traductor") or meta.get("publisher")
-                
+
                 # Generate stable hashes
                 from utils.helpers import generate_book_hash, generate_series_hash
                 book_hash = generate_book_hash(

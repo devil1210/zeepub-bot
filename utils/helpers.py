@@ -180,7 +180,7 @@ def generate_book_hash(
 
     # Cadena de identidad determinista para el EPUB específico
     identity = f"title:{base_title}|author:{author_norm}|vol:{vol_norm}|type:{type_norm}|lang:{lang_norm}|trans:{trans_norm}"
-    
+
     return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
@@ -199,7 +199,7 @@ def generate_series_hash(
 
     # Cadena de identidad determinista para la SERIE
     identity = f"series:{series_norm}|author:{author_norm}|type:{type_norm}"
-    
+
     return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
