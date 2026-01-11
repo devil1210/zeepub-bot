@@ -368,6 +368,7 @@ function BookDetailContent() {
                     formatDate={formatDate}
                     formatFileType={formatFileType}
                     downloadCount={downloadCount}
+                    onSearch={(term) => router.push(`/catalog?q=${encodeURIComponent(term)}`)}
                 />
 
                 {/* Floating Action Bar */}

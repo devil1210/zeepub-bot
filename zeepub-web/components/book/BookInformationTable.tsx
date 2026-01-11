@@ -8,13 +8,15 @@ interface BookInformationTableProps {
     formatDate: (date?: string) => string;
     formatFileType: (type?: string) => string;
     downloadCount: number;
+    onSearch?: (term: string) => void;
 }
 
 export function BookInformationTable({
     book,
     formatDate,
     formatFileType,
-    downloadCount
+    downloadCount,
+    onSearch
 }: BookInformationTableProps) {
     const cleanMetadataTitle = (text?: string) => {
         if (!text) return "";
@@ -59,12 +61,22 @@ export function BookInformationTable({
                     </div>
                     <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
                         <span className="text-muted-foreground shrink-0">Autor</span>
-                        <span className="font-semibold text-right">{book.author}</span>
+                        <span
+                            className={`font-semibold text-right transition-colors ${onSearch ? "cursor-pointer hover:text-primary active:scale-95" : ""}`}
+                            onClick={() => onSearch && book.author && onSearch(book.author)}
+                        >
+                            {book.author}
+                        </span>
                     </div>
                     {book.illustrator && (
                         <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
                             <span className="text-muted-foreground shrink-0">Ilustrador</span>
-                            <span className="font-semibold text-right">{book.illustrator}</span>
+                            <span
+                                className={`font-semibold text-right transition-colors ${onSearch ? "cursor-pointer hover:text-primary active:scale-95" : ""}`}
+                                onClick={() => onSearch && book.illustrator && onSearch(book.illustrator)}
+                            >
+                                {book.illustrator}
+                            </span>
                         </div>
                     )}
                     {book.isbn && (
@@ -82,19 +94,34 @@ export function BookInformationTable({
                     {book.publisher && (
                         <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
                             <span className="text-muted-foreground shrink-0">Grupo Traductor</span>
-                            <span className="font-bold text-primary text-right">{book.publisher}</span>
+                            <span
+                                className={`font-bold text-primary text-right transition-opacity ${onSearch ? "cursor-pointer hover:opacity-70 active:scale-95" : ""}`}
+                                onClick={() => onSearch && book.publisher && onSearch(book.publisher)}
+                            >
+                                {book.publisher}
+                            </span>
                         </div>
                     )}
                     {book.translator && (
                         <div className="flex justify-between items-start gap-4 border-b border-border/30 pb-3">
                             <span className="text-muted-foreground shrink-0">Traductor</span>
-                            <span className="font-semibold text-right">{book.translator}</span>
+                            <span
+                                className={`font-semibold text-right transition-colors ${onSearch ? "cursor-pointer hover:text-primary active:scale-95" : ""}`}
+                                onClick={() => onSearch && book.translator && onSearch(book.translator)}
+                            >
+                                {book.translator}
+                            </span>
                         </div>
                     )}
                     {book.layoutBy && (
                         <div className="flex justify-between items-start gap-4 last:border-0 pb-3">
                             <span className="text-muted-foreground shrink-0">Maquetador</span>
-                            <span className="font-semibold text-right">{book.layoutBy}</span>
+                            <span
+                                className={`font-semibold text-right transition-colors ${onSearch ? "cursor-pointer hover:text-primary active:scale-95" : ""}`}
+                                onClick={() => onSearch && book.layoutBy && onSearch(book.layoutBy)}
+                            >
+                                {book.layoutBy}
+                            </span>
                         </div>
                     )}
                 </div>
