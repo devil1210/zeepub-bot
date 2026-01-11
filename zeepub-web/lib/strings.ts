@@ -92,6 +92,7 @@ export interface AppStrings {
     close: string
     no_rating: string
     no_votes: string
+    book_not_found: string
 }
 
 export const DEFAULT_STRINGS: AppStrings = {
@@ -188,6 +189,7 @@ export const DEFAULT_STRINGS: AppStrings = {
     close: "Cerrar",
     no_rating: "Sin puntuación",
     no_votes: "Sin votos",
+    book_not_found: "Libro no encontrado",
 }
 
 let cachedStrings: AppStrings | null = null

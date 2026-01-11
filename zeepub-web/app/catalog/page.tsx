@@ -2,25 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import {
-    Library,
-    Folder,
-    ChevronRight,
-    ChevronLeft,
-    BookOpen,
-    Download,
-    Search,
-    ImageOff,
-    Calendar,
-    X,
-    ArrowUpCircle,
-    ArrowLeft,
-    ArrowUp,
-    ArrowDown,
-} from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Search, ImageOff, Library, BookOpen, Folder, ArrowUpCircle } from "lucide-react"
 import { OpdsClient } from "@/lib/opds-client"
 import { OPDSFeed, OPDSEntry, OPDSLink } from "@/lib/opds-types"
 import { callBotAPI } from "@/lib/api"
@@ -30,16 +12,11 @@ import { useStrings } from "@/components/strings-provider"
 
 import { Pagination } from "@/components/pagination"
 import { TransparentHeader } from "@/components/transparent-header"
-import { Input } from "@/components/ui/input"
-import {
-    Drawer,
-    DrawerContent,
-    DrawerHeader,
-    DrawerTitle,
-    DrawerTrigger,
-    DrawerClose,
-} from "@/components/ui/drawer"
-import { Check } from "lucide-react"
+
+// Sub-components
+import { CatalogItem } from "@/components/catalog/CatalogItem"
+import { SearchBar } from "@/components/catalog/SearchBar"
+import { SortingChips } from "@/components/catalog/SortingChips"
 
 interface Book {
     id: string
@@ -52,9 +29,6 @@ interface Book {
     detailUrl?: string
     isFolder: boolean
     year?: string
-    language?: string
-    size?: string
-    fileType?: string
     series?: string
     seriesIndex?: string
     tags?: string[]
@@ -79,7 +53,6 @@ interface PaginationState {
 
 const getThumbnailUrl = (url?: string) => {
     if (!url) return undefined
-    // Si es una URL de la librería local, cambiar covers por thumbnail
     if (url.includes("/api/library/covers/")) {
         return url.replace("/api/library/covers/", "/api/library/thumbnail/")
     }
@@ -94,43 +67,17 @@ function CatalogContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
 
-    // Robust Folder Detection:
-    // 1. Try "folder" search param
-    // 2. Try to extract from "feed_url" if it starts with "local"
-    let folderParam = searchParams.get("folder")
-    const feedUrlParam = searchParams.get("feed_url")
-
-    if (!folderParam && feedUrlParam && feedUrlParam.startsWith("local")) {
-        try {
-            // Decoded feed_url might be "local?source_id=1&folder=Name"
-            // or it might be encoded "local%3Fsource_id..."
-            let decoded = decodeURIComponent(feedUrlParam)
-            if (decoded.includes("?")) {
-                const queryPart = decoded.split("?")[1]
-                const params = new URLSearchParams(queryPart)
-                folderParam = params.get("folder")
-            }
-        } catch (e) {
-            console.error("Error parsing feed_url for folder:", e)
-        }
-    }
-
-    const folder = folderParam
-
-    // URL-based navigation: track current feed URL
-    const [currentFeedUrl, setCurrentFeedUrl] = useState<string>("")
-    const [lastFeedUrlBeforeSearch, setLastFeedUrlBeforeSearch] = useState<string>("")
-
-    // Replicando funcionalidad v3.13.8: Búsqueda reactiva en catálogo (inline)
     const { disableDisplacement, dataSaver } = useTheme()
     const [searchQuery, setSearchQuery] = useState("")
     const [searchType, setSearchType] = useState("all")
     const [sortBy, setSortBy] = useState("alpha")
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
-    const [showFilters, setShowFilters] = useState(false)
     const [isSearchDrawerOpen, setIsSearchDrawerOpen] = useState(false)
     const [searchResults, setSearchResults] = useState<Book[]>([])
     const [isSearching, setIsSearching] = useState(false)
+    const [currentFeedUrl, setCurrentFeedUrl] = useState<string>("")
+    const [lastFeedUrlBeforeSearch, setLastFeedUrlBeforeSearch] = useState<string>("")
+
     const [searchPagination, setSearchPagination] = useState<PaginationState>({
         currentPage: 1,
         totalPages: 1
@@ -144,15 +91,12 @@ function CatalogContent() {
             return
         }
 
-        // Save current feed URL before first search
         if (!lastFeedUrlBeforeSearch && currentFeedUrl) {
             setLastFeedUrlBeforeSearch(currentFeedUrl)
         }
 
         setIsSearching(true)
         try {
-            // New format: returns { items, total, page, totalPages }
-            // Note: We'll modify OpdsClient.search to support page parameter
             const result = await (OpdsClient as any).search(searchQuery, undefined, searchType, page)
             setSearchResults(result.results || [])
             setSearchPagination({
@@ -161,9 +105,7 @@ function CatalogContent() {
                 nextPage: (result.currentPage < result.totalPages) ? "next" : null,
                 prevPage: (result.currentPage > 1) ? "prev" : null
             })
-            if (page > 1) {
-                window.scrollTo(0, 0)
-            }
+            if (page > 1) window.scrollTo(0, 0)
         } catch (error) {
             console.error("[Catalog] Inline search error:", error)
         } finally {
@@ -175,10 +117,8 @@ function CatalogContent() {
         if (!searchQuery.trim()) {
             setSearchResults([])
             setIsSearching(false)
-            // Reload the last feed location when search is cleared
             if (lastFeedUrlBeforeSearch) {
                 const feedUrl = searchParams.get("feed_url")
-                // Only reload if we're not already on that feed
                 if (feedUrl !== lastFeedUrlBeforeSearch && !currentFeed) {
                     router.push(lastFeedUrlBeforeSearch ? `/catalog?feed_url=${encodeURIComponent(lastFeedUrlBeforeSearch)}` : '/catalog')
                 }
@@ -187,105 +127,49 @@ function CatalogContent() {
             return
         }
 
-        if (searchTimeout.current) {
-            clearTimeout(searchTimeout.current)
-        }
-
-        // If we have a query, ensure we're not stuck in loading
-        if (searchQuery.trim()) {
-            setIsLoading(false)
-        }
+        if (searchTimeout.current) clearTimeout(searchTimeout.current)
+        if (searchQuery.trim()) setIsLoading(false)
 
         searchTimeout.current = setTimeout(() => {
             handleCatalogSearch()
         }, 600)
 
         return () => {
-            if (searchTimeout.current) {
-                clearTimeout(searchTimeout.current)
-            }
+            if (searchTimeout.current) clearTimeout(searchTimeout.current)
         }
     }, [searchQuery, handleCatalogSearch, lastFeedUrlBeforeSearch, currentFeed, searchParams, router])
 
-    // Sync search query to URL for back-button persistence
-    useEffect(() => {
-        if (searchQuery.trim()) {
-            const current = new URLSearchParams(Array.from(searchParams.entries()))
-            if (current.get("q") !== searchQuery) {
-                current.set("q", searchQuery)
-                // Use replace to avoid polluting history with every keystroke
-                const search = current.toString()
-                const query = search ? `?${search}` : ""
-                router.replace(`${window.location.pathname}${query}`, { scroll: false })
-            }
-        }
-    }, [searchQuery, router, searchParams])
-
-    // Prefetch next page for smoother navigation
-    useEffect(() => {
-        if (currentFeed?.nextPage) {
-            const nextUrl = currentFeed.nextPage
-            // Delay slightly to prioritize current page render
-            const timer = setTimeout(() => {
-                OpdsClient.fetchFeed(nextUrl, isAdminMode).then(() => {
-                    console.log("[Catalog] Prefetched next page:", nextUrl)
-                }).catch(err => console.error("Prefetch error:", err))
-            }, 1000)
-            return () => clearTimeout(timer)
-        }
-    }, [currentFeed, isAdminMode])
-
-    // Load feed function
     const loadFeed = useCallback(async (url?: string, isPagination = false) => {
         setIsLoading(true)
         try {
-            // Construct sort parameter based on  sortBy and sortDirection
             let sortParam = sortBy
             if (sortDirection === "desc") {
                 sortParam = sortBy === "alpha" ? "alpha_desc" : `${sortBy}_desc`
             }
-            // For ascending, keep as is (alpha, date_added, downloads, rating)
-
-            // Use fetchLocalLibrary directly with constructed sortParam
             const data = await OpdsClient.fetchLocalLibrary(url, sortParam)
-            if (!data) {
-                console.error("[Catalog] No data received from feed")
-                return
-            }
+            if (!data) return
             setCurrentFeed(data)
-            // Track the URL we loaded
             const selfLink = data.links?.find((l: OPDSLink) => l.rel === "self")?.href
             setCurrentFeedUrl(selfLink || url || "")
-            console.log("[Catalog] Loaded feed (adminMode:", isAdminMode, "), URL:", selfLink || url || "root")
-
-            if (isPagination) {
-                window.scrollTo(0, 0)
-            }
+            if (isPagination) window.scrollTo(0, 0)
         } catch (error) {
-            console.error("[v0] Catalog load error:", error)
+            console.error("[Catalog] Load error:", error)
         } finally {
             setIsLoading(false)
         }
-    }, [isAdminMode, sortBy, sortDirection])
+    }, [sortBy, sortDirection])
 
-    // Unified feed loader: handle searchParams and isAdminMode changes
     useEffect(() => {
         const feedUrl = searchParams.get("feed_url")
         const q = searchParams.get("q")
-
         if (q) {
             setSearchQuery(q)
         } else {
-            console.log("[Catalog] Unified loading effect triggered, feedUrl:", feedUrl || "root")
-            if (feedUrl) {
-                // Si estamos cargando un feed específico (evitando búsqueda persistente al navegar)
-                setSearchQuery("")
-            }
+            if (feedUrl) setSearchQuery("")
             loadFeed(feedUrl || undefined)
         }
-    }, [searchParams, isAdminMode, loadFeed, sortBy])
+    }, [searchParams, isAdminMode, loadFeed])
 
-    // Reload feed when sortBy changes
     useEffect(() => {
         if (!searchQuery) {
             const feedUrl = searchParams.get("feed_url")
@@ -293,16 +177,7 @@ function CatalogContent() {
         }
     }, [sortBy])
 
-    // Go back in internal history or via OPDS hierarchy
-    // Go back via native browser history
-    const goBack = useCallback(() => {
-        console.log("[Catalog] goBack called, using native router.back()")
-        router.back()
-    }, [router])
-
-    // Navigate into a subsection using URL parameters (native history)
     const handleNavigate = useCallback((url: string) => {
-        console.log("[Catalog] Navigating to subsection:", url || "root")
         if (!url) {
             router.push('/catalog')
         } else {
@@ -310,160 +185,42 @@ function CatalogContent() {
         }
     }, [router])
 
-    // History persistence removed in favor of URL-based navigation
-
-    // Integrate with Telegram BackButton
     useEffect(() => {
         if (!webApp?.BackButton) return
-
-        console.log("[Catalog] Setting up BackButton")
-
-        // Always show back button in catalog (user can always go back to main menu)
         webApp.BackButton.show()
-
-        const handleBackClick = () => {
-            console.log("[Catalog] BackButton clicked")
-            goBack()
-        }
-
+        const handleBackClick = () => router.back()
         webApp.BackButton.onClick(handleBackClick)
+        return () => webApp.BackButton.offClick(handleBackClick)
+    }, [webApp, router])
 
-        return () => {
-            webApp.BackButton.offClick(handleBackClick)
-        }
-    }, [webApp, goBack])
-
-    // Loading logic moved to unified effect above
-
-    const handleGoBack = () => {
-        goBack()
-    }
-
-    const handleDownload = async (e: React.MouseEvent, book: OPDSEntry) => {
+    const handleDownload = async (e: React.MouseEvent, book: any) => {
         e.stopPropagation()
-        const downloadLink = book.links.find(
-            (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
-        )
+        const downloadLink = book.downloadUrl || book.links?.find(
+            (l: any) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
+        )?.href
 
         if (!downloadLink) {
-            webApp?.showAlert?.("No se encontró link de descarga para este libro")
+            webApp?.showAlert?.("No se encontró link de descarga")
             return
         }
 
         try {
-            webApp?.showPopup?.({
-                title: "Descargando",
-                message: `Se está enviando "${book.title}" a tu chat...`,
-            })
-            await callBotAPI("download", {
-                bookId: downloadLink.href,
-                title: book.title,
-            })
+            webApp?.showPopup?.({ title: "Descargando", message: `Enviando "${book.title}"...` })
+            await callBotAPI("download", { bookId: downloadLink, title: book.title })
         } catch (error) {
-            console.error("[v0] Download error:", error)
-            webApp?.showAlert?.("Error al procesar la descarga")
+            console.error("[Catalog] Download error:", error)
         }
     }
 
-    const handleBookClick = (entry: OPDSEntry) => {
-        const subsectionLink = entry.links.find((l) => l.rel === "subsection")
-        const detailUrl = entry.detail_url || entry.id || entry.links.find(l => l.rel === "self")?.href
+    const handleItemClick = (entry: any) => {
+        const subsectionLink = entry.links?.find((l: any) => l.rel === "subsection")?.href || entry.subsectionUrl
+        const detailUrl = entry.detail_url || entry.detailUrl || entry.id
 
         if (subsectionLink) {
-            handleNavigate(subsectionLink.href)
+            handleNavigate(subsectionLink)
         } else if (detailUrl) {
-            // Save preview data for instant loading in detail page
-            sessionStorage.setItem("preview-book", JSON.stringify({
-                id: entry.id,
-                title: entry.title,
-                author: entry.author,
-                cover: entry.cover_url,
-                summary: entry.summary,
-                year: entry.year,
-                publisher: entry.publisher,
-                language: entry.language,
-                downloadUrl: entry.links.find(
-                    (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
-                )?.href,
-                size: entry.links.find(l => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.contentlength ||
-                    entry.links.find(l => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.length,
-                fileType: entry.links.find((l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub")))?.type,
-                // Enhanced metadata persistence
-                series: entry.series,
-                seriesIndex: entry.seriesIndex,
-                tags: entry.tags,
-                cleanTitle: entry.cleanTitle,
-                romaji: entry.romaji,
-                categories: entry.categories,
-                publishedDate: entry.publishedDate
-            }))
-
-            // Save current position before navigating to book details
-            const currentUrl = currentFeed?.links.find(l => l.rel === "self")?.href || currentFeedUrl
-            if (currentUrl) {
-                sessionStorage.setItem("catalog-last-url", currentUrl)
-            }
+            sessionStorage.setItem("preview-book", JSON.stringify(entry))
             router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
-        }
-    }
-
-    const handleSearchBookClick = (book: Book) => {
-        if (book.isFolder && book.subsectionUrl) {
-            // Si es una carpeta en búsqueda, navegamos a ella en el catálogo y limpiamos búsqueda
-            setSearchQuery("")
-            setSearchResults([])
-            handleNavigate(book.subsectionUrl)
-            return
-        }
-
-        const detailUrl = book.detailUrl || book.id
-
-        if (detailUrl) {
-            // Save preview for all results (local and external)
-            sessionStorage.setItem("preview-book", JSON.stringify({
-                id: book.id,
-                title: book.title,
-                author: book.author,
-                cover: book.cover,
-                summary: book.summary,
-                year: book.year,
-                publisher: (book as any).publisher,
-                language: book.language,
-                downloadUrl: book.downloadUrl,
-                size: book.size,
-                fileType: book.fileType,
-                // Metadata suite
-                series: book.series,
-                seriesIndex: book.seriesIndex,
-                tags: book.tags,
-                cleanTitle: book.cleanTitle,
-                romaji: book.romaji,
-                categories: book.categories,
-                updatedDate: (book as any).updatedDate
-            }))
-
-            if (detailUrl.startsWith("http") || detailUrl.startsWith("local_")) {
-                router.push(`/book?id=${encodeURIComponent(detailUrl)}`)
-            } else {
-                router.push(`/book?id=${detailUrl}`)
-            }
-        }
-    }
-    const handleSearchDownload = async (e: React.MouseEvent, book: Book) => {
-        e.stopPropagation()
-        if (!book.downloadUrl) return
-
-        try {
-            webApp?.showPopup?.({
-                title: "Descargando",
-                message: `Se está enviando "${book.title}" a tu chat...`,
-            })
-            await callBotAPI("download", {
-                bookId: book.downloadUrl,
-                title: book.title,
-            })
-        } catch (error) {
-            console.error("[Catalog] Search download error:", error)
         }
     }
 
@@ -479,545 +236,117 @@ function CatalogContent() {
         <div className="min-h-screen bg-background pt-safe pb-20">
             <TransparentHeader />
             <main className="max-w-2xl mx-auto px-4 py-6 space-y-4 text-foreground">
-                {/* Buscador Versión Premium Redondeada Style Capsule */}
-                <div className="flex gap-2 mb-2 p-1.5 bg-background/60 backdrop-blur-xl border border-white/10 rounded-full shadow-lg relative overflow-hidden group/search-bar">
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
-                    <div className="relative flex-1 flex items-center">
-                        <Search className="absolute left-4 w-4 h-4 text-primary opacity-60" />
-                        <Input
-                            type="text"
-                            placeholder={t("search_placeholder")}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-transparent border-none pl-11 h-10 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50 rounded-full"
-                        />
-                    </div>
+                <SearchBar
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    searchType={searchType}
+                    setSearchType={setSearchType}
+                    isSearchDrawerOpen={isSearchDrawerOpen}
+                    setIsSearchDrawerOpen={setIsSearchDrawerOpen}
+                    onClear={() => {
+                        setSearchQuery("");
+                        setSearchResults([]);
+                        router.push('/catalog');
+                    }}
+                    t={t}
+                />
 
-                    <div className="flex items-center gap-1 pr-1">
-                        {searchQuery && (
-                            <Button
-                                onClick={() => {
-                                    setSearchQuery("")
-                                    setSearchResults([])
-                                    router.push('/catalog')
-                                }}
-                                variant="ghost"
-                                size="icon"
-                                className="h-9 w-9 hover:bg-white/5 text-muted-foreground transition-all active:scale-95 rounded-full"
-                            >
-                                <X className="w-4 h-4" />
-                            </Button>
-                        )}
+                {!searchQuery && (
+                    <SortingChips
+                        sortBy={sortBy}
+                        sortDirection={sortDirection}
+                        onSortChange={(id) => {
+                            if (sortBy === id) {
+                                setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+                            } else {
+                                setSortBy(id);
+                                setSortDirection("asc");
+                            }
+                        }}
+                        t={t}
+                    />
+                )}
 
-                        <Drawer open={isSearchDrawerOpen} onOpenChange={setIsSearchDrawerOpen}>
-                            <DrawerTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className="h-10 px-4 bg-primary/10 hover:bg-primary/20 border border-primary/20 text-[10px] uppercase tracking-wider font-bold text-primary rounded-full transition-all active:scale-95"
-                                >
-                                    {searchType === "all" ? t("search_type_all") || "TODOS" :
-                                        searchType === "title" ? t("search_type_title") || "TÍTULO" :
-                                            searchType === "author" ? t("search_type_author") || "AUTOR" :
-                                                searchType === "illustrator" ? t("search_type_illustrator") || "ILUSTRADOR" :
-                                                    searchType === "translator" ? t("search_type_translator") || "TRADUCTOR" :
-                                                        t("search_type_genres") || "GÉNEROS"}
-                                </Button>
-                            </DrawerTrigger>
-                            <DrawerContent className="border-t border-white/10 bg-background/80 backdrop-blur-2xl">
-                                <div className="mx-auto w-full max-w-sm">
-                                    <DrawerHeader>
-                                        <DrawerTitle className="text-center text-sm font-bold uppercase tracking-widest text-primary pt-2">
-                                            {t("search_type_title_drawer") || "Tipo de Búsqueda"}
-                                        </DrawerTitle>
-                                    </DrawerHeader>
-                                    <div className="p-4 grid grid-cols-1 gap-2">
-                                        {[
-                                            { id: "all", label: "TODOS", icon: Library },
-                                            { id: "title", label: "TÍTULO", icon: BookOpen },
-                                            { id: "author", label: "AUTOR", icon: Search },
-                                            { id: "illustrator", label: "ILUSTRADOR", icon: Search },
-                                            { id: "translator", label: "TRADUCTOR", icon: Search },
-                                            { id: "genres", label: "GÉNEROS", icon: Folder }
-                                        ].map((option) => (
-                                            <Button
-                                                key={option.id}
-                                                variant={searchType === option.id ? "secondary" : "ghost"}
-                                                className={`justify-between h-12 rounded-2xl px-4 transition-all ${searchType === option.id ? 'bg-primary/20 border border-primary/30' : ''}`}
-                                                onClick={() => {
-                                                    setSearchType(option.id)
-                                                    setIsSearchDrawerOpen(false)
-                                                }}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <option.icon className={`w-4 h-4 ${searchType === option.id ? 'text-primary' : 'text-muted-foreground'}`} />
-                                                    <span className={`text-xs font-bold ${searchType === option.id ? 'text-primary' : 'text-foreground'}`}>
-                                                        {option.label}
-                                                    </span>
-                                                </div>
-                                                {searchType === option.id && <Check className="w-4 h-4 text-primary" />}
-                                            </Button>
-                                        ))}
-                                    </div>
-                                    <div className="p-4 pt-0">
-                                        <DrawerClose asChild>
-                                            <Button variant="outline" className="w-full rounded-2xl border-white/10 h-12 text-xs font-bold uppercase tracking-widest">
-                                                {t("close") || "Cerrar"}
-                                            </Button>
-                                        </DrawerClose>
-                                    </div>
+                {currentFeed?.title && !searchQuery && (
+                    <div className="pb-1 flex items-center justify-between gap-3 px-1">
+                        <h1 className="text-lg font-bold text-foreground">
+                            {currentFeed.title === "Bibliotecas Disponibles" ? t("available_libraries") : currentFeed.title.split(" - ")[0]}
+                        </h1>
+                        {(() => {
+                            const firstBook = currentFeed.entries.find(e => !e.is_folder && e.bookType);
+                            if (!firstBook?.bookType || currentFeed.title === "Zeepubs") return null;
+                            return (
+                                <div className="px-3 py-1 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded-full border border-primary/30 tracking-wider">
+                                    {firstBook.bookType}
                                 </div>
-                            </DrawerContent>
-                        </Drawer>
+                            );
+                        })()}
                     </div>
-                </div>
+                )}
 
-
-                {/* Feed title */}
-                {currentFeed?.title && (() => {
-                    const rawTitle = currentFeed.title;
-                    const displayTitle = (rawTitle === "Bibliotecas Disponibles")
-                        ? t("available_libraries")
-                        : rawTitle.split(" - ")[0].split(" [")[0];
-
-                    return (
-                        <div className="pb-1 flex items-center justify-between gap-3">
-                            <h1 className="text-lg font-bold text-foreground">
-                                {displayTitle}
-                            </h1>
-                            {(() => {
-                                // If title is "Zeepubs", don't show the badge at all as per user feedback
-                                if (displayTitle === "Zeepubs") return null;
-
-                                // Find book type from entries to show in header
-                                const firstEntry = currentFeed.entries.find(e => !e.is_folder && e.bookType);
-                                const bookType = firstEntry?.bookType || currentFeed.entries[0]?.bookType;
-                                if (!bookType) return null;
-
-                                return (
-                                    <div className="px-3 py-1 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded-full border border-primary/30 tracking-wider flex-shrink-0 animate-in fade-in zoom-in duration-300">
-                                        {bookType}
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    );
-                })()}
-
-                {/* Content Container */}
-                <div className="space-y-4">
-                    {/* Search Results Inline */}
-                    {searchQuery && (
-                        <div className="space-y-3">
-                            {searchResults.map((book, index) => {
-                                const isSeriesFolder = book.is_series_folder;
-                                const categories = book.categories || [];
-
-                                const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
-                                const demography = categories.filter(tag => demographicsKeywords.some(keyword => tag.includes(keyword)));
-                                const genres = categories.filter(tag => !demographicsKeywords.some(keyword => tag.includes(keyword)));
-
-                                return (
-                                    <Card
-                                        key={book.id || (book as any).series}
-                                        onClick={() => {
-                                            handleSearchBookClick(book);
-                                        }}
-                                        className={`p-4 border-border hover:bg-secondary/20 active:scale-[0.98] transition-all cursor-pointer group animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
-                                            }`}
-                                        style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
-                                    >
-                                        <div className="flex gap-4">
-                                            {/* Cover */}
-                                            <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50 relative">
-                                                {/* Book Type Badge (NL/NW) */}
-                                                {book.bookType && (
-                                                    <div className="absolute bottom-1 left-1 z-10 px-1 py-0.5 bg-black/60 backdrop-blur-sm text-white text-[7px] font-bold uppercase rounded border border-white/20">
-                                                        {book.bookType}
-                                                    </div>
-                                                )}
-                                                {dataSaver ? (
-                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
-                                                        <ImageOff className="w-7 h-7 mb-1 opacity-20" />
-                                                        <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
-                                                    </div>
-                                                ) : book.cover ? (
-                                                    <img src={getThumbnailUrl(book.cover)} alt={book.title} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                                                        {isSeriesFolder ? <Folder className="w-8 h-8 text-primary" /> : <BookOpen className="w-8 h-8 text-primary" />}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Content */}
-                                            <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                {/* Line 1: Title */}
-                                                <h3 className="font-bold text-sm text-foreground mb-0.5 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                                                    {(book as any).englishTitle || book.cleanTitle || book.title}
-                                                </h3>
-
-                                                {/* Line 2: Romaji */}
-                                                {book.romaji && (
-                                                    <p className="text-[11px] text-muted-foreground/80 font-medium italic mb-1 line-clamp-2">
-                                                        {book.romaji}
-                                                    </p>
-                                                )}
-
-                                                {/* Line 3: Author */}
-                                                {(book.author || (book as any).illustrator) && (
-                                                    <p className="text-[11px] text-primary font-semibold mb-1 line-clamp-2">
-                                                        {book.author}
-                                                        {(!book.author && (book as any).illustrator) ? (book as any).illustrator : ((book as any).illustrator ? ` - ${(book as any).illustrator}` : "")}
-                                                    </p>
-                                                )}
-
-                                                {/* Line 4: Volume Info */}
-                                                {isSeriesFolder || (book as any).is_series_folder ? (
-                                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                                                        {(book as any).numBooks || (book as any).book_count} {((book as any).numBooks || (book as any).book_count) === 1 ? 'volumen' : 'volúmenes'}
-                                                    </p>
-                                                ) : (
-                                                    <p className="text-[10px] text-muted-foreground font-bold flex items-center gap-1">
-                                                        <span>
-                                                            {!book.seriesIndex || ["unico", "único", "0", "00"].includes(String(book.seriesIndex).toLowerCase().trim())
-                                                                ? "Volumen único"
-                                                                : `Volumen ${book.seriesIndex}`}
-                                                        </span>
-                                                        {(book as any).publisher && (
-                                                            <span className="text-primary">[{(book as any).publisher}]</span>
-                                                        )}
-                                                    </p>
-                                                )}
-
-                                                {!isSeriesFolder && !(book as any).is_series_folder && book.downloadUrl && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={(e) => handleSearchDownload(e, book)}
-                                                        className="h-8 px-3 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 rounded-xl self-start mt-2 transition-all active:scale-95 group/btn"
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            <Download className="w-3.5 h-3.5 opacity-70 group-hover/btn:scale-110 transition-transform" />
-                                                            <span className="text-[10px] uppercase tracking-[0.1em] font-bold">
-                                                                {t("book_download")}
-                                                            </span>
-                                                        </div>
-                                                    </Button>
-                                                )}
-                                            </div>
-
-                                            <div className="flex items-center">
-                                                <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                            </div>
-                                        </div>
-                                    </Card>
-                                );
-                            })}
-
+                <div className="space-y-3">
+                    {searchQuery ? (
+                        <>
+                            {searchResults.map((book, idx) => (
+                                <CatalogItem
+                                    key={book.id}
+                                    entry={book}
+                                    index={idx}
+                                    onClick={handleItemClick}
+                                    onDownload={handleDownload}
+                                    getThumbnailUrl={getThumbnailUrl}
+                                    dataSaver={dataSaver}
+                                    disableDisplacement={disableDisplacement}
+                                    isSearchItem={true}
+                                    t={t}
+                                />
+                            ))}
                             {!isSearching && searchResults.length === 0 && (
                                 <div className="text-center py-12 animate-in fade-in zoom-in-95 duration-300">
                                     <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                                     <p className="text-sm text-muted-foreground">{t("search_empty")}</p>
                                 </div>
                             )}
-                        </div>
-                    )
-                    }
+                        </>
+                    ) : (
+                        <>
+                            {currentFeed?.entries.map((entry, idx) => (
+                                <CatalogItem
+                                    key={entry.id}
+                                    entry={entry}
+                                    index={idx}
+                                    onClick={handleItemClick}
+                                    onDownload={handleDownload}
+                                    getThumbnailUrl={getThumbnailUrl}
+                                    dataSaver={dataSaver}
+                                    disableDisplacement={disableDisplacement}
+                                    t={t}
+                                />
+                            ))}
 
-                    {/* Normal Catalog Content */}
-                    {
-                        !searchQuery && currentFeed?.entries.map((entry, index) => {
-                            const isFolder = entry.links.some((l) => l.rel === "subsection")
-                            const isBook = entry.links.some(
-                                (l) => l.rel.includes("acquisition") || (l.type && l.type.includes("epub"))
-                            )
-
-                            if (isFolder) {
-                                return (
-                                    <Card
-                                        key={entry.id}
-                                        onClick={() => handleBookClick(entry)}
-                                        className={`p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-border group active:scale-[0.98] animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
-                                            }`}
-                                        style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-20 h-28 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors overflow-hidden border border-border/50 shadow-sm relative">
-                                                {dataSaver ? (
-                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
-                                                        <ImageOff className="w-7 h-7 mb-1 opacity-20" />
-                                                        <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
-                                                    </div>
-                                                ) : entry.cover_url ? (
-                                                    <img src={getThumbnailUrl(entry.cover_url)} alt={entry.title} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <Folder className="w-8 h-8 text-primary" />
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors mb-1">
-                                                    {entry.title.replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim()}
-                                                </h3>
-                                                {entry.author && entry.author !== "Colección" && (
-                                                    <p className="text-xs text-primary font-medium line-clamp-1 mb-1">
-                                                        {entry.author}
-                                                    </p>
-                                                )}
-                                                {entry.numBooks && (
-                                                    <p className="text-[10px] text-muted-foreground/60 font-medium">
-                                                        {entry.numBooks} {entry.numBooks === 1 ? 'libro' : 'libros'}
-                                                    </p>
-                                                )}
-
-                                                {/* Demographics and Genres display for folders/series */}
-                                                {(() => {
-                                                    if (!entry.categories || entry.categories.length === 0) return null;
-                                                    const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
-                                                    const demography = entry.categories.filter(tag => demographicsKeywords.some(keyword => tag.includes(keyword)));
-                                                    const genres = entry.categories.filter(tag => !demographicsKeywords.some(keyword => tag.includes(keyword)));
-
-                                                    return (
-                                                        <div className="flex flex-col gap-1.5">
-                                                            {demography.length > 0 && (
-                                                                <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
-                                                                    <span className="font-semibold text-foreground/70 not-italic mr-1">Demografía:</span>
-                                                                    {demography.join(", ")}
-                                                                </p>
-                                                            )}
-                                                            {genres.length > 0 && (
-                                                                <p className="text-[10px] text-muted-foreground line-clamp-2 italic">
-                                                                    <span className="font-semibold text-foreground/70 not-italic mr-1">Géneros:</span>
-                                                                    {genres.join(", ")}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
-                                            </div>
-                                            <div className="flex items-center">
-                                                <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                            </div>
-                                        </div>
-                                    </Card>
-                                )
-                            }
-
-                            if (isBook) {
-                                return (
-                                    <Card
-                                        key={entry.id}
-                                        onClick={() => handleBookClick(entry)}
-                                        className={`p-4 border-border hover:bg-secondary/20 transition-all cursor-pointer group active:scale-[0.98] animate-in fade-in duration-500 fill-mode-both ${!disableDisplacement ? "slide-in-from-top-4" : ""
-                                            }`}
-                                        style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
-                                    >
-                                        <div className="flex gap-4">
-                                            <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50">
-                                                {dataSaver ? (
-                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
-                                                        <ImageOff className="w-7 h-7 mb-1 opacity-20" />
-                                                        <span className="text-[8px] font-bold uppercase tracking-tighter opacity-30 px-1 text-center">Data Saver</span>
-                                                    </div>
-                                                ) : (
-                                                    <img
-                                                        src={getThumbnailUrl(entry.cover_url) || "/placeholder.svg"}
-                                                        alt={entry.title}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0 flex flex-col">
-                                                {/* 1. Main Title & Italic Subtitle */}
-                                                <h3 className="font-semibold text-foreground mb-0.5 line-clamp-1 leading-tight group-hover:text-primary transition-colors">
-                                                    {(() => {
-                                                        // Prioritize Romaji as primary in cards
-                                                        let base = entry.romaji || entry.cleanTitle || (entry.series || entry.title).replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
-                                                        base = base.replace(/\s*\[(NL|NW|WN)\]\s*/i, "").trim();
-
-                                                        // Add Type acronym suffix if it's a volume
-                                                        if (!entry.is_folder) {
-                                                            const typeTag = entry.tags?.find(t => ["NL", "NW", "WN"].includes(t.toUpperCase()));
-                                                            if (typeTag) base += ` [${typeTag.toUpperCase()}]`;
-                                                        }
-
-                                                        return base;
-                                                    })()}
-                                                </h3>
-                                                {/* Subtitle removed (English title is in header) */}
-
-                                                {/* 2. Team: Author - Illustrator */}
-                                                <p className="text-sm text-primary font-medium mb-1 line-clamp-1">
-                                                    {entry.author}
-                                                    {entry.illustrator ? ` - ${entry.illustrator}` : ""}
-                                                </p>
-
-                                                {/* 3. Volume & Group Line */}
-                                                <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                                                    <span className="font-medium">
-                                                        {(() => {
-                                                            const idx = String(entry.seriesIndex || "").toLowerCase().trim();
-                                                            if (!entry.seriesIndex || ["unico", "único", "0", "00"].includes(idx)) {
-                                                                return "Volumen único";
-                                                            }
-                                                            const volNum = parseFloat(entry.seriesIndex);
-                                                            const padded = isNaN(volNum) ? entry.seriesIndex : (volNum < 10 ? `0${volNum}` : String(volNum));
-                                                            return `Volumen ${padded}`;
-                                                        })()}
-                                                    </span>
-                                                    {entry.publisher && (
-                                                        <span className="text-primary font-bold">[{entry.publisher}]</span>
-                                                    )}
-                                                </p>
-
-                                                {/* 4. Meta Badges: Format & Date - Only show for series folders, not volumes */}
-                                                {entry.is_folder && (
-                                                    <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                                                        {entry.bookType && (
-                                                            <div className="px-2 py-0.5 bg-primary/20 text-primary text-[9px] font-bold uppercase tracking-[0.1em] rounded-md border border-primary/20 shadow-[0_0_10px_rgba(var(--primary),0.1)]">
-                                                                {entry.bookType}
-                                                            </div>
-                                                        )}
-                                                        {(entry.publishedAt || entry.year) && (
-                                                            <div className="flex items-center gap-1 px-2 py-0.5 bg-white/5 text-muted-foreground text-[9px] uppercase tracking-[0.12em] font-bold rounded-md border border-white/5">
-                                                                <Calendar className="w-3 h-3 opacity-50" />
-                                                                {entry.publishedAt || entry.year}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* Genres & Tags removed as per user feedback to keep cards cleaner */}
-
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={(e) => handleDownload(e, entry)}
-                                                    className="h-9 px-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 rounded-xl self-start transition-all active:scale-95 group/btn"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <Download className="w-4 h-4 opacity-70 group-hover/btn:scale-110 transition-transform" />
-                                                        <span className="text-[10px] uppercase tracking-[0.1em] font-bold">
-                                                            {t("book_download")}
-                                                        </span>
-                                                    </div>
-                                                </Button>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                                            </div>
-                                        </div>
-                                    </Card>
-                                )
-                            }
-
-                            return null
-                        })
-                    }
-
-                    {!searchQuery && currentFeed && (
-                        <div className="sticky bottom-4 z-[60] space-y-2 pointer-events-auto">
-                            {/* Compact Sort Chips - Moved to bottom */}
-                            {showFilters && (
-                                <div className="flex justify-center gap-2 overflow-x-auto pb-2 px-4 scrollbar-hide pointer-events-auto animate-in slide-in-from-bottom-4 duration-300">
-                                    <div className="flex gap-2 bg-background/80 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-2xl">
-                                        {[
-                                            { key: "alpha", label: "A-Z", icon: null },
-                                            { key: "date_added", label: "Añadido", icon: Calendar },
-                                            { key: "date_updated", label: "Actualizado", icon: Calendar },
-                                            { key: "downloads", label: "Descargas", icon: Download },
-                                            { key: "rating", label: "Valoración", icon: null },
-                                        ].map((option) => {
-                                            const isActive = sortBy === option.key
-                                            const Icon = option.icon
-
-                                            // Dynamic label for alpha: A-Z when asc, Z-A when desc
-                                            // Fixed: If not active, show A-Z. If active, show current setting.
-                                            const displayLabel = option.key === "alpha"
-                                                ? (isActive ? (sortDirection === "asc" ? "A-Z" : "Z-A") : "A-Z")
-                                                : option.label
-
-                                            return (
-                                                <button
-                                                    key={option.key}
-                                                    onClick={() => {
-                                                        if (isActive) {
-                                                            setSortDirection(prev => prev === "asc" ? "desc" : "asc")
-                                                        } else {
-                                                            setSortBy(option.key)
-                                                            setSortDirection(option.key === "alpha" ? "asc" : "desc")
-                                                        }
-                                                    }}
-                                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${isActive
-                                                        ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                                                        : "bg-card/50 text-muted-foreground hover:bg-secondary border border-border/50"
-                                                        }`}
-                                                >
-                                                    {Icon && <Icon className="w-3.5 h-3.5" />}
-                                                    <span>{displayLabel}</span>
-                                                    {isActive && (
-                                                        sortDirection === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                                                    )}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
+                            {currentFeed && (currentFeed.totalPages || 0) > 1 && (
+                                <div className="pt-6">
+                                    <Pagination
+                                        currentPage={currentFeed.currentPage || 1}
+                                        totalPages={currentFeed.totalPages || 1}
+                                        onPageChange={(page) => {
+                                            const feedUrl = searchParams.get("feed_url") || "local";
+                                            const baseUrl = feedUrl.includes("?") ? feedUrl.split("?")[0] : feedUrl;
+                                            const params = new URLSearchParams(feedUrl.includes("?") ? feedUrl.split("?")[1] : "");
+                                            params.set("page", String(page));
+                                            loadFeed(`${baseUrl}?${params.toString()}`, true);
+                                        }}
+                                    />
                                 </div>
                             )}
-
-                            <Pagination
-                                currentPage={currentFeed.currentPage}
-                                totalPages={currentFeed.totalPages}
-                                hasNextPage={!!currentFeed.nextPage}
-                                hasPrevPage={!!currentFeed.prevPage}
-                                hasUpPage={true}
-                                onNextPage={() => currentFeed.nextPage && handleNavigate(currentFeed.nextPage)}
-                                onPrevPage={() => currentFeed.prevPage && handleNavigate(currentFeed.prevPage)}
-                                onUpPage={handleGoBack}
-                                onSort={() => setShowFilters(!showFilters)}
-                                showSort={true}
-                                isLoading={isLoading}
-                            />
-                        </div>
+                        </>
                     )}
-                </div >
-
-                {searchQuery && (
-                    <Pagination
-                        currentPage={searchPagination.currentPage}
-                        totalPages={searchPagination.totalPages || 1}
-                        hasNextPage={!!searchPagination.nextPage}
-                        hasPrevPage={!!searchPagination.prevPage}
-                        hasUpPage={false}
-                        onNextPage={() => handleCatalogSearch(searchPagination.currentPage + 1)}
-                        onPrevPage={() => handleCatalogSearch(searchPagination.currentPage - 1)}
-                        onUpPage={() => setSearchQuery("")}
-                        isLoading={isSearching}
-                    />
-                )}
-
-                {
-                    !searchQuery && currentFeed && currentFeed.entries.length === 0 && !isLoading && (
-                        <div className="text-center py-16">
-                            <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
-                            <p className="text-muted-foreground">Esta sección está vacía</p>
-                        </div>
-                    )
-                }
-
-                {/* Remove debug version footer for release */}
-            </main >
-        </div >
+                </div>
+            </main>
+        </div>
     )
 }
 
 export default function CatalogPage() {
-    return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-background pt-safe p-4 w-full h-full">
-                <TransparentHeader />
-            </div>
-        }>
-            <CatalogContent />
-        </Suspense>
-    )
+    return <Suspense fallback={<div className="min-h-screen bg-background" />}><CatalogContent /></Suspense>
 }
