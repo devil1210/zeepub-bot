@@ -8,6 +8,17 @@ import re
 import html
 
 
+def _clean_metadata_tags(text):
+    """Remove tags like [NL], [NW], [ShinsengumiTL], etc. from metadata"""
+    if not text:
+        return text
+    # Remove all content within square brackets
+    cleaned = re.sub(r'\s*\[.*?\]\s*', ' ', text)
+    # Remove multiple spaces
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return cleaned.strip()
+
+
 class EpubMetadataExtractor:
     """
     Extractor de metadatos ligero usando zipfile y ElementTree.
@@ -42,7 +53,9 @@ class EpubMetadataExtractor:
                 # 3. Extraer Metadatos Básicos
                 metadata_node = opf_root.find('opf:metadata', self.NAMESPACE)
                 if metadata_node is not None:
-                    self.metadata['title'] = self._get_dc_value(metadata_node, 'title')
+                    # Clean title from tags like [ShinsengumiTL]
+                    raw_title = self._get_dc_value(metadata_node, 'title')
+                    self.metadata['title'] = _clean_metadata_tags(raw_title)
                     self.metadata['publisher'] = self._get_dc_value(metadata_node, 'publisher')
                     self.metadata['language'] = self._get_dc_value(metadata_node, 'language')
                     self.metadata['description'] = self._get_dc_value(metadata_node, 'description')
@@ -113,7 +126,8 @@ class EpubMetadataExtractor:
                         prop = meta.get('property')
 
                         if name == 'calibre:series':
-                            self.metadata['series'] = meta.get('content')
+                            # Clean series name from tags
+                            self.metadata['series'] = _clean_metadata_tags(meta.get('content'))
                         elif name == "calibre:series_index":
                             try:
                                 self.metadata["volume"] = float(meta.get("content"))
@@ -121,7 +135,8 @@ class EpubMetadataExtractor:
                                 pass
                         elif prop == 'belongs-to-collection':
                             val = meta.text or metadata_node.find(f'.//opf:meta[@id="{meta.get("id")}"]', self.NAMESPACE).text
-                            self.metadata['series'] = val
+                            # Clean series name from tags like [NL], [NW]
+                            self.metadata['series'] = _clean_metadata_tags(val)
                         elif prop == "group-position" and meta.get("refines") == "#serie":
                             try:
                                 self.metadata["volume"] = float(meta.text)

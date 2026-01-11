@@ -103,11 +103,19 @@ class ScannerService:
 
             book.title = meta.get("title") or book.filename
 
-            # Extract Romaji Title from main Title if it follows "Romaji - ...Volumen" pattern
+            # Extract Romaji Title from main Title
+            # Title format: "86 ―Eitishikkusu― - Volumen 01" or "Byōsoku Go Senchimētoru + Hoshi wo Ou Kodomo - Volumen 01"
+            # We want only the romaji part before " - Volumen"
             romaji = meta.get("romaji_title")
-            if not romaji and book.title and " - " in book.title:
-                # If title is "Romaji - Volume...", take the first part
-                romaji = book.title.split(" - ")[0].strip()
+            if not romaji and book.title:
+                # Remove volume part first
+                title_without_vol = re.sub(r'\s*-\s*Volumen\s+\d+.*$', '', book.title, flags=re.IGNORECASE).strip()
+                # If there's still a " - " separator, take the first part as romaji
+                if " - " in title_without_vol:
+                    romaji = title_without_vol.split(" - ")[0].strip()
+                else:
+                    # Otherwise use the whole cleaned title
+                    romaji = title_without_vol
 
             book.romaji_title = romaji
             book.author = meta.get("author")
@@ -166,13 +174,8 @@ class ScannerService:
             book.series = meta.get("series")
             book.volume = meta.get("volume")
 
-            # Smart Clean Series Title
-            if book.title:
-                parsed_meta = parse_metadata_from_title(book.title)
-                book.series_clean = parsed_meta.get("series_clean") or parsed_meta.get("clean_title")
-            elif book.series:
-                parsed_meta = parse_metadata_from_title(book.series)
-                book.series_clean = parsed_meta.get("series_clean") or parsed_meta.get("clean_title")
+            # series_clean is just the series name (already cleaned by extractor)
+            book.series_clean = book.series
 
             # Enriched identifiers and dates
             book.isbn = meta.get("isbn")
