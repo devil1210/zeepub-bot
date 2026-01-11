@@ -8,9 +8,10 @@ interface TransparentHeaderProps {
     title?: string
     onBack?: () => void
     rightElement?: React.ReactNode
+    showTitle?: boolean
 }
 
-export function TransparentHeader({ title, onBack, rightElement }: TransparentHeaderProps) {
+export function TransparentHeader({ title, onBack, rightElement, showTitle = true }: TransparentHeaderProps) {
     return (
         <header className="fixed top-0 left-0 right-0 z-[100] px-4 pt-safe flex items-center h-20 bg-gradient-to-b from-background via-background/80 to-transparent pointer-events-none">
             <div className="flex items-center justify-between w-full max-w-2xl mx-auto pointer-events-auto">
@@ -25,7 +26,7 @@ export function TransparentHeader({ title, onBack, rightElement }: TransparentHe
                             <ChevronLeft className="w-6 h-6" />
                         </Button>
                     )}
-                    {title && (
+                    {title && showTitle && (
                         <h1 className="text-sm font-black uppercase tracking-widest text-foreground truncate drop-shadow-sm ml-1">
                             {title}
                         </h1>

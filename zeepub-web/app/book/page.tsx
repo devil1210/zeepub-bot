@@ -80,7 +80,20 @@ function BookDetailContent() {
     const [isRating, setIsRating] = useState(false)
     const [showRateModal, setShowRateModal] = useState(false)
     const [isAdmin, setIsAdmin] = useState(false)
-    const { badgePosTop, setBadgePosTop, badgePosRight, setBadgePosRight, showPosTool, setShowPosTool, badgePosMode, setBadgePosMode } = useTheme()
+    const {
+        badgePosTop, setBadgePosTop,
+        badgePosRight, setBadgePosRight,
+        showPosTool, setShowPosTool,
+        badgePosMode, setBadgePosMode,
+        bookShowTranslator,
+        bookShowSeriesAsTitle,
+        bookShowRomajiAsSubtitle,
+        bookShowAuthorIllustrator,
+        bookShowVolume,
+        bookShowReleaseDate,
+        bookShowStats,
+        bookHideFloatingRating
+    } = useTheme()
     const [showAdminPanel, setShowAdminPanel] = useState(false)
     const [isSavingBadge, setIsSavingBadge] = useState(false)
     const [showRatingPopup, setShowRatingPopup] = useState(false)
@@ -173,12 +186,36 @@ function BookDetailContent() {
     const handleRate = async (rating: number) => {
         if (!bookId || isRating) return
         setIsRating(true)
+        const oldBook = book ? { ...book } : null
+
+        // Optimistic update
+        if (book) {
+            const newCount = (book.rating_count || 0) + (userRating ? 0 : 1)
+            const oldRatingAvg = book.rating_average || 0
+            const oldCount = book.rating_count || 0
+
+            let newAvg = rating
+            if (oldCount > 0) {
+                // Approximate new average
+                const totalPoints = (oldRatingAvg * oldCount) - (userRating || 0) + rating
+                newAvg = totalPoints / newCount
+            }
+
+            setBook({
+                ...book,
+                user_rating: rating,
+                rating_average: newAvg,
+                rating_count: newCount
+            })
+        }
+
         try {
             await callBotAPI("rate_book", { bookId, rating })
             setUserRating(rating)
             if (webApp) webApp.HapticFeedback.impactOccurred("medium")
         } catch (error) {
             console.error("Error rating book:", error)
+            if (oldBook) setBook(oldBook) // Rollback
         } finally {
             setIsRating(false)
         }
@@ -187,12 +224,32 @@ function BookDetailContent() {
     const handleRemoveRating = async () => {
         if (!bookId || isRating) return
         setIsRating(true)
+        const oldBook = book ? { ...book } : null
+
+        // Optimistic update
+        if (book && userRating) {
+            const newCount = Math.max(0, (book.rating_count || 0) - 1)
+            let newAvg = 0
+            if (newCount > 0) {
+                const totalPoints = (book.rating_average || 0) * (book.rating_count || 0) - userRating
+                newAvg = totalPoints / newCount
+            }
+
+            setBook({
+                ...book,
+                user_rating: undefined,
+                rating_average: newAvg,
+                rating_count: newCount
+            })
+        }
+
         try {
             await callBotAPI("remove_rating", { bookId })
             setUserRating(null)
             if (webApp) webApp.HapticFeedback.impactOccurred("light")
         } catch (error) {
             console.error("Error removing rating:", error)
+            if (oldBook) setBook(oldBook) // Rollback
         } finally {
             setIsRating(false)
         }
@@ -270,6 +327,7 @@ function BookDetailContent() {
             <TransparentHeader
                 title={book.series ? `${book.series} #${book.seriesIndex || '?'}` : "Detalles del Libro"}
                 onBack={() => router.back()}
+                showTitle={false}
                 rightElement={isAdmin ? (
                     <Button variant="ghost" size="icon" onClick={() => setShowAdminPanel(true)} className="rounded-full hover:bg-white/10">
                         <Settings className="w-5 h-5" />
@@ -287,6 +345,17 @@ function BookDetailContent() {
                     badgePosMode={badgePosMode}
                     setShowRatingPopup={setShowRatingPopup}
                     formatDate={formatDate}
+                    config={{
+                        showTranslator: bookShowTranslator,
+                        showSeriesAsTitle: bookShowSeriesAsTitle,
+                        showRomajiAsSubtitle: bookShowRomajiAsSubtitle,
+                        showAuthorIllustrator: bookShowAuthorIllustrator,
+                        showVolume: bookShowVolume,
+                        showReleaseDate: bookShowReleaseDate,
+                        showStats: bookShowStats,
+                        hideFloatingRating: bookHideFloatingRating
+                    }}
+                    onTranslatorClick={(translator) => router.push(`/catalog?q=${encodeURIComponent(translator)}`)}
                 />
 
                 <BookSynopsis

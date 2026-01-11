@@ -47,6 +47,22 @@ interface ThemeContextType {
   setShowPosTool: (enabled: boolean) => void
   badgePosMode: "relative" | "absolute"
   setBadgePosMode: (mode: "relative" | "absolute") => void
+  bookShowTranslator: boolean
+  setBookShowTranslator: (val: boolean) => void
+  bookShowSeriesAsTitle: boolean
+  setBookShowSeriesAsTitle: (val: boolean) => void
+  bookShowRomajiAsSubtitle: boolean
+  setBookShowRomajiAsSubtitle: (val: boolean) => void
+  bookShowAuthorIllustrator: boolean
+  setBookShowAuthorIllustrator: (val: boolean) => void
+  bookShowVolume: boolean
+  setBookShowVolume: (val: boolean) => void
+  bookShowReleaseDate: boolean
+  setBookShowReleaseDate: (val: boolean) => void
+  bookShowStats: boolean
+  setBookShowStats: (val: boolean) => void
+  bookHideFloatingRating: boolean
+  setBookHideFloatingRating: (val: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -94,6 +110,22 @@ const ThemeContext = createContext<ThemeContextType>({
   setShowPosTool: () => { },
   badgePosMode: "relative",
   setBadgePosMode: () => { },
+  bookShowTranslator: true,
+  setBookShowTranslator: () => { },
+  bookShowSeriesAsTitle: true,
+  setBookShowSeriesAsTitle: () => { },
+  bookShowRomajiAsSubtitle: true,
+  setBookShowRomajiAsSubtitle: () => { },
+  bookShowAuthorIllustrator: true,
+  setBookShowAuthorIllustrator: () => { },
+  bookShowVolume: true,
+  setBookShowVolume: () => { },
+  bookShowReleaseDate: true,
+  setBookShowReleaseDate: () => { },
+  bookShowStats: true,
+  setBookShowStats: () => { },
+  bookHideFloatingRating: false,
+  setBookHideFloatingRating: () => { },
 })
 
 export function useTheme() {
@@ -175,6 +207,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [badgePosRight, setBadgePosRight] = useState(8)
   const [showPosTool, setShowPosTool] = useState(false)
   const [badgePosMode, setBadgePosMode] = useState<"relative" | "absolute">("relative")
+  const [bookShowTranslator, setBookShowTranslator] = useState(true)
+  const [bookShowSeriesAsTitle, setBookShowSeriesAsTitle] = useState(true)
+  const [bookShowRomajiAsSubtitle, setBookShowRomajiAsSubtitle] = useState(true)
+  const [bookShowAuthorIllustrator, setBookShowAuthorIllustrator] = useState(true)
+  const [bookShowVolume, setBookShowVolume] = useState(true)
+  const [bookShowReleaseDate, setBookShowReleaseDate] = useState(true)
+  const [bookShowStats, setBookShowStats] = useState(true)
+  const [bookHideFloatingRating, setBookHideFloatingRating] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [shouldPersist, setShouldPersist] = useState(true)
   const [isResetting, setIsResetting] = useState(false)
@@ -203,6 +243,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedBadgePosRight = localStorage.getItem("badgePosRight")
     const savedShowPosTool = localStorage.getItem("showPosTool")
     const savedBadgePosMode = localStorage.getItem("badgePosMode")
+    const savedBookShowTranslator = localStorage.getItem("bookShowTranslator")
+    const savedBookShowSeriesAsTitle = localStorage.getItem("bookShowSeriesAsTitle")
+    const savedBookShowRomajiAsSubtitle = localStorage.getItem("bookShowRomajiAsSubtitle")
+    const savedBookShowAuthorIllustrator = localStorage.getItem("bookShowAuthorIllustrator")
+    const savedBookShowVolume = localStorage.getItem("bookShowVolume")
+    const savedBookShowReleaseDate = localStorage.getItem("bookShowReleaseDate")
+    const savedBookShowStats = localStorage.getItem("bookShowStats")
+    const savedBookHideFloatingRating = localStorage.getItem("bookHideFloatingRating")
 
     // Sync with Backend (Role Defaults)
     const fetchRemoteDefaults = async () => {
@@ -314,6 +362,38 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setBadgePosMode(data.badgePosMode)
             localStorage.setItem("badgePosMode", data.badgePosMode)
           }
+          if (data.bookShowTranslator !== undefined) {
+            setBookShowTranslator(data.bookShowTranslator)
+            localStorage.setItem("bookShowTranslator", String(data.bookShowTranslator))
+          }
+          if (data.bookShowSeriesAsTitle !== undefined) {
+            setBookShowSeriesAsTitle(data.bookShowSeriesAsTitle)
+            localStorage.setItem("bookShowSeriesAsTitle", String(data.bookShowSeriesAsTitle))
+          }
+          if (data.bookShowRomajiAsSubtitle !== undefined) {
+            setBookShowRomajiAsSubtitle(data.bookShowRomajiAsSubtitle)
+            localStorage.setItem("bookShowRomajiAsSubtitle", String(data.bookShowRomajiAsSubtitle))
+          }
+          if (data.bookShowAuthorIllustrator !== undefined) {
+            setBookShowAuthorIllustrator(data.bookShowAuthorIllustrator)
+            localStorage.setItem("bookShowAuthorIllustrator", String(data.bookShowAuthorIllustrator))
+          }
+          if (data.bookShowVolume !== undefined) {
+            setBookShowVolume(data.bookShowVolume)
+            localStorage.setItem("bookShowVolume", String(data.bookShowVolume))
+          }
+          if (data.bookShowReleaseDate !== undefined) {
+            setBookShowReleaseDate(data.bookShowReleaseDate)
+            localStorage.setItem("bookShowReleaseDate", String(data.bookShowReleaseDate))
+          }
+          if (data.bookShowStats !== undefined) {
+            setBookShowStats(data.bookShowStats)
+            localStorage.setItem("bookShowStats", String(data.bookShowStats))
+          }
+          if (data.bookHideFloatingRating !== undefined) {
+            setBookHideFloatingRating(data.bookHideFloatingRating)
+            localStorage.setItem("bookHideFloatingRating", String(data.bookHideFloatingRating))
+          }
         }
       } catch (error) {
         console.error("Error fetching UI defaults:", error)
@@ -344,6 +424,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedBadgePosRight) setBadgePosRight(parseInt(savedBadgePosRight))
     if (savedShowPosTool !== null) setShowPosTool(savedShowPosTool === "true")
     if (savedBadgePosMode) setBadgePosMode(savedBadgePosMode as "relative" | "absolute")
+    if (savedBookShowTranslator !== null) setBookShowTranslator(savedBookShowTranslator === "true")
+    if (savedBookShowSeriesAsTitle !== null) setBookShowSeriesAsTitle(savedBookShowSeriesAsTitle === "true")
+    if (savedBookShowRomajiAsSubtitle !== null) setBookShowRomajiAsSubtitle(savedBookShowRomajiAsSubtitle === "true")
+    if (savedBookShowAuthorIllustrator !== null) setBookShowAuthorIllustrator(savedBookShowAuthorIllustrator === "true")
+    if (savedBookShowVolume !== null) setBookShowVolume(savedBookShowVolume === "true")
+    if (savedBookShowReleaseDate !== null) setBookShowReleaseDate(savedBookShowReleaseDate === "true")
+    if (savedBookShowStats !== null) setBookShowStats(savedBookShowStats === "true")
+    if (savedBookHideFloatingRating !== null) setBookHideFloatingRating(savedBookHideFloatingRating === "true")
 
     // Then fetch remote defaults for missing ones
     fetchRemoteDefaults()
@@ -545,6 +633,62 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [useRandomFolderCovers, isLoaded, shouldPersist])
 
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowTranslator", String(bookShowTranslator))
+    }
+  }, [bookShowTranslator, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowSeriesAsTitle", String(bookShowSeriesAsTitle))
+    }
+  }, [bookShowSeriesAsTitle, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowRomajiAsSubtitle", String(bookShowRomajiAsSubtitle))
+    }
+  }, [bookShowRomajiAsSubtitle, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowAuthorIllustrator", String(bookShowAuthorIllustrator))
+    }
+  }, [bookShowAuthorIllustrator, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowVolume", String(bookShowVolume))
+    }
+  }, [bookShowVolume, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowReleaseDate", String(bookShowReleaseDate))
+    }
+  }, [bookShowReleaseDate, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowStats", String(bookShowStats))
+    }
+  }, [bookShowStats, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookHideFloatingRating", String(bookHideFloatingRating))
+    }
+  }, [bookHideFloatingRating, isLoaded, shouldPersist])
+
   const saveGlobalSettings = async (role: string) => {
     try {
       const { callBotAPI } = await import("@/lib/api")
@@ -569,7 +713,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         badgePosTop,
         badgePosRight,
         showPosTool,
-        badgePosMode
+        badgePosMode,
+        bookShowTranslator,
+        bookShowSeriesAsTitle,
+        bookShowRomajiAsSubtitle,
+        bookShowAuthorIllustrator,
+        bookShowVolume,
+        bookShowReleaseDate,
+        bookShowStats,
+        bookHideFloatingRating
       }
       await callBotAPI("ui_settings", { subAction: "set", role, settings })
     } catch (error) {
@@ -603,6 +755,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.badgePosRight !== undefined) setBadgePosRight(settings.badgePosRight)
     if (settings.showPosTool !== undefined) setShowPosTool(settings.showPosTool)
     if (settings.badgePosMode !== undefined) setBadgePosMode(settings.badgePosMode)
+    if (settings.bookShowTranslator !== undefined) setBookShowTranslator(settings.bookShowTranslator)
+    if (settings.bookShowSeriesAsTitle !== undefined) setBookShowSeriesAsTitle(settings.bookShowSeriesAsTitle)
+    if (settings.bookShowRomajiAsSubtitle !== undefined) setBookShowRomajiAsSubtitle(settings.bookShowRomajiAsSubtitle)
+    if (settings.bookShowAuthorIllustrator !== undefined) setBookShowAuthorIllustrator(settings.bookShowAuthorIllustrator)
+    if (settings.bookShowVolume !== undefined) setBookShowVolume(settings.bookShowVolume)
+    if (settings.bookShowReleaseDate !== undefined) setBookShowReleaseDate(settings.bookShowReleaseDate)
+    if (settings.bookShowStats !== undefined) setBookShowStats(settings.bookShowStats)
+    if (settings.bookHideFloatingRating !== undefined) setBookHideFloatingRating(settings.bookHideFloatingRating)
 
     // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
     if (persistToLocal) {
@@ -627,6 +787,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("badgePosRight", String(settings.badgePosRight ?? 8))
       localStorage.setItem("showPosTool", String(settings.showPosTool ?? false))
       localStorage.setItem("badgePosMode", settings.badgePosMode ?? "relative")
+      localStorage.setItem("bookShowTranslator", String(settings.bookShowTranslator ?? true))
+      localStorage.setItem("bookShowSeriesAsTitle", String(settings.bookShowSeriesAsTitle ?? true))
+      localStorage.setItem("bookShowRomajiAsSubtitle", String(settings.bookShowRomajiAsSubtitle ?? true))
+      localStorage.setItem("bookShowAuthorIllustrator", String(settings.bookShowAuthorIllustrator ?? true))
+      localStorage.setItem("bookShowVolume", String(settings.bookShowVolume ?? true))
+      localStorage.setItem("bookShowReleaseDate", String(settings.bookShowReleaseDate ?? true))
+      localStorage.setItem("bookShowStats", String(settings.bookShowStats ?? true))
+      localStorage.setItem("bookHideFloatingRating", String(settings.bookHideFloatingRating ?? false))
     }
   }
 
@@ -675,6 +843,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setShowPosTool,
         badgePosMode,
         setBadgePosMode,
+        bookShowTranslator,
+        setBookShowTranslator,
+        bookShowSeriesAsTitle,
+        setBookShowSeriesAsTitle,
+        bookShowRomajiAsSubtitle,
+        setBookShowRomajiAsSubtitle,
+        bookShowAuthorIllustrator,
+        setBookShowAuthorIllustrator,
+        bookShowVolume,
+        setBookShowVolume,
+        bookShowReleaseDate,
+        setBookShowReleaseDate,
+        bookShowStats,
+        setBookShowStats,
+        bookHideFloatingRating,
+        setBookHideFloatingRating,
         saveGlobalSettings,
         applySettings,
       }}

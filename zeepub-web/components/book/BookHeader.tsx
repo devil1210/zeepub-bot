@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Calendar, User, BookOpen, Star, Info } from "lucide-react"
+import { Calendar, User, BookOpen, Star, Info, Download, Hash } from "lucide-react"
 import { Card } from "@/components/ui/card"
 
 interface BookHeaderProps {
@@ -13,6 +13,18 @@ interface BookHeaderProps {
     badgePosMode: "relative" | "absolute";
     setShowRatingPopup: (val: boolean) => void;
     formatDate: (date?: string) => string;
+    // Layout Config
+    config?: {
+        showTranslator?: boolean;
+        showSeriesAsTitle?: boolean;
+        showRomajiAsSubtitle?: boolean;
+        showAuthorIllustrator?: boolean;
+        showVolume?: boolean;
+        showReleaseDate?: boolean;
+        showStats?: boolean;
+        hideFloatingRating?: boolean;
+    };
+    onTranslatorClick?: (translator: string) => void;
 }
 
 export function BookHeader({
@@ -23,14 +35,27 @@ export function BookHeader({
     badgePosRight,
     badgePosMode,
     setShowRatingPopup,
-    formatDate
+    formatDate,
+    config = {
+        showTranslator: true,
+        showSeriesAsTitle: true,
+        showRomajiAsSubtitle: true,
+        showAuthorIllustrator: true,
+        showVolume: true,
+        showReleaseDate: true,
+        showStats: true,
+        hideFloatingRating: false // Changed from true to false to match original behavior
+    },
+    onTranslatorClick
 }: BookHeaderProps) {
-    const title = book.romaji || book.cleanTitle || book.title;
-    const subtitle = book.author || "Autor desconocido";
+    const mainTitle = config.showSeriesAsTitle ? (book.series || book.title) : (book.romaji || book.cleanTitle || book.title);
+    const subtitle = config.showRomajiAsSubtitle ? (book.romaji || book.title) : book.author;
+
+    const authorIllustrator = [book.author, book.illustrator].filter(Boolean).join(" - ") || "Autor desconocido";
 
     return (
         <div className="relative mb-6">
-            <div className="flex flex-row items-stretch gap-4 sm:gap-6 min-h-[220px]">
+            <div className="flex flex-row items-start gap-4 sm:gap-6 min-h-[220px]">
                 {/* Book Cover Container */}
                 <div
                     className={`relative shrink-0 w-[140px] sm:w-[160px] aspect-[2/3] group/cover cursor-pointer ${badgePosMode === "relative" ? "overflow-visible" : ""
@@ -54,7 +79,7 @@ export function BookHeader({
                     </div>
 
                     {/* Rating Badge - Relative to Cover */}
-                    {badgePosMode === "relative" && (book.rating_average ?? 0) > 0 && (
+                    {!config.hideFloatingRating && badgePosMode === "relative" && (book.rating_average ?? 0) > 0 && (
                         <div
                             className="absolute z-20 transition-all duration-300 pointer-events-auto"
                             style={{ top: `${badgePosTop}px`, right: `${-badgePosRight}px` }}
@@ -72,42 +97,78 @@ export function BookHeader({
                 </div>
 
                 {/* Book Info Section */}
-                <div className="flex-1 flex flex-col justify-center py-2 transition-all duration-500">
+                <div className="flex-1 flex flex-col pt-1 transition-all duration-500">
                     <div className="space-y-3">
-                        {book.series && (
-                            <div className="flex items-center gap-1.5 group/series">
-                                <div className="h-4 w-1 bg-primary rounded-full" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-primary/80 group-hover/series:text-primary transition-colors">
-                                    {book.series} {book.seriesIndex && `#${book.seriesIndex}`}
+                        {config.showTranslator && book.translator && (
+                            <button
+                                onClick={() => onTranslatorClick?.(book.translator)}
+                                className="flex items-center gap-1.5 group/translator w-fit text-left active:scale-95 transition-transform"
+                            >
+                                <div className="h-4 w-1 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary/90 group-hover/translator:text-primary transition-colors">
+                                    {book.translator}
                                 </span>
-                            </div>
+                            </button>
                         )}
 
                         <div className="space-y-1">
                             <h1 className="text-xl sm:text-2xl font-black text-foreground leading-[1.1] tracking-tight line-clamp-3">
-                                {title}
+                                {mainTitle}
+                                {config.showSeriesAsTitle && book.seriesIndex && (
+                                    <span className="text-primary ml-2">#{book.seriesIndex}</span>
+                                )}
                             </h1>
-                            {book.romaji && book.romaji !== book.title && (
-                                <p className="text-[11px] text-muted-foreground font-medium line-clamp-1 italic opacity-80">
-                                    {book.title}
+                            {config.showRomajiAsSubtitle && (
+                                <p className="text-[11px] text-muted-foreground font-medium line-clamp-2 italic opacity-80 leading-relaxed">
+                                    {subtitle}
                                 </p>
                             )}
                         </div>
 
                         <div className="flex flex-col gap-2 pt-1">
-                            <div className="flex items-center gap-2 text-muted-foreground group/author">
-                                <div className="p-1.5 rounded-lg bg-secondary/50 border border-border/10 group-hover/author:border-primary/20 transition-colors">
-                                    <User className="w-3.5 h-3.5" />
+                            {config.showAuthorIllustrator && (
+                                <div className="flex items-center gap-2 text-muted-foreground group/author">
+                                    <div className="p-1 rounded-lg bg-secondary/30 border border-border/5">
+                                        <User className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span className="text-xs font-bold transition-colors">{authorIllustrator}</span>
                                 </div>
-                                <span className="text-sm font-bold group-hover/author:text-foreground transition-colors">{subtitle}</span>
-                            </div>
+                            )}
 
-                            {(book.publishedAt || book.year) && (
+                            {config.showVolume && book.seriesIndex && (
+                                <div className="flex items-center gap-2 text-muted-foreground/80">
+                                    <div className="p-1 rounded-lg bg-secondary/30 border border-border/5">
+                                        <Hash className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span className="text-xs font-semibold">Volumen {book.seriesIndex.padStart(2, '0')}</span>
+                                </div>
+                            )}
+
+                            {config.showReleaseDate && (book.publishedAt || book.year) && (
                                 <div className="flex items-center gap-2 text-muted-foreground/70">
-                                    <div className="p-1.5 rounded-lg bg-secondary/30 border border-border/5">
+                                    <div className="p-1 rounded-lg bg-secondary/30 border border-border/5">
                                         <Calendar className="w-3.5 h-3.5" />
                                     </div>
                                     <span className="text-xs font-semibold">{formatDate(book.publishedAt || book.year)}</span>
+                                </div>
+                            )}
+
+                            {config.showStats && (
+                                <div className="flex items-center gap-4 pt-1">
+                                    {(book.rating_average ?? 0) > 0 && (
+                                        <button
+                                            onClick={() => setShowRatingPopup(true)}
+                                            className="flex items-center gap-1.5 text-rating active:scale-95 transition-transform"
+                                        >
+                                            <Star className="w-3.5 h-3.5 fill-rating" />
+                                            <span className="text-xs font-black">{(book.rating_average || 0).toFixed(1)}</span>
+                                            <span className="text-[9px] text-muted-foreground opacity-60 font-medium">({book.rating_count || 0})</span>
+                                        </button>
+                                    )}
+                                    <div className="flex items-center gap-1.5 text-muted-foreground/60">
+                                        <Download className="w-3.5 h-3.5" />
+                                        <span className="text-xs font-black">{book.download_count || 0}</span>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -115,7 +176,7 @@ export function BookHeader({
                 </div>
 
                 {/* Rating Badge - Absolute to whole card */}
-                {badgePosMode === "absolute" && (book.rating_average ?? 0) > 0 && (
+                {!config.hideFloatingRating && badgePosMode === "absolute" && (book.rating_average ?? 0) > 0 && (
                     <div
                         className="absolute z-20 transition-all duration-300 pointer-events-auto"
                         style={{ top: `${badgePosTop}px`, right: `${badgePosRight}px` }}

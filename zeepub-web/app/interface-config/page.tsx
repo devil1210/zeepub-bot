@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
-import { Info, Moon, Sun, Monitor, Type, UserCircle, BookOpen, Heart, HelpCircle, Palette, Save, Globe, AlertTriangle, Search, CreditCard, RotateCcw, Check, ImageOff, Settings } from "lucide-react"
+import { Info, Moon, Sun, Monitor, Type, UserCircle, BookOpen, Heart, HelpCircle, Palette, Save, Globe, AlertTriangle, Search, CreditCard, RotateCcw, Check, ImageOff, Settings, Layout } from "lucide-react"
 import { AccessGuard } from "@/components/access-guard"
 import { TransparentHeader } from "@/components/transparent-header"
 import { useTheme } from "@/components/theme-provider"
@@ -13,8 +13,9 @@ import { Button } from "@/components/ui/button"
 import { useStrings } from "@/components/strings-provider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { useTelegramContext } from "@/components/telegram-provider"
-import { useState, useEffect } from "react"
+import { TelegramProvider, useTelegramContext } from "@/components/telegram-provider"
+import { useState, useEffect, useMemo } from "react"
+import { BookHeader } from "@/components/book/BookHeader"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -69,12 +70,30 @@ export default function InterfaceConfigPage() {
         setUseRandomFolderCovers,
         showRecsCard,
         setShowRecsCard,
-        badgePosTop,
-        setBadgePosTop,
         badgePosRight,
         setBadgePosRight,
+        badgePosTop,
+        setBadgePosTop,
         showPosTool,
         setShowPosTool,
+        badgePosMode,
+        setBadgePosMode,
+        bookShowTranslator,
+        setBookShowTranslator,
+        bookShowSeriesAsTitle,
+        setBookShowSeriesAsTitle,
+        bookShowRomajiAsSubtitle,
+        setBookShowRomajiAsSubtitle,
+        bookShowAuthorIllustrator,
+        setBookShowAuthorIllustrator,
+        bookShowVolume,
+        setBookShowVolume,
+        bookShowReleaseDate,
+        setBookShowReleaseDate,
+        bookShowStats,
+        setBookShowStats,
+        bookHideFloatingRating,
+        setBookHideFloatingRating
     } = useTheme()
 
     const { isAdmin, userProfile } = useTelegramContext()
@@ -125,7 +144,15 @@ export default function InterfaceConfigPage() {
                 enableAnimations: localStorage.getItem("enableAnimations") === "true",
                 animationDuration: parseInt(localStorage.getItem("animationDuration") || "200"),
                 animationDistance: parseInt(localStorage.getItem("animationDistance") || "4"),
-                disableDisplacement: localStorage.getItem("disableDisplacement") === "true"
+                disableDisplacement: localStorage.getItem("disableDisplacement") === "true",
+                bookShowTranslator: localStorage.getItem("bookShowTranslator") !== "false",
+                bookShowSeriesAsTitle: localStorage.getItem("bookShowSeriesAsTitle") !== "false",
+                bookShowRomajiAsSubtitle: localStorage.getItem("bookShowRomajiAsSubtitle") !== "false",
+                bookShowAuthorIllustrator: localStorage.getItem("bookShowAuthorIllustrator") !== "false",
+                bookShowVolume: localStorage.getItem("bookShowVolume") !== "false",
+                bookShowReleaseDate: localStorage.getItem("bookShowReleaseDate") !== "false",
+                bookShowStats: localStorage.getItem("bookShowStats") !== "false",
+                bookHideFloatingRating: localStorage.getItem("bookHideFloatingRating") === "true"
             }
             applySettings(personal, true) // Restore and ENABLE persistence
             toast.info("Has vuelto a tu configuración personal")
@@ -284,32 +311,80 @@ export default function InterfaceConfigPage() {
                     {/* Previsualización */}
                     <Card className="p-6 border-border shadow-sm overflow-hidden relative">
                         <Label className="text-lg font-bold mb-4 block">Previsualización</Label>
-                        <div className="relative z-10 bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-                            <Avatar
-                                className="border-2 border-primary shadow-lg transition-all mx-auto mb-4"
-                                style={{
-                                    width: `${80 * avatarScale}px`,
-                                    height: `${80 * avatarScale}px`
-                                }}
-                            >
-                                <AvatarImage src={botAvatar} alt="Bot Avatar" />
-                                <AvatarFallback className="bg-primary/20 text-primary font-bold" style={{ fontSize: `${24 * avatarScale}px` }}>
-                                    ZP
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="text-center space-y-2">
-                                <h3 className="font-bold text-xl text-foreground">ZeePub Bot</h3>
-                                <p className="text-sm text-muted-foreground">Asistente de lectura digital</p>
-                                <div className="flex justify-center gap-2 mt-4">
-                                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                                        Demo
-                                    </Badge>
-                                    <Badge variant="outline" className="border-primary/50 text-primary">
-                                        v1.0
-                                    </Badge>
+
+                        <Tabs defaultValue="avatar" className="w-full relative z-10">
+                            <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50 p-1 h-9 items-center justify-center rounded-lg text-muted-foreground">
+                                <TabsTrigger value="avatar" className="text-xs h-7">Avatar/App</TabsTrigger>
+                                <TabsTrigger value="book" className="text-xs h-7">Ficha Libro</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="avatar" className="mt-0">
+                                <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+                                    <Avatar
+                                        className="border-2 border-primary shadow-lg transition-all mx-auto mb-4"
+                                        style={{
+                                            width: `${80 * avatarScale}px`,
+                                            height: `${80 * avatarScale}px`
+                                        }}
+                                    >
+                                        <AvatarImage src={botAvatar} alt="Bot Avatar" />
+                                        <AvatarFallback className="bg-primary/20 text-primary font-bold" style={{ fontSize: `${24 * avatarScale}px` }}>
+                                            ZP
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="text-center space-y-2">
+                                        <h3 className="font-bold text-xl text-foreground">ZeePub Bot</h3>
+                                        <p className="text-sm text-muted-foreground">Asistente de lectura digital</p>
+                                        <div className="flex justify-center gap-2 mt-4">
+                                            <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                                                Demo
+                                            </Badge>
+                                            <Badge variant="outline" className="border-primary/50 text-primary">
+                                                v1.0
+                                            </Badge>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </TabsContent>
+
+                            <TabsContent value="book" className="mt-0">
+                                <div className="bg-background/20 backdrop-blur-md rounded-2xl p-4 border border-white/5 shadow-inner">
+                                    <BookHeader
+                                        book={{
+                                            title: "Toaru Majutsu no Index",
+                                            romaji: "Toaru Majutsu no Index - Volumen 01",
+                                            series: "A CERTAIN MAGICAL INDEX",
+                                            seriesIndex: "1",
+                                            author: "Kamachi Kazuma",
+                                            illustrator: "Haimura Kiyotaka",
+                                            translator: "Traducciones Genéricas",
+                                            publishedAt: "2004-04-10",
+                                            rating_average: 4.8,
+                                            rating_count: 125,
+                                            download_count: 542,
+                                            cover: "/robot-librarian.jpg" // Dummy cover
+                                        }}
+                                        getThumbnailUrl={(url) => url}
+                                        setIsCoverFull={() => { }}
+                                        badgePosTop={badgePosTop}
+                                        badgePosRight={badgePosRight}
+                                        badgePosMode={badgePosMode}
+                                        setShowRatingPopup={() => { }}
+                                        formatDate={(d) => d || ""}
+                                        config={{
+                                            showTranslator: bookShowTranslator,
+                                            showSeriesAsTitle: bookShowSeriesAsTitle,
+                                            showRomajiAsSubtitle: bookShowRomajiAsSubtitle,
+                                            showAuthorIllustrator: bookShowAuthorIllustrator,
+                                            showVolume: bookShowVolume,
+                                            showReleaseDate: bookShowReleaseDate,
+                                            showStats: bookShowStats,
+                                            hideFloatingRating: bookHideFloatingRating
+                                        }}
+                                    />
+                                </div>
+                            </TabsContent>
+                        </Tabs>
 
                         {/* Background pattern preview */}
                         <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -667,6 +742,70 @@ export default function InterfaceConfigPage() {
                                         />
                                     </div>
                                 </Card>
+
+                                <Separator className="my-6" />
+                                <Label className="text-base font-bold mb-4 block flex items-center gap-2">
+                                    <Layout className="w-5 h-5 text-primary" />
+                                    Detalle del Libro (Layout)
+                                </Label>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <Label htmlFor="book-show-translator" className="font-medium">Mostrar Traductor</Label>
+                                        </div>
+                                        <Switch id="book-show-translator" checked={bookShowTranslator} onCheckedChange={setBookShowTranslator} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <Label htmlFor="book-show-series-title" className="font-medium">Usar Serie como Título</Label>
+                                        </div>
+                                        <Switch id="book-show-series-title" checked={bookShowSeriesAsTitle} onCheckedChange={setBookShowSeriesAsTitle} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <Label htmlFor="book-show-romaji-subtitle" className="font-medium">Mostrar Romaji como Subtítulo</Label>
+                                        </div>
+                                        <Switch id="book-show-romaji-subtitle" checked={bookShowRomajiAsSubtitle} onCheckedChange={setBookShowRomajiAsSubtitle} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <Label htmlFor="book-show-author" className="font-medium">Mostrar Autor/Ilustrador</Label>
+                                        </div>
+                                        <Switch id="book-show-author" checked={bookShowAuthorIllustrator} onCheckedChange={setBookShowAuthorIllustrator} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <Label htmlFor="book-show-volume" className="font-medium">Mostrar Número de Volumen</Label>
+                                        </div>
+                                        <Switch id="book-show-volume" checked={bookShowVolume} onCheckedChange={setBookShowVolume} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <Label htmlFor="book-show-date" className="font-medium">Mostrar Fecha Lanzamiento</Label>
+                                        </div>
+                                        <Switch id="book-show-date" checked={bookShowReleaseDate} onCheckedChange={setBookShowReleaseDate} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <Label htmlFor="book-show-stats" className="font-medium">Mostrar Calificación y Descargas</Label>
+                                        </div>
+                                        <Switch id="book-show-stats" checked={bookShowStats} onCheckedChange={setBookShowStats} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <Label htmlFor="book-hide-floating" className="font-medium">Ocultar Calificación Flotante</Label>
+                                        </div>
+                                        <Switch id="book-hide-floating" checked={bookHideFloatingRating} onCheckedChange={setBookHideFloatingRating} />
+                                    </div>
+                                </div>
 
                                 {editTarget !== "personal" && (
                                     <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
