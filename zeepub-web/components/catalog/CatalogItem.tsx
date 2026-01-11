@@ -1,7 +1,7 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { Folder, BookOpen, Download, ChevronRight, ImageOff } from "lucide-react"
+import { Folder, BookOpen, Download, ChevronRight, ImageOff, Star } from "lucide-react"
 import { OPDSEntry } from "@/lib/opds-types"
 import { Button } from "@/components/ui/button"
 
@@ -51,11 +51,6 @@ export function CatalogItem({
             <div className="flex gap-4">
                 {/* Cover */}
                 <div className="w-20 h-28 bg-secondary rounded-lg flex-shrink-0 overflow-hidden shadow-sm border border-border/50 relative">
-                    {bookType && (
-                        <div className="absolute bottom-1 left-1 z-10 px-1 py-0.5 bg-black/60 backdrop-blur-sm text-white text-[7px] font-bold uppercase rounded border border-white/20">
-                            {bookType}
-                        </div>
-                    )}
                     {dataSaver ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary/40 relative">
                             <ImageOff className="w-7 h-7 mb-1 opacity-20" />
@@ -114,32 +109,55 @@ export function CatalogItem({
                             )}
                         </div>
                     ) : (
-                        <p className="text-[10px] text-muted-foreground font-bold flex items-center gap-1">
-                            <span>
-                                {!entry.seriesIndex || ["unico", "único", "0", "00"].includes(String(entry.seriesIndex).toLowerCase().trim())
-                                    ? "Volumen único"
-                                    : `Volumen ${entry.seriesIndex}`}
-                            </span>
-                            {entry.publisher && (
-                                <span className="text-primary">[{entry.publisher}]</span>
-                            )}
-                        </p>
-                    )}
-
-                    {onDownload && !isFolder && (entry.downloadUrl || entry.links?.some((l: any) => l.rel.includes("acquisition"))) && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => onDownload(e, entry)}
-                            className="h-8 px-3 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 rounded-xl self-start mt-2 transition-all active:scale-95 group/btn"
-                        >
-                            <div className="flex items-center gap-2">
-                                <Download className="w-3.5 h-3.5 opacity-70 group-hover/btn:scale-110 transition-transform" />
-                                <span className="text-[10px] uppercase tracking-[0.1em] font-bold">
-                                    {t?.("book_download") || "Descargar"}
+                        <div className="space-y-1.5 px-0.5">
+                            <p className="text-[10px] text-muted-foreground font-bold flex items-center gap-1">
+                                <span>
+                                    {!entry.seriesIndex || ["unico", "único", "0", "00"].includes(String(entry.seriesIndex).toLowerCase().trim())
+                                        ? "Volumen único"
+                                        : `Volumen ${entry.seriesIndex}`}
                                 </span>
+                                {entry.publisher && (
+                                    <span className="text-primary/70">[{entry.publisher}]</span>
+                                )}
+                            </p>
+
+                            {/* Ratings and Downloads */}
+                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60 font-medium">
+                                <div className="flex items-center gap-0.5">
+                                    <Star className="w-3 h-3 text-orange-400 fill-orange-400" />
+                                    <span className="font-bold text-foreground/70">{entry.rating_average?.toFixed(1) || "0.0"}</span>
+                                    <span className="opacity-50 text-[9px]">({entry.rating_count || 0})</span>
+                                </div>
+                                <div className="flex items-center gap-0.5">
+                                    <Download className="w-3 h-3 text-primary/50" />
+                                    <span className="font-bold text-foreground/70">{entry.download_count || 0}</span>
+                                </div>
                             </div>
-                        </Button>
+
+                            {onDownload && (entry.downloadUrl || entry.links?.some((l: any) => l.rel.includes("acquisition"))) && (
+                                <div className="flex items-center gap-2 pt-1">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => onDownload(e, entry)}
+                                        className="h-8 px-3 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 rounded-xl transition-all active:scale-95 group/btn"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Download className="w-3.5 h-3.5 opacity-70 group-hover/btn:scale-110 transition-transform" />
+                                            <span className="text-[10px] uppercase tracking-[0.1em] font-bold">
+                                                {t?.("book_download") || "Descargar"}
+                                            </span>
+                                        </div>
+                                    </Button>
+
+                                    {bookType && (
+                                        <div className="px-2 py-1 bg-secondary/50 border border-border text-muted-foreground text-[8px] font-black uppercase rounded-lg">
+                                            {bookType}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 

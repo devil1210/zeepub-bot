@@ -74,10 +74,14 @@ class LibraryService:
             end = start + items_per_page
             paginated_books = books[start:end]
 
+            from models.download_models import DownloadHistory
+            dl_counts = {r.title: r.c for r in session.query(DownloadHistory.title, func.count(DownloadHistory.id).label("c")).group_by(DownloadHistory.title).all()}
+
             results = []
             for b in paginated_books:
                 d = b.to_dict()
                 d["is_folder"] = False
+                d["download_count"] = dl_counts.get(b.title, 0)
                 # Cleaning for legacy compatibility
                 clean_regex = r"\s*\[(NL|NW|WN)\]\s*"
                 label = b.series or b.title
@@ -106,8 +110,12 @@ class LibraryService:
         """Busca un libro por su ID en la base de datos local."""
         session = get_session()
         try:
+            from models.download_models import DownloadHistory
             book = session.query(LocalBook).filter_by(id=book_id).first()
-            return book.to_dict() if book else None
+            if not book: return None
+            d = book.to_dict()
+            d["download_count"] = session.query(func.count(DownloadHistory.id)).filter_by(title=book.title).scalar() or 0
+            return d
         except Exception as e:
             logger.error(f"[LibraryService.get_book_by_id] Error: {e}")
             return None
@@ -128,6 +136,9 @@ class LibraryService:
         """
         session = get_session()
         try:
+            from models.download_models import DownloadHistory
+            dl_counts = {r.title: r.c for r in session.query(DownloadHistory.title, func.count(DownloadHistory.id).label("c")).group_by(DownloadHistory.title).all()}
+
             if not source_id:
                 sources = session.query(LibrarySource).all()
                 items = []
@@ -158,7 +169,9 @@ class LibraryService:
             for b in books:
                 rel_path = os.path.relpath(os.path.dirname(b.filepath), current_lookup)
                 if rel_path == ".":
-                    books_in_folder.append(b.to_dict())
+                    d = b.to_dict()
+                    d["download_count"] = dl_counts.get(b.title, 0)
+                    books_in_folder.append(d)
                 elif not rel_path.startswith(".."):
                     sub = rel_path.split(os.sep)[0]
                     if sub not in folders_map:

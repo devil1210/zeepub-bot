@@ -41,6 +41,9 @@ export interface OPDSEntry {
     pageCount?: number
     readingTime?: number
     numBooks?: number
+    rating_average?: number
+    rating_count?: number
+    download_count?: number
 }
 
 export interface OPDSFeed {

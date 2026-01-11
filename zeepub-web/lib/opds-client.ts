@@ -151,6 +151,9 @@ export class OpdsClient {
                         wordCount: item.wordCount,
                         pageCount: item.pageCount,
                         readingTime: item.readingTime,
+                        rating_average: item.rating_average,
+                        rating_count: item.rating_count || item.votes,
+                        download_count: item.download_count,
                         publishedDate: item.publishedAt || item.modifiedAtOpf,
                         year: item.publishedAt ? item.publishedAt.split("-")[0] : item.modifiedAtOpf ? item.modifiedAtOpf.split("-")[0] : (item.modifiedAt && typeof item.modifiedAt === 'string' && item.modifiedAt.includes("-")) ? item.modifiedAt.split("-")[0] : undefined,
                         illustrator: item.illustrator,
@@ -239,7 +242,10 @@ export class OpdsClient {
                         publisher: item.publisher,
                         bookType: item.bookType,
                         source_id: item.source_id,
-                        numBooks: item.book_count
+                        numBooks: item.book_count,
+                        rating_average: item.rating_average,
+                        rating_count: item.rating_count || item.votes,
+                        download_count: item.download_count,
                     }
                 }),
                 currentPage: data.page || 1,
