@@ -149,7 +149,7 @@ export function CatalogItem({
                             {/* Ratings and Downloads */}
                             <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60 font-medium">
                                 <div className="flex items-center gap-0.5 group/rating">
-                                    <Star className="w-3 h-3 text-amber-400 fill-amber-400 transition-transform group-hover/rating:scale-110" />
+                                    <Star className="w-3 h-3 text-rating fill-rating transition-transform group-hover/rating:scale-110" />
                                     <span className="font-bold text-foreground/70">{entry.rating_average?.toFixed(1) || "0.0"}</span>
                                     <span className="opacity-50 text-[9px]">({entry.rating_count || 0})</span>
                                 </div>

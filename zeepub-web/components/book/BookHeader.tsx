@@ -63,8 +63,8 @@ export function BookHeader({
                                 setShowRatingPopup(true);
                             }}
                         >
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-black/80 backdrop-blur-md border border-primary/40 text-primary font-black rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.5)] active:scale-90 transition-transform">
-                                <Star className="w-3 h-3 fill-primary" />
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-black/80 backdrop-blur-md border border-rating/40 text-rating font-black rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.5)] active:scale-90 transition-transform">
+                                <Star className="w-3 h-3 fill-rating" />
                                 <span className="text-[11px] tracking-tight">{(book.rating_average || 0).toFixed(1)}</span>
                             </div>
                         </div>
@@ -124,8 +124,8 @@ export function BookHeader({
                             setShowRatingPopup(true);
                         }}
                     >
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-xl border border-primary/30 text-primary font-black rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.5)] active:scale-95 transition-transform hover:bg-black/80 hover:border-primary">
-                            <Star className="w-3.5 h-3.5 fill-primary" />
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-xl border border-rating/30 text-rating font-black rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.5)] active:scale-95 transition-transform hover:bg-black/80 hover:border-rating">
+                            <Star className="w-3.5 h-3.5 fill-rating" />
                             <span className="text-xs tracking-tight">{(book.rating_average || 0).toFixed(1)}</span>
                         </div>
                     </div>

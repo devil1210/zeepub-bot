@@ -316,7 +316,7 @@ function BookDetailContent() {
                                     className="flex-1 h-10 hover:bg-white/5 text-foreground rounded-xl transition-all active:scale-95 px-0"
                                 >
                                     <div className="flex flex-col items-center justify-center gap-0.5">
-                                        <Star className={`w-4 h-4 ${userRating ? "fill-primary text-primary" : ""}`} />
+                                        <Star className={`w-4 h-4 ${userRating ? "fill-rating text-rating" : ""}`} />
                                         <span className="text-[9px] uppercase tracking-[0.1em] font-black opacity-70">VALORAR</span>
                                     </div>
                                 </Button>
@@ -349,7 +349,7 @@ function BookDetailContent() {
                         <div className="flex justify-center gap-3 mb-8">
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <button key={star} onClick={() => { handleRate(star); setTimeout(() => setShowRateModal(false), 600); }} disabled={isRating} className="p-1 transition-all active:scale-125">
-                                    <Star className={`w-10 h-10 transition-colors ${star <= (userRating || 0) ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]" : "text-muted-foreground/20 hover:text-yellow-400/50"}`} />
+                                    <Star className={`w-10 h-10 transition-colors ${star <= (userRating || 0) ? "fill-rating text-rating drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]" : "text-muted-foreground/20 hover:text-rating/50"}`} />
                                 </button>
                             ))}
                         </div>
