@@ -48,7 +48,7 @@ export function BookHeader({
     },
     onTranslatorClick
 }: BookHeaderProps) {
-    const mainTitle = config.showSeriesAsTitle ? (book.series || book.title) : (book.romaji || book.cleanTitle || book.title);
+    const mainTitle = config.showSeriesAsTitle ? (book.series_clean || book.series || book.title) : (book.romaji || book.cleanTitle || book.title);
     const subtitle = config.showRomajiAsSubtitle ? (book.romaji || book.title) : book.author;
 
     const authorIllustrator = [book.author, book.illustrator].filter(Boolean).join(" - ") || "Autor desconocido";
@@ -114,7 +114,7 @@ export function BookHeader({
                         <div className="space-y-1">
                             <h1 className="text-xl sm:text-2xl font-black text-foreground leading-[1.1] tracking-tight line-clamp-3">
                                 {mainTitle}
-                                {config.showSeriesAsTitle && book.seriesIndex && (
+                                {config.showSeriesAsTitle && book.seriesIndex !== undefined && book.seriesIndex !== null && String(book.seriesIndex) !== "0" && (
                                     <span className="text-primary ml-2">#{book.seriesIndex}</span>
                                 )}
                             </h1>
@@ -135,12 +135,16 @@ export function BookHeader({
                                 </div>
                             )}
 
-                            {config.showVolume && book.seriesIndex && (
+                            {config.showVolume && book.seriesIndex !== undefined && book.seriesIndex !== null && (
                                 <div className="flex items-center gap-2 text-muted-foreground/80">
                                     <div className="p-1 rounded-lg bg-secondary/30 border border-border/5">
                                         <Hash className="w-3.5 h-3.5" />
                                     </div>
-                                    <span className="text-xs font-semibold">Volumen {book.seriesIndex.padStart(2, '0')}</span>
+                                    <span className="text-xs font-semibold">
+                                        {String(book.seriesIndex) === "0" || book.seriesIndex === 0
+                                            ? "Volumen único"
+                                            : `Volumen ${String(book.seriesIndex).padStart(2, '0')}`}
+                                    </span>
                                 </div>
                             )}
 

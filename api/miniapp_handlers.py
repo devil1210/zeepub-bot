@@ -399,6 +399,7 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         "isbn": isbn,
         "asin": asin,
         "series": series or "",
+        "series_clean": series or extracted_meta.get("series") or "",
         "seriesIndex": series_index or "",
         "categories": categories,
         "year": year,
