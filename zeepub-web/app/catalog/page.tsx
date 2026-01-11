@@ -63,7 +63,8 @@ function CatalogContent() {
     const [currentFeed, setCurrentFeed] = useState<OPDSFeed | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const { webApp, isAdminMode } = useTelegramContext()
-    const { t } = useStrings()
+    const { t: originalT } = useStrings()
+    const t = originalT as any
     const searchParams = useSearchParams()
     const router = useRouter()
 
@@ -329,7 +330,18 @@ function CatalogContent() {
                                     <Pagination
                                         currentPage={currentFeed.currentPage || 1}
                                         totalPages={currentFeed.totalPages || 1}
-                                        onPageChange={(page) => {
+                                        hasNextPage={currentFeed.currentPage < (currentFeed.totalPages || 0)}
+                                        hasPrevPage={currentFeed.currentPage > 1}
+                                        onNextPage={() => {
+                                            const page = (currentFeed.currentPage || 1) + 1;
+                                            const feedUrl = searchParams.get("feed_url") || "local";
+                                            const baseUrl = feedUrl.includes("?") ? feedUrl.split("?")[0] : feedUrl;
+                                            const params = new URLSearchParams(feedUrl.includes("?") ? feedUrl.split("?")[1] : "");
+                                            params.set("page", String(page));
+                                            loadFeed(`${baseUrl}?${params.toString()}`, true);
+                                        }}
+                                        onPrevPage={() => {
+                                            const page = Math.max(1, (currentFeed.currentPage || 1) - 1);
                                             const feedUrl = searchParams.get("feed_url") || "local";
                                             const baseUrl = feedUrl.includes("?") ? feedUrl.split("?")[0] : feedUrl;
                                             const params = new URLSearchParams(feedUrl.includes("?") ? feedUrl.split("?")[1] : "");

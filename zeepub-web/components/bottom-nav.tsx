@@ -2,47 +2,59 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Search, Settings, BarChart3, Library } from "lucide-react"
+import { Home, Search, Settings, BarChart3, Library, Download } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { useAccessControl } from "@/hooks/use-access-control"
+import { useStrings } from "@/components/strings-provider"
 
 const navItems = [
-  { icon: Home, label: "Inicio", href: "/" },
-  { icon: Search, label: "Buscar", href: "/catalog" },
-  { icon: Library, label: "Catálogo", href: "/catalog" },
-  { icon: BarChart3, label: "Estado", href: "/status" },
+  { icon: Home, labelKey: "home_functions", defaultLabel: "Inicio", href: "/" },
+  { icon: Library, labelKey: "menu_catalog_label", defaultLabel: "Catálogo", href: "/catalog" },
+  { icon: Download, labelKey: "menu_downloads_label", defaultLabel: "Descargas", href: "/downloads" },
+  { icon: BarChart3, labelKey: "menu_status_label", defaultLabel: "Estado", href: "/status" },
 ]
 
 export function BottomNav() {
   const pathname = usePathname()
+  const { t } = useStrings()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-inset-bottom">
-      <div className="max-w-2xl mx-auto px-2 py-2">
-        <div className="flex items-center justify-around gap-1">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md animate-in slide-in-from-bottom-4 duration-500 delay-150 fill-mode-both">
+      <nav className="bg-background/70 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-1.5 ring-1 ring-white/5">
+        <div className="flex items-center justify-around">
           {navItems.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
+            const label = t(item.labelKey as any) || item.defaultLabel
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors min-w-[72px]",
+                  "relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-xl transition-all duration-300",
+                  "flex-1 min-w-[64px]",
                   isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon className={cn("w-5 h-5", isActive && "text-primary")} />
-                <span className={cn("text-xs font-medium", isActive && "text-primary")}>{item.label}</span>
+                {isActive && (
+                  <div className="absolute inset-0 bg-primary/10 rounded-xl animate-in fade-in zoom-in-95 duration-300" />
+                )}
+                <Icon className={cn("w-5 h-5 relative z-10 transition-transform duration-300", isActive && "scale-110")} />
+                <span className={cn(
+                  "text-[9px] sm:text-xs font-bold relative z-10 transition-all duration-300",
+                  isActive ? "opacity-100 translate-y-0" : "opacity-80"
+                )}>
+                  {label}
+                </span>
               </Link>
             )
           })}
         </div>
-      </div>
-    </nav>
+      </nav>
+    </div>
   )
 }

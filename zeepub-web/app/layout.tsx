@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { TelegramProvider } from "@/components/telegram-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { StringsProvider } from "@/components/strings-provider"
+import { BottomNav } from "@/components/bottom-nav"
 import Script from "next/script"
 import "./globals.css"
 
@@ -122,7 +123,8 @@ export default function RootLayout({
         <ThemeProvider>
           <TelegramProvider>
             <StringsProvider>
-              <div className="pb-4">{children}</div>
+              <div className="pb-20">{children}</div>
+              <BottomNav />
             </StringsProvider>
           </TelegramProvider>
         </ThemeProvider>
