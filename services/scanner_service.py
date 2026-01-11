@@ -59,15 +59,21 @@ class ScannerService:
         """
         Recorre el directorio y procesa archivos nuevos o modificados.
         """
+        count = 0
         for root, dirs, files in os.walk(source.path):
             for file in files:
                 if file.lower().endswith(".epub"):
                     full_path = os.path.join(root, file)
-                    self._process_book(full_path, source, session, force_scan)
+                    if self._process_book(full_path, source, session, force_scan):
+                        count += 1
+                        # Batch commit para no bloquear DB mucho tiempo pero asegurar progreso
+                        if count % 100 == 0:
+                            session.commit()
+                            logger.info(f"Progreso de escaneo: {count} libros procesados en {source.name}")
 
-    def _process_book(self, filepath, source, session, force_scan=False):
+    def _process_book(self, filepath, source, session, force_scan=False) -> bool:
         """
-        Procesa un archivo individual.
+        Procesa un archivo individual. Devuelve True si el libro fue procesado/actualizado.
         """
         try:
             stat = os.stat(filepath)
@@ -83,8 +89,9 @@ class ScannerService:
                 and book
                 and book.file_modified_at == mtime
                 and book.file_size == size
+                and book.content_hash  # Asegurar que tiene hash o forzar
             ):
-                return
+                return False
 
             print(f"Procesando: {filepath}")
 
@@ -219,10 +226,12 @@ class ScannerService:
                 if extractor.save_cover(cover_dest):
                     book.cover_path = f"/api/library/covers/{cover_filename}"
 
-            session.commit()
+            # session.commit()  # Movido a nivel de batch o fuente
+            return True
         except Exception as e:
-            print(f"Error procesando libro {filepath}: {e}")
+            logger.error(f"Error procesando libro {filepath}: {e}")
             session.rollback()
+            return False
 
     def _generate_book_hash(self, book: LocalBook) -> str:
         """

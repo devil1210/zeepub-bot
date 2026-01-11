@@ -46,7 +46,7 @@ class MaintenancePlugin(BasePlugin):
             app.add_handler(CommandHandler("import_history", self.import_history))
             app.add_handler(CommandHandler("latest_books", self.latest_books))
             app.add_handler(CommandHandler("clear_history", self.clear_history))
-            app.add_handler(CommandHandler("scan_library", self.scan_library))
+            app.add_handler(CommandHandler("scan_library", self.scan_library, block=False))
 
             # Publisher/Admin commands
             app.add_handler(CommandHandler("export_db", self.export_db))
