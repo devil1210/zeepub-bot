@@ -578,11 +578,16 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
             message_thread_id = thread_id_override
 
     metadata_override = None
+    actual_download_url = book_id  # Default to book_id for remote books
+    
     if book_id.startswith("local_") or book_id.isdigit():
         try:
             local_id = int(str(book_id).replace("local_", ""))
             local_book_obj = await LibraryService.get_book_by_id(local_id)
             if local_book_obj:
+                # Get the actual file path
+                actual_download_url = local_book_obj.get("downloadUrl") or local_book_obj.get("filepath")
+                
                 # We need the full dict with hashes
                 from services.library_service import LibraryService
                 async with LibraryService._session_scope() as session:
@@ -590,9 +595,10 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
                     lb = session.query(LocalBook).get(local_id)
                     if lb:
                         metadata_override = lb.to_dict()
-                        # mapping keys from to_dict to telegram_service expectations if necessary
-                        metadata_override["titulo"] = lb.title
-                        metadata_override["autor"] = lb.author
+                        # Ensure the file path is set
+                        if not actual_download_url:
+                            actual_download_url = lb.filepath
+                        logger.debug(f"Local book metadata: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}")
         except Exception as e:
             logger.error(f"Error fetching metadata for handle_download: {e}")
 
@@ -600,7 +606,7 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
         bot=bot.app.bot,
         user_id=user_id,
         title=title,
-        download_url=book_id,
+        download_url=actual_download_url,
         target_chat_id=target_chat_id,
         message_thread_id=message_thread_id,
         metadata_override=metadata_override

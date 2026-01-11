@@ -189,6 +189,7 @@ class LibraryService:
         Navega por el catálogo agrupando por series_hash o mostrando volúmenes.
         """
         session = get_session()
+        from repositories.metrics_repository import metrics_repo
         try:
             # 1. Listar Fuentes (Raíz)
             if not source_id:
@@ -247,7 +248,6 @@ class LibraryService:
 
                 from repositories.download_repository import download_repo
 
-                results = []
                 from repositories.metrics_repository import metrics_repo
                 for b in books:
                     d = b.to_dict()
