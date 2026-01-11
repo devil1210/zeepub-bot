@@ -187,6 +187,11 @@ class ScannerService:
             else:
                 book.series_clean = None
 
+            # Debug log for series metadata
+            logger.debug(
+                f"[SCAN] {book.filename} | Series: '{book.series}' | Series Clean: '{book.series_clean}' | Title: '{book.title}'"
+            )
+
             # Enriched identifiers and dates
             book.isbn = meta.get("isbn")
             book.asin = meta.get("asin")
