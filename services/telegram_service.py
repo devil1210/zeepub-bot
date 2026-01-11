@@ -1,10 +1,6 @@
 # services/telegram_service.py
 
-import io
-import os
-import logging
-import asyncio
-from urllib.parse import urlparse, unquote
+from typing import List, Dict, Any, Optional
 from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import ContextTypes
@@ -906,6 +902,7 @@ async def enviar_libro_directo(
     target_chat_id: int = None,
     format_type: str = "standard",
     message_thread_id: int = None,
+    metadata_override: Optional[Dict[str, Any]] = None,
 ):
     """
     Descarga y envía un libro directamente al usuario (para la Mini App).
@@ -958,19 +955,23 @@ async def enviar_libro_directo(
         logger.info(f"EPUB listo para procesar: {download_url}")
 
         # 4. Parsear metadatos del EPUB
-        meta = {
-            "titulo": title,
-            "epub_version": "2.0",
-            "fecha_modificacion": "Desconocida",
-        }
-        # Use centralized metadata enrichment
-        from services.epub_service import enrich_metadata_from_epub
+        if metadata_override:
+            logger.info(f"Usando metadatos proporcionados para: {title}")
+            meta = metadata_override
+        else:
+            meta = {
+                "titulo": title,
+                "epub_version": "2.0",
+                "fecha_modificacion": "Desconocida",
+            }
+            # Use centralized metadata enrichment
+            from services.epub_service import enrich_metadata_from_epub
 
-        logger.debug(f"Iniciando extracción de metadatos para: {title}")
-        meta = await enrich_metadata_from_epub(epub_bytes, download_url, meta)
-        logger.debug(
-            f"Metadatos extraídos - titulo_serie: {meta.get('titulo_serie')}, internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}"
-        )
+            logger.debug(f"Iniciando extracción de metadatos para: {title}")
+            meta = await enrich_metadata_from_epub(epub_bytes, download_url, meta)
+            logger.debug(
+                f"Metadatos extraídos - titulo_serie: {meta.get('titulo_serie')}, internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}"
+            )
 
         # 5. Preparar Portada
         cover_bytes = extract_cover_from_epub(epub_bytes)
@@ -1264,9 +1265,10 @@ async def enviar_libro_directo(
                 )
                 translator = meta.get("traductor") or meta.get("publisher")
 
-                # Generate stable hashes
+                # Generate stable hashes (only if not provided in override)
                 from utils.helpers import generate_book_hash, generate_series_hash
-                book_hash = generate_book_hash(
+                
+                book_hash = meta.get("content_hash") or generate_book_hash(
                     title=titulo_vol,
                     author=author,
                     series=series,

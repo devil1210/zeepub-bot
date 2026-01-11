@@ -112,13 +112,16 @@ class LibraryService:
             end = start + items_per_page
             paginated_books = books[start:end]
 
-            dl_counts = _get_download_counts_from_zeepub_db()
+            # Results Enrichment
+            from repositories.download_repository import download_repo
 
             results = []
             for b in paginated_books:
                 d = b.to_dict()
                 d["is_folder"] = False
-                d["download_count"] = dl_counts.get(b.title, 0)
+                d["download_count"] = await download_repo.get_total_download_count(
+                    b.title, book_hash=b.content_hash
+                )
                 # Cleaning for legacy compatibility
                 d["cleanTitle"] = (
                     b.series_clean

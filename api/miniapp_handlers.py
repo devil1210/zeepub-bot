@@ -380,10 +380,10 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         "cleanTitle": extracted_meta.get("clean_title") or entry.get("title", ""),
         "tags": extracted_meta.get("tags", []),
         "is_downloaded": await download_repo.has_user_downloaded(
-            user_id, entry.get("title", ""), extracted_meta.get("clean_title"), None
+            user_id, entry.get("title", ""), extracted_meta.get("clean_title"), entry.get("series_hash") or entry.get("content_hash")
         ),
         "download_count": await download_repo.get_total_download_count(
-            entry.get("title", ""), extracted_meta.get("clean_title"), None
+            entry.get("title", ""), extracted_meta.get("clean_title"), entry.get("series_hash") or entry.get("content_hash")
         )
     }
     return result
@@ -569,6 +569,25 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
             target_chat_id = target_id_override or get_setting("mini_app_group_id", "@ZeePubBotTest")
             message_thread_id = thread_id_override
 
+    metadata_override = None
+    if book_id.startswith("local_") or book_id.isdigit():
+        try:
+            local_id = int(str(book_id).replace("local_", ""))
+            local_book_obj = await LibraryService.get_book_by_id(local_id)
+            if local_book_obj:
+                # We need the full dict with hashes
+                from services.library_service import LibraryService
+                async with LibraryService._session_scope() as session:
+                    from models.library_models import LocalBook
+                    lb = session.query(LocalBook).get(local_id)
+                    if lb:
+                        metadata_override = lb.to_dict()
+                        # mapping keys from to_dict to telegram_service expectations if necessary
+                        metadata_override["titulo"] = lb.title
+                        metadata_override["autor"] = lb.author
+        except Exception as e:
+            logger.error(f"Error fetching metadata for handle_download: {e}")
+
     success = await enviar_libro_directo(
         bot=bot.app.bot,
         user_id=user_id,
@@ -576,6 +595,7 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
         download_url=book_id,
         target_chat_id=target_chat_id,
         message_thread_id=message_thread_id,
+        metadata_override=metadata_override
     )
     return {"success": success}
 
