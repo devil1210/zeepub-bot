@@ -17,6 +17,7 @@ import { BookSynopsis } from "@/components/book/BookSynopsis"
 import { BookInformationTable } from "@/components/book/BookInformationTable"
 import { BookAdminPanel } from "@/components/book/BookAdminPanel"
 import { RatingBreakdownPopup } from "@/components/book/RatingBreakdownPopup"
+import { BottomNav } from "@/components/bottom-nav"
 
 interface BookDetail {
     id: string
@@ -293,8 +294,8 @@ function BookDetailContent() {
                 />
 
                 {/* Floating Action Bar */}
-                <div className="sticky bottom-4 z-50 px-0">
-                    <div className="flex items-center w-full max-w-[440px] mx-auto bg-background/60 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                <div className="sticky bottom-4 z-50 px-0 space-y-4 pointer-events-none">
+                    <div className="flex items-center w-full max-w-[440px] mx-auto bg-background/60 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-[0_8px_32px_rgba(0,0,0,0.4)] pointer-events-auto">
                         <Button
                             variant="ghost"
                             onClick={() => router.back()}
@@ -335,6 +336,10 @@ function BookDetailContent() {
                                 <span className="text-[9px] uppercase tracking-[0.1em] font-bold">{isDownloading ? "Enviando..." : t("book_download")}</span>
                             </div>
                         </Button>
+                    </div>
+
+                    <div className="max-w-[440px] mx-auto pointer-events-auto">
+                        <BottomNav />
                     </div>
                 </div>
             </div>

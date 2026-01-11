@@ -36,7 +36,7 @@ export function Pagination({
     if (!hasNextPage && !hasPrevPage && !hasUpPage) return null
 
     return (
-        <div className="mt-6 pb-8 sticky bottom-4 z-50">
+        <div className="w-full">
             {/* Movil-First Premium Navigation */}
             <div className="flex items-center justify-center px-4 w-full">
                 <div className="flex items-center w-full max-w-[440px] bg-background/60 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden group/nav">
@@ -103,8 +103,8 @@ export function Pagination({
                         onClick={onNextPage}
                         disabled={!hasNextPage || isLoading}
                         className={`flex-1 h-10 rounded-xl transition-all active:scale-95 disabled:opacity-20 px-0 ${hasNextPage
-                                ? "bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)] border border-primary/20"
-                                : "hover:bg-white/5 text-foreground"
+                            ? "bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)] border border-primary/20"
+                            : "hover:bg-white/5 text-foreground"
                             }`}
                     >
                         <div className="flex flex-col items-center justify-center gap-0.5">

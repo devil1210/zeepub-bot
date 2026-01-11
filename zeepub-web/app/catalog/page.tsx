@@ -17,6 +17,7 @@ import { TransparentHeader } from "@/components/transparent-header"
 import { CatalogItem } from "@/components/catalog/CatalogItem"
 import { SearchBar } from "@/components/catalog/SearchBar"
 import { SortingChips } from "@/components/catalog/SortingChips"
+import { BottomNav } from "@/components/bottom-nav"
 
 interface Book {
     id: string
@@ -324,38 +325,65 @@ function CatalogContent() {
                                     t={t}
                                 />
                             ))}
-
-                            {currentFeed && (currentFeed.totalPages || 0) > 1 && (
-                                <div className="pt-6">
-                                    <Pagination
-                                        currentPage={currentFeed.currentPage || 1}
-                                        totalPages={currentFeed.totalPages || 1}
-                                        hasNextPage={currentFeed.currentPage < (currentFeed.totalPages || 0)}
-                                        hasPrevPage={currentFeed.currentPage > 1}
-                                        onNextPage={() => {
-                                            const page = (currentFeed.currentPage || 1) + 1;
-                                            const feedUrl = searchParams.get("feed_url") || "local";
-                                            const baseUrl = feedUrl.includes("?") ? feedUrl.split("?")[0] : feedUrl;
-                                            const params = new URLSearchParams(feedUrl.includes("?") ? feedUrl.split("?")[1] : "");
-                                            params.set("page", String(page));
-                                            loadFeed(`${baseUrl}?${params.toString()}`, true);
-                                        }}
-                                        onPrevPage={() => {
-                                            const page = Math.max(1, (currentFeed.currentPage || 1) - 1);
-                                            const feedUrl = searchParams.get("feed_url") || "local";
-                                            const baseUrl = feedUrl.includes("?") ? feedUrl.split("?")[0] : feedUrl;
-                                            const params = new URLSearchParams(feedUrl.includes("?") ? feedUrl.split("?")[1] : "");
-                                            params.set("page", String(page));
-                                            loadFeed(`${baseUrl}?${params.toString()}`, true);
-                                        }}
-                                    />
-                                </div>
-                            )}
                         </>
                     )}
                 </div>
-            </main>
-        </div>
+
+                {/* Sticky Navigation Area */}
+                <div className="sticky bottom-4 z-[60] pt-4 space-y-4 pointer-events-none">
+                    {currentFeed && (currentFeed.totalPages || 0) > 1 && !searchQuery && (
+                        <div className="max-w-[440px] mx-auto pointer-events-auto">
+                            <Pagination
+                                currentPage={currentFeed.currentPage || 1}
+                                totalPages={currentFeed.totalPages || 1}
+                                hasNextPage={currentFeed.currentPage < (currentFeed.totalPages || 0)}
+                                hasPrevPage={currentFeed.currentPage > 1}
+                                onNextPage={() => {
+                                    const page = (currentFeed.currentPage || 1) + 1;
+                                    const feedUrl = searchParams.get("feed_url") || "local";
+                                    const baseUrl = feedUrl.includes("?") ? feedUrl.split("?")[0] : feedUrl;
+                                    const params = new URLSearchParams(feedUrl.includes("?") ? feedUrl.split("?")[1] : "");
+                                    params.set("page", String(page));
+                                    loadFeed(`${baseUrl}?${params.toString()}`, true);
+                                }}
+                                onPrevPage={() => {
+                                    const page = Math.max(1, (currentFeed.currentPage || 1) - 1);
+                                    const feedUrl = searchParams.get("feed_url") || "local";
+                                    const baseUrl = feedUrl.includes("?") ? feedUrl.split("?")[0] : feedUrl;
+                                    const params = new URLSearchParams(feedUrl.includes("?") ? feedUrl.split("?")[1] : "");
+                                    params.set("page", String(page));
+                                    loadFeed(`${baseUrl}?${params.toString()}`, true);
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {searchQuery && (searchPagination.totalPages || 0) > 1 && (
+                        <div className="max-w-[440px] mx-auto pointer-events-auto">
+                            <Pagination
+                                currentPage={searchPagination.currentPage}
+                                totalPages={searchPagination.totalPages || 1}
+                                hasNextPage={!!searchPagination.nextPage}
+                                hasPrevPage={!!searchPagination.prevPage}
+                                hasUpPage={false}
+                                onNextPage={() => handleCatalogSearch(searchPagination.currentPage + 1)}
+                                onPrevPage={() => handleCatalogSearch(searchPagination.currentPage - 1)}
+                                onUpPage={() => {
+                                    setSearchQuery("");
+                                    setSearchResults([]);
+                                    router.push('/catalog');
+                                }}
+                                isLoading={isSearching}
+                            />
+                        </div>
+                    )}
+
+                    <div className="max-w-[440px] mx-auto pointer-events-auto">
+                        <BottomNav />
+                    </div>
+                </div>
+            </main >
+        </div >
     )
 }
 
