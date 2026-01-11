@@ -32,9 +32,16 @@ export function CatalogItem({
     const bookType = entry.bookType;
     const coverUrl = entry.cover_url || entry.cover;
 
-    // Title cleaning (use persistent series_clean if available)
-    const displayTitle = (entry.series_clean || entry.englishTitle || entry.cleanTitle || entry.title || "")
-        .replace(/\s*\[.*?\]\s*/g, " ").replace(/\s\s+/g, ' ').trim();
+    // Title display logic: prioritize series name for all cards
+    // For series folders and individual volumes, show the series name
+    const displayTitle = (
+        entry.series_clean ||
+        entry.series ||
+        entry.englishTitle ||
+        entry.cleanTitle ||
+        entry.title ||
+        ""
+    ).replace(/\s*\[.*?\]\s*/g, " ").replace(/\s\s+/g, ' ').trim();
 
     const demographicsKeywords = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo", "Adultos", "Chicos", "Chicas", "Mujeres", "Hombres"];
     const tags = entry.categories || entry.tags || [];
@@ -94,7 +101,12 @@ export function CatalogItem({
                     {isFolder ? (
                         <div className="space-y-1 px-0.5">
                             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider flex items-center gap-2">
-                                <span>{entry.numBooks || entry.book_count || 0} {(entry.numBooks || entry.book_count) === 1 ? 'volumen' : 'volúmenes'}</span>
+                                {/* Show "series" for library sources, "volúmenes" for series folders */}
+                                {entry.id?.startsWith('source_') ? (
+                                    <span>{entry.numBooks || entry.book_count || 0} {(entry.numBooks || entry.book_count) === 1 ? 'serie' : 'series'}</span>
+                                ) : (
+                                    <span>{entry.numBooks || entry.book_count || 0} {(entry.numBooks || entry.book_count) === 1 ? 'volumen' : 'volúmenes'}</span>
+                                )}
                                 {bookType && (
                                     <span className="px-1.5 py-0.5 bg-primary/20 text-primary text-[8px] font-black rounded-md border border-primary/20">
                                         {bookType}
