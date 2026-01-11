@@ -92,17 +92,23 @@ class LocalBook(Base):
     file_modified_at = Column(DateTime)
     indexed_at = Column(DateTime, default=datetime.utcnow)
 
+    # Identificadores estables basados en metadatos
+    series_hash = Column(String(64), index=True)  # Agrupa volúmenes de la misma serie/tipo
+    content_hash = Column(String(64), index=True, unique=True)  # Identifica el EPUB específico (incluye volumen y traductor)
+
     source = relationship("LibrarySource", back_populates="books")
 
     def to_dict(self):
         return {
             "id": f"local_{self.id}",  # Prefijo para distinguir de Kavita IDs
+            "hash": self.content_hash,
             "title": self.title,
             "author": self.author,
             "romaji": self.romaji_title,
             "englishTitle": self.english_title,
             "series": self.series,
             "series_clean": self.series_clean,
+            "seriesHash": self.series_hash,
             "seriesIndex": self.volume,
             "tags": self.tags,
             "demographics": self.demographics,

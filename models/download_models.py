@@ -29,3 +29,4 @@ class DownloadHistory(Base):
     volume = Column(String(50))
     translator = Column(String(255))
     clean_title = Column(String(512))
+    book_hash = Column(String(64), index=True)

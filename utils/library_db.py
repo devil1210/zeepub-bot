@@ -48,7 +48,9 @@ def check_migrations():
             ('reading_time', 'INTEGER'),
             ('rating_average', 'FLOAT DEFAULT 0.0'),
             ('rating_count', 'INTEGER DEFAULT 0'),
-            ('series_clean', 'VARCHAR(255)')
+            ('series_clean', 'VARCHAR(255)'),
+            ('content_hash', 'VARCHAR(64)'),
+            ('series_hash', 'VARCHAR(64)')
         ]
 
         # 1. Migración de columnas (local_books)

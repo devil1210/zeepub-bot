@@ -252,10 +252,10 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         if local_book:
             logger.info(f"[book-detail] Found local book via LibraryService: {local_book['title']}")
             local_book["is_downloaded"] = await download_repo.has_user_downloaded(
-                user_id, local_book["title"], local_book.get("cleanTitle")
+                user_id, local_book["title"], local_book.get("cleanTitle"), local_book.get("content_hash")
             )
             local_book["download_count"] = await download_repo.get_total_download_count(
-                local_book["title"], local_book.get("cleanTitle")
+                local_book["title"], local_book.get("cleanTitle"), local_book.get("content_hash")
             )
             return local_book
 
@@ -380,10 +380,10 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         "cleanTitle": extracted_meta.get("clean_title") or entry.get("title", ""),
         "tags": extracted_meta.get("tags", []),
         "is_downloaded": await download_repo.has_user_downloaded(
-            user_id, entry.get("title", ""), extracted_meta.get("clean_title")
+            user_id, entry.get("title", ""), extracted_meta.get("clean_title"), None
         ),
         "download_count": await download_repo.get_total_download_count(
-            entry.get("title", ""), extracted_meta.get("clean_title")
+            entry.get("title", ""), extracted_meta.get("clean_title"), None
         )
     }
     return result
@@ -700,6 +700,7 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
     book_id = str(book_id_raw)
     title_for_query = None
     clean_title_for_query = None
+    book_hash_for_query = None
 
     if book_id.startswith("local_") or book_id.isdigit():
         clean_id_int = int(book_id.replace("local_", ""))
@@ -707,6 +708,7 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
         if local_book:
             title_for_query = local_book["title"]
             clean_title_for_query = local_book.get("cleanTitle")
+            book_hash_for_query = local_book.get("content_hash")
     else:
         # It's a URL (OPDS)
         try:
@@ -718,13 +720,18 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
                     title_for_query = entry.get("title")
                     meta = parse_metadata_from_title(title_for_query)
                     clean_title_for_query = meta.get("clean_title")
+                    # For OPDS books we don't have a stable binary hash, 
+                    # but we can simulate one if we want consistency across scanners.
+                    # For now, title-based fallback in repository will handle it.
         except Exception as e:
             logger.error(f"[handle_get_download_count] Error resolving OPDS title for {book_id}: {e}")
 
-    if not title_for_query:
+    if not title_for_query and not book_hash_for_query:
         return {"count": 0}
 
-    count = await download_repo.get_total_download_count(title_for_query, clean_title_for_query)
+    count = await download_repo.get_total_download_count(
+        title_for_query, clean_title_for_query, book_hash_for_query
+    )
     return {"count": count}
 
 

@@ -141,7 +141,14 @@ class DatabaseManager:
                     logger.debug(f"Notice during migration (total_downloads): {e}")
 
             # Migración: Agregar nuevas columnas a download_history para historial enriquecido
-            for col in [("romaji_title", "TEXT"), ("series", "TEXT"), ("volume", "TEXT"), ("translator", "TEXT"), ("clean_title", "TEXT")]:
+            for col in [
+                ("romaji_title", "TEXT"),
+                ("series", "TEXT"),
+                ("volume", "TEXT"),
+                ("translator", "TEXT"),
+                ("clean_title", "TEXT"),
+                ("book_hash", "TEXT")
+            ]:
                 try:
                     await conn.execute(f"ALTER TABLE download_history ADD COLUMN {col[0]} {col[1]}")
                     logger.info(f"Migración: Agregada columna '{col[0]}' a tabla download_history")

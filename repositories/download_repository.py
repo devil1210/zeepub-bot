@@ -65,7 +65,8 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         series: Optional[str] = None,
         volume: Optional[str] = None,
         translator: Optional[str] = None,
-        clean_title: Optional[str] = None
+        clean_title: Optional[str] = None,
+        book_hash: Optional[str] = None
     ) -> int:
         """
         Record a download in the history.
@@ -84,10 +85,10 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             cursor = await conn.execute(
                 """
                 INSERT INTO download_history
-                (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title)
+                (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash)
             )
             await conn.commit()
             return cursor.lastrowid
@@ -174,15 +175,24 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             row = await cursor.fetchone()
             return row[0] if row else 0
 
-    async def has_user_downloaded(self, user_id: int, title: str, clean_title: Optional[str] = None) -> bool:
+    async def has_user_downloaded(self, user_id: int, title: str, clean_title: Optional[str] = None, book_hash: Optional[str] = None) -> bool:
         """
-        Check if a user has previously downloaded a book by title or clean_title.
+        Check if a user has previously downloaded a book by hash (preferred), title or clean_title.
         """
-        from utils.epub_extractor import clean_metadata_tags
-
-        search_clean = clean_title or clean_metadata_tags(title)
-
         async with self.db_manager.connection() as conn:
+            # 1. Prioritize Hash
+            if book_hash:
+                cursor = await conn.execute(
+                    "SELECT 1 FROM download_history WHERE user_id = ? AND book_hash = ?",
+                    (user_id, book_hash)
+                )
+                if await cursor.fetchone():
+                    return True
+
+            # 2. Fallback to Title
+            from utils.epub_extractor import clean_metadata_tags
+            search_clean = clean_title or clean_metadata_tags(title)
+
             cursor = await conn.execute(
                 """
                 SELECT 1 FROM download_history 
@@ -192,15 +202,25 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             )
             return await cursor.fetchone() is not None
 
-    async def get_total_download_count(self, title: str, clean_title: Optional[str] = None) -> int:
+    async def get_total_download_count(self, title: str, clean_title: Optional[str] = None, book_hash: Optional[str] = None) -> int:
         """
-        Get total download count for a book across all users, using both dirty and clean titles.
+        Get total download count for a book across all users, using hash (preferred), dirty and clean titles.
         """
-        from utils.epub_extractor import clean_metadata_tags
-
-        search_clean = clean_title or clean_metadata_tags(title)
-
         async with self.db_manager.connection() as conn:
+            # 1. Prioritize Hash
+            if book_hash:
+                cursor = await conn.execute(
+                    "SELECT COUNT(*) FROM download_history WHERE book_hash = ?",
+                    (book_hash,)
+                )
+                count = (await cursor.fetchone())[0]
+                if count > 0:
+                    return count
+
+            # 2. Fallback to Title
+            from utils.epub_extractor import clean_metadata_tags
+            search_clean = clean_title or clean_metadata_tags(title)
+
             cursor = await conn.execute(
                 """
                 SELECT COUNT(*) FROM download_history 

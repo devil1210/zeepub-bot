@@ -1,5 +1,6 @@
 import re
 import html
+import hashlib
 from urllib.parse import urljoin, urlparse
 from typing import Optional, List, Any, Dict
 from config.config_settings import config
@@ -153,8 +154,53 @@ def abs_url(base: str, href: str) -> str:
     return href if href.startswith("http") else urljoin(base, href)
 
 
-def norm_string(s: str) -> str:
-    return " ".join((s or "").split()).casefold()
+def norm_string(s: Any) -> str:
+    return " ".join((str(s) if s is not None else "").split()).casefold()
+
+
+def generate_book_hash(
+    title: str,
+    author: Optional[str] = None,
+    series: Optional[str] = None,
+    volume: Optional[Any] = None,
+    book_type: Optional[str] = None,
+    language: Optional[str] = None,
+    translator: Optional[str] = None
+) -> str:
+    """
+    Genera un hash estable de 64 caracteres basado en los metadatos clave.
+    Incluye el grupo traductor para distinguir ediciones.
+    """
+    base_title = norm_string(series or title)
+    author_norm = norm_string(author)
+    vol_norm = norm_string(volume)
+    type_norm = norm_string(book_type)
+    lang_norm = norm_string(language or "es")
+    trans_norm = norm_string(translator)
+
+    # Cadena de identidad determinista para el EPUB específico
+    identity = f"title:{base_title}|author:{author_norm}|vol:{vol_norm}|type:{type_norm}|lang:{lang_norm}|trans:{trans_norm}"
+    
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+
+
+def generate_series_hash(
+    series: str,
+    author: Optional[str] = None,
+    book_type: Optional[str] = None
+) -> str:
+    """
+    Genera un hash estable para agrupar volúmenes en una misma serie.
+    Solo depende del nombre de la serie, el autor y el tipo (NL vs NW).
+    """
+    series_norm = norm_string(series)
+    author_norm = norm_string(author)
+    type_norm = norm_string(book_type)
+
+    # Cadena de identidad determinista para la SERIE
+    identity = f"series:{series_norm}|author:{author_norm}|type:{type_norm}"
+    
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
 def limpiar_html_basico(texto_html: str) -> str:

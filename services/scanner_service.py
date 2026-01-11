@@ -7,7 +7,7 @@ from datetime import datetime
 from utils.library_db import get_session, init_library_db, COVERS_DIR
 from models.library_models import LibrarySource, LocalBook
 from utils.epub_extractor import EpubMetadataExtractor
-from utils.helpers import parse_metadata_from_title
+from utils.helpers import parse_metadata_from_title, generate_book_hash, generate_series_hash
 from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
@@ -208,6 +208,10 @@ class ScannerService:
             book.page_count = meta.get("page_count")
             book.reading_time = meta.get("reading_time")
 
+            # Generar hashes estables
+            book.series_hash = self._generate_series_hash(book)
+            book.content_hash = self._generate_book_hash(book)
+
             # Guardar Portada
             if extractor.cover_data:
                 cover_filename = f"{hashlib.md5(filepath.encode()).hexdigest()}.jpg"
@@ -219,3 +223,30 @@ class ScannerService:
         except Exception as e:
             print(f"Error procesando libro {filepath}: {e}")
             session.rollback()
+
+    def _generate_book_hash(self, book: LocalBook) -> str:
+        """
+        Genera un hash estable basado en los metadatos clave del libro.
+        Detecta cambios en título, autor, volumen, tipo y traductor.
+        """
+        return generate_book_hash(
+            title=book.title,
+            author=book.author,
+            series=book.series_clean,
+            volume=book.volume,
+            book_type=book.book_type,
+            language=book.language,
+            translator=book.translator or book.publisher or book.layout_by
+        )
+
+    def _generate_series_hash(self, book: LocalBook) -> str:
+        """
+        Genera un hash estable para agrupar volúmenes de la misma serie.
+        """
+        # Usar series_clean preferentemente
+        series_name = book.series_clean or book.series or book.title
+        return generate_series_hash(
+            series=series_name,
+            author=book.author,
+            book_type=book.book_type
+        )

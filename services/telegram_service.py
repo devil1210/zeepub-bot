@@ -1263,6 +1263,18 @@ async def enviar_libro_directo(
                     "clean_title"
                 )
                 translator = meta.get("traductor") or meta.get("publisher")
+                
+                # Generate stable hashes
+                from utils.helpers import generate_book_hash, generate_series_hash
+                book_hash = generate_book_hash(
+                    title=titulo_vol,
+                    author=author,
+                    series=series,
+                    volume=volume,
+                    book_type=meta.get("book_type") or meta.get("categoria"),
+                    language=meta.get("language"),
+                    translator=translator
+                )
 
                 await download_repo.add_download(
                     user_id=user_id,
@@ -1275,6 +1287,7 @@ async def enviar_libro_directo(
                     volume=volume,
                     translator=translator,
                     clean_title=clean_title,
+                    book_hash=book_hash,
                 )
                 logger.info(
                     f"[enviar_libro_directo] Historial guardado para user {user_id}: {titulo_vol}"
