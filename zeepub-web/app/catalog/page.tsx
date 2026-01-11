@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Search, ImageOff, Library, BookOpen, Folder, ArrowUpCircle } from "lucide-react"
+import { Search, ImageOff, Library, BookOpen, Folder, ArrowUpCircle, Calendar, Download } from "lucide-react"
 import { OpdsClient } from "@/lib/opds-client"
 import { OPDSFeed, OPDSEntry, OPDSLink } from "@/lib/opds-types"
 import { callBotAPI } from "@/lib/api"
@@ -83,6 +83,7 @@ function CatalogContent() {
         currentPage: 1,
         totalPages: 1
     })
+    const [showFilters, setShowFilters] = useState(false)
     const searchTimeout = useRef<NodeJS.Timeout | null>(null)
 
     const handleCatalogSearch = useCallback(async (page: number = 1) => {
@@ -186,6 +187,8 @@ function CatalogContent() {
         }
     }, [router])
 
+    const handleGoBack = () => router.back()
+
     useEffect(() => {
         if (!webApp?.BackButton) return
         webApp.BackButton.show()
@@ -252,23 +255,7 @@ function CatalogContent() {
                     t={t}
                 />
 
-                {!searchQuery && (
-                    <SortingChips
-                        sortBy={sortBy}
-                        sortDirection={sortDirection}
-                        onSortChange={(id) => {
-                            if (sortBy === id) {
-                                setSortDirection(prev => prev === "asc" ? "desc" : "asc");
-                            } else {
-                                setSortBy(id);
-                                setSortDirection("asc");
-                            }
-                        }}
-                        t={t}
-                    />
-                )}
-
-                {currentFeed?.title && !searchQuery && (
+                {!searchQuery && currentFeed?.title && (
                     <div className="pb-1 flex items-center justify-between gap-3 px-1">
                         <h1 className="text-lg font-bold text-foreground">
                             {currentFeed.title === "Bibliotecas Disponibles" ? t("available_libraries") : currentFeed.title.split(" - ")[0]}
@@ -329,14 +316,59 @@ function CatalogContent() {
                 </div>
 
                 {/* Sticky Navigation Area */}
-                <div className="sticky bottom-4 z-[60] pt-4">
-                    {currentFeed && (currentFeed.totalPages || 0) > 1 && !searchQuery && (
+                <div className="sticky bottom-4 z-[60] space-y-4 pt-4 pointer-events-none">
+                    {showFilters && !searchQuery && (
+                        <div className="flex justify-center gap-2 overflow-x-auto pb-2 px-4 scrollbar-hide pointer-events-auto animate-in slide-in-from-bottom-4 duration-300">
+                            <div className="flex gap-2 bg-background/80 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-2xl">
+                                {[
+                                    { key: "alpha", label: "A-Z", icon: null },
+                                    { key: "date_added", label: "Añadido", icon: Calendar },
+                                    { key: "date_updated", label: "Actualizado", icon: Calendar },
+                                    { key: "downloads", label: t ? t("book_downloads") || "Descargas" : "Descargas", icon: Download },
+                                    { key: "rating", label: "Valoración", icon: null },
+                                ].map((option) => {
+                                    const isActive = sortBy === option.key
+                                    const Icon = option.icon
+                                    const displayLabel = option.key === "alpha"
+                                        ? (isActive ? (sortDirection === "asc" ? "A-Z" : "Z-A") : "A-Z")
+                                        : option.label
+
+                                    return (
+                                        <button
+                                            key={option.key}
+                                            onClick={() => {
+                                                if (isActive) {
+                                                    setSortDirection(prev => prev === "asc" ? "desc" : "asc")
+                                                } else {
+                                                    setSortBy(option.key)
+                                                    setSortDirection(option.key === "alpha" ? "asc" : "desc")
+                                                }
+                                            }}
+                                            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${isActive
+                                                ? "bg-primary text-primary-foreground shadow-lg scale-105"
+                                                : "bg-card/50 text-muted-foreground hover:bg-secondary border border-border/50"
+                                                }`}
+                                        >
+                                            {Icon && <Icon className="w-3.5 h-3.5" />}
+                                            <span>{displayLabel}</span>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {!searchQuery && currentFeed && ((currentFeed.totalPages || 0) > 1 || searchParams.get("feed_url")) && (
                         <div className="max-w-[440px] mx-auto pointer-events-auto">
                             <Pagination
                                 currentPage={currentFeed.currentPage || 1}
                                 totalPages={currentFeed.totalPages || 1}
                                 hasNextPage={currentFeed.currentPage < (currentFeed.totalPages || 0)}
                                 hasPrevPage={currentFeed.currentPage > 1}
+                                hasUpPage={!!searchParams.get("feed_url")}
+                                onUpPage={handleGoBack}
+                                onSort={() => setShowFilters(!showFilters)}
+                                showSort={true}
                                 onNextPage={() => {
                                     const page = (currentFeed.currentPage || 1) + 1;
                                     const feedUrl = searchParams.get("feed_url") || "local";
@@ -353,6 +385,7 @@ function CatalogContent() {
                                     params.set("page", String(page));
                                     loadFeed(`${baseUrl}?${params.toString()}`, true);
                                 }}
+                                isLoading={isLoading}
                             />
                         </div>
                     )}
