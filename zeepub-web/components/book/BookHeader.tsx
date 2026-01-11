@@ -99,24 +99,18 @@ export function BookHeader({
                 {/* Book Info Section */}
                 <div className="flex-1 flex flex-col pt-1 transition-all duration-500">
                     <div className="space-y-3">
-                        {config.showTranslator && book.translator && (
-                            <button
-                                onClick={() => onTranslatorClick?.(book.translator)}
-                                className="flex items-center gap-1.5 group/translator w-fit text-left active:scale-95 transition-transform"
-                            >
+                        {(book.publisher || book.translator) && (
+                            <div className="flex items-center gap-1.5 w-fit text-left">
                                 <div className="h-4 w-1 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-primary/90 group-hover/translator:text-primary transition-colors">
-                                    {book.translator}
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary/90 transition-colors">
+                                    {[book.publisher, book.translator].filter(Boolean).join(" - ")}
                                 </span>
-                            </button>
+                            </div>
                         )}
 
                         <div className="space-y-1">
                             <h1 className="text-xl sm:text-2xl font-black text-foreground leading-[1.1] tracking-tight line-clamp-3">
                                 {mainTitle}
-                                {config.showSeriesAsTitle && book.seriesIndex !== undefined && book.seriesIndex !== null && String(book.seriesIndex) !== "0" && (
-                                    <span className="text-primary ml-2">#{book.seriesIndex}</span>
-                                )}
                             </h1>
                             {config.showRomajiAsSubtitle && (
                                 <p className="text-[11px] text-muted-foreground font-medium line-clamp-2 italic opacity-80 leading-relaxed">
@@ -129,9 +123,9 @@ export function BookHeader({
                             {config.showAuthorIllustrator && (
                                 <div className="flex items-center gap-2 text-muted-foreground group/author">
                                     <div className="p-1 rounded-lg bg-secondary/30 border border-border/5">
-                                        <User className="w-3.5 h-3.5" />
+                                        <User className="w-3.5 h-3.5 text-primary" />
                                     </div>
-                                    <span className="text-xs font-bold transition-colors">{authorIllustrator}</span>
+                                    <span className="text-xs font-bold text-primary transition-colors">{authorIllustrator}</span>
                                 </div>
                             )}
 
