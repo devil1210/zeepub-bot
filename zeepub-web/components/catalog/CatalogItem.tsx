@@ -140,18 +140,18 @@ export function CatalogItem({
                                         variant="ghost"
                                         size="sm"
                                         onClick={(e) => onDownload(e, entry)}
-                                        className="h-8 px-3 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 rounded-xl transition-all active:scale-95 group/btn"
+                                        className="h-6 px-2.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 rounded-lg transition-all active:scale-95 group/btn"
                                     >
-                                        <div className="flex items-center gap-2">
-                                            <Download className="w-3.5 h-3.5 opacity-70 group-hover/btn:scale-110 transition-transform" />
-                                            <span className="text-[10px] uppercase tracking-[0.1em] font-bold">
+                                        <div className="flex items-center gap-1.5">
+                                            <Download className="w-3 h-3 opacity-70 group-hover/btn:scale-110 transition-transform" />
+                                            <span className="text-[9px] uppercase tracking-[0.08em] font-bold">
                                                 {t?.("book_download") || "Descargar"}
                                             </span>
                                         </div>
                                     </Button>
 
                                     {bookType && (
-                                        <div className="h-8 px-2.5 flex items-center bg-secondary/30 border border-border/50 text-muted-foreground/70 text-[8px] font-black uppercase rounded-xl tracking-wider">
+                                        <div className="px-2 py-1 bg-secondary/50 border border-border text-muted-foreground text-[8px] font-black uppercase rounded-lg">
                                             {bookType}
                                         </div>
                                     )}

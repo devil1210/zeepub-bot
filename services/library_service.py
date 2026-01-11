@@ -9,6 +9,22 @@ from models.library_models import LocalBook, LibrarySource
 logger = logging.getLogger(__name__)
 
 
+def _get_download_counts_from_zeepub_db() -> Dict[str, int]:
+    """Helper function to get download counts from zeepub.db"""
+    import sqlite3
+    from config.config_settings import config
+    
+    dl_counts = {}
+    try:
+        conn = sqlite3.connect(config.URL_CACHE_DB_PATH)
+        cursor = conn.execute("SELECT title, COUNT(*) as c FROM download_history GROUP BY title")
+        dl_counts = {row[0]: row[1] for row in cursor.fetchall()}
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error fetching download counts from zeepub.db: {e}")
+    return dl_counts
+
+
 class LibraryService:
     @staticmethod
     async def search_books(
@@ -74,8 +90,7 @@ class LibraryService:
             end = start + items_per_page
             paginated_books = books[start:end]
 
-            from models.download_models import DownloadHistory
-            dl_counts = {r.title: r.c for r in session.query(DownloadHistory.title, func.count(DownloadHistory.id).label("c")).group_by(DownloadHistory.title).all()}
+            dl_counts = _get_download_counts_from_zeepub_db()
 
             results = []
             for b in paginated_books:
@@ -108,11 +123,24 @@ class LibraryService:
         """Busca un libro por su ID en la base de datos local."""
         session = get_session()
         try:
-            from models.download_models import DownloadHistory
             book = session.query(LocalBook).filter_by(id=book_id).first()
             if not book: return None
             d = book.to_dict()
-            d["download_count"] = session.query(func.count(DownloadHistory.id)).filter_by(title=book.title).scalar() or 0
+            
+            # Get download count from zeepub.db using sqlite3
+            import sqlite3
+            from config.config_settings import config
+            download_count = 0
+            try:
+                conn = sqlite3.connect(config.URL_CACHE_DB_PATH)
+                cursor = conn.execute("SELECT COUNT(*) FROM download_history WHERE title = ?", (book.title,))
+                row = cursor.fetchone()
+                download_count = row[0] if row else 0
+                conn.close()
+            except Exception as e:
+                logger.error(f"Error fetching download count for book {book.id}: {e}")
+            
+            d["download_count"] = download_count
             return d
         except Exception as e:
             logger.error(f"[LibraryService.get_book_by_id] Error: {e}")
@@ -134,8 +162,7 @@ class LibraryService:
         """
         session = get_session()
         try:
-            from models.download_models import DownloadHistory
-            dl_counts = {r.title: r.c for r in session.query(DownloadHistory.title, func.count(DownloadHistory.id).label("c")).group_by(DownloadHistory.title).all()}
+            dl_counts = _get_download_counts_from_zeepub_db()
 
             if not source_id:
                 sources = session.query(LibrarySource).all()
@@ -149,7 +176,7 @@ class LibraryService:
                         "folder_path": "",
                         "source_id": s.id,
                         "cover": random_book.cover_path if random_book else None,
-                        "numBooks": session.query(LocalBook).filter_by(source_id=s.id).count(),
+                        "numBooks": session.query(LocalBook.series).filter(LocalBook.source_id == s.id, LocalBook.series != None).distinct().count(),
                     })
                 return {"items": items, "total": len(items), "page": 1, "totalPages": 1}
 
