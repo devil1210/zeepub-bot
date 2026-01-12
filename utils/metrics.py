@@ -1,7 +1,5 @@
 from prometheus_client import Counter, Histogram, Gauge, start_http_server
 import logging
-from typing import Dict
-from config.config_settings import config
 
 logger = logging.getLogger(__name__)
 

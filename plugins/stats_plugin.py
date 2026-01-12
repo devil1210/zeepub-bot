@@ -1,12 +1,10 @@
 import logging
-import os
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
 from services.user_service import get_effective_user, get_users_by_role
-from services.stats_service import get_daily_stats
 from datetime import datetime
 from dateutil import parser as date_parser
 

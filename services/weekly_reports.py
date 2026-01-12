@@ -22,8 +22,8 @@ async def generate_weekly_report():
             (stats["valid"] / stats["total"] * 100) if stats["total"] > 0 else 0
         )
 
-        report = f"📊 <b>Reporte Semanal de Links</b>\n\n"
-        report += f"📈 <b>Estadísticas Generales:</b>\n"
+        report = "📊 <b>Reporte Semanal de Links</b>\n\n"
+        report += "📈 <b>Estadísticas Generales:</b>\n"
         report += f"  • Total de links: {stats['total']}\n"
         report += f"  ✅ Válidos: {stats['valid']}\n"
         report += f"  ❌ Rotos: {stats['broken']}\n"
@@ -31,7 +31,7 @@ async def generate_weekly_report():
         report += f"  📈 Tasa de éxito: {success_rate:.1f}%\n\n"
 
         if broken:
-            report += f"⚠️ <b>Links Rotos (máximo 10):</b>\n"
+            report += "⚠️ <b>Links Rotos (máximo 10):</b>\n"
             for hash_val, title, failed, last_checked in broken:
                 title_short = (
                     (title[:35] + "...")
@@ -40,7 +40,7 @@ async def generate_weekly_report():
                 )
                 report += f"  • {title_short}\n"
                 report += f"    Hash: <code>{hash_val}</code> (Fallos: {failed}/3)\n"
-            report += f"\n💡 Usa /purge_link <code>&lt;hash&gt;</code> para eliminar links rotos.\n"
+            report += "\n💡 Usa /purge_link <code>&lt;hash&gt;</code> para eliminar links rotos.\n"
         else:
             report += "✅ <b>No hay links rotos esta semana!</b>\n"
 

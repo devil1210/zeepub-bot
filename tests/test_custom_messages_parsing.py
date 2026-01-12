@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, AsyncMock
 from telegram import Update, Message, User
 from telegram.ext import ContextTypes
 import plugins.custom_messages_plugin as plugin_mod

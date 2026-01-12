@@ -1,8 +1,6 @@
 import logging
 import httpx
 import os
-import asyncio
-from config.config_settings import config
 
 logger = logging.getLogger(__name__)
 

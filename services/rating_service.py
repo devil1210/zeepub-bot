@@ -1,7 +1,6 @@
 import logging
 from typing import Dict, Any, Optional
 from sqlalchemy import func
-from core.db_manager import db_manager
 from utils.library_db import get_session
 from models.library_models import UserRating, LocalBook
 

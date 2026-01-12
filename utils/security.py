@@ -4,7 +4,7 @@ import json
 from urllib.parse import parse_qsl
 from typing import Dict, Any, Optional
 import time
-from fastapi import HTTPException, Header, Depends
+from fastapi import HTTPException, Header
 import os
 
 

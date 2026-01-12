@@ -1,6 +1,5 @@
 import logging
 import asyncio
-from telegram import Update
 from telegram.error import (
     TimedOut,
     NetworkError,

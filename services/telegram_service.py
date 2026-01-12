@@ -3,7 +3,7 @@ import os
 import logging
 import asyncio
 from urllib.parse import urlparse, unquote
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import ContextTypes
@@ -16,7 +16,6 @@ from services.metadata_service import (
     obtener_sinopsis_opds,
     obtener_sinopsis_opds_volumen,
 )
-from services.epub_service import parse_opf_from_epub
 from utils.http_client import fetch_bytes, cleanup_tmp
 from utils.helpers import (
     generar_slug_from_meta,
@@ -24,7 +23,7 @@ from utils.helpers import (
     escapar_html,
 )
 from utils.download_limiter import record_download, can_download, downloads_left
-from services.epub_service import parse_opf_from_epub, extract_cover_from_epub
+from services.epub_service import extract_cover_from_epub
 
 logger = logging.getLogger(__name__)
 
@@ -542,7 +541,6 @@ async def descargar_epub_pendiente(
 
     user_state = state_manager.get_user_state(uid)
 
-    from utils.helpers import get_thread_id
 
     bot = context.bot
 

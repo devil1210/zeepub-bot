@@ -9,7 +9,6 @@ from sqlalchemy import (
     Table,
     Column,
     Integer,
-    String,
     Text,
     BigInteger,
     DateTime,
@@ -163,7 +162,6 @@ def process_history_json(file_path: str) -> Dict[str, int]:
     Parses a Telegram export JSON file and imports books into the database.
     Returns stats: {'total': 0, 'imported': 0, 'errors': 0}
     """
-    import re  # Import at top of function
 
     stats = {"total": 0, "imported": 0, "errors": 0}
 

@@ -1,9 +1,8 @@
-import importlib
 import os
 import sys
 
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
 
 # Ensure we have the real config, not a mock from other tests

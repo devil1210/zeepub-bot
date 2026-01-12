@@ -6,7 +6,6 @@ import aiohttp
 import feedparser
 import tempfile
 from typing import Union
-from typing import Union
 
 # from core.session_manager import session_manager (Moved to local scope)
 import logging

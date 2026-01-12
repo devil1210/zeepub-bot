@@ -1,5 +1,4 @@
 import uvicorn
-import os
 
 if __name__ == "__main__":
     from config.config_settings import config

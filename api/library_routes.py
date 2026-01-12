@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
-from typing import List, Optional
+from typing import Optional
 import os
 from PIL import Image
 

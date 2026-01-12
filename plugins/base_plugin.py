@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Callable, List, Any, Optional
-from telegram import Update
-from telegram.ext import ContextTypes
 
 
 class BasePlugin(ABC):

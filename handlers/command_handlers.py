@@ -1,14 +1,13 @@
 # handlers/command_handlers.py
 
 import logging
-import os
 import html
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from datetime import datetime, timedelta
 from telegram.ext import ContextTypes, CommandHandler
 from core.state_manager import state_manager
-from utils.download_limiter import downloads_left, record_download, can_download
+from utils.download_limiter import downloads_left
 from services.opds_service import mostrar_colecciones, get_cached_feed
 from config.config_settings import config
 from utils.helpers import get_thread_id, is_command_for_bot, build_search_url
@@ -277,7 +276,6 @@ class CommandHandlers:
             left_text = f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día (de {max_dl}) [Usadas: {used}]"
 
         # Calcular tiempo para próximo reset
-        from datetime import datetime, timedelta
 
         now = datetime.now()
         next_midnight = (now + timedelta(days=1)).replace(

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Request, Response, Depends, Header
+from fastapi import APIRouter, HTTPException, Query, Request, Response, Depends
 from fastapi.responses import StreamingResponse
 from typing import Optional, Dict, Any
 import httpx
@@ -12,24 +12,18 @@ from utils.helpers import (
     build_search_url,
     formatear_mensaje_portada,
     find_zeepubs_destino,
-    abs_url,
     extract_author,
     parse_metadata_from_title,
 )
-from utils.security import validate_telegram_data
 from utils.http_client import fetch_bytes
 from services.epub_service import (
     parse_opf_from_epub,
-    extract_cover_from_epub,
     extract_internal_title,
 )
-from services.user_service import get_effective_user, get_user_info
 import logging
 
 
 from api.deps import (
-    get_telegram_user_id,
-    get_current_user_data,
     require_mini_app_access,
 )
 
@@ -755,7 +749,7 @@ async def prepare_facebook_post(
 
         # Construir link público acortado con SHA256
         from utils.url_cache import create_short_url
-        from urllib.parse import quote, unquote, urlparse
+        from urllib.parse import unquote, urlparse
 
         dl_domain = config.DL_DOMAIN.rstrip("/")
         # Asegurar esquema

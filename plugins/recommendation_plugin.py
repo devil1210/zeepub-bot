@@ -57,7 +57,7 @@ class RecommendationPlugin(BasePlugin):
             await update.message.reply_text("😢 No encontré recomendaciones obvias. ¡Sigue leyendo para que aprenda más de ti!")
             return
 
-        await update.message.reply_text(f"💡 <b>Tengo estas sugerencias para ti:</b>", parse_mode="HTML")
+        await update.message.reply_text("💡 <b>Tengo estas sugerencias para ti:</b>", parse_mode="HTML")
 
         # Enviar fichas simplificadas
         for book in recs:

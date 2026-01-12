@@ -1,19 +1,13 @@
 # handlers/callback_handlers.py
 
 import re
-import uuid
 import logging
-from urllib.parse import unquote, urlparse
-import html
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
-from telegram.constants import ParseMode
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler, MessageHandler, filters
 from core.state_manager import state_manager
 from services.opds_service import mostrar_colecciones, buscar_zeepubs_directo, mostrar_recomendaciones
 from services.telegram_service import publicar_libro
 from config.config_settings import config
-from utils.helpers import find_zeepubs_destino
-from utils.http_client import parse_feed_from_url
 
 logger = logging.getLogger(__name__)
 
@@ -316,7 +310,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception:
                 logger.debug("No se pudo borrar menú")
             try:
-                from utils.helpers import get_thread_id
 
                 thread_id = st.get("message_thread_id")  # Usar el guardado
                 prep = await context.bot.send_message(

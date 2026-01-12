@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 from datetime import datetime
 
 from utils.library_db import get_session, COVERS_DIR, DB_PATH

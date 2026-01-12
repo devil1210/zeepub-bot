@@ -1,10 +1,8 @@
 import pytest
-import os
 from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi import HTTPException
 from api.routes import get_feed, tunnel_opds
 from api.deps import require_mini_app_access
-from config.config_settings import config
 
 
 # Mock entry with links
@@ -227,7 +225,6 @@ async def test_get_feed_staff_evil_access():
 @pytest.mark.asyncio
 async def test_tunnel_opds_slash_url_defaults():
     # Test that /api/tunnel/opds?url=/ triggers default Start Catalog
-    from api.routes import tunnel_opds
 
     with patch(
         "api.routes.get_effective_user", new_callable=AsyncMock

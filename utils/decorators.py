@@ -1,7 +1,6 @@
 import logging
 import functools
 from telegram import Update
-from telegram.ext import ContextTypes
 from config.config_settings import config
 from utils.rate_limiter import rate_limiter, RateLimitType
 

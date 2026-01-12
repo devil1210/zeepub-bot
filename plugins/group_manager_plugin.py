@@ -1,7 +1,7 @@
 import logging
 import os
 import html
-from sqlalchemy import create_engine, Column, String, Boolean, Integer, BigInteger
+from sqlalchemy import create_engine, Column, String, Boolean, BigInteger
 from sqlalchemy.orm import declarative_base, sessionmaker
 from telegram import Update, ChatMember, ChatMemberUpdated
 from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler, MessageHandler, filters

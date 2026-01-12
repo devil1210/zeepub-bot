@@ -5,6 +5,23 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v7.1.0] - 2026-01-12
+
+### Añadido
+- **Modernización de Herramientas**: Implementación de **Ruff** como motor unificado de linting y formateo, reemplazando a Black y Flake8. Se han corregido automáticamente más de 130 inconsistencias de código.
+- **Limpieza de Entorno**: Eliminación de servicios y archivos residuales (`.vscode-server-insiders`, `.gradle`, `/var/lib/containerd`) liberando más de 3 GB de espacio en el LXC.
+
+### Cambiado
+- **Versión de Cliente (Web)**: Actualización a **Next.js 16.1.1** (Estable) para mejorar el rendimiento y la estabilidad del SSR.
+- **Dependencias de Backend**: Actualización masiva de librerías core:
+  - `python-telegram-bot` a v22.5.
+  - `FastAPI` a v0.115.6.
+  - `uvicorn` a v0.34.0.
+  - `aiohttp` y `httpx` a versiones optimizadas.
+
+### Arreglado
+- **Persistencia de Servicios**: Restaurado y habilitado permanentemente el servicio de monitoreo `beszel-agent`.
+
 ## [v7.0.2] - 2026-01-12
 
 ### Arreglado

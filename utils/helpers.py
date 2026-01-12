@@ -2,7 +2,7 @@ import re
 import html
 import hashlib
 from urllib.parse import urljoin, urlparse
-from typing import Optional, List, Any, Dict
+from typing import Optional, Any
 from config.config_settings import config
 
 
@@ -214,7 +214,6 @@ def limpiar_html_basico(texto_html: str) -> str:
 
 
 def build_search_url(query: str, uid: int = None, role: str = None) -> str:
-    from core.state_manager import state_manager
 
     # Default to START
     root = config.OPDS_ROOT_START
@@ -699,7 +698,7 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
     return True, ""
 
 
-CURRENT_VERSION = "v7.0.0"
+CURRENT_VERSION = "v7.1.0"
 
 
 def get_current_version() -> str:

@@ -1,5 +1,4 @@
 import re
-import sys
 
 
 # Mock helper
@@ -32,7 +31,7 @@ def parse_metadata_from_title(title_str: str) -> dict:
 
 
 def check_redundancy(feed_title, book_title):
-    print(f"--- Checking ---")
+    print("--- Checking ---")
     print(f"Feed Title: '{feed_title}'")
     print(f"Book Title: '{book_title}'")
 

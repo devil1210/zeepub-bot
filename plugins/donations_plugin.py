@@ -1,6 +1,5 @@
 import logging
 import os
-import html
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -9,7 +8,6 @@ from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
 from services.settings_service import get_setting, set_setting
-from plugins.custom_messages_plugin import StoredMessage  # Import model
 
 logger = logging.getLogger(__name__)
 

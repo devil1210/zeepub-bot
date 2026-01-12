@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
-from models.library_models import Base, LibrarySource
+from models.library_models import Base
 
 # Carpeta dedicada para la base de datos y adjuntos (para backups fáciles)
 DB_DIR = os.path.abspath("data/library")

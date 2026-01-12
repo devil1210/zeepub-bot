@@ -1,7 +1,6 @@
 import json
-from typing import List, Optional, Dict, Any
+from typing import Optional, Dict, Any
 from datetime import datetime
-from sqlalchemy.orm import Session
 
 from models.library_models import LocalBook, LibrarySource
 from utils.library_db import get_session

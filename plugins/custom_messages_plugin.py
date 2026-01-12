@@ -3,7 +3,7 @@ import os
 import html
 import re
 from datetime import datetime
-from typing import Dict, Callable, List, Optional, Any
+from typing import Dict, List, Any
 from sqlalchemy import (
     create_engine,
     Column,
@@ -15,7 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql import text  # Importar text explícitamente
 from sqlalchemy.orm import declarative_base, sessionmaker
-from telegram import Update, Message, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import (
     ContextTypes,

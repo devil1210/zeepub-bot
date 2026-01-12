@@ -1,8 +1,6 @@
 import uuid
 import logging
-from functools import wraps
 import re
-from urllib.parse import urlparse, unquote
 from difflib import SequenceMatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes

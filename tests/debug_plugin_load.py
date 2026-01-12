@@ -29,7 +29,6 @@ async def test_load():
         plugin = CustomMessagesPlugin()
 
         # Real config mock
-        from config.config_settings import config
 
         # config might define enablement for custom messages?
 

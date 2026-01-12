@@ -1,5 +1,4 @@
 import logging
-import os
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler
 from plugins.base_plugin import BasePlugin
@@ -378,7 +377,7 @@ class UserManagerPlugin(BasePlugin):
                     quote=True,
                     message_thread_id=thread_id,
                 )
-        except Exception as e:
+        except Exception:
             # Fallback si no se puede enviar al privado (e.g. usuario no inició bot)
             await update.message.reply_text(
                 f"❌ No pude enviarte MP (¿me has iniciado?). Aquí tienes:\n\n{msg}",

@@ -153,7 +153,7 @@ class ZeePubBot:
                     break
                 except RuntimeError as e:
                     if "not properly initialized" in str(e):
-                        logger.warning(f"Bot marcado como initialized pero ExtBot no está listo. Reintentando...")
+                        logger.warning("Bot marcado como initialized pero ExtBot no está listo. Reintentando...")
                         # Force a new initialization attempt
                         await asyncio.sleep(retry_delay)
                         continue

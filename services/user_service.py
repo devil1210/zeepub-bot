@@ -1,8 +1,8 @@
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from datetime import datetime
 from config.config_settings import config
-from repositories.user_repository import UserRepository, user_repo
+from repositories.user_repository import user_repo
 from services.cache_service import AsyncTTLCache
 
 logger = logging.getLogger(__name__)

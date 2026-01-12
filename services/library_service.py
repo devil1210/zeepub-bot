@@ -1,7 +1,6 @@
 import logging
 import re
-import os
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 from sqlalchemy import text, func
 from utils.library_db import get_session
 from models.library_models import LocalBook, LibrarySource
@@ -280,7 +279,6 @@ class LibraryService:
                     books_query.offset((page - 1) * page_size).limit(page_size).all()
                 )
 
-                from repositories.download_repository import download_repo
 
                 results = []
                 from repositories.metrics_repository import metrics_repo
@@ -323,7 +321,6 @@ class LibraryService:
 
             # Obtener detalles de los representantes de cada serie
             items = []
-            from repositories.download_repository import download_repo
 
             for s_hash, rep_id, num_vols, rating, votes in all_series_meta:
                 rep = session.query(LocalBook).get(rep_id)

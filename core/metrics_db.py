@@ -2,7 +2,6 @@ import aiosqlite
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +58,6 @@ class MetricsDatabaseManager:
             await conn.close()
 
 # Inicialización global
-from config.config_settings import config
 import os
 
 METRICS_DB_PATH = os.path.join("data", "user_metrics.db")

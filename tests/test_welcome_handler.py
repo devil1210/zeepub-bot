@@ -1,6 +1,5 @@
 import pytest
-import sys
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, AsyncMock
 from telegram import Update, Chat, ChatMember, ChatMemberUpdated
 from telegram.constants import ChatMemberStatus
 from telegram.ext import ContextTypes

@@ -1,7 +1,6 @@
 import os
 import zipfile
 import xml.etree.ElementTree as ET
-from datetime import datetime
 from PIL import Image
 import io
 import re

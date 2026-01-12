@@ -1,19 +1,15 @@
 import json
 import logging
-import re
 import urllib.parse
 import asyncio
 import time
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 from fastapi import HTTPException
-from sqlalchemy import func
 
 from config.config_settings import config
 from core.state_manager import state_manager
-from models.download_models import DownloadHistory
-from models.library_models import LocalBook
 from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
 from services.library_service import LibraryService
@@ -28,7 +24,6 @@ from utils.helpers import (
     extract_creators_by_role,
     parse_metadata_from_title,
 )
-from utils.library_db import get_session
 
 logger = logging.getLogger(__name__)
 

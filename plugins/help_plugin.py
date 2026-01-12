@@ -2,7 +2,6 @@ import logging
 import asyncio
 import os
 import html
-from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 from plugins.base_plugin import BasePlugin

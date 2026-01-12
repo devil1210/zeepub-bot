@@ -59,7 +59,7 @@ async def test_epub_metadata():
         print("\n✅ Would use NEW format (Epub de: ...)")
     else:
         print("\n❌ Would use OLD format (fallback)")
-        print(f"Missing: ", end="")
+        print("Missing: ", end="")
         if not internal_title:
             print("internal_title ", end="")
         if not opf_meta or not opf_meta.get("titulo_serie"):

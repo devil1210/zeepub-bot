@@ -1,7 +1,7 @@
 import time
 import asyncio
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List
 from dataclasses import dataclass
 
 

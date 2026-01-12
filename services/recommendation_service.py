@@ -1,9 +1,9 @@
 import logging
 import random
 from typing import List, Dict, Any
-from sqlalchemy import func, desc
+from sqlalchemy import desc
 from utils.library_db import get_session
-from models.library_models import LocalBook, UserRating
+from models.library_models import LocalBook
 from core.db_manager import db_manager
 
 logger = logging.getLogger(__name__)
