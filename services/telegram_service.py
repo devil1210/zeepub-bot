@@ -627,6 +627,7 @@ async def descargar_epub_pendiente(
         return
 
     # Preparar envío - intentar enviar al destino
+    prep = None
     try:
         prep = await bot.send_message(
             chat_id=destino,
@@ -636,7 +637,6 @@ async def descargar_epub_pendiente(
     except Forbidden:
         # El bot no puede iniciar conversación con el usuario
         # Mostrar botón para que inicie el bot primero
-        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
         bot_username = (await bot.get_me()).username
         start_link = f"https://t.me/{bot_username}?start=download"
@@ -922,9 +922,14 @@ async def enviar_libro_directo(
             return False
 
         # 2. Mensaje de preparación (siempre al usuario que interactúa)
-        prep_msg = await bot.send_message(
-            chat_id=user_id, text=f"⏳ Procesando: {title}..."
-        )
+        prep_msg = None
+        try:
+            prep_msg = await bot.send_message(
+                chat_id=user_id, text=f"⏳ Procesando: {title}..."
+            )
+        except Exception as e:
+            logger.warning(f"No se pudo enviar mensaje de preparación: {e}")
+
 
         # Destino final del libro
         destino = target_chat_id if target_chat_id else user_id
@@ -1333,11 +1338,12 @@ async def enviar_libro_directo(
 
         # Limpieza
         try:
-            await bot.delete_message(chat_id=user_id, message_id=prep_msg.message_id)
+            if prep_msg:
+                await bot.delete_message(chat_id=user_id, message_id=prep_msg.message_id)
         except Exception as e:
             logger.debug(
                 "Could not delete prep_msg %s: %s",
-                getattr(prep_msg, "message_id", None),
+                getattr(prep_msg, "message_id", None) if prep_msg else "None",
                 e,
             )
 

@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v7.0.2] - 2026-01-12
+
+### Arreglado
+- **Crash Crítico**: Corregido `UnboundLocalError` en `descargar_epub_pendiente` causado por un import local que sombreaba el global de `InlineKeyboardButton`.
+- **Robustez**: Inicialización adecuada de variables (`prep`, `prep_msg`) para evitar errores en bloques `finally` y de limpieza.
+
 ## [v7.0.1] - 2026-01-12
 
 ### Añadido
