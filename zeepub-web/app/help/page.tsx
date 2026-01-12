@@ -56,7 +56,7 @@ export default function HelpPage() {
 
   return (
     <div className="min-h-screen bg-background pt-safe">
-      <TransparentHeader title="Ayuda y Soporte" />
+      <TransparentHeader />
 
       <div className="max-w-2xl mx-auto px-4 pt-20 pb-6 space-y-6">
         {/* Welcome Card */}

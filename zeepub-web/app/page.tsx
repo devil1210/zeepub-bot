@@ -84,7 +84,7 @@ export default function HomePage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background pt-safe">
-        <TransparentHeader title="Librería" />
+        <TransparentHeader />
 
         <div className="max-w-2xl mx-auto px-4 pt-20 pb-8">
           {user && (

@@ -58,7 +58,7 @@ export default function RecommendationsPage() {
     return (
         <AccessGuard>
             <div className="min-h-screen bg-background pt-safe pb-20">
-                <TransparentHeader title="Para ti" />
+                <TransparentHeader />
 
                 <div className="max-w-2xl mx-auto px-4 pt-20 pb-8">
                     <div className="flex items-center gap-2 mb-6">

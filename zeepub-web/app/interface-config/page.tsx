@@ -215,7 +215,7 @@ export default function InterfaceConfigPage() {
     return (
         <AccessGuard>
             <div className="min-h-screen bg-background pt-safe">
-                <TransparentHeader title="Apariencia" />
+                <TransparentHeader />
 
                 <div className="max-w-2xl mx-auto px-4 pt-20 pb-6 space-y-6">
                     {/* Selector de Objetivo (Solo Admins) */}
