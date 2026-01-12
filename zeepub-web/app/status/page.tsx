@@ -52,8 +52,8 @@ export default function StatusPage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background pt-safe">
-        <TransparentHeader />
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        <TransparentHeader title="Estado del Sistema" />
+        <div className="max-w-2xl mx-auto px-4 pt-20 pb-6 space-y-6">
           {/* User Level */}
           <Card className="p-6 border-border">
             <div className="flex items-center gap-4 mb-4">

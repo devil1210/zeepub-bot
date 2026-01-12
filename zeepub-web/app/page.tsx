@@ -84,9 +84,9 @@ export default function HomePage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background pt-safe">
-        <TransparentHeader />
+        <TransparentHeader title="Librería" />
 
-        <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto px-4 pt-20 pb-8">
           {user && (
             <div className="text-center mb-4">
               <p className="text-xs text-muted-foreground">{t("home_greeting", { Nombre: user.first_name })}</p>

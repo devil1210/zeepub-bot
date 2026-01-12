@@ -215,9 +215,9 @@ export default function InterfaceConfigPage() {
     return (
         <AccessGuard>
             <div className="min-h-screen bg-background pt-safe">
-                <TransparentHeader />
+                <TransparentHeader title="Apariencia" />
 
-                <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+                <div className="max-w-2xl mx-auto px-4 pt-20 pb-6 space-y-6">
                     {/* Selector de Objetivo (Solo Admins) */}
                     {isAdmin && (
                         <Card className="p-4 border-2 border-primary/30 bg-primary/10 rounded-2xl shadow-lg">

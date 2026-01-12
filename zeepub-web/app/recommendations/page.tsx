@@ -58,9 +58,9 @@ export default function RecommendationsPage() {
     return (
         <AccessGuard>
             <div className="min-h-screen bg-background pt-safe pb-20">
-                <TransparentHeader />
+                <TransparentHeader title="Para ti" />
 
-                <div className="max-w-2xl mx-auto px-4 py-8">
+                <div className="max-w-2xl mx-auto px-4 pt-20 pb-8">
                     <div className="flex items-center gap-2 mb-6">
                         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                             <Sparkles className="w-6 h-6 text-primary" />

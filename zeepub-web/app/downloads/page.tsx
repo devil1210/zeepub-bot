@@ -103,8 +103,8 @@ export default function DownloadsPage() {
   return (
     <AccessGuard>
       <div className="min-h-screen bg-background pt-safe">
-        <TransparentHeader />
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        <TransparentHeader title="Descargas" />
+        <div className="max-w-2xl mx-auto px-4 pt-20 pb-6 space-y-6">
           {/* Stats Card */}
           <Card className="p-6 border-border bg-gradient-to-br from-primary/10 to-primary/5">
             <div className="flex items-center justify-between mb-4">

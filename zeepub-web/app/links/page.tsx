@@ -62,9 +62,9 @@ export default function LinksPage() {
 
   return (
     <div className="min-h-screen bg-background pt-safe">
-      <TransparentHeader />
+      <TransparentHeader title="Mis Enlaces" />
 
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 pt-20 pb-6 space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-4">
           <Card className="p-4 border-border">
