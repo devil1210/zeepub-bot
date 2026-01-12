@@ -19,11 +19,8 @@ async def test_tunnel_opds_access():
 @pytest.mark.asyncio
 async def test_tunnel_opds_streaming():
     # Test functionality
-    with patch(
-        "api.routes.get_effective_user", new_callable=AsyncMock
-    ) as mock_get_user, patch("httpx.AsyncClient") as mock_client_cls:
+    with patch("httpx.AsyncClient") as mock_client_cls:
 
-        mock_get_user.return_value = {"has_mini_app_access": True}
 
         # Mock Client and Response
         mock_client = AsyncMock()
