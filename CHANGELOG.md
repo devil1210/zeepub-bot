@@ -5,6 +5,12 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v7.1.1] - 2026-01-12
+
+### Arreglado
+- **Tests**: Corregido `AttributeError` en tests de API al eliminar parches inválidos de `get_effective_user`.
+- **Linting**: Corregidos errores E303 (demasiadas líneas en blanco) en servicios detectados por Black y Flake8.
+
 ## [v7.1.0] - 2026-01-12
 
 ### Añadido
