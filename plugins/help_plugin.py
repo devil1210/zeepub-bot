@@ -69,6 +69,13 @@ COMMANDS_REGISTRY = {
         "usage": "/sugerencia <texto>",
         "example": "/sugerencia Hola, el libro 'Dune' tiene un error en el capítulo 3.",
     },
+    "settings": {
+        "cat": "home",
+        "desc": "Configuración personal",
+        "long_desc": "Accede al menú de configuración para gestionar tus preferencias, como las recomendaciones semanales.",
+        "usage": "/settings",
+        "example": "/settings",
+    },
     # --- Content ---
     "search": {
         "cat": "content",
@@ -99,6 +106,13 @@ COMMANDS_REGISTRY = {
         "long_desc": "Muestra las reglas configuradas para el grupo actual.",
         "usage": "/reglas",
         "example": "/reglas",
+    },
+    "rules": {
+        "cat": "home",
+        "desc": "Ver reglas (Alias)",
+        "long_desc": "Muestra las reglas configuradas para el grupo actual. Alias de /reglas.",
+        "usage": "/rules",
+        "example": "/rules",
     },
     # --- User Management ---
     "add_user": {
@@ -163,6 +177,13 @@ COMMANDS_REGISTRY = {
         "long_desc": "Muestra estadísticas diarias del sistema o lista usuarios por rol (Admin/Staff only).",
         "usage": "/stats [rol]",
         "example": "/stats vip",
+    },
+    "recommend": {
+        "cat": "admin", # Beta staff only in plugin logic
+        "desc": "Recomendaciones Beta",
+        "long_desc": "Genera recomendaciones personalizadas de libros basadas en tus gustos (Beta Staff).",
+        "usage": "/recommend",
+        "example": "/recommend",
     },
     "evil": {
         "cat": "admin",
@@ -491,7 +512,7 @@ class HelpPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "3.13.6"
+        return "3.13.7"
 
     @property
     def description(self) -> str:

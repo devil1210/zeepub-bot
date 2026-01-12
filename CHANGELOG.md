@@ -5,6 +5,13 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v7.0.1] - 2026-01-12
+
+### Añadido
+- **Registro de Comandos Completo**: Integración de `/recommend`, `/settings` y `/rules` (alias) en el sistema de ayuda y menú de Telegram.
+- **Descripciones Dinámicas**: Implementadas más de 50 plantillas `cmd_menu_desc_` para una navegación profesional en el menú nativo de Telegram.
+- **Ayuda Detallada**: Nuevas plantillas de ayuda (`help_cmd_...`) para comandos de gestión de menú y sistema.
+
 ## [v7.0.0] - 2026-01-12
 
 ### Añadido

@@ -609,6 +609,41 @@ TEMPLATE_REGISTRY = {
         "vars": [],
         "default": "ℹ️ <b>Comando: /purge_link</b>\n\n📝 <b>Descripción:</b>\nElimina un enlace generado de la base de datos.\n\n⌨️ <b>Uso:</b> <code>/purge_link &lt;id&gt;</code>\n💡 <b>Ejemplo:</b> <code>/purge_link 123</code>",
     },
+    "help_cmd_set_bot_avatar": {
+        "desc": "Ayuda: /set_bot_avatar",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /set_bot_avatar</b>\n\n📝 <b>Descripción:</b>\nCambia la foto de perfil del bot. Debes responder a una imagen con el comando.\n\n⌨️ <b>Uso:</b> Responder a foto con <code>/set_bot_avatar</code>\n💡 <b>Ejemplo:</b> <code>/set_bot_avatar</code>",
+    },
+    "help_cmd_set_version": {
+        "desc": "Ayuda: /set_version",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /set_version</b>\n\n📝 <b>Descripción:</b>\nCambia la etiqueta de imagen (versión) en el archivo docker-compose.yml y reinicia el bot.\n\n⌨️ <b>Uso:</b> <code>/set_version &lt;tag&gt;</code>\n💡 <b>Ejemplo:</b> <code>/set_version v6.0.0</code>",
+    },
+    "help_cmd_add_menu_cmd": {
+        "desc": "Ayuda: /add_menu_cmd",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /add_menu_cmd</b>\n\n📝 <b>Descripción:</b>\nAgrega un comando existente al menú público de Telegram.\n\n⌨️ <b>Uso:</b> <code>/add_menu_cmd &lt;comando&gt;</code>\n💡 <b>Ejemplo:</b> <code>/add_menu_cmd search</code>",
+    },
+    "help_cmd_del_menu_cmd": {
+        "desc": "Ayuda: /del_menu_cmd",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /del_menu_cmd</b>\n\n📝 <b>Descripción:</b>\nElimina un comando del menú público de Telegram.\n\n⌨️ <b>Uso:</b> <code>/del_menu_cmd &lt;comando&gt;</code>\n💡 <b>Ejemplo:</b> <code>/del_menu_cmd status</code>",
+    },
+    "help_cmd_list_menu_cmd": {
+        "desc": "Ayuda: /list_menu_cmd",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /list_menu_cmd</b>\n\n📝 <b>Descripción:</b>\nMuestra la lista actual de comandos en el menú público de Telegram.\n\n⌨️ <b>Uso:</b> <code>/list_menu_cmd</code>\n💡 <b>Ejemplo:</b> <code>/list_menu_cmd</code>",
+    },
+    "help_cmd_move_menu_cmd": {
+        "desc": "Ayuda: /move_menu_cmd",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /move_menu_cmd</b>\n\n📝 <b>Descripción:</b>\nCambia la posición de un comando en el menú público (1-indexado).\n\n⌨️ <b>Uso:</b> <code>/move_menu_cmd &lt;comando&gt; &lt;posición&gt;</code>\n💡 <b>Ejemplo:</b> <code>/move_menu_cmd search 1</code>",
+    },
+    "help_cmd_refresh_menu": {
+        "desc": "Ayuda: /refresh_menu",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /refresh_menu</b>\n\n📝 <b>Descripción:</b>\nForza la actualización inmediata del menú de comandos en Telegram para todos los usuarios.\n\n⌨️ <b>Uso:</b> <code>/refresh_menu</code>\n💡 <b>Ejemplo:</b> <code>/refresh_menu</code>",
+    },
     "help_cmd_authorize_group": {
         "desc": "Ayuda: /authorize_group",
         "vars": [],
@@ -618,6 +653,21 @@ TEMPLATE_REGISTRY = {
         "desc": "Ayuda: /revoke_group",
         "vars": [],
         "default": "ℹ️ <b>Comando: /revoke_group</b>\n\n📝 <b>Descripción:</b>\nRevoca la autorización del bot en un grupo.\n\n⌨️ <b>Uso:</b> <code>/revoke_group [chat_id]</code>\n💡 <b>Ejemplo:</b> <code>/revoke_group</code>",
+    },
+    "help_cmd_recommend": {
+        "desc": "Ayuda: /recommend",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /recommend</b>\n\n📝 <b>Descripción:</b>\nGenera recomendaciones personalizadas de libros basadas en tus gustos (Beta Staff).\n\n⌨️ <b>Uso:</b> <code>/recommend</code>\n💡 <b>Ejemplo:</b> <code>/recommend</code>",
+    },
+    "help_cmd_settings": {
+        "desc": "Ayuda: /settings",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /settings</b>\n\n📝 <b>Descripción:</b>\nAccede al menú de configuración para gestionar tus preferencias, como las recomendaciones semanales.\n\n⌨️ <b>Uso:</b> <code>/settings</code>\n💡 <b>Ejemplo:</b> <code>/settings</code>",
+    },
+    "help_cmd_rules": {
+        "desc": "Ayuda: /rules",
+        "vars": [],
+        "default": "ℹ️ <b>Comando: /rules</b>\n\n📝 <b>Descripción:</b>\nMuestra las reglas configuradas para el grupo actual. Alias de /reglas.\n\n⌨️ <b>Uso:</b> <code>/rules</code>\n💡 <b>Ejemplo:</b> <code>/rules</code>",
     },
     # --- Mini App Donation Tiers ---
     "web_donate_tier_lector_name": {
@@ -859,6 +909,291 @@ TEMPLATE_REGISTRY = {
         "desc": "Menú: Descripción /cancel",
         "vars": [],
         "default": "Cancelar acción",
+    },
+    "cmd_menu_desc_recommend": {
+        "desc": "Menú: Descripción /recommend",
+        "vars": [],
+        "default": "Recomendaciones (Beta)",
+    },
+    "cmd_menu_desc_settings": {
+        "desc": "Menú: Descripción /settings",
+        "vars": [],
+        "default": "Configuración personal",
+    },
+    "cmd_menu_desc_reglas": {
+        "desc": "Menú: Descripción /reglas",
+        "vars": [],
+        "default": "Ver reglas",
+    },
+    "cmd_menu_desc_rules": {
+        "desc": "Menú: Descripción /rules",
+        "vars": [],
+        "default": "Ver reglas (Alias)",
+    },
+    "cmd_menu_desc_sugerencia": {
+        "desc": "Menú: Descripción /sugerencia",
+        "vars": [],
+        "default": "Enviar sugerencia",
+    },
+    "cmd_menu_desc_add_user": {
+        "desc": "Menú: Descripción /add_user",
+        "vars": [],
+        "default": "Agregar/Editar usuario",
+    },
+    "cmd_menu_desc_remove_user": {
+        "desc": "Menú: Descripción /remove_user",
+        "vars": [],
+        "default": "Eliminar usuario",
+    },
+    "cmd_menu_desc_set_rol": {
+        "desc": "Menú: Descripción /set_rol",
+        "vars": [],
+        "default": "Gestionar Staff/Rol",
+    },
+    "cmd_menu_desc_set_apodo": {
+        "desc": "Menú: Descripción /set_apodo",
+        "vars": [],
+        "default": "Establecer Apodo",
+    },
+    "cmd_menu_desc_reset": {
+        "desc": "Menú: Descripción /reset",
+        "vars": [],
+        "default": "Resetear descargas",
+    },
+    "cmd_menu_desc_refresh_user": {
+        "desc": "Menú: Descripción /refresh_user",
+        "vars": [],
+        "default": "Refrescar datos usuario",
+    },
+    "cmd_menu_desc_id": {
+        "desc": "Menú: Descripción /id",
+        "vars": [],
+        "default": "Ver mi ID",
+    },
+    "cmd_menu_desc_setlog": {
+        "desc": "Menú: Descripción /setlog",
+        "vars": [],
+        "default": "Cambiar nivel de log",
+    },
+    "cmd_menu_desc_stats": {
+        "desc": "Menú: Descripción /stats",
+        "vars": [],
+        "default": "Estadísticas del bot",
+    },
+    "cmd_menu_desc_evil": {
+        "desc": "Menú: Descripción /evil",
+        "vars": [],
+        "default": "Activar Modo Evil",
+    },
+    "cmd_menu_desc_set_auto_delete_time": {
+        "desc": "Menú: Descripción /set_auto_delete_time",
+        "vars": [],
+        "default": "Tiempo auto-borrado",
+    },
+    "cmd_menu_desc_debug_state": {
+        "desc": "Menú: Descripción /debug_state",
+        "vars": [],
+        "default": "Estado interno usuario",
+    },
+    "cmd_menu_desc_update_system": {
+        "desc": "Menú: Descripción /update_system",
+        "vars": [],
+        "default": "Actualizar sistema",
+    },
+    "cmd_menu_desc_set_version": {
+        "desc": "Menú: Descripción /set_version",
+        "vars": [],
+        "default": "Cambiar versión bot",
+    },
+    "cmd_menu_desc_plugins": {
+        "desc": "Menú: Descripción /plugins",
+        "vars": [],
+        "default": "Listar plugins cargados",
+    },
+    "cmd_menu_desc_set_price": {
+        "desc": "Menú: Descripción /set_price",
+        "vars": [],
+        "default": "Configurar precios",
+    },
+    "cmd_menu_desc_approve_donation": {
+        "desc": "Menú: Descripción /approve_donation",
+        "vars": [],
+        "default": "Aprobar donación",
+    },
+    "cmd_menu_desc_reject_donation": {
+        "desc": "Menú: Descripción /reject_donation",
+        "vars": [],
+        "default": "Rechazar donación",
+    },
+    "cmd_menu_desc_backup_db": {
+        "desc": "Menú: Descripción /backup_db",
+        "vars": [],
+        "default": "Respaldar Base de Datos",
+    },
+    "cmd_menu_desc_restore_db": {
+        "desc": "Menú: Descripción /restore_db",
+        "vars": [],
+        "default": "Restaurar Base de Datos",
+    },
+    "cmd_menu_desc_import_history": {
+        "desc": "Menú: Descripción /import_history",
+        "vars": [],
+        "default": "Importar historial",
+    },
+    "cmd_menu_desc_latest_books": {
+        "desc": "Menú: Descripción /latest_books",
+        "vars": [],
+        "default": "Libros recientes",
+    },
+    "cmd_menu_desc_scan_library": {
+        "desc": "Menú: Descripción /scan_library",
+        "vars": [],
+        "default": "Escanear librería",
+    },
+    "cmd_menu_desc_clear_history": {
+        "desc": "Menú: Descripción /clear_history",
+        "vars": [],
+        "default": "Borrar historial",
+    },
+    "cmd_menu_desc_export_db": {
+        "desc": "Menú: Descripción /export_db",
+        "vars": [],
+        "default": "Exportar mappings",
+    },
+    "cmd_menu_desc_export_history": {
+        "desc": "Menú: Descripción /export_history",
+        "vars": [],
+        "default": "Exportar historial",
+    },
+    "cmd_menu_desc_set_export_time": {
+        "desc": "Menú: Descripción /set_export_time",
+        "vars": [],
+        "default": "Hora exportación diaria",
+    },
+    "cmd_menu_desc_add_msge": {
+        "desc": "Menú: Descripción /add_msge",
+        "vars": [],
+        "default": "Guardar mensaje",
+    },
+    "cmd_menu_desc_reset_msge": {
+        "desc": "Menú: Descripción /reset_msge",
+        "vars": [],
+        "default": "Resetear mensaje",
+    },
+    "cmd_menu_desc_list_msge": {
+        "desc": "Menú: Descripción /list_msge",
+        "vars": [],
+        "default": "Listar mensajes",
+    },
+    "cmd_menu_desc_view_msge": {
+        "desc": "Menú: Descripción /view_msge",
+        "vars": [],
+        "default": "Previsualizar mensaje",
+    },
+    "cmd_menu_desc_send_msge": {
+        "desc": "Menú: Descripción /send_msge",
+        "vars": [],
+        "default": "Enviar mensaje guardado",
+    },
+    "cmd_menu_desc_saludo": {
+        "desc": "Menú: Descripción /saludo",
+        "vars": [],
+        "default": "Enviar saludo",
+    },
+    "cmd_menu_desc_set_welcome": {
+        "desc": "Menú: Descripción /set_welcome",
+        "vars": [],
+        "default": "Configurar bienvenida",
+    },
+    "cmd_menu_desc_templates": {
+        "desc": "Menú: Descripción /templates",
+        "vars": [],
+        "default": "Listar plantillas",
+    },
+    "cmd_menu_desc_set_var": {
+        "desc": "Menú: Descripción /set_var",
+        "vars": [],
+        "default": "Definir variable",
+    },
+    "cmd_menu_desc_del_var": {
+        "desc": "Menú: Descripción /del_var",
+        "vars": [],
+        "default": "Eliminar variable",
+    },
+    "cmd_menu_desc_vars": {
+        "desc": "Menú: Descripción /vars",
+        "vars": [],
+        "default": "Listar variables",
+    },
+    "cmd_menu_desc_template_vars": {
+        "desc": "Menú: Descripción /template_vars",
+        "vars": [],
+        "default": "Listar variables",
+    },
+    "cmd_menu_desc_status_links": {
+        "desc": "Menú: Descripción /status_links",
+        "vars": [],
+        "default": "Estado de links",
+    },
+    "cmd_menu_desc_link_list": {
+        "desc": "Menú: Descripción /link_list",
+        "vars": [],
+        "default": "Listar links",
+    },
+    "cmd_menu_desc_purge_link": {
+        "desc": "Menú: Descripción /purge_link",
+        "vars": [],
+        "default": "Borrar link",
+    },
+    "cmd_menu_desc_authorize_group": {
+        "desc": "Menú: Descripción /authorize_group",
+        "vars": [],
+        "default": "Autorizar grupo",
+    },
+    "cmd_menu_desc_revoke_group": {
+        "desc": "Menú: Descripción /revoke_group",
+        "vars": [],
+        "default": "Revocar grupo",
+    },
+    "cmd_menu_desc_set_group_welcome": {
+        "desc": "Menú: Descripción /set_group_welcome",
+        "vars": [],
+        "default": "Bienvenida grupo",
+    },
+    "cmd_menu_desc_add_menu_cmd": {
+        "desc": "Menú: Descripción /add_menu_cmd",
+        "vars": [],
+        "default": "Añadir comando menú",
+    },
+    "cmd_menu_desc_del_menu_cmd": {
+        "desc": "Menú: Descripción /del_menu_cmd",
+        "vars": [],
+        "default": "Quitar comando menú",
+    },
+    "cmd_menu_desc_list_menu_cmd": {
+        "desc": "Menú: Descripción /list_menu_cmd",
+        "vars": [],
+        "default": "Listar comandos menú",
+    },
+    "cmd_menu_desc_move_menu_cmd": {
+        "desc": "Menú: Descripción /move_menu_cmd",
+        "vars": [],
+        "default": "Reordenar menú",
+    },
+    "cmd_menu_desc_refresh_menu": {
+        "desc": "Menú: Descripción /refresh_menu",
+        "vars": [],
+        "default": "Refrescar menú Telegram",
+    },
+    "cmd_menu_desc_set_bot_avatar": {
+        "desc": "Menú: Descripción /set_bot_avatar",
+        "vars": [],
+        "default": "Cambiar avatar bot",
+    },
+    "cmd_menu_desc_verify": {
+        "desc": "Menú: Descripción /verify",
+        "vars": [],
+        "default": "Verificar cuenta",
     },
     "web_book_section": {
         "desc": "Web: Texto ver colección",
