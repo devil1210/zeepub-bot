@@ -834,15 +834,13 @@ export default function InterfaceConfigPage() {
                                         </div>
                                     </div>
                                 </div>
-                                {editTarget !== "personal" && (
-                                    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
-                                        <div className="flex items-center gap-3">
-                                            <Palette className="w-5 h-5 text-primary" />
-                                            <Label htmlFor="show-settings-in-menu" className="font-medium">Shortcut de Apariencia en Menú</Label>
-                                        </div>
-                                        <Switch id="show-settings-in-menu" checked={showSettingsInMenu} onCheckedChange={setShowSettingsInMenu} />
+                                <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <Palette className="w-5 h-5 text-primary" />
+                                        <Label htmlFor="show-settings-in-menu" className="font-medium">Shortcut de Apariencia en Menú</Label>
                                     </div>
-                                )}
+                                    <Switch id="show-settings-in-menu" checked={showSettingsInMenu} onCheckedChange={setShowSettingsInMenu} />
+                                </div>
                             </div>
 
                             {/* Admin Badge Positioning Tool */}

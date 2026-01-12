@@ -148,7 +148,7 @@ export default function HomePage() {
                   )}
                 </div>
               )}
-              {showRecsCard && (userProfile?.level?.id === '1' || userProfile?.level?.id === '2') && (
+              {showRecsCard && (
                 <Card
                   className="p-4 bg-primary/10 border-primary/20 cursor-pointer hover:bg-primary/20 transition-all border-dashed relative overflow-hidden group mb-4"
                   onClick={() => router.push("/recommendations")}
