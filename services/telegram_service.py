@@ -541,7 +541,6 @@ async def descargar_epub_pendiente(
 
     user_state = state_manager.get_user_state(uid)
 
-
     bot = context.bot
 
     thread_id_origen = user_state.get(
@@ -927,7 +926,6 @@ async def enviar_libro_directo(
             )
         except Exception as e:
             logger.warning(f"No se pudo enviar mensaje de preparación: {e}")
-
 
         # Destino final del libro
         destino = target_chat_id if target_chat_id else user_id

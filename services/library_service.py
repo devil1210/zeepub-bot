@@ -279,7 +279,6 @@ class LibraryService:
                     books_query.offset((page - 1) * page_size).limit(page_size).all()
                 )
 
-
                 results = []
                 from repositories.metrics_repository import metrics_repo
 
