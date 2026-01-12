@@ -93,7 +93,9 @@ export default function InterfaceConfigPage() {
         bookShowStats,
         setBookShowStats,
         bookHideFloatingRating,
-        setBookHideFloatingRating
+        setBookHideFloatingRating,
+        bookCompactness,
+        setBookCompactness
     } = useTheme()
 
     const { isAdmin, userProfile } = useTelegramContext()
@@ -152,7 +154,8 @@ export default function InterfaceConfigPage() {
                 bookShowVolume: localStorage.getItem("bookShowVolume") !== "false",
                 bookShowReleaseDate: localStorage.getItem("bookShowReleaseDate") !== "false",
                 bookShowStats: localStorage.getItem("bookShowStats") !== "false",
-                bookHideFloatingRating: localStorage.getItem("bookHideFloatingRating") === "true"
+                bookHideFloatingRating: localStorage.getItem("bookHideFloatingRating") === "true",
+                bookCompactness: parseFloat(localStorage.getItem("bookCompactness") || "0.5")
             }
             applySettings(personal, true) // Restore and ENABLE persistence
             toast.info("Has vuelto a tu configuración personal")
@@ -801,12 +804,36 @@ export default function InterfaceConfigPage() {
 
                                     <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
                                         <div className="flex items-center gap-3">
-                                            <Label htmlFor="book-hide-floating" className="font-medium">Ocultar Calificación Flotante</Label>
+                                            <Label htmlFor="book-hide-floating-rating" className="font-medium">Ocultar Puntuación Flotante</Label>
                                         </div>
-                                        <Switch id="book-hide-floating" checked={bookHideFloatingRating} onCheckedChange={setBookHideFloatingRating} />
+                                        <Switch id="book-hide-floating-rating" checked={bookHideFloatingRating} onCheckedChange={setBookHideFloatingRating} />
+                                    </div>
+
+                                    <div className="space-y-4 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Layout className="w-4 h-4 text-primary" />
+                                                <Label className="text-sm font-bold">Compacidad de Líneas</Label>
+                                            </div>
+                                            <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                                {Math.round(bookCompactness * 100)}%
+                                            </span>
+                                        </div>
+                                        <Slider
+                                            value={[bookCompactness]}
+                                            min={0}
+                                            max={1}
+                                            step={0.01}
+                                            onValueChange={(val) => setBookCompactness(val[0])}
+                                            className="cursor-pointer"
+                                        />
+                                        <div className="flex justify-between text-[10px] text-muted-foreground font-medium px-1">
+                                            <span>Relajado</span>
+                                            <span>Medio</span>
+                                            <span>Compacto</span>
+                                        </div>
                                     </div>
                                 </div>
-
                                 {editTarget !== "personal" && (
                                     <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
                                         <div className="flex items-center gap-3">

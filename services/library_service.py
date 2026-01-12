@@ -69,11 +69,12 @@ class LibraryService:
                     match_expr = "title MATCH :q"
                 elif search_type == "author":
                     match_expr = "author MATCH :q"
-                elif search_type in ("illustrator", "translator", "genres"):
+                elif search_type in ("illustrator", "translator", "genres", "layout"):
                     field_map = {
                         "illustrator": "illustrator",
                         "translator": "translator",
                         "genres": "tags",
+                        "layout": "layout_by",
                     }
                     match_expr = f"{field_map[search_type]} MATCH :q"
                 else:

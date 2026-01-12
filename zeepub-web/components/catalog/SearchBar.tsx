@@ -39,6 +39,7 @@ export function SearchBar({
         { id: "author", label: "AUTOR", icon: Search },
         { id: "illustrator", label: "ILUSTRADOR", icon: Search },
         { id: "translator", label: "TRADUCTOR", icon: Search },
+        { id: "layout", label: "MAQUETADOR", icon: Search },
         { id: "genres", label: "GÉNEROS", icon: Folder }
     ];
 

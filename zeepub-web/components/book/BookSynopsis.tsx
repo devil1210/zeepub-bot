@@ -2,6 +2,8 @@
 
 import { Card } from "@/components/ui/card"
 import { Tag, ScrollText } from "lucide-react"
+import { useTheme } from "@/components/theme-provider"
+
 
 interface BookSynopsisProps {
     book: any;
@@ -9,7 +11,9 @@ interface BookSynopsisProps {
 }
 
 export function BookSynopsis({ book, onTagClick }: BookSynopsisProps) {
+    const { bookCompactness } = useTheme();
     if (!book.summary && !book.categories && !book.tags && !book.demographics) return null;
+
 
     return (
         <div className="space-y-4 mb-6">
@@ -20,12 +24,17 @@ export function BookSynopsis({ book, onTagClick }: BookSynopsisProps) {
                         <ScrollText className="w-3.5 h-3.5" />
                         <h3 className="text-[10px] font-black uppercase tracking-widest">Sinopsis</h3>
                     </div>
-                    <div className="text-[13px] leading-[1.6] text-foreground/90 font-normal tracking-tight">
+                    <div
+                        className="text-[13px] text-foreground/90 font-normal tracking-tight"
+                        style={{ lineHeight: 1.4 + (1 - bookCompactness) * 0.4 }}
+                    >
+
                         {book.summary ? book.summary.split(/<br\s*\/?>|\n\n/).map((paragraph: string, i: number) => (
-                            <p key={i} className={i > 0 ? "mt-3" : ""}>
+                            <p key={i} style={{ marginTop: i > 0 ? `${(1 - bookCompactness) * 16 + 4}px` : "0px" }}>
                                 {paragraph.trim()}
                             </p>
                         )) : null}
+
                     </div>
                 </Card>
             )}

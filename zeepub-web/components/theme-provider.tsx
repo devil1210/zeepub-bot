@@ -63,6 +63,8 @@ interface ThemeContextType {
   setBookShowStats: (val: boolean) => void
   bookHideFloatingRating: boolean
   setBookHideFloatingRating: (val: boolean) => void
+  bookCompactness: number
+  setBookCompactness: (val: number) => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -126,6 +128,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setBookShowStats: () => { },
   bookHideFloatingRating: false,
   setBookHideFloatingRating: () => { },
+  bookCompactness: 0.5,
+  setBookCompactness: () => { },
 })
 
 export function useTheme() {
@@ -215,6 +219,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [bookShowReleaseDate, setBookShowReleaseDate] = useState(true)
   const [bookShowStats, setBookShowStats] = useState(true)
   const [bookHideFloatingRating, setBookHideFloatingRating] = useState(false)
+  const [bookCompactness, setBookCompactness] = useState(0.5)
   const [isLoaded, setIsLoaded] = useState(false)
   const [shouldPersist, setShouldPersist] = useState(true)
   const [isResetting, setIsResetting] = useState(false)
@@ -251,6 +256,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedBookShowReleaseDate = localStorage.getItem("bookShowReleaseDate")
     const savedBookShowStats = localStorage.getItem("bookShowStats")
     const savedBookHideFloatingRating = localStorage.getItem("bookHideFloatingRating")
+    const savedBookCompactness = localStorage.getItem("bookCompactness")
 
     // Sync with Backend (Role Defaults)
     const fetchRemoteDefaults = async () => {
@@ -394,6 +400,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setBookHideFloatingRating(data.bookHideFloatingRating)
             localStorage.setItem("bookHideFloatingRating", String(data.bookHideFloatingRating))
           }
+          if (data.bookCompactness !== undefined) {
+            setBookCompactness(data.bookCompactness)
+            localStorage.setItem("bookCompactness", String(data.bookCompactness))
+          }
         }
       } catch (error) {
         console.error("Error fetching UI defaults:", error)
@@ -432,6 +442,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedBookShowReleaseDate !== null) setBookShowReleaseDate(savedBookShowReleaseDate === "true")
     if (savedBookShowStats !== null) setBookShowStats(savedBookShowStats === "true")
     if (savedBookHideFloatingRating !== null) setBookHideFloatingRating(savedBookHideFloatingRating === "true")
+    if (savedBookCompactness !== null) setBookCompactness(parseFloat(savedBookCompactness))
 
     // Then fetch remote defaults for missing ones
     fetchRemoteDefaults()
@@ -689,6 +700,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [bookHideFloatingRating, isLoaded, shouldPersist])
 
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookCompactness", bookCompactness.toString())
+    }
+  }, [bookCompactness, isLoaded, shouldPersist])
+
   const saveGlobalSettings = async (role: string) => {
     try {
       const { callBotAPI } = await import("@/lib/api")
@@ -721,7 +739,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         bookShowVolume,
         bookShowReleaseDate,
         bookShowStats,
-        bookHideFloatingRating
+        bookHideFloatingRating,
+        bookCompactness
       }
       await callBotAPI("ui_settings", { subAction: "set", role, settings })
     } catch (error) {
@@ -763,6 +782,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (settings.bookShowReleaseDate !== undefined) setBookShowReleaseDate(settings.bookShowReleaseDate)
     if (settings.bookShowStats !== undefined) setBookShowStats(settings.bookShowStats)
     if (settings.bookHideFloatingRating !== undefined) setBookHideFloatingRating(settings.bookHideFloatingRating)
+    if (settings.bookCompactness !== undefined) setBookCompactness(settings.bookCompactness)
 
     // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
     if (persistToLocal) {
@@ -795,6 +815,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("bookShowReleaseDate", String(settings.bookShowReleaseDate ?? true))
       localStorage.setItem("bookShowStats", String(settings.bookShowStats ?? true))
       localStorage.setItem("bookHideFloatingRating", String(settings.bookHideFloatingRating ?? false))
+      localStorage.setItem("bookCompactness", (settings.bookCompactness ?? 0.5).toString())
     }
   }
 
@@ -859,6 +880,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setBookShowStats,
         bookHideFloatingRating,
         setBookHideFloatingRating,
+        bookCompactness,
+        setBookCompactness,
         saveGlobalSettings,
         applySettings,
       }}

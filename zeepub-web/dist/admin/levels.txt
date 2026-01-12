@@ -1,8 +1,8 @@
 1:"$Sreact.fragment"
-2:I[79520,["/_next/static/chunks/2ba992265038b27f.js"],""]
+2:I[79520,["/_next/static/chunks/7081dffabe0ae79e.js"],""]
 a:I[68027,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/247eb132b7f7b574.js"],"default"]
 :HL["/_next/static/chunks/8a80e7184ad3a13f.css","style"]
-:HL["/_next/static/chunks/54e7453bf7ab66f8.css","style"]
+:HL["/_next/static/chunks/3307852dd16e6c23.css","style"]
 :HL["/_next/static/media/797e433ab948586e-s.p.dbea232f.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/_next/static/media/caa3a2e1cccd8315-s.p.853070df.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 3:Tce9,
@@ -72,16 +72,16 @@ a:I[68027,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/247e
                   console.error("Error applying immediate theme:", e);
                 }
               })();
-            0:{"P":null,"b":"8SgNo9s40QornnOyKLdi3","c":["","admin","levels"],"q":"","i":false,"f":[[["",{"children":["admin",{"children":["levels",{"children":["__PAGE__",{}]}]}]},"$undefined","$undefined",true],[["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/8a80e7184ad3a13f.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/_next/static/chunks/54e7453bf7ab66f8.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","script","script-0",{"src":"/_next/static/chunks/2ba992265038b27f.js","async":true,"nonce":"$undefined"}]],["$","html",null,{"lang":"es","className":"dark","style":{"backgroundColor":"#1a1a1a"},"suppressHydrationWarning":true,"children":[["$","head",null,{"children":[["$","meta",null,{"name":"theme-color","content":"#1a1a1a"}],["$","meta",null,{"name":"color-scheme","content":"dark"}],["$","$L2",null,{"src":"https://telegram.org/js/telegram-web-app.js","strategy":"beforeInteractive"}],["$","script",null,{"dangerouslySetInnerHTML":{"__html":"$3"}}]]}],"$L4"]}]]}],{"children":["$L5",{"children":["$L6",{"children":["$L7",{},null,false,false]},null,false,false]},null,false,false]},["$L8",[],[]],false,false],"$L9",false]],"m":"$undefined","G":["$a",[]],"S":true}
-b:I[89554,["/_next/static/chunks/2ba992265038b27f.js"],"ThemeProvider"]
-c:I[72043,["/_next/static/chunks/2ba992265038b27f.js"],"TelegramProvider"]
-d:I[501,["/_next/static/chunks/2ba992265038b27f.js"],"StringsProvider"]
+            0:{"P":null,"b":"3SZ3qAcRB1w5H_OqycJfh","c":["","admin","levels"],"q":"","i":false,"f":[[["",{"children":["admin",{"children":["levels",{"children":["__PAGE__",{}]}]}]},"$undefined","$undefined",true],[["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/8a80e7184ad3a13f.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/_next/static/chunks/3307852dd16e6c23.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","script","script-0",{"src":"/_next/static/chunks/7081dffabe0ae79e.js","async":true,"nonce":"$undefined"}]],["$","html",null,{"lang":"es","className":"dark","style":{"backgroundColor":"#1a1a1a"},"suppressHydrationWarning":true,"children":[["$","head",null,{"children":[["$","meta",null,{"name":"theme-color","content":"#1a1a1a"}],["$","meta",null,{"name":"color-scheme","content":"dark"}],["$","$L2",null,{"src":"https://telegram.org/js/telegram-web-app.js","strategy":"beforeInteractive"}],["$","script",null,{"dangerouslySetInnerHTML":{"__html":"$3"}}]]}],"$L4"]}]]}],{"children":["$L5",{"children":["$L6",{"children":["$L7",{},null,false,false]},null,false,false]},null,false,false]},["$L8",[],[]],false,false],"$L9",false]],"m":"$undefined","G":["$a",[]],"S":true}
+b:I[89554,["/_next/static/chunks/7081dffabe0ae79e.js"],"ThemeProvider"]
+c:I[72043,["/_next/static/chunks/7081dffabe0ae79e.js"],"TelegramProvider"]
+d:I[501,["/_next/static/chunks/7081dffabe0ae79e.js"],"StringsProvider"]
 e:I[39756,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/247eb132b7f7b574.js"],"default"]
-f:I[98168,["/_next/static/chunks/2ba992265038b27f.js","/_next/static/chunks/0748dc73666028b7.js"],"default"]
+f:I[98168,["/_next/static/chunks/7081dffabe0ae79e.js","/_next/static/chunks/0748dc73666028b7.js"],"default"]
 10:I[37457,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/247eb132b7f7b574.js"],"default"]
-11:I[2355,["/_next/static/chunks/2ba992265038b27f.js"],"Analytics"]
+11:I[2355,["/_next/static/chunks/7081dffabe0ae79e.js"],"Analytics"]
 12:I[47257,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/247eb132b7f7b574.js"],"ClientPageRoot"]
-13:I[7049,["/_next/static/chunks/2ba992265038b27f.js","/_next/static/chunks/03056aa6f4e1f88a.js","/_next/static/chunks/8c5f56eb26b7118e.js"],"default"]
+13:I[7049,["/_next/static/chunks/7081dffabe0ae79e.js","/_next/static/chunks/03056aa6f4e1f88a.js","/_next/static/chunks/8c5f56eb26b7118e.js"],"default"]
 16:I[97367,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/247eb132b7f7b574.js"],"OutletBoundary"]
 17:"$Sreact.suspense"
 19:I[97367,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/247eb132b7f7b574.js"],"ViewportBoundary"]
