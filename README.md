@@ -2,23 +2,27 @@
 
 **Zeepub Bot** es un bot de Telegram avanzado que permite buscar y descargar libros electrónicos en formato EPUB. Integra una **Mini App** (Web App) para una experiencia de usuario moderna, búsqueda por palabra clave, navegación por catálogos OPDS y un sistema robusto de límites de descarga.
 
-![Bot Version](https://img.shields.io/badge/ZeePub_Bot-v6.1.1-blue?style=for-the-badge&logo=telegram)
+![Bot Version](https://img.shields.io/badge/ZeePub_Bot-v7.0.0-blue?style=for-the-badge&logo=telegram)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.9%2B-yellow)
 ![Docker](https://img.shields.io/badge/docker-enabled-blue)
 
 ***
 
-## 📋 Características v6 (Estable)
+## 📋 Características v7 (Actual)
 
-- **Librería Local (Local First)**: Indexación propia de metadatos para una búsqueda ultra-rápida e independiente.
-- **Búsqueda Instantánea**: Motor SQLite FTS5 para encontrar libros por título, autor, serie o género.
+- **Arquitectura de Hashes Universales**: Identificación robusta de libros mediante hashes de contenido, permitiendo métricas persistentes independientemente de la ubicación o el servidor OPDS.
+- **Métricas Agregadas Inteligentes**: Visualización en tiempo real de descargas y calificaciones totales por serie y biblioteca.
+- **Búsqueda Avanzada FTS5**: Motor de búsqueda ultra-rápido con filtros por título, autor, serie, género y maquetador.
+- **UI Premium de Alta Gama**: Interfaz pulida con soporte para áreas seguras (notches), cabeceras limpias y control de compacidad visual.
+- **Metadatos Interactivos**: Navegación fluida entre libros mediante clics en autores, traductores o maquetadores.
+- **Configuración Granular de Interfaz**: Control total sobre la compacidad de texto, visibilidad de tarjetas y accesos directos al menú por nivel de usuario (Staff, VIP, etc.).
+- **Feedback de Descarga en Tiempo Real**: Actualización instantánea del estado del libro tras una descarga exitosa.
 - **UI Premium Minimalista**: Interfaz de Mini App pulida con efectos de cristal (Glassmorphism) y animaciones suaves.
 - **Optimización de Imágenes**: Generación automática de miniaturas (thumbnails) para acelerar la carga en móviles.
 - **Métricas Técnicas**: Conteo automático de palabras, páginas y estimación de tiempo de lectura.
 - **Exportación Unificada**: Programador diario configurable que respalda tanto la caché de URLs como la base de datos de la librería.
 - **Gestión de Niveles**: Sistema de cuotas para usuarios VIP y Premium con límites persistentes.
-- **Arquitectura Modular (Plugins)**: Plugins activables para Mensajes Personalizados, Donaciones, Mantenimiento y más.
 
 ## 🧩 Plugins y Comandos Destacados
 

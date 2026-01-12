@@ -5,7 +5,32 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [v7.0.0] - 2026-01-12
+
+### Añadido
+- **Arquitectura Basada en Hashes**: Migración completa a `content_hash` como identificador único universal de libros. Esto independiza el rastreo de métricas y estados de las rutas de archivos o IDs de servidores OPDS externos.
+- **Métricas Agregadas**: Implementación de conteo de descargas y promedios de calificación agregados para series y fuentes (bibliotecas).
+- **Búsqueda Extendida (FTS5)**: Ahora es posible buscar por **Maquetador** (LayoutBy). El índice de búsqueda Full-Text ha sido reconstruido para soportar este nuevo campo.
+- **Metadatos Interactivos**: Los campos de Autor, Ilustrador, Traductor, Grupo y Maquetador ahora son clicables en la ficha del libro, activando una búsqueda automática en el catálogo.
+- **Control de Compacidad**: Nuevo ajuste en "Configuración de Interfaz > Apariencia" para ajustar la densidad visual de la sinopsis y los detalles del libro (0% a 100%).
+- **Visibilidad Universal**: Eliminadas las restricciones de nivel para las tarjetas de la pantalla de inicio. Ahora cualquier elemento (Recomendaciones, Donar, etc.) puede ser activado o desactivado para cualquier nivel o usuario desde la configuración.
+- **Auto-actualización de Estado**: La Mini App ahora actualiza automáticamente el estado del libro (cambiando el botón de descarga a "Reenviar") inmediatamente después de completar una descarga exitosa sin necesidad de recargar.
+- **Themed Metadata**: Los nombres de autores e ilustradores en la ficha del libro ahora heredan el color principal del tema para mejorar la jerarquía visual y coherencia estética.
+
+### Cambiado
+- **Estructura de Cabeceras**: Unificación del espaciado superior (`pt-20`) en todas las páginas principales para asegurar compatibilidad total con el "Notch" y la barra de estado de dispositivos móviles.
+- **Diseño Ultra-Limpio**: Las cabeceras transparentes ya no muestran texto de título por diseño, maximizando el espacio visual y la estética minimalista.
+- **Identificación de Libros**: El sistema ahora detecta automáticamente libros locales por su ruta física para recuperar metadatos extendidos de la base de datos SQL.
+- **Normalización de Series**: Mejora en la limpieza de nombres de series y manejo persistente del "Volumen 0" como "Volumen único" en todas las vistas.
+- **Refinamiento de Badges**: Los badges de tipo de libro (e.g. [NL]) han sido realineados y estilizados para integrarse mejor con las portadas.
+
+### Arreglado
+- **Errores de Ejecución**: Corregidos múltiples `NameError` y `UnboundLocalError` en `LibraryService` y manejadores de descarga.
+- **Sincronización de Descargas**: Resuelto problema de inconsistencia en el conteo de descargas al usar múltiples identificadores; ahora centralizado vía hash.
+- **Sesiones de Base de Datos**: Corregida la gestión de sesiones en `handle_download` para evitar bloqueos y asegurar registros precisos en el historial.
+
 ## [v6.1.2] - 2026-01-09
+
 
 ### Arreglado
 - **Descubrimiento de Watchtower**: Implementado sistema de detección automática de rutas (Smart Discovery). Ahora el bot intenta contactar con Watchtower en múltiples rutas (`watchtower:8080`, `localhost:8081`, `192.168.1.1:8081`) para asegurar compatibilidad en entornos mixtos Docker/LXC.

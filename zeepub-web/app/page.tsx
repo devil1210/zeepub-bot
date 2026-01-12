@@ -326,7 +326,8 @@ export default function HomePage() {
           {/* Version Footer */}
           <div className="text-center py-4 mt-8">
             <p className="text-xs text-muted-foreground/50">
-              ZeePub Bot v6.0.0
+              ZeePub Bot v7.0.0
+
             </p>
           </div>
         </div>
