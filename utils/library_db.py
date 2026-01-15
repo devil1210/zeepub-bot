@@ -1,0 +1,206 @@
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
+from models.library_models import Base
+
+# Carpeta dedicada para la base de datos y adjuntos (para backups fáciles)
+DB_DIR = os.path.abspath("data/library")
+DB_PATH = os.path.join(DB_DIR, "library.db")
+COVERS_DIR = os.path.join(DB_DIR, "covers")
+THUMBNAILS_DIR = os.path.join(DB_DIR, "thumbnails")
+
+# Crear carpetas si no existen
+os.makedirs(DB_DIR, exist_ok=True)
+os.makedirs(COVERS_DIR, exist_ok=True)
+os.makedirs(THUMBNAILS_DIR, exist_ok=True)
+
+# Motor de base de datos
+engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+session_factory = sessionmaker(bind=engine)
+Session = scoped_session(session_factory)
+
+
+def check_migrations():
+    """
+    Añade columnas nuevas a tablas existentes para evitar OperationalError
+    durante actualizaciones en fase alpha.
+    """
+    import sqlite3
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(local_books)")
+        existing_cols = [row[1] for row in cursor.fetchall()]
+
+        # Mapa de columnas nuevas: (nombre, tipo)
+        new_cols = [
+            ("layout_by", "VARCHAR(255)"),
+            ("isbn", "VARCHAR(20)"),
+            ("asin", "VARCHAR(50)"),
+            ("uri_id", "VARCHAR(512)"),
+            ("published_at", "VARCHAR(50)"),
+            ("modified_at_opf", "VARCHAR(50)"),
+            ("book_type", "VARCHAR(100)"),
+            ("demographics", "JSON"),
+            ("epub_version", "VARCHAR(20)"),
+            ("word_count", "INTEGER"),
+            ("page_count", "INTEGER"),
+            ("reading_time", "INTEGER"),
+            ("rating_average", "FLOAT DEFAULT 0.0"),
+            ("rating_count", "INTEGER DEFAULT 0"),
+            ("series_clean", "VARCHAR(255)"),
+            ("content_hash", "VARCHAR(64)"),
+            ("series_hash", "VARCHAR(64)"),
+        ]
+
+        # 1. Migración de columnas (local_books)
+        for col_name, col_type in new_cols:
+            if col_name not in existing_cols:
+                print(f"Migración: Añadiendo columna '{col_name}' a local_books...")
+                cursor.execute(
+                    f"ALTER TABLE local_books ADD COLUMN {col_name} {col_type}"
+                )
+
+        # 2. Migración: Crear tabla de ratings si no existe
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_ratings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                book_id INTEGER NOT NULL,
+                rating INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (book_id) REFERENCES local_books(id)
+            )
+        """
+        )
+
+        # Índice para evitar votos duplicados y búsquedas rápidas
+        cursor.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings_unique ON user_ratings(user_id, book_id)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_ratings_book ON user_ratings(book_id)"
+        )
+
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error en migración automática: {e}")
+
+
+def init_fts():
+    """
+    Inicializa la búsqueda de texto completo (FTS5) y los triggers de sincronización.
+    """
+    import sqlite3
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Verificar si la tabla FTS ya existe
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='books_fts'"
+        )
+        exists = cursor.fetchone()
+
+        if exists:
+            # Verificar si tiene el campo nuevo 'layout_by'
+            cursor.execute("PRAGMA table_info(books_fts)")
+            cols = [r[1] for r in cursor.fetchall()]
+            if "layout_by" not in cols:
+                print("Migración: FTS5 no tiene 'layout_by'. Recreando índice...")
+                cursor.execute("DROP TABLE books_fts")
+                cursor.execute("DROP TRIGGER IF EXISTS books_ai")
+                cursor.execute("DROP TRIGGER IF EXISTS books_ad")
+                cursor.execute("DROP TRIGGER IF EXISTS books_au")
+                exists = False
+
+        if not exists:
+            print("Inicializando búsqueda de texto completo (FTS5)...")
+
+            # Crear tabla virtual FTS5
+            # Usamos content='local_books' para una external content table (más eficiente en espacio)
+            cursor.execute(
+                """
+                CREATE VIRTUAL TABLE books_fts USING fts5(
+                    title,
+                    romaji_title,
+                    english_title,
+                    series,
+                    author,
+                    illustrator,
+                    translator,
+                    layout_by,
+                    publisher,
+                    tags,
+                    content='local_books',
+                    content_rowid='id'
+                )
+            """
+            )
+
+            # Poblar inicialmente
+            cursor.execute(
+                """
+                INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags)
+                SELECT id, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags FROM local_books
+            """
+            )
+
+            # Triggers para sincronización automática
+            # INSERT
+            cursor.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS books_ai AFTER INSERT ON local_books BEGIN
+                  INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags)
+                  VALUES (new.id, new.title, new.romaji_title, new.english_title, new.series, new.author, new.illustrator, new.translator, new.layout_by, new.publisher, new.tags);
+                END;
+            """
+            )
+
+            # DELETE
+            cursor.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS books_ad AFTER DELETE ON local_books BEGIN
+                  INSERT INTO books_fts(books_fts, rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags)
+                  VALUES('delete', old.id, old.title, old.romaji_title, old.english_title, old.series, old.author, old.illustrator, old.translator, old.layout_by, old.publisher, old.tags);
+                END;
+            """
+            )
+
+            # UPDATE
+            cursor.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS books_au AFTER UPDATE ON local_books BEGIN
+                  INSERT INTO books_fts(books_fts, rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags)
+                  VALUES('delete', old.id, old.title, old.romaji_title, old.english_title, old.series, old.author, old.illustrator, old.translator, old.layout_by, old.publisher, old.tags);
+                  INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags)
+                  VALUES (new.id, new.title, new.romaji_title, new.english_title, new.series, new.author, new.illustrator, new.translator, new.layout_by, new.publisher, new.tags);
+                END;
+            """
+            )
+
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error inicializando FTS5: {e}")
+
+
+def init_library_db():
+    """
+    Inicializa la base de datos creando las tablas si no existen.
+    """
+    Base.metadata.create_all(engine)
+    check_migrations()  # Asegurar que columnas nuevas existan
+    init_fts()  # Inicializar búsqueda de texto completo
+    print(f"Base de datos de librería inicializada en: {DB_PATH}")
+
+
+def get_session():
+    """
+    Retorna una nueva sesión de base de datos.
+    """
+    return Session()

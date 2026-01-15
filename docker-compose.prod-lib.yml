@@ -1,0 +1,39 @@
+services:
+  zeepubs_bot:
+    image: ghcr.io/devil1210/zeepub-bot:${BOT_IMAGE_TAG:-v6-alpha}
+    container_name: zeepubs_bot_v6
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      # La ruta del host se define en el .env como HOST_LIB_PATH
+      - ${HOST_LIB_PATH}:/library:ro
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    environment:
+      - DATABASE_URL=sqlite:////app/data/url_cache.db
+      - URL_CACHE_DB_PATH=data/url_cache.db
+      - LOG_LEVEL=INFO
+    ports:
+      - "${DEV_PORT:-8001}:8000"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower_v6
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN:-zeepub_secret}
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_LABEL_ENABLE=true
+    command: --interval 300 --label-enable

@@ -1,0 +1,892 @@
+"use client"
+
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+
+interface ThemeContextType {
+  isDarkMode: boolean
+  setIsDarkMode: (val: boolean) => void
+  primaryColor: string
+  setPrimaryColor: (val: string) => void
+  uiScale: number
+  setUiScale: (val: number) => void
+  avatarScale: number
+  setAvatarScale: (val: number) => void
+  showSearchCard: boolean
+  setShowSearchCard: (show: boolean) => void
+  showSearchBar: boolean
+  setShowSearchBar: (show: boolean) => void
+  showDonateCard: boolean
+  setShowDonateCard: (show: boolean) => void
+  showHelpCard: boolean
+  setShowHelpCard: (show: boolean) => void
+  showSettingsInMenu: boolean
+  setShowSettingsInMenu: (show: boolean) => void
+  showRecsCard: boolean
+  setShowRecsCard: (show: boolean) => void
+  saveGlobalSettings: (role: string) => Promise<void>
+  applySettings: (settings: any, persistToLocal?: boolean) => void
+  enableAnimations: boolean
+  setEnableAnimations: (enabled: boolean) => void
+  animationDuration: number
+  setAnimationDuration: (val: number) => void
+  animationDistance: number
+  setAnimationDistance: (val: number) => void
+  disableDisplacement: boolean
+  setDisableDisplacement: (disabled: boolean) => void
+  dataSaver: boolean
+  setDataSaver: (enabled: boolean) => void
+  useLocalLibrary: boolean
+  setUseLocalLibrary: (enabled: boolean) => void
+  useRandomFolderCovers: boolean
+  setUseRandomFolderCovers: (enabled: boolean) => void
+  badgePosTop: number
+  setBadgePosTop: (val: number) => void
+  badgePosRight: number
+  setBadgePosRight: (val: number) => void
+  showPosTool: boolean
+  setShowPosTool: (enabled: boolean) => void
+  badgePosMode: "relative" | "absolute"
+  setBadgePosMode: (mode: "relative" | "absolute") => void
+  bookShowTranslator: boolean
+  setBookShowTranslator: (val: boolean) => void
+  bookShowSeriesAsTitle: boolean
+  setBookShowSeriesAsTitle: (val: boolean) => void
+  bookShowRomajiAsSubtitle: boolean
+  setBookShowRomajiAsSubtitle: (val: boolean) => void
+  bookShowAuthorIllustrator: boolean
+  setBookShowAuthorIllustrator: (val: boolean) => void
+  bookShowVolume: boolean
+  setBookShowVolume: (val: boolean) => void
+  bookShowReleaseDate: boolean
+  setBookShowReleaseDate: (val: boolean) => void
+  bookShowStats: boolean
+  setBookShowStats: (val: boolean) => void
+  bookHideFloatingRating: boolean
+  setBookHideFloatingRating: (val: boolean) => void
+  bookCompactness: number
+  setBookCompactness: (val: number) => void
+}
+
+const ThemeContext = createContext<ThemeContextType>({
+  isDarkMode: true,
+  setIsDarkMode: () => { },
+  primaryColor: "#3b82f6",
+  setPrimaryColor: () => { },
+  uiScale: 1,
+  setUiScale: () => { },
+  avatarScale: 1,
+  setAvatarScale: () => { },
+  showSearchCard: true,
+  setShowSearchCard: () => { },
+  showSearchBar: false,
+  setShowSearchBar: () => { },
+  showDonateCard: true,
+  setShowDonateCard: () => { },
+  showHelpCard: true,
+  setShowHelpCard: () => { },
+  showSettingsInMenu: false,
+  setShowSettingsInMenu: () => { },
+  showRecsCard: true,
+  setShowRecsCard: () => { },
+  saveGlobalSettings: async () => { },
+  applySettings: () => { },
+  enableAnimations: false,
+  setEnableAnimations: () => { },
+  animationDuration: 200,
+  setAnimationDuration: () => { },
+  animationDistance: 4,
+  setAnimationDistance: () => { },
+  disableDisplacement: false,
+  setDisableDisplacement: () => { },
+  dataSaver: false,
+  setDataSaver: () => { },
+  useLocalLibrary: false,
+  setUseLocalLibrary: () => { },
+  useRandomFolderCovers: true,
+  setUseRandomFolderCovers: () => { },
+  badgePosTop: 8,
+  setBadgePosTop: () => { },
+  badgePosRight: 8,
+  setBadgePosRight: () => { },
+  showPosTool: false,
+  setShowPosTool: () => { },
+  badgePosMode: "relative",
+  setBadgePosMode: () => { },
+  bookShowTranslator: true,
+  setBookShowTranslator: () => { },
+  bookShowSeriesAsTitle: true,
+  setBookShowSeriesAsTitle: () => { },
+  bookShowRomajiAsSubtitle: true,
+  setBookShowRomajiAsSubtitle: () => { },
+  bookShowAuthorIllustrator: true,
+  setBookShowAuthorIllustrator: () => { },
+  bookShowVolume: true,
+  setBookShowVolume: () => { },
+  bookShowReleaseDate: true,
+  setBookShowReleaseDate: () => { },
+  bookShowStats: true,
+  setBookShowStats: () => { },
+  bookHideFloatingRating: false,
+  setBookHideFloatingRating: () => { },
+  bookCompactness: 0.5,
+  setBookCompactness: () => { },
+})
+
+export function useTheme() {
+  return useContext(ThemeContext)
+}
+
+// Color presets matching interface-config
+const colorPresets = [
+  { name: "Azul", value: "#3b82f6", dark: "#60a5fa" },
+  { name: "Verde", value: "#22c55e", dark: "#4ade80" },
+  { name: "Morado", value: "#a855f7", dark: "#c084fc" },
+  { name: "Rosa", value: "#ec4899", dark: "#f472b6" },
+  { name: "Naranja", value: "#f97316", dark: "#fb923c" },
+  { name: "Rojo", value: "#ef4444", dark: "#f87171" },
+  { name: "Cyan", value: "#06b6d4", dark: "#22d3ee" },
+]
+
+// Convert hex to OKLCH for Tailwind compatibility
+function hexToOklch(hex: string): string {
+  hex = hex.replace('#', '')
+
+  const r = parseInt(hex.substring(0, 2), 16) / 255
+  const g = parseInt(hex.substring(2, 4), 16) / 255
+  const b = parseInt(hex.substring(4, 6), 16) / 255
+
+  const toLinear = (c: number) => {
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  }
+
+  const rL = toLinear(r)
+  const gL = toLinear(g)
+  const bL = toLinear(b)
+
+  const x = 0.4124564 * rL + 0.3575761 * gL + 0.1804375 * bL
+  const y = 0.2126729 * rL + 0.7151522 * gL + 0.0721750 * bL
+  const z = 0.0193339 * rL + 0.1191920 * gL + 0.9503041 * bL
+
+  const xn = 0.95047
+  const yn = 1.00000
+  const zn = 1.08883
+
+  const fx = x / xn > 0.008856 ? Math.pow(x / xn, 1 / 3) : (903.3 * x / xn + 16) / 116
+  const fy = y / yn > 0.008856 ? Math.pow(y / yn, 1 / 3) : (903.3 * y / yn + 16) / 116
+  const fz = z / zn > 0.008856 ? Math.pow(z / zn, 1 / 3) : (903.3 * z / zn + 16) / 116
+
+  const L = 116 * fy - 16
+  const a = 500 * (fx - fy)
+  const bVal = 200 * (fy - fz)
+
+  const C = Math.sqrt(a * a + bVal * bVal)
+  let H = Math.atan2(bVal, a) * 180 / Math.PI
+  if (H < 0) H += 360
+
+  const l = L / 100
+  const c = C / 150
+
+  return `${l.toFixed(3)} ${c.toFixed(3)} ${H.toFixed(1)}`
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [isDarkMode, setIsDarkMode] = useState(true)
+  const [primaryColor, setPrimaryColor] = useState("#3b82f6")
+  const [uiScale, setUiScale] = useState(1)
+  const [avatarScale, setAvatarScale] = useState(1)
+  const [showSearchCard, setShowSearchCard] = useState(true)
+  const [showSearchBar, setShowSearchBar] = useState(false)
+  const [showDonateCard, setShowDonateCard] = useState(true)
+  const [showHelpCard, setShowHelpCard] = useState(true)
+  const [showSettingsInMenu, setShowSettingsInMenu] = useState(false)
+  const [showRecsCard, setShowRecsCard] = useState(true)
+  const [dataSaver, setDataSaver] = useState(false)
+  const [enableAnimations, setEnableAnimations] = useState(false)
+  const [animationDuration, setAnimationDuration] = useState(200)
+  const [animationDistance, setAnimationDistance] = useState(4)
+  const [disableDisplacement, setDisableDisplacement] = useState(false)
+  const [useLocalLibrary, setUseLocalLibrary] = useState(false)
+  const [useRandomFolderCovers, setUseRandomFolderCovers] = useState(true)
+  const [badgePosTop, setBadgePosTop] = useState(8)
+  const [badgePosRight, setBadgePosRight] = useState(8)
+  const [showPosTool, setShowPosTool] = useState(false)
+  const [badgePosMode, setBadgePosMode] = useState<"relative" | "absolute">("relative")
+  const [bookShowTranslator, setBookShowTranslator] = useState(true)
+  const [bookShowSeriesAsTitle, setBookShowSeriesAsTitle] = useState(true)
+  const [bookShowRomajiAsSubtitle, setBookShowRomajiAsSubtitle] = useState(true)
+  const [bookShowAuthorIllustrator, setBookShowAuthorIllustrator] = useState(true)
+  const [bookShowVolume, setBookShowVolume] = useState(true)
+  const [bookShowReleaseDate, setBookShowReleaseDate] = useState(true)
+  const [bookShowStats, setBookShowStats] = useState(true)
+  const [bookHideFloatingRating, setBookHideFloatingRating] = useState(false)
+  const [bookCompactness, setBookCompactness] = useState(0.5)
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [shouldPersist, setShouldPersist] = useState(true)
+  const [isResetting, setIsResetting] = useState(false)
+
+  // Load saved settings from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const savedTheme = localStorage.getItem("theme")
+    const savedColor = localStorage.getItem("primaryColor")
+    const savedScale = localStorage.getItem("uiScale")
+    const savedAvatarScale = localStorage.getItem("avatarScale")
+    const savedShowSearchCard = localStorage.getItem("showSearchCard")
+    const savedShowSearchBar = localStorage.getItem("showSearchBar")
+    const savedShowDonateCard = localStorage.getItem("showDonateCard")
+    const savedShowHelpCard = localStorage.getItem("showHelpCard")
+    const savedShowSettingsInMenu = localStorage.getItem("showSettingsInMenu")
+    const savedShowRecsCard = localStorage.getItem("showRecsCard")
+    const savedEnableAnimations = localStorage.getItem("enableAnimations")
+    const savedAnimDuration = localStorage.getItem("animationDuration")
+    const savedAnimDistance = localStorage.getItem("animationDistance")
+    const savedDataSaver = localStorage.getItem("dataSaver")
+    const savedUseLocalLibrary = localStorage.getItem("useLocalLibrary")
+    const savedUseRandomFolderCovers = localStorage.getItem("useRandomFolderCovers")
+    const savedBadgePosTop = localStorage.getItem("badgePosTop")
+    const savedBadgePosRight = localStorage.getItem("badgePosRight")
+    const savedShowPosTool = localStorage.getItem("showPosTool")
+    const savedBadgePosMode = localStorage.getItem("badgePosMode")
+    const savedBookShowTranslator = localStorage.getItem("bookShowTranslator")
+    const savedBookShowSeriesAsTitle = localStorage.getItem("bookShowSeriesAsTitle")
+    const savedBookShowRomajiAsSubtitle = localStorage.getItem("bookShowRomajiAsSubtitle")
+    const savedBookShowAuthorIllustrator = localStorage.getItem("bookShowAuthorIllustrator")
+    const savedBookShowVolume = localStorage.getItem("bookShowVolume")
+    const savedBookShowReleaseDate = localStorage.getItem("bookShowReleaseDate")
+    const savedBookShowStats = localStorage.getItem("bookShowStats")
+    const savedBookHideFloatingRating = localStorage.getItem("bookHideFloatingRating")
+    const savedBookCompactness = localStorage.getItem("bookCompactness")
+
+    // Sync with Backend (Role Defaults)
+    const fetchRemoteDefaults = async () => {
+      try {
+        const { callBotAPI } = await import("@/lib/api")
+        const data = await callBotAPI("ui_settings", { subAction: "get", role: "auto" })
+        if (data) {
+          // Backend now handles the 3-Way Merge (Global < Role < User)
+          // So we blindly apply what we receive as the source of truth.
+
+          if (data.update_notification) {
+            const { toast } = await import("sonner")
+            toast.info("La interfaz ha sido actualizada por el administrador", {
+              duration: 5000,
+              icon: "🔔"
+            })
+          }
+
+          // Always apply received settings to state AND localStorage
+          // This keeps local state perfectly synced with DB state
+          if (data.primaryColor) {
+            setPrimaryColor(data.primaryColor)
+            localStorage.setItem("primaryColor", data.primaryColor)
+          }
+
+          if (data.isDarkMode !== undefined) {
+            setIsDarkMode(data.isDarkMode)
+            localStorage.setItem("theme", data.isDarkMode ? "dark" : "light")
+          }
+
+          if (data.uiScale !== undefined) {
+            setUiScale(data.uiScale)
+            localStorage.setItem("uiScale", data.uiScale.toString())
+          }
+
+          if (data.avatarScale !== undefined) {
+            setAvatarScale(data.avatarScale)
+            localStorage.setItem("avatarScale", data.avatarScale.toString())
+          }
+
+          if (data.showSearchCard !== undefined) {
+            setShowSearchCard(data.showSearchCard)
+            localStorage.setItem("showSearchCard", String(data.showSearchCard))
+          }
+
+          if (data.showSearchBar !== undefined) {
+            setShowSearchBar(data.showSearchBar)
+            localStorage.setItem("showSearchBar", String(data.showSearchBar))
+          }
+
+          if (data.showDonateCard !== undefined) {
+            setShowDonateCard(data.showDonateCard)
+            localStorage.setItem("showDonateCard", String(data.showDonateCard))
+          }
+
+          if (data.showHelpCard !== undefined) {
+            setShowHelpCard(data.showHelpCard)
+            localStorage.setItem("showHelpCard", String(data.showHelpCard))
+          }
+
+          if (data.showSettingsInMenu !== undefined) {
+            setShowSettingsInMenu(data.showSettingsInMenu)
+            localStorage.setItem("showSettingsInMenu", String(data.showSettingsInMenu))
+          }
+          if (data.showRecsCard !== undefined) {
+            setShowRecsCard(data.showRecsCard)
+            localStorage.setItem("showRecsCard", String(data.showRecsCard))
+          }
+
+          if (data.enableAnimations !== undefined) {
+            setEnableAnimations(data.enableAnimations)
+            localStorage.setItem("enableAnimations", String(data.enableAnimations))
+          }
+
+          if (data.animationDuration !== undefined) {
+            setAnimationDuration(data.animationDuration)
+            localStorage.setItem("animationDuration", String(data.animationDuration))
+          }
+
+          if (data.animationDistance !== undefined) {
+            setAnimationDistance(data.animationDistance)
+            localStorage.setItem("animationDistance", String(data.animationDistance))
+          }
+          if (data.dataSaver !== undefined) {
+            setDataSaver(data.dataSaver)
+            localStorage.setItem("dataSaver", String(data.dataSaver))
+          }
+          if (data.useLocalLibrary !== undefined) {
+            setUseLocalLibrary(data.useLocalLibrary)
+            localStorage.setItem("useLocalLibrary", String(data.useLocalLibrary))
+          }
+          if (data.useRandomFolderCovers !== undefined) {
+            setUseRandomFolderCovers(data.useRandomFolderCovers)
+            localStorage.setItem("useRandomFolderCovers", String(data.useRandomFolderCovers))
+          }
+          if (data.badgePosTop !== undefined) {
+            setBadgePosTop(data.badgePosTop)
+            localStorage.setItem("badgePosTop", String(data.badgePosTop))
+          }
+          if (data.badgePosRight !== undefined) {
+            setBadgePosRight(data.badgePosRight)
+            localStorage.setItem("badgePosRight", String(data.badgePosRight))
+          }
+          if (data.showPosTool !== undefined) {
+            setShowPosTool(data.showPosTool)
+            localStorage.setItem("showPosTool", String(data.showPosTool))
+          }
+          if (data.badgePosMode !== undefined) {
+            setBadgePosMode(data.badgePosMode)
+            localStorage.setItem("badgePosMode", data.badgePosMode)
+          }
+          if (data.bookShowTranslator !== undefined) {
+            setBookShowTranslator(data.bookShowTranslator)
+            localStorage.setItem("bookShowTranslator", String(data.bookShowTranslator))
+          }
+          if (data.bookShowSeriesAsTitle !== undefined) {
+            setBookShowSeriesAsTitle(data.bookShowSeriesAsTitle)
+            localStorage.setItem("bookShowSeriesAsTitle", String(data.bookShowSeriesAsTitle))
+          }
+          if (data.bookShowRomajiAsSubtitle !== undefined) {
+            setBookShowRomajiAsSubtitle(data.bookShowRomajiAsSubtitle)
+            localStorage.setItem("bookShowRomajiAsSubtitle", String(data.bookShowRomajiAsSubtitle))
+          }
+          if (data.bookShowAuthorIllustrator !== undefined) {
+            setBookShowAuthorIllustrator(data.bookShowAuthorIllustrator)
+            localStorage.setItem("bookShowAuthorIllustrator", String(data.bookShowAuthorIllustrator))
+          }
+          if (data.bookShowVolume !== undefined) {
+            setBookShowVolume(data.bookShowVolume)
+            localStorage.setItem("bookShowVolume", String(data.bookShowVolume))
+          }
+          if (data.bookShowReleaseDate !== undefined) {
+            setBookShowReleaseDate(data.bookShowReleaseDate)
+            localStorage.setItem("bookShowReleaseDate", String(data.bookShowReleaseDate))
+          }
+          if (data.bookShowStats !== undefined) {
+            setBookShowStats(data.bookShowStats)
+            localStorage.setItem("bookShowStats", String(data.bookShowStats))
+          }
+          if (data.bookHideFloatingRating !== undefined) {
+            setBookHideFloatingRating(data.bookHideFloatingRating)
+            localStorage.setItem("bookHideFloatingRating", String(data.bookHideFloatingRating))
+          }
+          if (data.bookCompactness !== undefined) {
+            setBookCompactness(data.bookCompactness)
+            localStorage.setItem("bookCompactness", String(data.bookCompactness))
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching UI defaults:", error)
+      } finally {
+        // ALWAYS mark as loaded even if fetch fails
+        setIsLoaded(true)
+      }
+    }
+
+    // Apply local settings if they exist
+    if (savedTheme) setIsDarkMode(savedTheme === "dark")
+    if (savedColor) setPrimaryColor(savedColor)
+    if (savedScale) setUiScale(parseFloat(savedScale))
+    if (savedAvatarScale) setAvatarScale(parseFloat(savedAvatarScale))
+    if (savedShowSearchCard !== null) setShowSearchCard(savedShowSearchCard === "true")
+    if (savedShowSearchBar !== null) setShowSearchBar(savedShowSearchBar === "true")
+    if (savedShowDonateCard !== null) setShowDonateCard(savedShowDonateCard === "true")
+    if (savedShowHelpCard !== null) setShowHelpCard(savedShowHelpCard === "true")
+    if (savedShowSettingsInMenu !== null) setShowSettingsInMenu(savedShowSettingsInMenu === "true")
+    if (savedShowRecsCard !== null) setShowRecsCard(savedShowRecsCard === "true")
+    if (savedEnableAnimations !== null) setEnableAnimations(savedEnableAnimations === "true")
+    if (savedAnimDuration) setAnimationDuration(parseInt(savedAnimDuration))
+    if (savedAnimDistance) setAnimationDistance(parseInt(savedAnimDistance))
+    if (savedDataSaver !== null) setDataSaver(savedDataSaver === "true")
+    if (savedUseLocalLibrary !== null) setUseLocalLibrary(savedUseLocalLibrary === "true")
+    if (savedUseRandomFolderCovers !== null) setUseRandomFolderCovers(savedUseRandomFolderCovers === "true")
+    if (savedBadgePosTop) setBadgePosTop(parseInt(savedBadgePosTop))
+    if (savedBadgePosRight) setBadgePosRight(parseInt(savedBadgePosRight))
+    if (savedShowPosTool !== null) setShowPosTool(savedShowPosTool === "true")
+    if (savedBadgePosMode) setBadgePosMode(savedBadgePosMode as "relative" | "absolute")
+    if (savedBookShowTranslator !== null) setBookShowTranslator(savedBookShowTranslator === "true")
+    if (savedBookShowSeriesAsTitle !== null) setBookShowSeriesAsTitle(savedBookShowSeriesAsTitle === "true")
+    if (savedBookShowRomajiAsSubtitle !== null) setBookShowRomajiAsSubtitle(savedBookShowRomajiAsSubtitle === "true")
+    if (savedBookShowAuthorIllustrator !== null) setBookShowAuthorIllustrator(savedBookShowAuthorIllustrator === "true")
+    if (savedBookShowVolume !== null) setBookShowVolume(savedBookShowVolume === "true")
+    if (savedBookShowReleaseDate !== null) setBookShowReleaseDate(savedBookShowReleaseDate === "true")
+    if (savedBookShowStats !== null) setBookShowStats(savedBookShowStats === "true")
+    if (savedBookHideFloatingRating !== null) setBookHideFloatingRating(savedBookHideFloatingRating === "true")
+    if (savedBookCompactness !== null) setBookCompactness(parseFloat(savedBookCompactness))
+
+    // Then fetch remote defaults for missing ones
+    fetchRemoteDefaults()
+  }, [])
+
+  // Apply dark mode class to html element
+  useEffect(() => {
+    if (!isLoaded) return
+
+    const html = document.documentElement
+    if (isDarkMode) {
+      html.classList.add("dark")
+    } else {
+      html.classList.remove("dark")
+    }
+    if (shouldPersist) {
+      localStorage.setItem("theme", isDarkMode ? "dark" : "light")
+    }
+  }, [isDarkMode, isLoaded, shouldPersist])
+
+  // Apply primary color as CSS variables - use hex directly for accuracy
+  useEffect(() => {
+    if (!isLoaded) return
+
+    // Find the correct color variant based on mode
+    const selectedPreset = colorPresets.find(
+      (c) => c.value === primaryColor || c.dark === primaryColor
+    )
+    const colorToUse = isDarkMode
+      ? (selectedPreset?.dark || primaryColor)
+      : (selectedPreset?.value || primaryColor)
+
+    // Calculate if color is light or dark to set contrasting text
+    const getContrastColor = (hex: string): string => {
+      const cleanHex = hex.replace('#', '')
+      const r = parseInt(cleanHex.substring(0, 2), 16)
+      const g = parseInt(cleanHex.substring(2, 4), 16)
+      const b = parseInt(cleanHex.substring(4, 6), 16)
+      // Calculate relative luminance
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+      return luminance > 0.5 ? '#000000' : '#ffffff'
+    }
+
+    const contrastColor = getContrastColor(colorToUse)
+
+    // Create or update dynamic style tag - use hex directly for accurate colors
+    let styleTag = document.getElementById("dynamic-theme-colors")
+    if (!styleTag) {
+      styleTag = document.createElement("style")
+      styleTag.id = "dynamic-theme-colors"
+      document.head.appendChild(styleTag)
+    }
+
+    // Apply primary color and contrasting text color
+    styleTag.textContent = `
+      :root {
+        --primary: ${colorToUse} !important;
+        --primary-foreground: ${contrastColor} !important;
+        --ring: ${colorToUse} !important;
+        --accent: ${colorToUse} !important;
+        --accent-foreground: ${contrastColor} !important;
+      }
+      .dark {
+        --primary: ${colorToUse} !important;
+        --primary-foreground: ${contrastColor} !important;
+        --ring: ${colorToUse} !important;
+        --accent: ${colorToUse} !important;
+        --accent-foreground: ${contrastColor} !important;
+      }
+      /* Ensure button and link colors use the primary with contrast text */
+      .bg-primary { background-color: ${colorToUse} !important; color: ${contrastColor} !important; }
+      .text-primary { color: ${colorToUse} !important; }
+      .border-primary { border-color: ${colorToUse} !important; }
+    `
+
+    if (shouldPersist) {
+      localStorage.setItem("primaryColor", primaryColor)
+    }
+  }, [primaryColor, isDarkMode, isLoaded, shouldPersist])
+
+  // Apply UI scale
+  useEffect(() => {
+    if (!isLoaded) return
+
+    document.documentElement.style.setProperty("--font-scale", uiScale.toString())
+    document.documentElement.style.fontSize = `${uiScale * 100}%`
+    if (shouldPersist) {
+      localStorage.setItem("uiScale", uiScale.toString())
+    }
+  }, [uiScale, isLoaded, shouldPersist])
+
+  // Save avatar scale
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("avatarScale", avatarScale.toString())
+    }
+  }, [avatarScale, isLoaded, shouldPersist])
+
+  // Save visibility preferences
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("showSearchCard", String(showSearchCard))
+    }
+  }, [showSearchCard, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("showSearchBar", String(showSearchBar))
+    }
+  }, [showSearchBar, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("showDonateCard", String(showDonateCard))
+    }
+  }, [showDonateCard, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("showHelpCard", String(showHelpCard))
+    }
+  }, [showHelpCard, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("showSettingsInMenu", String(showSettingsInMenu))
+    }
+  }, [showSettingsInMenu, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("showRecsCard", String(showRecsCard))
+    }
+  }, [showRecsCard, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    const html = document.documentElement
+    if (enableAnimations) {
+      html.classList.add("animations-enabled")
+    } else {
+      html.classList.remove("animations-enabled")
+    }
+    if (shouldPersist) {
+      localStorage.setItem("enableAnimations", String(enableAnimations))
+    }
+  }, [enableAnimations, isLoaded, shouldPersist])
+
+  // Save animation duration
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("animationDuration", String(animationDuration))
+    }
+  }, [animationDuration, isLoaded, shouldPersist])
+
+  // Save animation distance
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("animationDistance", String(animationDistance))
+    }
+  }, [animationDistance, isLoaded, shouldPersist])
+
+  // Save disable displacement
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("disableDisplacement", String(disableDisplacement))
+    }
+  }, [disableDisplacement, isLoaded, shouldPersist])
+
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("dataSaver", String(dataSaver))
+    }
+  }, [dataSaver, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("useLocalLibrary", String(useLocalLibrary))
+    }
+  }, [useLocalLibrary, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("useRandomFolderCovers", String(useRandomFolderCovers))
+    }
+  }, [useRandomFolderCovers, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowTranslator", String(bookShowTranslator))
+    }
+  }, [bookShowTranslator, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowSeriesAsTitle", String(bookShowSeriesAsTitle))
+    }
+  }, [bookShowSeriesAsTitle, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowRomajiAsSubtitle", String(bookShowRomajiAsSubtitle))
+    }
+  }, [bookShowRomajiAsSubtitle, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowAuthorIllustrator", String(bookShowAuthorIllustrator))
+    }
+  }, [bookShowAuthorIllustrator, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowVolume", String(bookShowVolume))
+    }
+  }, [bookShowVolume, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowReleaseDate", String(bookShowReleaseDate))
+    }
+  }, [bookShowReleaseDate, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookShowStats", String(bookShowStats))
+    }
+  }, [bookShowStats, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookHideFloatingRating", String(bookHideFloatingRating))
+    }
+  }, [bookHideFloatingRating, isLoaded, shouldPersist])
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (shouldPersist) {
+      localStorage.setItem("bookCompactness", bookCompactness.toString())
+    }
+  }, [bookCompactness, isLoaded, shouldPersist])
+
+  const saveGlobalSettings = async (role: string) => {
+    try {
+      const { callBotAPI } = await import("@/lib/api")
+      const settings = {
+        primaryColor,
+        uiScale,
+        avatarScale,
+        isDarkMode,
+        showSearchCard,
+        showSearchBar,
+        showDonateCard,
+        showHelpCard,
+        showSettingsInMenu,
+        enableAnimations,
+        animationDuration,
+        animationDistance,
+        disableDisplacement,
+        dataSaver,
+        useLocalLibrary,
+        useRandomFolderCovers,
+        showRecsCard,
+        badgePosTop,
+        badgePosRight,
+        showPosTool,
+        badgePosMode,
+        bookShowTranslator,
+        bookShowSeriesAsTitle,
+        bookShowRomajiAsSubtitle,
+        bookShowAuthorIllustrator,
+        bookShowVolume,
+        bookShowReleaseDate,
+        bookShowStats,
+        bookHideFloatingRating,
+        bookCompactness
+      }
+      await callBotAPI("ui_settings", { subAction: "set", role, settings })
+    } catch (error) {
+      console.error("Error saving global settings:", error)
+      throw error
+    }
+  }
+
+  const applySettings = (settings: any, persistToLocal: boolean = true) => {
+    // Disable persistence temporarily if requested (e.g. previewing level settings)
+    setShouldPersist(persistToLocal)
+
+    if (settings.isDarkMode !== undefined) setIsDarkMode(settings.isDarkMode)
+    if (settings.primaryColor !== undefined) setPrimaryColor(settings.primaryColor)
+    if (settings.uiScale !== undefined) setUiScale(settings.uiScale)
+    if (settings.avatarScale !== undefined) setAvatarScale(settings.avatarScale)
+    if (settings.showSearchCard !== undefined) setShowSearchCard(settings.showSearchCard)
+    if (settings.showSearchBar !== undefined) setShowSearchBar(settings.showSearchBar)
+    if (settings.showDonateCard !== undefined) setShowDonateCard(settings.showDonateCard)
+    if (settings.showHelpCard !== undefined) setShowHelpCard(settings.showHelpCard)
+    if (settings.showSettingsInMenu !== undefined) setShowSettingsInMenu(settings.showSettingsInMenu)
+    if (settings.enableAnimations !== undefined) setEnableAnimations(settings.enableAnimations)
+    if (settings.animationDuration !== undefined) setAnimationDuration(settings.animationDuration)
+    if (settings.animationDistance !== undefined) setAnimationDistance(settings.animationDistance)
+    if (settings.disableDisplacement !== undefined) setDisableDisplacement(settings.disableDisplacement)
+    if (settings.dataSaver !== undefined) setDataSaver(settings.dataSaver)
+    if (settings.useLocalLibrary !== undefined) setUseLocalLibrary(settings.useLocalLibrary)
+    if (settings.useRandomFolderCovers !== undefined) setUseRandomFolderCovers(settings.useRandomFolderCovers)
+    if (settings.showRecsCard !== undefined) setShowRecsCard(settings.showRecsCard)
+    if (settings.badgePosTop !== undefined) setBadgePosTop(settings.badgePosTop)
+    if (settings.badgePosRight !== undefined) setBadgePosRight(settings.badgePosRight)
+    if (settings.showPosTool !== undefined) setShowPosTool(settings.showPosTool)
+    if (settings.badgePosMode !== undefined) setBadgePosMode(settings.badgePosMode)
+    if (settings.bookShowTranslator !== undefined) setBookShowTranslator(settings.bookShowTranslator)
+    if (settings.bookShowSeriesAsTitle !== undefined) setBookShowSeriesAsTitle(settings.bookShowSeriesAsTitle)
+    if (settings.bookShowRomajiAsSubtitle !== undefined) setBookShowRomajiAsSubtitle(settings.bookShowRomajiAsSubtitle)
+    if (settings.bookShowAuthorIllustrator !== undefined) setBookShowAuthorIllustrator(settings.bookShowAuthorIllustrator)
+    if (settings.bookShowVolume !== undefined) setBookShowVolume(settings.bookShowVolume)
+    if (settings.bookShowReleaseDate !== undefined) setBookShowReleaseDate(settings.bookShowReleaseDate)
+    if (settings.bookShowStats !== undefined) setBookShowStats(settings.bookShowStats)
+    if (settings.bookHideFloatingRating !== undefined) setBookHideFloatingRating(settings.bookHideFloatingRating)
+    if (settings.bookCompactness !== undefined) setBookCompactness(settings.bookCompactness)
+
+    // If we are restoring personal settings, ensure we force a save to localStorage of what we just applied
+    if (persistToLocal) {
+      localStorage.setItem("theme", settings.isDarkMode ? "dark" : "light")
+      localStorage.setItem("primaryColor", settings.primaryColor || "#3b82f6")
+      localStorage.setItem("uiScale", (settings.uiScale || 1).toString())
+      localStorage.setItem("avatarScale", (settings.avatarScale || 1).toString())
+      localStorage.setItem("showSearchCard", String(settings.showSearchCard ?? true))
+      localStorage.setItem("showSearchBar", String(settings.showSearchBar ?? false))
+      localStorage.setItem("showDonateCard", String(settings.showDonateCard ?? true))
+      localStorage.setItem("showHelpCard", String(settings.showHelpCard ?? true))
+      localStorage.setItem("showSettingsInMenu", String(settings.showSettingsInMenu ?? false))
+      localStorage.setItem("enableAnimations", String(settings.enableAnimations ?? false))
+      localStorage.setItem("animationDuration", String(settings.animationDuration ?? 200))
+      localStorage.setItem("animationDistance", String(settings.animationDistance ?? 4))
+      localStorage.setItem("disableDisplacement", String(settings.disableDisplacement ?? false))
+      localStorage.setItem("dataSaver", String(settings.dataSaver ?? false))
+      localStorage.setItem("useLocalLibrary", String(settings.useLocalLibrary ?? false))
+      localStorage.setItem("useRandomFolderCovers", String(settings.useRandomFolderCovers ?? true))
+      localStorage.setItem("showRecsCard", String(settings.showRecsCard ?? true))
+      localStorage.setItem("badgePosTop", String(settings.badgePosTop ?? 8))
+      localStorage.setItem("badgePosRight", String(settings.badgePosRight ?? 8))
+      localStorage.setItem("showPosTool", String(settings.showPosTool ?? false))
+      localStorage.setItem("badgePosMode", settings.badgePosMode ?? "relative")
+      localStorage.setItem("bookShowTranslator", String(settings.bookShowTranslator ?? true))
+      localStorage.setItem("bookShowSeriesAsTitle", String(settings.bookShowSeriesAsTitle ?? true))
+      localStorage.setItem("bookShowRomajiAsSubtitle", String(settings.bookShowRomajiAsSubtitle ?? true))
+      localStorage.setItem("bookShowAuthorIllustrator", String(settings.bookShowAuthorIllustrator ?? true))
+      localStorage.setItem("bookShowVolume", String(settings.bookShowVolume ?? true))
+      localStorage.setItem("bookShowReleaseDate", String(settings.bookShowReleaseDate ?? true))
+      localStorage.setItem("bookShowStats", String(settings.bookShowStats ?? true))
+      localStorage.setItem("bookHideFloatingRating", String(settings.bookHideFloatingRating ?? false))
+      localStorage.setItem("bookCompactness", (settings.bookCompactness ?? 0.5).toString())
+    }
+  }
+
+  return (
+    <ThemeContext.Provider
+      value={{
+        isDarkMode,
+        setIsDarkMode,
+        primaryColor,
+        setPrimaryColor,
+        uiScale,
+        setUiScale,
+        avatarScale,
+        setAvatarScale,
+        showSearchCard,
+        setShowSearchCard,
+        showSearchBar,
+        setShowSearchBar,
+        showDonateCard,
+        setShowDonateCard,
+        showHelpCard,
+        setShowHelpCard,
+        showSettingsInMenu,
+        setShowSettingsInMenu,
+        enableAnimations,
+        setEnableAnimations,
+        animationDuration,
+        setAnimationDuration,
+        animationDistance,
+        setAnimationDistance,
+        disableDisplacement,
+        setDisableDisplacement,
+        dataSaver,
+        setDataSaver,
+        useLocalLibrary,
+        setUseLocalLibrary,
+        useRandomFolderCovers,
+        setUseRandomFolderCovers,
+        showRecsCard,
+        setShowRecsCard,
+        badgePosTop,
+        setBadgePosTop,
+        badgePosRight,
+        setBadgePosRight,
+        showPosTool,
+        setShowPosTool,
+        badgePosMode,
+        setBadgePosMode,
+        bookShowTranslator,
+        setBookShowTranslator,
+        bookShowSeriesAsTitle,
+        setBookShowSeriesAsTitle,
+        bookShowRomajiAsSubtitle,
+        setBookShowRomajiAsSubtitle,
+        bookShowAuthorIllustrator,
+        setBookShowAuthorIllustrator,
+        bookShowVolume,
+        setBookShowVolume,
+        bookShowReleaseDate,
+        setBookShowReleaseDate,
+        bookShowStats,
+        setBookShowStats,
+        bookHideFloatingRating,
+        setBookHideFloatingRating,
+        bookCompactness,
+        setBookCompactness,
+        saveGlobalSettings,
+        applySettings,
+      }}
+    >
+      {children}
+    </ThemeContext.Provider>
+  )
+}

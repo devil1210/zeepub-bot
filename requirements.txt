@@ -1,0 +1,40 @@
+# Telegram Bot Framework
+python-telegram-bot[job-queue]==22.5
+
+# HTTP client y soporte async
+aiohttp==3.10.11
+httpx==0.28.1
+aiosqlite==0.20.0
+prometheus_client==0.21.1
+
+# OPDS & feeds
+feedparser==6.0.11
+lxml==5.3.0
+
+# Configuración
+python-dotenv==1.0.1
+
+# Typing para compatibilidad
+typing-extensions==4.12.2
+
+# Utilidades
+nest-asyncio==1.6.0
+rich==13.9.4
+psutil==6.1.1
+python-dateutil==2.9.0.post0
+Pillow==11.1.0
+
+# Desarrollo y pruebas
+pytest==8.3.4
+pytest-asyncio==0.25.2
+ruff==0.9.1
+
+# API (Mini App Backend)
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.12
+
+# Optional DB backend via SQLAlchemy (supports external DBs like Postgres)
+SQLAlchemy==2.0.36
+psycopg2-binary==2.9.10
+alembic==1.15.1

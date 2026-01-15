@@ -1,0 +1,244 @@
+import logging
+from typing import List, Dict, Any
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
+
+from api.deps import (
+    require_admin,
+    require_mini_app_access,
+    get_current_user_data,
+)
+
+router = APIRouter(tags=["miniapp"])
+logger = logging.getLogger(__name__)
+
+# --- Modelos Pydantic ---
+
+
+class AccessCheckRequest(BaseModel):
+    user_id: int
+    force: bool = False
+
+
+class UserLevelModel(BaseModel):
+    id: str
+    name: str
+    priority: int
+    color: str
+    hasAccess: bool
+
+
+class AccessResponse(BaseModel):
+    level: UserLevelModel
+    hasAccess: bool
+    isAdmin: bool
+
+
+class LevelUpdate(BaseModel):
+    id: str
+    hasAccess: bool
+
+
+class UpdateLevelsRequest(BaseModel):
+    levels: List[LevelUpdate]
+
+
+# --- Routes ---
+
+
+@router.post("/api/bot")
+async def handle_bot_request(
+    request: Request,
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+):
+    """
+    Main endpoint for Mini App requests.
+    Dispatches actions: search, download, status, etc.
+    """
+    user_id = user_data.get("user_id", 0)
+    user_role = user_data.get("role", "free")
+    # Store for further use
+    user_effective = user_data
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    action = body.get("action")
+    data = body.get("data", {})
+
+    # --- Control de Acceso por Niveles ---
+    # Los administradores siempre tienen acceso.
+    # El resto depende de su nivel (has_mini_app_access).
+    if user_effective.get("has_mini_app_access") is False and action != "status":
+        raise HTTPException(
+            status_code=403, detail="Tu nivel de usuario no tiene acceso a la Mini App"
+        )
+
+    logger.info(f"Miniapp action: {action} User: {user_id} Role: {user_role}")
+
+    try:
+        # Mapping of actions to their respective handlers
+        from api.miniapp_handlers import (
+            handle_search,
+            handle_book_detail,
+            handle_user_status,
+            handle_user_downloads_history,
+            handle_recommendations,
+            handle_rate_book,
+            handle_remove_rating,
+            handle_rating_breakdown,
+            handle_get_download_count,
+            handle_save_badge_config,
+            handle_status,
+            handle_download,
+            handle_bot_info,
+            handle_ui_settings,
+            handle_create_stars_invoice,
+        )
+
+        ACTION_HANDLERS = {
+            "search": handle_search,
+            "book-detail": handle_book_detail,
+            "user_status": handle_user_status,
+            "user_downloads_history": handle_user_downloads_history,
+            "recommendations": handle_recommendations,
+            "rate_book": handle_rate_book,
+            "remove_rating": handle_remove_rating,
+            "rating_breakdown": handle_rating_breakdown,
+            "get_download_count": handle_get_download_count,
+            "save_badge_config": handle_save_badge_config,
+            "status": handle_status,
+            "download": handle_download,
+            "bot_info": handle_bot_info,
+            "ui_settings": handle_ui_settings,
+            "create_stars_invoice": handle_create_stars_invoice,
+        }
+
+        handler = ACTION_HANDLERS.get(action)
+        if not handler:
+            logger.warning(f"Unknown action requested: {action} by user {user_id}")
+            raise HTTPException(status_code=400, detail=f"Unknown action: {action}")
+
+        logger.info(f"Dispatching action '{action}' for user {user_id}")
+        return await handler(data, user_effective)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error handling action {action}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Nuevos Endpoints de Control de Acceso ---
+
+
+@router.post("/api/user/access", response_model=AccessResponse)
+async def check_user_access(
+    request: AccessCheckRequest,
+    user_data: Dict[str, Any] = Depends(get_current_user_data),
+):
+    from services.user_service import get_effective_user
+    from repositories.user_repository import user_repo
+
+    current_uid = user_data.get("user_id", 0)
+    # Priorizar el ID verificado por Telegram
+    uid = current_uid or request.user_id
+    logger.info(f"Access check for UID: {uid} (Force: {request.force})")
+
+    # 1. Obtener información efectiva (Roles config, expiración, etc)
+    # Si force=True, ignoramos el caché del backend
+    use_cache = not request.force
+    eff = await get_effective_user(uid, use_cache=use_cache)
+
+    # 2. Obtener información de niveles de la base de datos
+    access_info = await user_repo.get_access_info(uid)
+
+    if not access_info:
+        # Si no existe en la tabla de niveles, creamos registro.
+        # Si get_effective_user ya sabe que es staff/admin/premium, usamos ese nivel.
+        role = eff.get("role", "free")
+        # El nivel id por defecto para free es 6 (Lector)
+        # IDs mapping: Admin=1, Staff=2, Premium=3, VIP=4, Patrocinador=5, Lector=6
+        role_to_level = {
+            "admin": 1,
+            "staff": 2,
+            "premium": 3,
+            "vip": 4,
+            "white": 5,
+            "free": 6,
+        }
+        level_id = role_to_level.get(role, 6)
+
+        logger.info(
+            f"User {uid} not found in user_levels. Role effective: {role}. Creating entry with Level ID {level_id}."
+        )
+        await user_repo.create_minimal_user(uid, level_id=level_id)
+        access_info = await user_repo.get_access_info(uid)
+
+    if not access_info:
+        logger.error(f"Failed to retrieve access info for user {uid}")
+        # Fallback de emergencia
+        return AccessResponse(
+            level=UserLevelModel(
+                id="6", name="Lector", priority=1, color="#9E9E9E", hasAccess=False
+            ),
+            hasAccess=eff.get("has_mini_app_access", False),
+            isAdmin=(eff.get("role") == "admin"),
+        )
+
+    # 3. Determinar flags finales mezclando ambos sistemas
+    # El usuario tiene acceso si:
+    # - Es Admin (de Config o DB)
+    # - Es Staff (de Config o DB)
+    # - Tiene acceso explícito por su nivel de DB
+    # - Tiene acceso explícito por get_effective_user (fallbacks de config)
+
+    is_admin = (eff.get("role") == "admin") or access_info.get("isAdmin", False)
+    is_staff = eff.get("role") == "staff"
+
+    # Priority: Roles admin/staff TRUMP level restrictions
+    has_access = (
+        is_admin
+        or is_staff
+        or eff.get("has_mini_app_access", False)
+        or access_info.get("hasAccess", False)
+    )
+
+    logger.info(
+        f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}, role={eff.get('role')}"
+    )
+    return AccessResponse(
+        level=UserLevelModel(**access_info["level"]),
+        hasAccess=has_access,
+        isAdmin=is_admin,
+    )
+
+
+@router.get("/api/admin/levels")
+@router.get("/api/admin/access-levels")
+async def get_levels(user_data: Dict[str, Any] = Depends(require_admin)):
+
+    logger.info("Fetching all access levels")
+    from repositories.user_repository import user_repo
+
+    levels = await user_repo.get_all_levels()
+
+    logger.info(f"Found {len(levels)} access levels")
+    return {"levels": [UserLevelModel(**l) for l in levels]}
+
+
+@router.put("/api/admin/levels")
+@router.post("/api/admin/access-levels")
+async def update_levels(
+    request: UpdateLevelsRequest, user_data: Dict[str, Any] = Depends(require_admin)
+):
+
+    from repositories.user_repository import user_repo
+
+    for level in request.levels:
+        await user_repo.update_level_access(int(level.id), level.hasAccess)
+
+    return {"success": True, "message": "Niveles actualizados correctamente"}

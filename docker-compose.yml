@@ -1,0 +1,63 @@
+services:
+  zeepubs_bot:
+    # build: .
+    # image: devil1210/zeepub-bot:latest
+    image: ghcr.io/devil1210/zeepub-bot:latest
+    container_name: zeepubs_bot
+    restart: unless-stopped
+    # ports:
+    #   - "8000:8000"
+    env_file:
+      - .env
+    # depends_on:
+    #   - db
+    volumes:
+      - ./data:/app/data # Persist URL cache database
+      - ./config:/app/config
+      - ./plugins:/app/plugins
+      # - ./logs:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    environment:
+      - DATABASE_URL=sqlite:////app/data/url_cache.db
+      - URL_CACHE_DB_PATH=data/url_cache.db
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+
+  # db:
+  #   image: postgres:15
+  #   container_name: zeepub_db
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: ${POSTGRES_USER:-zeepub}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zeepub}
+  #     POSTGRES_DB: ${POSTGRES_DB:-zeepub}
+  #   volumes:
+  #     - ./pgdata:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zeepub}" ]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: zeepub_watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
+      - WATCHTOWER_MONITOR_ONLY=${WATCHTOWER_MONITOR_ONLY:-false}
+      - WATCHTOWER_DEBUG=false
+      - DOCKER_API_VERSION=1.52
+      - WATCHTOWER_LABEL_ENABLE=true
+    ports:
+      - "8081:8080"
+    restart: always
