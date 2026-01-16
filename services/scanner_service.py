@@ -83,12 +83,20 @@ class ScannerService:
             book = session.query(LocalBook).filter_by(filepath=filepath).first()
 
             # Si ya existe y no ha cambiado el mtime ni el tamaño, saltar (a menos que sea force_scan)
+            # SI el libro existe pero no tiene metadata enriquecida (word_count es 0 o None),
+            # forzamos el procesamiento de metadata técnica
+            force_metadata = False
+            if book and (not book.word_count or book.word_count == 0):
+                logger.info(f"Forzando extracción de metadata para {filename} (metadata faltante)")
+                force_metadata = True
+
             if (
                 not force_scan
+                and not force_metadata
                 and book
                 and book.file_modified_at == mtime
                 and book.file_size == size
-                and book.content_hash  # Asegurar que tiene hash o forzar
+                and book.content_hash
             ):
                 return False
 

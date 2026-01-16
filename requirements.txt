@@ -38,3 +38,7 @@ python-multipart==0.0.12
 SQLAlchemy==2.0.36
 psycopg2-binary==2.9.10
 alembic==1.15.1
+
+# Metadata Extraction
+beautifulsoup4==4.12.3
+EbookLib==0.18

@@ -67,11 +67,11 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
     size: volume.size || '0 MB',
     format: volume.format || 'EPUB',
     epubVersion: volume.epubVersion || '3.0',
-    uploader: volume.uploader || 'ZeePub',
+    uploader: 'ZeePub', // Local books are uploaded by the system
     wordCount: volume.wordCount || 0,
     pages: volume.pages || 0,
     readTime: volume.readTime || 'N/A',
-    lastUpdated: 'Reciente',
+    lastUpdated: volume.modifiedAt ? new Date(volume.modifiedAt).toLocaleDateString() : 'Reciente',
     downloadCount: volume.downloadCount || 0,
     description: volume.description || 'Sin sinopsis disponible.',
     demography: volume.demography || [],
@@ -337,7 +337,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                       { label: 'Páginas', value: displayData.pages },
                       { label: 'Lectura Aprox.', value: displayData.readTime },
                       { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
-                      { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400', clickable: true, type: 'uploader' },
+                      { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400' },
+                      { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
                     ].map((item, idx) => (
                       <div key={idx} className="flex justify-between py-3 border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/[0.02] px-2 -mx-2 rounded transition-colors">
                         <span className="text-sm text-gray-500 font-medium">{item.label}</span>

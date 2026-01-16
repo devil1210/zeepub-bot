@@ -52,13 +52,26 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               coverUrl: v.cover || data.cover,
               publishedDate: v.publishedAt || 'N/A',
               pages: v.pageCount || 0,
-              format: (v.fileType || 'EPUB').replace('application/', '').toUpperCase(),
+              format: (v.bookType || 'EPUB').toUpperCase(),
               rating: v.rating_average || 0,
               description: v.summary || v.description,
               uploader: v.translator || 'ZeePub',
               downloadCount: v.download_count || 0,
               demography: v.demographics,
-              tags: v.tags
+              tags: v.tags,
+              // Metadata Enriquecida
+              romajiTitle: v.romaji,
+              illustrator: v.illustrator,
+              translator: v.translator,
+              typesetter: v.layoutBy,
+              group: v.publisher,
+              isbn: v.isbn,
+              asin: v.asin,
+              wordCount: v.wordCount,
+              readTime: v.readingTime ? `${v.readingTime} min` : 'N/A',
+              size: v.fileSize ? `${(v.fileSize / (1024 * 1024)).toFixed(2)} MB` : '0 MB',
+              language: v.language || 'Español',
+              epubVersion: v.epubVersion
             }));
             setVolumes(mappedVols);
           }
@@ -114,7 +127,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
       <div className="relative w-full h-80 shrink-0 overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center blur-sm scale-110 opacity-50"
-          style={{ backgroundImage: `url('${series.coverUrl}')` }}
+          style={{ backgroundImage: `url('${realSeries.coverUrl}')` }}
         ></div>
 
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-transparent"></div>
@@ -123,31 +136,31 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         <div className="absolute bottom-0 w-full px-4 sm:px-6 lg:px-8 pb-8 z-20">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
             <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 -mb-4 shadow-2xl rounded-lg overflow-hidden ring-4 ring-white/10">
-              <img alt={`${series.title} Cover`} className="w-full h-full object-cover" src={series.coverUrl} />
+              <img alt={`${realSeries.title} Cover`} className="w-full h-full object-cover" src={realSeries.coverUrl} />
             </div>
 
             <div className="flex-1 pb-2 w-full">
               <div className="flex items-center gap-3 mb-2">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/20 uppercase tracking-wide">
-                  {series.genre}
+                  {realSeries.genre}
                 </span>
                 <span className="flex items-center gap-1 text-yellow-500 text-xs sm:text-sm font-bold">
                   <Star className="w-4 h-4 fill-current" />
-                  {series.rating}
+                  {realSeries.rating}
                 </span>
               </div>
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 leading-tight">
-                {series.title}
+                {realSeries.title}
               </h1>
-              <p className="text-white/80 text-sm sm:text-base mb-4 font-medium">Por {series.author}</p>
+              <p className="text-white/80 text-sm sm:text-base mb-4 font-medium">Por {realSeries.author}</p>
 
               <p className="text-gray-200 text-xs sm:text-sm line-clamp-3 sm:line-clamp-3 max-w-2xl leading-relaxed mb-4">
-                {series.description || "Hajime Nagumo, de diecisiete años, es un otaku promedio. Sin embargo, su vida simple de pasar noches en vela y dormir en la escuela cambia repentinamente cuando él, junto con el resto de su clase, ¡es invocado a un mundo de fantasía!"}
+                {realSeries.description || "Sin descripción disponible."}
               </p>
 
               <div className="flex items-center gap-4 text-xs sm:text-sm text-gray-300 font-mono">
                 <span className="flex items-center gap-1.5"><Library className="w-4 h-4 text-primary" /> {volumes.length} Volúmenes</span>
-                <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-primary" /> Actualizado Hoy</span>
+                <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-primary" /> {realSeries.status || 'Completado'}</span>
               </div>
             </div>
           </div>
@@ -196,13 +209,13 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                       {vol.title}
                     </h3>
                     <p className="text-gray-500 text-xs italic font-serif mt-0.5 line-clamp-1">
-                      Byōsoku Go Senchimētoru + Hoshi wo Ou Kodomo
+                      {vol.romajiTitle || vol.title}
                     </p>
                   </div>
 
                   <div className="mb-2">
                     <p className="text-[#2AABEE] text-sm font-medium">
-                      {series.author} - Asahi Akisaka
+                      {series.author} {vol.illustrator ? `- ${vol.illustrator}` : ''}
                     </p>
                     <p className="text-gray-400 text-xs mt-0.5">
                       Volumen {vol.volumeNumber} <span className="text-[#2AABEE] font-bold">{vol.uploader}</span>
@@ -212,7 +225,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                   <div className="flex items-center gap-4 text-xs font-bold mb-auto">
                     <div className="flex items-center gap-1.5 text-gray-400">
                       <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
-                      <span className="text-gray-200">0.0</span> <span className="text-gray-600 font-normal">(0)</span>
+                      <span className="text-gray-200">{vol.rating.toFixed(1)}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[#2AABEE]">
                       <Download className="w-3.5 h-3.5" />
