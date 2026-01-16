@@ -33,6 +33,7 @@ class CommandHandlers:
         app.add_handler(CommandHandler("cancel", self.cancel))
         app.add_handler(CommandHandler("plugins", self.plugins))
         app.add_handler(CommandHandler("evil", self.evil))
+        app.add_handler(CommandHandler("changeweb", self.changeweb))
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
@@ -551,5 +552,93 @@ class CommandHandlers:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=text_search,
+                message_thread_id=thread_id,
+            )
+
+    async def changeweb(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /changeweb: Cambia entre la interfaz nueva (web_client) y la antigua (zeepub-web)."""
+        uid = update.effective_user.id
+        thread_id = get_thread_id(update)
+        
+        # Verificar permisos de admin
+        if uid not in config.ADMIN_USERS:
+            return  # Silencioso para no admins
+
+        if not context.args:
+            current = "Desconocido"
+            import os
+            # Intentar leer del .env directamente para mostrar lo real
+            try:
+                with open(".env", "r") as f:
+                    for line in f:
+                        if line.startswith("WEB_CLIENT_DIR="):
+                            current = line.split("=")[1].strip()
+            except:
+                current = os.getenv("WEB_CLIENT_DIR", "web_client (default)")
+
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=f"🔧 <b>Configuración Actual:</b> <code>{current}</code>\n\nUsa: <code>/changeweb new</code> o <code>/changeweb old</code>",
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+            return
+
+        target = context.args[0].lower()
+        new_val = ""
+        if target in ["new", "nuevo", "moderno"]:
+            new_val = "web_client"
+        elif target in ["old", "viejo", "legacy"]:
+            new_val = "zeepub-web"
+        else:
+             await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="❌ Opción no válida. Usa 'new' o 'old'.",
+                message_thread_id=thread_id,
+            )
+             return
+
+        # Actualizar .env
+        import os
+        env_path = ".env"
+        lines = []
+        updated = False
+        
+        try:
+            if os.path.exists(env_path):
+                with open(env_path, "r") as f:
+                    lines = f.readlines()
+                
+                with open(env_path, "w") as f:
+                    for line in lines:
+                        if line.startswith("WEB_CLIENT_DIR="):
+                            f.write(f"WEB_CLIENT_DIR={new_val}\n")
+                            updated = True
+                        else:
+                            f.write(line)
+                    if not updated:
+                        f.write(f"\nWEB_CLIENT_DIR={new_val}\n")
+            else:
+                with open(env_path, "w") as f:
+                     f.write(f"WEB_CLIENT_DIR={new_val}\n")
+
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=f"✅ Configuración actualizada a: <code>{new_val}</code>\n\n🔄 Reiniciando bot para aplicar cambios...",
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+            
+            # Reiniciar proceso (Docker debería reiniciarlo)
+            import sys
+            import time
+            time.sleep(1) # Dar tiempo a que salga el mensaje
+            sys.exit(0)
+
+        except Exception as e:
+            logger.error(f"Error actualizando .env: {e}")
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=f"❌ Error al actualizar configuración: {e}",
                 message_thread_id=thread_id,
             )
