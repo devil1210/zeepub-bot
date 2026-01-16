@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronRight
 } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,6 +19,7 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, showMobileBottomNav = false }) => {
+  const { settings } = useTheme();
 
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Inicio' },
@@ -115,7 +117,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       <div className="flex-1 flex flex-col h-full w-full relative z-10 min-w-0">
 
         {/* Mobile Header (Hidden on Desktop) */}
-        <header className="md:hidden flex items-center justify-between px-4 py-4 z-40 sticky top-0 bg-[#050505]/80 backdrop-blur-md border-b border-white/5 shrink-0">
+        <header
+          className="md:hidden flex items-center justify-between px-4 py-4 z-40 sticky top-0 border-b border-white/5 shrink-0"
+          style={{
+            background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+            backdropFilter: `blur(${settings.glassBlur}px)`,
+            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+          }}
+        >
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <BookOpen className="text-white w-5 h-5" />

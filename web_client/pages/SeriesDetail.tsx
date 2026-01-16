@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 import { api } from '../src/services/api';
 import {
   ArrowLeft,
@@ -29,6 +30,7 @@ interface SeriesDetailProps {
 }
 
 export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSelectVolume }) => {
+  const { settings } = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -345,11 +347,18 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           </div>
         )}
 
-        <div className="glass-panel rounded-full p-1 border border-white/10 shadow-2xl bg-[#0f1115]/90 backdrop-blur-md flex items-center justify-between">
+        <div
+          className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+          style={{
+            background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+            backdropFilter: `blur(${settings.glassBlur}px)`,
+            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+          }}
+        >
           <button
             onClick={handlePrevPage}
             disabled={currentPage === 1}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 text-gray-500 hover:text-gray-300 ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
               <ChevronLeft className="w-4 h-4" strokeWidth={2} />
@@ -357,36 +366,36 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             <span className="text-[9px] font-black uppercase tracking-widest mt-1">Anterior</span>
           </button>
 
-          <div className="w-px h-8 bg-white/5"></div>
+          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
           <button
             onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
           >
             <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
-              <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'fill-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
+              <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'text-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
             </div>
-            <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${isSortMenuOpen ? 'text-white' : 'text-gray-500'}`}>Ordenar</span>
+            <span className={`text-[9px] font-black uppercase tracking-widest mt-1`}>Ordenar</span>
           </button>
 
-          <div className="w-px h-8 bg-white/5"></div>
+          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
           <button
             onClick={onBack}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 text-gray-400 hover:text-gray-200`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white`}
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
-              <ArrowLeft className="w-4 h-4" strokeWidth={2} />
+              <Reply className="w-4 h-4" strokeWidth={2} />
             </div>
             <span className="text-[9px] font-black uppercase tracking-widest mt-1">Volver</span>
           </button>
 
-          <div className="w-px h-8 bg-white/5"></div>
+          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
           <button
             onClick={handleNextPage}
             disabled={currentPage === totalPages}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 text-gray-500 hover:text-gray-300 ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : ''}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : ''}`}
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
               <ChevronRight className="w-4 h-4" strokeWidth={2} />

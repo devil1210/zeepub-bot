@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../src/services/api';
 import {
   ArrowLeft,
@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { Volume, Series } from '../types';
 import { ReportIssueModal } from '../components/ReportIssueModal';
+import { RatingModal } from '../components/RatingModal';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface BookDetailProps {
   volume: Volume;
@@ -38,8 +40,26 @@ interface BookDetailProps {
 }
 
 export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, onSearch, onNavigate }) => {
+  const { settings } = useTheme();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
+
+  // Check persistent download status on mount
+  useEffect(() => {
+    const checkDownloadStatus = async () => {
+      try {
+        const historyRes = await api.getDownloadHistory();
+        if (historyRes && historyRes.downloads) {
+          const found = historyRes.downloads.some((d: any) => d.id === volume.id || d.title === volume.title);
+          if (found) setHasDownloaded(true);
+        }
+      } catch (err) {
+        console.error("Failed to check download history", err);
+      }
+    };
+    checkDownloadStatus();
+  }, [volume.id, volume.title]);
 
   // Helper to handle safe search navigation
   const handleSearch = (term?: string, type?: string) => {
@@ -52,10 +72,19 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
     try {
       await api.requestDownload(volume.id);
       setHasDownloaded(true);
-      // Optional: alert user or show notification
     } catch (err) {
       console.error("Error downloading book", err);
       alert("Error al solicitar descarga: " + (err as Error).message);
+    }
+  };
+
+  const handleRateSubmit = async (rating: number) => {
+    try {
+      await api.rateBook(volume.id, rating);
+      setIsRatingModalOpen(false);
+    } catch (err) {
+      console.error("Error rating book", err);
+      alert("Error al enviar valoración: " + (err as Error).message);
     }
   };
 
@@ -113,13 +142,26 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-900 dark:text-gray-100 bg-transparent">
       <ReportIssueModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
+      <RatingModal
+        isOpen={isRatingModalOpen}
+        onClose={() => setIsRatingModalOpen(false)}
+        onSubmit={handleRateSubmit}
+        title={displayData.title}
+      />
 
       {/* Navbar for Mobile */}
-      <header className="md:hidden h-16 bg-white/80 dark:bg-background/90 backdrop-blur border-b border-black/5 dark:border-white/10 flex items-center justify-between px-4 shrink-0 sticky top-0 z-40">
+      <header
+        className="md:hidden h-16 glass-panel border-b border-black/5 dark:border-white/10 flex items-center justify-between px-4 shrink-0 sticky top-0 z-40"
+        style={{
+          background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+          backdropFilter: `blur(${settings.glassBlur}px)`,
+          WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+        }}
+      >
         <button onClick={onBack} className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <span className="font-bold text-sm text-gray-900 dark:text-gray-200 truncate max-w-[200px]">{displayData.title}</span>
+        <span className="font-bold text-sm text-gray-900 dark:text-gray-200 truncate max-w-[200px]">{displayData.displayTitle}</span>
         <button onClick={() => setIsReportModalOpen(true)} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
           <Flag className="w-5 h-5" />
         </button>
@@ -136,7 +178,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto pb-32 md:pb-12">
+      <div className="flex-1 overflow-y-auto pb-40 md:pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
@@ -391,14 +433,22 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
         </div>
       </div>
 
-      {/* Floating Bottom Navigation */}
+      {/* Floating Bottom Navigation - Updated Design: Squared with rounded corners and transparency settings */}
       <div className="md:hidden fixed bottom-6 left-4 right-4 z-40 animate-in slide-in-from-bottom-4 duration-300">
-        <div className="glass-panel rounded-full p-1 border border-black/10 dark:border-white/10 shadow-2xl bg-white/90 dark:bg-[#0f1115]/90 backdrop-blur-md flex items-center justify-between">
+        <div
+          className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+          style={{
+            background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+            backdropFilter: `blur(${settings.glassBlur}px)`,
+            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+          }}
+        >
+          {/* Back */}
           <button
             onClick={onBack}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-xl text-gray-500 dark:text-gray-400"
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
           >
-            <div className="p-1.5 ">
+            <div className="p-1.5">
               <Reply className="w-4 h-4" strokeWidth={2} />
             </div>
             <span className="text-[9px] font-black uppercase tracking-widest mt-1">Volver</span>
@@ -406,9 +456,10 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
 
           <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
+          {/* Home */}
           <button
             onClick={() => onNavigate && onNavigate('dashboard')}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-xl text-gray-500 dark:text-gray-400"
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
           >
             <div className="p-1.5">
               <Home className="w-4 h-4" strokeWidth={2} />
@@ -418,9 +469,13 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
 
           <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
+          {/* Rate (Persistent if downloaded) */}
           {hasDownloaded && (
             <>
-              <button className="flex-1 flex flex-col items-center justify-center py-2 rounded-xl text-yellow-500">
+              <button
+                onClick={() => setIsRatingModalOpen(true)}
+                className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-yellow-500 hover:text-yellow-600 active:scale-95"
+              >
                 <div className="p-1.5">
                   <Star className="w-4 h-4 fill-current" strokeWidth={2} />
                 </div>
@@ -430,12 +485,13 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
             </>
           )}
 
+          {/* Download */}
           <button
             onClick={handleDownload}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 ${hasDownloaded ? 'text-green-600 dark:text-green-500' : 'text-[#2AABEE]'}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${hasDownloaded ? 'text-green-600 dark:text-green-500' : 'text-[#2AABEE]'}`}
           >
             <div className={`p-1.5 rounded-full transition-all duration-300 ${!hasDownloaded ? 'bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
-              {hasDownloaded ? <Check className="w-4 h-4" /> : <Download className="w-4 h-4 text-white" strokeWidth={2.5} />}
+              {hasDownloaded ? <Check className="w-4 h-4" strokeWidth={2.5} /> : <Download className="w-4 h-4 text-white" strokeWidth={2.5} />}
             </div>
             <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${!hasDownloaded ? 'text-[#2AABEE]' : ''}`}>
               {hasDownloaded ? 'Listo' : 'Descargar'}
@@ -443,7 +499,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
           </button>
         </div>
       </div>
-
     </div>
   );
 };
