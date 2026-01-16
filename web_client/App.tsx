@@ -80,11 +80,11 @@ const AppContent: React.FC = () => {
     navigateTo('search', series, null);
   };
 
-  const onSelectVolume = (volume: Volume) => {
-    // Ensure we have the series context if possible, usually passed from SeriesDetail
-    const currentSeries = currentState.series;
-    if (currentSeries) {
-      navigateTo('search', currentSeries, volume);
+  const onSelectVolume = (volume: Volume, seriesContext?: Series) => {
+    // Priority: Explicitly passed series > current state series
+    const targetSeries = seriesContext || currentState.series;
+    if (targetSeries) {
+      navigateTo('search', targetSeries, volume);
     }
   };
 

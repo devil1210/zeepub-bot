@@ -25,7 +25,7 @@ import { Series, Volume } from '../types';
 interface SeriesDetailProps {
   series: Series;
   onBack: () => void;
-  onSelectVolume: (volume: Volume) => void;
+  onSelectVolume: (volume: Volume, series: Series) => void;
 }
 
 export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSelectVolume }) => {
@@ -247,7 +247,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             {currentVolumes.map((vol, index) => (
               <div
                 key={vol.id}
-                onClick={() => onSelectVolume(vol)}
+                onClick={() => onSelectVolume(vol, realSeries)}
                 className="group relative flex gap-4 p-4 rounded-xl border border-white/5 bg-[#0d1117]/80 hover:bg-[#161b22] hover:border-[#2AABEE]/30 transition-all duration-200 cursor-pointer overflow-hidden shadow-sm"
               >
                 {/* Image */}
@@ -289,7 +289,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                   <div className="mt-4 flex flex-wrap items-center gap-3">
                     <button
                       className="flex items-center gap-2 px-5 py-2 rounded-lg bg-transparent border border-[#2AABEE]/40 text-[#2AABEE] text-[10px] font-black tracking-widest hover:bg-[#2AABEE] hover:text-white transition-all uppercase"
-                      onClick={(e) => { e.stopPropagation(); onSelectVolume(vol); }}
+                      onClick={(e) => { e.stopPropagation(); onSelectVolume(vol, realSeries); }}
                     >
                       <Download className="w-3.5 h-3.5" />
                       DESCARGAR

@@ -84,26 +84,31 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
   // Fallback data if fields are missing (mapped to backend Volume)
   const displayData = {
     ...volume,
-    romajiTitle: volume.romajiTitle || '',
-    language: volume.language || 'Español',
-    size: volume.size || '0 MB',
-    format: volume.format || 'EPUB',
-    epubVersion: volume.epubVersion || '3.0',
-    uploader: 'ZeePub', // Local books are uploaded by the system
+    title: String(volume.title || ''),
+    romajiTitle: String(volume.romajiTitle || ''),
+    language: String(volume.language || 'Español'),
+    size: String(volume.size || '0 MB'),
+    format: String(volume.format || 'EPUB'),
+    epubVersion: String(volume.epubVersion || '3.0'),
+    uploader: 'ZeePub',
     wordCount: volume.wordCount || 0,
     pages: volume.pages || 0,
     readTime: formatReadingTime(volume.wordCount ? Math.ceil(volume.wordCount / 200) : (typeof volume.readTime === 'number' ? volume.readTime : undefined)),
-    lastUpdated: volume.modifiedAt ? formatDate(volume.modifiedAt) : 'N/A',
-    publishedDate: formatDate(volume.publishedDate),
-    description: (volume.description || 'Sin sinopsis disponible.').replace(/<br\s*\/?>/gi, '\n'),
-    displayTitle: volume.englishTitle || series.title || volume.title,
-    illustrator: volume.illustrator || 'N/A',
-    translator: volume.translator || 'ZeePub',
-    group: volume.group || 'ZeePub',
-    typesetter: volume.typesetter || 'N/A',
-    isbn: volume.isbn || 'N/A',
-    asin: volume.asin || 'N/A'
+    lastUpdated: volume.modifiedAt ? formatDate(String(volume.modifiedAt)) : 'N/A',
+    publishedDate: formatDate(String(volume.publishedDate || '')),
+    description: String(volume.description || 'Sin sinopsis disponible.').replace(/<br\s*\/?>/gi, '\n'),
+    displayTitle: String(volume.englishTitle || series?.title || volume.title || 'Libro sin título'),
+    illustrator: String(volume.illustrator || 'N/A'),
+    translator: String(volume.translator || 'ZeePub'),
+    group: String(volume.group || 'ZeePub'),
+    typesetter: String(volume.typesetter || 'N/A'),
+    isbn: String(volume.isbn || 'N/A'),
+    asin: String(volume.asin || 'N/A'),
+    demography: Array.isArray(volume.demography) ? volume.demography : [],
+    genres: Array.isArray((volume as any).genres) ? (volume as any).genres : (Array.isArray(series?.genres) ? series.genres : [])
   };
+
+  if (!series || !volume) return null;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-900 dark:text-gray-100 bg-transparent">
