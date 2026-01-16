@@ -59,6 +59,28 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
     }
   };
 
+  // Helper for date formatting
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr || dateStr === 'N/A' || dateStr === 'Reciente') return 'N/A';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // Helper for reading time formatting
+  const formatReadingTime = (minutes?: number) => {
+    if (!minutes) return 'N/A';
+    const hours = (minutes / 60).toFixed(2);
+    return `${minutes} m / ${hours.replace('.', ',')} horas`;
+  };
+
   // Fallback data if fields are missing (mapped to backend Volume)
   const displayData = {
     ...volume,
@@ -70,12 +92,11 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
     uploader: 'ZeePub', // Local books are uploaded by the system
     wordCount: volume.wordCount || 0,
     pages: volume.pages || 0,
-    readTime: volume.readTime || 'N/A',
-    lastUpdated: volume.modifiedAt ? new Date(volume.modifiedAt).toLocaleDateString() : 'Reciente',
-    downloadCount: volume.downloadCount || 0,
-    description: volume.description || 'Sin sinopsis disponible.',
-    demography: volume.demography || [],
-    genres: volume.tags || [],
+    readTime: formatReadingTime(volume.wordCount ? Math.ceil(volume.wordCount / 200) : (typeof volume.readTime === 'number' ? volume.readTime : undefined)),
+    lastUpdated: volume.modifiedAt ? formatDate(volume.modifiedAt) : 'N/A',
+    publishedDate: formatDate(volume.publishedDate),
+    description: (volume.description || 'Sin sinopsis disponible.').replace(/<br\s*\/?>/gi, '\n'),
+    displayTitle: volume.englishTitle || series.title || volume.title,
     illustrator: volume.illustrator || 'N/A',
     translator: volume.translator || 'ZeePub',
     group: volume.group || 'ZeePub',
@@ -143,23 +164,22 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                     </>
                   )}
                 </button>
-                <div className="grid grid-cols-2 gap-3">
-                  <button className="py-3.5 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-white rounded-xl border border-black/5 dark:border-white/10 transition-colors flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider">
-                    <Share2 className="w-4 h-4" />
-                    Compartir
-                  </button>
+                <div className="flex flex-col gap-3">
                   <button onClick={() => setIsReportModalOpen(true)} className="py-3.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 rounded-xl border border-red-200 dark:border-red-500/20 transition-colors flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider">
                     <Flag className="w-4 h-4" />
-                    Reportar
+                    Reportar Error
                   </button>
                 </div>
               </div>
 
-              {/* Mobile Inline Actions */}
+              {/* Mobile Inline Actions - Simplified */}
               <div className="md:hidden flex gap-3">
-                <button className="flex-1 py-3 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-white rounded-xl border border-black/5 dark:border-white/10 transition-colors flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider">
-                  <Share2 className="w-4 h-4" />
-                  Compartir
+                <button
+                  onClick={handleDownload}
+                  className={`flex-1 py-3 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 ${hasDownloaded ? 'bg-green-600' : 'bg-[#2AABEE]'}`}
+                >
+                  {hasDownloaded ? <Check className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                  {hasDownloaded ? 'Descargado' : 'Descargar'}
                 </button>
               </div>
 
@@ -215,7 +235,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                 </div>
 
                 <h1 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold text-gray-900 dark:text-white leading-tight mb-2">
-                  {displayData.title}
+                  {displayData.displayTitle}
                 </h1>
                 <h2 className="text-sm sm:text-lg text-gray-500 dark:text-gray-400 italic font-serif mb-6 leading-relaxed">
                   {displayData.romajiTitle}
@@ -248,7 +268,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    <span>{volume.publishedDate}</span>
+                    <span>{displayData.publishedDate}</span>
                   </div>
                 </div>
               </div>
@@ -339,6 +359,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                       { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
                       { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400' },
                       { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
+                      { label: 'Fecha de actualización', value: displayData.lastUpdated, highlight: true },
                     ].map((item, idx) => (
                       <div key={idx} className="flex justify-between py-3 border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/[0.02] px-2 -mx-2 rounded transition-colors">
                         <span className="text-sm text-gray-500 font-medium">{item.label}</span>
