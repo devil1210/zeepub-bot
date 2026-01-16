@@ -39,7 +39,7 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
     page = data.get("page", 1)
 
     if not query and not page_url:
-        return {"results": []}
+        page_url = config.OPDS_ROOT_START
 
     # [NEW] Prioritize Local DB Search for ZeePub library
     is_local_search = not page_url or (
