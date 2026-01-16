@@ -38,220 +38,23 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
     page_url = data.get("pageUrl")
     page = data.get("page", 1)
 
+    is_local_search = True # Always enforced for web interface
+    
     if not query and not page_url:
-        page_url = config.OPDS_ROOT_START
+        # Default behavior: Search for everything (recent)
+        logger.info("[search] Empty query, returning all local books")
+        return await LibraryService.search_books(
+            "", page=page, search_type=data.get("type", "all")
+        )
 
-    # [NEW] Prioritize Local DB Search for ZeePub library
-    is_local_search = not page_url or (
-        page_url == config.OPDS_ROOT_START
-        or page_url == config.OPDS_ROOT_EVIL
-        or page_url == "root"
-        or "/api/library/catalog" in page_url
-    )
-
-    if is_local_search and query:
+    if is_local_search:
         logger.info(f"[search] Using LibraryService for native SQL search: {query}")
         return await LibraryService.search_books(
             query, page=page, search_type=data.get("type", "all")
         )
 
-    # OPDS Fallback
-    target_url = (
-        page_url if page_url else build_search_url(query, uid=user_id, role=user_role)
-    )
-
-    # API 9.3: Feedback en streaming
-    if not page_url:
-        from utils.streaming import send_message_draft
-        from api.main import bot
-
-        await send_message_draft(
-            bot=bot.app.bot, chat_id=user_id, text=f"🔍 <b>Buscando:</b> {query}..."
-        )
-
-    feed = await get_cached_feed(target_url)
-
-    # Determine the best base URL for relative links
-    feed_base_url = target_url
-    for link in getattr(feed.feed, "links", []):
-        if link.get("rel") == "self":
-            feed_base_url = abs_url(target_url, link.get("href"))
-            break
-
-    results = []
-    entries = getattr(feed, "entries", [])
-
-    # Extract pagination links
-    next_page = None
-    prev_page = None
-    first_page = None
-    last_page = None
-
-    for link in getattr(feed.feed, "links", []):
-        rel = link.get("rel", "")
-        href = abs_url(feed_base_url, link.get("href", ""))
-        if rel == "next":
-            next_page = href
-        elif rel in ("previous", "prev"):
-            prev_page = href
-        elif rel == "first":
-            first_page = href
-        elif rel == "last":
-            last_page = href
-
-    current_page = 1
-    if page_url and "page=" in page_url:
-        parsed = urllib.parse.urlparse(page_url)
-        params = urllib.parse.parse_qs(parsed.query)
-        try:
-            current_page = int(params.get("page", [1])[0])
-        except (ValueError, TypeError):
-            current_page = 1
-
-    total_pages = None
-    total_results = feed.feed.get("opensearch_totalresults")
-    items_per_page = feed.feed.get("opensearch_itemsperpage")
-    if total_results and items_per_page:
-        try:
-            total_pages = (int(total_results) + int(items_per_page) - 1) // int(
-                items_per_page
-            )
-        except Exception:
-            pass
-
-    for entry in entries:
-        book_id = entry.get("id", "")
-        title = entry.get("title", "Sin título")
-
-        is_folder = any(
-            link.get("rel") == "subsection" for link in getattr(entry, "links", [])
-        )
-        author = extract_author(entry, is_folder=is_folder)
-
-        summary = entry.get("summary", "")
-        if summary:
-            summary = (
-                summary.replace("Format: Epub Summary: ", "")
-                .replace("Format: Epub ", "")
-                .replace("Summary: ", "")
-                .strip()
-            )
-
-        publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
-        language = entry.get("dc_language") or entry.get("dcterms_language")
-        published = entry.get("published") or entry.get("issued")
-        year = published[:4] if published and len(published) >= 4 else None
-
-        isbn = None
-        identifier = entry.get("identifier")
-        if identifier and "isbn" in identifier.lower():
-            isbn = identifier.split(":")[-1].strip()
-
-        download_url = None
-        cover_url = None
-        subsection_url = None
-        detail_url = None
-        size = None
-        file_type = None
-
-        for link in getattr(entry, "links", []):
-            rel = link.get("rel", "")
-            href = abs_url(feed_base_url, link.get("href", ""))
-            ltype = link.get("type", "")
-
-            if rel == "subsection":
-                subsection_url = href
-            elif rel in ("self", "alternate") or "type=entry" in ltype:
-                if not detail_url or rel == "self":
-                    detail_url = href
-            elif "acquisition" in rel or "epub" in ltype:
-                download_url = href
-                file_type = ltype
-                size = link.get("contentlength") or link.get("length")
-            elif "image" in rel or "cover" in rel:
-                cover_url = href
-
-        if not detail_url and book_id:
-            detail_url = abs_url(feed_base_url, book_id)
-
-        raw_tags = getattr(entry, "tags", [])
-        categories = [
-            tag.get("label") or tag.get("term")
-            for tag in raw_tags
-            if tag.get("label") or tag.get("term")
-        ]
-
-        title_meta = parse_metadata_from_title(title)
-        entry_series = entry.get("calibre_series") or entry.get("schema_series")
-        entry_series_index = entry.get("calibre_series_index")
-
-        final_series = entry_series or title_meta.get("series", "")
-        final_series_index = entry_series_index or title_meta.get("volume", "")
-
-        results.append(
-            {
-                "id": book_id,
-                "title": title,
-                "author": author,
-                "illustrator": extract_creators_by_role(entry, "ill"),
-                "translator": extract_creators_by_role(entry, "trl"),
-                "summary": summary,
-                "cover": cover_url,
-                "downloadUrl": download_url,
-                "subsectionUrl": subsection_url,
-                "detailUrl": detail_url,
-                "publisher": publisher,
-                "language": language,
-                "isbn": isbn,
-                "year": year,
-                "size": size,
-                "fileType": file_type,
-                "is_folder": subsection_url is not None,
-                "updatedDate": entry.get("updated") or entry.get("published") or "",
-                "series": final_series,
-                "seriesIndex": final_series_index,
-                "tags": title_meta.get("tags", []),
-                "cleanTitle": title_meta.get("clean_title", title),
-                "romaji": title_meta.get("romaji", ""),
-                "categories": categories,
-                "wordCount": entry.get("kavita_wordcount")
-                or entry.get("calibre_wordcount"),
-                "pageCount": entry.get("kavita_pagecount")
-                or entry.get("calibre_pagecount"),
-                "readingTime": entry.get("kavita_readingtime")
-                or entry.get("calibre_readingtime"),
-            }
-        )
-
-    async def fetch_folder_cover(res):
-        if res["is_folder"] and not res["cover"]:
-            try:
-                sub_feed = await get_cached_feed(res["subsectionUrl"])
-                sub_entries = getattr(sub_feed, "entries", [])
-                if sub_entries:
-                    first_book = sub_entries[0]
-                    for l in getattr(first_book, "links", []):
-                        if "image" in l.get("rel", "") or "cover" in l.get("rel", ""):
-                            res["cover"] = abs_url(config.BASE_URL, l.get("href", ""))
-                            break
-            except Exception:
-                pass
-
-    folder_tasks = [
-        fetch_folder_cover(r) for r in results if r["is_folder"] and not r["cover"]
-    ]
-    if folder_tasks:
-        await asyncio.gather(*folder_tasks[:10])
-
-    return {
-        "results": results,
-        "nextPage": next_page,
-        "prevPage": prev_page,
-        "firstPage": first_page,
-        "lastPage": last_page,
-        "currentPage": current_page,
-        "totalPages": total_pages,
-    }
+    # REMOVED: OPDS Fallback Logic
+    return {"results": []}
 
 
 async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
@@ -263,11 +66,11 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
     if not book_id_raw:
         raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
 
-    # 1. Local Book
+    # 1. Local Book ONLY
     if isinstance(book_id_raw, str) and (
         book_id_raw.startswith("local_") or book_id_raw.isdigit()
     ):
-        clean_id = int(book_id_raw.replace("local_", ""))
+        clean_id = int(str(book_id_raw).replace("local_", ""))
         local_book = await LibraryService.get_book_by_id(clean_id)
         if local_book:
             logger.info(
@@ -285,138 +88,9 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
                 local_book.get("content_hash"),
             )
             return local_book
-
-    # 2. OPDS detail
-    book_id_url = book_id_raw
-    if not book_id_url.startswith("http"):
-        book_id_url = abs_url(config.OPDS_ROOT_START, book_id_url)
-
-    logger.info(f"[book-detail] Fetching feed from: {book_id_url}")
-    try:
-        feed = await get_cached_feed(book_id_url)
-    except Exception as e:
-        logger.error(f"[book-detail] Error fetching {book_id_url}: {e}")
-        raise HTTPException(status_code=400, detail=f"Invalid book URL: {book_id_url}")
-
-    if not feed:
-        raise HTTPException(
-            status_code=502,
-            detail="Error en el servidor de origen (OPDS). Intenta más tarde.",
-        )
-
-    entries = getattr(feed, "entries", [])
-    entry = (
-        entries[0] if entries else (feed.feed if getattr(feed, "feed", None) else None)
-    )
-
-    if not entry:
-        raise HTTPException(status_code=404, detail="Book detail not found")
-
-    entry_base_url = book_id_url
-    for link in getattr(entry, "links", []):
-        if link.get("rel") == "self":
-            entry_base_url = abs_url(book_id_url, link.get("href"))
-            break
-
-    publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
-    language = entry.get("dc_language") or entry.get("dcterms_language")
-    published = entry.get("published") or entry.get("issued")
-    year = published[:4] if published and len(published) >= 4 else None
-
-    isbn = None
-    identifier = entry.get("identifier")
-    if identifier and "isbn" in identifier.lower():
-        isbn = identifier.split(":")[-1].strip()
-
-    series = entry.get("calibre_series") or entry.get("schema_series")
-    series_index = entry.get("calibre_series_index")
-    categories = [cat.get("term") for cat in entry.get("tags", []) if cat.get("term")]
-
-    asin = None
-    for ident in entry.get("identifiers", []):
-        if isinstance(ident, dict) and ident.get("scheme", "").upper() == "ASIN":
-            asin = ident.get("value")
-            break
-    if not asin and identifier and "asin" in identifier.lower():
-        asin = identifier.split(":")[-1].strip()
-
-    extracted_meta = parse_metadata_from_title(entry.get("title", ""))
-    for ttag in extracted_meta.get("tags", []):
-        if ttag not in categories:
-            categories.append(ttag)
-
-    if not series and extracted_meta.get("series"):
-        series = extracted_meta["series"]
-    if not series_index and extracted_meta.get("volume"):
-        series_index = extracted_meta["volume"]
-
-    download_url = None
-    cover_url = None
-    size = None
-    file_type = None
-    up_url = None
-
-    for link in getattr(entry, "links", []):
-        rel = link.get("rel", "")
-        l_type = link.get("type", "")
-        href = abs_url(entry_base_url, link.get("href", ""))
-
-        if "acquisition" in rel or "epub" in l_type.lower():
-            if not download_url or "epub" in l_type.lower():
-                download_url = href
-                file_type = l_type
-                size = link.get("contentlength") or link.get("length")
-        elif "image" in rel or "cover" in rel or "thumbnail" in rel:
-            if not cover_url or "image" in rel:
-                cover_url = href
-        elif rel in ["up", "collection", "ancestor", "index", "breadcrumb"]:
-            if not up_url or rel == "up":
-                up_url = href
-
-    if not cover_url and "content" in entry:
-        for content in entry.get("content", []):
-            if "image" in content.get("type", ""):
-                cover_url = abs_url(entry_base_url, content.get("value", ""))
-                break
-
-    is_folder = up_url is not None
-    author = extract_author(entry, is_folder=is_folder)
-
-    result = {
-        "id": entry.get("id", ""),
-        "title": entry.get("title", "Sin título"),
-        "author": author,
-        "summary": entry.get("summary", ""),
-        "cover": cover_url,
-        "downloadUrl": download_url,
-        "publisher": publisher,
-        "language": language,
-        "isbn": isbn,
-        "asin": asin,
-        "series": series or "",
-        "series_clean": series or extracted_meta.get("series") or "",
-        "seriesIndex": series_index or "",
-        "categories": categories,
-        "year": year,
-        "size": size,
-        "fileType": file_type,
-        "upUrl": up_url,
-        "updatedDate": entry.get("updated", "") or entry.get("published", ""),
-        "illustrator": extract_creators_by_role(entry, "ill"),
-        "translator": extract_creators_by_role(entry, "trl"),
-        "layoutBy": extract_creators_by_role(entry, "bkp"),
-        "epubVersion": entry.get("dc_version") or entry.get("kavita_format_version"),
-        "wordCount": entry.get("kavita_wordcount") or entry.get("calibre_wordcount"),
-        "pageCount": entry.get("kavita_pagecount") or entry.get("calibre_pagecount"),
-        "readingTime": entry.get("kavita_readingtime")
-        or entry.get("calibre_readingtime"),
-        "romaji": extracted_meta.get("romaji", ""),
-        "cleanTitle": extracted_meta.get("clean_title") or entry.get("title", ""),
-        "tags": extracted_meta.get("tags", []),
-        "content_hash": entry.get("content_hash") or entry.get("hash"),
-        "is_downloaded": False,
-        "download_count": 0,
-    }
+    
+    # OPDS fallback removed
+    raise HTTPException(status_code=404, detail="Book not found in local library")
 
     # Get metrics from centralized DB
     from repositories.metrics_repository import metrics_repo
