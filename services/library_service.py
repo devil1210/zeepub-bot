@@ -155,6 +155,102 @@ class LibraryService:
             session.close()
 
     @staticmethod
+    async def search_series(
+        query: str,
+        page: int = 1,
+        items_per_page: int = 20,
+        source_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Búsqueda agrupada por series_hash. Retorna un objeto similar a Series
+        en lugar de volúmenes individuales.
+        """
+        session = get_session()
+        from repositories.metrics_repository import metrics_repo
+        try:
+            # Query base: Agrupar por series_hash
+            group_query = session.query(
+                LocalBook.series_hash,
+                func.min(LocalBook.id).label("rep_id"),
+                func.count(LocalBook.id).label("num_volumenes"),
+                func.avg(func.nullif(LocalBook.rating_average, 0.0)).label("avg_rating"),
+                func.sum(LocalBook.rating_count).label("total_votes"),
+            )
+
+            if source_id:
+                group_query = group_query.filter(LocalBook.source_id == source_id)
+
+            if query:
+                # Usar FTS o LIKE para filtrar los representantes
+                # Por simplicidad aquí usamos LIKE sobre el título/serie_clean
+                group_query = group_query.filter(
+                    (LocalBook.title.ilike(f"%{query}%")) | 
+                    (LocalBook.series.ilike(f"%{query}%")) |
+                    (LocalBook.author.ilike(f"%{query}%"))
+                )
+
+            group_query = group_query.group_by(LocalBook.series_hash)
+            
+            # Paginación sobre los grupos
+            total_items = group_query.count()
+            groups = group_query.order_by(func.min(LocalBook.title).asc()).offset((page - 1) * items_per_page).limit(items_per_page).all()
+
+            results = []
+            for s_hash, rep_id, num_vols, rating, votes in groups:
+                rep = session.query(LocalBook).get(rep_id)
+                if not rep: continue
+                
+                total_downloads = await metrics_repo.get_series_downloads(s_hash)
+                
+                results.append({
+                    "id": f"series_{s_hash}",
+                    "series_hash": s_hash,
+                    "title": rep.series_clean or rep.series or rep.title,
+                    "author": rep.author,
+                    "cover": rep.cover_path,
+                    "summary": rep.description,
+                    "categories": rep.tags,
+                    "fileType": rep.book_type or "EPUB",
+                    "rating_average": round(float(rating or 0), 1),
+                    "rating_count": int(votes or 0),
+                    "download_count": total_downloads,
+                    "numBooks": num_vols,
+                    "is_series": True,
+                    "is_folder": True
+                })
+
+            return {
+                "results": results,
+                "currentPage": page,
+                "totalPages": (total_items + items_per_page - 1) // items_per_page,
+                "totalResults": total_items
+            }
+        except Exception as e:
+            logger.error(f"[LibraryService.search_series] Error: {e}")
+            return {"results": [], "currentPage": page, "totalPages": 0, "totalResults": 0}
+        finally:
+            session.close()
+
+    @staticmethod
+    async def get_series_volumes(series_hash: str) -> list:
+        """Retorna todos los volúmenes de una serie agrupada."""
+        session = get_session()
+        from repositories.metrics_repository import metrics_repo
+        try:
+            books = session.query(LocalBook).filter_by(series_hash=series_hash).order_by(LocalBook.volume.asc()).all()
+            results = []
+            for b in books:
+                d = b.to_dict()
+                d["download_count"] = await metrics_repo.get_total_downloads(b.content_hash)
+                results.append(d)
+            return results
+        except Exception as e:
+            logger.error(f"Error get_series_volumes: {e}")
+            return []
+        finally:
+            session.close()
+
+    @staticmethod
     async def get_book_by_id(book_id: int) -> Optional[Dict[str, Any]]:
         """Busca un libro por su ID en la base de datos local."""
         session = get_session()

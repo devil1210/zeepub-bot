@@ -68,9 +68,9 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           rating: item.rating_average || 0,
           voteCount: item.rating_count || 0,
           downloadCount: item.download_count || 0,
-          volumesCount: 1, // API usually returns single books, logic for series is different
+          volumesCount: item.numBooks || 1,
           status: 'Completed',
-          lastUpdated: item.updatedDate,
+          lastUpdated: item.updatedDate || 'Reciente',
           volumes: []
         }));
 

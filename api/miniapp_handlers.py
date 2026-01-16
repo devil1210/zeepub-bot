@@ -48,9 +48,9 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
         )
 
     if is_local_search:
-        logger.info(f"[search] Using LibraryService for native SQL search: {query}")
-        return await LibraryService.search_books(
-            query, page=page, search_type=data.get("type", "all")
+        logger.info(f"[search] Using LibraryService for grouped series search: {query}")
+        return await LibraryService.search_series(
+            query, page=page
         )
 
     # REMOVED: OPDS Fallback Logic
@@ -66,9 +66,31 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
     if not book_id_raw:
         raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
 
-    # 1. Local Book ONLY
+    # 1. Series/Group Handling
+    if isinstance(book_id_raw, str) and book_id_raw.startswith("series_"):
+        s_hash = book_id_raw.replace("series_", "")
+        volumes = await LibraryService.get_series_volumes(s_hash)
+        if not volumes:
+            raise HTTPException(status_code=404, detail="Serie no encontrada")
+        
+        # Usar el primero como representante para la info general
+        rep = volumes[0]
+        return {
+            "id": book_id_raw,
+            "title": rep.get("series_clean") or rep.get("series") or rep.get("title"),
+            "author": rep.get("author"),
+            "summary": rep.get("description"),
+            "cover": rep.get("cover"),
+            "rating_average": rep.get("rating_average", 0),
+            "rating_count": rep.get("rating_count", 0),
+            "numBooks": len(volumes),
+            "is_series": True,
+            "volumes": volumes # Retornamos los volúmenes reales
+        }
+
+    # 2. Local Book ONLY (Individual)
     if isinstance(book_id_raw, str) and (
-        book_id_raw.startswith("local_") or book_id_raw.isdigit()
+        book_id_raw.isdigit() or (book_id_raw.startswith("local_") and not book_id_raw.startswith("series_"))
     ):
         clean_id = int(str(book_id_raw).replace("local_", ""))
         local_book = await LibraryService.get_book_by_id(clean_id)
