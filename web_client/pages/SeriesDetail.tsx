@@ -42,7 +42,12 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
       try {
         const data = await api.getBookDetail(series.id);
         if (data) {
-          setRealSeries(data as Series);
+          setRealSeries({
+            ...series, // Preserve existing data if needed
+            ...data,
+            coverUrl: data.cover || series.coverUrl,
+            description: data.summary || data.description || series.description
+          } as Series);
           if (data.volumes) {
             const mappedVols: Volume[] = data.volumes.map((v: any) => ({
               id: v.id,
