@@ -99,3 +99,6 @@ __pycache__/
 !bolt/
 !bolt/**!debug_redundancy.py
 !debug_redundancy.py
+
+!web_client/
+!web_client/**
