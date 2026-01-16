@@ -36,6 +36,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   const [volumes, setVolumes] = useState<Volume[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSort, setActiveSort] = useState('num-asc');
+  const [isSynopsisModalOpen, setIsSynopsisModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,7 +48,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             ...series, // Preserve existing data if needed
             ...data,
             coverUrl: data.cover || series.coverUrl,
-            description: data.summary || data.description || series.description
+            description: (data.summary || data.description || series.description)?.replace(/<br\s*\/?>/gi, '\n')
           } as Series);
           if (data.volumes) {
             const mappedVols: Volume[] = data.volumes.map((v: any) => ({
@@ -80,6 +81,17 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               epubVersion: v.epubVersion
             }));
             setVolumes(mappedVols);
+
+            // Update synopsis from the first volume if available
+            if (mappedVols.length > 0) {
+              const firstVol = [...mappedVols].sort((a, b) => (a.volumeNumber || 0) - (b.volumeNumber || 0))[0];
+              if (firstVol.description) {
+                setRealSeries(prev => ({
+                  ...prev,
+                  description: firstVol.description?.replace(/<br\s*\/?>/gi, '\n')
+                }));
+              }
+            }
           }
         }
       } catch (err) {
@@ -162,23 +174,34 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             </div>
 
             <div className="flex-1 pb-2 w-full">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/20 uppercase tracking-wide">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-black bg-green-500/10 text-green-400 border border-green-500/20 uppercase tracking-widest whitespace-nowrap">
                   {realSeries.genre}
                 </span>
-                <span className="flex items-center gap-1 text-yellow-500 text-xs sm:text-sm font-bold">
+                <span className="flex items-center gap-1.5 text-yellow-500 text-xs sm:text-sm font-black">
                   <Star className="w-4 h-4 fill-current" />
                   {realSeries.rating}
                 </span>
               </div>
+
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 leading-tight">
                 {realSeries.title}
               </h1>
-              <p className="text-white/80 text-sm sm:text-base mb-4 font-medium">Por {realSeries.author}</p>
+              <p className="text-white/80 text-sm sm:text-base mb-6 font-medium">Por {realSeries.author}</p>
 
-              <p className="text-gray-200 text-xs sm:text-sm line-clamp-3 sm:line-clamp-3 max-w-2xl leading-relaxed mb-4">
-                {realSeries.description || "Sin descripción disponible."}
-              </p>
+              <div className="relative mb-6">
+                <p className="text-gray-200 text-xs sm:text-sm line-clamp-3 max-w-2xl leading-relaxed whitespace-pre-line">
+                  {realSeries.description || "Sin descripción disponible."}
+                </p>
+                {realSeries.description && realSeries.description.length > 150 && (
+                  <button
+                    onClick={() => setIsSynopsisModalOpen(true)}
+                    className="mt-2 text-[#2AABEE] text-xs font-bold hover:underline py-1"
+                  >
+                    Ver más...
+                  </button>
+                )}
+              </div>
 
               <div className="flex items-center gap-4 text-xs sm:text-sm text-gray-300 font-mono">
                 <span className="flex items-center gap-1.5"><Library className="w-4 h-4 text-primary" /> {volumes.length} Volúmenes</span>
@@ -365,6 +388,44 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           </button>
         </div>
       </div>
+
+      {/* Synopsis Modal */}
+      {isSynopsisModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div
+            className="bg-[#0d1117] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-[#2AABEE]" />
+                Sinopsis Completa
+              </h3>
+              <button
+                onClick={() => setIsSynopsisModalOpen(false)}
+                className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto custom-scrollbar">
+              <p className="text-gray-300 text-sm sm:text-base leading-relaxed whitespace-pre-line text-justify">
+                {realSeries.description}
+              </p>
+            </div>
+            <div className="p-4 bg-black/20 border-t border-white/5 flex justify-end">
+              <button
+                onClick={() => setIsSynopsisModalOpen(false)}
+                className="px-6 py-2 bg-[#2AABEE] text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-[#2AABEE]/80"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+          {/* Overlay to close */}
+          <div className="absolute inset-0 -z-10" onClick={() => setIsSynopsisModalOpen(false)}></div>
+        </div>
+      )}
 
     </div>
   );
