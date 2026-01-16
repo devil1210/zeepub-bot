@@ -1,0 +1,5 @@
+{
+  "name": "ZeepubBot Web",
+  "description": "A modern, evolved web interface for the ZeepubBot ecosystem, featuring library management, advanced search, reading capabilities, and admin tools.",
+  "requestFramePermissions": []
+}

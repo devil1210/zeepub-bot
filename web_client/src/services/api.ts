@@ -1,0 +1,84 @@
+
+import axios from 'axios';
+
+// Get base URL from current window location (relative path)
+// In development with Vite proxy, this works. In production (served by bot), this works.
+const API_URL = '/api/bot';
+
+export interface ApiResponse<T = any> {
+    success?: boolean;
+    result?: T;
+    error?: string;
+}
+
+export interface BotRequest {
+    action: string;
+    data?: any;
+}
+
+const getInitData = () => {
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+        return (window as any).Telegram.WebApp.initData || '';
+    }
+    return '';
+};
+
+const apiClient = axios.create({
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Interceptor to add Telegram Auth Data to every request
+apiClient.interceptors.request.use((config) => {
+    const initData = getInitData();
+    if (initData) {
+        config.headers['X-Telegram-Init-Data'] = initData;
+    }
+
+    // Fallback/Legacy header if needed by some older middleware
+    config.headers['X-Telegram-Data'] = initData;
+
+    return config;
+});
+
+export const rpc = async <T = any>(action: string, data: any = {}): Promise<T> => {
+    try {
+        const response = await apiClient.post(API_URL, { action, data });
+        return response.data;
+    } catch (error: any) {
+        console.error(`RPC Error [${action}]:`, error);
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail);
+        }
+        throw error;
+    }
+};
+
+export const api = {
+    // Status & User
+    getUserStatus: () => rpc('user_status'),
+    getDownloadHistory: () => rpc('user_downloads_history'),
+
+    // Search & Content
+    searchBooks: (query: string, page: number = 1, type: string = 'all') =>
+        rpc('search', { query, page, type }),
+
+    getRecommendations: (limit: number = 10) =>
+        rpc('recommendations', { limit }),
+
+    getBookDetail: (bookId: string) =>
+        rpc('book-detail', { bookId }),
+
+    // Actions
+    requestDownload: (bookId: string, target: 'private' | 'group' | 'channel' = 'private') =>
+        rpc('download', { bookId, target }),
+
+    rateBook: (bookId: string, rating: number) =>
+        rpc('rate_book', { bookId, rating }),
+
+    // Config
+    getUiSettings: () => rpc('ui_settings', { subAction: 'get', role: 'auto' }),
+    savePersonalSettings: (settings: any) =>
+        rpc('ui_settings', { subAction: 'set', role: 'personal', settings }),
+};

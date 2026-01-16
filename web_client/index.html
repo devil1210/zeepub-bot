@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ZeepubBot Web</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Space Grotesk', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              primary: 'var(--color-primary)',
+              'primary-dark': 'var(--color-primary-dark)',
+              'telegram-blue': '#2AABEE',
+              background: '#101622',
+              'background-light': '#f6f6f8',
+              surface: '#121212',
+              'surface-highlight': '#1E1E1E',
+              border: 'rgba(255, 255, 255, 0.08)',
+              // New Catalog Colors
+              "amoled-bg": "#000000",
+              "amoled-surface": "#121212", 
+              "amoled-border": "#27272a",
+              "accent": "#10B981", 
+              // Book Detail Specifics
+              "background-dark": "#080b0e",
+              "surface-dark": "#12171c",
+              // Request Book & Telegram Specifics
+              telegram: {
+                  star: "#FFD700",
+                  ton: "#0098EA",
+              }
+            },
+            animation: {
+              'spin-slow': 'spin 3s linear infinite',
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            boxShadow: {
+                'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.1)',
+                'glow': '0 0 15px rgba(51, 144, 236, 0.3)',
+                'star-glow': '0 0 20px rgba(255, 215, 0, 0.2)',
+            },
+            backgroundImage: {
+              'hero-pattern': "url('https://images.unsplash.com/photo-1541963463532-d68292c34b19?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80')",
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      :root {
+        --color-primary: #2b6cee;
+        --color-primary-dark: #1a4bb0;
+        --glass-opacity: 0.6;
+        --glass-blur: 12px;
+        --glass-border-opacity: 0.08;
+        
+        /* Theme Defaults */
+        --app-bg: #050505;
+        --glass-rgb: 30, 35, 45;
+      }
+      body {
+        background-color: var(--app-bg);
+        overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #3f3f46;
+        border-radius: 3px;
+      }
+      .dark ::-webkit-scrollbar-thumb {
+        background: #27272a;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-primary-dark);
+      }
+      .glass-panel, .glass-card {
+        background: rgba(var(--glass-rgb), var(--glass-opacity));
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid rgba(255, 255, 255, var(--glass-border-opacity));
+      }
+
+      /* Light Mode Overrides for compatibility */
+      html:not(.dark) .glass-panel, html:not(.dark) .glass-card {
+        border-color: rgba(0, 0, 0, 0.08);
+        background: rgba(255, 255, 255, 0.7);
+      }
+      html:not(.dark) .text-white { color: #111827 !important; }
+      html:not(.dark) .text-gray-100 { color: #1f2937 !important; }
+      html:not(.dark) .text-gray-200 { color: #374151 !important; }
+      html:not(.dark) .text-gray-300 { color: #4b5563 !important; }
+      html:not(.dark) .text-gray-400 { color: #6b7280 !important; }
+      html:not(.dark) .text-gray-500 { color: #9ca3af !important; }
+      
+      html:not(.dark) .bg-white\/5 { background-color: rgba(0,0,0,0.05) !important; }
+      html:not(.dark) .bg-white\/10 { background-color: rgba(0,0,0,0.1) !important; }
+      html:not(.dark) .border-white\/5 { border-color: rgba(0,0,0,0.05) !important; }
+      html:not(.dark) .border-white\/10 { border-color: rgba(0,0,0,0.1) !important; }
+      html:not(.dark) .bg-black\/20 { background-color: rgba(0,0,0,0.05) !important; }
+
+      /* Toggle Checkbox Custom Styles */
+      .toggle-checkbox:checked {
+          right: 0;
+          border-color: var(--color-primary);
+      }
+      .toggle-checkbox:checked + .toggle-label {
+          background-color: var(--color-primary);
+      }
+      /* Range Slider Styling */
+      input[type=range] {
+          -webkit-appearance: none; 
+          background: transparent; 
+      }
+      input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: var(--color-primary);
+          cursor: pointer;
+          margin-top: -6px; 
+          box-shadow: 0 0 0 2px rgba(255,255,255,0.1);
+      }
+      input[type=range]::-webkit-slider-runnable-track {
+          width: 100%;
+          height: 4px;
+          cursor: pointer;
+          background: #334155;
+          border-radius: 2px;
+      }
+      /* Book Reflection Effect */
+      .book-reflection {
+          position: relative;
+      }
+      .book-reflection::after {
+          content: '';
+          position: absolute;
+          bottom: -48px;
+          left: 0;
+          right: 0;
+          height: 40px;
+          opacity: 0.2;
+          filter: blur(12px);
+          border-radius: 9999px;
+          background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent);
+          transform: perspective(500px) rotateX(60deg);
+      }
+      .glass-backdrop {
+          position: relative;
+          overflow: hidden;
+      }
+      .glass-backdrop::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          z-index: -10;
+          background-size: cover;
+          background-position: center;
+          opacity: 0.2;
+          filter: blur(64px);
+          transform: scale(1.25);
+          background-image: inherit;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-background text-gray-100 antialiased overflow-hidden font-sans selection:bg-primary selection:text-white">
+    <div id="root"></div>
+  </body>
+</html>
