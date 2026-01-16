@@ -97,6 +97,9 @@ async def handle_bot_request(
             handle_bot_info,
             handle_ui_settings,
             handle_create_stars_invoice,
+            handle_admin_stats,
+            handle_admin_get_tiers,
+            handle_admin_save_tier,
         )
 
         ACTION_HANDLERS = {
@@ -115,6 +118,9 @@ async def handle_bot_request(
             "bot_info": handle_bot_info,
             "ui_settings": handle_ui_settings,
             "create_stars_invoice": handle_create_stars_invoice,
+            "admin_stats": handle_admin_stats,
+            "admin_get_tiers": handle_admin_get_tiers,
+            "admin_save_tier": handle_admin_save_tier,
         }
 
         handler = ACTION_HANDLERS.get(action)

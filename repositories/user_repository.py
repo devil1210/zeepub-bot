@@ -188,6 +188,10 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.priority,
                 ul.color,
                 ul.has_mini_app_access,
+                ul.daily_downloads,
+                ul.early_access,
+                ul.custom_themes,
+                ul.price,
                 (EXISTS(SELECT 1 FROM admins WHERE user_id = ?) OR u.role = 'admin') as is_admin
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
@@ -203,10 +207,14 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "name": row[1],
                         "priority": row[2],
                         "color": row[3],
-                        "hasAccess": bool(row[4])
+                        "hasAccess": bool(row[4]),
+                        "dailyDownloads": row[5],
+                        "earlyAccess": bool(row[6]),
+                        "customThemes": bool(row[7]),
+                        "price": row[8]
                     },
-                    "hasAccess": bool(row[4]) or bool(row[5]),  # Access if level allowed OR if admin
-                    "isAdmin": bool(row[5])
+                    "hasAccess": bool(row[4]) or bool(row[9]),  # Access if level allowed OR if admin
+                    "isAdmin": bool(row[9])
                 }
             return None
 
@@ -224,9 +232,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
     async def get_all_levels(self) -> list[Dict[str, Any]]:
         """
-        Retorna todos los niveles configurados.
+        Retorna todos los niveles configurados con sus límites y características.
         """
-        query = "SELECT id, name, priority, color, has_mini_app_access FROM user_levels ORDER BY priority DESC"
+        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price FROM user_levels ORDER BY priority DESC"
         async with self.db.connection() as conn:
             cursor = await conn.execute(query)
             rows = await cursor.fetchall()
@@ -236,18 +244,49 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "name": row[1],
                     "priority": row[2],
                     "color": row[3],
-                    "hasAccess": bool(row[4])
+                    "hasAccess": bool(row[4]),
+                    "dailyDownloads": row[5],
+                    "earlyAccess": bool(row[6]),
+                    "customThemes": bool(row[7]),
+                    "price": row[8]
                 }
                 for row in rows
             ]
 
-    async def update_level_access(self, level_id: int, has_access: bool):
+    async def update_level(self, level_id: int, data: Dict[str, Any]):
         """
-        Actualiza el permiso de acceso a Mini App para un nivel.
+        Actualiza la configuración de un nivel.
         """
-        query = "UPDATE user_levels SET has_mini_app_access = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        fields = []
+        params = []
+        
+        mapping = {
+            "hasAccess": "has_mini_app_access",
+            "dailyDownloads": "daily_downloads",
+            "earlyAccess": "early_access",
+            "customThemes": "custom_themes",
+            "price": "price",
+            "name": "name",
+            "color": "color"
+        }
+        
+        for key, col in mapping.items():
+            if key in data:
+                fields.append(f"{col} = ?")
+                val = data[key]
+                if isinstance(val, bool):
+                    val = 1 if val else 0
+                params.append(val)
+        
+        if not fields:
+            return
+            
+        fields.append("updated_at = CURRENT_TIMESTAMP")
+        params.append(level_id)
+        
+        query = f"UPDATE user_levels SET {', '.join(fields)} WHERE id = ?"
         async with self.db.connection() as conn:
-            await conn.execute(query, (1 if has_access else 0, level_id))
+            await conn.execute(query, tuple(params))
             await conn.commit()
 
     async def is_admin(self, telegram_id: int) -> bool:

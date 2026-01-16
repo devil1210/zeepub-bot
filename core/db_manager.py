@@ -31,27 +31,50 @@ class DatabaseManager:
                     priority INTEGER NOT NULL UNIQUE,
                     color TEXT NOT NULL DEFAULT '#5EAEE6',
                     has_mini_app_access BOOLEAN NOT NULL DEFAULT 0,
+                    daily_downloads INTEGER NOT NULL DEFAULT 5,
+                    early_access BOOLEAN NOT NULL DEFAULT 0,
+                    custom_themes BOOLEAN NOT NULL DEFAULT 0,
+                    price FLOAT NOT NULL DEFAULT 0.0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
 
+            # Migración: Verificar y añadir nuevas columnas si no existen
+            cursor = await conn.execute("PRAGMA table_info(user_levels)")
+            tier_cols = [row[1] for row in await cursor.fetchall()]
+            new_tier_cols = [
+                ("daily_downloads", "INTEGER DEFAULT 5"),
+                ("early_access", "BOOLEAN DEFAULT 0"),
+                ("custom_themes", "BOOLEAN DEFAULT 0"),
+                ("price", "FLOAT DEFAULT 0.0")
+            ]
+            for col_name, col_def in new_tier_cols:
+                if col_name not in tier_cols:
+                    print(f"Migración: Añadiendo columna '{col_name}' a tabla user_levels...")
+                    await conn.execute(f"ALTER TABLE user_levels ADD COLUMN {col_name} {col_def}")
+
             # Insertar niveles iniciales si la tabla está vacía
             cursor = await conn.execute("SELECT COUNT(*) FROM user_levels")
             count = (await cursor.fetchone())[0]
             if count == 0:
+                # name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price
                 levels = [
-                    ('Administrador', 10, '#FF6B6B', 1),
-                    ('Staff', 9, '#FF9800', 1),
-                    ('Premium', 5, '#4CAF50', 1),
-                    ('VIP', 4, '#9C27B0', 1),
-                    ('Patrocinador', 3, '#2196F3', 1),
-                    ('Lector', 1, '#9E9E9E', 0)
+                    ('Administrador', 10, '#FF6B6B', 1, 999, 1, 1, 0.0),
+                    ('Staff', 9, '#FF9800', 1, 100, 1, 1, 0.0),
+                    ('Premium', 5, '#4CAF50', 1, 50, 1, 1, 15.0),
+                    ('VIP', 4, '#9C27B0', 1, 20, 1, 0, 5.0),
+                    ('Patrocinador', 3, '#2196F3', 1, 10, 0, 0, 2.0),
+                    ('Lector', 1, '#9E9E9E', 0, 5, 0, 0, 0.0)
                 ]
                 await conn.executemany(
-                    "INSERT INTO user_levels (name, priority, color, has_mini_app_access) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO user_levels (name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     levels
                 )
+            else:
+                # Actualizar niveles existentes si no tienen los valores por defecto esperados (opcional pero recomendado)
+                # Solo para asegurar que los niveles base tengan coherencia tras la migración
+                pass
 
             # Crear tabla de usuarios si no existe
             await conn.execute("""

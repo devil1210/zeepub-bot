@@ -81,4 +81,12 @@ export const api = {
     getUiSettings: () => rpc('ui_settings', { subAction: 'get', role: 'auto' }),
     savePersonalSettings: (settings: any) =>
         rpc('ui_settings', { subAction: 'set', role: 'personal', settings }),
+
+    // Admin
+    getAdminStats: () => rpc('admin_stats'),
+    getAdminTiers: () => rpc('admin_get_tiers'),
+    saveAdminTier: (tierData: any) => rpc('admin_save_tier', tierData),
+
+    // Raw RPC Access
+    rpc: rpc
 };

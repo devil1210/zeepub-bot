@@ -33,7 +33,7 @@ const AppContent: React.FC = () => {
     setNavStack(prev => {
       // If we are just switching main tabs (dashboard, search, library, settings), clear stack and set new root
       if (['dashboard', 'search', 'library', 'settings', 'admin', 'requests'].includes(tab) && !series && !volume) {
-          return [{ tab }];
+        return [{ tab }];
       }
       // Otherwise push to stack (drill down)
       return [...prev, { tab, series, volume }];
@@ -75,59 +75,59 @@ const AppContent: React.FC = () => {
 
   // Navigation Helpers for Pages
   const onNavigate = (tab: string) => navigateTo(tab);
-  
+
   const onSelectSeries = (series: Series) => {
     navigateTo('search', series, null);
   };
 
   const onSelectVolume = (volume: Volume) => {
-     // Ensure we have the series context if possible, usually passed from SeriesDetail
-     const currentSeries = currentState.series;
-     if (currentSeries) {
-         navigateTo('search', currentSeries, volume);
-     }
+    // Ensure we have the series context if possible, usually passed from SeriesDetail
+    const currentSeries = currentState.series;
+    if (currentSeries) {
+      navigateTo('search', currentSeries, volume);
+    }
   };
 
   const onVolumeBack = () => {
-      handleBack(); // Pops volume, returns to Series
+    handleBack(); // Pops volume, returns to Series
   };
 
   const onSeriesBack = () => {
-      handleBack(); // Pops series, returns to List
+    handleBack(); // Pops series, returns to List
   };
 
   // Helper for Library to jump straight to detail
   const handleLibraryBookClick = (bookTitle: string, author: string, cover: string) => {
-      const mockSeries: Series = {
-          id: 'lib-series-1',
-          title: bookTitle,
-          author: author,
-          coverUrl: cover,
-          description: 'Description loaded from library...',
-          genre: 'Fantasy',
-          rating: 5.0,
-          volumesCount: 1,
-          status: 'Ongoing',
-          lastUpdated: 'Hoy',
-          volumes: []
-      };
-      const mockVolume: Volume = {
-          id: 'lib-vol-1',
-          seriesId: 'lib-series-1',
-          title: bookTitle,
-          volumeNumber: 1,
-          coverUrl: cover,
-          publishedDate: '2023',
-          pages: 300,
-          format: 'EPUB',
-          rating: 5.0
-      };
-      navigateTo('search', mockSeries, mockVolume);
+    const mockSeries: Series = {
+      id: 'lib-series-1',
+      title: bookTitle,
+      author: author,
+      coverUrl: cover,
+      description: 'Description loaded from library...',
+      genre: 'Fantasy',
+      rating: 5.0,
+      volumesCount: 1,
+      status: 'Ongoing',
+      lastUpdated: 'Hoy',
+      volumes: []
+    };
+    const mockVolume: Volume = {
+      id: 'lib-vol-1',
+      seriesId: 'lib-series-1',
+      title: bookTitle,
+      volumeNumber: 1,
+      coverUrl: cover,
+      publishedDate: '2023',
+      pages: 300,
+      format: 'EPUB',
+      rating: 5.0
+    };
+    navigateTo('search', mockSeries, mockVolume);
   };
 
   const handleSearchNavigation = (term: string, type?: string) => {
-      // In a real app, pass search params. For now, go to search root.
-      navigateTo('search');
+    // In a real app, pass search params. For now, go to search root.
+    navigateTo('search');
   };
 
 
@@ -137,21 +137,21 @@ const AppContent: React.FC = () => {
 
     if (volume && series) {
       return (
-        <BookDetail 
-          volume={volume} 
-          series={series} 
+        <BookDetail
+          volume={volume}
+          series={series}
           onBack={onVolumeBack}
           onSearch={handleSearchNavigation}
           onNavigate={onNavigate}
         />
       );
     }
-    
+
     if (series) {
       return (
-        <SeriesDetail 
-          series={series} 
-          onBack={onSeriesBack} 
+        <SeriesDetail
+          series={series}
+          onBack={onSeriesBack}
           onSelectVolume={onSelectVolume}
         />
       );
@@ -180,10 +180,10 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <Layout 
-      activeTab={currentState.tab} 
+    <Layout
+      activeTab={currentState.tab}
       onTabChange={onNavigate}
-      showMobileBottomNav={false}
+      showMobileBottomNav={true}
     >
       {renderContent()}
     </Layout>
@@ -194,7 +194,7 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <TelegramProvider>
-         <AppContent />
+        <AppContent />
       </TelegramProvider>
     </ThemeProvider>
   );
