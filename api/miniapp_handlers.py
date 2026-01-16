@@ -40,17 +40,10 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
 
     is_local_search = True # Always enforced for web interface
     
-    if not query and not page_url:
-        # Default behavior: Search for everything (recent)
-        logger.info("[search] Empty query, returning all local books")
-        return await LibraryService.search_books(
-            "", page=page, search_type=data.get("type", "all")
-        )
-
     if is_local_search:
-        logger.info(f"[search] Using LibraryService for grouped series search: {query}")
+        logger.info(f"[search] Using LibraryService for grouped series search. Query: '{query or ''}'")
         return await LibraryService.search_series(
-            query, page=page
+            query or "", page=page
         )
 
     # REMOVED: OPDS Fallback Logic
