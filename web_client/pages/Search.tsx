@@ -414,7 +414,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                 return (
                   <button
                     key={option.id}
-                    onClick={() => setActiveSort(option.id)}
+                    onClick={() => {
+                      setActiveSort(option.id);
+                      setIsSortMenuOpen(false);
+                    }}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${isActive
                       ? 'bg-[#2AABEE] text-white border-[#2AABEE] shadow-lg shadow-blue-500/20'
                       : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
@@ -433,31 +436,36 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           <button
             onClick={handlePrevPage}
             disabled={currentPage === 1}
-            className={`flex-1 flex flex-col items-center justify-center py-2.5 px-2 rounded-l-full hover:bg-white/5 active:bg-white/10 transition-colors group ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : 'text-gray-400 active:text-white'}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 text-gray-500 hover:text-gray-300 ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
           >
-            <ChevronLeft className="w-4 h-4 mb-0.5 group-active:-translate-x-1 transition-transform" />
-            <span className="text-[9px] font-black uppercase tracking-widest">Anterior</span>
+            <div className="p-1.5 rounded-full transition-all duration-300">
+              <ChevronLeft className="w-4 h-4" strokeWidth={2} />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Anterior</span>
           </button>
 
           <div className="w-px h-8 bg-white/5"></div>
 
           <button
             onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-            className={`flex-1 flex flex-col items-center justify-center py-2.5 px-2 hover:bg-white/5 transition-colors group relative ${isSortMenuOpen ? 'text-[#2AABEE]' : 'text-gray-300'}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <div className={`absolute inset-x-2 bottom-0 h-0.5 rounded-t-full bg-[#2AABEE] transition-all duration-300 ${isSortMenuOpen ? 'opacity-100' : 'opacity-0'}`}></div>
-            <ArrowDownUp className="w-4 h-4 mb-0.5" />
-            <span className="text-[9px] font-black uppercase tracking-widest">Ordenar</span>
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
+              <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'fill-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
+            </div>
+            <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${isSortMenuOpen ? 'text-white' : 'text-gray-500'}`}>Ordenar</span>
           </button>
 
           <div className="w-px h-8 bg-white/5"></div>
 
           <button
             onClick={() => onNavigate && onNavigate('dashboard')}
-            className="flex-1 flex flex-col items-center justify-center py-2.5 px-2 hover:bg-white/5 text-gray-400 active:text-white transition-colors group"
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 text-gray-500 hover:text-gray-300`}
           >
-            <Home className="w-4 h-4 mb-0.5 group-active:-translate-y-1 transition-transform" />
-            <span className="text-[9px] font-black uppercase tracking-widest">Inicio</span>
+            <div className="p-1.5 rounded-full transition-all duration-300">
+              <Home className="w-4 h-4" strokeWidth={2} />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Inicio</span>
           </button>
 
           <div className="w-px h-8 bg-white/5"></div>
@@ -465,10 +473,12 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           <button
             onClick={handleNextPage}
             disabled={currentPage === totalPages}
-            className={`flex-1 flex flex-col items-center justify-center py-2.5 px-2 rounded-r-full hover:bg-white/5 active:bg-white/10 transition-colors group ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : 'text-gray-400 active:text-white'}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 text-gray-500 hover:text-gray-300 ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : ''}`}
           >
-            <ChevronRight className="w-4 h-4 mb-0.5 group-active:translate-x-1 transition-transform" />
-            <span className="text-[9px] font-black uppercase tracking-widest">Siguiente</span>
+            <div className="p-1.5 rounded-full transition-all duration-300">
+              <ChevronRight className="w-4 h-4" strokeWidth={2} />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Siguiente</span>
           </button>
         </div>
       </div>

@@ -131,34 +131,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         <main className="flex-1 overflow-y-auto relative scroll-smooth custom-scrollbar pb-24 md:pb-0 md:pt-8">
           {children}
         </main>
-
-        {/* Mobile Bottom Navigation (Hidden on Desktop) */}
-        {showMobileBottomNav && (
-          <nav className="md:hidden fixed bottom-6 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
-            <div className="glass-panel rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl flex justify-between items-center p-2 relative overflow-hidden">
-              {navItems.map((item) => {
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onTabChange(item.id)}
-                    className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-xl transition-all duration-300 relative z-10 ${isActive ? 'text-white' : 'text-gray-500 hover:text-gray-300'
-                      }`}
-                  >
-                    <div className={`p-1.5 rounded-full transition-all duration-300 ${isActive ? 'bg-primary shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
-                      <item.icon className={`w-5 h-5 ${isActive ? 'fill-white' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
-                    </div>
-                    <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${isActive ? 'text-white' : 'text-gray-500'}`}>
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })}
-
-            </div>
-          </nav>
-        )}
-
       </div>
     </div>
   );

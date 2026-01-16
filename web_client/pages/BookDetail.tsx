@@ -394,48 +394,52 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
       {/* Floating Bottom Navigation */}
       <div className="md:hidden fixed bottom-6 left-4 right-4 z-40 animate-in slide-in-from-bottom-4 duration-300">
         <div className="glass-panel rounded-full p-1 border border-black/10 dark:border-white/10 shadow-2xl bg-white/90 dark:bg-[#0f1115]/90 backdrop-blur-md flex items-center justify-between">
-          {/* Back */}
           <button
             onClick={onBack}
-            className="flex-1 flex flex-col items-center justify-center py-2.5 px-2 rounded-l-full hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors group text-gray-500 dark:text-gray-400 active:text-black dark:active:text-white"
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-xl text-gray-500 dark:text-gray-400"
           >
-            <Reply className="w-4 h-4 mb-0.5 group-active:-translate-y-1 transition-transform" />
-            <span className="text-[9px] font-black uppercase tracking-widest">Volver</span>
+            <div className="p-1.5 ">
+              <Reply className="w-4 h-4" strokeWidth={2} />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Volver</span>
           </button>
 
           <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
-          {/* Home */}
           <button
             onClick={() => onNavigate && onNavigate('dashboard')}
-            className="flex-1 flex flex-col items-center justify-center py-2.5 px-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group relative text-gray-500 dark:text-gray-400 active:text-black dark:active:text-white"
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-xl text-gray-500 dark:text-gray-400"
           >
-            <Home className="w-4 h-4 mb-0.5 group-active:-translate-y-1 transition-transform" />
-            <span className="text-[9px] font-black uppercase tracking-widest">Inicio</span>
+            <div className="p-1.5">
+              <Home className="w-4 h-4" strokeWidth={2} />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Inicio</span>
           </button>
 
           <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
-          {/* Rate (Only if downloaded) - ADDED, not replaced */}
           {hasDownloaded && (
             <>
-              <button
-                className="flex-1 flex flex-col items-center justify-center py-2.5 px-2 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors group text-yellow-500 active:text-yellow-600"
-              >
-                <Star className="w-4 h-4 mb-0.5 fill-current" />
-                <span className="text-[9px] font-black uppercase tracking-widest">Valorar</span>
+              <button className="flex-1 flex flex-col items-center justify-center py-2 rounded-xl text-yellow-500">
+                <div className="p-1.5">
+                  <Star className="w-4 h-4 fill-current" strokeWidth={2} />
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-widest mt-1">Valorar</span>
               </button>
               <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
             </>
           )}
 
-          {/* Download - Always Available (with status change) */}
           <button
             onClick={handleDownload}
-            className={`flex-1 flex flex-col items-center justify-center py-2.5 px-2 rounded-r-full hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors group ${hasDownloaded ? 'text-green-600 dark:text-green-500' : 'text-gray-500 dark:text-gray-400 active:text-black dark:active:text-white'}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 ${hasDownloaded ? 'text-green-600 dark:text-green-500' : 'text-[#2AABEE]'}`}
           >
-            {hasDownloaded ? <Check className="w-4 h-4 mb-0.5" /> : <Download className="w-4 h-4 mb-0.5" />}
-            <span className="text-[9px] font-black uppercase tracking-widest">Descargar</span>
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${!hasDownloaded ? 'bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
+              {hasDownloaded ? <Check className="w-4 h-4" /> : <Download className="w-4 h-4 text-white" strokeWidth={2.5} />}
+            </div>
+            <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${!hasDownloaded ? 'text-[#2AABEE]' : ''}`}>
+              {hasDownloaded ? 'Listo' : 'Descargar'}
+            </span>
           </button>
         </div>
       </div>

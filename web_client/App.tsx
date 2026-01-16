@@ -183,7 +183,6 @@ const AppContent: React.FC = () => {
     <Layout
       activeTab={currentState.tab}
       onTabChange={onNavigate}
-      showMobileBottomNav={!currentState.series && !currentState.volume}
     >
       {renderContent()}
     </Layout>

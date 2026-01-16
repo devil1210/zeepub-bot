@@ -27,7 +27,9 @@ import {
   Scan,
   Cpu,
   HardDrive,
-  ArrowLeft
+  ArrowLeft,
+  Home,
+  Reply
 } from 'lucide-react';
 import { UserPermissions } from './UserPermissions';
 import { api } from '../src/services/api';
@@ -107,7 +109,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   ] as const;
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto flex flex-col h-full overflow-hidden relative text-slate-800 dark:text-slate-100 font-sans pb-4 md:pb-6">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto flex flex-col h-full overflow-hidden relative text-slate-800 dark:text-slate-100 font-sans pb-32 md:pb-6">
       {/* Admin Header with Tabs */}
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 z-20 gap-4 shrink-0 relative">
 
@@ -661,6 +663,57 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
           </div>
         )}
 
+      </div>
+
+      {/* Mobile Bottom Navigation for Admin */}
+      <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
+        <div className="glass-panel rounded-full p-1 border border-white/10 shadow-2xl bg-[#0f1115]/90 backdrop-blur-md flex items-center justify-between">
+          <button
+            onClick={() => onNavigate && onNavigate('dashboard')}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 text-gray-500`}
+          >
+            <div className="p-1.5 rounded-full transition-all duration-300">
+              <Home className="w-4 h-4" strokeWidth={2} />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Inicio</span>
+          </button>
+
+          <div className="w-px h-8 bg-white/5"></div>
+
+          <button
+            onClick={() => setCurrentView('overview')}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 ${currentView === 'overview' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${currentView === 'overview' ? 'bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
+              <LayoutDashboard className={`w-4 h-4 ${currentView === 'overview' ? 'fill-white' : ''}`} strokeWidth={currentView === 'overview' ? 2.5 : 2} />
+            </div>
+            <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${currentView === 'overview' ? 'text-white' : 'text-gray-500'}`}>Resumen</span>
+          </button>
+
+          <div className="w-px h-8 bg-white/5"></div>
+
+          <button
+            onClick={() => setCurrentView('system')}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 ${currentView === 'system' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${currentView === 'system' ? 'bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
+              <Activity className={`w-4 h-4 ${currentView === 'system' ? 'fill-white' : ''}`} strokeWidth={currentView === 'system' ? 2.5 : 2} />
+            </div>
+            <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${currentView === 'system' ? 'text-white' : 'text-gray-500'}`}>Sistema</span>
+          </button>
+
+          <div className="w-px h-8 bg-white/5"></div>
+
+          <button
+            onClick={() => setCurrentView('tiers')}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all duration-300 relative z-10 ${currentView === 'tiers' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${currentView === 'tiers' ? 'bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
+              <Layers className={`w-4 h-4 ${currentView === 'tiers' ? 'fill-white' : ''}`} strokeWidth={currentView === 'tiers' ? 2.5 : 2} />
+            </div>
+            <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${currentView === 'tiers' ? 'text-white' : 'text-gray-500'}`}>Niveles</span>
+          </button>
+        </div>
       </div>
     </div>
   );
