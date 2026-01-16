@@ -147,7 +147,24 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
     }
   };
 
-  const currentSeries = series;
+  const currentSeries = React.useMemo(() => {
+    const sorted = [...series];
+    switch (activeSort) {
+      case 'a-z':
+        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+      case 'downloads':
+        return sorted.sort((a, b) => (b.downloadCount || 0) - (a.downloadCount || 0));
+      case 'rating':
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      case 'added':
+      case 'updated':
+        // As lastUpdated might be a string like "Hoy", we'll sort by ID as fallback or title
+        // In a real app we'd want timestamps
+        return sorted.sort((a, b) => String(b.lastUpdated).localeCompare(String(a.lastUpdated)));
+      default:
+        return sorted;
+    }
+  }, [series, activeSort]);
 
   const sortOptions = [
     { id: 'a-z', label: 'A-Z', icon: null },

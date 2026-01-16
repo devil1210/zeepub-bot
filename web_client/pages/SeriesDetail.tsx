@@ -35,6 +35,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   const [realSeries, setRealSeries] = useState<Series>(series);
   const [volumes, setVolumes] = useState<Volume[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSort, setActiveSort] = useState('num-asc');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,7 +93,23 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
   const totalPages = Math.ceil(volumes.length / itemsPerPage);
 
-  const currentVolumes = volumes.slice(
+  const sortedVolumes = React.useMemo(() => {
+    const sorted = [...volumes];
+    switch (activeSort) {
+      case 'num-asc':
+        return sorted.sort((a, b) => (a.volumeNumber || 0) - (b.volumeNumber || 0));
+      case 'num-desc':
+        return sorted.sort((a, b) => (b.volumeNumber || 0) - (a.volumeNumber || 0));
+      case 'rating':
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      case 'date':
+        return sorted.sort((a, b) => String(b.publishedDate).localeCompare(String(a.publishedDate)));
+      default:
+        return sorted;
+    }
+  }, [volumes, activeSort]);
+
+  const currentVolumes = sortedVolumes.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -186,7 +203,15 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               Lista de Volúmenes
             </h2>
             <div className="flex gap-2">
-              <button className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-primary transition-colors">
+              <button
+                onClick={() => {
+                  const orders = ['num-asc', 'num-desc', 'date', 'rating'];
+                  const nextIndex = (orders.indexOf(activeSort) + 1) % orders.length;
+                  setActiveSort(orders[nextIndex]);
+                }}
+                className={`p-2 rounded-lg bg-white/5 border border-white/10 transition-colors ${activeSort !== 'num-asc' ? 'text-[#2AABEE] border-[#2AABEE]/30' : 'text-gray-400 hover:text-primary'}`}
+                title="Cambiar Orden"
+              >
                 <SortAsc className="w-5 h-5" />
               </button>
               <button className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-primary transition-colors">
@@ -283,7 +308,11 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               ].map((option) => (
                 <button
                   key={option.id}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white"
+                  onClick={() => {
+                    setActiveSort(option.id);
+                    setIsSortMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${activeSort === option.id ? 'bg-[#2AABEE] text-white border-[#2AABEE]' : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'}`}
                 >
                   <option.icon className="w-3 h-3" />
                   {option.label}
