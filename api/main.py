@@ -113,9 +113,11 @@ if enable_miniapp:
             name="library_covers",
         )
 
-    # Ruta al directorio de build del frontend
+    # Ruta al directorio de build del frontend (Configurable)
+    # Permite cambiar entre 'web_client' (nuevo) y 'zeepub-web' (anterior)
+    web_client_dir = os.getenv("WEB_CLIENT_DIR", "web_client")
     frontend_dist = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "zeepub-web", "dist"
+        os.path.dirname(os.path.dirname(__file__)), web_client_dir, "dist"
     )
 
     if os.path.exists(frontend_dist):

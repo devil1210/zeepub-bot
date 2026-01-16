@@ -1,9 +1,9 @@
 # Etapa 1: Construcción del Frontend
 FROM node:20-alpine as frontend-build
 WORKDIR /app/frontend
-COPY zeepub-web/package*.json ./
+COPY web_client/package*.json ./
 RUN npm install
-COPY zeepub-web/ ./
+COPY web_client/ ./
 RUN npm run build
 
 # Etapa 2: Backend y Bot
@@ -30,7 +30,7 @@ RUN echo $GIT_COMMIT > version_hash.txt && echo $BUILD_DATE > build_date.txt
 COPY . .
 
 # Copiar el frontend construido desde la etapa anterior
-COPY --from=frontend-build /app/frontend/dist /app/zeepub-web/dist
+COPY --from=frontend-build /app/frontend/dist /app/web_client/dist
 
 # Variables de entorno por defecto (se pueden sobrescribir)
 ENV LOG_LEVEL=INFO
