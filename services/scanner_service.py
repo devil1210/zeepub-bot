@@ -103,16 +103,33 @@ class ScannerService:
 
             print(f"Procesando: {filepath}")
 
-            # Extraer Metadatos
+            # Primero extraer metadatos para obtener el hash
             extractor = EpubMetadataExtractor(filepath)
             meta = extractor.extract()
 
             if not meta:
                 return
 
-            if not book:
+            # Generar content_hash temporal para buscar duplicados
+            temp_book = LocalBook(filepath=filepath, source_id=source.id)
+            temp_book.title = meta.get("title") or os.path.basename(filepath)
+            temp_book.author = extract_author(meta.get("creators", {}))
+            temp_book.series = meta.get("series")
+            temp_book.volume = meta.get("volume")
+            temp_content_hash = self._generate_book_hash(temp_book)
+
+            # Buscar libro existente por content_hash
+            existing_book = session.query(LocalBook).filter_by(content_hash=temp_content_hash).first()
+            
+            if existing_book:
+                # Actualizar libro existente
+                book = existing_book
+                logger.debug(f"Actualizando libro existente: {book.title}")
+            else:
+                # Crear nuevo libro
                 book = LocalBook(filepath=filepath, source_id=source.id)
                 session.add(book)
+                logger.debug(f"Nuevo libro: {meta.get('title')}")
 
             # Actualizar campos
             book.filename = os.path.basename(filepath)
