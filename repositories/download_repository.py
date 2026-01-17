@@ -164,23 +164,6 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
                 logger.error(f"Supabase get_user_downloads error: {e}")
 
         return []
-            rows = await cursor.fetchall()
-
-            return [
-                {
-                    "id": row[0],
-                    "title": row[1],
-                    "author": row[2] or "Desconocido",
-                    "file_size": row[3],
-                    "downloaded_at": row[4],
-                    "romaji_title": row[5],
-                    "series": row[6],
-                    "volume": row[7],
-                    "translator": row[8],
-                    "clean_title": row[9]
-                }
-                for row in rows
-            ]
 
     async def get_download_count(
         self,
