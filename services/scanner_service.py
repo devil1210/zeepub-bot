@@ -235,6 +235,9 @@ class ScannerService:
                 cover_dest = os.path.join(COVERS_DIR, cover_filename)
                 if extractor.save_cover(cover_dest):
                     book.cover_path = f"/api/library/covers/{cover_filename}"
+                    # Thumbnail path (generado automáticamente por save_cover)
+                    book.cover_thumb_path = f"/api/library/covers/{cover_filename.replace('.jpg', '_thumb.jpg')}"
+
 
             # session.commit()  # Movido a nivel de batch o fuente
             return True

@@ -86,6 +86,10 @@ class LocalBook(Base):
     cover_path = Column(
         String(1024)
     )  # Ruta a la miniatura extraída en data/library/covers/
+    cover_thumb_path = Column(
+        String(1024)
+    )  # Ruta al thumbnail móvil optimizado (200px, 70% quality) para carga ultra rápida
+
 
     # Trazabilidad
     file_created_at = Column(DateTime)

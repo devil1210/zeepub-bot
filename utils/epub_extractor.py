@@ -245,7 +245,9 @@ class EpubMetadataExtractor:
 
     def save_cover(self, output_path):
         """
-        Guarda la portada extraída en el disco (opcionalmente redimensionándola).
+        Guarda la portada extraída en el disco en dos versiones:
+        1. Standard (600px) para desktop/vista detalle
+        2. Thumbnail móvil (200px, calidad 70%) para listas - carga ultra rápida
         """
         if self.cover_data and self.cover_extension:
             try:
@@ -254,13 +256,28 @@ class EpubMetadataExtractor:
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
 
-                # Redimensionar para ahorrar espacio si es muy grande
-                if img.width > 600:
-                    ratio = 600 / float(img.width)
-                    height = int((float(img.height) * float(ratio)))
-                    img = img.resize((600, height), Image.LANCZOS)
-
-                img.save(output_path, "JPEG", quality=85)
+                # 1. VERSION STANDARD (600px, quality 85)
+                standard_img = img.copy()
+                if standard_img.width > 600:
+                    ratio = 600 / float(standard_img.width)
+                    height = int((float(standard_img.height) * float(ratio)))
+                    standard_img = standard_img.resize((600, height), Image.LANCZOS)
+                
+                standard_img.save(output_path, "JPEG", quality=85, optimize=True)
+                
+                # 2. VERSION THUMBNAIL MÓVIL (200px, quality 70) - SUPER LIVIANA
+                thumbnail_path = output_path.replace('.jpg', '_thumb.jpg')
+                mobile_img = img.copy()
+                
+                # Thumbnail: 200px de ancho máximo
+                if mobile_img.width > 200:
+                    ratio = 200 / float(mobile_img.width)
+                    height = int((float(mobile_img.height) * float(ratio)))
+                    mobile_img = mobile_img.resize((200, height), Image.LANCZOS)
+                
+                # Quality 70% con optimización agresiva para máxima compresión
+                mobile_img.save(thumbnail_path, "JPEG", quality=70, optimize=True, progressive=True)
+                
                 return True
             except Exception as e:
                 print(f"Error guardando portada: {e}")
