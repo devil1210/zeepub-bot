@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
+import { MemoryRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
 import { Layout } from './components/Layout';
@@ -15,205 +16,192 @@ import { Library } from './pages/Library';
 import { Downloads } from './pages/Downloads';
 import { Series, Volume, Book } from './types';
 
-// Define navigation state shape
-interface NavState {
-  tab: string;
-  series?: Series | null;
-  volume?: Volume | null;
-  bookId?: string | null;
-}
+// Custom hook to bridge legacy onNavigate prop to React Router
+const useLegacyNavigation = () => {
+  const navigate = useNavigate();
 
-const AppContent: React.FC = () => {
-  const { webApp } = useTelegram();
-  const [navStack, setNavStack] = useState<NavState[]>([{ tab: 'dashboard' }]);
-  const [isReading, setIsReading] = useState(false);
-
-  // Current active state is the last item in stack
-  const currentState = navStack[navStack.length - 1];
-
-  // Helper to push new state
-  const navigateTo = useCallback((tab: string, series: Series | null = null, volume: Volume | null = null) => {
-    setNavStack(prev => {
-      // Handle 'book:ID' navigation
-      if (tab.startsWith('book:')) {
-        const bookId = tab.split(':')[1];
-        return [...prev, { tab: 'book-detail', bookId }];
-      }
-
-      // If we are just switching main tabs, clear stack and set new root
-      if (['dashboard', 'search', 'library', 'settings', 'admin', 'requests', 'downloads'].includes(tab) && !series && !volume) {
-        return [{ tab }];
-      }
-      // Otherwise push to stack
-      return [...prev, { tab, series, volume }];
-    });
-  }, []);
-
-  // Back handler
-  const handleBack = useCallback(() => {
-    if (isReading) {
-      setIsReading(false);
+  return (tab: string, series?: Series | null, volume?: Volume | null) => {
+    // Handle 'book:ID' shortcut
+    if (tab.startsWith('book:')) {
+      const bookId = tab.split(':')[1];
+      navigate(`/book/${bookId}`);
       return;
     }
 
-    setNavStack(prev => {
-      if (prev.length > 1) {
-        return prev.slice(0, -1);
-      }
-      return prev; // Can't go back further than root
-    });
-  }, [isReading]);
+    // Handle Volume Detail (BookDetail)
+    if (volume && series) {
+      navigate(`/read/${series.id}/${volume.id}`, { state: { series, volume } });
+      return;
+    }
 
-  // Sync with Telegram BackButton
+    // Handle Series Detail
+    if (series) {
+      navigate(`/series/${series.id}`, { state: { series } });
+      return;
+    }
+
+    // Handle Main Tabs
+    const path = tab === 'dashboard' ? '/' : `/${tab}`;
+    navigate(path);
+  };
+};
+
+/**
+ * Handles Telegram Back Button integration with React Router
+ */
+const TelegramNavigationHandler: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { webApp } = useTelegram();
+
   useEffect(() => {
     if (webApp?.BackButton) {
-      if (navStack.length > 1 || isReading) {
+      // Show back button if we are not at root tabs
+      const rootPaths = ['/', '/search', '/library', '/requests', '/settings', '/downloads', '/admin'];
+      const isRoot = rootPaths.includes(location.pathname);
+
+      if (!isRoot) {
         webApp.BackButton.show();
-        webApp.BackButton.onClick(handleBack);
+        webApp.BackButton.onClick(() => navigate(-1));
       } else {
         webApp.BackButton.hide();
       }
     }
+
     return () => {
       if (webApp?.BackButton) {
-        webApp.BackButton.offClick(handleBack);
+        webApp.BackButton.offClick(() => navigate(-1));
       }
     };
-  }, [webApp, navStack.length, isReading, handleBack]);
+  }, [webApp, location, navigate]);
 
+  return null;
+};
 
-  // Navigation Helpers for Pages
-  const onNavigate = (tab: string) => navigateTo(tab);
+// Wrapper Component to inject legacy navigation prop
+const PageWrapper: React.FC<{ Component: React.FC<any>; props?: any }> = ({ Component, props }) => {
+  const onNavigate = useLegacyNavigation();
+  return <Component onNavigate={onNavigate} {...props} />;
+};
 
-  const onSelectSeries = (series: Series) => {
-    navigateTo('search', series, null);
+const AppContent: React.FC = () => {
+  const onNavigate = useLegacyNavigation();
+  const location = useLocation();
+  const { isAdmin } = useTelegram();
+
+  // Determine active tab for Layout
+  const getActiveTab = (pathname: string) => {
+    if (pathname === '/') return 'dashboard';
+    return pathname.substring(1).split('/')[0]; // e.g. /search -> search
   };
-
-  const onSelectVolume = (volume: Volume, seriesContext?: Series) => {
-    // Priority: Explicitly passed series > current state series
-    const targetSeries = seriesContext || currentState.series;
-    if (targetSeries) {
-      navigateTo('search', targetSeries, volume);
-    }
-  };
-
-  const onVolumeBack = () => {
-    handleBack(); // Pops volume, returns to Series
-  };
-
-  const onSeriesBack = () => {
-    handleBack(); // Pops series, returns to List
-  };
-
-  // Helper for Library to jump straight to detail
-  const handleLibraryBookClick = (bookTitle: string, author: string, cover: string) => {
-    const mockSeries: Series = {
-      id: 'lib-series-1',
-      title: bookTitle,
-      author: author,
-      coverUrl: cover,
-      description: 'Description loaded from library...',
-      genre: 'Fantasy',
-      rating: 5.0,
-      volumesCount: 1,
-      status: 'Ongoing',
-      lastUpdated: 'Hoy',
-      volumes: []
-    };
-    const mockVolume: Volume = {
-      id: 'lib-vol-1',
-      seriesId: 'lib-series-1',
-      title: bookTitle,
-      volumeNumber: 1,
-      coverUrl: cover,
-      publishedDate: '2023',
-      pages: 300,
-      format: 'EPUB',
-      rating: 5.0
-    };
-    navigateTo('search', mockSeries, mockVolume);
-  };
-
-  const handleSearchNavigation = (term: string, type?: string) => {
-    // In a real app, pass search params. For now, go to search root.
-    navigateTo('search');
-  };
-
-  // Render Logic
-  const renderContent = () => {
-    const { tab, series, volume, bookId } = currentState;
-    const { isAdmin } = useTelegram();
-
-    // If a specific book is requested by ID (e.g., from recommendations or downloads)
-    if (bookId) {
-      return (
-        <BookDetailById
-          bookId={bookId}
-          onBack={handleBack}
-          onNavigate={onNavigate}
-        />
-      );
-    }
-
-    if (volume && series) {
-      return (
-        <BookDetail
-          volume={volume}
-          series={series}
-          onBack={onVolumeBack}
-          onSearch={handleSearchNavigation}
-          onNavigate={onNavigate}
-        />
-      );
-    }
-
-    if (series) {
-      return (
-        <SeriesDetail
-          series={series}
-          onBack={onSeriesBack}
-          onSelectVolume={onSelectVolume}
-        />
-      );
-    }
-
-    switch (tab) {
-      case 'dashboard':
-        return <Dashboard onNavigate={onNavigate} />;
-      case 'search':
-        return <Search onSelectSeries={onSelectSeries} onNavigate={onNavigate} />;
-      case 'requests':
-        return <RequestBook onNavigate={onNavigate} />;
-      case 'admin':
-        return isAdmin ? <Admin onNavigate={onNavigate} /> : <Dashboard onNavigate={onNavigate} />;
-      case 'settings':
-        return <Settings onNavigate={onNavigate} />;
-      case 'downloads':
-        return <Downloads
-          onNavigate={onNavigate}
-          onBookClick={(bookId: any) => {
-            // Logic to navigate to book detail from ID or mock book
-            navigateTo('search'); // Fallback or implement proper search result selection
-          }}
-        />;
-      case 'library':
-        return <Library onNavigate={onNavigate} onSelectBook={handleLibraryBookClick} />;
-      default:
-        return <Dashboard onNavigate={onNavigate} />;
-    }
-  };
-
-  if (isReading) {
-    return <Reader onClose={() => setIsReading(false)} />;
-  }
 
   return (
-    <Layout
-      activeTab={currentState.tab}
-      onTabChange={onNavigate}
-    >
-      {renderContent()}
-    </Layout>
+    <>
+      <TelegramNavigationHandler />
+      <Layout activeTab={getActiveTab(location.pathname)} onTabChange={onNavigate}>
+        <Routes>
+          <Route path="/" element={<PageWrapper Component={Dashboard} />} />
+          <Route path="/search" element={<Search onNavigate={onNavigate} onSelectSeries={(s) => onNavigate('search', s)} />} />
+          <Route path="/library" element={
+            <Library
+              onNavigate={onNavigate}
+              onSelectBook={(title, author, cover) => {
+                // Mock conversion for library click
+                // In real app, maybe Library should return Series object?
+                const mockSeries: Series = {
+                  id: 'lib-series-1',
+                  title: title,
+                  author: author,
+                  coverUrl: cover,
+                  description: 'Description loaded from library...',
+                  genre: 'Fantasy',
+                  rating: 5.0,
+                  volumesCount: 1,
+                  status: 'Ongoing',
+                  lastUpdated: 'Hoy',
+                  volumes: []
+                };
+                const mockVolume: Volume = {
+                  id: 'lib-vol-1',
+                  seriesId: 'lib-series-1',
+                  title: title,
+                  volumeNumber: 1,
+                  coverUrl: cover,
+                  publishedDate: '2023',
+                  pages: 300,
+                  format: 'EPUB',
+                  rating: 5.0
+                };
+                onNavigate('search', mockSeries, mockVolume);
+              }}
+            />
+          } />
+          <Route path="/requests" element={<PageWrapper Component={RequestBook} />} />
+          <Route path="/settings" element={<PageWrapper Component={Settings} />} />
+          <Route path="/downloads" element={
+            <Downloads
+              onNavigate={onNavigate}
+              onBookClick={() => onNavigate('search')}
+            />
+          } />
+          <Route path="/admin" element={
+            isAdmin ? <PageWrapper Component={Admin} /> : <Navigate to="/" replace />
+          } />
+
+          {/* Details Routes */}
+          <Route path="/book/:bookId" element={<BookDetailByIdWrapper />} />
+          <Route path="/series/:seriesId" element={<SeriesDetailWrapper />} />
+          <Route path="/read/:seriesId/:volumeId" element={<BookDetailWrapper />} />
+          <Route path="/reader" element={<Reader onClose={() => onNavigate('dashboard')} />} />
+        </Routes>
+      </Layout>
+    </>
+  );
+};
+
+// Wrappers to handle params and state
+const BookDetailByIdWrapper = () => {
+  const navigate = useNavigate();
+  const onNavigate = useLegacyNavigation();
+  const { pathname } = useLocation();
+  const bookId = pathname.split('/')[2];
+
+  return <BookDetailById bookId={bookId} onBack={() => navigate(-1)} onNavigate={onNavigate} />;
+};
+
+const SeriesDetailWrapper = () => {
+  const navigate = useNavigate();
+  const onNavigate = useLegacyNavigation();
+  const location = useLocation();
+  const series = location.state?.series as Series;
+
+  if (!series) return <Navigate to="/" />; // Fallback if no state
+
+  return (
+    <SeriesDetail
+      series={series}
+      onBack={() => navigate(-1)}
+      onSelectVolume={(vol) => onNavigate('search', series, vol)}
+    />
+  );
+};
+
+const BookDetailWrapper = () => {
+  const navigate = useNavigate();
+  const onNavigate = useLegacyNavigation();
+  const location = useLocation();
+  const { series, volume } = location.state || {}; // Cast as needed
+
+  if (!series || !volume) return <Navigate to="/" />;
+
+  return (
+    <BookDetail
+      series={series}
+      volume={volume}
+      onBack={() => navigate(-1)}
+      onSearch={(term) => onNavigate('search')}
+      onNavigate={onNavigate}
+    />
   );
 };
 
@@ -221,7 +209,9 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <TelegramProvider>
-        <AppContent />
+        <MemoryRouter>
+          <AppContent />
+        </MemoryRouter>
       </TelegramProvider>
     </ThemeProvider>
   );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Download, Star } from 'lucide-react';
 import { Book } from '../types';
+import { ProgressiveImage } from './ProgressiveImage';
 
 interface BookCardProps {
   book: Book;
@@ -16,14 +17,15 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
           {book.format}
         </span>
       </div>
-      
+
       <div className={`relative overflow-hidden bg-gray-800 ${compact ? 'aspect-[3/4]' : 'aspect-[2/3]'}`}>
-        <img 
-          alt={book.title} 
-          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" 
-          src={book.coverUrl} 
+        <ProgressiveImage
+          alt={book.title}
+          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+          src={book.coverUrl}
+          containerClassName="w-full h-full"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-60"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-60 pointer-events-none"></div>
         {!compact && (
           <div className="absolute bottom-4 left-4 right-4">
             <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 drop-shadow-md">{book.title}</h3>
@@ -35,8 +37,8 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
       <div className="p-4 flex flex-col flex-1">
         {compact && (
           <div className="mb-3">
-             <h3 className="text-white font-bold text-base leading-tight line-clamp-1">{book.title}</h3>
-             <p className="text-gray-400 text-xs mt-1 truncate">{book.author}</p>
+            <h3 className="text-white font-bold text-base leading-tight line-clamp-1">{book.title}</h3>
+            <p className="text-gray-400 text-xs mt-1 truncate">{book.author}</p>
           </div>
         )}
 
@@ -52,7 +54,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
           <span className="text-[10px] text-gray-500 uppercase tracking-wider">
             {compact ? book.format : 'Available'}
           </span>
-          <button 
+          <button
             onClick={() => onDownload(book)}
             className="p-2 rounded-lg bg-white/5 text-gray-300 hover:bg-primary hover:text-white transition-colors"
           >

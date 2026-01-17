@@ -292,7 +292,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "dailyDownloads": row[5],
                         "earlyAccess": bool(row[6]),
                         "customThemes": bool(row[7]),
-                        "price": row[8]
+                        "price": row[8],
+                        "showRecommendations": bool(row[9]) if len(row) > 9 else True
                     },
                     "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
                     "isAdmin": is_admin,
@@ -341,7 +342,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "dailyDownloads": row['daily_downloads'],
                             "earlyAccess": bool(row['early_access']),
                             "customThemes": bool(row['custom_themes']),
-                            "price": row['price']
+                            "price": row['price'],
+                            "showRecommendations": bool(row.get('show_recommendations', True))
                         }
                         for row in res.data
                     ]
@@ -351,7 +353,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         """
         Retorna todos los niveles configurados con sus límites y características.
         """
-        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price FROM user_levels ORDER BY priority DESC"
+        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations FROM user_levels ORDER BY priority DESC"
         async with self.db.connection() as conn:
             cursor = await conn.execute(query)
             rows = await cursor.fetchall()
@@ -365,7 +367,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "dailyDownloads": row[5],
                     "earlyAccess": bool(row[6]),
                     "customThemes": bool(row[7]),
-                    "price": row[8]
+                    "price": row[8],
+                    "showRecommendations": bool(row[9]) if len(row) > 9 else True
                 }
                 for row in rows
             ]
@@ -504,6 +507,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             "dailyDownloads": "daily_downloads",
             "earlyAccess": "early_access",
             "customThemes": "custom_themes",
+            "showRecommendations": "show_recommendations",
             "price": "price",
             "name": "name",
             "color": "color"

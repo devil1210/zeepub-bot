@@ -248,9 +248,9 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                     <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg">
                         <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                             <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-                                <Info className="w-5 h-5" />
+                                <Zap className="w-5 h-5" />
                             </div>
-                            <h3 className="text-lg font-black text-white uppercase tracking-tight">Info General</h3>
+                            <h3 className="text-white font-bold">General & Access</h3>
                         </div>
                         <div className="space-y-4">
                             <div>
@@ -284,6 +284,16 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                         <span className="text-[10px] text-gray-400 font-mono uppercase font-bold">{config.color}</span>
                                     </div>
                                 </div>
+                            </div>
+                            <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div className="space-y-1">
+                                    <span className="block text-white text-sm font-bold">Mostrar Recomendaciones</span>
+                                    <span className="block text-gray-500 text-xs">Sugerir contenido en inicio</span>
+                                </div>
+                                <Toggle
+                                    checked={config.showRecommendations}
+                                    onChange={(val) => setConfig({ ...config, showRecommendations: val })}
+                                />
                             </div>
                         </div>
                     </div>
@@ -503,10 +513,10 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* Floating Footer Navigation Bar for Admin */}
-            <div className="fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-6 duration-500 max-w-7xl mx-auto">
+            < div className="fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-6 duration-500 max-w-7xl mx-auto" >
                 <div
                     className="glass-panel rounded-[2rem] p-1.5 border-2 border-white/5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] flex items-center justify-between overflow-hidden"
                     style={{
@@ -565,7 +575,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         <span className="text-xs font-black uppercase tracking-widest leading-none">Aplicar Cambios</span>
                     </button>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
