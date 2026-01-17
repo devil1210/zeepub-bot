@@ -68,6 +68,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
 
   // Load all available levels and user permissions from API
   useEffect(() => {
+    console.log('[UserPermissions] Component mounted, loading data for:', userId, userData?.id);
     const loadData = async () => {
       try {
         setLoading(true);
@@ -100,7 +101,9 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
         if (userIdToFetch) {
           try {
             const res = await api.getUserPermissions(userIdToFetch);
+            console.log('[UserPermissions] API Response:', res);
             if (res.success && res.user) {
+              console.log('[UserPermissions] Setting user data:', res.user);
               if (res.user.username) setDisplayName(res.user.username);
               if (res.user.levelName) setDisplayLevel(res.user.levelName);
               if (res.user.levelColor) setDisplayColor(res.user.levelColor);
@@ -113,6 +116,8 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
                 isAdmin: res.user.isAdmin ?? false,
                 role: res.user.role || 'free',
               });
+            } else {
+              console.warn('[UserPermissions] API returned success=false or no user data');
             }
           } catch (err: any) {
             console.error('Error loading user permissions:', err);

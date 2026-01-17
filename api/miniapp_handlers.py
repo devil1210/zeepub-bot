@@ -1041,6 +1041,7 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
 
 async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda los permisos de un usuario específico."""
+    logger.info(f"ADMIN: Save permissions request for data: {data}")
     user_role = user_data.get("role", "free")
     if user_role != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
@@ -1095,6 +1096,7 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
 
 async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene los permisos de un usuario específico."""
+    logger.info(f"ADMIN: Get permissions request for data: {data}")
     user_role = user_data.get("role", "free")
     if user_role != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")

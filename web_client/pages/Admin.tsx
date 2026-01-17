@@ -179,9 +179,6 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     return () => clearInterval(interval);
   }, []);
 
-  if (selectedUserId) {
-    return <UserPermissions onBack={() => setSelectedUserId(null)} />;
-  }
 
   const viewOptions = [
     { id: 'overview', label: 'Monitor', icon: BarChart3 },
@@ -656,10 +653,12 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
           {/* User Permissions Editor */}
           {currentView === 'tiers' && selectedUserId && !configuringTier && (() => {
             const selectedUser = users.find(u => String(u.id) === String(selectedUserId));
+            console.log('[Admin] Rendering UserPermissions for:', selectedUserId, selectedUser);
             if (!selectedUser) return null;
 
             return (
               <UserPermissions
+                key={selectedUserId}
                 userId={String(selectedUserId)}
                 userData={{
                   username: selectedUser.username,
