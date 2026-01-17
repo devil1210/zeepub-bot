@@ -123,8 +123,25 @@ class ScannerService:
             
             if existing_book:
                 # Actualizar libro existente
+                old_filepath = existing_book.filepath
+                old_filename = existing_book.filename
+                
                 book = existing_book
                 logger.debug(f"Actualizando libro existente: {book.title}")
+                
+                # Detectar si cambió el nombre del archivo
+                new_filename = os.path.basename(filepath)
+                if old_filepath != filepath or old_filename != new_filename:
+                    logger.warning(f"Archivo renombrado/movido: {old_filepath} -> {filepath}")
+                    
+                    # Notificar a admins por Telegram
+                    asyncio.create_task(self._notify_file_renamed(
+                        title=book.title,
+                        old_path=old_filepath,
+                        new_path=filepath,
+                        old_filename=old_filename,
+                        new_filename=new_filename
+                    ))
             else:
                 # Crear nuevo libro
                 book = LocalBook(filepath=filepath, source_id=source.id)
