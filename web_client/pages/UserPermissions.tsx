@@ -336,7 +336,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                   </div>
                   <div className="relative">
                     <select
-                      value={permissions.levelId || ''}
+                      value={permissions.levelId !== null && permissions.levelId !== undefined ? permissions.levelId : ''}
                       onChange={(e) => handleLevelChange(parseInt(e.target.value))}
                       className="appearance-none bg-black/20 border border-white/10 text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-48 p-2.5 pr-8 cursor-pointer"
                     >
