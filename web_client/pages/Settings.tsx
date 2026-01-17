@@ -20,7 +20,8 @@ import {
   Home,
   Download,
   Terminal,
-  Eraser
+  Eraser,
+  Eye
 } from 'lucide-react';
 import { ReportIssueModal } from '../components/ReportIssueModal';
 import { RequestBookModal } from '../components/RequestBookModal';
@@ -31,9 +32,10 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { settings, updateSettings, resetSettings } = useTheme();
-  const { user: tgUser, isAdmin, status, customThemes } = useTelegram();
+  const { user: tgUser, isAdmin, status, customThemes, simulatedLevel, setSimulatedLevel } = useTelegram();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [availableLevels, setAvailableLevels] = useState<Array<{ id: number, name: string, color: string }>>([]);
 
   const handleColorChange = (color: string) => {
     updateSettings({
@@ -48,10 +50,66 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
     }
   };
 
+  // Fetch available levels for admin simulation
+  React.useEffect(() => {
+    if (isAdmin) {
+      import('../src/services/api').then(({ api }) => {
+        api.getAdminTiers().then((res: any) => {
+          if (res.levels) {
+            setAvailableLevels(res.levels.map((l: any) => ({
+              id: l.id,
+              name: l.name,
+              color: l.color || '#6b7280'
+            })));
+          }
+        }).catch(console.error);
+      });
+    }
+  }, [isAdmin]);
+
   return (
     <div className="max-w-6xl mx-auto pb-32 md:pb-12 p-4 md:p-8 animate-in fade-in duration-300 font-sans text-gray-100">
       <ReportIssueModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
       <RequestBookModal isOpen={isRequestModalOpen} onClose={() => setIsRequestModalOpen(false)} />
+
+      {/* Admin Level Simulation Banner */}
+      {isAdmin && (
+        <div className="glass-panel p-4 rounded-2xl border border-purple-500/30 bg-purple-500/10 mb-6 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/20">
+                <Eye className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">Simulación de Nivel</p>
+                <p className="text-xs text-gray-400">Ver la interfaz como un usuario de determinado nivel</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <select
+                value={simulatedLevel || ''}
+                onChange={(e) => setSimulatedLevel(e.target.value ? parseInt(e.target.value) : null)}
+                className="px-4 py-2 text-sm font-medium border border-white/10 bg-black/20 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 rounded-xl appearance-none min-w-[160px]"
+              >
+                <option value="">Sin simulación</option>
+                {availableLevels.map(level => (
+                  <option key={level.id} value={level.id} style={{ color: level.color }}>
+                    {level.name}
+                  </option>
+                ))}
+              </select>
+              {simulatedLevel && (
+                <button
+                  onClick={() => setSimulatedLevel(null)}
+                  className="px-3 py-2 text-xs font-bold bg-red-500/20 text-red-400 rounded-lg border border-red-500/20 hover:bg-red-500/30 transition-colors"
+                >
+                  Desactivar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

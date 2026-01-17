@@ -35,6 +35,9 @@ interface TelegramContextType {
   isExpanded: boolean;
   ready: boolean;
   refreshStatus: () => Promise<void>;
+  // Level simulation for admins
+  simulatedLevel: number | null;
+  setSimulatedLevel: (levelId: number | null) => void;
 }
 
 const TelegramContext = createContext<TelegramContextType | undefined>(undefined);
@@ -48,6 +51,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isBetaTester, setIsBetaTester] = useState(false);
   const [customThemes, setCustomThemes] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(true);
+  const [simulatedLevel, setSimulatedLevel] = useState<number | null>(null);
   const { updateSettings } = useTheme();
 
   const refreshStatus = async () => {
@@ -156,7 +160,9 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       showRecommendations: showRecommendations,
       isExpanded,
       ready,
-      refreshStatus
+      refreshStatus,
+      simulatedLevel,
+      setSimulatedLevel
     }}>
       {children}
     </TelegramContext.Provider>
