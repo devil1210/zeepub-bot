@@ -1001,6 +1001,97 @@ async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, 
         return {"success": False, "message": str(e)}
 
 
+async def handle_admin_restart_docker(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Restart Docker container (admin only)."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    try:
+        import subprocess
+        
+        # Get container name from environment
+        container_name = os.getenv("CONTAINER_NAME", "zeepub-bot")
+        
+        logger.info(f"Admin {user_data.get('telegram_id')} requesting Docker restart for container: {container_name}")
+        
+        # Execute docker restart command
+        result = subprocess.run(
+            ["docker", "restart", container_name],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            logger.info(f"Docker container {container_name} restart initiated successfully")
+            return {
+                "success": True,
+                "message": f"Contenedor {container_name} reiniciándose...",
+                "output": result.stdout.strip()
+            }
+        else:
+            logger.error(f"Docker restart failed: {result.stderr}")
+            return {
+                "success": False,
+                "message": f"Error al reiniciar: {result.stderr}"
+            }
+    except subprocess.TimeoutExpired:
+        return {"success": False, "message": "Timeout al ejecutar comando docker"}
+    except FileNotFoundError:
+        return {"success": False, "message": "Docker no está disponible en el sistema"}
+    except Exception as e:
+        logger.error(f"Error en handle_admin_restart_docker: {e}")
+        return {"success": False, "message": str(e)}
+
+
+async def handle_admin_update_system(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Trigger system update (git pull + restart) - admin only."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    try:
+        import subprocess
+        
+        force = data.get("force", False)
+        logger.info(f"Admin {user_data.get('telegram_id')} requesting system update (force={force})")
+        
+        # Execute git pull
+        git_cmd = ["git", "pull"]
+        if force:
+            # Reset local changes and force pull
+            subprocess.run(["git", "reset", "--hard", "HEAD"], capture_output=True, timeout=10)
+            git_cmd = ["git", "pull", "--force"]
+        
+        result = subprocess.run(git_cmd, capture_output=True, text=True, timeout=30, cwd="/app")
+        
+        if result.returncode == 0:
+            # Schedule container restart
+            container_name = os.getenv("CONTAINER_NAME", "zeepub-bot")
+            subprocess.Popen(["docker", "restart", container_name])
+            
+            logger.info(f"System update successful, restart scheduled")
+            return {
+                "success": True,
+                "message": "Actualización completada. Bot reiniciándose...",
+                "output": result.stdout.strip(),
+                "restarting": True
+            }
+        else:
+            logger.error(f"Git pull failed: {result.stderr}")
+            return {
+                "success": False,
+                "message": f"Error al actualizar: {result.stderr}",
+                "output": result.stdout.strip()
+            }
+    except subprocess.TimeoutExpired:
+        return {"success": False, "message": "Timeout al ejecutar git pull"}
+    except Exception as e:
+        logger.error(f"Error en handle_admin_update_system: {e}")
+        return {"success": False, "message": str(e)}
+
+
 async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda la configuración completa de un nivel/tier."""
     user_role = user_data.get("role", "free")
