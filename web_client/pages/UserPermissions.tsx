@@ -34,56 +34,114 @@ interface PermissionsState {
   isAdmin: boolean;
 }
 
+interface Level {
+  id: number;
+  name: string;
+  color: string;
+}
+
 export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId, userData }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // Use passed userData immediately for display
   const [displayName, setDisplayName] = useState(userData?.username || 'Usuario');
   const [displayId] = useState(userData?.id || userId || '00000000');
   const [displayLevel, setDisplayLevel] = useState(userData?.level || 'Básico');
+  const [displayColor, setDisplayColor] = useState('#6b7280');
+
+  // Available levels from database
+  const [allLevels, setAllLevels] = useState<Level[]>([]);
 
   const [permissions, setPermissions] = useState<PermissionsState>({
     levelId: null,
-    levelName: 'Básico',
+    levelName: userData?.level || 'Básico',
     canReport: true,
     bypassLimits: false,
     betaTester: false,
     isAdmin: false,
   });
 
-  // Load permissions from API
+  // Load all available levels and user permissions from API
   useEffect(() => {
-    const loadPermissions = async () => {
-      if (!userId && !userData?.id) {
-        setLoading(false);
-        return;
-      }
-
+    const loadData = async () => {
       try {
         setLoading(true);
-        const res = await api.getUserPermissions(userId || userData?.id || '');
-        if (res.success && res.user) {
-          setDisplayName(res.user.username || displayName);
-          setDisplayLevel(res.user.levelName || 'Básico');
-          setPermissions({
-            levelId: res.user.levelId,
-            levelName: res.user.levelName || 'Básico',
-            canReport: res.user.canReport ?? true,
-            bypassLimits: res.user.bypassLimits ?? false,
-            betaTester: res.user.betaTester ?? false,
-            isAdmin: res.user.isAdmin ?? false,
-          });
+
+        // Fetch all available levels
+        try {
+          const levelsRes = await api.getAdminTiers();
+          if (levelsRes.levels && Array.isArray(levelsRes.levels)) {
+            setAllLevels(levelsRes.levels.map((l: any) => ({
+              id: l.id,
+              name: l.name,
+              color: l.color || '#6b7280'
+            })));
+          }
+        } catch (e) {
+          console.error('Error loading levels:', e);
+          // Fallback levels
+          setAllLevels([
+            { id: 1, name: 'Administrador', color: '#FF6B6B' },
+            { id: 2, name: 'Staff', color: '#FF9800' },
+            { id: 3, name: 'Premium', color: '#4CAF50' },
+            { id: 4, name: 'VIP', color: '#9C27B0' },
+            { id: 5, name: 'Patrocinador', color: '#2196F3' },
+            { id: 6, name: 'Lector', color: '#9E9E9E' }
+          ]);
+        }
+
+        // Fetch user permissions if userId is available
+        const userIdToFetch = userId || userData?.id;
+        if (userIdToFetch) {
+          try {
+            const res = await api.getUserPermissions(userIdToFetch);
+            if (res.success && res.user) {
+              if (res.user.username) setDisplayName(res.user.username);
+              if (res.user.levelName) setDisplayLevel(res.user.levelName);
+              if (res.user.levelColor) setDisplayColor(res.user.levelColor);
+              setPermissions({
+                levelId: res.user.levelId,
+                levelName: res.user.levelName || 'Básico',
+                canReport: res.user.canReport ?? true,
+                bypassLimits: res.user.bypassLimits ?? false,
+                betaTester: res.user.betaTester ?? false,
+                isAdmin: res.user.isAdmin ?? false,
+              });
+            }
+          } catch (err: any) {
+            console.error('Error loading user permissions:', err);
+            // Use userData if API fails
+          }
         }
       } catch (err: any) {
-        console.error('Error loading user permissions:', err);
+        console.error('Error loading data:', err);
       } finally {
         setLoading(false);
       }
     };
-    loadPermissions();
+    loadData();
   }, [userId, userData?.id]);
+
+  // Update level color when level changes
+  useEffect(() => {
+    const selectedLevel = allLevels.find(l => l.id === permissions.levelId);
+    if (selectedLevel) {
+      setDisplayLevel(selectedLevel.name);
+      setDisplayColor(selectedLevel.color);
+    }
+  }, [permissions.levelId, allLevels]);
+
+  const handleLevelChange = (levelId: number) => {
+    const level = allLevels.find(l => l.id === levelId);
+    setPermissions({
+      ...permissions,
+      levelId,
+      levelName: level?.name || 'Básico'
+    });
+  };
 
   const handleSave = async () => {
     try {
@@ -163,7 +221,10 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
             <div className="glass-panel rounded-2xl border border-white/5 p-6 flex items-start sm:items-center gap-5 shadow-lg">
               <div className="relative">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-cyan-300 p-1">
-                  <div className="w-full h-full rounded-full border-2 border-[#121212] bg-gradient-to-br from-primary/30 to-purple-500/30 flex items-center justify-center text-2xl font-black text-white">
+                  <div
+                    className="w-full h-full rounded-full border-2 border-[#121212] flex items-center justify-center text-2xl font-black text-white"
+                    style={{ background: `linear-gradient(135deg, ${displayColor}40, ${displayColor}20)` }}
+                  >
                     {displayName.charAt(0).toUpperCase()}
                   </div>
                 </div>
@@ -172,7 +233,14 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                   <h2 className="text-xl font-bold text-white truncate">{displayName}</h2>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-900/30 text-blue-300 border border-blue-500/20">
+                  <span
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border"
+                    style={{
+                      backgroundColor: `${displayColor}20`,
+                      color: displayColor,
+                      borderColor: `${displayColor}40`
+                    }}
+                  >
                     {displayLevel}
                   </span>
                 </div>
@@ -212,16 +280,16 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
                   </div>
                   <div className="relative">
                     <select
-                      value={permissions.levelName}
-                      onChange={(e) => setPermissions({ ...permissions, levelName: e.target.value })}
-                      className="appearance-none bg-black/20 border border-white/10 text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-40 p-2.5 pr-8 cursor-pointer"
+                      value={permissions.levelId || ''}
+                      onChange={(e) => handleLevelChange(parseInt(e.target.value))}
+                      className="appearance-none bg-black/20 border border-white/10 text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-48 p-2.5 pr-8 cursor-pointer"
                     >
-                      <option value="Lector">Básico (Gratis)</option>
-                      <option value="Patrocinador">Patrocinador</option>
-                      <option value="VIP">VIP</option>
-                      <option value="Premium">Premium</option>
-                      <option value="Staff">Staff</option>
-                      <option value="Administrador">Administrador</option>
+                      <option value="" disabled>Seleccionar nivel...</option>
+                      {allLevels.map((level) => (
+                        <option key={level.id} value={level.id} className="bg-gray-900">
+                          {level.name}
+                        </option>
+                      ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-gray-500">
                       <ChevronDown className="w-4 h-4" />
@@ -273,8 +341,9 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-white">Etiquetas Beta Tester</span>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-900/30 text-blue-400 border border-blue-500/20">NEW UI</span>
                     </div>
-                    <p className="text-sm text-gray-400">Acceso a funciones experimentales e info de depuración.</p>
+                    <p className="text-sm text-gray-400">Acceso a la interfaz nueva y funciones experimentales.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -339,12 +408,11 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
               </div>
               <div className="p-4 overflow-y-auto max-h-[600px]">
                 <div className="relative pl-4 border-l-2 border-white/10 space-y-6">
-                  {/* Log entries would be loaded from API in a real implementation */}
                   <div className="relative">
                     <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-[#121212]"></div>
                     <p className="text-xs text-gray-500 mb-0.5 font-mono">Ahora</p>
                     <p className="text-sm text-gray-200 mb-1">
-                      Editando permisos
+                      Editando permisos de <span className="font-bold text-primary">{displayName}</span>
                     </p>
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center text-[8px] text-white font-bold">A</div>
@@ -353,13 +421,17 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
                   </div>
                   <div className="relative">
                     <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-gray-600 ring-4 ring-[#121212]"></div>
-                    <p className="text-xs text-gray-500 mb-0.5 font-mono">Usuario unido</p>
+                    <p className="text-xs text-gray-500 mb-0.5 font-mono">Nivel Actual</p>
                     <p className="text-sm text-gray-200 mb-1">
-                      Registro inicial
+                      <span style={{ color: displayColor }}>{displayLevel}</span>
                     </p>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-gray-500">ZeepubBot</span>
-                    </div>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-gray-600 ring-4 ring-[#121212]"></div>
+                    <p className="text-xs text-gray-500 mb-0.5 font-mono">ID de Usuario</p>
+                    <p className="text-sm text-gray-200 mb-1 font-mono">
+                      {displayId}
+                    </p>
                   </div>
                 </div>
               </div>
