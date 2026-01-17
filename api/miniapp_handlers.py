@@ -222,10 +222,10 @@ async def handle_recommendations(data: Dict[str, Any], user_data: Dict[str, Any]
     from services.recommendation_service import RecommendationService
 
     user_id = user_data.get("user_id")
-    user_role = user_data.get("role", "free")
+    # user_role = user_data.get("role", "free")
 
-    if user_role not in ("admin", "staff"):
-        raise HTTPException(status_code=403, detail="Beta exclusiva para Staff")
+    # if user_role not in ("admin", "staff"):
+    #     raise HTTPException(status_code=403, detail="Beta exclusiva para Staff")
 
     limit = data.get("limit", 10)
     recs = await RecommendationService.get_recommendations(user_id, limit=limit)

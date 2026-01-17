@@ -226,16 +226,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                 </div>
               </div>
 
-              {/* Mobile Inline Actions - Simplified */}
-              <div className="md:hidden flex gap-3">
-                <button
-                  onClick={handleDownload}
-                  className={`flex-1 py-3 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 ${hasDownloaded ? 'bg-green-600' : 'bg-[#2AABEE]'}`}
-                >
-                  {hasDownloaded ? <Check className="w-4 h-4" /> : <Download className="w-4 h-4" />}
-                  {hasDownloaded ? 'Descargado' : 'Descargar'}
-                </button>
-              </div>
 
               {/* Extra Info visible in sidebar (Desktop) */}
               <div className="hidden md:block glass-panel p-4 rounded-xl border border-black/5 dark:border-white/5 space-y-4 bg-white/50 dark:bg-transparent">
@@ -324,6 +314,18 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                     <Calendar className="w-4 h-4" />
                     <span>{displayData.publishedDate}</span>
                   </div>
+                  {displayData.translator && (
+                    <button onClick={() => handleSearch(displayData.translator, 'translator')} className="flex items-center gap-2 group hover:text-black dark:hover:text-gray-200 transition-colors">
+                      <Languages className="w-4 h-4 text-indigo-500" />
+                      <span className="font-bold group-hover:underline">{displayData.translator}</span>
+                    </button>
+                  )}
+                  {displayData.lastUpdated !== 'N/A' && (
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <Clock className="w-4 h-4" />
+                      <span className="font-bold">Actualizado: {displayData.lastUpdated}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -441,7 +443,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
       </div>
 
       {/* Floating Bottom Navigation - Updated Design: Squared with rounded corners and transparency settings */}
-      <div className="md:hidden fixed bottom-6 left-4 right-4 z-40 animate-in slide-in-from-bottom-4 duration-300">
+      <div className="md:hidden fixed bottom-6 left-4 right-4 z-40 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{

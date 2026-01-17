@@ -19,6 +19,7 @@ interface NavState {
   tab: string;
   series?: Series | null;
   volume?: Volume | null;
+  bookId?: string | null;
 }
 
 const AppContent: React.FC = () => {
@@ -32,11 +33,17 @@ const AppContent: React.FC = () => {
   // Helper to push new state
   const navigateTo = useCallback((tab: string, series: Series | null = null, volume: Volume | null = null) => {
     setNavStack(prev => {
-      // If we are just switching main tabs (dashboard, search, library, settings), clear stack and set new root
+      // Handle 'book:ID' navigation
+      if (tab.startsWith('book:')) {
+        const bookId = tab.split(':')[1];
+        return [...prev, { tab: 'book-detail', bookId }];
+      }
+
+      // If we are just switching main tabs, clear stack and set new root
       if (['dashboard', 'search', 'library', 'settings', 'admin', 'requests', 'downloads'].includes(tab) && !series && !volume) {
         return [{ tab }];
       }
-      // Otherwise push to stack (drill down)
+      // Otherwise push to stack
       return [...prev, { tab, series, volume }];
     });
   }, []);
@@ -134,8 +141,20 @@ const AppContent: React.FC = () => {
 
   // Render Logic
   const renderContent = () => {
-    const { tab, series, volume } = currentState;
+    const { tab, series, volume, bookId } = currentState;
     const { isAdmin } = useTelegram();
+
+    // If a specific book is requested by ID (e.g., from downloads)
+    if (bookId) {
+      // This would typically involve fetching book/volume/series details by bookId
+      // For now, we'll use a placeholder or navigate to a generic search if data isn't available
+      // In a real app, you'd fetch the book and its associated series/volume here.
+      // Example: const { book, volume, series } = useFetchBookDetails(bookId);
+      // If data is fetched, render BookDetail with that data.
+      // If not, perhaps show a loading state or redirect.
+      console.warn(`Direct book navigation by ID (${bookId}) is not fully implemented. Redirecting to search.`);
+      return <Search onSelectSeries={onSelectSeries} onNavigate={onNavigate} />;
+    }
 
     if (volume && series) {
       return (

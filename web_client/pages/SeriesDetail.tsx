@@ -119,9 +119,17 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
     const sorted = [...volumes];
     switch (activeSort) {
       case 'num-asc':
-        return sorted.sort((a, b) => (a.volumeNumber || 0) - (b.volumeNumber || 0));
+        return sorted.sort((a, b) => {
+          const numA = typeof a.volumeNumber === 'string' ? parseFloat(a.volumeNumber) : (a.volumeNumber || 0);
+          const numB = typeof b.volumeNumber === 'string' ? parseFloat(b.volumeNumber) : (b.volumeNumber || 0);
+          return numA - numB;
+        });
       case 'num-desc':
-        return sorted.sort((a, b) => (b.volumeNumber || 0) - (a.volumeNumber || 0));
+        return sorted.sort((a, b) => {
+          const numA = typeof a.volumeNumber === 'string' ? parseFloat(a.volumeNumber) : (a.volumeNumber || 0);
+          const numB = typeof b.volumeNumber === 'string' ? parseFloat(b.volumeNumber) : (b.volumeNumber || 0);
+          return numB - numA;
+        });
       case 'rating':
         return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       case 'date':
@@ -213,9 +221,12 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 )}
               </div>
 
-              <div className="flex items-center gap-4 text-xs sm:text-sm text-gray-300 font-mono">
+              <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-gray-300 font-mono">
                 <span className="flex items-center gap-1.5"><Library className="w-4 h-4 text-primary" /> {volumes.length} Volúmenes</span>
                 <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-primary" /> {realSeries.status || 'Completado'}</span>
+                {realSeries.lastUpdated && (
+                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-primary" /> Actualizado: {realSeries.lastUpdated}</span>
+                )}
               </div>
             </div>
           </div>
@@ -363,10 +374,17 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300 flex flex-col gap-3">
+      <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300 flex flex-col gap-3 max-w-5xl mx-auto">
         {isSortMenuOpen && (
-          <div className="glass-panel rounded-2xl p-2 border border-white/10 shadow-2xl bg-[#0f1115]/95 backdrop-blur-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          <div
+            className="glass-panel rounded-2xl p-4 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
+            style={{
+              background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
+              backdropFilter: `blur(${settings.glassBlur}px)`,
+              WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+            }}
+          >
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { id: 'num-asc', label: '1 - 9', icon: SortAsc },
                 { id: 'num-desc', label: '9 - 1', icon: SortAsc },
@@ -379,9 +397,9 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     setActiveSort(option.id);
                     setIsSortMenuOpen(false);
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${activeSort === option.id ? 'bg-[#2AABEE] text-white border-[#2AABEE] shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'}`}
+                  className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${activeSort === option.id ? 'bg-[#2AABEE] text-white border-[#2AABEE] shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white'}`}
                 >
-                  <option.icon className="w-3 h-3" />
+                  <option.icon className="w-3.5 h-3.5" />
                   {option.label}
                 </button>
               ))}

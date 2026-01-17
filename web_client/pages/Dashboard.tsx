@@ -32,7 +32,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       try {
         const [historyRes, recRes] = await Promise.all([
           api.getDownloadHistory(),
-          api.getRecommendations(6)
+          api.getRecommendations(4)
         ]);
 
         if (historyRes && historyRes.downloads) {
@@ -54,7 +54,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     fetchData();
   }, []);
 
-  const userName = status?.user?.username || tgUser?.first_name || "Lector";
+  const userName = tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : (status?.user?.username || "Lector");
   const userLevel = status?.user?.status_label || "Lector";
   const downloadsUsed = status?.user?.downloads?.used || 0;
   const downloadsLimit = status?.user?.downloads?.limit || 0;
@@ -149,9 +149,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               {loading ? (
-                Array(6).fill(0).map((_, i) => (
+                Array(4).fill(0).map((_, i) => (
                   <div key={i} className="aspect-[2/3] rounded-2xl bg-white/5 animate-pulse border border-white/5 shadow-inner"></div>
                 ))
               ) : (
@@ -159,7 +159,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <div
                     key={i}
                     className="group cursor-pointer flex flex-col"
-                    onClick={() => onNavigate && onNavigate('search')}
+                    onClick={() => onNavigate && onNavigate(`book:${book.id}`)}
                   >
                     <div className="relative aspect-[2/3] rounded-2xl overflow-hidden mb-3 border border-white/10 shadow-2xl group-hover:scale-[1.05] group-hover:shadow-primary/20 transition-all duration-500 ring-1 ring-white/5">
                       <img

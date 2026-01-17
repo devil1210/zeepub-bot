@@ -161,12 +161,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
         <div>
           <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
             <ShieldCheck className="text-primary w-8 h-8 md:w-12 md:h-12" />
-            Panel <span className="text-primary">Admin</span>
+            Panel <span className="text-primary">de Control</span>
           </h1>
-          <p className="text-gray-400 text-sm md:text-base mt-2 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-green-500" />
-            Control total de la plataforma ZeepubBot
-          </p>
         </div>
 
         <div className="flex items-center gap-2 p-1 bg-white/5 rounded-2xl border border-white/5">
