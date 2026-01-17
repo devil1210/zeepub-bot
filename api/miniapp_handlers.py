@@ -1087,6 +1087,11 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
         # Update user in Supabase
         client.table('users').update(update_data).eq('telegram_id', int(user_id)).execute()
         
+        # Invalidate bot's user cache so changes are reflected immediately
+        from services.user_service import invalidate_user_cache
+        import asyncio
+        asyncio.create_task(invalidate_user_cache(int(user_id)))
+        
         logger.info(f"ADMIN: Saved user permissions for user {user_id}")
         return {"success": True}
     except Exception as e:
