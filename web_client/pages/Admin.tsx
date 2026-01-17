@@ -33,6 +33,7 @@ import {
   Eraser
 } from 'lucide-react';
 import { UserPermissions } from './UserPermissions';
+import { TierConfiguration } from './TierConfiguration';
 import { api } from '../src/services/api';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -88,6 +89,7 @@ interface AdminProps {
 export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const { settings } = useTheme();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [configuringTier, setConfiguringTier] = useState<{ name: string; color: string } | null>(null);
   const [currentView, setCurrentView] = useState<'overview' | 'system' | 'tiers'>('overview');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [levels, setLevels] = useState<UserLevel[]>([]);
@@ -436,7 +438,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
 
           {/* ==================== TIERS VIEW ==================== */}
-          {currentView === 'tiers' && !selectedUserId && (
+          {currentView === 'tiers' && !selectedUserId && !configuringTier && (
             <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-10 animate-in fade-in duration-300 px-1">
               {/* Page Heading */}
               <div className="flex flex-wrap justify-between gap-6">
@@ -469,7 +471,12 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                       <li className="flex items-center gap-2 text-xs text-gray-400"><ShieldCheck className="w-3 h-3 text-green-500" /> 1 Descarga Diaria</li>
                       <li className="flex items-center gap-2 text-xs text-gray-400"><Eraser className="w-3 h-3 text-red-500" /> Sin Solicitudes</li>
                     </ul>
-                    <button className="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-colors border border-white/5">Editar Permisos</button>
+                    <button
+                      onClick={() => setConfiguringTier({ name: 'Gratuito', color: '#6b7280' })}
+                      className="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-colors border border-white/5"
+                    >
+                      Editar Permisos
+                    </button>
                   </div>
                 </div>
 
@@ -487,7 +494,12 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                       <li className="flex items-center gap-2 text-xs text-gray-300"><ShieldCheck className="w-3 h-3 text-primary" /> Solicitudes Prioritarias</li>
                       <li className="flex items-center gap-2 text-xs text-gray-300"><ShieldCheck className="w-3 h-3 text-primary" /> Acceso Anticipado</li>
                     </ul>
-                    <button className="w-full py-2 rounded-lg bg-primary hover:bg-primary-dark text-xs font-bold text-white transition-colors shadow-lg shadow-primary/20">Configurar</button>
+                    <button
+                      onClick={() => setConfiguringTier({ name: 'VIP', color: settings.primaryColor })}
+                      className="w-full py-2 rounded-lg bg-primary hover:bg-primary-dark text-xs font-bold text-white transition-colors shadow-lg shadow-primary/20"
+                    >
+                      Configurar
+                    </button>
                   </div>
                 </div>
 
@@ -505,7 +517,12 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                       <li className="flex items-center gap-2 text-xs text-gray-300"><ShieldCheck className="w-3 h-3 text-yellow-500" /> Insignia de Perfil</li>
                       <li className="flex items-center gap-2 text-xs text-gray-300"><ShieldCheck className="w-3 h-3 text-yellow-500" /> Canal de Soporte Directo</li>
                     </ul>
-                    <button className="w-full py-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-xs font-bold text-yellow-500 border border-yellow-500/20 transition-colors">Configurar</button>
+                    <button
+                      onClick={() => setConfiguringTier({ name: 'Leyenda', color: '#eab308' })}
+                      className="w-full py-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-xs font-bold text-yellow-500 border border-yellow-500/20 transition-colors"
+                    >
+                      Configurar
+                    </button>
                   </div>
                 </div>
               </div>
@@ -560,8 +577,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                             <td className="p-4">
                               <div className="flex items-center gap-3">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isVip ? 'bg-purple-500/20 text-purple-400' :
-                                    isLegend ? 'bg-yellow-500/20 text-yellow-400' :
-                                      'bg-gray-700 text-gray-300'
+                                  isLegend ? 'bg-yellow-500/20 text-yellow-400' :
+                                    'bg-gray-700 text-gray-300'
                                   }`}>
                                   {user.username.charAt(0).toUpperCase()}
                                 </div>
@@ -570,8 +587,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                             </td>
                             <td className="p-4">
                               <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider ${isVip ? 'bg-purple-500/20 text-purple-300 border border-purple-500/20' :
-                                  isLegend ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/20' :
-                                    'bg-white/10 text-gray-400 border border-white/10'
+                                isLegend ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/20' :
+                                  'bg-white/10 text-gray-400 border border-white/10'
                                 }`}>
                                 {tierName}
                               </span>
@@ -630,6 +647,19 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 id: selectedUserId,
                 level: users.find(u => u.id === selectedUserId)!.level?.name || 'Básico'
               } : undefined}
+            />
+          )}
+
+          {/* Tier Configuration Editor */}
+          {currentView === 'tiers' && configuringTier && (
+            <TierConfiguration
+              tierName={configuringTier.name}
+              tierColor={configuringTier.color}
+              onBack={() => setConfiguringTier(null)}
+              onSave={(config) => {
+                console.log('Saving tier config:', config);
+                // TODO: Save to backend
+              }}
             />
           )}
         </div >
