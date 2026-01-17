@@ -3,6 +3,7 @@ import re
 import json
 import hashlib
 import logging
+import asyncio
 from datetime import datetime
 from utils.library_db import get_session, init_library_db, COVERS_DIR
 from models.library_models import LibrarySource, LocalBook
