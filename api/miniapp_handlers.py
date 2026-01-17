@@ -616,43 +616,77 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
     session.close()
 
     # 3. Revenue Estimation
-    # Count users per tier and multiply by price
-    async with user_repo.db.connection() as conn:
-        cursor = await conn.execute("""
-            SELECT ul.price, COUNT(u.telegram_id) 
-            FROM user_levels ul
-            LEFT JOIN users u ON u.level_id = ul.id
-            GROUP BY ul.id
-        """)
-        tier_revenue = await cursor.fetchall()
-        total_revenue = sum(price * count for price, count in tier_revenue)
+    total_revenue = 0.0
+    if user_repo.supabase.is_active:
+        try:
+            # We can use RPC or join
+            res = user_repo.supabase.get_client().table('users').select("level:user_levels(price)").execute()
+            if res.data:
+                total_revenue = sum(u.get('level', {}).get('price', 0) for u in res.data)
+        except Exception as e:
+            logger.error(f"Supabase revenue error: {e}")
+    else:
+        async with user_repo.db.connection() as conn:
+            cursor = await conn.execute("""
+                SELECT ul.price, COUNT(u.telegram_id) 
+                FROM user_levels ul
+                LEFT JOIN users u ON u.level_id = ul.id
+                GROUP BY ul.id
+            """)
+            tier_revenue = await cursor.fetchall()
+            total_revenue = sum(price * count for price, count in tier_revenue)
 
     # 4. Popular Book (Last 30 days)
-    async with user_repo.db.connection() as conn:
-        cursor = await conn.execute("""
-            SELECT title, clean_title, book_hash, COUNT(*) as dls
-            FROM download_history 
-            WHERE downloaded_at >= datetime('now', '-30 days')
-            GROUP BY book_hash, clean_title
-            ORDER BY dls DESC
-            LIMIT 1
-        """)
-        row = await cursor.fetchone()
-        popular_book = None
-        if row:
-            title, clean_title, book_hash, dls = row
-            popular_book = {
-                "title": clean_title or title,
-                "downloads": dls,
-                "author": "N/A" # Default
-            }
-            # Search author in library_db
-            session = get_session()
-            lb = session.query(LocalBook).filter((LocalBook.content_hash == book_hash) | (LocalBook.title == title)).first()
-            if lb:
-                popular_book["author"] = lb.author
-                popular_book["cover"] = lb.cover_path
-            session.close()
+    popular_book = None
+    if download_repo.supabase.is_active:
+        try:
+            three_days_ago = (datetime.now() - timedelta(days=30)).isoformat()
+            res = download_repo.supabase.get_client().table('download_history').select("title, clean_title, book_hash").gte('downloaded_at', three_days_ago).execute()
+            if res.data:
+                from collections import Counter
+                counts = Counter((f"{r['book_hash']}|{r['title']}|{r['clean_title']}") for r in res.data)
+                best = counts.most_common(1)
+                if best:
+                    key, count = best[0]
+                    b_hash, b_title, b_clean = key.split('|')
+                    popular_book = {
+                        "title": b_clean if b_clean != 'None' else b_title,
+                        "downloads": count,
+                        "author": "N/A"
+                    }
+                    # Get author from library
+                    session = get_session()
+                    lb = session.query(LocalBook).filter((LocalBook.content_hash == b_hash) | (LocalBook.title == b_title)).first()
+                    if lb:
+                        popular_book["author"] = lb.author
+                        popular_book["cover"] = lb.cover_path
+                    session.close()
+        except Exception as e:
+            logger.error(f"Supabase popular book error: {e}")
+    else:
+        async with user_repo.db.connection() as conn:
+            cursor = await conn.execute("""
+                SELECT title, clean_title, book_hash, COUNT(*) as dls
+                FROM download_history 
+                WHERE downloaded_at >= datetime('now', '-30 days')
+                GROUP BY book_hash, clean_title
+                ORDER BY dls DESC
+                LIMIT 1
+            """)
+            row = await cursor.fetchone()
+            if row:
+                title, clean_title, book_hash, dls = row
+                popular_book = {
+                    "title": clean_title or title,
+                    "downloads": dls,
+                    "author": "N/A"
+                }
+                session = get_session()
+                lb = session.query(LocalBook).filter((LocalBook.content_hash == book_hash) | (LocalBook.title == title)).first()
+                if lb:
+                    popular_book["author"] = lb.author
+                    popular_book["cover"] = lb.cover_path
+                session.close()
 
     return {
         "revenue": round(total_revenue, 2),

@@ -553,7 +553,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
       </div>
 
       {/* Mobile Bottom Floating Action Bar for Settings */}
-      <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
+      <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300">
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{

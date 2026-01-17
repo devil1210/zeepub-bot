@@ -422,7 +422,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       </div>
 
       {/* Mobile Catalog Bottom Bar */}
-      <div className="md:hidden fixed bottom-6 left-4 right-4 z-40 flex flex-col gap-3">
+      <div className="md:hidden fixed bottom-6 left-8 right-8 z-40 flex flex-col gap-3">
         {isSortMenuOpen && (
           <div className="glass-panel rounded-2xl p-2 border border-white/10 shadow-2xl bg-[#0f1115]/95 backdrop-blur-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">

@@ -170,13 +170,13 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             <button
               key={v.id}
               onClick={() => setCurrentView(v.id)}
-              className={`flex items-center gap-2 px-4 md:px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${currentView === v.id
+              className={`flex items-center gap-2 px-3 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentView === v.id
                 ? 'bg-primary text-white shadow-lg shadow-primary/30'
                 : 'text-gray-500 hover:text-white hover:bg-white/5'
                 }`}
             >
-              <v.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{v.label}</span>
+              <v.icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="inline">{v.label}</span>
             </button>
           ))}
         </div>
@@ -512,7 +512,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       )}
 
       {/* Admin Mobile Floating Navigation */}
-      <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
+      <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
@@ -540,7 +540,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 <div className={`p-1.5 rounded-full transition-all duration-300 ${currentView === v.id ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
                   <v.icon className={`w-4 h-4 ${currentView === v.id ? 'text-white' : ''}`} strokeWidth={2.5} />
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-widest mt-1">{v.label.split(' ')[0]}</span>
+                <span className={`text-[8px] font-black uppercase tracking-tight mt-1 whitespace-nowrap overflow-hidden text-center`}>{v.label}</span>
               </button>
               {v.id !== 'tiers' && <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>}
             </React.Fragment>

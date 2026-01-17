@@ -436,6 +436,21 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         }
         role = level_to_role.get(level_id, 'free')
         
+        if self.supabase.is_active:
+            try:
+                self.supabase.get_client().table('users').update({
+                    "level_id": level_id,
+                    "role": role
+                }).eq('telegram_id', telegram_id).execute()
+                
+                # Sync admins table in Supabase
+                if role == 'admin':
+                    self.supabase.get_client().table('admins').upsert({"user_id": telegram_id}).execute()
+                else:
+                    self.supabase.get_client().table('admins').delete().eq('user_id', telegram_id).execute()
+            except Exception as e:
+                logger.error(f"Supabase update_user_level error: {e}")
+
         async with self.db.connection() as conn:
             await conn.execute(
                 "UPDATE users SET level_id = ?, role = ? WHERE telegram_id = ?",
@@ -454,6 +469,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         """
         fields = []
         params = []
+        sb_data = {}
         
         mapping = {
             "hasAccess": "has_mini_app_access",
@@ -472,9 +488,16 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if isinstance(val, bool):
                     val = 1 if val else 0
                 params.append(val)
+                sb_data[col] = data[key]
         
         if not fields:
             return
+
+        if self.supabase.is_active and sb_data:
+            try:
+                self.supabase.get_client().table('user_levels').update(sb_data).eq('id', level_id).execute()
+            except Exception as e:
+                logger.error(f"Supabase update_level error: {e}")
             
         fields.append("updated_at = CURRENT_TIMESTAMP")
         params.append(level_id)
@@ -488,6 +511,14 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         """
         Verifica si un usuario está en la tabla de admins.
         """
+        if self.supabase.is_active:
+            try:
+                res = self.supabase.get_client().table('admins').select("user_id").eq('user_id', telegram_id).execute()
+                if res.data:
+                    return True
+            except Exception as e:
+                logger.error(f"Supabase is_admin error: {e}")
+
         async with self.db.connection() as conn:
             cursor = await conn.execute(
                 "SELECT 1 FROM admins WHERE user_id = ?", (telegram_id,)
