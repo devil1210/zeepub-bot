@@ -661,6 +661,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
               tierName={configuringTier.name}
               tierColor={configuringTier.color}
               onBack={() => setConfiguringTier(null)}
+              onNavigate={onNavigate}
               onSave={(config) => {
                 console.log('Saving tier config:', config);
                 // TODO: Save to backend

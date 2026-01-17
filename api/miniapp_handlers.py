@@ -937,8 +937,8 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
         return {"success": False, "message": "Supabase no está habilitado."}
     
     try:
-        from core.supabase_client import get_supabase_client
-        client = get_supabase_client()
+        # from core.supabase_client import get_supabase_client
+        client = supabase_manager.get_client()
         
         # Find tier by name
         result = client.table('user_levels').select('id').ilike('name', tier_name).execute()
@@ -999,8 +999,8 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
         return {"success": False, "message": "Supabase no está habilitado."}
     
     try:
-        from core.supabase_client import get_supabase_client
-        client = get_supabase_client()
+        # from core.supabase_client import get_supabase_client
+        client = supabase_manager.get_client()
         
         query = client.table('user_levels').select('*')
         if tier_id:
@@ -1053,8 +1053,8 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
         return {"success": False, "message": "Supabase no está habilitado."}
     
     try:
-        from core.supabase_client import get_supabase_client
-        client = get_supabase_client()
+        # from core.supabase_client import get_supabase_client
+        client = supabase_manager.get_client()
         
         # Build update data
         update_data = {
@@ -1107,8 +1107,8 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
         return {"success": False, "message": "Supabase no está habilitado."}
     
     try:
-        from core.supabase_client import get_supabase_client
-        client = get_supabase_client()
+        # from core.supabase_client import get_supabase_client
+        client = supabase_manager.get_client()
         
         result = client.table('users').select(
             'telegram_id, nickname, role, level_id, can_report, bypass_limits, beta_tester, is_super_admin, added_at'
