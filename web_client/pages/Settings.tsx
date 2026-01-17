@@ -16,7 +16,8 @@ import {
   Save,
   ArrowLeft,
   ShieldCheck,
-  Home
+  Home,
+  Download
 } from 'lucide-react';
 import { ReportIssueModal } from '../components/ReportIssueModal';
 
@@ -130,6 +131,40 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   <div>
                     <p className="text-sm font-bold text-white">Solicitudes de Libros</p>
                     <p className="text-xs text-gray-400">Gestionar peticiones pendientes</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
+              </button>
+              <button
+                onClick={() => onNavigate && onNavigate('downloads')}
+                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-green-500/10 text-green-400 border border-green-500/10">
+                    <Download className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Mis Descargas</p>
+                    <p className="text-xs text-gray-400">Ver contenido recién descargado</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm('¿Estás seguro de que quieres restablecer tus estadísticas? Esta acción no se puede deshacer.')) {
+                    // api.rpc('reset_user_stats', {})
+                  }
+                }}
+                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/10">
+                    <RotateCcw className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Restablecer Estadísticas</p>
+                    <p className="text-xs text-gray-400">Reiniciar contador de descargas y actividad</p>
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
@@ -324,8 +359,66 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                             </div>
                           </div>
                         </div>
+
                         <div>
-                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Transparencia (Alpha)</label>
+                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Ancho de Portada (Cards)</label>
+                          <div className="pt-2 flex flex-col gap-2">
+                            <input
+                              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                              max="180"
+                              min="80"
+                              type="range"
+                              value={settings.coverWidth}
+                              onChange={(e) => updateSettings({ coverWidth: parseInt(e.target.value) })}
+                            />
+                            <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
+                              <span>80px</span>
+                              <span className="text-primary font-bold">{settings.coverWidth}px</span>
+                              <span>180px</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Transparencia General</label>
+                          <div className="pt-2 flex flex-col gap-2">
+                            <input
+                              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                              max="100"
+                              min="0"
+                              type="range"
+                              value={settings.interfaceOpacity * 100}
+                              onChange={(e) => updateSettings({ interfaceOpacity: parseInt(e.target.value) / 100 })}
+                            />
+                            <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
+                              <span>0%</span>
+                              <span className="text-primary font-bold">{Math.round(settings.interfaceOpacity * 100)}%</span>
+                              <span>100%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Transparencia Nav Bar</label>
+                          <div className="pt-2 flex flex-col gap-2">
+                            <input
+                              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                              max="100"
+                              min="10"
+                              type="range"
+                              value={settings.navOpacity * 100}
+                              onChange={(e) => updateSettings({ navOpacity: parseInt(e.target.value) / 100 })}
+                            />
+                            <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
+                              <span>10%</span>
+                              <span className="text-primary font-bold">{Math.round(settings.navOpacity * 100)}%</span>
+                              <span>100%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Transparencia Acento (Alpha)</label>
                           <div className="pt-2 flex flex-col gap-2">
                             <input
                               className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
@@ -434,7 +527,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
-            background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
             WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
           }}
@@ -474,6 +567,6 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-    </div>
+    </div >
   );
 };

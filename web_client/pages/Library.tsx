@@ -166,7 +166,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
             <div
                className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
                style={{
-                  background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+                  background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
                   backdropFilter: `blur(${settings.glassBlur}px)`,
                   WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
                }}

@@ -126,42 +126,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <div className="pt-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-primary" />
-                Recién Descargados
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3">
-              {loading ? (
-                <div className="text-center p-8 text-gray-500">Cargando actividad...</div>
-              ) : history.length === 0 ? (
-                <div className="text-center p-8 text-gray-500 glass-panel rounded-xl border border-white/5">
-                  No hay descargas recientes.
-                </div>
-              ) : (
-                history.map((item, i) => (
-                  <div key={i} className="glass-panel p-4 rounded-xl border border-white/5 hover:bg-white/5 transition-all group cursor-pointer flex items-center gap-4 hover:border-primary/30">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-[10px] font-black border group-hover:scale-110 transition-transform bg-black/20 text-gray-500 border-white/5 uppercase tracking-widest`}>
-                      <Download className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                      <div className="md:col-span-8">
-                        <h4 className="text-white font-bold truncate text-base">{item.title}</h4>
-                        <p className="text-gray-500 text-xs truncate font-medium">{item.author || 'Desconocido'}</p>
-                      </div>
-                      <div className="hidden md:block md:col-span-4 text-right">
-                        <span className="text-xs text-gray-500 font-medium">{item.date ? new Date(item.date).toLocaleDateString() : ''}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
 
         </div>
 

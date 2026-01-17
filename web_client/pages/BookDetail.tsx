@@ -44,6 +44,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
+  const [localRating, setLocalRating] = useState(volume.rating || 0);
+  const [localDownloadCount, setLocalDownloadCount] = useState(volume.downloadCount || 0);
 
   // Check persistent download status on mount
   useEffect(() => {
@@ -72,6 +74,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
     try {
       await api.requestDownload(volume.id);
       setHasDownloaded(true);
+      setLocalDownloadCount(prev => prev + 1);
     } catch (err) {
       console.error("Error downloading book", err);
       alert("Error al solicitar descarga: " + (err as Error).message);
@@ -81,6 +84,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
   const handleRateSubmit = async (rating: number) => {
     try {
       await api.rateBook(volume.id, rating);
+      // Logic to update local rating (simulated average update or just show user's rating for now)
+      setLocalRating(rating);
       setIsRatingModalOpen(false);
     } catch (err) {
       console.error("Error rating book", err);
@@ -113,6 +118,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
   // Fallback data if fields are missing (mapped to backend Volume)
   const displayData = {
     ...volume,
+    rating: localRating,
+    downloadCount: localDownloadCount,
     title: String(volume.title || ''),
     romajiTitle: String(volume.romajiTitle || ''),
     language: String(volume.language || 'Español'),
@@ -153,7 +160,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
       <header
         className="md:hidden h-16 glass-panel border-b border-black/5 dark:border-white/10 flex items-center justify-between px-4 shrink-0 sticky top-0 z-40"
         style={{
-          background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+          background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
           backdropFilter: `blur(${settings.glassBlur}px)`,
           WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
         }}
@@ -438,7 +445,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
-            background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
             WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
           }}

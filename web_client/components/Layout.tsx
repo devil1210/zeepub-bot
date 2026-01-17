@@ -120,7 +120,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         <header
           className="md:hidden flex items-center justify-between px-4 py-4 z-40 sticky top-0 border-b border-white/5 shrink-0"
           style={{
-            background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
             WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
           }}

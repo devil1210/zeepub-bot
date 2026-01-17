@@ -228,20 +228,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               Lista de Volúmenes
             </h2>
             <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  const orders = ['num-asc', 'num-desc', 'date', 'rating'];
-                  const nextIndex = (orders.indexOf(activeSort) + 1) % orders.length;
-                  setActiveSort(orders[nextIndex]);
-                }}
-                className={`p-2 rounded-lg bg-white/5 border border-white/10 transition-colors ${activeSort !== 'num-asc' ? 'text-[#2AABEE] border-[#2AABEE]/30' : 'text-gray-400 hover:text-primary'}`}
-                title="Cambiar Orden"
-              >
-                <SortAsc className="w-5 h-5" />
-              </button>
-              <button className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-primary transition-colors">
-                <Filter className="w-5 h-5" />
-              </button>
+              {/* Buttons removed as requested */}
             </div>
           </div>
 
@@ -253,7 +240,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 className="group relative flex gap-4 p-4 rounded-xl border border-white/5 bg-[#0d1117]/80 hover:bg-[#161b22] hover:border-[#2AABEE]/30 transition-all duration-200 cursor-pointer overflow-hidden shadow-sm"
               >
                 {/* Image */}
-                <div className="shrink-0 w-24 sm:w-28 aspect-[2/3] bg-slate-800 rounded-lg overflow-hidden shadow-lg border border-white/5">
+                <div className="shrink-0 aspect-[2/3] bg-slate-800 rounded-lg overflow-hidden shadow-lg border border-white/5" style={{ width: settings.coverWidth }}>
                   <img alt={vol.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={vol.coverUrl} />
                 </div>
 
@@ -261,10 +248,10 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="mb-1">
                     <h3 className="text-white font-bold text-base sm:text-lg leading-tight line-clamp-2">
-                      {vol.title}
+                      {vol.romajiTitle || vol.title}
                     </h3>
                     <p className="text-gray-500 text-xs italic font-serif mt-0.5 line-clamp-1">
-                      {vol.romajiTitle || vol.title}
+                      {vol.romajiTitle ? vol.title : ''}
                     </p>
                   </div>
 
@@ -298,11 +285,12 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     </button>
 
                     <button
-                      className="flex items-center gap-2 px-5 py-2 rounded-lg bg-transparent border border-white/10 text-gray-400 text-[10px] font-black tracking-widest hover:text-white hover:bg-white/10 transition-all uppercase"
+                      className="flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg bg-transparent border border-white/10 text-gray-400 text-[10px] sm:text-[10px] font-black tracking-widest hover:text-white hover:bg-white/10 transition-all uppercase whitespace-nowrap"
                       onClick={(e) => { e.stopPropagation(); /* Add logic */ }}
                     >
                       <Bookmark className="w-3.5 h-3.5" />
-                      BIBLIOTECA
+                      <span className="hidden sm:inline">BIBLIOTECA</span>
+                      <span className="sm:hidden">+</span>
                     </button>
                   </div>
                 </div>
@@ -350,7 +338,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
-            background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
             WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
           }}

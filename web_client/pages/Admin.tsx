@@ -115,7 +115,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       <header
         className="md:hidden flex items-center justify-between px-4 py-4 z-40 sticky top-0 border-b border-black/5 dark:border-white/10 shrink-0"
         style={{
-          background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+          background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
           backdropFilter: `blur(${settings.glassBlur}px)`,
           WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
         }}
@@ -333,6 +333,27 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 <span className="text-2xl font-bold font-mono">2.4 GB</span>
               </div>
             </div>
+
+            <div className="glass-panel p-8 rounded-2xl border border-red-500/20 bg-red-500/5 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <h3 className="text-xl font-black text-white flex items-center gap-2">
+                  <RotateCcw className="text-red-400 w-6 h-6" />
+                  Mantenimiento Anual
+                </h3>
+                <p className="text-gray-400 text-sm mt-1">Borra todos los registros de descargas y estadísticas de usuarios para el nuevo ciclo.</p>
+              </div>
+              <button
+                onClick={() => {
+                  if (confirm('¿ESTÁS ABSOLUTAMENTE SEGURO? Esta acción borrará todas las estadísticas del servidor.')) {
+                    // api.rpc('admin_reset_all_stats', {})
+                  }
+                }}
+                className="px-8 py-4 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-500/20 transition-all flex items-center gap-3"
+              >
+                <Eraser className="w-5 h-5" />
+                Reiniciar Estadísticas Globales
+              </button>
+            </div>
           </div>
         )}
 
@@ -366,7 +387,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
-            background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
             WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
           }}

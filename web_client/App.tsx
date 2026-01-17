@@ -11,7 +11,8 @@ import { SeriesDetail } from './pages/SeriesDetail';
 import { BookDetail } from './pages/BookDetail';
 import { RequestBook } from './pages/RequestBook';
 import { Library } from './pages/Library';
-import { Series, Volume } from './types';
+import { Downloads } from './pages/Downloads';
+import { Series, Volume, Book } from './types';
 
 // Define navigation state shape
 interface NavState {
@@ -32,7 +33,7 @@ const AppContent: React.FC = () => {
   const navigateTo = useCallback((tab: string, series: Series | null = null, volume: Volume | null = null) => {
     setNavStack(prev => {
       // If we are just switching main tabs (dashboard, search, library, settings), clear stack and set new root
-      if (['dashboard', 'search', 'library', 'settings', 'admin', 'requests'].includes(tab) && !series && !volume) {
+      if (['dashboard', 'search', 'library', 'settings', 'admin', 'requests', 'downloads'].includes(tab) && !series && !volume) {
         return [{ tab }];
       }
       // Otherwise push to stack (drill down)
@@ -168,6 +169,14 @@ const AppContent: React.FC = () => {
         return <Admin onNavigate={onNavigate} />;
       case 'settings':
         return <Settings onNavigate={onNavigate} />;
+      case 'downloads':
+        return <Downloads
+          onNavigate={onNavigate}
+          onBookClick={(bookId: any) => {
+            // Logic to navigate to book detail from ID or mock book
+            navigateTo('search'); // Fallback or implement proper search result selection
+          }}
+        />;
       case 'library':
         return <Library onNavigate={onNavigate} onSelectBook={handleLibraryBookClick} />;
       default:
