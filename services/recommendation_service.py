@@ -82,15 +82,61 @@ class RecommendationService:
 
     @staticmethod
     def _get_popular_recommendations(limit: int, exclude_titles: set) -> List[Dict[str, Any]]:
-        """Fallback: Libros con mejor rating o más descargados."""
+        """Fallback: Libros más descargados de la biblioteca."""
+        from core.db_manager import db_manager
+        import asyncio
+        
         session = get_session()
         try:
-            # Priorizar rating alto (> 4.0) y luego descargas (aunque descargas no está en LocalBook,
-            # usaremos rating_count como proxy de popularidad)
+            # First try to get books by actual download count from download_history
+            # We'll use a subquery approach to join with LocalBook
+            from sqlalchemy import text
+            
+            # Query most downloaded book hashes from download_history
+            result = session.execute(text("""
+                SELECT lb.id, lb.title, lb.author, lb.cover_path, lb.rating_average, lb.rating_count,
+                       lb.series, lb.volume, lb.content_hash
+                FROM local_books lb
+                LEFT JOIN (
+                    SELECT book_hash, COUNT(*) as dl_count 
+                    FROM download_history 
+                    WHERE book_hash IS NOT NULL 
+                    GROUP BY book_hash
+                ) dh ON lb.content_hash = dh.book_hash
+                WHERE lb.title NOT IN :exclude_titles OR :no_exclude = 1
+                ORDER BY COALESCE(dh.dl_count, 0) DESC, lb.rating_average DESC, lb.rating_count DESC
+                LIMIT :limit
+            """), {"exclude_titles": tuple(exclude_titles) if exclude_titles else ('__NONE__',), 
+                   "no_exclude": 1 if not exclude_titles else 0,
+                   "limit": limit})
+            
+            books = result.fetchall()
+            
+            if books:
+                return [
+                    {
+                        "id": row[0],
+                        "title": row[1],
+                        "author": row[2],
+                        "cover_path": row[3],
+                        "rating_average": row[4] or 0,
+                        "rating_count": row[5] or 0,
+                        "series": row[6],
+                        "series_index": row[7],
+                    }
+                    for row in books
+                ]
+            
+            # Fallback to simple rating-based query if no download history
             books = session.query(LocalBook).filter(
-                LocalBook.title.notin_(exclude_titles)
+                LocalBook.title.notin_(exclude_titles) if exclude_titles else True
             ).order_by(desc(LocalBook.rating_average), desc(LocalBook.rating_count)).limit(limit).all()
 
+            return [book.to_dict() for book in books]
+        except Exception as e:
+            logger.error(f"Error getting popular recommendations: {e}")
+            # Ultimate fallback - just get any books
+            books = session.query(LocalBook).limit(limit).all()
             return [book.to_dict() for book in books]
         finally:
             session.close()

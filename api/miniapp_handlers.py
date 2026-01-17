@@ -240,25 +240,27 @@ async def handle_recommendations(data: Dict[str, Any], user_data: Dict[str, Any]
     for r in recs:
         is_dict = isinstance(r, dict)
         r_id = r.get("id") if is_dict else r.id
+        # Extract numeric ID from prefixed ID if needed
+        numeric_id = str(r_id).replace("local_", "") if isinstance(r_id, str) else r_id
+        
+        # Always generate cover URL if book has a cover
+        has_cover = (r.get("cover_path") if is_dict else getattr(r, 'cover_path', None)) or (r.get("cover") if is_dict else getattr(r, 'cover', None))
+        cover_url = f"/api/library/covers/{numeric_id}" if has_cover else None
+        
         results.append(
             {
-                "id": f"local_{r_id}",
+                "id": f"local_{numeric_id}",
                 "title": r.get("title") if is_dict else r.title,
                 "author": r.get("author") if is_dict else r.author,
-                "cover": (
-                    f"/api/library/covers/{r_id}"
-                    if (r.get("cover_path") if is_dict else r.cover_path)
-                    else None
-                ),
-                "downloadUrl": f"local_{r_id}",
+                "cover": cover_url,
+                "downloadUrl": f"local_{numeric_id}",
                 "is_folder": False,
-                "series": r.get("series") if is_dict else r.series,
-                "seriesIndex": r.get("series_index") if is_dict else r.series_index,
+                "series": r.get("series") if is_dict else getattr(r, 'series', None),
+                "seriesIndex": r.get("series_index") if is_dict else getattr(r, 'series_index', None),
                 "cleanTitle": r.get("title") if is_dict else r.title,
                 "rating_average": (
-                    r.get("rating_average") if is_dict else r.rating_average
-                )
-                or 0,
+                    r.get("rating_average") if is_dict else getattr(r, 'rating_average', 0)
+                ) or 0,
             }
         )
     return {"results": results}

@@ -9,6 +9,7 @@ import { Reader } from './pages/Reader';
 import { Settings } from './pages/Settings';
 import { SeriesDetail } from './pages/SeriesDetail';
 import { BookDetail } from './pages/BookDetail';
+import { BookDetailById } from './pages/BookDetailById';
 import { RequestBook } from './pages/RequestBook';
 import { Library } from './pages/Library';
 import { Downloads } from './pages/Downloads';
@@ -138,22 +139,20 @@ const AppContent: React.FC = () => {
     navigateTo('search');
   };
 
-
   // Render Logic
   const renderContent = () => {
     const { tab, series, volume, bookId } = currentState;
     const { isAdmin } = useTelegram();
 
-    // If a specific book is requested by ID (e.g., from downloads)
+    // If a specific book is requested by ID (e.g., from recommendations or downloads)
     if (bookId) {
-      // This would typically involve fetching book/volume/series details by bookId
-      // For now, we'll use a placeholder or navigate to a generic search if data isn't available
-      // In a real app, you'd fetch the book and its associated series/volume here.
-      // Example: const { book, volume, series } = useFetchBookDetails(bookId);
-      // If data is fetched, render BookDetail with that data.
-      // If not, perhaps show a loading state or redirect.
-      console.warn(`Direct book navigation by ID (${bookId}) is not fully implemented. Redirecting to search.`);
-      return <Search onSelectSeries={onSelectSeries} onNavigate={onNavigate} />;
+      return (
+        <BookDetailById
+          bookId={bookId}
+          onBack={handleBack}
+          onNavigate={onNavigate}
+        />
+      );
     }
 
     if (volume && series) {
