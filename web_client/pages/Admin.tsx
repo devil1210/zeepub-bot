@@ -639,22 +639,6 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             </div>
           )}
 
-          {/* User Permissions Editor */}
-          {currentView === 'tiers' && selectedUserId && (() => {
-            const selectedUser = users.find(u => String(u.id) === String(selectedUserId));
-            return (
-              <UserPermissions
-                onBack={() => setSelectedUserId(null)}
-                userId={selectedUserId}
-                userData={selectedUser ? {
-                  username: selectedUser.username,
-                  id: String(selectedUser.id),
-                  level: selectedUser.level?.name || 'Gratuito'
-                } : undefined}
-              />
-            );
-          })()}
-
           {/* Tier Configuration Editor */}
           {currentView === 'tiers' && configuringTier && (
             <TierConfiguration
@@ -671,17 +655,16 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
           {/* User Permissions Editor */}
           {currentView === 'tiers' && selectedUserId && !configuringTier && (() => {
-            const selectedUser = users.find(u => u.id === selectedUserId);
-            if (!selectedUser) return null; // Safety check
+            const selectedUser = users.find(u => String(u.id) === String(selectedUserId));
+            if (!selectedUser) return null;
 
             return (
               <UserPermissions
-                userId={selectedUserId}
+                userId={String(selectedUserId)}
                 userData={{
                   username: selectedUser.username,
-                  id: selectedUser.id,
-                  level: selectedUser.level?.name || 'Lector',
-                  avatar: undefined // Backend doesn't send avatar url in list, handled by component
+                  id: String(selectedUser.id),
+                  level: selectedUser.level?.name || 'Lector'
                 }}
                 onBack={() => setSelectedUserId(null)}
               />
