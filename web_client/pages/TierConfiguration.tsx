@@ -533,14 +533,25 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                             WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
                         }}
                     >
-                        <div className="flex items-center gap-2 max-w-[1200px] mx-auto">
+                        <div className="flex items-center gap-2 max-w-[1200px] mx-auto w-full">
                             {/* Home Button */}
                             <button
                                 onClick={() => onNavigate && onNavigate('dashboard')}
-                                className="flex-none flex flex-col items-center justify-center p-3 rounded-2xl bg-black/40 border border-white/5 hover:bg-white/5 text-gray-500 hover:text-white transition-all w-16"
+                                className="flex-none flex flex-col items-center justify-center p-3 rounded-2xl bg-black/40 border border-white/5 hover:bg-white/5 text-gray-500 hover:text-white transition-all w-20"
                             >
                                 <Layout className="w-5 h-5" strokeWidth={2.5} />
-                                <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-60">Inicio</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-60">Home</span>
+                            </button>
+
+                            <div className="w-px h-10 bg-white/10"></div>
+
+                            {/* Membership Button */}
+                            <button
+                                onClick={onBack}
+                                className="flex-none flex flex-col items-center justify-center p-3 rounded-2xl bg-black/40 border border-white/5 hover:bg-white/5 text-gray-500 hover:text-white transition-all w-24"
+                            >
+                                <Layers className="w-5 h-5" strokeWidth={2.5} />
+                                <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-60">Membership</span>
                             </button>
 
                             <div className="w-px h-10 bg-white/10"></div>
@@ -549,36 +560,24 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                             <button
                                 onClick={handleUndo}
                                 disabled={JSON.stringify(config) === JSON.stringify(originalConfig)}
-                                className="flex-none flex flex-col items-center justify-center p-3 rounded-2xl bg-black/40 border border-white/5 hover:bg-white/5 text-gray-500 hover:text-orange-400 transition-all disabled:opacity-30 disabled:pointer-events-none w-16"
+                                className="flex-none flex flex-col items-center justify-center p-3 rounded-2xl bg-black/40 border border-white/5 hover:bg-white/5 text-gray-500 hover:text-orange-400 transition-all disabled:opacity-30 disabled:pointer-events-none w-20"
                             >
                                 <div className="group-hover:rotate-[-45deg] transition-transform">
                                     <RotateCcw className="w-5 h-5" strokeWidth={2.5} />
                                 </div>
-                                <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-60">Reset</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-60">Undo</span>
                             </button>
 
-                            {/* Save Button */}
+                            {/* Apply Button */}
                             <button
                                 onClick={handleSave}
                                 disabled={saving || JSON.stringify(config) === JSON.stringify(originalConfig)}
-                                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[1.5rem] bg-primary text-white shadow-xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale"
+                                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[1.5rem] bg-primary text-white shadow-xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale ml-2"
                             >
                                 {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" strokeWidth={2.5} />}
                                 <div className="flex flex-col items-start leading-none">
-                                    <span className="text-[10px] opacity-80 font-medium">CONFIRMAR</span>
-                                    <span className="text-sm font-black uppercase tracking-widest">Aplicar</span>
-                                </div>
-                            </button>
-
-                            {/* Membership Button */}
-                            <button
-                                onClick={onBack}
-                                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[1.5rem] bg-white/10 text-white border border-white/10 transition-all hover:bg-white/20 active:scale-[0.98]"
-                            >
-                                <Layers className="w-5 h-5" strokeWidth={2.5} />
-                                <div className="flex flex-col items-start leading-none">
-                                    <span className="text-[10px] opacity-60 font-medium">VOLVER A</span>
-                                    <span className="text-sm font-black uppercase tracking-widest">Membresía</span>
+                                    <span className="text-[10px] opacity-80 font-medium">CONFIRM</span>
+                                    <span className="text-sm font-black uppercase tracking-widest">Apply</span>
                                 </div>
                             </button>
                         </div>

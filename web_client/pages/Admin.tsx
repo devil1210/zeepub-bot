@@ -672,15 +672,17 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
           {/* User Permissions Editor */}
           {currentView === 'tiers' && selectedUserId && !configuringTier && (() => {
             const selectedUser = users.find(u => u.id === selectedUserId);
+            if (!selectedUser) return null; // Safety check
+
             return (
               <UserPermissions
                 userId={selectedUserId}
-                userData={selectedUser ? {
+                userData={{
                   username: selectedUser.username,
                   id: selectedUser.id,
                   level: selectedUser.level?.name || 'Lector',
-                  avatar: undefined
-                } : undefined}
+                  avatar: undefined // Backend doesn't send avatar url in list, handled by component
+                }}
                 onBack={() => setSelectedUserId(null)}
               />
             );
