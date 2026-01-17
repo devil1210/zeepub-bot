@@ -700,11 +700,11 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
           }}
         >
-          {selectedUserId ? (
-            /* User Permissions Mode: Inicio | Deshacer | Aplicar | Niveles */
+          {(selectedUserId || configuringTier) ? (
+            /* User Permissions / Tier Config Mode: Inicio | Deshacer | Aplicar | Niveles */
             <>
               <button
-                onClick={() => setSelectedUserId(null)}
+                onClick={() => { setSelectedUserId(null); setConfiguringTier(null); }}
                 className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white"
               >
                 <Home className="w-4 h-4" strokeWidth={2} />
@@ -738,7 +738,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
               <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
               <button
-                onClick={() => setSelectedUserId(null)}
+                onClick={() => { setSelectedUserId(null); setConfiguringTier(null); }}
                 className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white"
               >
                 <Layers className="w-4 h-4" strokeWidth={2} />
