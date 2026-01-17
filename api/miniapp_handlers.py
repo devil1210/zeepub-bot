@@ -187,14 +187,20 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
     minutes, _ = divmod(remainder, 60)
 
     return {
-        "level": system_role_text,
-        "downloadsUsed": used,
-        "downloadsLimit": max_dl,
+        "user": {
+            "id": user_id,
+            "username": user_data.get("nickname") or f"User_{user_id}",
+            "role": role_key,
+            "status_label": system_role_text,
+            "downloads": {
+                "used": used,
+                "limit": max_dl
+            }
+        },
         "timeUntilReset": f"{hours}h {minutes}m",
         "hasUnlimitedDownloads": max_dl is None and role_key != "banned",
         "isBanned": role_key == "banned",
         "isAdmin": role_key == "admin",
-        "role": role_key,
     }
 
 

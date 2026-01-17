@@ -7,8 +7,8 @@ from services.cache_service import AsyncTTLCache
 
 logger = logging.getLogger(__name__)
 
-# Cache for user info (1 hour) - changed from 5 minutes for high-volume bot (1000+ msg/sec)
-user_cache = AsyncTTLCache(ttl_seconds=3600)
+# Cache for user info (5 minutes)
+user_cache = AsyncTTLCache(ttl_seconds=300)
 
 
 async def upsert_user(
