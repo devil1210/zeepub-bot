@@ -236,6 +236,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     user = res.data[0]
                     lvl = user.get('level', {})
                     is_admin = (user.get('role') == 'admin')
+                    beta_tester = user.get('beta_tester', False) or is_admin  # Admins are always beta testers
                     # check admins table too if needed, but role='admin' is usually enough
                     return {
                         "level": {
@@ -250,7 +251,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "price": lvl.get('price')
                         },
                         "hasAccess": bool(lvl.get('has_mini_app_access')) or is_admin,
-                        "isAdmin": is_admin
+                        "isAdmin": is_admin,
+                        "isBetaTester": beta_tester
                     }
             except Exception as e:
                 logger.error(f"Supabase access info error: {e}")
@@ -266,7 +268,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.early_access,
                 ul.custom_themes,
                 ul.price,
-                (EXISTS(SELECT 1 FROM admins WHERE user_id = ?) OR u.role = 'admin') as is_admin
+                (EXISTS(SELECT 1 FROM admins WHERE user_id = ?) OR u.role = 'admin') as is_admin,
+                u.role
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -275,6 +278,10 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             cursor = await conn.execute(query, (telegram_id, telegram_id))
             row = await cursor.fetchone()
             if row:
+                is_admin = bool(row[9])
+                role = row[10] if len(row) > 10 else 'free'
+                # For SQLite, treat admin and staff as beta testers 
+                beta_tester = is_admin or role in ('admin', 'staff')
                 return {
                     "level": {
                         "id": str(row[0]),
@@ -287,8 +294,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "customThemes": bool(row[7]),
                         "price": row[8]
                     },
-                    "hasAccess": bool(row[4]) or bool(row[9]),  # Access if level allowed OR if admin
-                    "isAdmin": bool(row[9])
+                    "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
+                    "isAdmin": is_admin,
+                    "isBetaTester": beta_tester
                 }
             return None
 

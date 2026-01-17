@@ -29,6 +29,7 @@ interface TelegramContextType {
   user: TelegramUser | null;
   status: UserStatus | null;
   isAdmin: boolean;
+  isBetaTester: boolean;  // Controls new vs old UI
   isExpanded: boolean;
   ready: boolean;
   refreshStatus: () => Promise<void>;
@@ -42,6 +43,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [status, setStatus] = useState<UserStatus | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [ready, setReady] = useState(false);
+  const [isBetaTester, setIsBetaTester] = useState(false);
   const { updateSettings } = useTheme();
 
   const refreshStatus = async () => {
@@ -51,6 +53,26 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setStatus(res);
     } catch (e) {
       console.error("Failed to refresh user status", e);
+    }
+  };
+
+  // Fetch beta tester status from access endpoint
+  const fetchBetaTesterStatus = async (userId: number) => {
+    try {
+      const response = await fetch('/api/user/access', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Telegram-Init-Data': (window as any).Telegram?.WebApp?.initData || ''
+        },
+        body: JSON.stringify({ user_id: userId, force: false })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setIsBetaTester(data.isBetaTester || data.isAdmin || false);
+      }
+    } catch (e) {
+      console.log('Could not fetch beta tester status from access endpoint');
     }
   };
 
@@ -73,6 +95,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Get user data
       if (tg.initDataUnsafe?.user) {
         setUser(tg.initDataUnsafe.user);
+        // Fetch beta tester status
+        fetchBetaTesterStatus(tg.initDataUnsafe.user.id);
       }
 
       // Initial status fetch
@@ -81,28 +105,23 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Sync Theme
       const applyTelegramTheme = () => {
         if (tg.themeParams) {
-          // Map Telegram theme params to app theme settings
           const bg = tg.themeParams.bg_color || '#000000';
           const buttonColor = tg.themeParams.button_color || '#2AABEE';
-          // Determine if dark or light based on bg color brightness roughly
-          // Simple heuristic
           updateSettings({
             primaryColor: buttonColor,
-            theme: 'dark' // Force dark for now based on design requirements, or detect
+            theme: 'dark'
           });
-
           document.documentElement.style.setProperty('--app-bg', bg);
         }
       };
 
       applyTelegramTheme();
-      // Listen for theme changes if API supports it (future proofing)
 
     } else {
       // Fallback for browser testing
       console.log("Telegram WebApp not detected. Running in browser mode.");
       setReady(true);
-      // Mock user for dev
+      // Mock user for dev - dev users are beta testers
       setUser({
         id: 123456,
         first_name: "Dev",
@@ -110,14 +129,18 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         username: "dev_user",
         photo_url: "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"
       });
+      setIsBetaTester(true); // Dev mode = always beta tester for testing new UI
       refreshStatus();
     }
   }, []);
 
   const isAdmin = status?.user?.role === 'admin';
 
+  // Admins are always beta testers
+  const effectiveBetaTester = isAdmin || isBetaTester;
+
   return (
-    <TelegramContext.Provider value={{ webApp, user, status, isAdmin, isExpanded, ready, refreshStatus }}>
+    <TelegramContext.Provider value={{ webApp, user, status, isAdmin, isBetaTester: effectiveBetaTester, isExpanded, ready, refreshStatus }}>
       {children}
     </TelegramContext.Provider>
   );

@@ -33,6 +33,7 @@ class AccessResponse(BaseModel):
     level: UserLevelModel
     hasAccess: bool
     isAdmin: bool
+    isBetaTester: bool = False  # Controls new vs old UI
 
 
 class LevelUpdate(BaseModel):
@@ -229,13 +230,17 @@ async def check_user_access(
         or access_info.get("hasAccess", False)
     )
 
+    # Beta tester flag - admins are always beta testers
+    is_beta_tester = is_admin or access_info.get("isBetaTester", False)
+
     logger.info(
-        f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}, role={eff.get('role')}"
+        f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}, isBetaTester={is_beta_tester}"
     )
     return AccessResponse(
         level=UserLevelModel(**access_info["level"]),
         hasAccess=has_access,
         isAdmin=is_admin,
+        isBetaTester=is_beta_tester,
     )
 
 
