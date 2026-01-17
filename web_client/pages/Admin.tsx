@@ -447,10 +447,10 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                               data: { confirmed: true }
                             });
 
-                            if (response.data.success) {
-                              alert(`✅ ${response.data.message}\n\n📊 Detalles:\n${response.data.details?.join('\n') || ''}\n\n📝 Próximo paso: Escanea tu biblioteca para reindexar tus libros.`);
+                            if (response.success) {
+                              alert(`✅ ${response.message}\n\n📊 Detalles:\n${response.details?.join('\n') || ''}\n\n📝 Próximo paso: Escanea tu biblioteca para reindexar tus libros.`);
                             } else {
-                              alert(`❌ Error: ${response.data.message}`);
+                              alert(`❌ Error: ${response.message}`);
                             }
                           } catch (error: any) {
                             alert(`❌ Error al resetear base de datos: ${error.message}`);
