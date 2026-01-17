@@ -104,6 +104,10 @@ async def handle_bot_request(
             handle_admin_set_user_level,
             handle_admin_backup_library,
             handle_admin_scan_library,
+            handle_admin_save_tier_config,
+            handle_admin_get_tier_config,
+            handle_admin_save_user_permissions,
+            handle_admin_get_user_permissions,
         )
 
         ACTION_HANDLERS = {
@@ -129,6 +133,10 @@ async def handle_bot_request(
             "admin_set_user_level": handle_admin_set_user_level,
             "admin_backup_library": handle_admin_backup_library,
             "admin_scan_library": handle_admin_scan_library,
+            "admin_save_tier_config": handle_admin_save_tier_config,
+            "admin_get_tier_config": handle_admin_get_tier_config,
+            "admin_save_user_permissions": handle_admin_save_user_permissions,
+            "admin_get_user_permissions": handle_admin_get_user_permissions,
         }
 
         handler = ACTION_HANDLERS.get(action)

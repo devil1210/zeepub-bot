@@ -93,6 +93,32 @@ export const api = {
     adminBackupLibrary: () => rpc('admin_backup_library'),
     adminScanLibrary: (force: boolean = false) => rpc('admin_scan_library', { force }),
 
+    // Tier Configuration
+    getTierConfig: (name: string) => rpc('admin_get_tier_config', { name }),
+    saveTierConfig: (config: {
+        name: string;
+        icon?: string;
+        color?: string;
+        dailyDownloads?: number;
+        maxConcurrent?: number;
+        priorityRequests?: boolean;
+        earlyAccess?: boolean;
+        customThemes?: boolean;
+        uiPrimaryColor?: string;
+        panelTransparency?: number;
+    }) => rpc('admin_save_tier_config', config),
+
+    // User Permissions
+    getUserPermissions: (userId: string) => rpc('admin_get_user_permissions', { userId }),
+    saveUserPermissions: (permissions: {
+        userId: string;
+        levelId?: number;
+        canReport?: boolean;
+        bypassLimits?: boolean;
+        betaTester?: boolean;
+        isAdmin?: boolean;
+    }) => rpc('admin_save_user_permissions', permissions),
+
     // Raw RPC Access
     rpc: rpc
 };

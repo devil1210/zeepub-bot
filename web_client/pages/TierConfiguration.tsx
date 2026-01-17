@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ArrowLeft,
     Save,
@@ -7,9 +7,11 @@ import {
     Stars,
     Palette,
     History,
-    Eye
+    Eye,
+    Loader2
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { api } from '../src/services/api';
 
 interface TierConfigurationProps {
     tierName: string;
@@ -38,6 +40,9 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
     onSave
 }) => {
     const { settings } = useTheme();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [config, setConfig] = useState<TierConfig>({
         name: tierName,
@@ -52,9 +57,52 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         panelTransparency: 70,
     });
 
-    const handleSave = () => {
-        onSave?.(config);
-        onBack();
+    // Load tier config from API on mount
+    useEffect(() => {
+        const loadTierConfig = async () => {
+            try {
+                setLoading(true);
+                const res = await api.getTierConfig(tierName);
+                if (res.success && res.tier) {
+                    setConfig({
+                        name: res.tier.name || tierName,
+                        icon: res.tier.icon || 'verified',
+                        color: res.tier.color || tierColor,
+                        dailyDownloads: res.tier.dailyDownloads ?? 50,
+                        maxConcurrent: res.tier.maxConcurrent ?? 3,
+                        priorityRequests: res.tier.priorityRequests ?? false,
+                        earlyAccess: res.tier.earlyAccess ?? false,
+                        customThemes: res.tier.customThemes ?? false,
+                        uiPrimaryColor: res.tier.uiPrimaryColor || settings.primaryColor,
+                        panelTransparency: res.tier.panelTransparency ?? 70,
+                    });
+                }
+            } catch (err: any) {
+                console.error('Error loading tier config:', err);
+                // Use defaults if load fails
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadTierConfig();
+    }, [tierName]);
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            setError(null);
+            const res = await api.saveTierConfig(config);
+            if (res.success) {
+                onSave?.(config);
+                onBack();
+            } else {
+                setError(res.message || 'Error al guardar');
+            }
+        } catch (err: any) {
+            setError(err.message || 'Error al guardar configuración');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const Toggle: React.FC<{ checked: boolean; onChange: (val: boolean) => void }> = ({ checked, onChange }) => (
@@ -71,8 +119,26 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         </button>
     );
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-full min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                    <p className="text-gray-400 text-sm">Cargando configuración...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-8 animate-in fade-in duration-300 px-1">
+            {/* Error Alert */}
+            {error && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                    {error}
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -84,20 +150,21 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                     </button>
                     <div className="flex flex-col">
                         <h1 className="text-white text-3xl font-black leading-tight tracking-tight flex items-center gap-3">
-                            Configurar Nivel: <span style={{ color: tierColor }}>{tierName}</span>
+                            Configurar Nivel: <span style={{ color: config.color }}>{config.name}</span>
                             <span className="px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30 text-[10px] font-bold uppercase tracking-widest text-primary">
                                 Edit Mode
                             </span>
                         </h1>
-                        <p className="text-gray-400 text-sm">Ajusta los permisos y límites específicos para los usuarios {tierName}.</p>
+                        <p className="text-gray-400 text-sm">Ajusta los permisos y límites específicos para los usuarios {config.name}.</p>
                     </div>
                 </div>
                 <button
                     onClick={handleSave}
-                    className="flex min-w-[140px] cursor-pointer items-center justify-center gap-2 rounded-lg h-11 px-6 bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all"
+                    disabled={saving}
+                    className="flex min-w-[140px] cursor-pointer items-center justify-center gap-2 rounded-lg h-11 px-6 bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-50"
                 >
-                    <Save className="w-5 h-5" />
-                    <span>Save Changes</span>
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                    <span>{saving ? 'Guardando...' : 'Save Changes'}</span>
                 </button>
             </div>
 

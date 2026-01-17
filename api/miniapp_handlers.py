@@ -921,3 +921,229 @@ async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, A
     except Exception as e:
         logger.error(f"Error scanning library via API: {e}")
         return {"success": False, "message": str(e)}
+
+
+async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Guarda la configuración completa de un nivel/tier."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    tier_name = data.get("name")
+    if not tier_name:
+        raise HTTPException(status_code=400, detail="Falta el nombre del tier")
+    
+    if not config.ENABLE_SUPABASE:
+        return {"success": False, "message": "Supabase no está habilitado."}
+    
+    try:
+        from core.supabase_client import get_supabase_client
+        client = get_supabase_client()
+        
+        # Find tier by name
+        result = client.table('user_levels').select('id').ilike('name', tier_name).execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=404, detail=f"Tier '{tier_name}' no encontrado")
+        
+        tier_id = result.data[0]['id']
+        
+        # Build update data
+        update_data = {
+            "updated_at": "now()"
+        }
+        
+        # Map frontend fields to database columns
+        field_mapping = {
+            "name": "name",
+            "icon": "icon",
+            "color": "color",
+            "dailyDownloads": "daily_downloads",
+            "maxConcurrent": "max_concurrent",
+            "priorityRequests": "priority_requests",
+            "earlyAccess": "early_access",
+            "customThemes": "custom_themes",
+            "uiPrimaryColor": "ui_primary_color",
+            "panelTransparency": "panel_transparency"
+        }
+        
+        for frontend_key, db_key in field_mapping.items():
+            if frontend_key in data and data[frontend_key] is not None:
+                update_data[db_key] = data[frontend_key]
+        
+        # Update tier in Supabase
+        client.table('user_levels').update(update_data).eq('id', tier_id).execute()
+        
+        logger.info(f"ADMIN: Saved tier config for '{tier_name}' (ID: {tier_id})")
+        return {"success": True, "tierId": tier_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving tier config: {e}")
+        return {"success": False, "message": str(e)}
+
+
+async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Obtiene la configuración completa de un nivel/tier."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    tier_name = data.get("name")
+    tier_id = data.get("id")
+    
+    if not tier_name and not tier_id:
+        raise HTTPException(status_code=400, detail="Falta name o id del tier")
+    
+    if not config.ENABLE_SUPABASE:
+        return {"success": False, "message": "Supabase no está habilitado."}
+    
+    try:
+        from core.supabase_client import get_supabase_client
+        client = get_supabase_client()
+        
+        query = client.table('user_levels').select('*')
+        if tier_id:
+            query = query.eq('id', tier_id)
+        else:
+            query = query.ilike('name', tier_name)
+        
+        result = query.execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Tier no encontrado")
+        
+        tier = result.data[0]
+        return {
+            "success": True,
+            "tier": {
+                "id": tier.get("id"),
+                "name": tier.get("name"),
+                "icon": tier.get("icon", "verified"),
+                "color": tier.get("color", "#0da6f2"),
+                "dailyDownloads": tier.get("daily_downloads", 1),
+                "maxConcurrent": tier.get("max_concurrent", 3),
+                "priorityRequests": tier.get("priority_requests", False),
+                "earlyAccess": tier.get("early_access", False),
+                "customThemes": tier.get("custom_themes", False),
+                "uiPrimaryColor": tier.get("ui_primary_color", "#0da6f2"),
+                "panelTransparency": tier.get("panel_transparency", 70),
+                "price": tier.get("price", 0),
+                "priority": tier.get("priority", 0)
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting tier config: {e}")
+        return {"success": False, "message": str(e)}
+
+
+async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Guarda los permisos de un usuario específico."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    user_id = data.get("userId")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Falta userId")
+    
+    if not config.ENABLE_SUPABASE:
+        return {"success": False, "message": "Supabase no está habilitado."}
+    
+    try:
+        from core.supabase_client import get_supabase_client
+        client = get_supabase_client()
+        
+        # Build update data
+        update_data = {
+            "updated_at": "now()"
+        }
+        
+        # Map frontend fields to database columns
+        field_mapping = {
+            "levelId": "level_id",
+            "canReport": "can_report",
+            "bypassLimits": "bypass_limits",
+            "betaTester": "beta_tester",
+            "isAdmin": "is_super_admin",
+            "role": "role"
+        }
+        
+        for frontend_key, db_key in field_mapping.items():
+            if frontend_key in data and data[frontend_key] is not None:
+                # Special handling for isAdmin -> sets role to 'admin'
+                if frontend_key == "isAdmin" and data[frontend_key]:
+                    update_data["role"] = "admin"
+                elif frontend_key == "isAdmin" and not data[frontend_key]:
+                    # Don't downgrade if we're not explicitly setting role
+                    if "role" not in data:
+                        continue
+                else:
+                    update_data[db_key] = data[frontend_key]
+        
+        # Update user in Supabase
+        client.table('users').update(update_data).eq('telegram_id', int(user_id)).execute()
+        
+        logger.info(f"ADMIN: Saved user permissions for user {user_id}")
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error saving user permissions: {e}")
+        return {"success": False, "message": str(e)}
+
+
+async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Obtiene los permisos de un usuario específico."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    user_id = data.get("userId")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Falta userId")
+    
+    if not config.ENABLE_SUPABASE:
+        return {"success": False, "message": "Supabase no está habilitado."}
+    
+    try:
+        from core.supabase_client import get_supabase_client
+        client = get_supabase_client()
+        
+        result = client.table('users').select(
+            'telegram_id, nickname, role, level_id, can_report, bypass_limits, beta_tester, is_super_admin, added_at'
+        ).eq('telegram_id', int(user_id)).execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        user = result.data[0]
+        
+        # Get level info
+        level_info = None
+        if user.get("level_id"):
+            level_result = client.table('user_levels').select('name, color').eq('id', user['level_id']).execute()
+            if level_result.data:
+                level_info = level_result.data[0]
+        
+        return {
+            "success": True,
+            "user": {
+                "id": str(user.get("telegram_id")),
+                "username": user.get("nickname", f"User_{user.get('telegram_id')}"),
+                "role": user.get("role", "free"),
+                "levelId": user.get("level_id"),
+                "levelName": level_info.get("name") if level_info else "Básico",
+                "levelColor": level_info.get("color") if level_info else "#6b7280",
+                "canReport": user.get("can_report", True),
+                "bypassLimits": user.get("bypass_limits", False),
+                "betaTester": user.get("beta_tester", False),
+                "isAdmin": user.get("is_super_admin", False) or user.get("role") == "admin",
+                "addedAt": user.get("added_at")
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting user permissions: {e}")
+        return {"success": False, "message": str(e)}
