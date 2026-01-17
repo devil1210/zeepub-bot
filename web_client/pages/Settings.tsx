@@ -438,6 +438,44 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                       </div>
                     </div>
                   </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Opacidad de Navegación</label>
+                    <div className="pt-2 flex flex-col gap-2">
+                      <input
+                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                        max="100"
+                        min="10"
+                        type="range"
+                        value={settings.navOpacity * 100}
+                        onChange={(e) => updateSettings({ navOpacity: parseInt(e.target.value) / 100 })}
+                      />
+                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
+                        <span>10%</span>
+                        <span className="text-primary font-bold">{Math.round(settings.navOpacity * 100)}%</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Ancho de Portadas (px)</label>
+                    <div className="pt-2 flex flex-col gap-2">
+                      <input
+                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                        max="200"
+                        min="80"
+                        type="range"
+                        value={settings.coverWidth}
+                        onChange={(e) => updateSettings({ coverWidth: parseInt(e.target.value) })}
+                      />
+                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
+                        <span>80px</span>
+                        <span className="text-primary font-bold">{settings.coverWidth}px</span>
+                        <span>200px</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
