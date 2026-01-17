@@ -213,6 +213,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         return results
 
     async def update_nickname(self, telegram_id: int, nickname: Optional[str]):
+        if self.supabase.is_active:
+            try:
+                self.supabase.get_client().table('users').update({"nickname": nickname}).eq('telegram_id', telegram_id).execute()
+            except Exception as e:
+                logger.error(f"Supabase update_nickname error: {e}")
+
         async with self.db.connection() as conn:
             await conn.execute(
                 "UPDATE users SET nickname = ? WHERE telegram_id = ?",
@@ -286,28 +292,29 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 }
             return None
 
-    async def create_minimal_user(self, telegram_id: int, level_id: int = 6):
+    async def create_minimal_user(self, telegram_id: int, level_id: int = 6, nickname: Optional[str] = None):
         """
         Crea un registro básico de usuario si no existe.
         Level 6 = Lector (default), role = 'free'
         """
         if self.supabase.is_active:
             try:
-                # Check if exists first to avoid overwriting existing roles
+                # Check if exists first
                 res = self.supabase.get_client().table('users').select('telegram_id').eq('telegram_id', telegram_id).execute()
                 if not res.data:
                     self.supabase.get_client().table('users').insert({
                         "telegram_id": telegram_id,
                         "level_id": level_id,
-                        "role": 'free'
+                        "role": 'free',
+                        "nickname": nickname
                     }).execute()
             except Exception as e:
                 logger.error(f"Supabase create_minimal_user error: {e}")
 
         async with self.db.connection() as conn:
             await conn.execute(
-                "INSERT OR IGNORE INTO users (telegram_id, level_id, role, added_at) VALUES (?, ?, ?, ?)",
-                (telegram_id, level_id, 'free', datetime.utcnow())
+                "INSERT OR IGNORE INTO users (telegram_id, level_id, role, added_at, nickname) VALUES (?, ?, ?, ?, ?)",
+                (telegram_id, level_id, 'free', datetime.utcnow(), nickname)
             )
             await conn.commit()
 

@@ -94,7 +94,7 @@ def reset_all_downloads() -> None:
         logger.info("No había archivo de descargas diarias para eliminar.")
 
 
-async def downloads_left(uid: int) -> Union[int, str]:
+async def downloads_left(uid: int, tg_user: Optional[Any] = None) -> Union[int, str]:
     """
     Devuelve el número de descargas restantes según el nivel de usuario:
     - Staff/Admin: ilimitadas
@@ -109,7 +109,7 @@ async def downloads_left(uid: int) -> Union[int, str]:
     used = st.get("downloads_used", 0)
 
     from services.user_service import get_effective_user
-    user_data = await get_effective_user(uid)
+    user_data = await get_effective_user(uid, tg_user=tg_user)
     role = user_data.get("role", "free")
 
     if role in ("admin", "staff", "premium"):
@@ -126,13 +126,13 @@ async def downloads_left(uid: int) -> Union[int, str]:
     return remaining if remaining > 0 else 0
 
 
-async def can_download(uid: int) -> bool:
+async def can_download(uid: int, tg_user: Optional[Any] = None) -> bool:
     """
     Comprueba si el usuario aún puede descargar:
     - Siempre True para PremiumList
     - True si quedan descargas para VIPList, WhiteList o usuarios normales
     """
-    left = await downloads_left(uid)
+    left = await downloads_left(uid, tg_user=tg_user)
     if left == "ilimitadas":
         return True
     return left > 0

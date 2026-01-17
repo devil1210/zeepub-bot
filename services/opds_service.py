@@ -188,7 +188,7 @@ async def mostrar_colecciones(
     if not st.get("historial") or title in ("📚 Categorías", "📁 Biblioteca ZeePubs", "📁 ZeePubs [ES]"):
         try:
             from services.user_service import get_effective_user
-            user_info = await get_effective_user(uid)
+            user_info = await get_effective_user(uid, tg_user=update.effective_user)
             if user_info.get("role") in ("admin", "staff"):
                 keyboard.append([InlineKeyboardButton("💡 Para ti (Beta)", callback_data="rec|ver")])
         except Exception as e:

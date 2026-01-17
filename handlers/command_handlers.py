@@ -39,7 +39,7 @@ class CommandHandlers:
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
 
         uid = update.effective_user.id
-        left = await downloads_left(uid)
+        left = await downloads_left(uid, tg_user=update.effective_user)
 
         first_name = update.effective_user.first_name
 
@@ -109,7 +109,7 @@ class CommandHandlers:
         # Helper: Determine if user is a Publisher
         # Logic: Nivel Staff AND Rol Publicador
         from services.user_service import get_effective_user
-        user_data_start = await get_effective_user(uid)
+        user_data_start = await get_effective_user(uid, tg_user=update.effective_user)
         role_start = user_data_start.get("role", "free")
         custom_status_start = user_data_start.get("custom_status")
 
@@ -231,7 +231,7 @@ class CommandHandlers:
         # Obtener info extendida
         from services.user_service import get_effective_user
 
-        user_data = await get_effective_user(uid)
+        user_data = await get_effective_user(uid, tg_user=target_user)
 
         roles_display = {
             "admin": "Admin 🛠️",

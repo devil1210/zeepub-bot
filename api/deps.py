@@ -39,6 +39,8 @@ async def get_telegram_user_id(
 
 
 async def get_current_user_data(
+    x_telegram_init_data: Optional[str] = Header(None, alias="x-telegram-init-data"),
+    x_telegram_data: Optional[str] = Header(None, alias="X-Telegram-Data"),
     user_id: int = Depends(get_telegram_user_id),
 ) -> Dict[str, Any]:
     """
@@ -47,7 +49,18 @@ async def get_current_user_data(
     if user_id == 0:
         return {"user_id": 0, "role": "anonymous", "has_mini_app_access": False}
 
-    data = await get_effective_user(user_id)
+    # Extract user metadata from initData to allow nickname sync
+    init_data = x_telegram_init_data or x_telegram_data
+    tg_user = None
+    if init_data:
+        try:
+            res = validate_telegram_data(init_data, config.TELEGRAM_TOKEN)
+            if res:
+                tg_user = res.get("user")
+        except Exception:
+            pass
+
+    data = await get_effective_user(user_id, tg_user=tg_user)
     data["user_id"] = user_id
     return data
 

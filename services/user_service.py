@@ -85,7 +85,7 @@ async def get_user_info(telegram_id: int) -> Optional[Dict[str, Any]]:
     return await user_repo.get_by_id(telegram_id)
 
 
-async def get_effective_user(uid: int, use_cache: bool = True) -> Dict[str, Any]:
+async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional[Any] = None) -> Dict[str, Any]:
     """
     Determina el rol efectivo del usuario y estado, considerando DB y Config (legacy).
     Retorna un dict con keys: role, status_label, expires_at (puede ser None).
@@ -98,11 +98,23 @@ async def get_effective_user(uid: int, use_cache: bool = True) -> Dict[str, Any]
         if cached:
             return cached
 
+    # Extract nickname if tg_user provided
+    nickname_from_tg = None
+    if tg_user:
+        if isinstance(tg_user, dict):
+            # From API/WebApp
+            first_name = tg_user.get("first_name", "")
+            last_name = tg_user.get("last_name", "")
+            nickname_from_tg = f"{first_name} {last_name}".strip() or tg_user.get("username")
+        else:
+            # From Bot (Telegram User object)
+            nickname_from_tg = getattr(tg_user, 'full_name', getattr(tg_user, 'first_name', None))
+
     result = {
         "role": "free",
         "status_label": "Lector",
         "expires_at": None,
-        "nickname": None,
+        "nickname": nickname_from_tg,
     }
 
     # 1. Config Admins always have top precedence
@@ -137,13 +149,18 @@ async def get_effective_user(uid: int, use_cache: bool = True) -> Dict[str, Any]
             role_str = role_db.lower() if isinstance(role_db, str) else "free"
             custom_status = info.get("custom_status")
 
+            # Update nickname if missing and we have it now
+            db_nickname = info.get("nickname")
+            if nickname_from_tg and not db_nickname:
+                await update_user_nickname(uid, nickname_from_tg)
+                db_nickname = nickname_from_tg
+
             # Normalize DB roles to internal standards just in case
             result = {
                 "role": role_str,
                 "status_label": custom_status or role_str.capitalize(),
                 "expires_at": expires_at,
-                "nickname": info.get("nickname"),
-                "custom_status": custom_status,
+                "nickname": db_nickname,
                 "custom_status": custom_status,
                 "settings": info.get("settings", {}),
                 # has_mini_app_access will be set by default logic below
@@ -153,7 +170,7 @@ async def get_effective_user(uid: int, use_cache: bool = True) -> Dict[str, Any]
     if not info and uid not in config.ADMIN_USERS:
         # PROACTIVE SYNC: Create minimal user record if not exists
         logger.info(f"Auto-registering user {uid} (Lector level)")
-        await user_repo.create_minimal_user(uid)
+        await user_repo.create_minimal_user(uid, nickname=nickname_from_tg)
         # Re-fetch access info to ensure result is populated
         access_info = await user_repo.get_access_info(uid)
 
