@@ -889,7 +889,8 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "file_modified_at": b.file_modified_at.isoformat() if b.file_modified_at else None,
                     "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
                     "series_hash": b.series_hash,
-                    "content_hash": b.content_hash
+                    "content_hash": b.content_hash,
+                    "book_hash": b.book_hash or b.content_hash  # Use book_hash, fallback to content_hash
                 })
             client.table('local_books').upsert(books_data).execute()
             

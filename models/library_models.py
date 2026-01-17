@@ -95,6 +95,7 @@ class LocalBook(Base):
     # Identificadores estables basados en metadatos
     series_hash = Column(String(64), index=True)  # Agrupa volúmenes de la misma serie/tipo
     content_hash = Column(String(64), index=True, unique=True)  # Identifica el EPUB específico (incluye volumen y traductor)
+    book_hash = Column(String(64), index=True)  # Identificador único del libro para reportes y descargas
 
     source = relationship("LibrarySource", back_populates="books")
 

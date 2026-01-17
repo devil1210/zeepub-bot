@@ -226,6 +226,8 @@ class ScannerService:
             # Generar hashes estables
             book.series_hash = self._generate_series_hash(book)
             book.content_hash = self._generate_book_hash(book)
+            book.book_hash = book.content_hash  # book_hash is same as content_hash for local books
+
 
             # Guardar Portada
             if extractor.cover_data:
