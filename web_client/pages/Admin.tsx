@@ -662,7 +662,25 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
               }}
             />
           )}
+
+          {/* User Permissions Editor */}
+          {currentView === 'tiers' && selectedUserId && !configuringTier && (() => {
+            const selectedUser = users.find(u => u.id === selectedUserId);
+            return (
+              <UserPermissions
+                userId={selectedUserId}
+                userData={selectedUser ? {
+                  username: selectedUser.username,
+                  id: selectedUser.id,
+                  level: selectedUser.level?.name || 'Lector',
+                  avatar: undefined
+                } : undefined}
+                onBack={() => setSelectedUserId(null)}
+              />
+            );
+          })()}
         </div >
+
       )}
 
       {/* Admin Floating Navigation - Always visible for quick access */}
