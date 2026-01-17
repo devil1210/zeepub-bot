@@ -43,6 +43,16 @@ class MetricsRepository:
         if not content_hash:
             return False
         
+        # 1. Try Local First (Faster)
+        async with self.db_manager.connection() as conn:
+            cursor = await conn.execute(
+                "SELECT 1 FROM user_downloads WHERE user_id = ? AND content_hash = ? LIMIT 1",
+                (user_id, content_hash),
+            )
+            if await cursor.fetchone() is not None:
+                return True
+
+        # 2. Supabase Fallback (if enabled and not found locally)
         if self.supabase.is_active:
             try:
                 res = self.supabase.get_client().table('user_downloads').select("id").eq('user_id', user_id).eq('content_hash', content_hash).limit(1).execute()
@@ -50,17 +60,26 @@ class MetricsRepository:
             except Exception as e:
                 logger.error(f"Supabase metrics has_downloaded error: {e}")
 
-        async with self.db_manager.connection() as conn:
-            cursor = await conn.execute(
-                "SELECT 1 FROM user_downloads WHERE user_id = ? AND content_hash = ? LIMIT 1",
-                (user_id, content_hash),
-            )
-            return await cursor.fetchone() is not None
+        return False
 
     async def get_total_downloads(self, content_hash: str) -> int:
         if not content_hash:
             return 0
         
+        # 1. Try Local First
+        local_count = 0
+        async with self.db_manager.connection() as conn:
+            cursor = await conn.execute(
+                "SELECT COUNT(*) FROM user_downloads WHERE content_hash = ?",
+                (content_hash,),
+            )
+            row = await cursor.fetchone()
+            local_count = row[0] if row else 0
+            
+        if local_count > 0:
+            return local_count
+
+        # 2. Supabase Fallback
         if self.supabase.is_active:
             try:
                 res = self.supabase.get_client().table('user_downloads').select("id", count='exact').eq('content_hash', content_hash).execute()
@@ -68,13 +87,7 @@ class MetricsRepository:
             except Exception as e:
                 logger.error(f"Supabase metrics get_total_downloads error: {e}")
 
-        async with self.db_manager.connection() as conn:
-            cursor = await conn.execute(
-                "SELECT COUNT(*) FROM user_downloads WHERE content_hash = ?",
-                (content_hash,),
-            )
-            row = await cursor.fetchone()
-            return row[0] if row else 0
+        return local_count
 
     async def get_series_downloads(self, series_hash: str) -> int:
         if not series_hash:
