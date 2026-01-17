@@ -48,6 +48,7 @@ class MaintenancePlugin(BasePlugin):
             app.add_handler(CommandHandler("clear_history", self.clear_history))
             app.add_handler(CommandHandler("scan_library", self.scan_library, block=False))
             app.add_handler(CommandHandler("reset_stats", self.reset_stats))
+            app.add_handler(CommandHandler("reset_library", self.reset_library))
 
             # Publisher/Admin commands
             app.add_handler(CommandHandler("export_db", self.export_db))
@@ -747,3 +748,107 @@ class MaintenancePlugin(BasePlugin):
         except Exception as e:
             logger.error(f"Error en reset_stats: {e}", exc_info=True)
             await update.message.reply_text(f"❌ Error al reiniciar: {str(e)}")
+
+    async def reset_library(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Comando: /reset_library
+        Resetea completamente la base de datos local de la biblioteca.
+        Solo para admin. Requiere confirmación.
+        """
+        user_id = update.effective_user.id
+        tid = get_thread_id(update)
+
+        # Verificar que el usuario sea admin
+        if user_id not in config.ADMIN_IDS:
+            await update.message.reply_text(
+                "❌ <b>Acceso Denegado</b>\n\n"
+                "Este comando solo está disponible para administradores.",
+                parse_mode="HTML",
+                message_thread_id=tid
+            )
+            return
+
+        # Verificar si hay argumento de confirmación
+        if not context.args or context.args[0].upper() != "CONFIRMAR":
+            await update.message.reply_text(
+                "⚠️ <b>ADVERTENCIA: Reset de Base de Datos Local</b>\n\n"
+                "Este comando eliminará:\n"
+                "• Toda la base de datos local (<code>library.db</code>)\n"
+                "• Todas las portadas generadas\n"
+                "• Todos los thumbnails móviles\n"
+                "• Todas las fuentes de biblioteca configuradas\n\n"
+                "Necesitarás volver a escanear tu biblioteca después de esto.\n\n"
+                "⚠️ <b>Para confirmar, ejecuta:</b>\n"
+                "<code>/reset_library CONFIRMAR</code>",
+                parse_mode="HTML",
+                message_thread_id=tid
+            )
+            return
+
+        msg = await update.message.reply_text(
+            "🔄 <b>Reseteando base de datos local...</b>",
+            parse_mode="HTML",
+            message_thread_id=tid
+        )
+
+        try:
+            from utils.library_db import DB_PATH, COVERS_DIR
+            
+            items_deleted = []
+            
+            # 1. Eliminar base de datos
+            if os.path.exists(DB_PATH):
+                try:
+                    os.remove(DB_PATH)
+                    items_deleted.append("✅ Base de datos eliminada")
+                except Exception as e:
+                    logger.error(f"Error eliminando DB: {e}")
+                    await msg.edit_text(
+                        f"❌ <b>Error eliminando base de datos:</b>\n<code>{e}</code>",
+                        parse_mode="HTML"
+                    )
+                    return
+            else:
+                items_deleted.append("ℹ️ Base de datos no existía")
+            
+            # 2. Eliminar directorio de portadas
+            cover_count = 0
+            if os.path.exists(COVERS_DIR):
+                try:
+                    # Contar archivos
+                    cover_count = len([f for f in os.listdir(COVERS_DIR) if os.path.isfile(os.path.join(COVERS_DIR, f))])
+                    
+                    shutil.rmtree(COVERS_DIR)
+                    items_deleted.append(f"✅ {cover_count} portadas eliminadas")
+                except Exception as e:
+                    logger.error(f"Error eliminando portadas: {e}")
+                    items_deleted.append(f"⚠️ Error eliminando portadas: {e}")
+            else:
+                items_deleted.append("ℹ️ Directorio de portadas no existía")
+            
+            # 3. Recrear directorio de portadas vacío
+            try:
+                os.makedirs(COVERS_DIR, exist_ok=True)
+                items_deleted.append("✅ Directorio de portadas recreado")
+            except Exception as e:
+                logger.error(f"Error recreando directorio: {e}")
+                items_deleted.append(f"⚠️ Error recreando directorio: {e}")
+            
+            # Mensaje de éxito
+            summary = "\n".join(items_deleted)
+            await msg.edit_text(
+                f"✨ <b>Base de Datos Local Reseteada</b>\n\n"
+                f"<b>Resumen:</b>\n{summary}\n\n"
+                f"📝 <b>Próximo paso:</b>\n"
+                f"Ejecuta <code>/scan_library</code> para reindexar tus libros.",
+                parse_mode="HTML"
+            )
+            
+            logger.info(f"Admin {user_id} reseted library database. {cover_count} covers deleted.")
+            
+        except Exception as e:
+            logger.error(f"Error en reset_library: {e}")
+            await msg.edit_text(
+                f"❌ <b>Error durante el reset:</b>\n<code>{e}</code>",
+                parse_mode="HTML"
+            )
