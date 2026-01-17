@@ -403,6 +403,60 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                       </button>
                     </div>
 
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-white text-[10px] uppercase">🐳 Reiniciar Bot Docker</h4>
+                        <RefreshCw className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                      </div>
+                      <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Reinicia el contenedor Docker del bot</p>
+                      <button
+                        onClick={async () => {
+                          if (!confirm('¿Reiniciar el contenedor Docker del bot?\n\nEl bot estará offline por unos segundos.')) {
+                            return;
+                          }
+                          try {
+                            const response = await api.rpc('admin_restart_docker', {});
+                            if (response.success) {
+                              alert(`✅ ${response.message}\n\nEl bot se está reiniciando...`);
+                            } else {
+                              alert(`❌ Error: ${response.message}`);
+                            }
+                          } catch (error: any) {
+                            alert(`❌ Error al reiniciar: ${error.message}`);
+                          }
+                        }}
+                        className="w-full py-2 text-[9px] font-black text-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95"
+                      >
+                        🐳 Reiniciar Bot
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-white text-[10px] uppercase">⬆️ Update System</h4>
+                        <Download className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                      </div>
+                      <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Ejecuta git pull y reinicia el sistema</p>
+                      <button
+                        onClick={async () => {
+                          const forceUpdate = confirm('¿Actualizar el sistema?\n\nEsto ejecutará git pull y reiniciará el bot.\n\n❗ Click "Cancelar" para actualización normal\n❗ Click "OK" para forzar y sobrescribir cambios locales');
+                          try {
+                            const response = await api.rpc('admin_update_system', { force: forceUpdate });
+                            if (response.success) {
+                              alert(`✅ ${response.message}\n\nOutput:\n${response.output || 'Sin cambios'}`);
+                            } else {
+                              alert(`❌ Error: ${response.message}\n\n${response.output || ''}`);
+                            }
+                          } catch (error: any) {
+                            alert(`❌ Error al actualizar: ${error.message}`);
+                          }
+                        }}
+                        className="w-full py-2 text-[9px] font-black text-center bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-green-600/20 active:scale-95"
+                      >
+                        ⬆️ Update System
+                      </button>
+                    </div>
+
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-bold text-white text-[10px] uppercase">Backup Base de Datos (SQLite)</h4>
