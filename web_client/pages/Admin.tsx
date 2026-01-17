@@ -658,6 +658,12 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 console.log('Saving tier config:', config);
                 // TODO: Save to backend
               }}
+              // Callbacks for parent navigation control
+              onSavingChange={(saving) => setSavingTierConfig(saving)}
+              onCanUndoChange={(canUndo) => setCanUndoTier(canUndo)}
+              onCanApplyChange={(canApply) => setCanApplyTier(canApply)}
+              onUndoRef={(undoFn) => tierUndoRef.current = undoFn}
+              onSaveRef={(saveFn) => tierSaveRef.current = saveFn}
             />
           )}
 
@@ -713,8 +719,14 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
               <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
               <button
-                onClick={() => permissionsUndoRef.current?.()}
-                disabled={!canUndoPerms}
+                onClick={() => {
+                  if (configuringTier) {
+                    tierUndoRef.current?.();
+                  } else if (selectedUserId) {
+                    permissionsUndoRef.current?.();
+                  }
+                }}
+                disabled={configuringTier ? !canUndoTier : !canUndoPerms}
                 className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white disabled:opacity-30"
               >
                 <Undo2 className="w-4 h-4" strokeWidth={2} />
@@ -724,12 +736,18 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
               <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
               <button
-                onClick={() => permissionsSaveRef.current?.()}
-                disabled={!canApplyPerms || savingUserPerms}
+                onClick={() => {
+                  if (configuringTier) {
+                    tierSaveRef.current?.();
+                  } else if (selectedUserId) {
+                    permissionsSaveRef.current?.();
+                  }
+                }}
+                disabled={(configuringTier ? !canApplyTier || savingTierConfig : !canApplyPerms || savingUserPerms)}
                 className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-primary hover:text-primary-light disabled:opacity-30"
               >
-                <div className={`p-1.5 rounded-full transition-all duration-300 ${canApplyPerms && !savingUserPerms ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
-                  {savingUserPerms ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <CheckCircle className="w-4 h-4 text-white" strokeWidth={2.5} />}
+                <div className={`p-1.5 rounded-full transition-all duration-300 ${(configuringTier ? canApplyTier && !savingTierConfig : canApplyPerms && !savingUserPerms) ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
+                  {(configuringTier ? savingTierConfig : savingUserPerms) ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <CheckCircle className="w-4 h-4 text-white" strokeWidth={2.5} />}
                 </div>
                 <span className="text-[8px] font-black uppercase tracking-tight mt-1">Aplicar</span>
               </button>
