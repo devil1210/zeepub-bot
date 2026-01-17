@@ -253,6 +253,82 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 for row in rows
             ]
 
+    async def list_users(self, limit: int = 50, offset: int = 0, search: str = None) -> list[Dict[str, Any]]:
+        """
+        Retorna la lista de usuarios con su nivel y estadísticas de descargas.
+        """
+        query = """
+            SELECT 
+                u.telegram_id, 
+                u.nickname, 
+                u.role, 
+                ul.name as level_name, 
+                ul.color as level_color,
+                u.total_downloads,
+                ul.daily_downloads
+            FROM users u
+            LEFT JOIN user_levels ul ON u.level_id = ul.id
+        """
+        params = []
+        if search:
+            query += " WHERE u.nickname LIKE ? OR CAST(u.telegram_id AS TEXT) LIKE ?"
+            params.extend([f"%{search}%", f"%{search}%"])
+        
+        query += " ORDER BY u.added_at DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
+        results = []
+        async with self.db.connection() as conn:
+            cursor = await conn.execute(query, tuple(params))
+            rows = await cursor.fetchall()
+            for row in rows:
+                tid, nickname, role, l_name, l_color, total_dl, daily_limit = row
+                
+                # Fetch downloads today from state_manager proxy if possible or just return a placeholder
+                # In a real app we'd query download_history for today
+                used_today = 0 # Placeholder, should be fetched per-user in a real scenario
+                
+                results.append({
+                    "id": str(tid),
+                    "username": nickname or f"User_{tid}",
+                    "role": role,
+                    "level": {
+                        "name": l_name or "N/A",
+                        "color": l_color or "#888888"
+                    },
+                    "downloads": {
+                        "used": used_today,
+                        "limit": daily_limit,
+                        "total": total_dl
+                    }
+                })
+        return results
+
+    async def update_user_level(self, telegram_id: int, level_id: int):
+        """Cambia el nivel de un usuario."""
+        # Mapping level_id to role for consistency
+        level_to_role = {
+            1: 'admin',
+            2: 'staff',
+            3: 'premium',
+            4: 'vip',
+            5: 'white',
+            6: 'free'
+        }
+        role = level_to_role.get(level_id, 'free')
+        
+        async with self.db.connection() as conn:
+            await conn.execute(
+                "UPDATE users SET level_id = ?, role = ? WHERE telegram_id = ?",
+                (level_id, role, telegram_id)
+            )
+            # Sync admins table
+            if role == 'admin':
+                await conn.execute("INSERT OR IGNORE INTO admins (user_id) VALUES (?)", (telegram_id,))
+            else:
+                await conn.execute("DELETE FROM admins WHERE user_id = ?", (telegram_id,))
+            await conn.commit()
+
     async def update_level(self, level_id: int, data: Dict[str, Any]):
         """
         Actualiza la configuración de un nivel.

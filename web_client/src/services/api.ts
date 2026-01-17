@@ -86,6 +86,10 @@ export const api = {
     getAdminStats: () => rpc('admin_stats'),
     getAdminTiers: () => rpc('admin_get_tiers'),
     saveAdminTier: (tierData: any) => rpc('admin_save_tier', tierData),
+    getAdminUsers: (limit: number = 20, offset: number = 0, search?: string) =>
+        rpc('admin_get_users', { limit, offset, search }),
+    setAdminUserLevel: (userId: string, levelId: number) =>
+        rpc('admin_set_user_level', { userId, levelId }),
 
     // Raw RPC Access
     rpc: rpc

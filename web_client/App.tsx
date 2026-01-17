@@ -135,6 +135,7 @@ const AppContent: React.FC = () => {
   // Render Logic
   const renderContent = () => {
     const { tab, series, volume } = currentState;
+    const { isAdmin } = useTelegram();
 
     if (volume && series) {
       return (
@@ -166,7 +167,7 @@ const AppContent: React.FC = () => {
       case 'requests':
         return <RequestBook onNavigate={onNavigate} />;
       case 'admin':
-        return <Admin onNavigate={onNavigate} />;
+        return isAdmin ? <Admin onNavigate={onNavigate} /> : <Dashboard onNavigate={onNavigate} />;
       case 'settings':
         return <Settings onNavigate={onNavigate} />;
       case 'downloads':

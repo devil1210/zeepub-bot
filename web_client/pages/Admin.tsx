@@ -49,16 +49,22 @@ interface AdminStats {
   growthTrend: { date: string; users: number; downloads: number; }[];
 }
 
-interface UserLevel {
+price: number;
+}
+
+interface AdminUser {
   id: string;
-  name: string;
-  priority: number;
-  color: string;
-  hasAccess: boolean;
-  dailyDownloads: number;
-  earlyAccess: boolean;
-  customThemes: boolean;
-  price: number;
+  username: string;
+  role: string;
+  level: {
+    name: string;
+    color: string;
+  };
+  downloads: {
+    used: number;
+    limit: number;
+    total: number;
+  };
 }
 
 interface AdminProps {
@@ -71,14 +77,22 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const [currentView, setCurrentView] = useState<'overview' | 'system' | 'tiers'>('overview');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [levels, setLevels] = useState<UserLevel[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingLevel, setSavingLevel] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchAdminData = async () => {
     try {
-      const statsData = await api.rpc('admin_stats', {});
-      const levelsData = await api.rpc('admin_get_tiers', {});
+      setLoading(true);
+      const [statsData, levelsData, usersData] = await Promise.all([
+        api.getAdminStats(),
+        api.getAdminTiers(),
+        api.getAdminUsers(20, 0, searchQuery)
+      ]);
       setStats(statsData as AdminStats);
       setLevels(levelsData.levels as UserLevel[]);
+      setUsers(usersData.users as AdminUser[]);
     } catch (error) {
       console.error("Error fetching admin data:", error);
     } finally {
@@ -86,10 +100,36 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleSaveLevel = async (level: UserLevel) => {
+    try {
+      setSavingLevel(level.id);
+      await api.saveAdminTier(level);
+      // Small feedback
+      const originalLevels = [...levels];
+      setLevels(levels.map(l => l.id === level.id ? level : l));
+      setTimeout(() => setSavingLevel(null), 1000);
+    } catch (error) {
+      console.error("Error saving level:", error);
+      setSavingLevel(null);
+    }
+  };
+
+  const handleUpdateUserLevel = async (userId: string, levelId: string) => {
+    try {
+      await api.setAdminUserLevel(userId, parseInt(levelId));
+      fetchAdminData();
+    } catch (error) {
+      console.error("Error updating user level:", error);
+    }
+  };
+
   useEffect(() => {
     fetchAdminData();
+  }, [searchQuery]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
-      api.rpc('admin_stats', {}).then(data => setStats(data as AdminStats));
+      api.getAdminStats().then(data => setStats(data as AdminStats));
     }, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -327,29 +367,139 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                         <input
                           type="number"
                           className="w-16 bg-black/40 border border-white/5 rounded-lg p-2 text-center font-bold text-white text-sm"
-                          defaultValue={level.dailyDownloads}
+                          value={level.dailyDownloads}
+                          onChange={(e) => setLevels(levels.map(l => l.id === level.id ? { ...l, dailyDownloads: parseInt(e.target.value) } : l))}
                         />
                       </div>
                       <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5">
                         <span className="text-xs font-bold text-gray-300">Early Access</span>
-                        <div className={`w-10 h-5.5 rounded-full relative transition-colors cursor-pointer ${level.earlyAccess ? 'bg-primary' : 'bg-gray-700'}`}>
+                        <div
+                          onClick={() => setLevels(levels.map(l => l.id === level.id ? { ...l, earlyAccess: !l.earlyAccess } : l))}
+                          className={`w-10 h-5.5 rounded-full relative transition-colors cursor-pointer ${level.earlyAccess ? 'bg-primary' : 'bg-gray-700'}`}
+                        >
                           <div className={`absolute top-1 w-3.5 h-3.5 bg-white rounded-full transition-all ${level.earlyAccess ? 'left-5.5' : 'left-1'}`}></div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5">
                         <span className="text-xs font-bold text-gray-300">Temas Custom</span>
-                        <div className={`w-10 h-5.5 rounded-full relative transition-colors cursor-pointer ${level.customThemes ? 'bg-primary' : 'bg-gray-700'}`}>
+                        <div
+                          onClick={() => setLevels(levels.map(l => l.id === level.id ? { ...l, customThemes: !l.customThemes } : l))}
+                          className={`w-10 h-5.5 rounded-full relative transition-colors cursor-pointer ${level.customThemes ? 'bg-primary' : 'bg-gray-700'}`}
+                        >
                           <div className={`absolute top-1 w-3.5 h-3.5 bg-white rounded-full transition-all ${level.customThemes ? 'left-5.5' : 'left-1'}`}></div>
                         </div>
                       </div>
                     </div>
                     <div className="p-6 bg-white/5 border-t border-white/5">
-                      <button className="w-full py-4 bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2">
-                        <Save className="w-4 h-4" /> Guardar Cambios
+                      <button
+                        onClick={() => handleSaveLevel(level)}
+                        disabled={savingLevel === level.id}
+                        className={`w-full py-4 ${savingLevel === level.id ? 'bg-green-500 text-white' : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'} text-xs font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2`}
+                      >
+                        {savingLevel === level.id ? <ShieldCheck className="w-4 h-4 animate-bounce" /> : <Save className="w-4 h-4" />}
+                        {savingLevel === level.id ? 'Guardado' : 'Guardar Cambios'}
                       </button>
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* REGISTER TABLE - Match screenshot */}
+              <div className="glass-panel rounded-[40px] border border-white/5 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 mt-12">
+                <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div>
+                    <h3 className="text-xl font-black text-white uppercase flex items-center gap-3">
+                      <Layers className="w-6 h-6 text-primary" />
+                      Registros Activos
+                    </h3>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Gestionar cuentas individuales y anular permisos.</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                      <input
+                        type="text"
+                        placeholder="Filtrar por ID o Usuario..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-black/40 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white focus:ring-1 ring-primary min-w-[240px]"
+                      />
+                    </div>
+                    <button className="px-4 py-2.5 bg-white/5 text-xs font-black uppercase tracking-widest text-gray-400 rounded-xl hover:text-white transition-colors border border-white/5">Filtros</button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-white/[0.02] border-b border-white/5">
+                        <th className="p-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">ID Registro</th>
+                        <th className="p-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Identidad</th>
+                        <th className="p-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Nivel de Acceso</th>
+                        <th className="p-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Utilización Cuota</th>
+                        <th className="p-6 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Ops</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.02]">
+                      {users.map((user) => (
+                        <tr key={user.id} className="hover:bg-white/[0.01] transition-colors group">
+                          <td className="p-6 text-xs text-gray-500 font-mono">#{user.id}</td>
+                          <td className="p-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center text-[10px] font-black text-primary border border-white/5 uppercase">
+                                {user.username.charAt(0)}
+                              </div>
+                              <span className="text-sm font-bold text-white">{user.username}</span>
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <select
+                              value={levels.find(l => l.name === user.level.name)?.id || '6'}
+                              onChange={(e) => handleUpdateUserLevel(user.id, e.target.value)}
+                              style={{ color: user.level.color }}
+                              className="bg-white/5 border border-white/10 rounded-lg py-1 px-3 text-[10px] font-black uppercase tracking-widest cursor-pointer focus:ring-1 ring-primary"
+                            >
+                              {levels.map(l => (
+                                <option key={l.id} value={l.id} className="bg-gray-900 text-white">{l.name}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="p-6 min-w-[200px]">
+                            <div className="flex flex-col gap-2">
+                              <div className="flex justify-between text-[10px] font-black uppercase">
+                                <span className={user.downloads.used >= user.downloads.limit && user.downloads.limit !== -1 ? 'text-red-400' : 'text-primary'}>
+                                  {user.downloads.used} / {user.downloads.limit === -1 ? '∞' : user.downloads.limit}
+                                </span>
+                              </div>
+                              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-1000 ${user.downloads.used >= user.downloads.limit && user.downloads.limit !== -1 ? 'bg-red-500' : 'bg-primary'}`}
+                                  style={{ width: `${user.downloads.limit === -1 ? 0 : Math.min(100, (user.downloads.used / user.downloads.limit) * 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-6 text-right">
+                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-primary transition-colors">
+                                <RotateCcw className="w-4 h-4" />
+                              </button>
+                              <button className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-red-500 transition-colors">
+                                <Eraser className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="p-6 bg-white/[0.01] border-t border-white/5 text-center">
+                  <button className="text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2 mx-auto disabled:opacity-50">
+                    Siguiente Página <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
             </div>
           )}

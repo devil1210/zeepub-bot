@@ -23,6 +23,7 @@ import {
 import { Series } from '../types';
 import { SearchScopeModal } from '../components/SearchScopeModal';
 import { api } from '../src/services/api';
+import { preloadImages } from '../src/utils/imagePreloader';
 
 interface SearchProps {
   onSelectSeries: (series: Series) => void;
@@ -79,6 +80,20 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         setSeries(mapped);
         setTotalPages(res.totalPages || 1);
         setTotalResults(res.totalResults || mapped.length);
+
+        // Preload current results
+        const currentCovers = mapped.map(s => s.coverUrl);
+        preloadImages(currentCovers);
+
+        // Preload next page in background if available
+        if (page < (res.totalPages || 1)) {
+          api.searchBooks(query, page + 1, selectedScope.toLowerCase()).then(nextRes => {
+            if (nextRes && nextRes.results) {
+              const nextCovers = nextRes.results.map((item: any) => item.cover || '');
+              preloadImages(nextCovers);
+            }
+          });
+        }
       } else {
         setSeries([]);
       }

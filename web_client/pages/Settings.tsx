@@ -31,8 +31,7 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { settings, updateSettings, resetSettings } = useTheme();
-  const { user: tgUser } = useTelegram();
-  const [isAdmin, setIsAdmin] = useState(true); // Simulation toggle
+  const { user: tgUser, isAdmin, status } = useTelegram();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
@@ -54,15 +53,6 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
       <ReportIssueModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
       <RequestBookModal isOpen={isRequestModalOpen} onClose={() => setIsRequestModalOpen(false)} />
 
-      {/* Simulation Toggle for Demo */}
-      <div className="mb-6 flex justify-end">
-        <button
-          onClick={() => setIsAdmin(!isAdmin)}
-          className="text-[10px] uppercase font-bold tracking-widest bg-white/5 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10 text-gray-400 transition-colors"
-        >
-          {isAdmin ? 'Simulando: Admin' : 'Simulando: Usuario'}
-        </button>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Profile & Quick Actions */}

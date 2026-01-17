@@ -15,27 +15,35 @@ import {
 } from 'lucide-react';
 import { api } from '../src/services/api';
 import { useTelegram } from '../contexts/TelegramContext';
+import { preloadImages } from '../src/utils/imagePreloader';
 
 interface DashboardProps {
   onNavigate?: (tab: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { user: tgUser } = useTelegram();
-  const [status, setStatus] = useState<any>(null);
+  const { user: tgUser, status } = useTelegram();
   const [history, setHistory] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statusRes, historyRes] = await Promise.all([
-          api.getUserStatus(),
-          api.getDownloadHistory()
+        const [historyRes, recRes] = await Promise.all([
+          api.getDownloadHistory(),
+          api.getRecommendations(6)
         ]);
-        setStatus(statusRes);
+
         if (historyRes && historyRes.downloads) {
           setHistory(historyRes.downloads);
+        }
+
+        if (recRes && recRes.results) {
+          setRecommendations(recRes.results);
+          // Preload recommendation covers
+          const covers = recRes.results.map((r: any) => r.cover || '');
+          preloadImages(covers);
         }
       } catch (error) {
         console.error("Dashboard data fetch failed", error);
@@ -126,6 +134,53 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
 
+          {/* Recommendations Section */}
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-sm font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                <Star className="w-4 h-4 text-yellow-500" />
+                Recomendados para ti
+              </h3>
+              <button
+                onClick={() => onNavigate && onNavigate('search')}
+                className="text-[10px] font-black text-primary hover:text-white uppercase tracking-widest bg-primary/5 hover:bg-primary px-3 py-1.5 rounded-lg border border-primary/20 transition-all flex items-center gap-1"
+              >
+                Ver Catálogo <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6">
+              {loading ? (
+                Array(6).fill(0).map((_, i) => (
+                  <div key={i} className="aspect-[2/3] rounded-2xl bg-white/5 animate-pulse border border-white/5 shadow-inner"></div>
+                ))
+              ) : (
+                recommendations.map((book, i) => (
+                  <div
+                    key={i}
+                    className="group cursor-pointer flex flex-col"
+                    onClick={() => onNavigate && onNavigate('search')}
+                  >
+                    <div className="relative aspect-[2/3] rounded-2xl overflow-hidden mb-3 border border-white/10 shadow-2xl group-hover:scale-[1.05] group-hover:shadow-primary/20 transition-all duration-500 ring-1 ring-white/5">
+                      <img
+                        src={book.cover || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200"}
+                        alt={book.title}
+                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                        <div className="flex items-center gap-1 text-yellow-400 mb-1">
+                          <Star className="w-2.5 h-2.5 fill-current" />
+                          <span className="text-[10px] font-bold">{book.rating_average || 'N/A'}</span>
+                        </div>
+                        <span className="text-[10px] font-black text-white line-clamp-2 leading-tight">{book.title}</span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] font-bold text-gray-400 truncate px-1 group-hover:text-primary transition-colors text-center">{book.title}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
         </div>
 

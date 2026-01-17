@@ -8,6 +8,7 @@ import {
    ArrowDownUp,
    Filter
 } from 'lucide-react';
+import { preloadImages } from '../src/utils/imagePreloader';
 
 interface LibraryProps {
    onNavigate?: (tab: string) => void;
@@ -16,6 +17,17 @@ interface LibraryProps {
 
 export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) => {
    const { settings } = useTheme();
+
+   React.useEffect(() => {
+      preloadImages([
+         'https://lh3.googleusercontent.com/aida-public/AB6AXuCIAvtXCCRr1DdCjOnabIOkCW2Sp6NMP7ps9Nh9nuV_k-OPfIhoftkSihrTpVchLKRuoFU4fRS-wUvbfri_69LtYsT6-OiNoRKy2vpTL4abAb84gdP0HT-3nw27q294CKcSeM9qQ98RACjZTquO0jZlaRhjPg8Lk-_7cLPYgI-OKPyYEHezSVpxxow6kOLq5uc_BAk1vaqzt-vfqIRvpYIUnbhZBhoCNa4VIHVA6O00lJYYKX6MHmmspDSauVh0OBzSKb_jjxO3Y6I',
+         'https://lh3.googleusercontent.com/aida-public/AB6AXuCfiOnuSU03lAssHkL9Pk67gxh-aQXuxzds5tvWpBDy7wMjZZDhAcPlRr8VWLyVSS382qrLuq_WoruRpU3ZKP6rDt2CPPUNZMlRaIEBM8oSPhKgPnqAFOA6zq1j5BF4m35Ignmy1qONB_Io1M9KBPST0EIkrWrnZydC0mieoJmcqF2FqOjsj9ExlITAIwcuLZKL51JaTdLLzHRDZaxhPAdNWzQROTqAzG_ycKbrfAyMlPeksUWl9duDX-ZFFKzRYQ2MtuO5IEVG7MY',
+         'https://lh3.googleusercontent.com/aida-public/AB6AXuCKNIZwQN3zeokE87YW_n3IPKpm3nUgRIXkNX-3OHx-fOLRO_rZErpdu7PPDE3lpKhqeTagdxkjLnZBChqx9WYKJBwk34EnqhYHb51ga6GV_pJidZmngMNiS30D_fDpbmjtxOpIjv5oyQrbJ1uvhZOUSAOTpAwV4g6DyIZ8HUh1twTCboRzi8BX3TRTQbP5gq_FcvNidtO4ntNm05XZFesAF7_eV7ZyVCIcJKXph7cISdNUSt5Iy4-3yqSM2i7iwHMV6Djfd4SxifY',
+         'https://lh3.googleusercontent.com/aida-public/AB6AXuAEH5pFFmH_qC2YnQFl6ycA962y11h1tzGNDS9Ke5lyI5uoAG3-n4_W0HFRt9y8BCx7KcD3JMemxEttvm58KFcwlX7GsGcPH1Jg5_HMVKggU578SReEnal9deMDGnvaRK_LrPEP0kHg4I3gttm_aCynHmzo9hGq0s7gxTVyu6Xad5OWjikUVTVWsVWwCzvfNKCux0hI5Ygv5cLnc9dleS5WxB5ghaDIYNkz5q6-fbMteTXgNN3Ptgu18mwJTYM7bRfLN5Mvv4NsSM0',
+         'https://lh3.googleusercontent.com/aida-public/AB6AXuBhhAc828PEvGhsWOq-OVw_UphG1nC9uKyj72NYJp9XFzhZpQqvhFEyR7MM58oPNd9JSOQjFu173G5JCD7Aoioj1jmUQ6KvBJsunvMzQWacM748PiT494Y6MN0TS-IWEn6r4AlilDwT70TeEt7bOn7Brws4eJ-bkcD02w0WpaP8Rx1p46OjYEffz9bPTAQvNrKUAyQS17jVHfEV8uXwTtzF2zEArhl6UzpJCoL_OLRS_eC9G_yhLeUTgW3MpoNzZRG-RAkJEpQi2uU'
+      ]);
+   }, []);
+
    return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 animate-in fade-in duration-500 pb-28">
 

@@ -24,6 +24,7 @@ import {
   List
 } from 'lucide-react';
 import { Series, Volume } from '../types';
+import { preloadImages } from '../src/utils/imagePreloader';
 
 interface SeriesDetailProps {
   series: Series;
@@ -86,6 +87,10 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               epubVersion: v.epubVersion
             }));
             setVolumes(mappedVols);
+
+            // Preload volume covers
+            const volCovers = mappedVols.map(v => v.coverUrl);
+            preloadImages(volCovers);
 
             // Update synopsis from the first volume if available
             if (mappedVols.length > 0) {

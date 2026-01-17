@@ -685,3 +685,33 @@ async def handle_admin_save_tier(data: Dict[str, Any], user_data: Dict[str, Any]
     await user_repo.update_level(int(level_id), data)
     return {"success": True}
 
+
+async def handle_admin_get_users(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Obtiene la lista paginada de usuarios para el panel admin."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    limit = data.get("limit", 20)
+    offset = data.get("offset", 0)
+    search = data.get("search")
+    
+    users = await user_repo.list_users(limit=limit, offset=offset, search=search)
+    return {"users": users}
+
+
+async def handle_admin_set_user_level(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Cambia el nivel de un usuario específico."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    target_id = data.get("userId")
+    level_id = data.get("levelId")
+    
+    if not target_id or not level_id:
+        raise HTTPException(status_code=400, detail="Faltan parámetros userId o levelId")
+    
+    await user_repo.update_user_level(int(target_id), int(level_id))
+    return {"success": True}
+

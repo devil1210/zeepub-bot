@@ -10,11 +10,28 @@ interface TelegramUser {
   photo_url?: string;
 }
 
+export interface UserStatus {
+  user: {
+    id: number;
+    username: string;
+    role: string;
+    status_label: string;
+    downloads: {
+      used: number;
+      limit: number;
+    };
+  };
+  hasUnlimitedDownloads: boolean;
+}
+
 interface TelegramContextType {
   webApp: any;
   user: TelegramUser | null;
+  status: UserStatus | null;
+  isAdmin: boolean;
   isExpanded: boolean;
   ready: boolean;
+  refreshStatus: () => Promise<void>;
 }
 
 const TelegramContext = createContext<TelegramContextType | undefined>(undefined);
@@ -22,20 +39,31 @@ const TelegramContext = createContext<TelegramContextType | undefined>(undefined
 export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [webApp, setWebApp] = useState<any>(null);
   const [user, setUser] = useState<TelegramUser | null>(null);
+  const [status, setStatus] = useState<UserStatus | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [ready, setReady] = useState(false);
   const { updateSettings } = useTheme();
+
+  const refreshStatus = async () => {
+    try {
+      const { api } = await import('../src/services/api');
+      const res = await api.getUserStatus();
+      setStatus(res);
+    } catch (e) {
+      console.error("Failed to refresh user status", e);
+    }
+  };
 
   useEffect(() => {
     // Check if running inside Telegram
     if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
       const tg = (window as any).Telegram.WebApp;
       setWebApp(tg);
-      
+
       // Initialize
       tg.ready();
       setReady(true);
-      
+
       // Expand by default
       if (!tg.isExpanded) {
         tg.expand();
@@ -47,43 +75,49 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUser(tg.initDataUnsafe.user);
       }
 
+      // Initial status fetch
+      refreshStatus();
+
       // Sync Theme
       const applyTelegramTheme = () => {
-          if (tg.themeParams) {
-            // Map Telegram theme params to app theme settings
-            const bg = tg.themeParams.bg_color || '#000000';
-            const buttonColor = tg.themeParams.button_color || '#2AABEE';
-            // Determine if dark or light based on bg color brightness roughly
-            // Simple heuristic
-            updateSettings({
-                primaryColor: buttonColor,
-                theme: 'dark' // Force dark for now based on design requirements, or detect
-            });
-            
-            document.documentElement.style.setProperty('--app-bg', bg);
-          }
+        if (tg.themeParams) {
+          // Map Telegram theme params to app theme settings
+          const bg = tg.themeParams.bg_color || '#000000';
+          const buttonColor = tg.themeParams.button_color || '#2AABEE';
+          // Determine if dark or light based on bg color brightness roughly
+          // Simple heuristic
+          updateSettings({
+            primaryColor: buttonColor,
+            theme: 'dark' // Force dark for now based on design requirements, or detect
+          });
+
+          document.documentElement.style.setProperty('--app-bg', bg);
+        }
       };
-      
+
       applyTelegramTheme();
       // Listen for theme changes if API supports it (future proofing)
-      
+
     } else {
-        // Fallback for browser testing
-        console.log("Telegram WebApp not detected. Running in browser mode.");
-        setReady(true);
-        // Mock user for dev
-        setUser({
-            id: 123456,
-            first_name: "Dev",
-            last_name: "User",
-            username: "dev_user",
-            photo_url: "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"
-        });
+      // Fallback for browser testing
+      console.log("Telegram WebApp not detected. Running in browser mode.");
+      setReady(true);
+      // Mock user for dev
+      setUser({
+        id: 123456,
+        first_name: "Dev",
+        last_name: "User",
+        username: "dev_user",
+        photo_url: "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"
+      });
+      refreshStatus();
     }
   }, []);
 
+  const isAdmin = status?.user?.role === 'admin';
+
   return (
-    <TelegramContext.Provider value={{ webApp, user, isExpanded, ready }}>
+    <TelegramContext.Provider value={{ webApp, user, status, isAdmin, isExpanded, ready, refreshStatus }}>
       {children}
     </TelegramContext.Provider>
   );
