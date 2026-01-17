@@ -11,6 +11,7 @@ from fastapi import HTTPException
 
 from config.config_settings import config
 import os
+import shutil
 from core.db_manager import db_manager
 from core.supabase_manager import supabase_manager
 from utils.library_db import get_session
@@ -975,6 +976,18 @@ async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, 
         except Exception as e:
             logger.error(f"Error recreating covers dir: {e}")
             items_deleted.append(f"Error recreando directorio: {e}")
+        
+        # 4. Recreate database with proper schema to avoid readonly issues
+        try:
+            from models.library_models import Base
+            from sqlalchemy import create_engine
+            
+            engine = create_engine(f"sqlite:///{DB_PATH}")
+            Base.metadata.create_all(engine)
+            items_deleted.append("Base de datos recreada con esquema correcto")
+        except Exception as e:
+            logger.error(f"Error recreating database schema: {e}")
+            items_deleted.append(f"Advertencia recreando esquema: {e}")
         
         logger.info(f"Admin {user_data.get('telegram_id')} reset library database. {cover_count} covers deleted.")
         
