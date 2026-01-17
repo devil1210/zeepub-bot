@@ -759,7 +759,7 @@ class MaintenancePlugin(BasePlugin):
         tid = get_thread_id(update)
 
         # Verificar que el usuario sea admin
-        if user_id not in config.ADMIN_IDS:
+        if user_id not in config.ADMIN_USERS:
             await update.message.reply_text(
                 "❌ <b>Acceso Denegado</b>\n\n"
                 "Este comando solo está disponible para administradores.",
