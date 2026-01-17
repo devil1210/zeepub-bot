@@ -578,46 +578,36 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                         <div
                           key={user.id}
                           onClick={() => setSelectedUserId(user.id)}
-                          className="glass-panel p-4 rounded-xl border border-white/5 hover:border-primary/30 transition-all cursor-pointer group flex flex-col gap-4"
+                          className="glass-panel p-4 rounded-xl border border-white/5 hover:border-primary/30 transition-all cursor-pointer group 
+                            flex flex-col md:flex-row gap-4 md:items-center"
                         >
-                          <div className="flex items-center gap-3">
+                          {/* User Avatar and Info */}
+                          <div className="flex items-center gap-3 md:flex-1">
                             <div
-                              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-lg"
+                              className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm md:text-base font-bold shadow-lg flex-shrink-0"
                               style={{ backgroundColor: `${tierColor}20`, color: tierColor, border: `1px solid ${tierColor}30` }}
                             >
                               {user.username.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex flex-col min-w-0">
-                              <span className="text-sm font-bold text-white truncate">{user.username}</span>
-                              <span className="text-[10px] font-mono text-gray-500 truncate">#{user.id}</span>
+                              <span className="text-sm md:text-base font-bold text-white truncate">{user.username}</span>
+                              <span className="text-[10px] md:text-xs font-mono text-gray-500 truncate">#{user.id}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between">
+                          {/* Tier Badge */}
+                          <div className="flex items-center justify-between md:justify-start md:gap-4">
                             <span
-                              className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider"
+                              className="px-2 py-0.5 rounded text-[9px] md:text-[10px] font-black uppercase tracking-wider whitespace-nowrap"
                               style={{ backgroundColor: `${tierColor}15`, color: tierColor, border: `1px solid ${tierColor}20` }}
                             >
                               {tierName}
                             </span>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-                                onClick={(e) => { e.stopPropagation(); }}
-                              >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                className="p-1.5 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
-                                onClick={(e) => { e.stopPropagation(); }}
-                              >
-                                <Eraser className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
                           </div>
 
-                          <div className="space-y-1.5 pt-2 border-t border-white/5">
-                            <div className="flex justify-between items-center text-[9px] uppercase tracking-widest font-bold">
+                          {/* Usage Stats - Horizontal on desktop */}
+                          <div className="space-y-1.5 pt-2 md:pt-0 border-t md:border-t-0 md:border-l border-white/5 md:pl-4 md:flex-1">
+                            <div className="flex justify-between items-center text-[9px] md:text-[10px] uppercase tracking-widest font-bold">
                               <span className="text-gray-500">Uso de Cuota</span>
                               <span className={isWarning ? 'text-red-400' : 'text-primary'}>
                                 {Math.min(100, user.downloads.limit === -1 ? 0 : (user.downloads.used / user.downloads.limit) * 100).toFixed(0)}%
@@ -690,8 +680,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
       )}
 
-      {/* Admin Floating Navigation - Dynamic: changes buttons based on context */}
-      <div className="fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
+      {/* Admin Floating Navigation - Mobile Only: changes buttons based on context */}
+      <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{

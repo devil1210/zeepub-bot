@@ -1113,7 +1113,7 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
         client = supabase_manager.get_client()
         
         result = client.table('users').select(
-            'telegram_id, nickname, role, level_id, can_report, bypass_limits, beta_tester, is_super_admin, added_at'
+            'telegram_id, nickname, role, level_id, can_report, bypass_limits, beta_tester, added_at'
         ).eq('telegram_id', int(user_id)).execute()
         
         if not result.data:
@@ -1140,7 +1140,7 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
                 "canReport": user.get("can_report", True),
                 "bypassLimits": user.get("bypass_limits", False),
                 "betaTester": user.get("beta_tester", False),
-                "isAdmin": user.get("is_super_admin", False) or user.get("role") == "admin",
+                "isAdmin": user.get("role") == "admin",
                 "addedAt": user.get("added_at")
             }
         }
