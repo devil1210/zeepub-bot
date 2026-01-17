@@ -522,67 +522,6 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         </div>
                     </div>
                 </div>
-
-                {/* Floating Footer Navigation Bar for Admin */}
-                <div className="fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-6 duration-500 max-w-7xl mx-auto">
-                    <div
-                        className="glass-panel rounded-[2rem] p-1.5 border-2 border-white/5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] flex items-center justify-between overflow-hidden"
-                        style={{
-                            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-                            backdropFilter: `blur(${settings.glassBlur}px)`,
-                            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-                        }}
-                    >
-                        <div className="flex items-center gap-2 max-w-[1200px] mx-auto w-full">
-                            {/* Home Button */}
-                            <button
-                                onClick={() => onNavigate && onNavigate('dashboard')}
-                                className="flex-none flex flex-col items-center justify-center p-3 rounded-2xl bg-black/40 border border-white/5 hover:bg-white/5 text-gray-500 hover:text-white transition-all w-20"
-                            >
-                                <Layout className="w-5 h-5" strokeWidth={2.5} />
-                                <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-60">Home</span>
-                            </button>
-
-                            <div className="w-px h-10 bg-white/10"></div>
-
-                            {/* Membership Button */}
-                            <button
-                                onClick={onBack}
-                                className="flex-none flex flex-col items-center justify-center p-3 rounded-2xl bg-black/40 border border-white/5 hover:bg-white/5 text-gray-500 hover:text-white transition-all w-24"
-                            >
-                                <Layers className="w-5 h-5" strokeWidth={2.5} />
-                                <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-60">Membership</span>
-                            </button>
-
-                            <div className="w-px h-10 bg-white/10"></div>
-
-                            {/* Undo Button */}
-                            <button
-                                onClick={handleUndo}
-                                disabled={JSON.stringify(config) === JSON.stringify(originalConfig)}
-                                className="flex-none flex flex-col items-center justify-center p-3 rounded-2xl bg-black/40 border border-white/5 hover:bg-white/5 text-gray-500 hover:text-orange-400 transition-all disabled:opacity-30 disabled:pointer-events-none w-20"
-                            >
-                                <div className="group-hover:rotate-[-45deg] transition-transform">
-                                    <RotateCcw className="w-5 h-5" strokeWidth={2.5} />
-                                </div>
-                                <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-60">Undo</span>
-                            </button>
-
-                            {/* Apply Button */}
-                            <button
-                                onClick={handleSave}
-                                disabled={saving || JSON.stringify(config) === JSON.stringify(originalConfig)}
-                                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[1.5rem] bg-primary text-white shadow-xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale ml-2"
-                            >
-                                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" strokeWidth={2.5} />}
-                                <div className="flex flex-col items-start leading-none">
-                                    <span className="text-[10px] opacity-80 font-medium">CONFIRM</span>
-                                    <span className="text-sm font-black uppercase tracking-widest">Apply</span>
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
         </>
     );
