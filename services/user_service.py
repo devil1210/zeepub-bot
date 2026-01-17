@@ -150,6 +150,13 @@ async def get_effective_user(uid: int, use_cache: bool = True) -> Dict[str, Any]
             }
 
     # 4. Fallback default policy for non-DB users
+    if not info and uid not in config.ADMIN_USERS:
+        # PROACTIVE SYNC: Create minimal user record if not exists
+        logger.info(f"Auto-registering user {uid} (Lector level)")
+        await user_repo.create_minimal_user(uid)
+        # Re-fetch access info to ensure result is populated
+        access_info = await user_repo.get_access_info(uid)
+
     if "has_mini_app_access" not in result:
         # Default policy: Restricted access for unknown users (matching Lector behavior)
         # Admins and Staff from config will have this set to True explicitly below/above

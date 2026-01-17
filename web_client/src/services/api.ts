@@ -90,6 +90,8 @@ export const api = {
         rpc('admin_get_users', { limit, offset, search }),
     setAdminUserLevel: (userId: string, levelId: number) =>
         rpc('admin_set_user_level', { userId, levelId }),
+    adminBackupLibrary: () => rpc('admin_backup_library'),
+    adminScanLibrary: (force: boolean = false) => rpc('admin_scan_library', { force }),
 
     // Raw RPC Access
     rpc: rpc

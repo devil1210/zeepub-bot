@@ -9,6 +9,11 @@ from typing import Dict, Any
 from fastapi import HTTPException
 
 from config.config_settings import config
+import os
+from core.db_manager import db_manager
+from core.supabase_manager import supabase_manager
+from utils.library_db import get_session
+from models.library_models import LocalBook, LibrarySource
 from core.state_manager import state_manager
 from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
@@ -755,3 +760,107 @@ async def handle_admin_set_user_level(data: Dict[str, Any], user_data: Dict[str,
     await user_repo.update_user_level(int(target_id), int(level_id))
     return {"success": True}
 
+
+async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Syncs SQLite library data to Supabase."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    if not config.ENABLE_SUPABASE:
+        return {"success": False, "message": "Supabase no está habilitado."}
+
+    try:
+        session = get_session()
+        sources = session.query(LibrarySource).all()
+        books = session.query(LocalBook).all()
+        
+        client = supabase_manager.get_client()
+        
+        # 1. Sync Sources
+        for s in sources:
+            source_data = {
+                "id": s.id,
+                "name": s.name,
+                "path": s.path,
+                "last_scanned": s.last_scanned.isoformat() if s.last_scanned else None
+            }
+            client.table('library_sources').upsert(source_data).execute()
+            
+        # 2. Sync Books in batches
+        batch_size = 100
+        for i in range(0, len(books), batch_size):
+            batch = books[i:i+batch_size]
+            books_data = []
+            for b in batch:
+                books_data.append({
+                    "id": b.id,
+                    "source_id": b.source_id,
+                    "filepath": b.filepath,
+                    "filename": b.filename,
+                    "file_size": b.file_size,
+                    "hash_md5": b.hash_md5,
+                    "title": b.title,
+                    "romaji_title": b.romaji_title,
+                    "english_title": b.english_title,
+                    "series": b.series,
+                    "series_clean": b.series_clean,
+                    "volume": float(b.volume) if b.volume is not None else None,
+                    "author": b.author,
+                    "illustrator": b.illustrator,
+                    "translator": b.translator,
+                    "layout_by": b.layout_by,
+                    "publisher": b.publisher,
+                    "isbn": b.isbn,
+                    "asin": b.asin,
+                    "uri_id": b.uri_id,
+                    "published_at": b.published_at,
+                    "modified_at_opf": b.modified_at_opf,
+                    "book_type": b.book_type,
+                    "epub_version": b.epub_version,
+                    "word_count": b.word_count,
+                    "page_count": b.page_count,
+                    "reading_time": b.reading_time,
+                    "rating_average": b.rating_average,
+                    "rating_count": b.rating_count,
+                    "description": b.description,
+                    "demographics": b.demographics,
+                    "tags": b.tags,
+                    "language": b.language,
+                    "cover_path": b.cover_path,
+                    "file_created_at": b.file_created_at.isoformat() if b.file_created_at else None,
+                    "file_modified_at": b.file_modified_at.isoformat() if b.file_modified_at else None,
+                    "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
+                    "series_hash": b.series_hash,
+                    "content_hash": b.content_hash
+                })
+            client.table('local_books').upsert(books_data).execute()
+            
+        session.close()
+        return {"success": True, "message": f"Sincronizados {len(sources)} fuentes y {len(books)} libros."}
+    except Exception as e:
+        logger.error(f"Error backup library to Supabase: {e}")
+        return {"success": False, "message": str(e)}
+
+async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Activates forced library scan."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    force = data.get("force", False)
+    
+    try:
+        from services.scanner_service import ScannerService
+        libs_json = os.getenv("LOCAL_LIBRARIES")
+        if not libs_json:
+            return {"success": False, "message": "LOCAL_LIBRARIES no configurada."}
+            
+        scanner = ScannerService(libs_json)
+        # We use asyncio.to_thread to not block the FastAPI loop
+        await asyncio.to_thread(scanner.sync_all, force_scan=force)
+        
+        return {"success": True, "message": "Escaneo completado."}
+    except Exception as e:
+        logger.error(f"Error scanning library via API: {e}")
+        return {"success": False, "message": str(e)}

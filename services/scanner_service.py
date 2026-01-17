@@ -86,6 +86,7 @@ class ScannerService:
             # SI el libro existe pero no tiene metadata enriquecida (word_count es 0 o None),
             # forzamos el procesamiento de metadata técnica
             force_metadata = False
+            filename = os.path.basename(filepath)
             if book and (not book.word_count or book.word_count == 0):
                 logger.info(f"Forzando extracción de metadata para {filename} (metadata faltante)")
                 force_metadata = True

@@ -291,6 +291,19 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         Crea un registro básico de usuario si no existe.
         Level 6 = Lector (default), role = 'free'
         """
+        if self.supabase.is_active:
+            try:
+                # Check if exists first to avoid overwriting existing roles
+                res = self.supabase.get_client().table('users').select('telegram_id').eq('telegram_id', telegram_id).execute()
+                if not res.data:
+                    self.supabase.get_client().table('users').insert({
+                        "telegram_id": telegram_id,
+                        "level_id": level_id,
+                        "role": 'free'
+                    }).execute()
+            except Exception as e:
+                logger.error(f"Supabase create_minimal_user error: {e}")
+
         async with self.db.connection() as conn:
             await conn.execute(
                 "INSERT OR IGNORE INTO users (telegram_id, level_id, role, added_at) VALUES (?, ?, ?, ?)",
