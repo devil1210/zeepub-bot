@@ -442,10 +442,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                           }
 
                           try {
-                            const response = await api.post('/api/miniapp', {
-                              action: 'admin_reset_library',
-                              data: { confirmed: true }
-                            });
+                            const response = await api.rpc('admin_reset_library', { confirmed: true });
 
                             if (response.success) {
                               alert(`✅ ${response.message}\n\n📊 Detalles:\n${response.details?.join('\n') || ''}\n\n📝 Próximo paso: Escanea tu biblioteca para reindexar tus libros.`);
