@@ -1,5 +1,6 @@
 import json
 import logging
+from sqlalchemy import func
 import urllib.parse
 import asyncio
 import time
@@ -609,10 +610,58 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
     if user_role != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
 
-    # 1. Active Sessions (Users in memory as proxy)
+    # 1. Dynamic System Metrics
+    total_users = 0
+    total_books = 0
+    dls_24h = 0
+    
+    if user_repo.supabase.is_active:
+        try:
+            # Users
+            res_u = user_repo.supabase.get_client().table('users').select("telegram_id", count='exact').execute()
+            total_users = res_u.count or 0
+            
+            # Books
+            res_b = user_repo.supabase.get_client().table('local_books').select("id", count='exact').execute()
+            total_books = res_b.count or 0
+            
+            # Downloads 24h
+            day_ago = (datetime.now() - timedelta(hours=24)).isoformat()
+            res_d = user_repo.supabase.get_client().table('download_history').select("id", count='exact').gte('downloaded_at', day_ago).execute()
+            dls_24h = res_d.count or 0
+        except Exception as e:
+            logger.error(f"Supabase metrics error: {e}")
+    else:
+        async with user_repo.db.connection() as conn:
+            # Users
+            cur = await conn.execute("SELECT COUNT(*) FROM users")
+            total_users = (await cur.fetchone())[0]
+            
+            # Downloads 24h
+            cur = await conn.execute("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= datetime('now', '-1 day')")
+            dls_24h = (await cur.fetchone())[0]
+        
+        # Books (always from local session for now or repo)
+        from utils.library_db import get_session
+        from models.library_models import LocalBook
+        s = get_session()
+        total_books = s.query(LocalBook).count()
+        s.close()
+
+    # Calculate Uptime
+    from api.main import app_state
+    start_time = app_state.get("start_time", time.time())
+    uptime_seconds = int(time.time() - start_time)
+    days, remainder = divmod(uptime_seconds, 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, _ = divmod(remainder, 60)
+    
+    uptime_text = f"{days}d {hours}h {minutes}m" if days > 0 else f"{hours}h {minutes}m"
+
+    # 2. Active Sessions (Users in memory as proxy)
     active_sessions = len(state_manager.user_state)
 
-    # 2. Storage usage
+    # 3. Storage usage
     from utils.library_db import get_session
     from models.library_models import LocalBook
     session = get_session()
@@ -703,7 +752,11 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
             {"date": "15 Nov", "users": 1200, "downloads": 2400},
             {"date": "30 Nov", "users": 1350, "downloads": 2800},
             {"date": "15 Dic", "users": 1500, "downloads": 3100}
-        ] # Placeholder for trend
+        ], # Placeholder for trend
+        "totalUsers": total_users,
+        "totalBooks": total_books,
+        "downloads24h": dls_24h,
+        "uptime": uptime_text
     }
 
 

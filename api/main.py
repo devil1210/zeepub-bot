@@ -18,8 +18,11 @@ logger = logging.getLogger(__name__)
 # Instancia global del bot
 bot = ZeePubBot()
 
+import time
+app_start_time = time.time()
+
 # Estado de la aplicación para acceso desde rutas
-app_state = {}
+app_state = {"start_time": app_start_time}
 
 
 @asynccontextmanager

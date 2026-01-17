@@ -48,6 +48,10 @@ interface AdminStats {
     cover?: string;
   } | null;
   growthTrend: { date: string; users: number; downloads: number; }[];
+  totalUsers: number;
+  totalBooks: number;
+  downloads24h: number;
+  uptime: string;
 }
 
 interface UserLevel {
@@ -191,21 +195,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
           </h1>
         </div>
 
-        <div className="flex items-center gap-2 p-1 bg-white/5 rounded-2xl border border-white/5">
-          {viewOptions.map((v) => (
-            <button
-              key={v.id}
-              onClick={() => setCurrentView(v.id)}
-              className={`flex items-center gap-2 px-3 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentView === v.id
-                ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                : 'text-gray-500 hover:text-white hover:bg-white/5'
-                }`}
-            >
-              <v.icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              <span className="inline">{v.label}</span>
-            </button>
-          ))}
-        </div>
+        {/* Navigation Bar removed as requested - using bottom nav only */}
       </div>
 
       {loading ? (
@@ -299,9 +289,9 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
                   <div className="relative z-10">
                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Usuarios Activos</p>
-                    <h3 className="text-2xl font-bold text-white mt-1">12,482</h3>
+                    <h3 className="text-2xl font-bold text-white mt-1">{stats?.totalUsers?.toLocaleString() || '0'}</h3>
                     <div className="flex items-center mt-2 text-[10px] text-green-500 font-bold uppercase tracking-wider">
-                      <TrendingUp className="w-3 h-3 mr-1" /> +4.5% esta semana
+                      <TrendingUp className="w-3 h-3 mr-1" /> Sincronizado
                     </div>
                   </div>
                   <div className="p-3 bg-blue-500/10 rounded-xl text-primary">
@@ -312,9 +302,9 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
                   <div className="relative z-10">
                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Índice Biblioteca</p>
-                    <h3 className="text-2xl font-bold text-white mt-1">843,209</h3>
+                    <h3 className="text-2xl font-bold text-white mt-1">{stats?.totalBooks?.toLocaleString() || '0'}</h3>
                     <div className="flex items-center mt-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                      <Archive className="w-3 h-3 mr-1" /> 2.4 TB utilizados
+                      <Archive className="w-3 h-3 mr-1" /> {stats?.storageUsedGB} GB utilizados
                     </div>
                   </div>
                   <div className="p-3 bg-purple-500/10 rounded-xl text-purple-400">
@@ -325,9 +315,9 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
                   <div className="relative z-10">
                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Descargas (24h)</p>
-                    <h3 className="text-2xl font-bold text-white mt-1">1,024</h3>
+                    <h3 className="text-2xl font-bold text-white mt-1">{stats?.downloads24h?.toLocaleString() || '0'}</h3>
                     <div className="flex items-center mt-2 text-[10px] text-green-500 font-bold uppercase tracking-wider">
-                      <TrendingUp className="w-3 h-3 mr-1" /> +12% vs ayer
+                      <TrendingUp className="w-3 h-3 mr-1" /> Hoy
                     </div>
                   </div>
                   <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
@@ -337,10 +327,10 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
                 <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
                   <div className="relative z-10">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Uptime Sistema</p>
-                    <h3 className="text-2xl font-bold text-white mt-1">99.9%</h3>
-                    <div className="flex items-center mt-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                      <Zap className="w-3 h-3 mr-1" /> 14d 2h desde reinicio
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Estado Sistema</p>
+                    <h3 className="text-2xl font-bold text-white mt-1">{stats?.uptime || '99.9%'}</h3>
+                    <div className="flex items-center mt-2 text-[10px] text-green-500 font-bold uppercase tracking-wider">
+                      <Zap className="w-3 h-3 mr-1" /> Online
                     </div>
                   </div>
                   <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400">
@@ -612,8 +602,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
         </div >
       )}
 
-      {/* Admin Mobile Floating Navigation */}
-      <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
+      {/* Admin Floating Navigation - Always visible for quick access */}
+      <div className="fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
