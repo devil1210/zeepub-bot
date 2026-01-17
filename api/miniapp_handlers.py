@@ -924,6 +924,71 @@ async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, A
         return {"success": False, "message": str(e)}
 
 
+async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Reset complete library database (admin only, requires confirmation)."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    # Require explicit confirmation
+    confirmed = data.get("confirmed", False)
+    if not confirmed:
+        return {
+            "success": False, 
+            "message": "Confirmación requerida para eliminar la base de datos.",
+            "requireConfirmation": True
+        }
+    
+    try:
+        from utils.library_db import DB_PATH, COVERS_DIR
+        
+        items_deleted = []
+        cover_count = 0
+        
+        # 1. Delete database file
+        if os.path.exists(DB_PATH):
+            try:
+                os.remove(DB_PATH)
+                items_deleted.append("Base de datos eliminada")
+            except Exception as e:
+                logger.error(f"Error deleting DB: {e}")
+                return {"success": False, "message": f"Error eliminando base de datos: {e}"}
+        else:
+            items_deleted.append("Base de datos no existía")
+        
+        # 2. Delete covers directory
+        if os.path.exists(COVERS_DIR):
+            try:
+                cover_count = len([f for f in os.listdir(COVERS_DIR) if os.path.isfile(os.path.join(COVERS_DIR, f))])
+                shutil.rmtree(COVERS_DIR)
+                items_deleted.append(f"{cover_count} portadas eliminadas")
+            except Exception as e:
+                logger.error(f"Error deleting covers: {e}")
+                items_deleted.append(f"Error eliminando portadas: {e}")
+        else:
+            items_deleted.append("Directorio de portadas no existía")
+        
+        # 3. Recreate covers directory
+        try:
+            os.makedirs(COVERS_DIR, exist_ok=True)
+            items_deleted.append("Directorio de portadas recreado")
+        except Exception as e:
+            logger.error(f"Error recreating covers dir: {e}")
+            items_deleted.append(f"Error recreando directorio: {e}")
+        
+        logger.info(f"Admin {user_data.get('telegram_id')} reset library database. {cover_count} covers deleted.")
+        
+        return {
+            "success": True, 
+            "message": "Base de datos local reseteada exitosamente.",
+            "details": items_deleted,
+            "coversDeleted": cover_count
+        }
+    except Exception as e:
+        logger.error(f"Error en handle_admin_reset_library: {e}")
+        return {"success": False, "message": str(e)}
+
+
 async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda la configuración completa de un nivel/tier."""
     user_role = user_data.get("role", "free")
