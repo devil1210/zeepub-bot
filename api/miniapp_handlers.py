@@ -979,11 +979,10 @@ async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, 
         
         # 4. Recreate database with proper schema to avoid readonly issues
         try:
-            from models.library_models import Base
-            from sqlalchemy import create_engine
+            from utils.library_db import init_library_db
             
-            engine = create_engine(f"sqlite:///{DB_PATH}")
-            Base.metadata.create_all(engine)
+            # Initialize database with all tables
+            init_library_db()
             items_deleted.append("Base de datos recreada con esquema correcto")
         except Exception as e:
             logger.error(f"Error recreating database schema: {e}")
