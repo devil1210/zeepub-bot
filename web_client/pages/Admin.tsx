@@ -110,6 +110,15 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const permissionsUndoRef = useRef<(() => void) | null>(null);
   const permissionsSaveRef = useRef<(() => Promise<void>) | null>(null);
 
+  // State for tier configuration editing navigation
+  const [savingTierConfig, setSavingTierConfig] = useState(false);
+  const [canUndoTier, setCanUndoTier] = useState(false);
+  const [canApplyTier, setCanApplyTier] = useState(false);
+
+  // Refs for callback functions from TierConfiguration component
+  const tierUndoRef = useRef<(() => void) | null>(null);
+  const tierSaveRef = useRef<(() => Promise<void>) | null>(null);
+
   const fetchAdminData = async () => {
     try {
       setLoading(true);

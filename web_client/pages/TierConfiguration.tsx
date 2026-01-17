@@ -25,6 +25,12 @@ interface TierConfigurationProps {
     onBack: () => void;
     onSave?: (config: TierConfig) => void;
     onNavigate?: (page: string, ...args: any[]) => void;
+    // Callbacks for parent navigation control
+    onSavingChange?: (saving: boolean) => void;
+    onCanUndoChange?: (canUndo: boolean) => void;
+    onCanApplyChange?: (canApply: boolean) => void;
+    onUndoRef?: (undoFn: () => void) => void;
+    onSaveRef?: (saveFn: () => Promise<void>) => void;
 }
 
 interface TierConfig {
@@ -56,7 +62,13 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
     tierColor,
     onBack,
     onSave,
-    onNavigate
+    onNavigate,
+    // Parent navigation control callbacks
+    onSavingChange,
+    onCanUndoChange,
+    onCanApplyChange,
+    onUndoRef,
+    onSaveRef
 }) => {
     const { settings, updateSettings } = useTheme();
     const [loading, setLoading] = useState(true);
@@ -139,6 +151,27 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         };
         loadTierConfig();
     }, [selectedTierName]);
+
+    // Notify parent of saving state changes
+    useEffect(() => {
+        onSavingChange?.(saving);
+    }, [saving, onSavingChange]);
+
+    // Notify parent of undo/apply availability
+    useEffect(() => {
+        const hasChanges = JSON.stringify(config) !== JSON.stringify(originalConfig);
+        onCanUndoChange?.(hasChanges);
+        onCanApplyChange?.(hasChanges);
+    }, [config, originalConfig, onCanUndoChange, onCanApplyChange]);
+
+    // Expose undo/save functions to parent via refs
+    useEffect(() => {
+        onUndoRef?.(handleUndo);
+    }, [onUndoRef]);
+
+    useEffect(() => {
+        onSaveRef?.(handleSave);
+    }, [onSaveRef]);
 
     const handleSave = async () => {
         try {
