@@ -420,6 +420,47 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                       <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Reinicia contadores y limpia cache global</p>
                       <button className="w-full py-2 text-[9px] font-black text-center bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-red-600/20 active:scale-95">Reiniciar Global</button>
                     </div>
+
+                    <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:border-red-500/50 transition-colors group">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-red-400 text-[10px] uppercase">🗑️ Reset Base de Datos Local</h4>
+                        <Database className="w-4 h-4 text-red-500 group-hover:text-red-400 transition-colors" />
+                      </div>
+                      <p className="text-[10px] text-gray-400 mb-3 uppercase tracking-tight">
+                        ⚠️ Elimina toda la biblioteca indexada, portadas y thumbnails
+                      </p>
+                      <button
+                        onClick={async () => {
+                          if (!confirm('⚠️ ¿Estás ABSOLUTAMENTE SEGURO de que quieres RESETEAR toda la base de datos local?\n\nEsta acción NO SE PUEDE DESHACER.\n\nTendrás que volver a escanear toda tu biblioteca.\n\nClick OK para continuar.')) {
+                            return;
+                          }
+
+                          const confirmText = prompt('Por favor escribe "CONFIRMAR" en mayúsculas para proceder:');
+                          if (confirmText !== 'CONFIRMAR') {
+                            alert('❌ Operación cancelada. No se escribió CONFIRMAR correctamente.');
+                            return;
+                          }
+
+                          try {
+                            const response = await api.post('/api/miniapp', {
+                              action: 'admin_reset_library',
+                              data: { confirmed: true }
+                            });
+
+                            if (response.data.success) {
+                              alert(`✅ ${response.data.message}\n\n📊 Detalles:\n${response.data.details?.join('\n') || ''}\n\n📝 Próximo paso: Escanea tu biblioteca para reindexar tus libros.`);
+                            } else {
+                              alert(`❌ Error: ${response.data.message}`);
+                            }
+                          } catch (error: any) {
+                            alert(`❌ Error al resetear base de datos: ${error.message}`);
+                          }
+                        }}
+                        className="w-full py-2 text-[9px] font-black text-center bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-red-600/30 active:scale-95"
+                      >
+                        🗑️ RESET BIBLIOTECA LOCAL
+                      </button>
+                    </div>
                   </div>
                 </div>
 
