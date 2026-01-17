@@ -117,6 +117,7 @@ export const api = {
         bypassLimits?: boolean;
         betaTester?: boolean;
         isAdmin?: boolean;
+        role?: string;
     }) => rpc('admin_save_user_permissions', permissions),
 
     // Raw RPC Access

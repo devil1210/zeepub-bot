@@ -32,6 +32,7 @@ interface PermissionsState {
   bypassLimits: boolean;
   betaTester: boolean;
   isAdmin: boolean;
+  role: string;
 }
 
 interface Level {
@@ -62,6 +63,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
     bypassLimits: false,
     betaTester: false,
     isAdmin: false,
+    role: userData?.level === 'Administrador' ? 'admin' : 'free',
   });
 
   // Load all available levels and user permissions from API
@@ -109,6 +111,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
                 bypassLimits: res.user.bypassLimits ?? false,
                 betaTester: res.user.betaTester ?? false,
                 isAdmin: res.user.isAdmin ?? false,
+                role: res.user.role || 'free',
               });
             }
           } catch (err: any) {
@@ -156,6 +159,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
         bypassLimits: permissions.bypassLimits,
         betaTester: permissions.betaTester,
         isAdmin: permissions.isAdmin,
+        role: permissions.role,
       });
 
       if (res.success) {
