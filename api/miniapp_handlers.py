@@ -767,6 +767,7 @@ async def handle_admin_get_tiers(data: Dict[str, Any], user_data: Dict[str, Any]
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     levels = await user_repo.get_all_levels()
+    logger.info(f"ADMIN: handle_admin_get_tiers found {len(levels)} levels")
     return {"levels": levels}
 
 
@@ -795,6 +796,7 @@ async def handle_admin_get_users(data: Dict[str, Any], user_data: Dict[str, Any]
     search = data.get("search")
     
     users = await user_repo.list_users(limit=limit, offset=offset, search=search)
+    logger.info(f"ADMIN: handle_admin_get_users found {len(users)} users (limit={limit}, offset={offset}, search={search})")
     return {"users": users}
 
 

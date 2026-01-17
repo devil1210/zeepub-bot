@@ -99,16 +99,20 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const fetchAdminData = async () => {
     try {
       setLoading(true);
+      console.log('[Admin] Fetching admin data...');
       const [statsData, levelsData, usersData] = await Promise.all([
         api.getAdminStats(),
         api.getAdminTiers(),
         api.getAdminUsers(20, 0, searchQuery)
       ]);
+      console.log('[Admin] Stats:', statsData);
+      console.log('[Admin] Levels:', levelsData);
+      console.log('[Admin] Users:', usersData);
       setStats(statsData as AdminStats);
-      setLevels(levelsData.levels as UserLevel[]);
-      setUsers(usersData.users as AdminUser[]);
+      setLevels(levelsData.levels as UserLevel[] || []);
+      setUsers(usersData.users as AdminUser[] || []);
     } catch (error) {
-      console.error("Error fetching admin data:", error);
+      console.error("[Admin] Error fetching admin data:", error);
     } finally {
       setLoading(false);
     }
