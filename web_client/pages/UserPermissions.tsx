@@ -123,12 +123,13 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
             console.log('[UserPermissions] API Response:', res);
             if (res.success && res.user) {
               console.log('[UserPermissions] Setting user data:', res.user);
+              console.log('[UserPermissions] levelId from API:', res.user.levelId, typeof res.user.levelId);
               if (res.user.username) setDisplayName(res.user.username);
               if (res.user.levelName) setDisplayLevel(res.user.levelName);
               if (res.user.levelColor) setDisplayColor(res.user.levelColor);
 
               const newPerms = {
-                levelId: res.user.levelId,
+                levelId: res.user.levelId ?? null,
                 levelName: res.user.levelName || 'Básico',
                 canReport: res.user.canReport ?? true,
                 bypassLimits: res.user.bypassLimits ?? false,
@@ -136,6 +137,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 isAdmin: res.user.isAdmin ?? false,
                 role: res.user.role || 'free',
               };
+              console.log('[UserPermissions] Setting permissions to:', newPerms);
               setPermissions(newPerms);
               setInitialPermissions(newPerms);
             } else {
