@@ -49,7 +49,16 @@ interface AdminStats {
   growthTrend: { date: string; users: number; downloads: number; }[];
 }
 
-price: number;
+interface UserLevel {
+  id: string;
+  name: string;
+  priority: number;
+  color: string;
+  hasAccess: boolean;
+  dailyDownloads: number;
+  earlyAccess: boolean;
+  customThemes: boolean;
+  price: number;
 }
 
 interface AdminUser {
