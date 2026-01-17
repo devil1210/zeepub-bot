@@ -33,9 +33,22 @@ const defaultSettings: ThemeSettings = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<ThemeSettings>(defaultSettings);
+  const [settings, setSettings] = useState<ThemeSettings>(() => {
+    const saved = localStorage.getItem('zeepub_theme_settings');
+    if (saved) {
+      try {
+        return { ...defaultSettings, ...JSON.parse(saved) };
+      } catch (e) {
+        console.error('Error parsing saved theme settings:', e);
+      }
+    }
+    return defaultSettings;
+  });
 
   useEffect(() => {
+    // Save settings to localStorage
+    localStorage.setItem('zeepub_theme_settings', JSON.stringify(settings));
+
     // Apply settings to CSS variables
     const root = document.documentElement;
     root.style.setProperty('--color-primary', settings.primaryColor);
@@ -80,6 +93,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const resetSettings = () => {
+    localStorage.removeItem('zeepub_theme_settings');
     setSettings(defaultSettings);
   };
 

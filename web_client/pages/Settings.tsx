@@ -31,7 +31,7 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { settings, updateSettings, resetSettings } = useTheme();
-  const { user: tgUser, isAdmin, status } = useTelegram();
+  const { user: tgUser, isAdmin, status, customThemes } = useTelegram();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
@@ -310,203 +310,74 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Admin Only: Tier-Based UI Customization */}
-          {isAdmin && (
+          {/* User Specific UI Personalization (Visible if tier has customThemes enabled or is Admin) */}
+          {(customThemes || isAdmin) && (
             <div className="glass-panel p-8 rounded-2xl border-l-4 border-primary relative overflow-hidden animate-in slide-in-from-bottom-4 duration-500 shadow-xl">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <h3 className="text-lg font-black text-white flex items-center gap-2 uppercase tracking-tight">
-                  <PenTool className="text-primary w-5 h-5" />
-                  Personalización UI por Nivel
-                </h3>
-                <div className="flex items-center gap-3">
-                  <label className="text-xs font-medium text-gray-400 whitespace-nowrap">Editando UI para:</label>
-                  <div className="relative">
-                    <select className="block w-full pl-3 pr-8 py-1.5 text-xs font-bold border-white/10 bg-black/20 text-white focus:outline-none focus:ring-primary focus:border-primary rounded-lg transition-all shadow-sm">
-                      <option>Global (Por Defecto)</option>
-                      <option>Nivel Gratuito</option>
-                      <option selected>Nivel VIP</option>
-                      <option>Administrador</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+              <h3 className="text-lg font-black text-white flex items-center gap-2 mb-6 uppercase tracking-tight">
+                <PenTool className="text-primary w-5 h-5" />
+                Personalización de Interfaz
+              </h3>
 
               <div className="space-y-8">
-                {/* Theme Visuals & Colors */}
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Colores y Marca</label>
-                      <p className="text-[10px] text-gray-500 mt-1">Define la identidad visual personalizada para este nivel.</p>
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Color de Acento Personal</label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        className="w-full pl-10 pr-3 py-2 text-sm font-mono bg-black/20 border-white/10 rounded-lg text-white focus:ring-primary focus:border-primary transition-all uppercase"
+                        type="text"
+                        value={settings.primaryColor}
+                        onChange={(e) => handleColorChange(e.target.value)}
+                      />
+                      <div className="absolute left-3 top-2.5 w-4 h-4 rounded shadow-sm border border-white/20" style={{ backgroundColor: settings.primaryColor }}></div>
                     </div>
-                    <span className="text-[9px] bg-primary/10 text-primary px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-primary/20 font-black uppercase tracking-widest">
-                      Sincronización Activada
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col md:flex-row gap-6 p-5 bg-black/20 rounded-xl border border-white/5">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="relative w-24 h-24 rounded-xl shadow-lg border-2 border-white/10 overflow-hidden"
-                        style={{
-                          background: `linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222)`,
-                          backgroundSize: '10px 10px',
-                          backgroundPosition: '0 0, 5px 5px'
-                        }}>
-                        <div className="absolute inset-0 flex items-center justify-center text-center text-[10px] font-black text-white uppercase tracking-widest drop-shadow-md z-10 p-1">Vista Previa</div>
-                        <div className="w-full h-full transition-colors duration-200" style={{ backgroundColor: settings.primaryColor, opacity: settings.glassOpacity }}></div>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-mono text-gray-500 uppercase">{settings.primaryColor}</span>
-                        <span className="text-[9px] font-bold text-primary uppercase">{Math.round(settings.glassOpacity * 100)}% Opacidad</span>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Color de Acento Primario</label>
-                          <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                              <input
-                                className="w-full pl-10 pr-3 py-2 text-sm font-mono bg-black/20 border-white/10 rounded-lg text-white focus:ring-primary focus:border-primary transition-all uppercase"
-                                type="text"
-                                value={settings.primaryColor}
-                                onChange={(e) => handleColorChange(e.target.value)}
-                              />
-                              <div className="absolute left-3 top-2.5 w-4 h-4 rounded shadow-sm border border-white/20" style={{ backgroundColor: settings.primaryColor }}></div>
-                            </div>
-                            <div className="relative overflow-hidden rounded-lg w-10 h-10 border border-white/10">
-                              <input
-                                className="absolute -top-2 -left-2 w-16 h-16 p-0 border-none bg-transparent cursor-pointer"
-                                type="color"
-                                value={settings.primaryColor}
-                                onChange={(e) => handleColorChange(e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Ancho de Portada (Cards)</label>
-                          <div className="pt-2 flex flex-col gap-2">
-                            <input
-                              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                              max="180"
-                              min="80"
-                              type="range"
-                              value={settings.coverWidth}
-                              onChange={(e) => updateSettings({ coverWidth: parseInt(e.target.value) })}
-                            />
-                            <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
-                              <span>80px</span>
-                              <span className="text-primary font-bold">{settings.coverWidth}px</span>
-                              <span>180px</span>
-                            </div>
-                          </div>
-                        </div>
-
-
-                        <div>
-                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Transparencia Nav Bar</label>
-                          <div className="pt-2 flex flex-col gap-2">
-                            <input
-                              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                              max="100"
-                              min="10"
-                              type="range"
-                              value={settings.navOpacity * 100}
-                              onChange={(e) => updateSettings({ navOpacity: parseInt(e.target.value) / 100 })}
-                            />
-                            <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
-                              <span>10%</span>
-                              <span className="text-primary font-bold">{Math.round(settings.navOpacity * 100)}%</span>
-                              <span>100%</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5 flex items-center justify-between">
-                            <span>Transparencia Acento (Alpha)</span>
-                            <span className="text-primary-light lowercase font-mono">Ideal para letras/iconos</span>
-                          </label>
-                          <div className="pt-2 flex flex-col gap-2">
-                            <input
-                              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                              max="100"
-                              min="0"
-                              type="range"
-                              value={settings.accentOpacity * 100}
-                              onChange={(e) => updateSettings({ accentOpacity: parseInt(e.target.value) / 100 })}
-                            />
-                            <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
-                              <span>0%</span>
-                              <span className="text-primary font-bold">{Math.round(settings.accentOpacity * 100)}%</span>
-                              <span>100%</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Nivel de Glassmorphism (Cards)</label>
-                          <div className="pt-2 flex flex-col gap-2">
-                            <input
-                              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                              max="100"
-                              min="10"
-                              type="range"
-                              value={settings.glassOpacity * 100}
-                              onChange={(e) => updateSettings({ glassOpacity: parseInt(e.target.value) / 100 })}
-                            />
-                            <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
-                              <span>10%</span>
-                              <span className="text-primary font-bold">{Math.round(settings.glassOpacity * 100)}%</span>
-                              <span>100%</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="relative overflow-hidden rounded-lg w-10 h-10 border border-white/10">
+                      <input
+                        className="absolute -top-2 -left-2 w-16 h-16 p-0 border-none bg-transparent cursor-pointer"
+                        type="color"
+                        value={settings.primaryColor}
+                        onChange={(e) => handleColorChange(e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-white/5 my-2"></div>
-
-                {/* Glass Intensity */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>
-                    <div className="flex justify-between items-center mb-3">
-                      <div>
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Intensidad Glassmorphism (Blur)</label>
-                        <p className="text-[10px] text-gray-500 mt-1">Cantidad de desenfoque de fondo en píxeles</p>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Nivel de Glassmorphism (Blur)</label>
+                    <div className="pt-2 flex flex-col gap-2">
+                      <input
+                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                        max="40"
+                        min="0"
+                        type="range"
+                        value={settings.glassBlur}
+                        onChange={(e) => updateSettings({ glassBlur: parseInt(e.target.value) })}
+                      />
+                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
+                        <span>0px</span>
+                        <span className="text-primary font-bold">{settings.glassBlur}px</span>
+                        <span>40px</span>
                       </div>
-                      <span className="text-xs font-bold text-primary">{settings.glassBlur}px</span>
-                    </div>
-                    <input
-                      className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
-                      max="40"
-                      min="0"
-                      type="range"
-                      value={settings.glassBlur}
-                      onChange={(e) => updateSettings({ glassBlur: parseInt(e.target.value) })}
-                    />
-                    <div className="mt-2 flex justify-between text-[10px] text-gray-400 font-medium">
-                      <span>Ninguno</span>
-                      <span>Medio</span>
-                      <span>Alto</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 relative overflow-hidden group hover:border-primary/50 transition-colors">
-                    <div className="absolute inset-y-0 left-0 w-1 bg-primary"></div>
-                    <div>
-                      <p className="text-sm font-bold text-white">Inyección CSS Personalizada</p>
-                      <p className="text-[10px] text-gray-500 mt-0.5">Aplicar estilos avanzados para VIPs</p>
-                    </div>
-                    <div className="cursor-pointer relative">
-                      <input defaultChecked className="sr-only peer" type="checkbox" />
-                      <div className="w-11 h-6 bg-gray-700 rounded-full peer-checked:bg-primary transition-colors"></div>
-                      <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Transparencia de Paneles</label>
+                    <div className="pt-2 flex flex-col gap-2">
+                      <input
+                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                        max="100"
+                        min="10"
+                        type="range"
+                        value={settings.glassOpacity * 100}
+                        onChange={(e) => updateSettings({ glassOpacity: parseInt(e.target.value) / 100 })}
+                      />
+                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
+                        <span>10%</span>
+                        <span className="text-primary font-bold">{Math.round(settings.glassOpacity * 100)}%</span>
+                        <span>100%</span>
+                      </div>
                     </div>
                   </div>
                 </div>

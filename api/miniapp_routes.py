@@ -27,6 +27,7 @@ class UserLevelModel(BaseModel):
     priority: int
     color: str
     hasAccess: bool
+    customThemes: bool = False
 
 
 class AccessResponse(BaseModel):
@@ -34,6 +35,7 @@ class AccessResponse(BaseModel):
     hasAccess: bool
     isAdmin: bool
     isBetaTester: bool = False  # Controls new vs old UI
+    customThemes: bool = False
 
 
 class LevelUpdate(BaseModel):
@@ -241,6 +243,7 @@ async def check_user_access(
         hasAccess=has_access,
         isAdmin=is_admin,
         isBetaTester=is_beta_tester,
+        customThemes=access_info["level"].get("customThemes", False) or is_admin
     )
 
 

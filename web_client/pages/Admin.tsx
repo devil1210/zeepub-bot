@@ -456,76 +456,85 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* Tier Cards Row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Free Tier */}
-                <div className="glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
-                  <div className="absolute top-0 right-0 p-4 opacity-5">
-                    <User className="w-16 h-16 text-gray-400" />
-                  </div>
-                  <div className="relative z-10">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2 block">Nivel por Defecto</span>
-                    <h3 className="text-2xl font-black text-white mb-4">Gratuito</h3>
-                    <ul className="space-y-2 mb-6">
-                      <li className="flex items-center gap-2 text-xs text-gray-400"><ShieldCheck className="w-3 h-3 text-green-500" /> Acceso a Catálogo Público</li>
-                      <li className="flex items-center gap-2 text-xs text-gray-400"><ShieldCheck className="w-3 h-3 text-green-500" /> 1 Descarga Diaria</li>
-                      <li className="flex items-center gap-2 text-xs text-gray-400"><Eraser className="w-3 h-3 text-red-500" /> Sin Solicitudes</li>
-                    </ul>
-                    <button
-                      onClick={() => setConfiguringTier({ name: 'Gratuito', color: '#6b7280' })}
-                      className="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-colors border border-white/5"
-                    >
-                      Editar Permisos
-                    </button>
-                  </div>
-                </div>
+              {/* Tier Cards Row - Dynamic */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {levels.sort((a, b) => a.priority - b.priority).map((level) => {
+                  const isDefault = level.id === '1' || level.name.toLowerCase() === 'gratis' || level.name.toLowerCase() === 'gratuito';
+                  const isPopular = level.name.toLowerCase() === 'vip';
 
-                {/* VIP Tier */}
-                <div className="glass-panel p-6 rounded-2xl border border-primary/20 relative overflow-hidden group hover:border-primary/50 transition-all">
-                  <div className="absolute inset-0 bg-primary/5"></div>
-                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Star className="w-16 h-16 text-primary" />
-                  </div>
-                  <div className="relative z-10">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 block">Más Popular</span>
-                    <h3 className="text-2xl font-black text-white mb-4">VIP</h3>
-                    <ul className="space-y-2 mb-6">
-                      <li className="flex items-center gap-2 text-xs text-gray-300"><ShieldCheck className="w-3 h-3 text-primary" /> Descargas Ilimitadas</li>
-                      <li className="flex items-center gap-2 text-xs text-gray-300"><ShieldCheck className="w-3 h-3 text-primary" /> Solicitudes Prioritarias</li>
-                      <li className="flex items-center gap-2 text-xs text-gray-300"><ShieldCheck className="w-3 h-3 text-primary" /> Acceso Anticipado</li>
-                    </ul>
-                    <button
-                      onClick={() => setConfiguringTier({ name: 'VIP', color: settings.primaryColor })}
-                      className="w-full py-2 rounded-lg bg-primary hover:bg-primary-dark text-xs font-bold text-white transition-colors shadow-lg shadow-primary/20"
+                  return (
+                    <div
+                      key={level.id}
+                      className="glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all flex flex-col justify-between"
                     >
-                      Configurar
-                    </button>
-                  </div>
-                </div>
+                      {isPopular && (
+                        <div className="absolute top-0 right-0 p-4 opacity-5">
+                          <Star className="w-16 h-16 text-primary" />
+                        </div>
+                      )}
 
-                {/* Legend Tier */}
-                <div className="glass-panel p-6 rounded-2xl border border-yellow-500/20 relative overflow-hidden group hover:border-yellow-500/50 transition-all">
-                  <div className="absolute inset-0 bg-yellow-500/5"></div>
-                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <TrendingUp className="w-16 h-16 text-yellow-500" />
+                      <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1 block">
+                              {isDefault ? 'Nivel por Defecto' : isPopular ? 'Más Popular' : 'Nivel de Usuario'}
+                            </span>
+                            <h3 className="text-2xl font-black text-white" style={{ color: level.color }}>{level.name}</h3>
+                          </div>
+                          <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                            <Layers className="w-5 h-5" style={{ color: level.color }} />
+                          </div>
+                        </div>
+
+                        <ul className="space-y-2 mb-6 text-xs text-gray-400">
+                          <li className="flex items-center gap-2">
+                            <ShieldCheck className="w-3 h-3 text-green-500" />
+                            {level.dailyDownloads === -1 ? 'Descargas Ilimitadas' : `${level.dailyDownloads} descargas diarias`}
+                          </li>
+                          {level.earlyAccess && (
+                            <li className="flex items-center gap-2">
+                              <ShieldCheck className="w-3 h-3 text-green-500" /> Acceso Anticipado
+                            </li>
+                          )}
+                          {level.customThemes && (
+                            <li className="flex items-center gap-2">
+                              <ShieldCheck className="w-3 h-3 text-green-500" /> Temas Personalizados
+                            </li>
+                          )}
+                          {(level.priority && level.priority < 5) && (
+                            <li className="flex items-center gap-2">
+                              <ShieldCheck className="w-3 h-3 text-green-500" /> Soporte Prioritario
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+
+                      <button
+                        onClick={() => setConfiguringTier({ name: level.name, color: level.color })}
+                        className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all mt-auto"
+                        style={{
+                          backgroundColor: `${level.color}15`,
+                          color: level.color,
+                          border: `1px solid ${level.color}30`
+                        }}
+                      >
+                        Configurar
+                      </button>
+                    </div>
+                  );
+                })}
+
+                {/* Add New Level Card */}
+                <button
+                  className="glass-panel p-6 rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-4 hover:bg-white/5 hover:border-primary/50 transition-all text-gray-500 hover:text-primary min-h-[220px]"
+                >
+                  <div className="p-4 rounded-full bg-white/5 border border-white/10">
+                    <Plus className="w-8 h-8" />
                   </div>
-                  <div className="relative z-10">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-yellow-500 mb-2 block">Supporter</span>
-                    <h3 className="text-2xl font-black text-white mb-4">Leyenda</h3>
-                    <ul className="space-y-2 mb-6">
-                      <li className="flex items-center gap-2 text-xs text-gray-300"><ShieldCheck className="w-3 h-3 text-yellow-500" /> Todo lo de VIP</li>
-                      <li className="flex items-center gap-2 text-xs text-gray-300"><ShieldCheck className="w-3 h-3 text-yellow-500" /> Insignia de Perfil</li>
-                      <li className="flex items-center gap-2 text-xs text-gray-300"><ShieldCheck className="w-3 h-3 text-yellow-500" /> Canal de Soporte Directo</li>
-                    </ul>
-                    <button
-                      onClick={() => setConfiguringTier({ name: 'Leyenda', color: '#eab308' })}
-                      className="w-full py-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-xs font-bold text-yellow-500 border border-yellow-500/20 transition-colors"
-                    >
-                      Configurar
-                    </button>
-                  </div>
-                </div>
+                  <span className="text-xs font-black uppercase tracking-widest">Crear Nuevo Nivel</span>
+                </button>
               </div>
+
 
               {/* Active Registrations Table */}
               <div className="glass-panel rounded-2xl border border-white/5 overflow-hidden">
@@ -549,84 +558,77 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-white/5 border-b border-white/5">
-                        <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">ID Registro</th>
-                        <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Identidad</th>
-                        <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Nivel de Acceso</th>
-                        <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Utilización Cuota</th>
-                        <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Ops</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {users.map((user) => {
-                        const tierName = user.level?.name || 'Gratis';
-                        const isVip = tierName.toLowerCase().includes('vip') || tierName.toLowerCase().includes('premium');
-                        const isLegend = tierName.toLowerCase().includes('legend') || tierName.toLowerCase().includes('admin') || tierName.toLowerCase().includes('staff');
-                        const isWarning = user.downloads.used >= user.downloads.limit && user.downloads.limit !== -1;
+                <div className="p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {users.map((user) => {
+                      const tierName = user.level?.name || 'Gratis';
+                      const tierColor = user.level?.color || '#6b7280';
+                      const isWarning = user.downloads.used >= user.downloads.limit && user.downloads.limit !== -1;
 
-                        return (
-                          <tr
-                            key={user.id}
-                            className="hover:bg-white/5 transition-colors group cursor-pointer"
-                            onClick={() => setSelectedUserId(user.id)}
-                          >
-                            <td className="p-4 text-xs font-mono text-gray-500 font-bold">#{user.id}</td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isVip ? 'bg-purple-500/20 text-purple-400' :
-                                  isLegend ? 'bg-yellow-500/20 text-yellow-400' :
-                                    'bg-gray-700 text-gray-300'
-                                  }`}>
-                                  {user.username.charAt(0).toUpperCase()}
-                                </div>
-                                <span className="text-sm font-bold text-white">{user.username}</span>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider ${isVip ? 'bg-purple-500/20 text-purple-300 border border-purple-500/20' :
-                                isLegend ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/20' :
-                                  'bg-white/10 text-gray-400 border border-white/10'
-                                }`}>
-                                {tierName}
+                      return (
+                        <div
+                          key={user.id}
+                          onClick={() => setSelectedUserId(user.id)}
+                          className="glass-panel p-4 rounded-xl border border-white/5 hover:border-primary/30 transition-all cursor-pointer group flex flex-col gap-4"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-lg"
+                              style={{ backgroundColor: `${tierColor}20`, color: tierColor, border: `1px solid ${tierColor}30` }}
+                            >
+                              {user.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-bold text-white truncate">{user.username}</span>
+                              <span className="text-[10px] font-mono text-gray-500 truncate">#{user.id}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span
+                              className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider"
+                              style={{ backgroundColor: `${tierColor}15`, color: tierColor, border: `1px solid ${tierColor}20` }}
+                            >
+                              {tierName}
+                            </span>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                                onClick={(e) => { e.stopPropagation(); }}
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                className="p-1.5 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); }}
+                              >
+                                <Eraser className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5 pt-2 border-t border-white/5">
+                            <div className="flex justify-between items-center text-[9px] uppercase tracking-widest font-bold">
+                              <span className="text-gray-500">Uso de Cuota</span>
+                              <span className={isWarning ? 'text-red-400' : 'text-primary'}>
+                                {Math.min(100, user.downloads.limit === -1 ? 0 : (user.downloads.used / user.downloads.limit) * 100).toFixed(0)}%
                               </span>
-                            </td>
-                            <td className="p-4">
-                              <div className="w-32">
-                                <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden mb-1">
-                                  <div
-                                    className={`h-full rounded-full ${isWarning ? 'bg-red-500' : 'bg-primary'}`}
-                                    style={{ width: user.downloads.limit === -1 ? '5%' : `${Math.min(100, (user.downloads.used / user.downloads.limit) * 100)}%` }}
-                                  ></div>
-                                </div>
-                                <span className={`text-[10px] font-mono ${isWarning ? 'text-red-400 font-bold' : 'text-gray-500'}`}>
-                                  {user.downloads.used} / {user.downloads.limit === -1 ? '∞' : user.downloads.limit}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="p-4 text-right">
-                              <div className="flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-                                  onClick={(e) => { e.stopPropagation(); }}
-                                >
-                                  <RotateCcw className="w-4 h-4" />
-                                </button>
-                                <button
-                                  className="p-1.5 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
-                                  onClick={(e) => { e.stopPropagation(); }}
-                                >
-                                  <Eraser className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            </div>
+                            <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${isWarning ? 'bg-red-500' : 'bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]'}`}
+                                style={{ width: user.downloads.limit === -1 ? '5%' : `${Math.min(100, (user.downloads.used / user.downloads.limit) * 100)}%` }}
+                              ></div>
+                            </div>
+                            <div className="flex justify-between text-[10px] font-mono text-gray-500">
+                              <span>{user.downloads.used} descargas</span>
+                              <span>{user.downloads.limit === -1 ? '∞' : user.downloads.limit} lím.</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="p-4 border-t border-white/5 bg-white/5 flex justify-center">
                   <button className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-colors">
@@ -638,17 +640,20 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
           )}
 
           {/* User Permissions Editor */}
-          {currentView === 'tiers' && selectedUserId && (
-            <UserPermissions
-              onBack={() => setSelectedUserId(null)}
-              userId={selectedUserId}
-              userData={users.find(u => u.id === selectedUserId) ? {
-                username: users.find(u => u.id === selectedUserId)!.username,
-                id: selectedUserId,
-                level: users.find(u => u.id === selectedUserId)!.level?.name || 'Básico'
-              } : undefined}
-            />
-          )}
+          {currentView === 'tiers' && selectedUserId && (() => {
+            const selectedUser = users.find(u => String(u.id) === String(selectedUserId));
+            return (
+              <UserPermissions
+                onBack={() => setSelectedUserId(null)}
+                userId={selectedUserId}
+                userData={selectedUser ? {
+                  username: selectedUser.username,
+                  id: String(selectedUser.id),
+                  level: selectedUser.level?.name || 'Gratuito'
+                } : undefined}
+              />
+            );
+          })()}
 
           {/* Tier Configuration Editor */}
           {currentView === 'tiers' && configuringTier && (

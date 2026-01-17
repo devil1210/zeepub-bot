@@ -30,6 +30,7 @@ interface TelegramContextType {
   status: UserStatus | null;
   isAdmin: boolean;
   isBetaTester: boolean;  // Controls new vs old UI
+  customThemes: boolean;  // Controls if user can personalize UI
   isExpanded: boolean;
   ready: boolean;
   refreshStatus: () => Promise<void>;
@@ -44,6 +45,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isExpanded, setIsExpanded] = useState(false);
   const [ready, setReady] = useState(false);
   const [isBetaTester, setIsBetaTester] = useState(false);
+  const [customThemes, setCustomThemes] = useState(false);
   const { updateSettings } = useTheme();
 
   const refreshStatus = async () => {
@@ -70,6 +72,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (response.ok) {
         const data = await response.json();
         setIsBetaTester(data.isBetaTester || data.isAdmin || false);
+        setCustomThemes(data.customThemes || data.isAdmin || false);
       }
     } catch (e) {
       console.log('Could not fetch beta tester status from access endpoint');
@@ -140,7 +143,17 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const effectiveBetaTester = isAdmin || isBetaTester;
 
   return (
-    <TelegramContext.Provider value={{ webApp, user, status, isAdmin, isBetaTester: effectiveBetaTester, isExpanded, ready, refreshStatus }}>
+    <TelegramContext.Provider value={{
+      webApp,
+      user,
+      status,
+      isAdmin,
+      isBetaTester: effectiveBetaTester,
+      customThemes: isAdmin || customThemes,
+      isExpanded,
+      ready,
+      refreshStatus
+    }}>
       {children}
     </TelegramContext.Provider>
   );
