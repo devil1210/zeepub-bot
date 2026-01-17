@@ -673,42 +673,44 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
       )}
 
-      {/* Admin Floating Navigation - Always visible for quick access */}
-      <div className="fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
-        <div
-          className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
-          style={{
-            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-            backdropFilter: `blur(${settings.glassBlur}px)`,
-            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-          }}
-        >
-          <button
-            onClick={() => onNavigate && onNavigate('dashboard')}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white"
+      {/* Admin Floating Navigation - Always visible for quick access except when editing user */}
+      {!selectedUserId && (
+        <div className="fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
+          <div
+            className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+            style={{
+              background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
+              backdropFilter: `blur(${settings.glassBlur}px)`,
+              WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+            }}
           >
-            <Home className="w-4 h-4" strokeWidth={2} />
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Salir</span>
-          </button>
+            <button
+              onClick={() => onNavigate && onNavigate('dashboard')}
+              className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white"
+            >
+              <Home className="w-4 h-4" strokeWidth={2} />
+              <span className="text-[9px] font-black uppercase tracking-widest mt-1">Salir</span>
+            </button>
 
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
+            <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
-          {viewOptions.map((v) => (
-            <React.Fragment key={v.id}>
-              <button
-                onClick={() => setCurrentView(v.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${currentView === v.id ? 'text-primary' : 'text-gray-500'}`}
-              >
-                <div className={`p-1.5 rounded-full transition-all duration-300 ${currentView === v.id ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
-                  <v.icon className={`w-4 h-4 ${currentView === v.id ? 'text-white' : ''}`} strokeWidth={2.5} />
-                </div>
-                <span className={`text-[8px] font-black uppercase tracking-tight mt-1 whitespace-nowrap overflow-hidden text-center`}>{v.label}</span>
-              </button>
-              {v.id !== 'tiers' && <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>}
-            </React.Fragment>
-          ))}
+            {viewOptions.map((v) => (
+              <React.Fragment key={v.id}>
+                <button
+                  onClick={() => setCurrentView(v.id)}
+                  className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${currentView === v.id ? 'text-primary' : 'text-gray-500'}`}
+                >
+                  <div className={`p-1.5 rounded-full transition-all duration-300 ${currentView === v.id ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
+                    <v.icon className={`w-4 h-4 ${currentView === v.id ? 'text-white' : ''}`} strokeWidth={2.5} />
+                  </div>
+                  <span className={`text-[8px] font-black uppercase tracking-tight mt-1 whitespace-nowrap overflow-hidden text-center`}>{v.label}</span>
+                </button>
+                {v.id !== 'tiers' && <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div >
   );
 };
