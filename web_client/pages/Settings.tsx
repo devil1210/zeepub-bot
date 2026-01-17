@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme, adjustBrightness } from '../contexts/ThemeContext';
+import { useTelegram } from '../contexts/TelegramContext';
 import {
   LogOut,
   ChevronRight,
@@ -17,9 +18,12 @@ import {
   ArrowLeft,
   ShieldCheck,
   Home,
-  Download
+  Download,
+  Terminal,
+  Eraser
 } from 'lucide-react';
 import { ReportIssueModal } from '../components/ReportIssueModal';
+import { RequestBookModal } from '../components/RequestBookModal';
 
 interface SettingsProps {
   onNavigate?: (tab: string) => void;
@@ -27,8 +31,10 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { settings, updateSettings, resetSettings } = useTheme();
+  const { user: tgUser } = useTelegram();
   const [isAdmin, setIsAdmin] = useState(true); // Simulation toggle
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
   const handleColorChange = (color: string) => {
     updateSettings({
@@ -46,6 +52,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   return (
     <div className="max-w-6xl mx-auto pb-32 md:pb-12 p-4 md:p-8 animate-in fade-in duration-300 font-sans text-gray-100">
       <ReportIssueModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
+      <RequestBookModal isOpen={isRequestModalOpen} onClose={() => setIsRequestModalOpen(false)} />
 
       {/* Simulation Toggle for Demo */}
       <div className="mb-6 flex justify-end">
@@ -68,14 +75,20 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 <img
                   alt="Avatar de Usuario"
                   className="h-24 w-24 rounded-full ring-4 ring-[#121212] shadow-2xl object-cover"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4k5u3hJ-stj856Bvv__7CQz0Oynqfc4SX4g2PgE825IwIx0nNowP9TzRSjkIDDcA7GwSCgn-oZ_2NTFtopYKSXGpfH4AIHKu57ENJCuaJ4MPydF7uAB_dGFJFsnhhczBJX4I1T2igBXRb8HnhCjflxVCan3rSeljiKNXrDK-tU83AANxLXst6PrRelgTnArgn3vvH88AyJrMPrKjxhPGHyxvLqe-Xz4Po9X6G90nxaYRmNkUbVj9l6r7CP8J3rxfdySsH17xgfBs"
+                  src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuB4k5u3hJ-stj856Bvv__7CQz0Oynqfc4SX4g2PgE825IwIx0nNowP9TzRSjkIDDcA7GwSCgn-oZ_2NTFtopYKSXGpfH4AIHKu57ENJCuaJ4MPydF7uAB_dGFJFsnhhczBJX4I1T2igBXRb8HnhCjflxVCan3rSeljiKNXrDK-tU83AANxLXst6PrRelgTnArgn3vvH88AyJrMPrKjxhPGHyxvLqe-Xz4Po9X6G90nxaYRmNkUbVj9l6r7CP8J3rxfdySsH17xgfBs"}
                 />
                 <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <PenTool className="text-white w-5 h-5" />
                 </div>
               </div>
-              <h2 className="text-xl font-bold text-white mt-4">Alex Doe</h2>
-              <p className="text-sm text-gray-400">@alex_doe</p>
+              <h2 className="text-xl font-bold text-white mt-4">{tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Alex Doe'}</h2>
+              <p className="text-sm text-gray-400">@{tgUser?.username || 'alex_doe'}</p>
+              {tgUser?.id && (
+                <div className="mt-1 flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity">
+                  <Terminal className="w-3 h-3" />
+                  <span className="text-[10px] font-mono text-gray-500">{tgUser.id}</span>
+                </div>
+              )}
               <div className="mt-3 flex gap-2">
                 {isAdmin ? (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
@@ -121,7 +134,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
               )}
 
               <button
-                onClick={() => onNavigate && onNavigate('requests')}
+                onClick={() => setIsRequestModalOpen(true)}
                 className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3">
@@ -130,7 +143,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-white">Solicitudes de Libros</p>
-                    <p className="text-xs text-gray-400">Gestionar peticiones pendientes</p>
+                    <p className="text-xs text-gray-400">Enviar peticiones de nuevo contenido</p>
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
@@ -150,25 +163,48 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
               </button>
-              <button
-                onClick={() => {
-                  if (confirm('¿Estás seguro de que quieres restablecer tus estadísticas? Esta acción no se puede deshacer.')) {
-                    // api.rpc('reset_user_stats', {})
-                  }
-                }}
-                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/10">
-                    <RotateCcw className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-white">Restablecer Estadísticas</p>
-                    <p className="text-xs text-gray-400">Reiniciar contador de descargas y actividad</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
-              </button>
+              {isAdmin && (
+                <>
+                  <button
+                    onClick={() => {
+                      if (confirm('¿Estás seguro de que quieres restablecer tus estadísticas? Esta acción no se puede deshacer.')) {
+                        // api.rpc('reset_user_stats', {})
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/10">
+                        <RotateCcw className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white">Restablecer Estadísticas</p>
+                        <p className="text-xs text-gray-400">Reiniciar contador de descargas y actividad</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('¿Quieres reiniciar tu contador de descargas diarias?')) {
+                        // api.rpc('reset_download_counter', {})
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/10">
+                        <Eraser className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white">Reiniciar Contador Diario</p>
+                        <p className="text-xs text-gray-400">Pone a cero el límite de descargas del día</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
+                  </button>
+                </>
+              )}
               <button
                 onClick={() => setIsReportModalOpen(true)}
                 className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
@@ -379,24 +415,6 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                           </div>
                         </div>
 
-                        <div>
-                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Transparencia General</label>
-                          <div className="pt-2 flex flex-col gap-2">
-                            <input
-                              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                              max="100"
-                              min="0"
-                              type="range"
-                              value={settings.interfaceOpacity * 100}
-                              onChange={(e) => updateSettings({ interfaceOpacity: parseInt(e.target.value) / 100 })}
-                            />
-                            <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
-                              <span>0%</span>
-                              <span className="text-primary font-bold">{Math.round(settings.interfaceOpacity * 100)}%</span>
-                              <span>100%</span>
-                            </div>
-                          </div>
-                        </div>
 
                         <div>
                           <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Transparencia Nav Bar</label>
@@ -418,7 +436,29 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Transparencia Acento (Alpha)</label>
+                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5 flex items-center justify-between">
+                            <span>Transparencia Acento (Alpha)</span>
+                            <span className="text-primary-light lowercase font-mono">Ideal para letras/iconos</span>
+                          </label>
+                          <div className="pt-2 flex flex-col gap-2">
+                            <input
+                              className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                              max="100"
+                              min="0"
+                              type="range"
+                              value={settings.accentOpacity * 100}
+                              onChange={(e) => updateSettings({ accentOpacity: parseInt(e.target.value) / 100 })}
+                            />
+                            <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
+                              <span>0%</span>
+                              <span className="text-primary font-bold">{Math.round(settings.accentOpacity * 100)}%</span>
+                              <span>100%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Nivel de Glassmorphism (Cards)</label>
                           <div className="pt-2 flex flex-col gap-2">
                             <input
                               className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"

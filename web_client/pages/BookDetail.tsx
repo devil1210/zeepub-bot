@@ -140,8 +140,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
     typesetter: String(volume.typesetter || 'N/A'),
     isbn: String(volume.isbn || 'N/A'),
     asin: String(volume.asin || 'N/A'),
-    demography: Array.isArray(volume.demography) ? volume.demography : [],
-    genres: Array.isArray((volume as any).genres) ? (volume as any).genres : (Array.isArray(series?.genres) ? series.genres : [])
+    demography: Array.isArray(volume.demography) ? volume.demography : (Array.isArray((volume as any).demographics) ? (volume as any).demographics : []),
+    genres: Array.isArray((volume as any).genres) ? (volume as any).genres : (Array.isArray((volume as any).tags) ? (volume as any).tags : (Array.isArray(series?.genres) ? series.genres : []))
   };
 
   if (!series || !volume) return null;

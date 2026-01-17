@@ -19,7 +19,9 @@ import {
   Calendar,
   Reply,
   BookmarkPlus,
-  Bookmark
+  Bookmark,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { Series, Volume } from '../types';
 
@@ -39,6 +41,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   const [loading, setLoading] = useState(true);
   const [activeSort, setActiveSort] = useState('num-asc');
   const [isSynopsisModalOpen, setIsSynopsisModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -227,78 +230,124 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               <ListOrdered className="w-5 h-5 text-primary" />
               Lista de Volúmenes
             </h2>
-            <div className="flex gap-2">
-              {/* Buttons removed as requested */}
+            <div className="flex gap-2 bg-white/5 p-1 rounded-xl border border-white/5">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className={viewMode === 'list' ? "flex flex-col gap-3" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"}>
             {currentVolumes.map((vol, index) => (
-              <div
-                key={vol.id}
-                onClick={() => onSelectVolume(vol, realSeries)}
-                className="group relative flex gap-4 p-4 rounded-xl border border-white/5 bg-[#0d1117]/80 hover:bg-[#161b22] hover:border-[#2AABEE]/30 transition-all duration-200 cursor-pointer overflow-hidden shadow-sm"
-              >
-                {/* Image */}
-                <div className="shrink-0 aspect-[2/3] bg-slate-800 rounded-lg overflow-hidden shadow-lg border border-white/5" style={{ width: settings.coverWidth }}>
-                  <img alt={vol.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={vol.coverUrl} />
-                </div>
+              viewMode === 'list' ? (
+                <div
+                  key={vol.id}
+                  onClick={() => onSelectVolume(vol, realSeries)}
+                  className="group relative flex gap-4 p-4 rounded-xl border border-white/5 bg-[#0d1117]/80 hover:bg-[#161b22] hover:border-[#2AABEE]/30 transition-all duration-200 cursor-pointer overflow-hidden shadow-sm"
+                >
+                  {/* Image */}
+                  <div className="shrink-0 aspect-[2/3] bg-slate-800 rounded-lg overflow-hidden shadow-lg border border-white/5" style={{ width: settings.coverWidth }}>
+                    <img alt={vol.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={vol.coverUrl} />
+                  </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <div className="mb-1">
-                    <h3 className="text-white font-bold text-base sm:text-lg leading-tight line-clamp-2">
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    <div className="mb-1">
+                      <h3 className="text-white font-bold text-base sm:text-lg leading-tight line-clamp-2">
+                        {vol.romajiTitle || vol.title}
+                      </h3>
+                      <p className="text-gray-500 text-xs italic font-serif mt-0.5 line-clamp-1">
+                        {vol.romajiTitle ? vol.title : ''}
+                      </p>
+                    </div>
+
+                    <div className="mb-2">
+                      <p className="text-[#2AABEE] text-sm font-medium">
+                        {series.author} {vol.illustrator ? `- ${vol.illustrator}` : ''}
+                      </p>
+                      <p className="text-gray-400 text-xs mt-0.5">
+                        Volumen {vol.volumeNumber} <span className="text-[#2AABEE] font-bold">{vol.uploader}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-xs font-bold mb-auto">
+                      <div className="flex items-center gap-1.5 text-gray-400">
+                        <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
+                        <span className="text-gray-200">{vol.rating.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[#2AABEE]">
+                        <Download className="w-3.5 h-3.5" />
+                        <span>{vol.downloadCount}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        className="flex items-center gap-2 px-5 py-2 rounded-lg bg-transparent border border-[#2AABEE]/40 text-[#2AABEE] text-[10px] font-black tracking-widest hover:bg-[#2AABEE] hover:text-white transition-all uppercase"
+                        onClick={(e) => { e.stopPropagation(); onSelectVolume(vol, realSeries); }}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        DESCARGAR
+                      </button>
+
+                      <button
+                        className="flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg bg-transparent border border-white/10 text-gray-400 text-[10px] sm:text-[10px] font-black tracking-widest hover:text-white hover:bg-white/10 transition-all uppercase whitespace-nowrap"
+                        onClick={(e) => { e.stopPropagation(); /* Add logic */ }}
+                      >
+                        <Bookmark className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">BIBLIOTECA</span>
+                        <span className="sm:hidden">+</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="hidden sm:flex items-center justify-center pl-2 text-gray-600 group-hover:text-[#2AABEE] transition-colors">
+                    <ChevronRight className="w-6 h-6" />
+                  </div>
+                </div>
+              ) : (
+                <div
+                  key={vol.id}
+                  onClick={() => onSelectVolume(vol, realSeries)}
+                  className="group relative flex flex-col gap-3 rounded-xl p-3 transition-all duration-300 glass-panel hover:bg-white/10 hover:-translate-y-0.5 cursor-pointer border border-white/5"
+                >
+                  <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-gray-800 shadow-md">
+                    <img
+                      alt={vol.title}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      src={vol.coverUrl}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <span className="text-[10px] font-black text-white/90 uppercase tracking-widest bg-primary/80 px-2 py-0.5 rounded shadow-sm">Vol {vol.volumeNumber}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <h3 className="truncate text-sm font-bold text-white group-hover:text-primary transition-colors">
                       {vol.romajiTitle || vol.title}
                     </h3>
-                    <p className="text-gray-500 text-xs italic font-serif mt-0.5 line-clamp-1">
-                      {vol.romajiTitle ? vol.title : ''}
-                    </p>
-                  </div>
-
-                  <div className="mb-2">
-                    <p className="text-[#2AABEE] text-sm font-medium">
-                      {series.author} {vol.illustrator ? `- ${vol.illustrator}` : ''}
-                    </p>
-                    <p className="text-gray-400 text-xs mt-0.5">
-                      Volumen {vol.volumeNumber} <span className="text-[#2AABEE] font-bold">{vol.uploader}</span>
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-xs font-bold mb-auto">
-                    <div className="flex items-center gap-1.5 text-gray-400">
-                      <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
-                      <span className="text-gray-200">{vol.rating.toFixed(1)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[#2AABEE]">
-                      <Download className="w-3.5 h-3.5" />
-                      <span>{vol.downloadCount}</span>
+                    <div className="flex items-center justify-between text-[10px] font-bold text-gray-400">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                        <span>{vol.rating.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Download className="w-3 h-3 text-[#2AABEE]" />
+                        <span>{vol.downloadCount}</span>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <button
-                      className="flex items-center gap-2 px-5 py-2 rounded-lg bg-transparent border border-[#2AABEE]/40 text-[#2AABEE] text-[10px] font-black tracking-widest hover:bg-[#2AABEE] hover:text-white transition-all uppercase"
-                      onClick={(e) => { e.stopPropagation(); onSelectVolume(vol, realSeries); }}
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      DESCARGAR
-                    </button>
-
-                    <button
-                      className="flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg bg-transparent border border-white/10 text-gray-400 text-[10px] sm:text-[10px] font-black tracking-widest hover:text-white hover:bg-white/10 transition-all uppercase whitespace-nowrap"
-                      onClick={(e) => { e.stopPropagation(); /* Add logic */ }}
-                    >
-                      <Bookmark className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">BIBLIOTECA</span>
-                      <span className="sm:hidden">+</span>
-                    </button>
-                  </div>
                 </div>
-
-                <div className="hidden sm:flex items-center justify-center pl-2 text-gray-600 group-hover:text-[#2AABEE] transition-colors">
-                  <ChevronRight className="w-6 h-6" />
-                </div>
-              </div>
+              )
             ))}
 
             <div className="text-center py-4 text-xs text-gray-500 font-medium">

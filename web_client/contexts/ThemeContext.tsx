@@ -5,7 +5,6 @@ interface ThemeSettings {
   primaryColorDark: string;
   glassOpacity: number;
   navOpacity: number;
-  interfaceOpacity: number;
   accentOpacity: number;
   glassBlur: number;
   theme: 'dark' | 'light' | 'amoled';
@@ -24,7 +23,6 @@ const defaultSettings: ThemeSettings = {
   primaryColorDark: '#1a4bb0',
   glassOpacity: 0.6,
   navOpacity: 0.8,
-  interfaceOpacity: 0.4,
   accentOpacity: 0.2,
   glassBlur: 12,
   theme: 'dark',
@@ -42,9 +40,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const root = document.documentElement;
     root.style.setProperty('--color-primary', settings.primaryColor);
     root.style.setProperty('--color-primary-dark', settings.primaryColorDark);
+
+    // Add RGB components for primary color to allow alpha variations
+    const r = parseInt(settings.primaryColor.substring(1, 3), 16);
+    const g = parseInt(settings.primaryColor.substring(3, 5), 16);
+    const b = parseInt(settings.primaryColor.substring(5, 7), 16);
+    root.style.setProperty('--color-primary-rgb', `${r}, ${g}, ${b}`);
+
     root.style.setProperty('--glass-opacity', settings.glassOpacity.toString());
     root.style.setProperty('--nav-opacity', settings.navOpacity.toString());
-    root.style.setProperty('--interface-opacity', settings.interfaceOpacity.toString());
     root.style.setProperty('--accent-opacity', settings.accentOpacity.toString());
     root.style.setProperty('--glass-blur', `${settings.glassBlur}px`);
     root.style.setProperty('--cover-width', `${settings.coverWidth}px`);
