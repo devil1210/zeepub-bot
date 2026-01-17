@@ -26,6 +26,12 @@ interface UserPermissionsProps {
     level: string;
     avatar?: string;
   };
+  // Callbacks for parent navigation control
+  onSavingChange?: (saving: boolean) => void;
+  onCanUndoChange?: (canUndo: boolean) => void;
+  onCanApplyChange?: (canApply: boolean) => void;
+  onUndoRef?: (undoFn: () => void) => void;
+  onSaveRef?: (saveFn: () => Promise<void>) => void;
 }
 
 interface PermissionsState {
@@ -44,7 +50,16 @@ interface Level {
   color: string;
 }
 
-export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId, userData }) => {
+export const UserPermissions: React.FC<UserPermissionsProps> = ({
+  onBack,
+  userId,
+  userData,
+  onSavingChange,
+  onCanUndoChange,
+  onCanApplyChange,
+  onUndoRef,
+  onSaveRef
+}) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +162,24 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
       setDisplayColor(selectedLevel.color);
     }
   }, [permissions.levelId, allLevels]);
+
+  // Notify parent of saving state changes
+  useEffect(() => {
+    onSavingChange?.(saving);
+  }, [saving, onSavingChange]);
+
+  // Notify parent of canUndo/canApply changes
+  useEffect(() => {
+    const hasChanges = initialPermissions && JSON.stringify(permissions) !== JSON.stringify(initialPermissions);
+    onCanUndoChange?.(!!hasChanges);
+    onCanApplyChange?.(!!hasChanges);
+  }, [permissions, initialPermissions, onCanUndoChange, onCanApplyChange]);
+
+  // Expose undo and save functions to parent
+  useEffect(() => {
+    onUndoRef?.(handleUndo);
+    onSaveRef?.(handleSave);
+  }, [onUndoRef, onSaveRef]);
 
   const handleLevelChange = (levelId: number) => {
     const level = allLevels.find(l => l.id === levelId);
@@ -445,57 +478,6 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({ onBack, userId
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Fixed Bottom Navigation */}
-      <div className="fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
-        <div className="glass-panel rounded-3xl p-1 border border-white/10 shadow-2xl flex items-center justify-between overflow-hidden bg-black/40 backdrop-blur-xl">
-          {/* Home / Inicio */}
-          <button
-            onClick={onBack}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white"
-          >
-            <Home className="w-4 h-4" strokeWidth={2} />
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Inicio</span>
-          </button>
-
-          <div className="w-px h-8 bg-white/5"></div>
-
-          {/* Undo / Deshacer */}
-          <button
-            onClick={handleUndo}
-            disabled={!initialPermissions || JSON.stringify(permissions) === JSON.stringify(initialPermissions)}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white disabled:opacity-30"
-          >
-            <Undo2 className="w-4 h-4" strokeWidth={2} />
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Deshacer</span>
-          </button>
-
-          <div className="w-px h-8 bg-white/5"></div>
-
-          {/* Apply / Aplicar */}
-          <button
-            onClick={handleSave}
-            disabled={saving || (initialPermissions && JSON.stringify(permissions) === JSON.stringify(initialPermissions))}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-primary hover:text-primary-light disabled:opacity-30"
-          >
-            <div className={`p-1.5 rounded-full transition-all duration-300 ${!saving ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
-              {saving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <CheckCircle className="w-4 h-4 text-white" strokeWidth={2.5} />}
-            </div>
-            <span className="text-[8px] font-black uppercase tracking-tight mt-1">Aplicar</span>
-          </button>
-
-          <div className="w-px h-8 bg-white/5"></div>
-
-          {/* Membership / Niveles */}
-          <button
-            onClick={onBack}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white"
-          >
-            <Layers className="w-4 h-4" strokeWidth={2} />
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Niveles</span>
-          </button>
         </div>
       </div>
     </div>
