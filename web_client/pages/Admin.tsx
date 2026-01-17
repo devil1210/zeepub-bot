@@ -16,20 +16,21 @@ import {
   RotateCcw,
   Activity,
   Server,
-  Terminal,
-  Eraser,
-  Database,
-  Cpu,
-  HardDrive,
-  ArrowLeft,
-  Home,
-  Settings,
-  ArrowRight,
-  TrendingDown,
   Monitor,
   BarChart3,
   Calendar,
-  Download
+  Download,
+  Archive,
+  Database,
+  Terminal,
+  Cpu,
+  HardDrive,
+  RefreshCw,
+  ArrowLeft,
+  ArrowRight,
+  Settings,
+  Home,
+  Eraser
 } from 'lucide-react';
 import { UserPermissions } from './UserPermissions';
 import { api } from '../src/services/api';
@@ -267,76 +268,127 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
           {/* ==================== SYSTEM VIEW ==================== */}
           {currentView === 'system' && (
             <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* CPU Widget */}
-                <div className="glass-panel p-6 rounded-3xl border border-white/5">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-red-500/10 text-red-500 rounded-lg"><Cpu className="w-5 h-5" /></div>
-                    <h4 className="text-xs font-black uppercase tracking-widest text-white">CPU Usage</h4>
+
+              {/* Metric Cards from New Infrastructure Layout */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Usuarios Activos</p>
+                    <h3 className="text-2xl font-bold text-white mt-1">12,482</h3>
+                    <div className="flex items-center mt-2 text-[10px] text-green-500 font-bold uppercase tracking-wider">
+                      <TrendingUp className="w-3 h-3 mr-1" /> +4.5% esta semana
+                    </div>
                   </div>
-                  <div className="flex items-end gap-2 mb-4">
-                    <span className="text-4xl font-bold text-white">12.4</span>
-                    <span className="text-lg text-gray-500 mb-1">%</span>
-                  </div>
-                  <div className="flex gap-1 h-8 items-end">
-                    {[0.2, 0.4, 0.3, 0.8, 0.5, 0.2, 0.3, 0.4, 0.1, 0.4, 0.6, 0.3].map((h, i) => (
-                      <div key={i} className="flex-1 bg-red-500/20 rounded-t-sm" style={{ height: `${h * 100}%` }}></div>
-                    ))}
+                  <div className="p-3 bg-blue-500/10 rounded-xl text-primary">
+                    <User className="w-5 h-5" />
                   </div>
                 </div>
 
-                {/* Latency Widget */}
-                <div className="glass-panel p-6 rounded-3xl border border-white/5">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-green-500/10 text-green-500 rounded-lg"><Monitor className="w-5 h-5" /></div>
-                    <h4 className="text-xs font-black uppercase tracking-widest text-white">Avg. Latency</h4>
+                <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Índice Biblioteca</p>
+                    <h3 className="text-2xl font-bold text-white mt-1">843,209</h3>
+                    <div className="flex items-center mt-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                      <Archive className="w-3 h-3 mr-1" /> 2.4 TB utilizados
+                    </div>
                   </div>
-                  <div className="flex items-end gap-2 mb-4">
-                    <span className="text-4xl font-bold text-white">48</span>
-                    <span className="text-lg text-gray-500 mb-1">ms</span>
+                  <div className="p-3 bg-purple-500/10 rounded-xl text-purple-400">
+                    <Layers className="w-5 h-5" />
                   </div>
-                  <p className="text-[10px] text-green-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                    <TrendingDown className="w-3 h-3" /> Optimizado
-                  </p>
                 </div>
 
-                {/* Memory Widget */}
-                <div className="glass-panel p-6 rounded-3xl border border-white/5">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-amber-500/10 text-amber-500 rounded-lg"><Database className="w-5 h-5" /></div>
-                    <h4 className="text-xs font-black uppercase tracking-widest text-white">Memory Usage</h4>
+                <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Descargas (24h)</p>
+                    <h3 className="text-2xl font-bold text-white mt-1">1,024</h3>
+                    <div className="flex items-center mt-2 text-[10px] text-green-500 font-bold uppercase tracking-wider">
+                      <TrendingUp className="w-3 h-3 mr-1" /> +12% vs ayer
+                    </div>
                   </div>
-                  <div className="flex items-end gap-2 mb-4">
-                    <span className="text-4xl font-bold text-white">2.4</span>
-                    <span className="text-lg text-gray-500 mb-1">GB</span>
+                  <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
+                    <Download className="w-5 h-5" />
                   </div>
-                  <div className="w-full bg-white/5 rounded-full h-1.5">
-                    <div className="w-[35%] h-full bg-amber-500 rounded-full"></div>
+                </div>
+
+                <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Uptime Sistema</p>
+                    <h3 className="text-2xl font-bold text-white mt-1">99.9%</h3>
+                    <div className="flex items-center mt-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                      <Zap className="w-3 h-3 mr-1" /> 14d 2h desde reinicio
+                    </div>
+                  </div>
+                  <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400">
+                    <Activity className="w-5 h-5" />
                   </div>
                 </div>
               </div>
 
-              {/* Maintenance Tools */}
-              <div className="glass-panel p-8 rounded-[40px] border border-red-500/20 bg-red-500/5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-[100px] -mr-20 -mt-20"></div>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
-                  <div className="max-w-md">
-                    <h3 className="text-2xl font-black text-white flex items-center gap-3 mb-3">
-                      <RotateCcw className="text-red-400 w-8 h-8" />
-                      Mantenimiento Crítico
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Maintenance Section */}
+                <div className="lg:col-span-1 glass-panel rounded-3xl p-6 flex flex-col border border-white/5">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                      <Settings className="text-primary w-4 h-4" /> Mantenimiento
                     </h3>
-                    <p className="text-gray-400 text-sm leading-relaxed">
-                      Reinicia todos los contadores de la plataforma. Esta acción pondrá a cero las descargas diarias,
-                      estadísticas de popularidad y registros de sesiones. <span className="text-red-400 font-bold underline">Uso exclusivo para fin de ciclo.</span>
-                    </p>
+                    <span className="px-2 py-1 bg-green-500/10 text-green-500 text-[8px] font-bold rounded border border-green-500/20 uppercase">Operativo</span>
                   </div>
-                  <button
-                    onClick={() => { if (confirm('¡ATENCIÓN! Se perderán todos los datos estadísticos históricos. ¿Continuar?')) { /* rpc call */ } }}
-                    className="group px-8 py-5 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-red-600/20 transition-all flex items-center justify-center gap-3 active:scale-95"
-                  >
-                    <Eraser className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                    Reiniciar Sistema Global
-                  </button>
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-white text-[10px] uppercase">Escanear Biblioteca</h4>
+                        <Activity className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                      </div>
+                      <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Indexar nuevo contenido en /mnt/books/incoming</p>
+                      <button className="w-full py-2 text-[9px] font-black text-center bg-primary hover:bg-primary-dark text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-primary/20 active:scale-95">Ejecutar Escaneo</button>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-white text-[10px] uppercase">Backup Base de Datos</h4>
+                        <Database className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                      </div>
+                      <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Realizar snapshot manual de la base de datos</p>
+                      <button className="w-full py-2 text-[9px] font-black text-center bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl transition-all border border-white/5 uppercase tracking-widest active:scale-95">Iniciar Backup</button>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/10 hover:border-red-500/50 transition-colors group cursor-pointer">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-red-400 text-[10px] uppercase">Resetear Sistema</h4>
+                        <RotateCcw className="w-4 h-4 text-gray-500 group-hover:text-red-400 transition-colors" />
+                      </div>
+                      <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Reinicia contadores y limpia cache global</p>
+                      <button className="w-full py-2 text-[9px] font-black text-center bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-red-600/20 active:scale-95">Reiniciar Global</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* System Logs */}
+                <div className="lg:col-span-2 glass-panel rounded-3xl p-0 overflow-hidden flex flex-col h-[400px] border border-white/5">
+                  <div className="p-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+                    <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                      <Terminal className="w-4 h-4 text-gray-500" /> Live System Logs
+                    </h3>
+                    <div className="flex gap-1.5 px-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/30"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-green-500/30"></span>
+                    </div>
+                  </div>
+                  <div className="flex-1 bg-black/40 p-4 font-mono text-[10px] overflow-y-auto leading-relaxed">
+                    <div className="space-y-1">
+                      <div className="text-gray-500">[10:42:01] <span className="text-blue-400 font-bold">INFO</span>: Worker process started with PID 8821</div>
+                      <div className="text-gray-500">[10:42:05] <span className="text-blue-400 font-bold">INFO</span>: Connecting to Telegram API... <span className="text-green-400 font-bold">OK</span></div>
+                      <div className="text-gray-500">[10:42:06] <span className="text-yellow-400 font-bold">WARN</span>: High latency detected on webhook (450ms)</div>
+                      <div className="text-gray-500">[10:43:12] <span className="text-blue-400 font-bold">INFO</span>: User <span className="text-purple-400">@devil1210</span> requested /scan_library</div>
+                      <div className="text-gray-500 pl-4">→ Initializing Universal Hash Architecture scanner...</div>
+                      <div className="text-gray-500 pl-4">→ Found 12 new EPUB files in /mnt/books/incoming</div>
+                      <div className="text-gray-500 pl-4">→ Generating thumbnails (Glassmorphism applied)</div>
+                      <div className="text-gray-500">[10:43:45] <span className="text-green-400 font-bold uppercase">SUCCESS</span>: Library index updated. +12 items.</div>
+                      <div className="text-gray-500">[10:45:00] <span className="text-blue-400 font-bold">INFO</span>: Watchtower checking for updates...</div>
+                      <div className="text-gray-300 animate-pulse">_</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
