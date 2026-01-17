@@ -9,7 +9,8 @@ class MetricsRepository:
 
     def __init__(self, db_manager):
         self.db_manager = db_manager
-
+        from core.supabase_manager import supabase_manager
+        self.supabase = supabase_manager
     # --- Downloads ---
 
     async def add_download(
@@ -19,6 +20,18 @@ class MetricsRepository:
         series_hash: Optional[str] = None,
         title: Optional[str] = None,
     ):
+        if self.supabase.is_active:
+            try:
+                data = {
+                    "user_id": user_id,
+                    "content_hash": content_hash,
+                    "series_hash": series_hash,
+                    "title": title
+                }
+                self.supabase.get_client().table('user_downloads').insert(data).execute()
+            except Exception as e:
+                logger.error(f"Supabase metrics add_download error: {e}")
+
         async with self.db_manager.connection() as conn:
             await conn.execute(
                 "INSERT INTO user_downloads (user_id, content_hash, series_hash, title) VALUES (?, ?, ?, ?)",
@@ -29,6 +42,14 @@ class MetricsRepository:
     async def has_downloaded(self, user_id: int, content_hash: str) -> bool:
         if not content_hash:
             return False
+        
+        if self.supabase.is_active:
+            try:
+                res = self.supabase.get_client().table('user_downloads').select("id").eq('user_id', user_id).eq('content_hash', content_hash).limit(1).execute()
+                if res.data: return True
+            except Exception as e:
+                logger.error(f"Supabase metrics has_downloaded error: {e}")
+
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 "SELECT 1 FROM user_downloads WHERE user_id = ? AND content_hash = ? LIMIT 1",
@@ -39,6 +60,14 @@ class MetricsRepository:
     async def get_total_downloads(self, content_hash: str) -> int:
         if not content_hash:
             return 0
+        
+        if self.supabase.is_active:
+            try:
+                res = self.supabase.get_client().table('user_downloads').select("id", count='exact').eq('content_hash', content_hash).execute()
+                return res.count or 0
+            except Exception as e:
+                logger.error(f"Supabase metrics get_total_downloads error: {e}")
+
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 "SELECT COUNT(*) FROM user_downloads WHERE content_hash = ?",
@@ -89,6 +118,17 @@ class MetricsRepository:
     # --- Ratings ---
 
     async def add_rating(self, user_id: int, content_hash: str, rating: int):
+        if self.supabase.is_active:
+            try:
+                data = {
+                    "user_id": user_id,
+                    "content_hash": content_hash,
+                    "rating": rating
+                }
+                self.supabase.get_client().table('user_ratings').upsert(data).execute()
+            except Exception as e:
+                logger.error(f"Supabase metrics add_rating error: {e}")
+
         async with self.db_manager.connection() as conn:
             await conn.execute(
                 """
@@ -105,6 +145,24 @@ class MetricsRepository:
     async def get_rating_stats(self, content_hash: str) -> Dict[str, Any]:
         if not content_hash:
             return {"average": 0.0, "count": 0}
+        
+        if self.supabase.is_active:
+            try:
+                # We can't do direct AVG in wrapper easily without RPC, but we can fetch or use RPC
+                # RPC is better: get_rating_stats_by_hash(p_hash text)
+                # But for now, fetch all and calculate (only if not too many)
+                # Ideally: rpc calls are mapped
+                res = self.supabase.get_client().table('user_ratings').select("rating").eq('content_hash', content_hash).execute()
+                if res.data:
+                    ratings = [r['rating'] for r in res.data]
+                    return {
+                        "average": round(sum(ratings) / len(ratings), 1),
+                        "count": len(ratings)
+                    }
+                return {"average": 0.0, "count": 0}
+            except Exception as e:
+                logger.error(f"Supabase metrics get_rating_stats error: {e}")
+
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 "SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE content_hash = ?",

@@ -68,19 +68,27 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         clean_title: Optional[str] = None,
         book_hash: Optional[str] = None
     ) -> int:
-        """
-        Record a download in the history.
+        if self.supabase.is_active:
+            try:
+                data = {
+                    "user_id": user_id,
+                    "title": title,
+                    "author": author,
+                    "download_url": download_url,
+                    "file_size": file_size,
+                    "romaji_title": romaji_title,
+                    "series": series,
+                    "volume": volume,
+                    "translator": translator,
+                    "clean_title": clean_title,
+                    "book_hash": book_hash
+                }
+                res = self.supabase.get_client().table('download_history').insert(data).execute()
+                if res.data:
+                    return res.data[0]['id']
+            except Exception as e:
+                logger.error(f"Supabase add_download error: {e}")
 
-        Args:
-            user_id: Telegram user ID
-            title: Book title
-            author: Book author (optional)
-            download_url: URL of the downloaded file (optional)
-            file_size: File size in bytes (optional)
-
-        Returns:
-            ID of the created record
-        """
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 """
@@ -108,6 +116,28 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         Returns:
             List of download records
         """
+        if self.supabase.is_active:
+            try:
+                res = self.supabase.get_client().table('download_history').select("*").eq('user_id', user_id).order('downloaded_at', desc=True).limit(limit).execute()
+                if res.data:
+                    return [
+                        {
+                            "id": row['id'],
+                            "title": row['title'],
+                            "author": row['author'] or "Desconocido",
+                            "file_size": row['file_size'],
+                            "downloaded_at": row['downloaded_at'],
+                            "romaji_title": row['romaji_title'],
+                            "series": row['series'],
+                            "volume": row['volume'],
+                            "translator": row['translator'],
+                            "clean_title": row['clean_title']
+                        }
+                        for row in res.data
+                    ]
+            except Exception as e:
+                logger.error(f"Supabase get_user_downloads error: {e}")
+
         async with self.db_manager.connection() as conn:
             cursor = await conn.execute(
                 """
@@ -152,6 +182,16 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         Returns:
             Number of downloads
         """
+        if self.supabase.is_active:
+            try:
+                query = self.supabase.get_client().table('download_history').select("id", count='exact').eq('user_id', user_id)
+                if since:
+                    query = query.gte('downloaded_at', since.isoformat())
+                res = query.execute()
+                return res.count or 0
+            except Exception as e:
+                logger.error(f"Supabase get_download_count error: {e}")
+
         async with self.db_manager.connection() as conn:
             if since:
                 cursor = await conn.execute(
@@ -179,6 +219,21 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         """
         Check if a user has previously downloaded a book by hash (preferred), title or clean_title.
         """
+        if self.supabase.is_active:
+            try:
+                # 1. Check Hash
+                if book_hash:
+                    res = self.supabase.get_client().table('download_history').select("id").eq('user_id', user_id).eq('book_hash', book_hash).limit(1).execute()
+                    if res.data: return True
+                
+                # 2. Check Titles
+                from utils.epub_extractor import clean_metadata_tags
+                search_clean = clean_title or clean_metadata_tags(title)
+                res = self.supabase.get_client().table('download_history').select("id").eq('user_id', user_id).or_(f"title.eq.{title},clean_title.eq.{search_clean},title.eq.{search_clean},clean_title.eq.{title}").limit(1).execute()
+                if res.data: return True
+            except Exception as e:
+                logger.error(f"Supabase has_user_downloaded error: {e}")
+
         async with self.db_manager.connection() as conn:
             # 1. Prioritize Hash
             if book_hash:
@@ -211,6 +266,19 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         """
         Get total download count for a book across all users, using hash (preferred), dirty and clean titles.
         """
+        if self.supabase.is_active:
+            try:
+                if book_hash:
+                    res = self.supabase.get_client().table('download_history').select("id", count='exact').eq('book_hash', book_hash).execute()
+                    if res.count > 0: return res.count
+                
+                from utils.epub_extractor import clean_metadata_tags
+                search_clean = clean_title or clean_metadata_tags(title)
+                res = self.supabase.get_client().table('download_history').select("id", count='exact').or_(f"title.eq.{title},clean_title.eq.{search_clean}").execute()
+                return res.count or 0
+            except Exception as e:
+                logger.error(f"Supabase get_total_download_count error: {e}")
+
         async with self.db_manager.connection() as conn:
             # 1. Prioritize Hash
             if book_hash:

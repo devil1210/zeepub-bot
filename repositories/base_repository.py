@@ -10,7 +10,8 @@ class BaseRepository(ABC, Generic[T]):
     def __init__(self, db_manager, table_name: str):
         self.db_manager = db_manager
         self.table_name = table_name
-
+        from core.supabase_manager import supabase_manager
+        self.supabase = supabase_manager
     @abstractmethod
     async def get_by_id(self, id: Any) -> Optional[T]:
         pass

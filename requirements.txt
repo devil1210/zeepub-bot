@@ -42,3 +42,6 @@ alembic==1.15.1
 # Metadata Extraction
 beautifulsoup4==4.12.3
 EbookLib==0.18
+
+# Supabase
+supabase==2.10.0

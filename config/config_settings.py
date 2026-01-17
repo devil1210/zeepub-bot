@@ -139,6 +139,12 @@ class BotConfig:
     # Updates
     GIT_BRANCH: str = os.getenv("GIT_BRANCH", "main")
 
+    # Supabase Configuration
+    ENABLE_SUPABASE: bool = os.getenv("ENABLE_SUPABASE", "False").lower() == "true"
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")  # Anon key
+    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
     # Optional SQLAlchemy URL.
     # Solo se carga si el plugin está habilitado explícitamente.
     # Esto asegura que SQLite sea el default incluso si DATABASE_URL existe en el entorno.

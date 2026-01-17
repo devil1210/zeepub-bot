@@ -16,8 +16,30 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
     def __init__(self, db: DatabaseManager = db_manager):
         self.db = db
+        from core.supabase_manager import supabase_manager
+        self.supabase = supabase_manager
 
     async def get_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
+        if self.supabase.is_active:
+            try:
+                res = self.supabase.get_client().table('users').select("*").eq('telegram_id', telegram_id).execute()
+                if res.data:
+                    user = res.data[0]
+                    # Map Supabase result to expected format
+                    return {
+                        "telegram_id": int(user['telegram_id']),
+                        "role": user['role'],
+                        "expires_at": self._parse_datetime(user['expires_at']),
+                        "custom_status": user['custom_status'],
+                        "nickname": user['nickname'],
+                        "settings": user['settings'] or {},
+                        "total_downloads": user['total_downloads'] or 0,
+                    }
+                return None
+            except Exception as e:
+                logger.error(f"Supabase error in get_by_id: {e}")
+                # Fallback to SQLite if needed, or just return None
+
         async with self.db.connection() as conn:
             cursor = await conn.execute(
                 "SELECT role, expires_at, custom_status, nickname, settings, total_downloads FROM users WHERE telegram_id = ?",
@@ -75,24 +97,41 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         created_by: Optional[int] = None,
         nickname: Optional[str] = None,
     ):
+        # Admin level mapping
+        role_to_level = {
+            'admin': 1, 'staff': 2, 'premium': 3, 'vip': 4, 'white': 5, 'free': 6, 'user': 6
+        }
+        level_id = role_to_level.get(role.lower(), 6)
+
+        if self.supabase.is_active:
+            try:
+                data = {
+                    "telegram_id": telegram_id,
+                    "role": role.lower(),
+                    "level_id": level_id
+                }
+                if expires_at: data["expires_at"] = expires_at.isoformat()
+                if custom_status: data["custom_status"] = custom_status
+                if created_by: data["created_by"] = created_by
+                if nickname: data["nickname"] = nickname
+                
+                self.supabase.get_client().table('users').upsert(data).execute()
+                
+                if role.lower() == 'admin':
+                    self.supabase.get_client().table('admins').upsert({"user_id": telegram_id, "granted_by": created_by}).execute()
+                else:
+                    self.supabase.get_client().table('admins').delete().eq('user_id', telegram_id).execute()
+                    
+                return {"telegram_id": telegram_id, "role": role}
+            except Exception as e:
+                logger.error(f"Supabase upsert error: {e}")
+
         async with self.db.connection() as conn:
             # Check existence
             cursor = await conn.execute(
                 "SELECT telegram_id FROM users WHERE telegram_id = ?", (telegram_id,)
             )
             exists = await cursor.fetchone()
-
-            # Mapping role to level_id
-            role_to_level = {
-                'admin': 1,
-                'staff': 2,
-                'premium': 3,
-                'vip': 4,
-                'white': 5,
-                'free': 6,
-                'user': 6
-            }
-            level_id = role_to_level.get(role.lower(), 6)
 
             if exists:
                 fields = ["role = ?", "level_id = ?"]
@@ -109,7 +148,6 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if nickname is not None:
                     fields.append("nickname = ?")
                     params.append(nickname)
-                # settings is not updated via upsert usually, use update_user_settings
 
                 params.append(telegram_id)
                 sql = f"UPDATE users SET {', '.join(fields)} WHERE telegram_id = ?"
@@ -136,13 +174,18 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     (telegram_id, created_by)
                 )
             elif exists:
-                # If it was an admin and now it's not
                 await conn.execute("DELETE FROM admins WHERE user_id = ?", (telegram_id,))
 
             await conn.commit()
             return {"telegram_id": telegram_id, "role": role}
 
     async def update_status(self, telegram_id: int, custom_status: Optional[str]):
+        if self.supabase.is_active:
+            try:
+                self.supabase.get_client().table('users').update({"custom_status": custom_status}).eq('telegram_id', telegram_id).execute()
+            except Exception as e:
+                logger.error(f"Supabase status error: {e}")
+
         async with self.db.connection() as conn:
             await conn.execute(
                 "UPDATE users SET custom_status = ? WHERE telegram_id = ?",
@@ -178,9 +221,34 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             await conn.commit()
 
     async def get_access_info(self, telegram_id: int) -> Optional[Dict[str, Any]]:
-        """
-        Obtiene información de nivel y privilegios de admin para un usuario.
-        """
+        if self.supabase.is_active:
+            try:
+                # Use RPC or multi-table select if possible, but simplest is two calls or a view
+                # For now, let's join in Supabase
+                res = self.supabase.get_client().table('users').select("*, level:user_levels(*)").eq('telegram_id', telegram_id).execute()
+                if res.data:
+                    user = res.data[0]
+                    lvl = user.get('level', {})
+                    is_admin = (user.get('role') == 'admin')
+                    # check admins table too if needed, but role='admin' is usually enough
+                    return {
+                        "level": {
+                            "id": str(lvl.get('id')),
+                            "name": lvl.get('name'),
+                            "priority": lvl.get('priority'),
+                            "color": lvl.get('color'),
+                            "hasAccess": bool(lvl.get('has_mini_app_access')),
+                            "dailyDownloads": lvl.get('daily_downloads'),
+                            "earlyAccess": bool(lvl.get('early_access')),
+                            "customThemes": bool(lvl.get('custom_themes')),
+                            "price": lvl.get('price')
+                        },
+                        "hasAccess": bool(lvl.get('has_mini_app_access')) or is_admin,
+                        "isAdmin": is_admin
+                    }
+            except Exception as e:
+                logger.error(f"Supabase access info error: {e}")
+
         query = """
             SELECT
                 ul.id,
@@ -231,6 +299,27 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             await conn.commit()
 
     async def get_all_levels(self) -> list[Dict[str, Any]]:
+        if self.supabase.is_active:
+            try:
+                res = self.supabase.get_client().table('user_levels').select("*").order('priority', desc=True).execute()
+                if res.data:
+                    return [
+                        {
+                            "id": str(row['id']),
+                            "name": row['name'],
+                            "priority": row['priority'],
+                            "color": row['color'],
+                            "hasAccess": bool(row['has_mini_app_access']),
+                            "dailyDownloads": row['daily_downloads'],
+                            "earlyAccess": bool(row['early_access']),
+                            "customThemes": bool(row['custom_themes']),
+                            "price": row['price']
+                        }
+                        for row in res.data
+                    ]
+            except Exception as e:
+                logger.error(f"Supabase get_all_levels error: {e}")
+
         """
         Retorna todos los niveles configurados con sus límites y características.
         """
@@ -254,6 +343,36 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             ]
 
     async def list_users(self, limit: int = 50, offset: int = 0, search: str = None) -> list[Dict[str, Any]]:
+        if self.supabase.is_active:
+            try:
+                query = self.supabase.get_client().table('users').select("*, level:user_levels(name, color, daily_downloads)")
+                if search:
+                    # Supabase doesn't support easy OR complex filters via wrapper as nicely, but we can try
+                    query = query.or_(f"nickname.ilike.%{search}%,telegram_id.eq.{search}")
+                
+                res = query.order('added_at', desc=True).range(offset, offset + limit - 1).execute()
+                
+                results = []
+                for user in res.data:
+                    lvl = user.get('level', {})
+                    results.append({
+                        "id": str(user['telegram_id']),
+                        "username": user['nickname'] or f"User_{user['telegram_id']}",
+                        "role": user['role'],
+                        "level": {
+                            "name": lvl.get('name') or "N/A",
+                            "color": lvl.get('color') or "#888888"
+                        },
+                        "downloads": {
+                            "used": 0, # Placeholder
+                            "limit": lvl.get('daily_downloads') or 5,
+                            "total": user['total_downloads'] or 0
+                        }
+                    })
+                return results
+            except Exception as e:
+                logger.error(f"Supabase list_users error: {e}")
+
         """
         Retorna la lista de usuarios con su nivel y estadísticas de descargas.
         """
@@ -391,6 +510,19 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             await conn.commit()
 
     async def increment_download_count(self, telegram_id: int) -> int:
+        if self.supabase.is_active:
+            try:
+                # Direct increment is harder via REST without RPC, but we can do a read-modify-write or RPC
+                # RPC is better: create function increment_total_downloads(uid bigint)
+                # But for now, read-modify-write if we don't have the RPC setup
+                res = self.supabase.get_client().table('users').select('total_downloads').eq('telegram_id', telegram_id).execute()
+                if res.data:
+                    new_count = (res.data[0]['total_downloads'] or 0) + 1
+                    self.supabase.get_client().table('users').update({"total_downloads": new_count}).eq('telegram_id', telegram_id).execute()
+                    return new_count
+            except Exception as e:
+                logger.error(f"Supabase increment error: {e}")
+
         """Incrementa el contador total de descargas de un usuario y retorna el nuevo valor."""
         async with self.db.connection() as conn:
             await conn.execute(
