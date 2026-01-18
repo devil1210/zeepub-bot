@@ -30,10 +30,15 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
     const { settings } = useTheme();
 
     return (
-        <div className="md:hidden z-30 px-4 py-1" style={{ background: 'transparent' }}>
-            <div
-                className="p-1"
-            >
+        <div
+            className="md:hidden z-30 px-4 py-2 border-b border-white/5"
+            style={{
+                background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
+                backdropFilter: `blur(${settings.glassBlur}px)`,
+                WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+            }}
+        >
+            <div className="w-full">
                 <div className="flex flex-row gap-2 sm:gap-4 items-center justify-between">
                     <div className="relative w-full max-w-xl group flex-1">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
