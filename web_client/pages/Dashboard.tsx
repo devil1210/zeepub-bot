@@ -68,13 +68,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const limitDisplay = isUnlimited ? "∞" : downloadsLimit;
   const totalDownloads = status?.user?.downloads?.total || 0;
 
-  // Colorful card configurations (gradient borders when enabled)
+  // Colorful card configurations (gradient borders when enabled) - matching icon colors
   const colorfulCardStyles = [
-    { gradient: 'from-orange-500 to-red-500', shadow: 'shadow-orange-500/20' },
-    { gradient: 'from-purple-500 to-pink-500', shadow: 'shadow-purple-500/20' },
-    { gradient: 'from-green-500 to-emerald-500', shadow: 'shadow-green-500/20' },
-    { gradient: 'from-blue-500 to-cyan-500', shadow: 'shadow-blue-500/20' },
+    { gradient: 'from-blue-500 to-cyan-400', shadow: 'shadow-blue-500/30' },
+    { gradient: 'from-purple-500 to-pink-400', shadow: 'shadow-purple-500/30' },
+    { gradient: 'from-green-500 to-emerald-400', shadow: 'shadow-green-500/30' },
+    { gradient: 'from-amber-500 to-yellow-400', shadow: 'shadow-amber-500/30' },
   ];
+
+  // Get colorful card opacity (default 0.95 = mostly opaque bg)
+  const cardBgOpacity = settings.colorfulCardOpacity ?? 0.85;
 
   // Calculate percentage for progress bar
   let progressPercent = 0;
@@ -141,9 +144,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   >
                     {/* Gradient border effect when colorful cards enabled */}
                     {settings.colorfulCards && (
-                      <div className={`absolute inset-0 bg-gradient-to-br ${colorStyle.gradient} opacity-20 rounded-2xl`}></div>
+                      <div className={`absolute inset-0 bg-gradient-to-br ${colorStyle.gradient} rounded-2xl`}></div>
                     )}
-                    <div className={`absolute inset-[1px] rounded-2xl ${settings.colorfulCards ? 'bg-gray-900/95 dark:bg-gray-900/95' : 'glass-panel'}`}></div>
+                    <div
+                      className={`absolute inset-[2px] rounded-xl ${settings.colorfulCards ? '' : 'glass-panel'}`}
+                      style={settings.colorfulCards ? { background: `rgba(17, 24, 39, ${cardBgOpacity})` } : {}}
+                    ></div>
                     <div className={`relative z-10 p-4 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(0,0,0,0.3)]`}>
                       <item.icon className="w-7 h-7" strokeWidth={1.5} />
                     </div>

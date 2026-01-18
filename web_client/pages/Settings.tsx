@@ -517,6 +517,26 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                       </span>
                     </div>
                     <p className="text-[10px] text-gray-500 mt-2">Aplica bordes de gradiente coloridos a las tarjetas de acceso rápido</p>
+
+                    {/* Colorful Card Opacity Slider - only show when colorful cards enabled */}
+                    {settings.colorfulCards && (
+                      <div className="mt-4 p-3 rounded-lg bg-black/20 border border-white/5">
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">Transparencia de Tarjetas</label>
+                        <input
+                          className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                          max="95"
+                          min="50"
+                          type="range"
+                          value={(settings.colorfulCardOpacity ?? 0.85) * 100}
+                          onChange={(e) => updateSettings({ colorfulCardOpacity: parseInt(e.target.value) / 100 })}
+                        />
+                        <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5 mt-1">
+                          <span>Más color</span>
+                          <span className="text-primary font-bold">{Math.round((settings.colorfulCardOpacity ?? 0.85) * 100)}%</span>
+                          <span>Más sólido</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Element Selector for Per-Element Opacity */}

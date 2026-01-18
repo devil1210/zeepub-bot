@@ -14,6 +14,7 @@ interface ThemeSettings {
   fontSize: number;
   coverWidth: number;
   colorfulCards: boolean;
+  colorfulCardOpacity: number;
 }
 
 interface ThemeContextType {
@@ -35,6 +36,7 @@ const defaultSettings: ThemeSettings = {
   fontSize: 14,
   coverWidth: 120,
   colorfulCards: false,
+  colorfulCardOpacity: 0.85,
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
