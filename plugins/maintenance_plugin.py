@@ -49,6 +49,7 @@ class MaintenancePlugin(BasePlugin):
             app.add_handler(CommandHandler("scan_library", self.scan_library, block=False))
             app.add_handler(CommandHandler("reset_stats", self.reset_stats))
             app.add_handler(CommandHandler("reset_library", self.reset_library))
+            app.add_handler(CommandHandler("find_duplicates", self.find_duplicates))
 
             # Publisher/Admin commands
             app.add_handler(CommandHandler("export_db", self.export_db))
@@ -850,5 +851,120 @@ class MaintenancePlugin(BasePlugin):
             logger.error(f"Error en reset_library: {e}")
             await msg.edit_text(
                 f"❌ <b>Error durante el reset:</b>\n<code>{e}</code>",
+                parse_mode="HTML"
+            )
+
+    async def find_duplicates(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Find and display duplicate books in the library."""
+        uid = update.effective_user.id
+        msg = update.effective_message
+        thread_id = self._get_thread_id(update)
+        
+        if uid not in ADMIN_USERS:
+            return
+        
+        try:
+            status_msg = await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="🔍 <b>Buscando duplicados...</b>",
+                message_thread_id=thread_id,
+                parse_mode="HTML"
+            )
+            
+            from utils.library_db import get_session
+            from models.library_models import LocalBook
+            from sqlalchemy import func
+            
+            session = get_session()
+            
+            # Find duplicates
+            duplicate_hashes = session.query(
+                LocalBook.content_hash,
+                func.count().label('count')
+            ).filter(
+                LocalBook.content_hash.isnot(None)
+            ).group_by(
+                LocalBook.content_hash
+            ).having(
+                func.count() > 1
+            ).all()
+            
+            if not duplicate_hashes:
+                await status_msg.edit_text(
+                    "✅ <b>No se encontraron duplicados</b>\n\n"
+                    "Tu biblioteca está limpia.",
+                    parse_mode="HTML"
+                )
+                session.close()
+                return
+            
+            # Collect duplicate info
+            duplicate_groups = []
+            total_wasted = 0
+            total_dupes = 0
+            
+            for hash_row in duplicate_hashes:
+                content_hash = hash_row[0]
+                books = session.query(LocalBook).filter(
+                    LocalBook.content_hash == content_hash
+                ).order_by(LocalBook.indexed_at.asc()).all()
+                
+                if len(books) <= 1:
+                    continue
+                
+                file_sizes = [b.file_size or 0 for b in books]
+                total_size = sum(file_sizes)
+                wasted = total_size - min(file_sizes) if file_sizes else 0
+                
+                total_wasted += wasted
+                total_dupes += len(books) - 1
+                
+                duplicate_groups.append({
+                    'title': books[0].title,
+                    'count': len(books),
+                    'wasted_mb': round(wasted / (1024 * 1024), 2),
+                    'paths': [b.filepath for b in books]
+                })
+            
+            session.close()
+            
+            # Sort by wasted space
+            duplicate_groups.sort(key=lambda x: x['wasted_mb'], reverse=True)
+            
+            # Build message
+            message = (
+                f"📊 <b>Análisis de Duplicados</b>\n\n"
+                f"<b>Total de duplicados:</b> {total_dupes} libros\n"
+                f"<b>Grupos afectados:</b> {len(duplicate_groups)} series\n"
+                f"<b>Espacio desperdiciado:</b> {round(total_wasted / (1024 * 1024), 2)} MB\n\n"
+                f"<b>Top 10 Duplicados:</b>\n\n"
+            )
+            
+            # Show top 10
+            for i, group in enumerate(duplicate_groups[:10], 1):
+                message += (
+                    f"{i}. 📕 <b>{group['title']}</b>\n"
+                    f"   • {group['count']} copias ({group['wasted_mb']} MB desperdiciado)\n"
+                )
+                # Show first 2 paths
+                for path in group['paths'][:2]:
+                    filename = path.split('/')[-1]
+                    message += f"   • <code>{filename}</code>\n"
+                if len(group['paths']) > 2:
+                    message += f"   • ...y {len(group['paths']) - 2} más\n"
+                message += "\n"
+            
+            if len(duplicate_groups) > 10:
+                message += f"\n<i>...y {len(duplicate_groups) - 10} grupos más</i>\n\n"
+            
+            message += "\n💡 Usa el <b>Panel de Admin</b> para gestionar duplicados."
+            
+            await status_msg.edit_text(message, parse_mode="HTML")
+            logger.info(f"Admin {uid} checked duplicates: {total_dupes} found")
+            
+        except Exception as e:
+            logger.error(f"Error in find_duplicates: {e}")
+            await status_msg.edit_text(
+                f"❌ <b>Error buscando duplicados:</b> {str(e)}",
                 parse_mode="HTML"
             )
