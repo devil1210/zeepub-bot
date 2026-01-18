@@ -195,7 +195,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   ];
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-300 relative" ref={scrollContainerRef}>
+    <div className="flex flex-col h-full min-h-0 animate-in fade-in duration-300 relative" ref={scrollContainerRef}>
 
       <SearchScopeModal
         isOpen={isScopeModalOpen}
@@ -267,8 +267,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         </div>
       </div>
 
-      {/* List Content */}
-      <div className="flex-1 px-4 pb-32 md:pb-6">
+      {/* List Content - Scrollable */}
+      <div className="flex-1 px-4 pb-32 md:pb-6 overflow-y-auto">
         <div className="max-w-7xl mx-auto space-y-3">
 
           {viewMode === 'list' ? (
