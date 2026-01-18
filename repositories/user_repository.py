@@ -381,7 +381,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     # Supabase doesn't support easy OR complex filters via wrapper as nicely, but we can try
                     query = query.or_(f"nickname.ilike.%{search}%,telegram_id.eq.{search}")
                 
-                res = query.order('added_at', desc=True).range(offset, offset + limit - 1).execute()
+                res = query.order('updated_at', desc=True).range(offset, offset + limit - 1).execute()
                 
                 results = []
                 for user in res.data:

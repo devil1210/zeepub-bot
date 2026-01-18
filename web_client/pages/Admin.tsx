@@ -1107,7 +1107,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
           )}
         </div>
       </div>
-      )
+    </div>
     </div >
   );
 };
