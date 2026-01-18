@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTelegram } from '../contexts/TelegramContext';
+import { useSearchNav } from '../contexts/SearchNavContext';
+import { SearchBottomNav } from './SearchBottomNav';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,6 +24,7 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, showMobileBottomNav = false }) => {
   const { settings } = useTheme();
   const { user: tgUser, status } = useTelegram();
+  const { state: searchNavState, handlePrevPage, handleNextPage, onSortChange } = useSearchNav();
 
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Inicio' },
@@ -142,6 +145,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         <main className="flex-1 overflow-y-auto relative scroll-smooth custom-scrollbar pb-24 md:pb-0 md:pt-8">
           {children}
         </main>
+
+        {/* Search Bottom Nav - Rendered at Layout level for isolation */}
+        {activeTab === 'search' && searchNavState.isVisible && (
+          <SearchBottomNav
+            currentPage={searchNavState.currentPage}
+            totalPages={searchNavState.totalPages}
+            onPrevPage={handlePrevPage}
+            onNextPage={handleNextPage}
+            onHome={() => onTabChange('dashboard')}
+            activeSort={searchNavState.activeSort}
+            onSortChange={onSortChange}
+          />
+        )}
       </div>
     </div>
   );

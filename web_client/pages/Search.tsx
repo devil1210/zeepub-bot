@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useSearchNav } from '../contexts/SearchNavContext';
 import {
   Search as SearchIcon,
   Filter,
@@ -32,7 +33,7 @@ interface SearchProps {
 
 export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) => {
   const { settings } = useTheme();
-  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const { setPageInfo, setActiveSort: setNavActiveSort, setVisible, registerCallbacks } = useSearchNav();
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
   const [activeSort, setActiveSort] = useState('a-z');
   const [selectedScope, setSelectedScope] = useState('TODOS');
@@ -49,6 +50,31 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const [totalResults, setTotalResults] = useState(0);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Sync pagination state to context for Layout's bottom nav
+  useEffect(() => {
+    setPageInfo(currentPage, totalPages);
+  }, [currentPage, totalPages]);
+
+  // Sync sort state to context
+  useEffect(() => {
+    setNavActiveSort(activeSort);
+  }, [activeSort]);
+
+  // Make bottom nav visible when this component mounts, hide on unmount
+  useEffect(() => {
+    setVisible(true);
+    return () => setVisible(false);
+  }, []);
+
+  // Register callbacks for bottom nav buttons
+  useEffect(() => {
+    registerCallbacks({
+      onPrevPage: () => setCurrentPage(prev => Math.max(1, prev - 1)),
+      onNextPage: () => setCurrentPage(prev => Math.min(totalPages, prev + 1)),
+      onSortChange: (sort: string) => setActiveSort(sort)
+    });
+  }, [totalPages]);
 
   // Perform Search
   const doSearch = async (query: string, page: number) => {
@@ -206,7 +232,12 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
       {/* Search Header - Floating Glass (Desktop/Tablet) */}
       <div className="sticky top-0 z-30 p-4">
-        <div className="glass-panel rounded-2xl p-4 border border-white/10 shadow-lg shadow-black/20 backdrop-blur-xl">
+        <div
+          className="glass-panel rounded-2xl p-4 border border-white/10 backdrop-blur-xl"
+          style={{
+            background: `rgba(var(--glass-rgb), var(--searchbar-opacity, 0.8))`,
+          }}
+        >
           <div className="flex flex-row gap-2 sm:gap-4 items-center justify-between">
             <div className="relative w-full max-w-xl group flex-1">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -421,102 +452,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           <div className="text-center py-4 text-xs text-gray-500 font-medium">
             Página {currentPage} de {totalPages} • {totalResults} Resultados
           </div>
-        </div >
-      </div >
-
-      {/* Mobile Catalog Bottom Bar */}
-      < div className="md:hidden fixed bottom-6 left-8 right-8 z-40 flex flex-col gap-3" >
-        {isSortMenuOpen && (
-          <div
-            className="glass-panel rounded-3xl p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
-            style={{
-              background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-              backdropFilter: `blur(${settings.glassBlur}px)`,
-              WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-            }}
-          >
-            <div className="grid grid-cols-3 gap-2">
-              {sortOptions.map((option) => {
-                const isActive = activeSort === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => {
-                      setActiveSort(option.id);
-                      setIsSortMenuOpen(false);
-                    }}
-                    className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${isActive
-                      ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-blue-500/20'
-                      : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
-                      }`}
-                  >
-                    {option.icon && <option.icon className={`w-4 h-4 ${option.id === 'z-a' ? 'rotate-180' : ''}`} />}
-                    <span className="text-center leading-tight">{option.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div
-          className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
-          style={{
-            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-            backdropFilter: `blur(${settings.glassBlur}px)`,
-            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-          }}
-        >
-          <button
-            onClick={handlePrevPage}
-            disabled={currentPage === 1}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
-          >
-            <div className="p-1.5 rounded-full transition-all duration-300">
-              <ChevronLeft className="w-4 h-4" strokeWidth={2} />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Anterior</span>
-          </button>
-
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-
-          <button
-            onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
-          >
-            <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-[var(--color-primary)] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
-              <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'text-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
-            </div>
-            <span className={`text-[9px] font-black uppercase tracking-widest mt-1`}>Ordenar</span>
-          </button>
-
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-
-          <button
-            onClick={() => onNavigate && onNavigate('dashboard')}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white`}
-          >
-            <div className="p-1.5 rounded-full transition-all duration-300">
-              <Home className="w-4 h-4" strokeWidth={2} />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Inicio</span>
-          </button>
-
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-
-          <button
-            onClick={handleNextPage}
-            disabled={currentPage === totalPages}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : ''}`}
-          >
-            <div className="p-1.5 rounded-full transition-all duration-300">
-              <ChevronRight className="w-4 h-4" strokeWidth={2} />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Siguiente</span>
-          </button>
         </div>
-      </div >
-
+      </div>
     </div >
   );
 };

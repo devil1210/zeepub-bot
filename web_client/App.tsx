@@ -206,12 +206,17 @@ const BookDetailWrapper = () => {
 };
 
 const App: React.FC = () => {
+  // Import SearchNavProvider dynamically to avoid circular deps
+  const { SearchNavProvider } = require('./contexts/SearchNavContext');
+
   return (
     <ThemeProvider>
       <TelegramProvider>
-        <MemoryRouter>
-          <AppContent />
-        </MemoryRouter>
+        <SearchNavProvider>
+          <MemoryRouter>
+            <AppContent />
+          </MemoryRouter>
+        </SearchNavProvider>
       </TelegramProvider>
     </ThemeProvider>
   );
