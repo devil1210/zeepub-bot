@@ -33,7 +33,9 @@ import {
   Eraser,
   Undo2,
   CheckCircle,
-  Loader2
+  Loader2,
+  Copy,
+  Trash2
 } from 'lucide-react';
 import { UserPermissions } from './UserPermissions';
 import { TierConfiguration } from './TierConfiguration';
@@ -119,6 +121,12 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const tierUndoRef = useRef<(() => void) | null>(null);
   const tierSaveRef = useRef<(() => Promise<void>) | null>(null);
 
+  // State for duplicates management
+  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [loadingDuplicates, setLoadingDuplicates] = useState(false);
+  const [selectedDuplicates, setSelectedDuplicates] = useState<Set<number>>(new Set());
+  const [deletingDuplicates, setDeletingDuplicates] = useState(false);
+
   const fetchAdminData = async () => {
     try {
       setLoading(true);
@@ -186,6 +194,47 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       alert("Error: " + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDuplicates = async () => {
+    try {
+      setLoadingDuplicates(true);
+      const response = await api.rpc('admin_find_duplicates', {});
+      if (response.success) {
+        setDuplicates(response.duplicate_groups || []);
+      } else {
+        alert(`Error al buscar duplicados: ${response.message}`);
+      }
+    } catch (error: any) {
+      console.error('Error fetching duplicates:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setLoadingDuplicates(false);
+    }
+  };
+
+  const handleDeleteDuplicates = async (bookIds: number[]) => {
+    if (bookIds.length === 0) return;
+
+    const confirmMsg = `¿Eliminar ${bookIds.length} archivo(s) duplicado(s)?\n\nEsta acción NO se puede deshacer.`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      setDeletingDuplicates(true);
+      const response = await api.rpc('admin_delete_duplicate', { book_ids: bookIds });
+
+      if (response.success) {
+        alert(`✅ Eliminados ${response.deleted_count} archivos\nEspacio liberado: ${response.freed_space_mb} MB${response.errors ? `\n\n⚠️ Errores:\n${response.errors.join('\n')}` : ''}`);
+        setSelectedDuplicates(new Set());
+        await fetchDuplicates(); // Reload
+      } else {
+        alert(`❌ Error: ${response.message}`);
+      }
+    } catch (error: any) {
+      alert(`❌ Error al eliminar: ${error.message}`);
+    } finally {
+      setDeletingDuplicates(false);
     }
   };
 
@@ -361,6 +410,179 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                     <Activity className="w-5 h-5" />
                   </div>
                 </div>
+              </div>
+
+              {/* Duplicates Section */}
+              <div className="glass-panel rounded-3xl p-6 border border-white/5 mb-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                    <Copy className="text-orange-400 w-4 h-4" /> Duplicados
+                  </h3>
+                  <button
+                    onClick={fetchDuplicates}
+                    disabled={loadingDuplicates}
+                    className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors border border-orange-500/20 disabled:opacity-50"
+                  >
+                    {loadingDuplicates ? 'Buscando...' : 'Buscar Duplicados'}
+                  </button>
+                </div>
+
+                {duplicates.length === 0 && !loadingDuplicates && (
+                  <div className="text-center py-12 text-gray-500">
+                    <Copy className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <p className="text-sm">No se encontraron duplicados</p>
+                    <p className="text-xs mt-1">Haz click en "Buscar Duplicados" para analizar</p>
+                  </div>
+                )}
+
+                {loadingDuplicates && (
+                  <div className="text-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-orange-400" />
+                    <p className="text-sm text-gray-400 mt-3">Analizando biblioteca...</p>
+                  </div>
+                )}
+
+                {duplicates.length > 0 && (
+                  <>
+                    <div className="mb-4 p-4 bg-orange-500/5 border border-orange-500/20 rounded-xl">
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase font-bold">Total Duplicados</p>
+                          <p className="text-2xl font-black text-white">{duplicates.reduce((sum, g) => sum + (g.count - 1), 0)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase font-bold">Grupos Afectados</p>
+                          <p className="text-2xl font-black text-white">{duplicates.length}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase font-bold">Espacio Desperdiciado</p>
+                          <p className="text-2xl font-black text-orange-400">
+                            {(duplicates.reduce((sum, g) => sum + g.wasted_space, 0) / (1024 * 1024)).toFixed(1)} MB
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedDuplicates.size > 0 && (
+                      <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-white">{selectedDuplicates.size} archivos seleccionados</p>
+                          <p className="text-xs text-gray-400">Listos para eliminar</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setSelectedDuplicates(new Set())}
+                            className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDuplicates(Array.from(selectedDuplicates))}
+                            disabled={deletingDuplicates}
+                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50"
+                          >
+                            {deletingDuplicates ? 'Eliminando...' : `Eliminar ${selectedDuplicates.size}`}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                      {duplicates.map((group, idx) => (
+                        <div key={group.content_hash} className="p-4 bg-white/5 border border-white/5 rounded-xl hover:border-orange-500/30 transition-colors">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-bold text-white text-sm">{group.title}</h4>
+                              {group.author && <p className="text-xs text-gray-400">{group.author}</p>}
+                              {group.series && group.volume && (
+                                <p className="text-xs text-gray-500">{group.series} - Vol. {group.volume}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <span className="px-2 py-1 bg-orange-500/10 text-orange-400 text-[8px] font-bold rounded border border-orange-500/20 uppercase">
+                                {group.count} copias
+                              </span>
+                              <p className="text-[10px] text-gray-500 mt-1">{(group.wasted_space / (1024 * 1024)).toFixed(2)} MB desperdiciado</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            {group.books.map((book: any) => {
+                              const isSelected = selectedDuplicates.has(book.id);
+                              const isOldest = book.is_oldest;
+                              const isNewest = book.is_newest;
+
+                              return (
+                                <div
+                                  key={book.id}
+                                  className={`p-3 rounded-lg border transition-all ${isSelected
+                                    ? 'bg-red-500/10 border-red-500/50'
+                                    : 'bg-black/20 border-white/5 hover:border-white/10'
+                                    }`}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={(e) => {
+                                        const newSet = new Set(selectedDuplicates);
+                                        if (e.target.checked) {
+                                          newSet.add(book.id);
+                                        } else {
+                                          newSet.delete(book.id);
+                                        }
+                                        setSelectedDuplicates(newSet);
+                                      }}
+                                      className="mt-1 w-4 h-4 rounded border-gray-600 text-red-600 focus:ring-red-500"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <code className="text-[10px] text-gray-400 break-all">{book.filename}</code>
+                                        {isOldest && (
+                                          <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-400 text-[8px] font-bold rounded uppercase">Más viejo</span>
+                                        )}
+                                        {isNewest && (
+                                          <span className="px-1.5 py-0.5 bg-green-500/10 text-green-400 text-[8px] font-bold rounded uppercase">Más nuevo</span>
+                                        )}
+                                      </div>
+                                      <p className="text-[9px] text-gray-500">
+                                        {(book.file_size / (1024 * 1024)).toFixed(2)} MB •
+                                        Indexado: {new Date(book.indexed_at).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="mt-3 pt-3 border-t border-white/5 flex gap-2">
+                            <button
+                              onClick={() => {
+                                const newSet = new Set(selectedDuplicates);
+                                group.books.slice(1).forEach((b: any) => newSet.add(b.id));
+                                setSelectedDuplicates(newSet);
+                              }}
+                              className="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded text-[8px] font-bold uppercase tracking-wider transition-colors border border-blue-500/20"
+                            >
+                              Mantener más viejo
+                            </button>
+                            <button
+                              onClick={() => {
+                                const newSet = new Set(selectedDuplicates);
+                                group.books.slice(0, -1).forEach((b: any) => newSet.add(b.id));
+                                setSelectedDuplicates(newSet);
+                              }}
+                              className="px-2 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded text-[8px] font-bold uppercase tracking-wider transition-colors border border-green-500/20"
+                            >
+                              Mantener más nuevo
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
