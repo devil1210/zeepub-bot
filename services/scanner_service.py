@@ -8,7 +8,7 @@ from datetime import datetime
 from utils.library_db import get_session, init_library_db, COVERS_DIR
 from models.library_models import LibrarySource, LocalBook
 from utils.epub_extractor import EpubMetadataExtractor
-from utils.helpers import generate_book_hash, generate_series_hash
+from utils.helpers import generate_book_hash, generate_series_hash, extract_author
 
 logger = logging.getLogger(__name__)
 
