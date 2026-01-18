@@ -92,8 +92,18 @@ class RecommendationService:
             # We'll use a subquery approach to join with LocalBook
             from sqlalchemy import text
             
+            # Build WHERE clause dynamically if we have titles to exclude
+            if exclude_titles:
+                # Create placeholders: ?, ?, ? for each title
+                placeholders = ', '.join(['?' for _ in exclude_titles])
+                where_clause = f"WHERE lb.title NOT IN ({placeholders})"
+                params = list(exclude_titles) + [limit]
+            else:
+                where_clause = ""
+                params = [limit]
+            
             # Query most downloaded book hashes from download_history
-            result = session.execute(text("""
+            query = f"""
                 SELECT lb.id, lb.title, lb.author, lb.cover_path, lb.rating_average, lb.rating_count,
                        lb.series, lb.volume, lb.content_hash
                 FROM local_books lb
@@ -103,12 +113,12 @@ class RecommendationService:
                     WHERE book_hash IS NOT NULL 
                     GROUP BY book_hash
                 ) dh ON lb.content_hash = dh.book_hash
-                WHERE lb.title NOT IN :exclude_titles OR :no_exclude = 1
+                {where_clause}
                 ORDER BY COALESCE(dh.dl_count, 0) DESC, lb.rating_average DESC, lb.rating_count DESC
-                LIMIT :limit
-            """), {"exclude_titles": tuple(exclude_titles) if exclude_titles else ('__NONE__',), 
-                   "no_exclude": 1 if not exclude_titles else 0,
-                   "limit": limit})
+                LIMIT ?
+            """
+            
+            result = session.execute(text(query), params)
             
             books = result.fetchall()
             
