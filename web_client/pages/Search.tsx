@@ -33,7 +33,18 @@ interface SearchProps {
 
 export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) => {
   const { settings } = useTheme();
-  const { setPageInfo, setActiveSort: setNavActiveSort, setVisible, registerCallbacks } = useSearchNav();
+  const {
+    state: navState,
+    setPageInfo,
+    setActiveSort: setNavActiveSort,
+    setVisible,
+    setSearchTerm: setNavSearchTerm,
+    setSelectedScope: setNavSelectedScope,
+    setViewMode: setNavViewMode,
+    setLoading: setNavLoading,
+    registerCallbacks
+  } = useSearchNav();
+
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
   const [activeSort, setActiveSort] = useState('a-z');
   const [selectedScope, setSelectedScope] = useState('TODOS');
@@ -51,28 +62,46 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Sync pagination state to context for Layout's bottom nav
+  // Sync state to context for Layout's header/nav components
   useEffect(() => {
     setPageInfo(currentPage, totalPages);
   }, [currentPage, totalPages]);
 
-  // Sync sort state to context
   useEffect(() => {
     setNavActiveSort(activeSort);
   }, [activeSort]);
 
-  // Make bottom nav visible when this component mounts, hide on unmount
+  useEffect(() => {
+    setNavSearchTerm(searchTerm);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setNavSelectedScope(selectedScope);
+  }, [selectedScope]);
+
+  useEffect(() => {
+    setNavViewMode(viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    setNavLoading(loading);
+  }, [loading]);
+
+  // Make header/nav visible when this component mounts, hide on unmount
   useEffect(() => {
     setVisible(true);
     return () => setVisible(false);
   }, []);
 
-  // Register callbacks for bottom nav buttons
+  // Register callbacks for header/nav buttons
   useEffect(() => {
     registerCallbacks({
       onPrevPage: () => setCurrentPage(prev => Math.max(1, prev - 1)),
       onNextPage: () => setCurrentPage(prev => Math.min(totalPages, prev + 1)),
-      onSortChange: (sort: string) => setActiveSort(sort)
+      onSortChange: (sort: string) => setActiveSort(sort),
+      onSearchChange: (term: string) => setSearchTerm(term),
+      onScopeClick: () => setIsScopeModalOpen(true),
+      onViewModeChange: (mode: 'list' | 'grid') => setViewMode(mode)
     });
   }, [totalPages]);
 
@@ -221,7 +250,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   ];
 
   return (
-    <div className="flex flex-col h-full min-h-0 animate-in fade-in duration-300 relative overflow-y-auto" ref={scrollContainerRef}>
+    <div className="flex flex-col h-full animate-in fade-in duration-300 relative" ref={scrollContainerRef}>
 
       <SearchScopeModal
         isOpen={isScopeModalOpen}
@@ -230,70 +259,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         onSelectScope={setSelectedScope}
       />
 
-      {/* Search Header - Sticky at top of scroll container */}
-      <div className="sticky top-0 z-30 p-4">
-        <div
-          className="glass-panel rounded-2xl p-4 border border-white/10 backdrop-blur-xl"
-          style={{
-            background: `rgba(var(--glass-rgb), var(--searchbar-opacity, 0.8))`,
-          }}
-        >
-          <div className="flex flex-row gap-2 sm:gap-4 items-center justify-between">
-            <div className="relative w-full max-w-xl group flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon className="text-gray-400 w-5 h-5 group-focus-within:text-[var(--color-primary)] transition-colors" />
-              </div>
-              <input
-                className="block w-full pl-10 pr-24 py-3 rounded-xl border border-white/5 bg-black/20 text-white placeholder-gray-500 focus:ring-1 focus:ring-primary focus:border-primary focus:bg-black/40 text-sm transition-all shadow-inner"
-                placeholder="Buscar..."
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <div className="absolute inset-y-0 right-1 flex items-center">
-                <button
-                  onClick={() => setIsScopeModalOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]"
-                >
-                  {selectedScope}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {/* View Toggles */}
-              <div className="bg-black/20 p-1 rounded-lg border border-white/5 flex shrink-0">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
-                  title="Vista de Lista"
-                >
-                  <List className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
-                  title="Vista de Cuadrícula"
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </button>
-              </div>
-
-              {loading && <RefreshCw className="w-5 h-5 animate-spin text-[var(--color-primary)]" />}
-
-              {/* Desktop Sort Controls (Hidden on Mobile) */}
-              <div className="hidden md:flex items-center gap-3">
-                <div className="h-6 w-px bg-white/10 mx-1"></div>
-                <div className="flex bg-black/20 p-1 rounded-lg border border-white/5">
-                  <button className="px-3 py-1.5 rounded-md bg-white/10 text-white shadow-sm text-xs font-bold transition-all">Título</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* List Content */}
+      {/* List Content - Header/Nav rendered at Layout level */}
       <div className="flex-1 px-4 pb-32 md:pb-6">
         <div className="max-w-7xl mx-auto space-y-3">
 
@@ -454,6 +420,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           </div>
         </div>
       </div>
-    </div >
+
+    </div>
   );
 };

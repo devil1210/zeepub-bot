@@ -1,10 +1,16 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface SearchNavState {
+    // Pagination state
     currentPage: number;
     totalPages: number;
     activeSort: string;
     isVisible: boolean;
+    // Header state
+    searchTerm: string;
+    selectedScope: string;
+    viewMode: 'list' | 'grid';
+    loading: boolean;
 }
 
 interface SearchNavContextType {
@@ -15,11 +21,20 @@ interface SearchNavContextType {
     handlePrevPage: () => void;
     handleNextPage: () => void;
     onSortChange: (sort: string) => void;
+    // Header methods
+    setSearchTerm: (term: string) => void;
+    setSelectedScope: (scope: string) => void;
+    setViewMode: (mode: 'list' | 'grid') => void;
+    setLoading: (loading: boolean) => void;
+    openScopeModal: () => void;
     // Callbacks set by Search.tsx
     registerCallbacks: (callbacks: {
         onPrevPage: () => void;
         onNextPage: () => void;
         onSortChange: (sort: string) => void;
+        onSearchChange: (term: string) => void;
+        onScopeClick: () => void;
+        onViewModeChange: (mode: 'list' | 'grid') => void;
     }) => void;
 }
 
@@ -30,13 +45,20 @@ export const SearchNavProvider: React.FC<{ children: ReactNode }> = ({ children 
         currentPage: 1,
         totalPages: 1,
         activeSort: 'a-z',
-        isVisible: false
+        isVisible: false,
+        searchTerm: '',
+        selectedScope: 'TODOS',
+        viewMode: 'list',
+        loading: false
     });
 
     const [callbacks, setCallbacks] = useState<{
         onPrevPage: () => void;
         onNextPage: () => void;
         onSortChange: (sort: string) => void;
+        onSearchChange: (term: string) => void;
+        onScopeClick: () => void;
+        onViewModeChange: (mode: 'list' | 'grid') => void;
     } | null>(null);
 
     const setPageInfo = (currentPage: number, totalPages: number) => {
@@ -49,6 +71,28 @@ export const SearchNavProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     const setVisible = (visible: boolean) => {
         setState(prev => ({ ...prev, isVisible: visible }));
+    };
+
+    const setSearchTerm = (term: string) => {
+        setState(prev => ({ ...prev, searchTerm: term }));
+        callbacks?.onSearchChange?.(term);
+    };
+
+    const setSelectedScope = (scope: string) => {
+        setState(prev => ({ ...prev, selectedScope: scope }));
+    };
+
+    const setViewMode = (mode: 'list' | 'grid') => {
+        setState(prev => ({ ...prev, viewMode: mode }));
+        callbacks?.onViewModeChange?.(mode);
+    };
+
+    const setLoading = (loading: boolean) => {
+        setState(prev => ({ ...prev, loading }));
+    };
+
+    const openScopeModal = () => {
+        callbacks?.onScopeClick?.();
     };
 
     const handlePrevPage = () => {
@@ -68,6 +112,9 @@ export const SearchNavProvider: React.FC<{ children: ReactNode }> = ({ children 
         onPrevPage: () => void;
         onNextPage: () => void;
         onSortChange: (sort: string) => void;
+        onSearchChange: (term: string) => void;
+        onScopeClick: () => void;
+        onViewModeChange: (mode: 'list' | 'grid') => void;
     }) => {
         setCallbacks(cbs);
     };
@@ -81,6 +128,11 @@ export const SearchNavProvider: React.FC<{ children: ReactNode }> = ({ children 
             handlePrevPage,
             handleNextPage,
             onSortChange,
+            setSearchTerm,
+            setSelectedScope,
+            setViewMode,
+            setLoading,
+            openScopeModal,
             registerCallbacks
         }}>
             {children}

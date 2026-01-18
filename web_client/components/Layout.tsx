@@ -13,6 +13,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useTelegram } from '../contexts/TelegramContext';
 import { useSearchNav } from '../contexts/SearchNavContext';
 import { SearchBottomNav } from './SearchBottomNav';
+import { SearchHeader } from './SearchHeader';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,7 +25,15 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, showMobileBottomNav = false }) => {
   const { settings } = useTheme();
   const { user: tgUser, status } = useTelegram();
-  const { state: searchNavState, handlePrevPage, handleNextPage, onSortChange } = useSearchNav();
+  const {
+    state: searchNavState,
+    handlePrevPage,
+    handleNextPage,
+    onSortChange,
+    setSearchTerm,
+    setViewMode,
+    openScopeModal
+  } = useSearchNav();
 
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Inicio' },
@@ -140,6 +149,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             <img src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"} alt="Profile" />
           </button>
         </header>
+
+        {/* Search Header - Rendered at Layout level for isolation (Mobile only) */}
+        {activeTab === 'search' && searchNavState.isVisible && (
+          <SearchHeader
+            searchTerm={searchNavState.searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedScope={searchNavState.selectedScope}
+            onScopeClick={openScopeModal}
+            viewMode={searchNavState.viewMode}
+            onViewModeChange={setViewMode}
+            loading={searchNavState.loading}
+          />
+        )}
 
         {/* Scrollable Content */}
         <main className="flex-1 overflow-y-auto relative scroll-smooth custom-scrollbar pb-24 md:pb-0 md:pt-8">
