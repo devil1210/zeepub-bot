@@ -38,6 +38,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const [availableLevels, setAvailableLevels] = useState<Array<{ id: number, name: string, color: string }>>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [selectedElement, setSelectedElement] = useState<'nav' | 'searchbar' | 'header'>('nav');
 
   const handleColorChange = (color: string) => {
     updateSettings({
@@ -483,25 +484,6 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Opacidad de Navegación</label>
-                    <div className="pt-2 flex flex-col gap-2">
-                      <input
-                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                        max="100"
-                        min="10"
-                        type="range"
-                        value={settings.navOpacity * 100}
-                        onChange={(e) => updateSettings({ navOpacity: parseInt(e.target.value) / 100 })}
-                      />
-                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
-                        <span>10%</span>
-                        <span className="text-primary font-bold">{Math.round(settings.navOpacity * 100)}%</span>
-                        <span>100%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
                     <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Ancho de Portadas (px)</label>
                     <div className="pt-2 flex flex-col gap-2">
                       <input
@@ -516,6 +498,85 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                         <span>80px</span>
                         <span className="text-primary font-bold">{settings.coverWidth}px</span>
                         <span>200px</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Colorful Cards Toggle */}
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Tarjetas Coloridas</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => updateSettings({ colorfulCards: !settings.colorfulCards })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.colorfulCards ? 'bg-primary' : 'bg-gray-600'}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.colorfulCards ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                      <span className="text-xs text-gray-400">
+                        {settings.colorfulCards ? 'Activado' : 'Desactivado'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-2">Aplica bordes de gradiente coloridos a las tarjetas de acceso rápido</p>
+                  </div>
+
+                  {/* Element Selector for Per-Element Opacity */}
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Configurar Elemento</label>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {[
+                        { id: 'nav' as const, label: 'Navegación' },
+                        { id: 'searchbar' as const, label: 'Barra de Búsqueda' },
+                        { id: 'header' as const, label: 'Encabezados' },
+                      ].map((el) => (
+                        <button
+                          key={el.id}
+                          onClick={() => setSelectedElement(el.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${selectedElement === el.id
+                            ? 'bg-primary/20 text-primary border-primary/30'
+                            : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
+                            }`}
+                        >
+                          {el.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Per-Element Opacity Slider */}
+                    <div className="p-4 rounded-xl bg-black/20 border border-white/5">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">
+                        Opacidad de {selectedElement === 'nav' ? 'Navegación' : selectedElement === 'searchbar' ? 'Barra de Búsqueda' : 'Encabezados'}
+                      </label>
+                      <input
+                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                        max="100"
+                        min="10"
+                        type="range"
+                        value={
+                          selectedElement === 'nav'
+                            ? settings.navOpacity * 100
+                            : selectedElement === 'searchbar'
+                              ? settings.searchBarOpacity * 100
+                              : settings.headerOpacity * 100
+                        }
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) / 100;
+                          if (selectedElement === 'nav') updateSettings({ navOpacity: val });
+                          else if (selectedElement === 'searchbar') updateSettings({ searchBarOpacity: val });
+                          else updateSettings({ headerOpacity: val });
+                        }}
+                      />
+                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5 mt-2">
+                        <span>10%</span>
+                        <span className="text-primary font-bold">
+                          {Math.round(
+                            selectedElement === 'nav'
+                              ? settings.navOpacity * 100
+                              : selectedElement === 'searchbar'
+                                ? settings.searchBarOpacity * 100
+                                : settings.headerOpacity * 100
+                          )}%
+                        </span>
+                        <span>100%</span>
                       </div>
                     </div>
                   </div>

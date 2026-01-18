@@ -7,10 +7,13 @@ interface ThemeSettings {
   glassOpacity: number;
   navOpacity: number;
   accentOpacity: number;
+  searchBarOpacity: number;
+  headerOpacity: number;
   glassBlur: number;
   theme: 'dark' | 'light' | 'amoled';
   fontSize: number;
   coverWidth: number;
+  colorfulCards: boolean;
 }
 
 interface ThemeContextType {
@@ -25,10 +28,13 @@ const defaultSettings: ThemeSettings = {
   glassOpacity: 0.6,
   navOpacity: 0.8,
   accentOpacity: 0.2,
+  searchBarOpacity: 0.8,
+  headerOpacity: 0.9,
   glassBlur: 12,
   theme: 'dark',
   fontSize: 14,
   coverWidth: 120,
+  colorfulCards: false,
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -85,6 +91,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--glass-opacity', settings.glassOpacity.toString());
     root.style.setProperty('--nav-opacity', settings.navOpacity.toString());
     root.style.setProperty('--accent-opacity', settings.accentOpacity.toString());
+    root.style.setProperty('--searchbar-opacity', settings.searchBarOpacity.toString());
+    root.style.setProperty('--header-opacity', settings.headerOpacity.toString());
     root.style.setProperty('--glass-blur', `${settings.glassBlur}px`);
     root.style.setProperty('--cover-width', `${settings.coverWidth}px`);
 

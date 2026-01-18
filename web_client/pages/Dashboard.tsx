@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { api } from '../src/services/api';
 import { useTelegram } from '../contexts/TelegramContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { preloadImages } from '../src/utils/imagePreloader';
 
 interface DashboardProps {
@@ -23,6 +24,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user: tgUser, status, showRecommendations } = useTelegram();
+  const { settings } = useTheme();
   const [history, setHistory] = useState<any[]>([]);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +66,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const downloadsLimit = status?.user?.downloads?.limit || 0;
   const isUnlimited = status?.user?.downloads?.limit === -1 || status?.hasUnlimitedDownloads;
   const limitDisplay = isUnlimited ? "∞" : downloadsLimit;
+  const totalDownloads = status?.user?.downloads?.total || 0;
+
+  // Colorful card configurations (gradient borders when enabled)
+  const colorfulCardStyles = [
+    { gradient: 'from-orange-500 to-red-500', shadow: 'shadow-orange-500/20' },
+    { gradient: 'from-purple-500 to-pink-500', shadow: 'shadow-purple-500/20' },
+    { gradient: 'from-green-500 to-emerald-500', shadow: 'shadow-green-500/20' },
+    { gradient: 'from-blue-500 to-cyan-500', shadow: 'shadow-blue-500/20' },
+  ];
 
   // Calculate percentage for progress bar
   let progressPercent = 0;
@@ -120,21 +131,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
                 { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
                 { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-              ].map((item, i) => (
-                <button
-                  key={i}
-                  onClick={() => onNavigate && onNavigate(item.id)}
-                  className={`glass-panel p-5 rounded-2xl border ${item.border} flex flex-col items-center justify-center text-center gap-3 hover:scale-[1.02] active:scale-95 transition-all duration-300 group shadow-lg`}
-                >
-                  <div className={`p-4 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(0,0,0,0.3)]`}>
-                    <item.icon className="w-7 h-7" strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <span className="block text-gray-900 dark:text-white font-bold text-base leading-none mb-1">{item.label}</span>
-                    <span className="block text-gray-500 text-[10px] font-medium uppercase tracking-wider">{item.desc}</span>
-                  </div>
-                </button>
-              ))}
+              ].map((item, i) => {
+                const colorStyle = colorfulCardStyles[i];
+                return (
+                  <button
+                    key={i}
+                    onClick={() => onNavigate && onNavigate(item.id)}
+                    className={`relative p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 hover:scale-[1.02] active:scale-95 transition-all duration-300 group shadow-lg overflow-hidden ${settings.colorfulCards ? colorStyle.shadow : ''}`}
+                  >
+                    {/* Gradient border effect when colorful cards enabled */}
+                    {settings.colorfulCards && (
+                      <div className={`absolute inset-0 bg-gradient-to-br ${colorStyle.gradient} opacity-20 rounded-2xl`}></div>
+                    )}
+                    <div className={`absolute inset-[1px] rounded-2xl ${settings.colorfulCards ? 'bg-gray-900/95 dark:bg-gray-900/95' : 'glass-panel'}`}></div>
+                    <div className={`relative z-10 p-4 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(0,0,0,0.3)]`}>
+                      <item.icon className="w-7 h-7" strokeWidth={1.5} />
+                    </div>
+                    <div className="relative z-10">
+                      <span className="block text-gray-900 dark:text-white font-bold text-base leading-none mb-1">{item.label}</span>
+                      <span className="block text-gray-500 text-[10px] font-medium uppercase tracking-wider">{item.desc}</span>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -231,10 +250,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-black/5 dark:bg-white/5 rounded-xl p-3 border border-black/5 dark:border-white/5 flex flex-col items-center justify-center text-center">
                   <TrendingUp className="w-5 h-5 text-green-500 mb-1" />
-                  <span className="text-gray-900 dark:text-white font-bold text-lg">Activo</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Estado</span>
+                  <span className="text-gray-900 dark:text-white font-bold text-lg">Top 5%</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Ranking</span>
                 </div>
-                {/* More stats placeholder */}
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-3 border border-black/5 dark:border-white/5 flex flex-col items-center justify-center text-center">
+                  <Download className="w-5 h-5 text-primary mb-1" />
+                  <span className="text-gray-900 dark:text-white font-bold text-lg">{totalDownloads}</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total DLS</span>
+                </div>
               </div>
             </div>
           </div>
