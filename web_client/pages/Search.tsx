@@ -221,7 +221,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   ];
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-300 relative" ref={scrollContainerRef}>
+    <div className="flex flex-col h-full min-h-0 animate-in fade-in duration-300 relative overflow-y-auto" ref={scrollContainerRef}>
 
       <SearchScopeModal
         isOpen={isScopeModalOpen}
@@ -230,7 +230,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         onSelectScope={setSelectedScope}
       />
 
-      {/* Search Header - Floating Glass (Desktop/Tablet) */}
+      {/* Search Header - Sticky at top of scroll container */}
       <div className="sticky top-0 z-30 p-4">
         <div
           className="glass-panel rounded-2xl p-4 border border-white/10 backdrop-blur-xl"
