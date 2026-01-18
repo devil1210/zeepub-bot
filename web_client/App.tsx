@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { MemoryRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
+import { SearchNavProvider } from './contexts/SearchNavContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Search } from './pages/Search';
@@ -206,8 +207,6 @@ const BookDetailWrapper = () => {
 };
 
 const App: React.FC = () => {
-  // Import SearchNavProvider dynamically to avoid circular deps
-  const { SearchNavProvider } = require('./contexts/SearchNavContext');
 
   return (
     <ThemeProvider>
