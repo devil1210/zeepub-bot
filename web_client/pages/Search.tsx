@@ -168,15 +168,16 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
     const sorted = [...series];
     switch (activeSort) {
       case 'a-z':
-        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+        // Sort by series title (use title as fallback)
+        return sorted.sort((a, b) => (a.title || a.title).localeCompare(b.title || b.title));
+      case 'z-a':
+        return sorted.sort((a, b) => (b.title || b.title).localeCompare(a.title || a.title));
       case 'downloads':
         return sorted.sort((a, b) => (b.downloadCount || 0) - (a.downloadCount || 0));
       case 'rating':
         return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       case 'added':
       case 'updated':
-        // As lastUpdated might be a string like "Hoy", we'll sort by ID as fallback or title
-        // In a real app we'd want timestamps
         return sorted.sort((a, b) => String(b.lastUpdated).localeCompare(String(a.lastUpdated)));
       default:
         return sorted;
@@ -184,11 +185,12 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   }, [series, activeSort]);
 
   const sortOptions = [
-    { id: 'a-z', label: 'A-Z', icon: null },
-    { id: 'added', label: 'AÑADIDO', icon: Calendar },
-    { id: 'updated', label: 'ACTUALIZADO', icon: Clock },
+    { id: 'a-z', label: 'A-Z', icon: ArrowUp },
+    { id: 'z-a', label: 'Z-A', icon: ArrowUp },
     { id: 'downloads', label: 'DESCARGAS', icon: Download },
     { id: 'rating', label: 'VALORACIÓN', icon: Star },
+    { id: 'added', label: 'AÑADIDO', icon: Calendar },
+    { id: 'updated', label: 'ACTUALIZADO', icon: Clock },
   ];
 
   return (
@@ -424,8 +426,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       {/* Mobile Catalog Bottom Bar */}
       <div className="md:hidden fixed bottom-6 left-8 right-8 z-40 flex flex-col gap-3">
         {isSortMenuOpen && (
-          <div className="glass-panel rounded-2xl p-2 border border-white/10 shadow-2xl bg-[#0f1115]/95 backdrop-blur-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          <div className="glass-panel rounded-2xl p-3 border border-white/10 shadow-2xl bg-[#0f1115]/95 backdrop-blur-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
+            <div className="grid grid-cols-3 gap-2">
               {sortOptions.map((option) => {
                 const isActive = activeSort === option.id;
                 return (
@@ -435,13 +437,13 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                       setActiveSort(option.id);
                       setIsSortMenuOpen(false);
                     }}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${isActive
-                      ? 'bg-[#2AABEE] text-white border-[#2AABEE] shadow-lg shadow-blue-500/20'
-                      : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
+                    className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${isActive
+                        ? 'bg-[#2AABEE] text-white border-[#2AABEE] shadow-lg shadow-blue-500/20'
+                        : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
                       }`}
                   >
-                    {option.icon && <option.icon className="w-3 h-3" />}
-                    {option.label}
+                    {option.icon && <option.icon className={`w-4 h-4 ${option.id === 'z-a' ? 'rotate-180' : ''}`} />}
+                    <span className="text-center leading-tight">{option.label}</span>
                   </button>
                 );
               })}
