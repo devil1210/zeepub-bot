@@ -104,8 +104,15 @@ export const api = {
         priorityRequests?: boolean;
         earlyAccess?: boolean;
         customThemes?: boolean;
-        uiPrimaryColor?: string;
-        panelTransparency?: number;
+        primaryColor?: string;
+        glassOpacity?: number;
+        theme?: string;
+        fontSize?: number;
+        glassBlur?: number;
+        coverWidth?: number;
+        navOpacity?: number;
+        accentOpacity?: number;
+        showRecommendations?: boolean;
     }) => rpc('admin_save_tier_config', config),
 
     // User Permissions

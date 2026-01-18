@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme, adjustBrightness } from '../contexts/ThemeContext';
 import { useTelegram } from '../contexts/TelegramContext';
 import {
@@ -59,11 +59,16 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         throw new Error(res.message || 'Error al guardar');
       }
     } catch (err: any) {
-      console.error('Save settings error:', err);
       setSaveMessage({ type: 'error', text: err.message || 'Error al conectar con el servidor' });
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleClearCache = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.reload();
   };
 
   const handleBack = () => {
@@ -73,7 +78,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   };
 
   // Fetch available levels for admin simulation
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAdmin) {
       import('../src/services/api').then(({ api }) => {
         api.getAdminTiers().then((res: any) => {
@@ -561,7 +566,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 <p className="text-sm font-bold text-red-200">Almacenamiento de Caché Local</p>
                 <p className="text-xs text-red-400 mt-1">Si experimentas problemas de visualización, intenta limpiar la caché.</p>
               </div>
-              <button className="flex-shrink-0 px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-200 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-800 transition-colors flex items-center gap-2">
+              <button
+                onClick={handleClearCache}
+                className="flex-shrink-0 px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-200 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-800 transition-colors flex items-center gap-2"
+              >
                 <Trash2 className="w-4 h-4" />
                 Limpiar Caché
               </button>
@@ -627,12 +635,12 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-[#2AABEE] disabled:opacity-50"
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-[var(--color-primary)] disabled:opacity-50"
           >
-            <div className="p-1.5 rounded-full bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]">
+            <div className="p-1.5 rounded-full bg-[var(--color-primary)] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]">
               {isSaving ? <RotateCcw className="w-4 h-4 text-white animate-spin" strokeWidth={2.5} /> : <Save className="w-4 h-4 text-white" strokeWidth={2.5} />}
             </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1 text-[#2AABEE]">{isSaving ? 'Guardando' : 'Guardar'}</span>
+            <span className="text-[9px] font-black uppercase tracking-widest mt-1 text-[var(--color-primary)]">{isSaving ? 'Guardando' : 'Guardar'}</span>
           </button>
         </div>
       </div>

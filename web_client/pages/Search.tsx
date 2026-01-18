@@ -210,10 +210,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           <div className="flex flex-row gap-2 sm:gap-4 items-center justify-between">
             <div className="relative w-full max-w-xl group flex-1">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon className="text-gray-400 w-5 h-5 group-focus-within:text-[#2AABEE] transition-colors" />
+                <SearchIcon className="text-gray-400 w-5 h-5 group-focus-within:text-[var(--color-primary)] transition-colors" />
               </div>
               <input
-                className="block w-full pl-10 pr-24 py-3 rounded-xl border border-white/5 bg-black/20 text-white placeholder-gray-500 focus:ring-1 focus:ring-[#2AABEE] focus:border-[#2AABEE] focus:bg-black/40 text-sm transition-all shadow-inner"
+                className="block w-full pl-10 pr-24 py-3 rounded-xl border border-white/5 bg-black/20 text-white placeholder-gray-500 focus:ring-1 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] focus:bg-black/40 text-sm transition-all shadow-inner"
                 placeholder="Buscar..."
                 type="text"
                 value={searchTerm}
@@ -222,7 +222,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
               <div className="absolute inset-y-0 right-1 flex items-center">
                 <button
                   onClick={() => setIsScopeModalOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-[#0f1318] hover:bg-[#2AABEE]/10 border border-white/10 hover:border-[#2AABEE]/30 text-[#2AABEE] text-[10px] font-black uppercase tracking-widest transition-all"
+                  className="px-3 py-1.5 rounded-lg bg-[#0f1318] hover:bg-[var(--color-primary)]/10 border border-white/10 hover:border-[var(--color-primary)]/30 text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest transition-all"
                 >
                   {selectedScope}
                 </button>
@@ -248,7 +248,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                 </button>
               </div>
 
-              {loading && <RefreshCw className="w-5 h-5 animate-spin text-[#2AABEE]" />}
+              {loading && <RefreshCw className="w-5 h-5 animate-spin text-[var(--color-primary)]" />}
 
               {/* Desktop Sort Controls (Hidden on Mobile) */}
               <div className="hidden md:flex items-center gap-3">
@@ -292,14 +292,14 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                     </h3>
                     <button
                       onClick={(e) => { e.stopPropagation(); /* Add logic */ }}
-                      className="p-1.5 rounded-full bg-white/5 hover:bg-[#2AABEE]/20 text-gray-400 hover:text-[#2AABEE] transition-colors shrink-0"
+                      className="p-1.5 rounded-full bg-white/5 hover:bg-[var(--color-primary)]/20 text-gray-400 hover:text-[var(--color-primary)] transition-colors shrink-0"
                     >
                       <PlusCircle className="w-4 h-4" />
                     </button>
                   </div>
 
                   {/* Author */}
-                  <p className="text-sm text-[#2AABEE] font-medium mb-1.5 truncate">
+                  <p className="text-sm text-[var(--color-primary)] font-medium mb-1.5 truncate">
                     {series.author}
                   </p>
 
@@ -329,7 +329,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                       <span className="text-gray-300">{series.rating.toFixed(1)}</span>
                       <span className="text-gray-600 font-normal">({series.voteCount || 0})</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[#2AABEE]">
+                    <div className="flex items-center gap-1.5 text-[var(--color-primary)]">
                       <Download className="w-3.5 h-3.5" />
                       <span>{series.downloadCount || 0}</span>
                     </div>
@@ -344,7 +344,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                 <div
                   key={series.id}
                   onClick={() => handleSelectSeries(series)}
-                  className="group relative glass-panel rounded-2xl overflow-hidden hover:bg-white/5 shadow-sm hover:shadow-xl hover:shadow-[#2AABEE]/10 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full cursor-pointer bg-black/20"
+                  className="group relative glass-panel rounded-2xl overflow-hidden hover:bg-white/5 shadow-sm hover:shadow-xl hover:shadow-[var(--color-primary)]/10 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full cursor-pointer bg-black/20"
                 >
                   {/* Format Badge (Top Right) */}
                   <div className="absolute top-3 right-3 z-10">
@@ -376,7 +376,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   <div className="p-4 flex flex-col flex-1 bg-[#0d1117]">
                     {/* Top Row: Genre & Rating */}
                     <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[#2AABEE]/10 text-[#2AABEE] border border-[#2AABEE]/20 truncate max-w-[70%]">
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20 truncate max-w-[70%]">
                         {series.genre?.split(',')[0]}
                       </span>
                       <div className="flex items-center gap-1 text-yellow-500 text-xs shrink-0">
@@ -403,10 +403,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                         {series.status === 'Ongoing' ? 'EN EMISIÓN' : 'FINALIZADO'}
                       </span>
                       <div className="flex gap-2">
-                        <button className="p-2 rounded-full bg-white/5 text-gray-400 hover:bg-[#2AABEE] hover:text-white transition-colors" onClick={(e) => { e.stopPropagation(); }}>
+                        <button className="p-2 rounded-full bg-white/5 text-gray-400 hover:bg-[var(--color-primary)] hover:text-white transition-colors" onClick={(e) => { e.stopPropagation(); }}>
                           <PlusCircle className="w-4 h-4" />
                         </button>
-                        <button className="p-2 rounded-full bg-white/5 text-gray-400 hover:bg-[#2AABEE] hover:text-white transition-colors">
+                        <button className="p-2 rounded-full bg-white/5 text-gray-400 hover:bg-[var(--color-primary)] hover:text-white transition-colors">
                           <Download className="w-4 h-4" />
                         </button>
                       </div>
@@ -446,7 +446,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                       setIsSortMenuOpen(false);
                     }}
                     className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${isActive
-                      ? 'bg-[#2AABEE] text-white border-[#2AABEE] shadow-lg shadow-blue-500/20'
+                      ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-blue-500/20'
                       : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
                       }`}
                   >
@@ -484,7 +484,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
             onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
             className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
           >
-            <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-[var(--color-primary)] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
               <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'text-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
             </div>
             <span className={`text-[9px] font-black uppercase tracking-widest mt-1`}>Ordenar</span>

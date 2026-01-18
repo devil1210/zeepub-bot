@@ -442,37 +442,44 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
                     "badgePosMode": get_setting("badge_pos_mode", "relative"),
                 }
             )
-            # 1. Load Global Defaults
-            global_raw = get_setting("ui_defaults_global", "{}")
-            global_defaults = json.loads(global_raw)
-            final_settings.update(global_defaults)
+        except Exception as e:
+            logger.error(f"Error loading UI base defaults: {e}")
 
-            # 2. Tier Defaults (Override Global)
-            user_record = await user_repo.get_by_id(user_id)
-            if user_record:
-                access_info = await user_repo.get_access_info(user_id)
-                if access_info and "level" in access_info:
-                    lvl = access_info["level"]
-                    tier_overrides = {
-                        "theme": lvl.get("theme"),
-                        "fontSize": lvl.get("fontSize"),
-                        "glassBlur": lvl.get("glassBlur"),
-                        "coverWidth": lvl.get("coverWidth"),
-                        "navOpacity": lvl.get("navOpacity"),
-                        "accentOpacity": lvl.get("accentOpacity"),
-                        "glassOpacity": lvl.get("glassOpacity", 0.6),
-                        "primaryColor": lvl.get("primaryColor"),
-                        "showRecommendations": lvl.get("showRecommendations")
-                    }
-                    # Filter out None values
-                    tier_overrides = {k: v for k, v in tier_overrides.items() if v is not None}
-                    final_settings.update(tier_overrides)
+        # 1. Load Global Defaults
+        global_raw = get_setting("ui_defaults_global", "{}")
+        if global_raw:
+            try:
+                global_defaults = json.loads(global_raw)
+                final_settings.update(global_defaults)
+            except Exception:
+                pass
 
-            # 3. Personal Overrides (Highest priority)
-            if user_record and user_record.get("settings"):
-                final_settings.update(user_record.get("settings", {}))
-                
-            return final_settings
+        # 2. Tier Defaults (Override Global)
+        user_record = await user_repo.get_by_id(user_id)
+        if user_record:
+            access_info = await user_repo.get_access_info(user_id)
+            if access_info and "level" in access_info:
+                lvl = access_info["level"]
+                tier_overrides = {
+                    "theme": lvl.get("theme"),
+                    "fontSize": lvl.get("fontSize"),
+                    "glassBlur": lvl.get("glassBlur"),
+                    "coverWidth": lvl.get("coverWidth"),
+                    "navOpacity": lvl.get("navOpacity"),
+                    "accentOpacity": lvl.get("accentOpacity"),
+                    "glassOpacity": lvl.get("glassOpacity", 0.6),
+                    "primaryColor": lvl.get("primaryColor"),
+                    "showRecommendations": lvl.get("showRecommendations")
+                }
+                # Filter out None values
+                tier_overrides = {k: v for k, v in tier_overrides.items() if v is not None}
+                final_settings.update(tier_overrides)
+
+        # 3. Personal Overrides (Highest priority)
+        if user_record and user_record.get("settings"):
+            final_settings.update(user_record.get("settings", {}))
+            
+        return final_settings
 
     elif sub_action == "set":
         target_role = data.get("role", "global")
