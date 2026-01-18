@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
+import { useCloudStorage } from '../src/hooks/useCloudStorage';
 
 interface ThemeSettings {
   primaryColor: string;
@@ -33,21 +34,14 @@ const defaultSettings: ThemeSettings = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<ThemeSettings>(() => {
-    const saved = localStorage.getItem('zeepub_theme_settings');
-    if (saved) {
-      try {
-        return { ...defaultSettings, ...JSON.parse(saved) };
-      } catch (e) {
-        console.error('Error parsing saved theme settings:', e);
-      }
-    }
-    return defaultSettings;
-  });
+  // Use CloudStorage hook for persistent theme settings
+  const { value: settings, saveValue: setSavedSettings, isLoading } = useCloudStorage<ThemeSettings>(
+    'zeepub_theme_settings',
+    defaultSettings
+  );
 
   useEffect(() => {
-    // Save settings to localStorage
-    localStorage.setItem('zeepub_theme_settings', JSON.stringify(settings));
+    // Apply settings to CSS variables (no localStorage needed - handled by hook)
 
     // Apply settings to CSS variables
     const root = document.documentElement;
@@ -89,12 +83,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [settings]);
 
   const updateSettings = (newSettings: Partial<ThemeSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+    const updatedSettings = { ...settings, ...newSettings };
+    setSavedSettings(updatedSettings);
   };
 
   const resetSettings = () => {
-    localStorage.removeItem('zeepub_theme_settings');
-    setSettings(defaultSettings);
+    // CloudStorage will handle persistence automatically
+    setSavedSettings(defaultSettings);
   };
 
   return (
