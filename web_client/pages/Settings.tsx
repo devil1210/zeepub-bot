@@ -32,7 +32,7 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { settings, updateSettings, resetSettings } = useTheme();
-  const { user: tgUser, isAdmin, status, customThemes, simulatedLevel, setSimulatedLevel, showRecommendations } = useTelegram();
+  const { user: tgUser, isAdmin, status, customThemes, simulatedLevel, setSimulatedLevel, showRecommendations, setShowRecommendations } = useTelegram();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [availableLevels, setAvailableLevels] = useState<Array<{ id: number, name: string, color: string }>>([]);
@@ -172,8 +172,8 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   <PenTool className="text-white w-5 h-5" />
                 </div>
               </div>
-              <h2 className="text-xl font-bold text-white mt-4">{tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Alex Doe'}</h2>
-              <p className="text-sm text-gray-400">@{tgUser?.username || 'alex_doe'}</p>
+              <h2 className="text-xl font-bold text-white mt-4">{tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Usuario'}</h2>
+              <p className="text-sm text-gray-400">@{tgUser?.username || 'usuario'}</p>
               {tgUser?.id && (
                 <div className="mt-1 flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity">
                   <Terminal className="w-3 h-3" />
@@ -187,7 +187,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   </span>
                 ) : (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                    Miembro VIP
+                    {status?.user?.status_label || 'Miembro VIP'}
                   </span>
                 )}
               </div>
@@ -530,9 +530,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                             const newValue = !showRecommendations;
                             try {
                               const { api } = await import('../src/services/api');
-                              await api.rpc('update_user_setting', { key: 'show_recommendations', value: newValue });
-                              // Update local state via context - will be refreshed on next load
-                              window.location.reload();
+                              // Save to backend with consistent camelCase key
+                              await api.rpc('update_user_setting', { key: 'showRecommendations', value: newValue });
+                              // Update local state via context immediately
+                              setShowRecommendations(newValue);
                             } catch (e) {
                               console.error('Failed to update show recommendations setting', e);
                             }

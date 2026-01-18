@@ -10,6 +10,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTelegram } from '../contexts/TelegramContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, showMobileBottomNav = false }) => {
   const { settings } = useTheme();
+  const { user: tgUser, status } = useTelegram();
 
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Inicio' },
@@ -97,14 +99,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           <div className="glass-panel p-3 rounded-2xl border border-white/5 bg-black/20 flex items-center gap-3 hover:border-primary/30 transition-colors cursor-pointer group">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 p-[1px]">
               <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"
+                src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"}
                 alt="User"
                 className="w-full h-full rounded-full object-cover border border-black"
               />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate">Alex Doe</p>
-              <p className="text-xs text-primary font-medium truncate uppercase tracking-wider">VIP Member</p>
+              <p className="text-sm font-bold text-white truncate">{tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Usuario'}</p>
+              <p className="text-xs text-primary font-medium truncate uppercase tracking-wider">{status?.user?.status_label || 'Visitante'}</p>
             </div>
             <button className="text-gray-500 hover:text-white transition-colors">
               <LogOut className="w-4 h-4" />
@@ -132,7 +134,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             <span className="font-bold text-lg text-white">ZeepubBot</span>
           </div>
           <button onClick={() => onTabChange('settings')} className="w-8 h-8 rounded-full overflow-hidden border border-white/20">
-            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw" alt="Profile" />
+            <img src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"} alt="Profile" />
           </button>
         </header>
 

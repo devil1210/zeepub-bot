@@ -32,6 +32,7 @@ interface TelegramContextType {
   isBetaTester: boolean;  // Controls new vs old UI
   customThemes: boolean;  // Controls if user can personalize UI
   showRecommendations: boolean; // Controls if recommendations are shown
+  setShowRecommendations: (value: boolean) => void;
   isExpanded: boolean;
   ready: boolean;
   refreshStatus: () => Promise<void>;
@@ -116,7 +117,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const applyTelegramTheme = () => {
         if (tg.themeParams) {
           const bg = tg.themeParams.bg_color || '#000000';
-          const buttonColor = tg.themeParams.button_color || '#2AABEE';
+          const buttonColor = tg.themeParams.button_color || '#2b6cee';
           updateSettings({
             primaryColor: buttonColor
           });
@@ -157,6 +158,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isBetaTester: effectiveBetaTester,
       customThemes: isAdmin || customThemes,
       showRecommendations: showRecommendations,
+      setShowRecommendations: setShowRecommendations,
       isExpanded,
       ready,
       refreshStatus,

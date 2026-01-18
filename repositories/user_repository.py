@@ -291,6 +291,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.early_access,
                 ul.custom_themes,
                 ul.price,
+                ul.show_recommendations,
                 (EXISTS(SELECT 1 FROM admins WHERE user_id = ?) OR u.role = 'admin') as is_admin,
                 u.role,
                 u.settings,
@@ -310,14 +311,14 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             cursor = await conn.execute(query, (telegram_id, telegram_id))
             row = await cursor.fetchone()
             if row:
-                is_admin = bool(row[9])
-                role = row[10] if len(row) > 10 else 'free'
+                is_admin = bool(row[10])
+                role = row[11] if len(row) > 11 else 'free'
                 
                 # Parse settings
                 settings = {}
                 try:
                     import json
-                    settings_str = row[11] if len(row) > 11 else "{}"
+                    settings_str = row[12] if len(row) > 12 else "{}"
                     if settings_str:
                         settings = json.loads(settings_str)
                 except Exception:
@@ -337,14 +338,14 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "customThemes": bool(row[7]),
                         "price": row[8],
                         "showRecommendations": bool(row[9]) if len(row) > 9 else True,
-                        "theme": row[12] if len(row) > 12 else 'dark',
-                        "fontSize": row[13] if len(row) > 13 else 14,
-                        "glassBlur": row[14] if len(row) > 14 else 12,
-                        "coverWidth": row[15] if len(row) > 15 else 120,
-                        "navOpacity": row[16] if len(row) > 16 else 0.8,
-                        "accentOpacity": row[17] if len(row) > 17 else 0.2,
-                        "glassOpacity": (row[18] if len(row) > 18 else 60) / 100.0,
-                        "primaryColor": row[19] if len(row) > 19 else '#2b6cee',
+                        "theme": row[13] if len(row) > 13 else 'dark',
+                        "fontSize": row[14] if len(row) > 14 else 14,
+                        "glassBlur": row[15] if len(row) > 15 else 12,
+                        "coverWidth": row[16] if len(row) > 16 else 120,
+                        "navOpacity": row[17] if len(row) > 17 else 0.8,
+                        "accentOpacity": row[18] if len(row) > 18 else 0.2,
+                        "glassOpacity": (row[19] if len(row) > 19 else 60) / 100.0,
+                        "primaryColor": row[20] if len(row) > 20 else '#2b6cee',
                     },
                     "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
                     "isAdmin": is_admin,

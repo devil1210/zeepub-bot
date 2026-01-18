@@ -230,7 +230,11 @@ async def handle_recommendations(data: Dict[str, Any], user_data: Dict[str, Any]
 
     user_id = user_data.get("user_id")
     settings = user_data.get("settings", {})
-    show_recs = settings.get("show_recommendations", True)
+    
+    # Check both camelCase and snake_case for backward compatibility
+    show_recs = settings.get("showRecommendations")
+    if show_recs is None:
+        show_recs = settings.get("show_recommendations", True)
     
     if not show_recs:
         logger.info(f"Recommendations skipped for user {user_id} (disabled in settings)")

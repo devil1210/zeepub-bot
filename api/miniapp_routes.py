@@ -252,13 +252,25 @@ async def check_user_access(
     logger.info(
         f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}, isBetaTester={is_beta_tester}"
     )
+    # Personal settings (showRecommendations) override level defaults
+    user_settings = eff.get("settings", {})
+    personal_show_recs = user_settings.get("showRecommendations")
+    if personal_show_recs is None:
+        personal_show_recs = user_settings.get("show_recommendations")
+    
+    # Final value: personal setting OR level default
+    final_show_recommendations = (
+        personal_show_recs if personal_show_recs is not None 
+        else access_info["level"].get("showRecommendations", True)
+    )
+
     return AccessResponse(
         level=UserLevelModel(**access_info["level"]),
         hasAccess=has_access,
         isAdmin=is_admin,
         isBetaTester=is_beta_tester,
         customThemes=access_info["level"].get("customThemes", False) or is_admin,
-        showRecommendations=access_info["level"].get("showRecommendations", True)
+        showRecommendations=final_show_recommendations
     )
 
 

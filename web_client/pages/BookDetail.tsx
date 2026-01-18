@@ -204,7 +204,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
               <div className="hidden md:flex flex-col gap-3">
                 <button
                   onClick={handleDownload}
-                  className={`w-full py-3.5 text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2 ${hasDownloaded ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' : 'bg-[#2AABEE] hover:bg-[#2AABEE]/90 shadow-blue-500/20'}`}
+                  className={`w-full py-3.5 text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2 ${hasDownloaded ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' : 'bg-primary hover:brightness-110 shadow-primary/20'}`}
                 >
                   {hasDownloaded ? (
                     <>
@@ -242,7 +242,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                 {/* Download Block */}
                 <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Descargas Totales</span>
-                  <div className="flex items-center gap-1.5 text-[#2AABEE]">
+                  <div className="flex items-center gap-1.5 text-primary">
                     <Download className="w-4 h-4" />
                     <span className="text-gray-900 dark:text-white font-bold">{displayData.downloadCount}</span>
                   </div>
@@ -265,7 +265,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                 <div className="mb-4 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-wider">
                   <button
                     onClick={() => handleSearch(displayData.group, 'group')}
-                    className="bg-[#2AABEE]/10 text-[#2AABEE] border border-[#2AABEE]/20 px-2 py-1 rounded-md hover:bg-[#2AABEE] hover:text-white transition-colors cursor-pointer"
+                    className="bg-primary/10 text-primary border border-primary/20 px-2 py-1 rounded-md hover:bg-primary hover:text-white transition-colors cursor-pointer"
                   >
                     {displayData.group}
                   </button>
@@ -288,8 +288,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                 {/* Author/Stats Row - CLICKABLE */}
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-600 dark:text-gray-400 border-b border-black/5 dark:border-white/5 pb-6 mb-2">
                   <button onClick={() => handleSearch(series.author, 'author')} className="flex items-center gap-2 text-gray-900 dark:text-white group">
-                    <User className="w-4 h-4 text-[#2AABEE] group-hover:scale-110 transition-transform" />
-                    <span className="font-bold group-hover:underline cursor-pointer group-hover:text-[#2AABEE] transition-colors">{series.author}</span>
+                    <User className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                    <span className="font-bold group-hover:underline cursor-pointer group-hover:text-primary transition-colors">{series.author}</span>
                   </button>
 
                   {/* Added Rating & Downloads here for visibility on Mobile */}
@@ -297,7 +297,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                     <Star className="w-4 h-4 fill-current" />
                     <span className="text-gray-900 dark:text-white font-bold">{displayData.rating || 4.7}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[#2AABEE]">
+                  <div className="flex items-center gap-1.5 text-primary">
                     <Download className="w-4 h-4" />
                     <span className="text-gray-900 dark:text-white font-bold">{displayData.downloadCount}</span>
                   </div>
@@ -353,7 +353,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
 
               {/* Synopsis */}
               <div className="glass-panel border border-black/5 dark:border-white/5 bg-white/50 dark:bg-transparent rounded-2xl p-6 lg:p-8 shadow-sm dark:shadow-xl">
-                <div className="flex items-center gap-2 mb-4 text-[#2AABEE]">
+                <div className="flex items-center gap-2 mb-4 text-primary">
                   <FileText className="w-5 h-5" />
                   <h3 className="text-xs font-black uppercase tracking-widest">Sinopsis</h3>
                 </div>
@@ -366,7 +366,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Book Details */}
                 <div className="glass-panel border border-black/5 dark:border-white/5 bg-white/50 dark:bg-transparent rounded-2xl p-6 shadow-sm dark:shadow-xl h-full">
-                  <div className="flex items-center gap-2 mb-6 text-[#2AABEE]">
+                  <div className="flex items-center gap-2 mb-6 text-primary">
                     <Library className="w-5 h-5" />
                     <h3 className="text-xs font-black uppercase tracking-widest">Detalles del Libro</h3>
                   </div>
@@ -376,7 +376,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                       { label: 'Volumen', value: `${volume.volumeNumber} (Único)` },
                       { label: 'ISBN', value: displayData.isbn, highlight: true, font: 'mono' },
                       { label: 'ASIN', value: displayData.asin, highlight: true, font: 'mono' },
-                      { label: 'Grupo', value: displayData.group, color: 'text-[#2AABEE]', clickable: true, type: 'group' },
+                      { label: 'Grupo', value: displayData.group, color: 'text-primary', clickable: true, type: 'group' },
                       { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
                     ].map((item, idx) => (
                       <div key={idx} className="flex justify-between py-3 border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/[0.02] px-2 -mx-2 rounded transition-colors">
@@ -400,7 +400,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
 
                 {/* Tech Specs */}
                 <div className="glass-panel border border-black/5 dark:border-white/5 bg-white/50 dark:bg-transparent rounded-2xl p-6 shadow-sm dark:shadow-xl h-full">
-                  <div className="flex items-center gap-2 mb-6 text-[#2AABEE]">
+                  <div className="flex items-center gap-2 mb-6 text-primary">
                     <Database className="w-5 h-5" />
                     <h3 className="text-xs font-black uppercase tracking-widest">Ficha Técnica</h3>
                   </div>
@@ -497,12 +497,12 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
           {/* Download */}
           <button
             onClick={handleDownload}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${hasDownloaded ? 'text-green-600 dark:text-green-500' : 'text-[#2AABEE]'}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${hasDownloaded ? 'text-green-600 dark:text-green-500' : 'text-primary'}`}
           >
-            <div className={`p-1.5 rounded-full transition-all duration-300 ${!hasDownloaded ? 'bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${!hasDownloaded ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
               {hasDownloaded ? <Check className="w-4 h-4" strokeWidth={2.5} /> : <Download className="w-4 h-4 text-white" strokeWidth={2.5} />}
             </div>
-            <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${!hasDownloaded ? 'text-[#2AABEE]' : ''}`}>
+            <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${!hasDownloaded ? 'text-primary' : ''}`}>
               {hasDownloaded ? 'Listo' : 'Descargar'}
             </span>
           </button>

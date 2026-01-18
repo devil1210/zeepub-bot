@@ -213,7 +213,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                 <SearchIcon className="text-gray-400 w-5 h-5 group-focus-within:text-[var(--color-primary)] transition-colors" />
               </div>
               <input
-                className="block w-full pl-10 pr-24 py-3 rounded-xl border border-white/5 bg-black/20 text-white placeholder-gray-500 focus:ring-1 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] focus:bg-black/40 text-sm transition-all shadow-inner"
+                className="block w-full pl-10 pr-24 py-3 rounded-xl border border-white/5 bg-black/20 text-white placeholder-gray-500 focus:ring-1 focus:ring-primary focus:border-primary focus:bg-black/40 text-sm transition-all shadow-inner"
                 placeholder="Buscar..."
                 type="text"
                 value={searchTerm}
@@ -222,7 +222,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
               <div className="absolute inset-y-0 right-1 flex items-center">
                 <button
                   onClick={() => setIsScopeModalOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-[#0f1318] hover:bg-[var(--color-primary)]/10 border border-white/10 hover:border-[var(--color-primary)]/30 text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest transition-all"
+                  className="px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]"
                 >
                   {selectedScope}
                 </button>
