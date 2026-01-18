@@ -32,7 +32,7 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { settings, updateSettings, resetSettings } = useTheme();
-  const { user: tgUser, isAdmin, status, customThemes, simulatedLevel, setSimulatedLevel } = useTelegram();
+  const { user: tgUser, isAdmin, status, customThemes, simulatedLevel, setSimulatedLevel, showRecommendations } = useTelegram();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [availableLevels, setAvailableLevels] = useState<Array<{ id: number, name: string, color: string }>>([]);
@@ -476,6 +476,37 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Show Recommendations Toggle - Only for users with custom themes permission */}
+                  {customThemes && (
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Mostrar Recomendaciones</label>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={async () => {
+                            const newValue = !showRecommendations;
+                            try {
+                              const { api } = await import('../src/services/api');
+                              await api.rpc('update_user_setting', { key: 'show_recommendations', value: newValue });
+                              // Update local state via context - will be refreshed on next load
+                              window.location.reload();
+                            } catch (e) {
+                              console.error('Failed to update show recommendations setting', e);
+                            }
+                          }}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showRecommendations ? 'bg-primary' : 'bg-gray-600'
+                            }`}
+                        >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showRecommendations ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                        </button>
+                        <span className="text-xs text-gray-400">
+                          {showRecommendations ? 'Visible' : 'Oculto'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-2">Controla si la sección de recomendaciones aparece en el inicio</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

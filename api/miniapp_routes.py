@@ -118,6 +118,7 @@ async def handle_bot_request(
             handle_admin_get_user_permissions,
             handle_admin_find_duplicates,
             handle_admin_delete_duplicate,
+            handle_update_user_setting,
         )
 
         ACTION_HANDLERS = {
@@ -152,6 +153,7 @@ async def handle_bot_request(
             "admin_get_user_permissions": handle_admin_get_user_permissions,
             "admin_find_duplicates": handle_admin_find_duplicates,
             "admin_delete_duplicate": handle_admin_delete_duplicate,
+            "update_user_setting": handle_update_user_setting,
         }
 
         handler = ACTION_HANDLERS.get(action)

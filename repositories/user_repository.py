@@ -105,6 +105,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
         if self.supabase.is_active:
             try:
+                logger.info(f"[UPSERT DEBUG] Attempting upsert for user {telegram_id}, role={role}")
+                logger.info(f"[UPSERT DEBUG] Supabase client active: {self.supabase.is_active}")
+                
                 data = {
                     "telegram_id": telegram_id,
                     "role": role.lower(),
@@ -115,7 +118,11 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if created_by: data["created_by"] = created_by
                 if nickname: data["nickname"] = nickname
                 
-                self.supabase.get_client().table('users').upsert(data).execute()
+                logger.info(f"[UPSERT DEBUG] Data to upsert: {data}")
+                
+                result = self.supabase.get_client().table('users').upsert(data).execute()
+                logger.info(f"[UPSERT DEBUG] Upsert successful for user {telegram_id}")
+                logger.debug(f"[UPSERT DEBUG] Supabase response: {result}")
                 
                 if role.lower() == 'admin':
                     self.supabase.get_client().table('admins').upsert({"user_id": telegram_id, "granted_by": created_by}).execute()
@@ -124,7 +131,14 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     
                 return {"telegram_id": telegram_id, "role": role}
             except Exception as e:
-                logger.error(f"Supabase upsert error: {e}")
+                import traceback
+                logger.error(f"[UPSERT ERROR] Supabase upsert failed for user {telegram_id}")
+                logger.error(f"[UPSERT ERROR] Exception type: {type(e).__name__}")
+                logger.error(f"[UPSERT ERROR] Exception message: {str(e)}")
+                logger.error(f"[UPSERT ERROR] Data attempted: {data}")
+                logger.error(f"[UPSERT ERROR] Full traceback:\n{traceback.format_exc()}")
+                # Don't fall through to SQLite - re-raise to make it visible
+                raise
 
         async with self.db.connection() as conn:
             # Check existence

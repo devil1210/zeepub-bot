@@ -1511,3 +1511,23 @@ async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[st
         session.rollback()
         session.close()
         return {"success": False, "message": str(e)}
+
+
+async def handle_update_user_setting(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Actualiza una configuración específica del usuario (ej: show_recommendations)"""
+    from services.user_service import update_user_setting
+    
+    user_id = user_data.get("telegram_id")
+    key = data.get("key")
+    value = data.get("value")
+    
+    if not key:
+        raise HTTPException(status_code=400, detail="Missing 'key' parameter")
+    
+    try:
+        logger.info(f"User {user_id} updating setting: {key} = {value}")
+        result = await update_user_setting(user_id, key, value)
+        return {"success": True, "settings": result}
+    except Exception as e:
+        logger.error(f"Error updating user setting for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
