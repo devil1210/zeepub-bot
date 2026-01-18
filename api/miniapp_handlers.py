@@ -1196,7 +1196,15 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
         
         for frontend_key, db_key in field_mapping.items():
             if frontend_key in data and data[frontend_key] is not None:
-                update_data[db_key] = data[frontend_key]
+                val = data[frontend_key]
+                # Special handling for panel_transparency (expects int 0-100, frontend sends float 0-1)
+                if db_key == "panel_transparency":
+                    try:
+                        val = int(float(val) * 100)
+                    except (ValueError, TypeError):
+                        val = 70 # Fallback default
+                
+                update_data[db_key] = val
         
         # Update tier in Supabase
         client.table('user_levels').update(update_data).eq('id', tier_id).execute()
