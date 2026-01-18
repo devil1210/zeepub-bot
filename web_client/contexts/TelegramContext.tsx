@@ -118,8 +118,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const bg = tg.themeParams.bg_color || '#000000';
           const buttonColor = tg.themeParams.button_color || '#2AABEE';
           updateSettings({
-            primaryColor: buttonColor,
-            theme: 'dark'
+            primaryColor: buttonColor
           });
           document.documentElement.style.setProperty('--app-bg', bg);
         }

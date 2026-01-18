@@ -263,7 +263,15 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "earlyAccess": bool(lvl.get('early_access')),
                             "customThemes": bool(lvl.get('custom_themes')),
                             "price": lvl.get('price'),
-                            "showRecommendations": user.get('settings', {}).get('show_recommendations', True)
+                            "showRecommendations": bool(lvl.get('show_recommendations', True)),
+                            "theme": lvl.get('ui_theme', 'dark'),
+                            "fontSize": lvl.get('ui_font_size', 14),
+                            "glassBlur": lvl.get('ui_glass_blur', 12),
+                            "coverWidth": lvl.get('ui_cover_width', 120),
+                            "navOpacity": lvl.get('ui_nav_opacity', 0.8),
+                            "accentOpacity": lvl.get('ui_accent_opacity', 0.2),
+                            "glassOpacity": (lvl.get('panel_transparency', 60) or 60) / 100.0,
+                            "primaryColor": lvl.get('ui_primary_color', '#2b6cee'),
                         },
                         "hasAccess": bool(lvl.get('has_mini_app_access')) or is_admin,
                         "isAdmin": is_admin,
@@ -285,7 +293,15 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.price,
                 (EXISTS(SELECT 1 FROM admins WHERE user_id = ?) OR u.role = 'admin') as is_admin,
                 u.role,
-                u.settings
+                u.settings,
+                ul.ui_theme,
+                ul.ui_font_size,
+                ul.ui_glass_blur,
+                ul.ui_cover_width,
+                ul.ui_nav_opacity,
+                ul.ui_accent_opacity,
+                ul.panel_transparency,
+                ul.ui_primary_color
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -320,7 +336,14 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "earlyAccess": bool(row[6]),
                         "customThemes": bool(row[7]),
                         "price": row[8],
-                        "showRecommendations": settings.get("show_recommendations", True)
+                        "showRecommendations": bool(row[9]) if len(row) > 9 else True,
+                        "uiTheme": row[12] if len(row) > 12 else 'dark',
+                        "uiFontSize": row[13] if len(row) > 13 else 14,
+                        "uiGlassBlur": row[14] if len(row) > 14 else 12,
+                        "uiCoverWidth": row[15] if len(row) > 15 else 120,
+                        "uiNavOpacity": row[16] if len(row) > 16 else 0.8,
+                        "uiAccentOpacity": row[17] if len(row) > 17 else 0.2,
+                        "panelTransparency": row[18] if len(row) > 18 else 60,
                     },
                     "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
                     "isAdmin": is_admin,
@@ -370,7 +393,15 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "earlyAccess": bool(row['early_access']),
                             "customThemes": bool(row['custom_themes']),
                             "price": row['price'],
-                            "showRecommendations": bool(row.get('show_recommendations', True))
+                            "price": row['price'],
+                            "showRecommendations": bool(row.get('show_recommendations', True)),
+                            "uiTheme": row.get('ui_theme', 'dark'),
+                            "uiFontSize": row.get('ui_font_size', 14),
+                            "uiGlassBlur": row.get('ui_glass_blur', 12),
+                            "uiCoverWidth": row.get('ui_cover_width', 120),
+                            "uiNavOpacity": row.get('ui_nav_opacity', 0.8),
+                            "uiAccentOpacity": row.get('ui_accent_opacity', 0.2),
+                            "panelTransparency": row.get('panel_transparency', 60),
                         }
                         for row in res.data
                     ]
@@ -380,7 +411,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         """
         Retorna todos los niveles configurados con sus límites y características.
         """
-        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations FROM user_levels ORDER BY priority DESC"
+        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, ui_primary_color FROM user_levels ORDER BY priority DESC"
         async with self.db.connection() as conn:
             cursor = await conn.execute(query)
             rows = await cursor.fetchall()
@@ -395,7 +426,15 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "earlyAccess": bool(row[6]),
                     "customThemes": bool(row[7]),
                     "price": row[8],
-                    "showRecommendations": bool(row[9]) if len(row) > 9 else True
+                    "showRecommendations": bool(row[9]) if len(row) > 9 else True,
+                    "theme": row[10] if len(row) > 10 else 'dark',
+                    "fontSize": row[11] if len(row) > 11 else 14,
+                    "glassBlur": row[12] if len(row) > 12 else 12,
+                    "coverWidth": row[13] if len(row) > 13 else 120,
+                    "navOpacity": row[14] if len(row) > 14 else 0.8,
+                    "accentOpacity": row[15] if len(row) > 15 else 0.2,
+                    "glassOpacity": (row[16] if len(row) > 16 else 60) / 100.0,
+                    "primaryColor": row[17] if len(row) > 17 else '#2b6cee',
                 }
                 for row in rows
             ]
@@ -537,7 +576,15 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             "showRecommendations": "show_recommendations",
             "price": "price",
             "name": "name",
-            "color": "color"
+            "color": "color",
+            "theme": "ui_theme",
+            "fontSize": "ui_font_size",
+            "glassBlur": "ui_glass_blur",
+            "coverWidth": "ui_cover_width",
+            "navOpacity": "ui_nav_opacity",
+            "accentOpacity": "ui_accent_opacity",
+            "glassOpacity": "panel_transparency",
+            "primaryColor": "ui_primary_color"
         }
         
         for key, col in mapping.items():

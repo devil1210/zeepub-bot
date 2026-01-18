@@ -40,6 +40,34 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     defaultSettings
   );
 
+  // Sync with backend on mount
+  useEffect(() => {
+    const syncWithBackend = async () => {
+      try {
+        const { api } = await import('../src/services/api');
+        const backendSettings = await api.getUiSettings();
+        if (backendSettings) {
+          // Merge backend settings into CloudStorage
+          // We prioritize backend settings if they exist
+          const merged = { ...settings, ...backendSettings };
+
+          // Map backend keys to frontend keys if they differ
+          if (backendSettings.glassOpacity !== undefined) {
+            merged.glassOpacity = backendSettings.glassOpacity;
+          }
+
+          setSavedSettings(merged);
+        }
+      } catch (e) {
+        console.error("Failed to sync theme with backend", e);
+      }
+    };
+
+    if (!isLoading) {
+      syncWithBackend();
+    }
+  }, [isLoading]);
+
   useEffect(() => {
     // Apply settings to CSS variables (no localStorage needed - handled by hook)
 

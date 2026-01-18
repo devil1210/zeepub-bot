@@ -43,12 +43,14 @@ interface TierConfig {
     earlyAccess: boolean;
     customThemes: boolean;
     showRecommendations: boolean;
-    uiPrimaryColor: string;
-    panelTransparency: number;
+    primaryColor: string;
+    glassOpacity: number;
     navOpacity?: number;
     accentOpacity?: number;
     glassBlur?: number;
     coverWidth?: number;
+    theme?: 'dark' | 'amoled' | 'light';
+    fontSize?: number;
 }
 
 interface LevelOption {
@@ -87,12 +89,14 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         earlyAccess: true,
         customThemes: false,
         showRecommendations: false,
-        uiPrimaryColor: settings.primaryColor,
-        panelTransparency: 70,
+        primaryColor: settings.primaryColor,
+        glassOpacity: 0.7,
         navOpacity: settings.navOpacity,
         accentOpacity: settings.accentOpacity,
         glassBlur: settings.glassBlur,
-        coverWidth: settings.coverWidth
+        coverWidth: settings.coverWidth,
+        theme: settings.theme,
+        fontSize: settings.fontSize
     });
 
     const [originalConfig, setOriginalConfig] = useState<TierConfig | null>(null);
@@ -138,12 +142,14 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         earlyAccess: res.tier.earlyAccess ?? false,
                         customThemes: res.tier.customThemes ?? false,
                         showRecommendations: res.tier.showRecommendations ?? false,
-                        uiPrimaryColor: res.tier.uiPrimaryColor || settings.primaryColor,
-                        panelTransparency: res.tier.panelTransparency ?? 70,
+                        primaryColor: res.tier.primaryColor || settings.primaryColor,
+                        glassOpacity: res.tier.glassOpacity ?? 0.7,
                         navOpacity: res.tier.navOpacity ?? settings.navOpacity,
                         accentOpacity: res.tier.accentOpacity ?? settings.accentOpacity,
                         glassBlur: res.tier.glassBlur ?? settings.glassBlur,
-                        coverWidth: res.tier.coverWidth ?? settings.coverWidth
+                        coverWidth: res.tier.coverWidth ?? settings.coverWidth,
+                        theme: res.tier.uiTheme || settings.theme,
+                        fontSize: res.tier.uiFontSize || settings.fontSize
                     };
                     setConfig(newConfig);
                     setOriginalConfig(newConfig);
@@ -507,16 +513,16 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                                 <div className="flex items-center gap-3">
                                                     <div
                                                         className="size-10 rounded-lg shadow-inner border border-white/10"
-                                                        style={{ backgroundColor: config.uiPrimaryColor }}
+                                                        style={{ backgroundColor: config.primaryColor }}
                                                     />
-                                                    <span className="text-xs font-black font-mono text-gray-300 uppercase">{config.uiPrimaryColor}</span>
+                                                    <span className="text-xs font-black font-mono text-gray-300 uppercase">{config.primaryColor}</span>
                                                 </div>
                                                 <label className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all cursor-pointer shadow-lg shadow-primary/20">
                                                     Pick
                                                     <input
                                                         type="color"
-                                                        value={config.uiPrimaryColor}
-                                                        onChange={(e) => setConfig({ ...config, uiPrimaryColor: e.target.value })}
+                                                        value={config.primaryColor}
+                                                        onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
                                                         className="hidden"
                                                     />
                                                 </label>
@@ -542,14 +548,14 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                     <div>
                                         <div className="flex justify-between items-center mb-3">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Transparencia Paneles (Alpha)</label>
-                                            <span className="text-xs font-black text-primary">{config.panelTransparency}%</span>
+                                            <span className="text-xs font-black text-primary">{Math.round((config.glassOpacity ?? 0.7) * 100)}%</span>
                                         </div>
                                         <input
                                             type="range"
                                             min="0"
                                             max="100"
-                                            value={config.panelTransparency}
-                                            onChange={(e) => setConfig({ ...config, panelTransparency: parseInt(e.target.value) })}
+                                            value={(config.glassOpacity ?? 0.7) * 100}
+                                            onChange={(e) => setConfig({ ...config, glassOpacity: parseInt(e.target.value) / 100 })}
                                             className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
                                         />
                                     </div>
@@ -573,15 +579,44 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
 
                                     <div>
                                         <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Ancho de Portadas (Cards)</label>
-                                            <span className="text-xs font-black text-primary">{config.coverWidth || settings.coverWidth}px</span>
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Opacidad de Acentos</label>
+                                            <span className="text-xs font-black text-primary">{Math.round((config.accentOpacity ?? 0.2) * 100)}%</span>
                                         </div>
                                         <input
                                             type="range"
-                                            min="80"
-                                            max="180"
-                                            value={config.coverWidth || settings.coverWidth}
-                                            onChange={(e) => setConfig({ ...config, coverWidth: parseInt(e.target.value) })}
+                                            min="0"
+                                            max="100"
+                                            value={(config.accentOpacity ?? 0.2) * 100}
+                                            onChange={(e) => setConfig({ ...config, accentOpacity: parseInt(e.target.value) / 100 })}
+                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Tema Base por Defecto</label>
+                                        <select
+                                            value={config.theme || 'dark'}
+                                            onChange={(e) => setConfig({ ...config, theme: e.target.value as any })}
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold focus:ring-1 focus:ring-primary focus:border-primary transition-all appearance-none"
+                                        >
+                                            <option value="dark">Dark (Noche)</option>
+                                            <option value="amoled">AMOLED (Negro Puro)</option>
+                                            <option value="light">Light (Claro)</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between items-center mb-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Tamaño de Fuente Base</label>
+                                            <span className="text-xs font-black text-primary">{config.fontSize || 14}px</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="12"
+                                            max="20"
+                                            step="1"
+                                            value={config.fontSize || 14}
+                                            onChange={(e) => setConfig({ ...config, fontSize: parseInt(e.target.value) })}
                                             className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
                                         />
                                     </div>

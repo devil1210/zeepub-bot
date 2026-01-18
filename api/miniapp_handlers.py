@@ -442,33 +442,37 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
                     "badgePosMode": get_setting("badge_pos_mode", "relative"),
                 }
             )
+            # 1. Load Global Defaults
             global_raw = get_setting("ui_defaults_global", "{}")
-            final_settings.update(json.loads(global_raw))
-        except Exception:
-            pass
+            global_defaults = json.loads(global_raw)
+            final_settings.update(global_defaults)
 
-        # Load role settings
-        role_version = 0
-        if target_role and target_role != "global":
-            try:
-                role_raw = get_setting(f"ui_defaults_{target_role}", "{}")
-                role_data = json.loads(role_raw)
-                role_version = role_data.get("ui_version", 0)
-                final_settings.update(role_data)
-            except Exception:
-                pass
-
-        # Personal overrides
-        if data.get("role") == "auto":
+            # 2. Tier Defaults (Override Global)
             user_record = await user_repo.get_by_id(user_id)
-            if user_record and user_record.get("settings"):
-                user_settings = user_record.get("settings", {})
-                last_seen_version = user_settings.get("last_seen_version", 0)
-                if role_version > last_seen_version:
-                    final_settings["update_notification"] = True
-                final_settings.update(user_settings)
+            if user_record:
+                access_info = await user_repo.get_access_info(user_id)
+                if access_info and "level" in access_info:
+                    lvl = access_info["level"]
+                    tier_overrides = {
+                        "theme": lvl.get("theme"),
+                        "fontSize": lvl.get("fontSize"),
+                        "glassBlur": lvl.get("glassBlur"),
+                        "coverWidth": lvl.get("coverWidth"),
+                        "navOpacity": lvl.get("navOpacity"),
+                        "accentOpacity": lvl.get("accentOpacity"),
+                        "glassOpacity": lvl.get("glassOpacity", 0.6),
+                        "primaryColor": lvl.get("primaryColor"),
+                        "showRecommendations": lvl.get("showRecommendations")
+                    }
+                    # Filter out None values
+                    tier_overrides = {k: v for k, v in tier_overrides.items() if v is not None}
+                    final_settings.update(tier_overrides)
 
-        return final_settings
+            # 3. Personal Overrides (Highest priority)
+            if user_record and user_record.get("settings"):
+                final_settings.update(user_record.get("settings", {}))
+                
+            return final_settings
 
     elif sub_action == "set":
         target_role = data.get("role", "global")
@@ -1115,11 +1119,14 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             ui_settings = {}
             field_mapping = {
                 "uiPrimaryColor": "primaryColor",
-                "panelTransparency": "glassOpacity",
+                "panelTransparency": "panelTransparency",
                 "navOpacity": "navOpacity",
                 "glassBlur": "glassBlur",
                 "coverWidth": "coverWidth",
-                "showRecommendations": "showRecommendations"
+                "showRecommendations": "showRecommendations",
+                "uiTheme": "theme",
+                "uiFontSize": "fontSize",
+                "uiAccentOpacity": "accentOpacity"
             }
             
             for frontend_key, setting_key in field_mapping.items():
@@ -1165,8 +1172,15 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             "priorityRequests": "priority_requests",
             "earlyAccess": "early_access",
             "customThemes": "custom_themes",
-            "uiPrimaryColor": "ui_primary_color",
-            "panelTransparency": "panel_transparency"
+            "primaryColor": "ui_primary_color",
+            "glassOpacity": "panel_transparency",
+            "theme": "ui_theme",
+            "fontSize": "ui_font_size",
+            "glassBlur": "ui_glass_blur",
+            "coverWidth": "ui_cover_width",
+            "navOpacity": "ui_nav_opacity",
+            "accentOpacity": "ui_accent_opacity",
+            "showRecommendations": "show_recommendations"
         }
         
         for frontend_key, db_key in field_mapping.items():
@@ -1216,11 +1230,14 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                     "priorityRequests": True,
                     "earlyAccess": True,
                     "customThemes": True,
-                    "uiPrimaryColor": g.get("primaryColor", "#2b6cee"),
-                    "panelTransparency": int(g.get("glassOpacity", 0.6) * 100),
-                    "navOpacity": g.get("navOpacity", 0.8),
+                    "primaryColor": g.get("primaryColor", "#2b6cee"),
+                    "glassOpacity": g.get("glassOpacity", 0.6),
+                    "theme": g.get("theme", "dark"),
+                    "fontSize": g.get("fontSize", 14),
                     "glassBlur": g.get("glassBlur", 12),
                     "coverWidth": g.get("coverWidth", 120),
+                    "navOpacity": g.get("navOpacity", 0.8),
+                    "accentOpacity": g.get("accentOpacity", 0.2),
                     "showRecommendations": g.get("showRecommendations", True)
                 }
             }
@@ -1254,8 +1271,16 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                 "customThemes": tier.get("custom_themes", False),
                 "uiPrimaryColor": tier.get("ui_primary_color", "#0da6f2"),
                 "panelTransparency": tier.get("panel_transparency", 70),
-                "price": tier.get("price", 0),
-                "priority": tier.get("priority", 0)
+                "priority": tier.get("priority", 0),
+                "primaryColor": tier.get("ui_primary_color", "#2b6cee"),
+                "glassOpacity": (tier.get("panel_transparency", 70) or 70) / 100.0,
+                "theme": tier.get("ui_theme", "dark"),
+                "fontSize": tier.get("ui_font_size", 14),
+                "glassBlur": tier.get("ui_glass_blur", 12),
+                "coverWidth": tier.get("ui_cover_width", 120),
+                "navOpacity": tier.get("ui_nav_opacity", 0.8),
+                "accentOpacity": tier.get("ui_accent_opacity", 0.2),
+                "showRecommendations": bool(tier.get("show_recommendations", True))
             }
         }
     except HTTPException:
