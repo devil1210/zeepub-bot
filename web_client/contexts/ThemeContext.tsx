@@ -88,13 +88,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const b = parseInt(settings.primaryColor.substring(5, 7), 16);
     root.style.setProperty('--color-primary-rgb', `${r}, ${g}, ${b}`);
 
-    root.style.setProperty('--glass-opacity', settings.glassOpacity.toString());
-    root.style.setProperty('--nav-opacity', settings.navOpacity.toString());
-    root.style.setProperty('--accent-opacity', settings.accentOpacity.toString());
-    root.style.setProperty('--searchbar-opacity', settings.searchBarOpacity.toString());
-    root.style.setProperty('--header-opacity', settings.headerOpacity.toString());
-    root.style.setProperty('--glass-blur', `${settings.glassBlur}px`);
-    root.style.setProperty('--cover-width', `${settings.coverWidth}px`);
+    root.style.setProperty('--glass-opacity', (settings.glassOpacity ?? 0.6).toString());
+    root.style.setProperty('--nav-opacity', (settings.navOpacity ?? 0.8).toString());
+    root.style.setProperty('--accent-opacity', (settings.accentOpacity ?? 0.2).toString());
+    root.style.setProperty('--searchbar-opacity', (settings.searchBarOpacity ?? 0.8).toString());
+    root.style.setProperty('--header-opacity', (settings.headerOpacity ?? 0.9).toString());
+    root.style.setProperty('--glass-blur', `${settings.glassBlur ?? 12}px`);
+    root.style.setProperty('--cover-width', `${settings.coverWidth ?? 120}px`);
 
     // Apply base font size (simplistic approach for demo)
     root.style.fontSize = `${settings.fontSize}px`;
