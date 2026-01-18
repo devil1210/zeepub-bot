@@ -30,11 +30,13 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
     const { settings } = useTheme();
 
     return (
-        <div className="md:hidden sticky top-0 z-30 px-4 pt-2 pb-2">
+        <div className="md:hidden z-30 px-4 pt-2 pb-2" style={{ background: 'transparent' }}>
             <div
-                className="glass-panel rounded-2xl p-4 border border-white/10 backdrop-blur-xl"
+                className="rounded-2xl p-4 border border-white/10 backdrop-blur-xl"
                 style={{
                     background: `rgba(var(--glass-rgb), var(--searchbar-opacity, 0.8))`,
+                    WebkitBackdropFilter: `blur(12px)`,
+                    backdropFilter: `blur(12px)`,
                 }}
             >
                 <div className="flex flex-row gap-2 sm:gap-4 items-center justify-between">
