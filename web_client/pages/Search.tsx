@@ -207,7 +207,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       {/* Search Header - Floating Glass (Desktop/Tablet) */}
       <div className="sticky top-0 z-40 p-4 pt-2 pb-2">
         <div
-          className="glass-panel rounded-2xl p-4 border border-white/10 shadow-lg shadow-black/20 backdrop-blur-xl"
+          className="glass-panel rounded-2xl p-4 border border-white/10 backdrop-blur-xl"
           style={{
             background: `rgba(var(--glass-rgb), var(--searchbar-opacity, 0.8))`,
           }}
