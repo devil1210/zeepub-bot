@@ -230,44 +230,43 @@ class ScannerService:
             book.book_hash = book.content_hash  # book_hash is same as content_hash for local books
 
             # Check for duplicates by content_hash AFTER generating it
-            existing_with_same_hash = session.query(LocalBook).filter(
-                LocalBook.content_hash == book.content_hash,
-                LocalBook.id != book.id if book.id else True
+            # First check if this exact file already exists
+            existing_same_file = session.query(LocalBook).filter(
+                LocalBook.filepath == filepath
             ).first()
             
-            if existing_with_same_hash and not book.id:
-                # Found existing book with same content but different path
-                logger.warning(f"Duplicado detectado: {book.title} (hash: {book.content_hash[:8]}...)")
-                logger.warning(f"  Existente: {existing_with_same_hash.filepath}")
-                logger.warning(f"  Nuevo: {filepath}")
+            if existing_same_file:
+                # Same file, just update metadata
+                book = existing_same_file
+                logger.debug(f"Actualizando archivo existente: {filepath}")
+            else:
+                # Check if there's another file with same content (real duplicate)
+                existing_with_same_hash = session.query(LocalBook).filter(
+                    LocalBook.content_hash == book.content_hash,
+                    LocalBook.filepath != filepath
+                ).first()
                 
-                # Use existing book and update its path
-                old_path = existing_with_same_hash.filepath
-                old_filename = existing_with_same_hash.filename
-                
-                # Update the existing record
-                existing_with_same_hash.filepath = filepath
-                existing_with_same_hash.filename = book.filename
-                existing_with_same_hash.file_size = book.file_size
-                existing_with_same_hash.file_modified_at = book.file_modified_at
-                existing_with_same_hash.indexed_at = datetime.utcnow()
-                
-                # Copy over any new/updated metadata
-                book = existing_with_same_hash
-                
-                # Notify about renamed file
-                if old_path != filepath:
+                if existing_with_same_hash:
+                    # This is a REAL duplicate (different file, same content)
+                    logger.warning(f"📕 Duplicado detectado: {book.title}")
+                    logger.warning(f"   Archivo existente: {existing_with_same_hash.filepath}")
+                    logger.warning(f"   Archivo duplicado: {filepath}")
+                    logger.warning(f"   Hash: {book.content_hash[:8]}...")
+                    
+                    # Add as new record (both files coexist)
+                    session.add(book)
+                    
+                    # Notify about duplicate
                     asyncio.create_task(self._notify_file_renamed(
                         title=book.title,
-                        old_path=old_path,
+                        old_path=existing_with_same_hash.filepath,
                         new_path=filepath,
-                        old_filename=old_filename,
+                        old_filename=existing_with_same_hash.filename,
                         new_filename=book.filename
                     ))
-                return True
-            elif not book.id:
-                # New book, add to session
-                session.add(book)
+                else:
+                    # New unique file, add to session
+                    session.add(book)
 
 
             # Guardar Portada
