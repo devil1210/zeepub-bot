@@ -592,6 +592,15 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         """Actualiza el campo JSON settings de un usuario."""
         import json
         settings_json = json.dumps(settings)
+        
+        if self.supabase.is_active:
+            try:
+                self.supabase.get_client().table('users').update({
+                    "settings": settings
+                }).eq('telegram_id', telegram_id).execute()
+            except Exception as e:
+                logger.error(f"Supabase update settings error: {e}")
+
         async with self.db.connection() as conn:
             await conn.execute(
                 "UPDATE users SET settings = ? WHERE telegram_id = ?",
