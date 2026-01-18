@@ -426,7 +426,14 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       {/* Mobile Catalog Bottom Bar */}
       <div className="md:hidden fixed bottom-6 left-8 right-8 z-40 flex flex-col gap-3">
         {isSortMenuOpen && (
-          <div className="glass-panel rounded-2xl p-3 border border-white/10 shadow-2xl bg-[#0f1115]/95 backdrop-blur-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
+          <div
+            className="glass-panel rounded-3xl p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
+            style={{
+              background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
+              backdropFilter: `blur(${settings.glassBlur}px)`,
+              WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+            }}
+          >
             <div className="grid grid-cols-3 gap-2">
               {sortOptions.map((option) => {
                 const isActive = activeSort === option.id;
@@ -438,8 +445,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                       setIsSortMenuOpen(false);
                     }}
                     className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${isActive
-                        ? 'bg-[#2AABEE] text-white border-[#2AABEE] shadow-lg shadow-blue-500/20'
-                        : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
+                      ? 'bg-[#2AABEE] text-white border-[#2AABEE] shadow-lg shadow-blue-500/20'
+                      : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
                       }`}
                   >
                     {option.icon && <option.icon className={`w-4 h-4 ${option.id === 'z-a' ? 'rotate-180' : ''}`} />}
