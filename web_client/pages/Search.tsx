@@ -205,12 +205,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       />
 
       {/* Search Header - Floating Glass (Desktop/Tablet) */}
-      <div
-        className="sticky top-0 z-40 p-4 pt-2"
-        style={{
-          background: 'linear-gradient(to bottom, var(--app-bg) 0%, var(--app-bg) 70%, transparent 100%)',
-        }}
-      >
+      <div className="sticky top-0 z-40 p-4 pt-2 pb-2">
         <div
           className="glass-panel rounded-2xl p-4 border border-white/10 shadow-lg shadow-black/20 backdrop-blur-xl"
           style={{
