@@ -211,7 +211,12 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           background: 'linear-gradient(to bottom, var(--app-bg) 0%, var(--app-bg) 70%, transparent 100%)',
         }}
       >
-        <div className="glass-panel rounded-2xl p-4 border border-white/10 shadow-lg shadow-black/20 backdrop-blur-xl">
+        <div
+          className="glass-panel rounded-2xl p-4 border border-white/10 shadow-lg shadow-black/20 backdrop-blur-xl"
+          style={{
+            background: `rgba(var(--glass-rgb), var(--searchbar-opacity, 0.8))`,
+          }}
+        >
           <div className="flex flex-row gap-2 sm:gap-4 items-center justify-between">
             <div className="relative w-full max-w-xl group flex-1">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

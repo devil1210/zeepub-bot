@@ -581,6 +581,43 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     </div>
                   </div>
 
+                  {/* Live Preview */}
+                  <div className="md:col-span-2 p-4 rounded-xl bg-black/30 border border-white/5">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-3">Vista Previa</label>
+                    {selectedElement === 'nav' && (
+                      <div
+                        className="rounded-xl p-3 border border-white/10 flex items-center gap-3"
+                        style={{ background: `rgba(var(--glass-rgb), ${settings.navOpacity ?? 0.8})` }}
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white text-xs">🏠</div>
+                        <span className="text-sm text-white font-medium">Navegación</span>
+                        <div className="ml-auto flex gap-2">
+                          <div className="w-6 h-6 rounded bg-white/10"></div>
+                          <div className="w-6 h-6 rounded bg-white/10"></div>
+                        </div>
+                      </div>
+                    )}
+                    {selectedElement === 'searchbar' && (
+                      <div
+                        className="rounded-xl p-3 border border-white/10 flex items-center gap-2"
+                        style={{ background: `rgba(var(--glass-rgb), ${settings.searchBarOpacity ?? 0.8})` }}
+                      >
+                        <div className="text-gray-400">🔍</div>
+                        <div className="flex-1 h-8 rounded-lg bg-black/20 border border-white/5"></div>
+                        <div className="px-2 py-1 rounded bg-primary/20 text-primary text-[10px] font-bold">TODOS</div>
+                      </div>
+                    )}
+                    {selectedElement === 'header' && (
+                      <div
+                        className="rounded-xl p-4 border border-white/10"
+                        style={{ background: `rgba(var(--glass-rgb), ${settings.headerOpacity ?? 0.9})` }}
+                      >
+                        <div className="text-lg font-bold text-white mb-1">Título de Sección</div>
+                        <div className="text-xs text-gray-400">Descripción del encabezado</div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Show Recommendations Toggle - Only for users with custom themes permission */}
                   {customThemes && (
                     <div>
