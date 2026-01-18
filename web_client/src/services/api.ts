@@ -112,6 +112,9 @@ export const api = {
         coverWidth?: number;
         navOpacity?: number;
         accentOpacity?: number;
+        searchBarOpacity?: number;
+        headerOpacity?: number;
+        colorfulCards?: boolean;
         showRecommendations?: boolean;
     }) => rpc('admin_save_tier_config', config),
 
