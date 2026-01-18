@@ -1323,3 +1323,191 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
     except Exception as e:
         logger.error(f"Error getting user permissions: {e}")
         return {"success": False, "message": str(e)}
+
+
+async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """
+    Find all duplicate books grouped by content_hash.
+    Returns duplicate groups with file info and statistics.
+    """
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    try:
+        from utils.library_db import get_session
+        from models.library_models import LocalBook
+        from sqlalchemy import func
+        
+        session = get_session()
+        
+        # Query to find duplicates
+        duplicate_hashes = session.query(
+            LocalBook.content_hash,
+            func.count().label('count')
+        ).filter(
+            LocalBook.content_hash.isnot(None)
+        ).group_by(
+            LocalBook.content_hash
+        ).having(
+            func.count() > 1
+        ).all()
+        
+        duplicate_groups = []
+        total_wasted_space = 0
+        total_duplicates = 0
+        
+        for hash_row in duplicate_hashes:
+            content_hash = hash_row[0]
+            
+            # Get all books with this hash
+            books = session.query(LocalBook).filter(
+                LocalBook.content_hash == content_hash
+            ).order_by(
+                LocalBook.indexed_at.asc()
+            ).all()
+            
+            if len(books) <= 1:
+                continue
+            
+            # Calculate stats
+            file_sizes = [book.file_size or 0 for book in books]
+            total_size = sum(file_sizes)
+            min_size = min(file_sizes) if file_sizes else 0
+            wasted_space = total_size - min_size
+            
+            total_wasted_space += wasted_space
+            total_duplicates += len(books) - 1
+            
+            group = {
+                "content_hash": content_hash,
+                "title": books[0].title,
+                "author": books[0].author,
+                "series": books[0].series,
+                "volume": books[0].volume,
+                "count": len(books),
+                "total_size": total_size,
+                "wasted_space": wasted_space,
+                "books": [
+                    {
+                        "id": book.id,
+                        "filepath": book.filepath,
+                        "filename": book.filename,
+                        "file_size": book.file_size or 0,
+                        "indexed_at": book.indexed_at.isoformat() if book.indexed_at else None,
+                        "is_oldest": book.id == books[0].id,
+                        "is_newest": book.id == books[-1].id
+                    }
+                    for book in books
+                ]
+            }
+            
+            duplicate_groups.append(group)
+        
+        duplicate_groups.sort(key=lambda x: x['wasted_space'], reverse=True)
+        session.close()
+        
+        return {
+            "success": True,
+            "duplicate_groups": duplicate_groups,
+            "summary": {
+                "total_duplicates": total_duplicates,
+                "duplicate_groups_count": len(duplicate_groups),
+                "wasted_space_bytes": total_wasted_space,
+                "wasted_space_mb": round(total_wasted_space / (1024 * 1024), 2)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error finding duplicates: {e}")
+        return {"success": False, "message": str(e)}
+
+
+async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Delete duplicate books safely, ensuring at least one copy remains."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    book_ids = data.get("book_ids", [])
+    if not book_ids:
+        return {"success": False, "message": "No se especificaron libros"}
+    
+    try:
+        from utils.library_db import get_session, COVERS_DIR
+        from models.library_models import LocalBook
+        from sqlalchemy import func
+        from collections import defaultdict
+        import os
+        
+        session = get_session()
+        
+        books_to_delete = session.query(LocalBook).filter(
+            LocalBook.id.in_(book_ids)
+        ).all()
+        
+        if not books_to_delete:
+            return {"success": False, "message": "No se encontraron libros"}
+        
+        # Group by content_hash
+        by_hash = defaultdict(list)
+        for book in books_to_delete:
+            by_hash[book.content_hash].append(book)
+        
+        deleted_count = 0
+        deleted_size = 0
+        errors = []
+        
+        for content_hash, books in by_hash.items():
+            # Count total books with this hash
+            total_with_hash = session.query(func.count(LocalBook.id)).filter(
+                LocalBook.content_hash == content_hash
+            ).scalar()
+            
+            # Can't delete all copies
+            if len(books) >= total_with_hash:
+                errors.append(f"No se puede eliminar todas las copias de {books[0].title}")
+                continue
+            
+            # Delete files
+            for book in books:
+                try:
+                    if book.filepath and os.path.exists(book.filepath):
+                        os.remove(book.filepath)
+                    
+                    if book.cover_path:
+                        cover_file = book.cover_path.replace('/api/library/covers/', '')
+                        cover_path = os.path.join(COVERS_DIR, cover_file)
+                        if os.path.exists(cover_path):
+                            os.remove(cover_path)
+                        thumb_path = cover_path.replace('.jpg', '_thumb.jpg')
+                        if os.path.exists(thumb_path):
+                            os.remove(thumb_path)
+                    
+                    deleted_size += book.file_size or 0
+                    session.delete(book)
+                    deleted_count += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error deleting book {book.id}: {e}")
+                    errors.append(f"Error: {book.filename}")
+        
+        session.commit()
+        session.close()
+        
+        result = {
+            "success": True,
+            "deleted_count": deleted_count,
+            "freed_space_mb": round(deleted_size / (1024 * 1024), 2)
+        }
+        
+        if errors:
+            result["errors"] = errors
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error deleting duplicates: {e}")
+        session.rollback()
+        session.close()
+        return {"success": False, "message": str(e)}
