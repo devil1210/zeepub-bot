@@ -262,7 +262,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "dailyDownloads": lvl.get('daily_downloads'),
                             "earlyAccess": bool(lvl.get('early_access')),
                             "customThemes": bool(lvl.get('custom_themes')),
-                            "price": lvl.get('price')
+                            "price": lvl.get('price'),
+                            "showRecommendations": user.get('settings', {}).get('show_recommendations', True)
                         },
                         "hasAccess": bool(lvl.get('has_mini_app_access')) or is_admin,
                         "isAdmin": is_admin,
@@ -283,7 +284,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.custom_themes,
                 ul.price,
                 (EXISTS(SELECT 1 FROM admins WHERE user_id = ?) OR u.role = 'admin') as is_admin,
-                u.role
+                u.role,
+                u.settings
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -294,6 +296,17 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             if row:
                 is_admin = bool(row[9])
                 role = row[10] if len(row) > 10 else 'free'
+                
+                # Parse settings
+                settings = {}
+                try:
+                    import json
+                    settings_str = row[11] if len(row) > 11 else "{}"
+                    if settings_str:
+                        settings = json.loads(settings_str)
+                except Exception:
+                    pass
+
                 # For SQLite, treat admin and staff as beta testers 
                 beta_tester = is_admin or role in ('admin', 'staff')
                 return {
@@ -307,7 +320,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "earlyAccess": bool(row[6]),
                         "customThemes": bool(row[7]),
                         "price": row[8],
-                        "showRecommendations": bool(row[9]) if len(row) > 9 else True
+                        "showRecommendations": settings.get("show_recommendations", True)
                     },
                     "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
                     "isAdmin": is_admin,
