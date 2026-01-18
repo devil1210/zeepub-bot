@@ -62,6 +62,7 @@ async def get_current_user_data(
 
     data = await get_effective_user(user_id, tg_user=tg_user)
     data["user_id"] = user_id
+    data["telegram_id"] = user_id
     return data
 
 

@@ -1517,7 +1517,7 @@ async def handle_update_user_setting(data: Dict[str, Any], user_data: Dict[str, 
     """Actualiza una configuración específica del usuario (ej: show_recommendations)"""
     from services.user_service import update_user_setting
     
-    user_id = user_data.get("telegram_id")
+    user_id = user_data.get("user_id")
     key = data.get("key")
     value = data.get("value")
     
