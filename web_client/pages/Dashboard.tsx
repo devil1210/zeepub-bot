@@ -30,16 +30,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [historyRes, recRes] = await Promise.all([
-          api.getDownloadHistory(),
-          api.getRecommendations(4)
-        ]);
+        const promises: Promise<any>[] = [api.getDownloadHistory()];
+
+        // Only fetch recommendations if enabled in settings
+        if (showRecommendations) {
+          promises.push(api.getRecommendations(4));
+        }
+
+        const [historyRes, recRes] = await Promise.all(promises);
 
         if (historyRes && historyRes.downloads) {
           setHistory(historyRes.downloads);
         }
 
-        if (recRes && recRes.results) {
+        if (showRecommendations && recRes && recRes.results) {
           setRecommendations(recRes.results);
           // Preload recommendation covers
           const covers = recRes.results.map((r: any) => r.cover || '');
@@ -52,7 +56,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       }
     };
     fetchData();
-  }, []);
+  }, [showRecommendations]);
 
   const userName = tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : (status?.user?.username || "Lector");
   const userLevel = status?.user?.status_label || "Lector";

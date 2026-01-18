@@ -119,12 +119,15 @@ async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional
 
     # 1. Config Admins always have top precedence
     if uid in config.ADMIN_USERS:
+        # Load DB info even for config admins to preserve personal settings
+        info = await get_user_info(uid)
         result = {
             "role": "admin",
             "status_label": "Admin",
             "expires_at": None,
-            "nickname": None,
+            "nickname": info.get("nickname") if info else None,
             "has_mini_app_access": True,
+            "settings": info.get("settings", {}) if info else {},
         }
         await user_cache.set(cache_key, result)
         return result
