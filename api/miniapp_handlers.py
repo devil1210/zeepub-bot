@@ -1297,8 +1297,8 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                 "fontSize": tier.get("ui_font_size", 14),
                 "glassBlur": tier.get("ui_glass_blur", 12),
                 "coverWidth": tier.get("ui_cover_width", 120),
-                "navOpacity": (lambda x: x/100.0 if x is not None and x > 1 else x)(tier.get("ui_nav_opacity", 0.8)),
-                "accentOpacity": (lambda x: x/100.0 if x is not None and x > 1 else x)(tier.get("ui_accent_opacity", 0.2)),
+                "navOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(tier.get("ui_nav_opacity", 0.8)),
+                "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(tier.get("ui_accent_opacity", 0.2)),
                 "showRecommendations": bool(tier.get("show_recommendations", True))
             }
         }
