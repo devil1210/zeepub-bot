@@ -465,7 +465,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         )}
 
         <div
-          className="glass-panel rounded-3xl p-1 border border-white/10 flex items-center justify-between overflow-hidden"
+          className="rounded-3xl p-1 border border-white/10 flex items-center justify-between overflow-hidden"
           style={{
             background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
