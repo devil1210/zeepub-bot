@@ -433,7 +433,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       < div className="md:hidden fixed bottom-6 left-8 right-8 z-40 flex flex-col gap-3" >
         {isSortMenuOpen && (
           <div
-            className="glass-panel rounded-3xl p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
+            className="glass-panel rounded-3xl p-3 border border-white/10 animate-in slide-in-from-bottom-2 fade-in duration-200"
             style={{
               background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
               backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -465,7 +465,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         )}
 
         <div
-          className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+          className="glass-panel rounded-3xl p-1 border border-white/10 flex items-center justify-between overflow-hidden"
           style={{
             background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
