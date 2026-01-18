@@ -150,21 +150,22 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           </button>
         </header>
 
-        {/* Search Header - Rendered at Layout level for isolation (Mobile only) */}
-        {activeTab === 'search' && searchNavState.isVisible && (
-          <SearchHeader
-            searchTerm={searchNavState.searchTerm}
-            onSearchChange={setSearchTerm}
-            selectedScope={searchNavState.selectedScope}
-            onScopeClick={openScopeModal}
-            viewMode={searchNavState.viewMode}
-            onViewModeChange={setViewMode}
-            loading={searchNavState.loading}
-          />
-        )}
-
         {/* Scrollable Content */}
         <main className="flex-1 overflow-y-auto relative scroll-smooth custom-scrollbar pb-24 md:pb-0 md:pt-8">
+          {/* Search Header - Sticky inside scroll area */}
+          {activeTab === 'search' && searchNavState.isVisible && (
+            <div className="sticky top-0 z-30 transition-all duration-300">
+              <SearchHeader
+                searchTerm={searchNavState.searchTerm}
+                onSearchChange={setSearchTerm}
+                selectedScope={searchNavState.selectedScope}
+                onScopeClick={openScopeModal}
+                viewMode={searchNavState.viewMode}
+                onViewModeChange={setViewMode}
+                loading={searchNavState.loading}
+              />
+            </div>
+          )}
           {children}
         </main>
 

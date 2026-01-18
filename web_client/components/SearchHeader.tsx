@@ -30,14 +30,9 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
     const { settings } = useTheme();
 
     return (
-        <div className="md:hidden z-30 px-4 pt-2 pb-2" style={{ background: 'transparent' }}>
+        <div className="md:hidden z-30 px-4 py-1" style={{ background: 'transparent' }}>
             <div
-                className="rounded-2xl p-4 border border-white/10 backdrop-blur-xl"
-                style={{
-                    background: `rgba(var(--glass-rgb), var(--searchbar-opacity, 0.8))`,
-                    WebkitBackdropFilter: `blur(12px)`,
-                    backdropFilter: `blur(12px)`,
-                }}
+                className="p-1"
             >
                 <div className="flex flex-row gap-2 sm:gap-4 items-center justify-between">
                     <div className="relative w-full max-w-xl group flex-1">
@@ -45,7 +40,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                             <SearchIcon className="text-gray-400 w-5 h-5 group-focus-within:text-[var(--color-primary)] transition-colors" />
                         </div>
                         <input
-                            className="block w-full pl-10 pr-24 py-3 rounded-xl border border-white/5 bg-black/20 text-white placeholder-gray-500 focus:ring-1 focus:ring-primary focus:border-primary focus:bg-black/40 text-sm transition-all shadow-inner"
+                            className="block w-full pl-10 pr-24 py-3 rounded-xl border border-white/5 bg-white/5 text-white placeholder-gray-500 focus:ring-1 focus:ring-primary focus:border-primary focus:bg-white/10 text-sm transition-all"
                             placeholder="Buscar..."
                             type="text"
                             value={searchTerm}
