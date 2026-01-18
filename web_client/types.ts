@@ -3,6 +3,7 @@ export interface Book {
   title: string;
   author: string;
   coverUrl: string;
+  coverThumbUrl?: string;
   format: 'EPUB' | 'PDF' | 'MOBI';
   rating: number;
   size: string;
@@ -16,6 +17,7 @@ export interface Volume {
   title: string;
   volumeNumber: number;
   coverUrl: string;
+  coverThumbUrl?: string;
   publishedDate: string;
   pages: number;
   format: 'EPUB' | 'PDF' | 'MOBI';
@@ -32,7 +34,7 @@ export interface Volume {
   demography?: string[];
   isVerified?: boolean;
   downloadCount?: number;
-  
+
   // Staff & IDs
   illustrator?: string;
   translator?: string;
@@ -48,6 +50,7 @@ export interface Series {
   title: string;
   author: string;
   coverUrl: string;
+  coverThumbUrl?: string;
   description: string;
   genre: string; // Used for display list
   genres?: string[]; // Full list

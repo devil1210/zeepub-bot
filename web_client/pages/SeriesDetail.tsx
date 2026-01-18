@@ -63,6 +63,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               title: v.title,
               volumeNumber: v.seriesIndex || 1,
               coverUrl: v.cover || data.cover,
+              coverThumbUrl: v.cover_thumb || v.cover || data.cover_thumb || data.cover,
               publishedDate: v.publishedAt || 'N/A',
               pages: v.pageCount || 0,
               format: (v.bookType || 'EPUB').toUpperCase(),
@@ -88,8 +89,8 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             }));
             setVolumes(mappedVols);
 
-            // Preload volume covers
-            const volCovers = mappedVols.map(v => v.coverUrl);
+            // Preload volume thumbnails for faster grid/list viewing
+            const volCovers = mappedVols.map(v => v.coverThumbUrl || v.coverUrl);
             preloadImages(volCovers);
 
             // Update synopsis from the first volume if available
@@ -214,7 +215,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 {realSeries.description && realSeries.description.length > 150 && (
                   <button
                     onClick={() => setIsSynopsisModalOpen(true)}
-                    className="mt-2 text-[#2AABEE] text-xs font-bold hover:underline py-1"
+                    className="mt-2 text-primary text-xs font-bold hover:underline py-1"
                   >
                     Ver más...
                   </button>
@@ -268,11 +269,16 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative flex gap-4 p-4 rounded-xl border border-white/5 bg-[#0d1117]/80 hover:bg-[#161b22] hover:border-[#2AABEE]/30 transition-all duration-200 cursor-pointer overflow-hidden shadow-sm"
+                  className="group relative flex gap-4 p-4 rounded-xl border border-white/5 bg-black/40 hover:bg-white/5 hover:border-primary/30 transition-all duration-200 cursor-pointer overflow-hidden shadow-sm"
+                  style={{
+                    backgroundColor: `rgba(var(--glass-rgb), ${settings.glassOpacity / 2})`,
+                    backdropFilter: `blur(${settings.glassBlur}px)`,
+                    WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+                  }}
                 >
                   {/* Image */}
                   <div className="shrink-0 aspect-[2/3] bg-slate-800 rounded-lg overflow-hidden shadow-lg border border-white/5" style={{ width: settings.coverWidth }}>
-                    <img alt={vol.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={vol.coverUrl} />
+                    <img alt={vol.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={vol.coverThumbUrl || vol.coverUrl} />
                   </div>
 
                   {/* Content */}
@@ -287,11 +293,11 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     </div>
 
                     <div className="mb-2">
-                      <p className="text-[#2AABEE] text-sm font-medium">
+                      <p className="text-primary text-sm font-medium">
                         {series.author} {vol.illustrator ? `- ${vol.illustrator}` : ''}
                       </p>
                       <p className="text-gray-400 text-xs mt-0.5">
-                        Volumen {vol.volumeNumber} <span className="text-[#2AABEE] font-bold">{vol.uploader}</span>
+                        Volumen {vol.volumeNumber} <span className="text-primary font-bold">{vol.uploader}</span>
                       </p>
                     </div>
 
@@ -300,7 +306,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                         <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
                         <span className="text-gray-200">{vol.rating.toFixed(1)}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-[#2AABEE]">
+                      <div className="flex items-center gap-1.5 text-primary">
                         <Download className="w-3.5 h-3.5" />
                         <span>{vol.downloadCount}</span>
                       </div>
@@ -308,7 +314,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <button
-                        className="flex items-center gap-2 px-5 py-2 rounded-lg bg-transparent border border-[#2AABEE]/40 text-[#2AABEE] text-[10px] font-black tracking-widest hover:bg-[#2AABEE] hover:text-white transition-all uppercase"
+                        className="flex items-center gap-2 px-5 py-2 rounded-lg bg-transparent border border-primary/40 text-primary text-[10px] font-black tracking-widest hover:bg-primary hover:text-white transition-all uppercase"
                         onClick={(e) => { e.stopPropagation(); onSelectVolume(vol, realSeries); }}
                       >
                         <Download className="w-3.5 h-3.5" />
@@ -326,7 +332,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     </div>
                   </div>
 
-                  <div className="hidden sm:flex items-center justify-center pl-2 text-gray-600 group-hover:text-[#2AABEE] transition-colors">
+                  <div className="hidden sm:flex items-center justify-center pl-2 text-gray-600 group-hover:text-primary transition-colors">
                     <ChevronRight className="w-6 h-6" />
                   </div>
                 </div>
@@ -334,13 +340,18 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative flex flex-col gap-3 rounded-xl p-3 transition-all duration-300 glass-panel hover:bg-white/10 hover:-translate-y-0.5 cursor-pointer border border-white/5"
+                  className="group relative flex flex-col gap-3 rounded-xl p-3 transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5 cursor-pointer border border-white/5"
+                  style={{
+                    backgroundColor: `rgba(var(--glass-rgb), ${settings.glassOpacity / 2})`,
+                    backdropFilter: `blur(${settings.glassBlur}px)`,
+                    WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+                  }}
                 >
                   <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-gray-800 shadow-md">
                     <img
                       alt={vol.title}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      src={vol.coverUrl}
+                      src={vol.coverThumbUrl || vol.coverUrl}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
                     <div className="absolute bottom-2 left-2 right-2">
@@ -357,7 +368,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                         <span>{vol.rating.toFixed(1)}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Download className="w-3 h-3 text-[#2AABEE]" />
+                        <Download className="w-3 h-3 text-primary" />
                         <span>{vol.downloadCount}</span>
                       </div>
                     </div>
@@ -397,7 +408,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     setActiveSort(option.id);
                     setIsSortMenuOpen(false);
                   }}
-                  className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${activeSort === option.id ? 'bg-[#2AABEE] text-white border-[#2AABEE] shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white'}`}
+                  className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${activeSort === option.id ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white'}`}
                 >
                   <option.icon className="w-3.5 h-3.5" />
                   {option.label}
@@ -432,7 +443,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
             className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
           >
-            <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
               <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'text-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
             </div>
             <span className={`text-[9px] font-black uppercase tracking-widest mt-1`}>Ordenar</span>
@@ -474,7 +485,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           >
             <div className="p-6 border-b border-white/5 flex items-center justify-between">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-[#2AABEE]" />
+                <BookOpen className="w-5 h-5 text-primary" />
                 Sinopsis Completa
               </h3>
               <button
@@ -492,7 +503,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             <div className="p-4 bg-black/20 border-t border-white/5 flex justify-end">
               <button
                 onClick={() => setIsSynopsisModalOpen(false)}
-                className="px-6 py-2 bg-[#2AABEE] text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-[#2AABEE]/80"
+                className="px-6 py-2 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-primary/80"
               >
                 Cerrar
               </button>

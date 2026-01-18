@@ -45,8 +45,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         if (showRecommendations && recRes && recRes.results) {
           setRecommendations(recRes.results);
-          // Preload recommendation covers
-          const covers = recRes.results.map((r: any) => r.cover || '');
+          // Preload recommendation thumbnails for faster grid viewing
+          const covers = recRes.results.map((r: any) => r.cover_thumb || r.cover || '');
           preloadImages(covers);
         }
       } catch (error) {
@@ -168,7 +168,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     >
                       <div className="relative aspect-[2/3] rounded-2xl overflow-hidden mb-3 border border-white/10 shadow-2xl group-hover:scale-[1.05] group-hover:shadow-primary/20 transition-all duration-500 ring-1 ring-white/5">
                         <img
-                          src={book.cover || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200"}
+                          src={book.cover_thumb || book.cover || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200"}
                           alt={book.title}
                           className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                         />

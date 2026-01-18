@@ -208,6 +208,7 @@ class LibraryService:
                     "title": rep.series_clean or rep.series or rep.title,
                     "author": rep.author,
                     "cover": rep.cover_path,
+                    "cover_thumb": rep.cover_thumb_path,
                     "summary": rep.description,
                     "categories": rep.tags,
                     "fileType": rep.book_type or "EPUB",
@@ -337,6 +338,7 @@ class LibraryService:
                             "folder_path": "",
                             "source_id": s.id,
                             "cover": random_book.cover_path if random_book else None,
+                            "cover_thumb": random_book.cover_thumb_path if random_book else None,
                             "numBooks": source_metrics.num_series or 0,
                             "rating_average": round(
                                 float(source_metrics.avg_rating or 0), 1
@@ -433,6 +435,7 @@ class LibraryService:
                         "series_hash": s_hash,
                         "source_id": source_id,
                         "cover": rep.cover_path,
+                        "cover_thumb": rep.cover_thumb_path,
                         "author": rep.author,
                         "numBooks": num_vols,
                         "series": rep.series,

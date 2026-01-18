@@ -22,7 +22,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
         <ProgressiveImage
           alt={book.title}
           className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-          src={book.coverUrl}
+          src={book.coverThumbUrl || book.coverUrl}
           containerClassName="w-full h-full"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-60 pointer-events-none"></div>

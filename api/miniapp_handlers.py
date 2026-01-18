@@ -242,28 +242,29 @@ async def handle_recommendations(data: Dict[str, Any], user_data: Dict[str, Any]
     results = []
     for r in recs:
         is_dict = isinstance(r, dict)
-        r_id = r.get("id") if is_dict else r.id
-        # Extract numeric ID from prefixed ID if needed
-        numeric_id = str(r_id).replace("local_", "") if isinstance(r_id, str) else r_id
+        if is_dict:
+            # Local book from search/service usually has cover and cover_thumb via to_dict
+            book_data = r
+        else:
+            # LocalBook object from SQLAlchemy
+            book_data = r.to_dict()
         
-        # Always generate cover URL if book has a cover
-        has_cover = (r.get("cover_path") if is_dict else getattr(r, 'cover_path', None)) or (r.get("cover") if is_dict else getattr(r, 'cover', None))
-        cover_url = f"/api/library/covers/{numeric_id}" if has_cover else None
+        # Ensure we use the correct cover paths from DB
+        numeric_id = book_data.get("id", "").replace("local_", "")
         
         results.append(
             {
                 "id": f"local_{numeric_id}",
-                "title": r.get("title") if is_dict else r.title,
-                "author": r.get("author") if is_dict else r.author,
-                "cover": cover_url,
+                "title": book_data.get("title"),
+                "author": book_data.get("author"),
+                "cover": book_data.get("cover"),
+                "cover_thumb": book_data.get("cover_thumb"),
                 "downloadUrl": f"local_{numeric_id}",
                 "is_folder": False,
-                "series": r.get("series") if is_dict else getattr(r, 'series', None),
-                "seriesIndex": r.get("series_index") if is_dict else getattr(r, 'series_index', None),
-                "cleanTitle": r.get("title") if is_dict else r.title,
-                "rating_average": (
-                    r.get("rating_average") if is_dict else getattr(r, 'rating_average', 0)
-                ) or 0,
+                "series": book_data.get("series"),
+                "seriesIndex": book_data.get("seriesIndex"),
+                "cleanTitle": book_data.get("title"),
+                "rating_average": book_data.get("rating_average", 0),
             }
         )
     return {"results": results}
@@ -1108,6 +1109,36 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
         return {"success": False, "message": "Supabase no está habilitado."}
     
     try:
+        if tier_name == "Global":
+            # Global settings are stored in bot_settings table
+            # Filter out non-UI fields for global UI defaults
+            ui_settings = {}
+            field_mapping = {
+                "uiPrimaryColor": "primaryColor",
+                "panelTransparency": "glassOpacity",
+                "navOpacity": "navOpacity",
+                "glassBlur": "glassBlur",
+                "coverWidth": "coverWidth",
+                "showRecommendations": "showRecommendations"
+            }
+            
+            for frontend_key, setting_key in field_mapping.items():
+                if frontend_key in data:
+                    val = data[frontend_key]
+                    if frontend_key == "panelTransparency":
+                        val = val / 100.0 # Convert % to 0-1
+                    ui_settings[setting_key] = val
+            
+            # Additional fields that might be in data but not in mapping
+            if "name" in data: ui_settings["name"] = data["name"]
+            
+            current_global = json.loads(get_setting("ui_defaults_global", "{}"))
+            current_global.update(ui_settings)
+            set_setting("ui_defaults_global", json.dumps(current_global))
+            
+            logger.info(f"ADMIN: Saved GLOBAL tier config")
+            return {"success": True, "tierId": "global"}
+
         # from core.supabase_client import get_supabase_client
         client = supabase_manager.get_client()
         
@@ -1166,10 +1197,34 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
     if not tier_name and not tier_id:
         raise HTTPException(status_code=400, detail="Falta name o id del tier")
     
-    if not config.ENABLE_SUPABASE:
+    if not config.ENABLE_SUPABASE and tier_name != "Global":
         return {"success": False, "message": "Supabase no está habilitado."}
     
     try:
+        if tier_name == "Global":
+            global_raw = get_setting("ui_defaults_global", "{}")
+            g = json.loads(global_raw)
+            return {
+                "success": True,
+                "tier": {
+                    "id": "global",
+                    "name": "Global",
+                    "icon": "globe",
+                    "color": "#ffffff",
+                    "dailyDownloads": -1,
+                    "maxConcurrent": 10,
+                    "priorityRequests": True,
+                    "earlyAccess": True,
+                    "customThemes": True,
+                    "uiPrimaryColor": g.get("primaryColor", "#2b6cee"),
+                    "panelTransparency": int(g.get("glassOpacity", 0.6) * 100),
+                    "navOpacity": g.get("navOpacity", 0.8),
+                    "glassBlur": g.get("glassBlur", 12),
+                    "coverWidth": g.get("coverWidth", 120),
+                    "showRecommendations": g.get("showRecommendations", True)
+                }
+            }
+
         # from core.supabase_client import get_supabase_client
         client = supabase_manager.get_client()
         
@@ -1194,7 +1249,7 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                 "color": tier.get("color", "#0da6f2"),
                 "dailyDownloads": tier.get("daily_downloads", 1),
                 "maxConcurrent": tier.get("max_concurrent", 3),
-                "priorityRequests": tier.get("priority_requests", False),
+                "priority_requests": tier.get("priority_requests", False),
                 "earlyAccess": tier.get("early_access", False),
                 "customThemes": tier.get("custom_themes", False),
                 "uiPrimaryColor": tier.get("ui_primary_color", "#0da6f2"),

@@ -125,6 +125,7 @@ class LocalBook(Base):
                 self.file_modified_at.isoformat() if self.file_modified_at else None
             ),
             "cover": self.cover_path,  # Alias para compatibilidad
+            "cover_thumb": self.cover_thumb_path,
             "downloadUrl": self.filepath,  # Ruta local para enviar_libro_directo
             "is_folder": False,
             # Enriched data

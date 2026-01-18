@@ -65,6 +65,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           title: item.title,
           author: item.author,
           coverUrl: item.cover || '',
+          coverThumbUrl: item.cover_thumb || item.cover || '',
           description: item.summary,
           genre: item.categories ? item.categories.join(', ') : '',
           type: item.fileType ? item.fileType.replace('application/', '').toUpperCase() : 'EPUB',
@@ -81,15 +82,15 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         setTotalPages(res.totalPages || 1);
         setTotalResults(res.totalResults || mapped.length);
 
-        // Preload current results
-        const currentCovers = mapped.map(s => s.coverUrl);
+        // Preload current results (thumbnails first)
+        const currentCovers = mapped.map(s => s.coverThumbUrl || s.coverUrl);
         preloadImages(currentCovers);
 
         // Preload next page in background if available
         if (page < (res.totalPages || 1)) {
           api.searchBooks(query, page + 1, selectedScope.toLowerCase()).then(nextRes => {
             if (nextRes && nextRes.results) {
-              const nextCovers = nextRes.results.map((item: any) => item.cover || '');
+              const nextCovers = nextRes.results.map((item: any) => item.cover_thumb || item.cover || '');
               preloadImages(nextCovers);
             }
           });
@@ -278,7 +279,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   <img
                     alt={series.title}
                     className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                    src={series.coverUrl}
+                    src={series.coverThumbUrl || series.coverUrl}
                   />
                 </div>
 
@@ -357,7 +358,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                     <img
                       alt={series.title}
                       className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-                      src={series.coverUrl}
+                      src={series.coverThumbUrl || series.coverUrl}
                     />
                     {/* Bottom Gradient & Text Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-90"></div>

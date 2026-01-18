@@ -36,12 +36,34 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [availableLevels, setAvailableLevels] = useState<Array<{ id: number, name: string, color: string }>>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   const handleColorChange = (color: string) => {
     updateSettings({
       primaryColor: color,
       primaryColorDark: adjustBrightness(color, -20)
     });
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveMessage(null);
+    try {
+      const { api } = await import('../src/services/api');
+      const res = await api.savePersonalSettings(settings);
+      if (res.success) {
+        setSaveMessage({ type: 'success', text: 'Configuración guardada correctamente' });
+        setTimeout(() => setSaveMessage(null), 3000);
+      } else {
+        throw new Error(res.message || 'Error al guardar');
+      }
+    } catch (err: any) {
+      console.error('Save settings error:', err);
+      setSaveMessage({ type: 'error', text: err.message || 'Error al conectar con el servidor' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleBack = () => {
@@ -56,11 +78,14 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
       import('../src/services/api').then(({ api }) => {
         api.getAdminTiers().then((res: any) => {
           if (res.levels) {
-            setAvailableLevels(res.levels.map((l: any) => ({
-              id: l.id,
-              name: l.name,
-              color: l.color || '#6b7280'
-            })));
+            setAvailableLevels([
+              { id: 0, name: 'Global (Default)', color: '#ffffff' },
+              ...res.levels.map((l: any) => ({
+                id: l.id,
+                name: l.name,
+                color: l.color || '#6b7280'
+              }))
+            ]);
           }
         }).catch(console.error);
       });
@@ -87,8 +112,8 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
             </div>
             <div className="flex items-center gap-3">
               <select
-                value={simulatedLevel || ''}
-                onChange={(e) => setSimulatedLevel(e.target.value ? parseInt(e.target.value) : null)}
+                value={simulatedLevel === 0 ? '0' : (simulatedLevel || '')}
+                onChange={(e) => setSimulatedLevel(e.target.value === '' ? null : parseInt(e.target.value))}
                 className="px-4 py-2 text-sm font-medium border border-white/10 bg-black/20 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 rounded-xl appearance-none min-w-[160px]"
               >
                 <option value="">Sin simulación</option>
@@ -107,6 +132,19 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Message Notification */}
+      {saveMessage && (
+        <div className={`fixed top-20 right-4 z-[100] p-4 rounded-xl border animate-in slide-in-from-right-4 duration-300 ${saveMessage.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
+          }`}>
+          <div className="flex items-center gap-2">
+            <div className={`p-1.5 rounded-lg ${saveMessage.type === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+              <Save className="w-4 h-4" />
+            </div>
+            <p className="text-sm font-bold">{saveMessage.text}</p>
           </div>
         </div>
       )}
@@ -540,10 +578,12 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
               Restaurar
             </button>
             <button
-              className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/30 transition-colors flex items-center gap-2"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/30 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save className="w-4 h-4" />
-              Guardar Cambios
+              {isSaving ? <RotateCcw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isSaving ? 'Guardando...' : 'Guardar Cambios'}
             </button>
           </div>
 
@@ -585,12 +625,14 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
           <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
           <button
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-[#2AABEE]"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-[#2AABEE] disabled:opacity-50"
           >
             <div className="p-1.5 rounded-full bg-[#2AABEE] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]">
-              <Save className="w-4 h-4 text-white" strokeWidth={2.5} />
+              {isSaving ? <RotateCcw className="w-4 h-4 text-white animate-spin" strokeWidth={2.5} /> : <Save className="w-4 h-4 text-white" strokeWidth={2.5} />}
             </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1 text-[#2AABEE]">Guardar</span>
+            <span className="text-[9px] font-black uppercase tracking-widest mt-1 text-[#2AABEE]">{isSaving ? 'Guardando' : 'Guardar'}</span>
           </button>
         </div>
       </div>
