@@ -99,7 +99,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               if (firstVol.description) {
                 setRealSeries(prev => ({
                   ...prev,
-                  description: firstVol.description?.replace(/<br\s*\/?>/gi, '\n')
+                  description: firstVol.description
                 }));
               }
             }
@@ -166,6 +166,22 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
     if (currentPage > 1) setCurrentPage(prev => prev - 1);
   };
 
+  const formatDescription = (desc: string) => {
+    if (!desc) return null;
+    // Collapse double breaks and split by single breaks
+    const paragraphs = desc
+      .split(/\n\s*\n/)
+      .join('\n')
+      .split('\n')
+      .filter(p => p.trim() !== '');
+
+    return paragraphs.map((p, i) => (
+      <p key={i} className={i !== paragraphs.length - 1 ? "mb-3" : ""}>
+        {p}
+      </p>
+    ));
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-100">
 
@@ -193,8 +209,8 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             </div>
 
             <div className="flex-1 pb-2 w-full">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-black bg-green-500/10 text-green-400 border border-green-500/20 uppercase tracking-widest whitespace-nowrap">
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <span className="px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-black bg-green-500/20 text-green-400 border border-green-500/30 uppercase tracking-widest leading-relaxed">
                   {realSeries.genre}
                 </span>
                 <span className="flex items-center gap-1.5 text-yellow-500 text-xs sm:text-sm font-black">
@@ -209,9 +225,9 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               <p className="text-white/80 text-sm sm:text-base mb-6 font-medium">Por {realSeries.author}</p>
 
               <div className="relative mb-6">
-                <p className="text-gray-200 text-xs sm:text-sm line-clamp-3 max-w-2xl leading-relaxed whitespace-pre-line">
-                  {realSeries.description || "Sin descripción disponible."}
-                </p>
+                <div className="text-gray-200 text-xs sm:text-sm line-clamp-3 max-w-2xl leading-relaxed font-medium">
+                  {formatDescription(realSeries.description || "Sin descripción disponible.")}
+                </div>
                 {realSeries.description && realSeries.description.length > 150 && (
                   <button
                     onClick={() => setIsSynopsisModalOpen(true)}

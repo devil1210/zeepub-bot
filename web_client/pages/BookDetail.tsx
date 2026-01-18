@@ -132,7 +132,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
     readTime: formatReadingTime(volume.wordCount ? Math.ceil(volume.wordCount / 200) : (typeof volume.readTime === 'number' ? volume.readTime : undefined)),
     lastUpdated: volume.modifiedAt ? formatDate(String(volume.modifiedAt)) : 'N/A',
     publishedDate: formatDate(String(volume.publishedDate || '')),
-    description: String(volume.description || 'Sin sinopsis disponible.').replace(/<br\s*\/?>/gi, '\n'),
+    description: String(volume.description || 'Sin sinopsis disponible.'),
     displayTitle: String(volume.englishTitle || series?.title || volume.title || 'Libro sin título'),
     illustrator: String(volume.illustrator || 'N/A'),
     translator: String(volume.translator || 'ZeePub'),
@@ -142,6 +142,22 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
     asin: String(volume.asin || 'N/A'),
     demography: Array.isArray(volume.demography) ? volume.demography : (Array.isArray((volume as any).demographics) ? (volume as any).demographics : []),
     genres: Array.isArray((volume as any).genres) ? (volume as any).genres : (Array.isArray((volume as any).tags) ? (volume as any).tags : (Array.isArray(series?.genres) ? series.genres : []))
+  };
+
+  const formatDescription = (desc: string) => {
+    if (!desc) return null;
+    // Collapse double breaks and split by single breaks
+    const paragraphs = desc
+      .split(/\n\s*\n/)
+      .join('\n')
+      .split('\n')
+      .filter(p => p.trim() !== '');
+
+    return paragraphs.map((p, i) => (
+      <p key={i} className={i !== paragraphs.length - 1 ? "mb-3" : ""}>
+        {p}
+      </p>
+    ));
   };
 
   if (!series || !volume) return null;
@@ -357,9 +373,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                   <FileText className="w-5 h-5" />
                   <h3 className="text-xs font-black uppercase tracking-widest">Sinopsis</h3>
                 </div>
-                <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-7 sm:leading-8 whitespace-pre-line font-medium text-justify">
-                  {displayData.description}
-                </p>
+                <div className="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-7 sm:leading-8 font-medium text-justify">
+                  {formatDescription(displayData.description)}
+                </div>
               </div>
 
               {/* Two Column Details Grid */}

@@ -48,6 +48,22 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
         }
     };
 
+    const formatDescription = (desc: string) => {
+        if (!desc) return null;
+        // Collapse double breaks and split by single breaks
+        const paragraphs = desc
+            .split(/\n\s*\n/)
+            .join('\n')
+            .split('\n')
+            .filter(p => p.trim() !== '');
+
+        return paragraphs.map((p, i) => (
+            <p key={i} className={i !== paragraphs.length - 1 ? "mb-3" : ""}>
+                {p}
+            </p>
+        ));
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -171,9 +187,9 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
                     <h3 className="text-sm font-black text-gray-500 uppercase tracking-wider mb-4">
                         Sinopsis
                     </h3>
-                    <p className="text-gray-300 leading-relaxed whitespace-pre-line">
-                        {book.description}
-                    </p>
+                    <div className="text-gray-300 leading-relaxed font-medium">
+                        {formatDescription(book.description)}
+                    </div>
                 </div>
             )}
 
