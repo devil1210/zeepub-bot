@@ -858,7 +858,7 @@ class MaintenancePlugin(BasePlugin):
         """Find and display duplicate books in the library."""
         uid = update.effective_user.id
         msg = update.effective_message
-        thread_id = self._get_thread_id(update)
+        thread_id = get_thread_id(update)
         
         if uid not in ADMIN_USERS:
             return
@@ -968,3 +968,4 @@ class MaintenancePlugin(BasePlugin):
                 f"❌ <b>Error buscando duplicados:</b> {str(e)}",
                 parse_mode="HTML"
             )
+
