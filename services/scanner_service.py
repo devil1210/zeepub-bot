@@ -111,43 +111,9 @@ class ScannerService:
             if not meta:
                 return
 
-            # Generar content_hash temporal para buscar duplicados
-            temp_book = LocalBook(filepath=filepath, source_id=source.id)
-            temp_book.title = meta.get("title") or os.path.basename(filepath)
-            temp_book.author = extract_author(meta.get("creators", {}))
-            temp_book.series = meta.get("series")
-            temp_book.volume = meta.get("volume")
-            temp_content_hash = self._generate_book_hash(temp_book)
-
-            # Buscar libro existente por content_hash
-            existing_book = session.query(LocalBook).filter_by(content_hash=temp_content_hash).first()
-            
-            if existing_book:
-                # Actualizar libro existente
-                old_filepath = existing_book.filepath
-                old_filename = existing_book.filename
-                
-                book = existing_book
-                logger.debug(f"Actualizando libro existente: {book.title}")
-                
-                # Detectar si cambió el nombre del archivo
-                new_filename = os.path.basename(filepath)
-                if old_filepath != filepath or old_filename != new_filename:
-                    logger.warning(f"Archivo renombrado/movido: {old_filepath} -> {filepath}")
-                    
-                    # Notificar a admins por Telegram
-                    asyncio.create_task(self._notify_file_renamed(
-                        title=book.title,
-                        old_path=old_filepath,
-                        new_path=filepath,
-                        old_filename=old_filename,
-                        new_filename=new_filename
-                    ))
-            else:
-                # Crear nuevo libro
+            if not book:
                 book = LocalBook(filepath=filepath, source_id=source.id)
-                session.add(book)
-                logger.debug(f"Nuevo libro: {meta.get('title')}")
+                # Don't add yet, will check for duplicates after generating hash
 
             # Actualizar campos
             book.filename = os.path.basename(filepath)
@@ -262,6 +228,46 @@ class ScannerService:
             book.series_hash = self._generate_series_hash(book)
             book.content_hash = self._generate_book_hash(book)
             book.book_hash = book.content_hash  # book_hash is same as content_hash for local books
+
+            # Check for duplicates by content_hash AFTER generating it
+            existing_with_same_hash = session.query(LocalBook).filter(
+                LocalBook.content_hash == book.content_hash,
+                LocalBook.id != book.id if book.id else True
+            ).first()
+            
+            if existing_with_same_hash and not book.id:
+                # Found existing book with same content but different path
+                logger.warning(f"Duplicado detectado: {book.title} (hash: {book.content_hash[:8]}...)")
+                logger.warning(f"  Existente: {existing_with_same_hash.filepath}")
+                logger.warning(f"  Nuevo: {filepath}")
+                
+                # Use existing book and update its path
+                old_path = existing_with_same_hash.filepath
+                old_filename = existing_with_same_hash.filename
+                
+                # Update the existing record
+                existing_with_same_hash.filepath = filepath
+                existing_with_same_hash.filename = book.filename
+                existing_with_same_hash.file_size = book.file_size
+                existing_with_same_hash.file_modified_at = book.file_modified_at
+                existing_with_same_hash.indexed_at = datetime.utcnow()
+                
+                # Copy over any new/updated metadata
+                book = existing_with_same_hash
+                
+                # Notify about renamed file
+                if old_path != filepath:
+                    asyncio.create_task(self._notify_file_renamed(
+                        title=book.title,
+                        old_path=old_path,
+                        new_path=filepath,
+                        old_filename=old_filename,
+                        new_filename=book.filename
+                    ))
+                return True
+            elif not book.id:
+                # New book, add to session
+                session.add(book)
 
 
             # Guardar Portada
