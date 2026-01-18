@@ -341,5 +341,70 @@ async def update_user_setting(telegram_id: int, key: str, value: Any) -> Dict[st
     return current_settings
 
 
+
 # Init DB is handled by DatabaseManager/UserRepository instantiation
 # We don't need init_user_db() explicit call here as repo handles connections lazily or via manager
+
+
+async def sync_user_from_env(telegram_id: int, tg_user=None) -> Optional[Dict]:
+    """
+    Verifica si el usuario está en alguna lista del .env y
+    sincroniza su rol/nivel en Supabase automáticamente.
+    
+    Prioridad:
+    1. ADMIN_USERS -> admin
+    2. FACEBOOK_PUBLISHERS -> staff + "Publicador"
+    3. PREMIUM_LIST -> premium
+    4. VIP_LIST -> vip
+    5. WHITELIST -> white (Patrocinador)
+    
+    Returns:
+        Dict con rol asignado o None si no cambió nada
+    """
+    # Determinar rol según ENV
+    target_role = None
+    custom_status = None
+    
+    if telegram_id in config.ADMIN_USERS:
+        target_role = "admin"
+    elif telegram_id in config.FACEBOOK_PUBLISHERS:
+        target_role = "staff"
+        custom_status = "Publicador"
+    elif telegram_id in config.PREMIUM_LIST:
+        target_role = "premium"
+    elif telegram_id in config.VIP_LIST:
+        target_role = "vip"
+    elif telegram_id in config.WHITELIST:
+        target_role = "white"
+    
+    if not target_role:
+        return None  # No está en ninguna lista del ENV
+    
+    # Obtener usuario actual de Supabase
+    current_user = await get_effective_user(telegram_id, tg_user=tg_user, use_cache=False)
+    current_role = current_user.get("role", "free")
+    current_custom_status = current_user.get("custom_status")
+    
+    # Verificar si necesita actualización
+    needs_update = False
+    if current_role != target_role:
+        needs_update = True
+        logger.info(f"Auto-syncing user {telegram_id} from ENV: {current_role} -> {target_role}")
+    elif custom_status and current_custom_status != custom_status:
+        needs_update = True
+        logger.info(f"Updating custom_status for user {telegram_id}: {current_custom_status} -> {custom_status}")
+    
+    if needs_update:
+        # Actualizar rol en Supabase (sin expiración, es permanente desde ENV)
+        await upsert_user(
+            telegram_id=telegram_id,
+            role=target_role,
+            custom_status=custom_status,
+            duration_months=None,  # Permanente
+        )
+        
+        # Invalidar cache y retornar usuario actualizado
+        await user_cache.invalidate(f"user_effective:{telegram_id}")
+        return await get_effective_user(telegram_id, tg_user=tg_user, use_cache=False)
+    
+    return current_user

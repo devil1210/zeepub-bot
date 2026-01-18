@@ -39,6 +39,16 @@ class CommandHandlers:
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
 
         uid = update.effective_user.id
+        
+        # Auto-sincronizar desde ENV (ADMIN_USERS, VIP_LIST, etc.)
+        from services.user_service import sync_user_from_env
+        try:
+            synced = await sync_user_from_env(uid, tg_user=update.effective_user)
+            if synced:
+                logger.info(f"User {uid} auto-synced from ENV: role={synced.get('role')}")
+        except Exception as e:
+            logger.error(f"Error syncing user {uid} from ENV: {e}")
+        
         left = await downloads_left(uid, tg_user=update.effective_user)
 
         first_name = update.effective_user.first_name
