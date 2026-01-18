@@ -255,15 +255,6 @@ class ScannerService:
                     
                     # Add as new record (both files coexist)
                     session.add(book)
-                    
-                    # Notify about duplicate
-                    asyncio.create_task(self._notify_file_renamed(
-                        title=book.title,
-                        old_path=existing_with_same_hash.filepath,
-                        new_path=filepath,
-                        old_filename=existing_with_same_hash.filename,
-                        new_filename=book.filename
-                    ))
                 else:
                     # New unique file, add to session
                     session.add(book)
