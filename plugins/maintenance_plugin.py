@@ -860,7 +860,7 @@ class MaintenancePlugin(BasePlugin):
         msg = update.effective_message
         thread_id = get_thread_id(update)
         
-        if uid not in ADMIN_USERS:
+        if uid not in config.ADMIN_USERS:
             return
         
         try:
