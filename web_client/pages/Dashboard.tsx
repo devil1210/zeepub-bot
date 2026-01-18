@@ -81,8 +81,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
           {/* Hero / Greeting */}
           <div className="pt-4 md:pt-2">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight mb-3">
-              Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">{userName}</span> 👋
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white tracking-tight mb-3">
+              Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400 dark:to-blue-400">{userName}</span> 👋
             </h1>
             <p className="text-gray-400 text-lg">
               Tu biblioteca personal está lista.
@@ -116,10 +116,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Acciones Rápidas</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-                { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-                { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
-                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+                { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+                { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
               ].map((item, i) => (
                 <button
                   key={i}
@@ -130,7 +130,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <item.icon className="w-7 h-7" strokeWidth={1.5} />
                   </div>
                   <div>
-                    <span className="block text-white font-bold text-base leading-none mb-1">{item.label}</span>
+                    <span className="block text-gray-900 dark:text-white font-bold text-base leading-none mb-1">{item.label}</span>
                     <span className="block text-gray-500 text-[10px] font-medium uppercase tracking-wider">{item.desc}</span>
                   </div>
                 </button>
@@ -203,7 +203,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <span className="text-xl">👤</span>
                 </div>
                 <div>
-                  <h3 className="text-white font-bold leading-none">{userLevel}</h3>
+                  <h3 className="text-gray-900 dark:text-white font-bold leading-none">{userLevel}</h3>
                   <p className="text-xs text-yellow-500 font-bold uppercase tracking-wider mt-1">{status?.user?.role || "Free"}</p>
                 </div>
               </div>
@@ -216,7 +216,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <Zap className="w-3 h-3 text-primary" />
                     Cuota Diaria
                   </span>
-                  <span className="text-white font-bold">{downloadsUsed} <span className="text-gray-500 font-normal">/ {limitDisplay}</span></span>
+                  <span className="text-gray-900 dark:text-white font-bold">{downloadsUsed} <span className="text-gray-500 font-normal">/ {limitDisplay}</span></span>
                 </div>
                 {!isUnlimited && (
                   <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
@@ -229,9 +229,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5 flex flex-col items-center justify-center text-center">
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-3 border border-black/5 dark:border-white/5 flex flex-col items-center justify-center text-center">
                   <TrendingUp className="w-5 h-5 text-green-500 mb-1" />
-                  <span className="text-white font-bold text-lg">Activo</span>
+                  <span className="text-gray-900 dark:text-white font-bold text-lg">Activo</span>
                   <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Estado</span>
                 </div>
                 {/* More stats placeholder */}

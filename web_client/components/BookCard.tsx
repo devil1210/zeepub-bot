@@ -13,12 +13,12 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
   return (
     <div className="group relative glass-panel rounded-xl overflow-hidden border border-white/5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full">
       <div className="absolute top-3 right-3 z-10">
-        <span className="bg-black/70 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider border border-white/10">
+        <span className="bg-black/70 dark:bg-black/70 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider border border-white/10 shadow-sm">
           {book.format}
         </span>
       </div>
 
-      <div className={`relative overflow-hidden bg-gray-800 ${compact ? 'aspect-[3/4]' : 'aspect-[2/3]'}`}>
+      <div className={`relative overflow-hidden bg-slate-200 dark:bg-gray-800 ${compact ? 'aspect-[3/4]' : 'aspect-[2/3]'}`}>
         <ProgressiveImage
           alt={book.title}
           className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
@@ -29,7 +29,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
         {!compact && (
           <div className="absolute bottom-4 left-4 right-4">
             <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 drop-shadow-md">{book.title}</h3>
-            <p className="text-gray-300 text-sm font-medium mt-1 truncate">{book.author}</p>
+            <p className="text-gray-200 dark:text-gray-300 text-sm font-medium mt-1 truncate">{book.author}</p>
           </div>
         )}
       </div>
@@ -37,8 +37,8 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
       <div className="p-4 flex flex-col flex-1">
         {compact && (
           <div className="mb-3">
-            <h3 className="text-white font-bold text-base leading-tight line-clamp-1">{book.title}</h3>
-            <p className="text-gray-400 text-xs mt-1 truncate">{book.author}</p>
+            <h3 className="text-gray-900 dark:text-white font-bold text-base leading-tight line-clamp-1">{book.title}</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-xs mt-1 truncate">{book.author}</p>
           </div>
         )}
 

@@ -272,10 +272,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
               <div
                 key={series.id}
                 onClick={() => handleSelectSeries(series)}
-                className="group flex gap-4 p-3 rounded-lg bg-[#0d1117]/80 hover:bg-[#161b22] transition-all duration-200 cursor-pointer relative overflow-hidden border border-white/5"
+                className="group flex gap-4 p-3 rounded-xl glass-panel hover:bg-white/5 transition-all duration-200 cursor-pointer relative overflow-hidden shadow-sm"
               >
                 {/* Left: Cover Image */}
-                <div className="relative shrink-0 w-[85px] sm:w-[100px] aspect-[2/3] shadow-lg rounded-md overflow-hidden bg-slate-800">
+                <div className="relative shrink-0 w-[85px] sm:w-[100px] aspect-[2/3] shadow-lg rounded-md overflow-hidden bg-slate-200 dark:bg-slate-800">
                   <img
                     alt={series.title}
                     className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
@@ -285,9 +285,9 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
                 {/* Right: Details */}
                 <div className="flex flex-col flex-1 min-w-0 py-0.5">
-                  {/* Title - Fixed to White as requested */}
+                  {/* Title */}
                   <div className="flex justify-between items-start gap-2">
-                    <h3 className="text-base sm:text-lg font-bold text-white leading-tight mb-1 line-clamp-2 sm:line-clamp-1">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight mb-1 line-clamp-2 sm:line-clamp-1">
                       {series.title}
                     </h3>
                     <button
@@ -323,11 +323,11 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   </div>
 
                   {/* Stats Row */}
-                  <div className="flex items-center gap-4 text-xs font-bold text-gray-500">
+                  <div className="flex items-center gap-4 text-xs font-bold text-gray-500 dark:text-gray-400">
                     <div className="flex items-center gap-1.5 text-yellow-500">
                       <Star className="w-3.5 h-3.5 fill-current" />
-                      <span className="text-gray-300">{series.rating.toFixed(1)}</span>
-                      <span className="text-gray-600 font-normal">({series.voteCount || 0})</span>
+                      <span className="text-gray-700 dark:text-gray-300">{series.rating.toFixed(1)}</span>
+                      <span className="text-gray-400 dark:text-gray-600 font-normal">({series.voteCount || 0})</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[var(--color-primary)]">
                       <Download className="w-3.5 h-3.5" />
@@ -344,7 +344,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                 <div
                   key={series.id}
                   onClick={() => handleSelectSeries(series)}
-                  className="group relative glass-panel rounded-2xl overflow-hidden hover:bg-white/5 shadow-sm hover:shadow-xl hover:shadow-[var(--color-primary)]/10 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full cursor-pointer bg-black/20"
+                  className="group relative glass-panel rounded-2xl overflow-hidden hover:bg-white/5 shadow-sm hover:shadow-xl hover:shadow-[var(--color-primary)]/10 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full cursor-pointer"
                 >
                   {/* Format Badge (Top Right) */}
                   <div className="absolute top-3 right-3 z-10">
@@ -354,7 +354,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   </div>
 
                   {/* Image Container */}
-                  <div className="relative aspect-[2/3] overflow-hidden bg-slate-800">
+                  <div className="relative aspect-[2/3] overflow-hidden bg-slate-200 dark:bg-slate-800">
                     <img
                       alt={series.title}
                       className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
@@ -373,7 +373,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   </div>
 
                   {/* Details Container */}
-                  <div className="p-4 flex flex-col flex-1 bg-[#0d1117]">
+                  <div className="p-4 flex flex-col flex-1 bg-white/50 dark:bg-[#0d1117]">
                     {/* Top Row: Genre & Rating */}
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20 truncate max-w-[70%]">
@@ -421,11 +421,11 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           <div className="text-center py-4 text-xs text-gray-500 font-medium">
             Página {currentPage} de {totalPages} • {totalResults} Resultados
           </div>
-        </div>
-      </div>
+        </div >
+      </div >
 
       {/* Mobile Catalog Bottom Bar */}
-      <div className="md:hidden fixed bottom-6 left-8 right-8 z-40 flex flex-col gap-3">
+      < div className="md:hidden fixed bottom-6 left-8 right-8 z-40 flex flex-col gap-3" >
         {isSortMenuOpen && (
           <div
             className="glass-panel rounded-3xl p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
@@ -515,8 +515,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
             <span className="text-[9px] font-black uppercase tracking-widest mt-1">Siguiente</span>
           </button>
         </div>
-      </div>
+      </div >
 
-    </div>
+    </div >
   );
 };

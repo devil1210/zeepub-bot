@@ -59,15 +59,15 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
          {/* Page Header */}
          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between mb-8">
             <div>
-               <h1 className="text-4xl font-black tracking-tight text-white mb-2">Mi Biblioteca</h1>
+               <h1 className="text-4xl font-black tracking-tight text-gray-900 dark:text-white mb-2">Mi Biblioteca</h1>
                <p className="text-gray-400">Gestiona tu lista de lectura y actualizaciones.</p>
             </div>
             {/* Filter Chips */}
             <div className="flex flex-wrap gap-2">
-               <button className="flex h-9 items-center gap-2 rounded-full bg-white text-black px-4 text-sm font-medium transition-transform active:scale-95 hover:bg-gray-100 border border-transparent">
+               <button className="flex h-9 items-center gap-2 rounded-full bg-black dark:bg-white text-white dark:text-black px-4 text-sm font-medium transition-transform active:scale-95 hover:bg-gray-900 dark:hover:bg-gray-100 border border-transparent shadow-sm">
                   Todas
                </button>
-               <button className="flex h-9 items-center gap-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 px-4 text-sm font-medium text-white transition-all active:scale-95">
+               <button className="flex h-9 items-center gap-2 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10 px-4 text-sm font-medium text-gray-900 dark:text-white transition-all active:scale-95">
                   Actualizadas
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">1</span>
                </button>
@@ -92,7 +92,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
                      </div>
                   )}
                   {/* Image Container */}
-                  <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-gray-800 shadow-md">
+                  <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-slate-200 dark:bg-gray-800 shadow-md">
                      <div
                         className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
                         style={{ backgroundImage: `url("${book.cover}")` }}
@@ -112,10 +112,10 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
                   </div>
                   {/* Content */}
                   <div className="flex flex-col gap-1">
-                     <h3 className="truncate text-base font-bold text-white group-hover:text-primary transition-colors">{book.title}</h3>
+                     <h3 className="truncate text-base font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">{book.title}</h3>
                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-white">Vol {book.vol}</span>
-                        <span className="text-gray-400">{book.time}</span>
+                        <span className="font-medium text-gray-700 dark:text-white">Vol {book.vol}</span>
+                        <span className="text-gray-500 dark:text-gray-400">{book.time}</span>
                      </div>
                   </div>
                </div>
