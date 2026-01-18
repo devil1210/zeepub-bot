@@ -32,6 +32,7 @@ interface UserPermissionsProps {
   onCanApplyChange?: (canApply: boolean) => void;
   onUndoRef?: (undoFn: () => void) => void;
   onSaveRef?: (saveFn: () => Promise<void>) => void;
+  onSaveSuccess?: () => void;
 }
 
 interface PermissionsState {
@@ -58,7 +59,8 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
   onCanUndoChange,
   onCanApplyChange,
   onUndoRef,
-  onSaveRef
+  onSaveRef,
+  onSaveSuccess
 }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -216,6 +218,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
 
       if (res.success) {
         setSuccess(true);
+        onSaveSuccess?.();
         setTimeout(() => setSuccess(false), 3000);
       } else {
         setError(res.message || 'Error al guardar');
@@ -278,13 +281,13 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
               <div className="relative">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-cyan-300 p-1">
                   <div
-                    className="w-full h-full rounded-full border-2 border-[#121212] flex items-center justify-center text-2xl font-black text-white"
+                    className="w-full h-full rounded-full border-2 border-white/20 dark:border-[#121212] flex items-center justify-center text-2xl font-black text-white"
                     style={{ background: `linear-gradient(135deg, ${displayColor}40, ${displayColor}20)` }}
                   >
                     {displayName.charAt(0).toUpperCase()}
                   </div>
                 </div>
-                <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-4 border-[#121212] rounded-full"></div>
+                <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-4 border-white dark:border-[#121212] rounded-full"></div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
@@ -338,11 +341,11 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                     <select
                       value={permissions.levelId !== null && permissions.levelId !== undefined ? permissions.levelId : ''}
                       onChange={(e) => handleLevelChange(parseInt(e.target.value))}
-                      className="appearance-none bg-black/20 border border-white/10 text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-48 p-2.5 pr-8 cursor-pointer"
+                      className="appearance-none bg-white/5 dark:bg-black/20 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-48 p-2.5 pr-8 cursor-pointer"
                     >
-                      <option value="" disabled>Seleccionar nivel...</option>
+                      <option value="" disabled className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">Seleccionar nivel...</option>
                       {allLevels.map((level) => (
-                        <option key={level.id} value={level.id} className="bg-gray-900">
+                        <option key={level.id} value={level.id} className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
                           {level.name}
                         </option>
                       ))}
@@ -368,7 +371,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       onChange={(e) => setPermissions({ ...permissions, canReport: e.target.checked })}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   </label>
                 </div>
 
@@ -388,7 +391,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       onChange={(e) => setPermissions({ ...permissions, bypassLimits: e.target.checked })}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   </label>
                 </div>
 
@@ -408,7 +411,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       onChange={(e) => setPermissions({ ...permissions, betaTester: e.target.checked })}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   </label>
                 </div>
 
@@ -428,7 +431,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       onChange={(e) => setPermissions({ ...permissions, isAdmin: e.target.checked })}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                   </label>
                 </div>
               </div>
@@ -452,7 +455,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
               <div className="p-4 overflow-y-auto max-h-[600px]">
                 <div className="relative pl-4 border-l-2 border-white/10 space-y-6">
                   <div className="relative">
-                    <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-[#121212]"></div>
+                    <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-white dark:ring-[#121212]"></div>
                     <p className="text-xs text-gray-500 mb-0.5 font-mono">Ahora</p>
                     <p className="text-sm text-gray-200 mb-1">
                       Editando permisos de <span className="font-bold text-primary">{displayName}</span>
@@ -463,14 +466,14 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                     </div>
                   </div>
                   <div className="relative">
-                    <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-gray-600 ring-4 ring-[#121212]"></div>
+                    <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-gray-600 ring-4 ring-white dark:ring-[#121212]"></div>
                     <p className="text-xs text-gray-500 mb-0.5 font-mono">Nivel Actual</p>
                     <p className="text-sm text-gray-200 mb-1">
                       <span style={{ color: displayColor }}>{displayLevel}</span>
                     </p>
                   </div>
                   <div className="relative">
-                    <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-gray-600 ring-4 ring-[#121212]"></div>
+                    <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-gray-600 ring-4 ring-white dark:ring-[#121212]"></div>
                     <p className="text-xs text-gray-500 mb-0.5 font-mono">ID de Usuario</p>
                     <p className="text-sm text-gray-200 mb-1 font-mono">
                       {displayId}

@@ -796,12 +796,6 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                       Configura permisos globales y niveles de suscripción para toda la base de usuarios.
                     </p>
                   </div>
-                  <div className="flex items-end">
-                    <button className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-black text-xs transition-all shadow-xl shadow-primary/30 uppercase tracking-widest border border-white/10">
-                      <Plus className="w-5 h-5" />
-                      Nuevo Nivel Personalizado
-                    </button>
-                  </div>
                 </div>
 
                 {/* Tier Cards Row - Dynamic */}
@@ -871,16 +865,6 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                       </div>
                     );
                   })}
-
-                  {/* Add New Level Card */}
-                  <button
-                    className="glass-panel p-6 rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-4 hover:bg-white/5 hover:border-primary/50 transition-all text-gray-500 hover:text-primary min-h-[220px]"
-                  >
-                    <div className="p-4 rounded-full bg-white/5 border border-white/10">
-                      <Plus className="w-8 h-8" />
-                    </div>
-                    <span className="text-xs font-black uppercase tracking-widest">Crear Nuevo Nivel</span>
-                  </button>
                 </div>
 
 
@@ -1018,6 +1002,10 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                   onCanApplyChange={setCanApplyPerms}
                   onUndoRef={(fn) => { permissionsUndoRef.current = fn; }}
                   onSaveRef={(fn) => { permissionsSaveRef.current = fn; }}
+                  onSaveSuccess={() => {
+                    console.log('[Admin] User permissions saved successfully, refreshing list...');
+                    fetchAdminData();
+                  }}
                 />
               );
             })()}
