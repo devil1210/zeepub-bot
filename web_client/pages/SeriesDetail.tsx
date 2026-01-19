@@ -56,7 +56,10 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             ...series, // Preserve existing data if needed
             ...data,
             coverUrl: data.cover || series.coverUrl,
-            description: (data.summary || data.description || series.description)?.replace(/<br\s*\/?>/gi, '\n')
+            description: (data.summary || data.description || series.description)?.replace(/<br\s*\/?>/gi, '\n'),
+            englishTitle: data.english_title,
+            spanishTitle: data.spanish_title,
+            romajiTitle: data.romaji_title || data.romaji
           } as Series);
           if (data.volumes) {
             const mappedVols: Volume[] = data.volumes.map((v: any) => ({
@@ -76,7 +79,9 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               demography: v.demographics,
               tags: v.tags,
               // Metadata Enriquecida
-              romajiTitle: v.romaji,
+              romajiTitle: v.romaji_title || v.romaji,
+              englishTitle: v.english_title,
+              spanishTitle: v.spanish_title,
               illustrator: v.illustrator,
               translator: v.translator,
               typesetter: v.layoutBy,
@@ -233,6 +238,11 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 leading-tight">
                 {realSeries.englishTitle || realSeries.title}
               </h1>
+              {realSeries.romajiTitle && (
+                <h2 className="text-sm sm:text-lg text-white/60 italic font-serif mb-4 leading-relaxed">
+                  {realSeries.romajiTitle}
+                </h2>
+              )}
               <button
                 onClick={() => onSearch?.(realSeries.author || '')}
                 className="text-white/80 text-sm sm:text-base mb-6 font-medium hover:text-primary transition-colors hover:underline"

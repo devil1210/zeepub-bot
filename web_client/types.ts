@@ -45,6 +45,8 @@ export interface Volume {
   epubVersion?: string;
   modifiedAt?: string;
   modifiedAtOpf?: string;
+  englishTitle?: string;
+  spanishTitle?: string;
 }
 
 export interface Series {
@@ -63,6 +65,9 @@ export interface Series {
   volumesCount: number;
   status: 'Ongoing' | 'Completed';
   lastUpdated: string;
+  englishTitle?: string;
+  spanishTitle?: string;
+  romajiTitle?: string;
   volumes: Volume[];
 }
 

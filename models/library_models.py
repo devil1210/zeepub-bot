@@ -144,6 +144,7 @@ class LocalBook(Base):
             "pageCount": self.page_count,
             "english_title": self.english_title,
             "spanish_title": self.spanish_title,
+            "romaji_title": self.romaji_title,
 
             "readingTime": self.reading_time,
 

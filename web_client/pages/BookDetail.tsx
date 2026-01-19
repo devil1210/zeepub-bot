@@ -96,7 +96,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             format: (bookData.bookType || 'EPUB') as any,
             rating: bookData.rating_average || 0,
             description: bookData.description || bookData.summary,
-            romajiTitle: bookData.romaji,
             language: bookData.language || 'Español',
             size: bookData.fileSize ? `${(bookData.fileSize / 1024 / 1024).toFixed(2)} MB` : 'N/A',
             uploader: 'ZeePub',
@@ -113,7 +112,10 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             asin: bookData.asin,
             epubVersion: bookData.epubVersion,
             modifiedAt: bookData.modifiedAt,
-            modifiedAtOpf: bookData.modifiedAtOpf
+            modifiedAtOpf: bookData.modifiedAtOpf,
+            englishTitle: bookData.english_title,
+            spanishTitle: bookData.spanish_title,
+            romajiTitle: bookData.romaji_title || bookData.romaji
           };
 
           const mappedSeries: Series = {
@@ -127,6 +129,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             volumesCount: 1,
             status: 'Completed',
             lastUpdated: bookData.modifiedAt_opf || bookData.modifiedAt || 'N/A',
+            englishTitle: bookData.english_title,
+            spanishTitle: bookData.spanish_title,
+            romajiTitle: bookData.romaji_title || bookData.romaji,
             volumes: []
           };
 
@@ -230,7 +235,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     rating: localRating,
     downloadCount: localDownloadCount,
     title: String(curVolume.title || ''),
-    romajiTitle: String(curVolume.romajiTitle || ''),
     language: String(curVolume.language || 'Español'),
     size: String(curVolume.size || '0 MB'),
     format: String(curVolume.format || 'EPUB'),
@@ -242,7 +246,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     lastUpdated: curVolume.modifiedAtOpf ? formatDate(String(curVolume.modifiedAtOpf)) : (curVolume.modifiedAt ? formatDate(String(curVolume.modifiedAt)) : 'N/A'),
     publishedDate: formatDate(String(curVolume.publishedDate || '')),
     description: String(curVolume.description || 'Sin sinopsis disponible.'),
-    displayTitle: String(curVolume.englishTitle || curSeries?.title || curVolume.title || 'Libro sin título'),
+    displayTitle: String(curVolume.englishTitle || curSeries?.englishTitle || curSeries?.title || curVolume.title || 'Libro sin título'),
+    romajiTitle: String(curVolume.romajiTitle || curSeries?.romajiTitle || ''),
     illustrator: String(curVolume.illustrator || 'N/A'),
     translator: String(curVolume.translator || 'ZeePub'),
     group: String(curVolume.group || 'ZeePub'),
