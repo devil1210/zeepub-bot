@@ -226,18 +226,61 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
     onSaveRef?.(handleSave);
   }, [onUndoRef, onSaveRef]);
 
-  const handleLevelChange = (levelId: number) => {
+  const handleLevelChange = async (levelId: number) => {
     const level = allLevels.find(l => l.id === levelId);
+
+    // Update level immediately
     setPermissions({
       ...permissions,
       levelId,
       levelName: level?.name || 'Básico'
     });
+
+    // Load tier configuration in background
+    try {
+      const tierConfig = await api.getTierConfig(level?.name || '');
+      if (tierConfig.success && tierConfig.tier) {
+        console.log('[UserPermissions] Tier config loaded:', tierConfig.tier);
+      }
+    } catch (err) {
+      console.error('Error loading tier config:', err);
+    }
   };
 
-  const handleUndo = () => {
-    if (initialPermissions) {
-      setPermissions(initialPermissions);
+  const handleUndo = async () => {
+    // Reset to the default permissions of the currently selected level
+    const currentLevel = allLevels.find(l => l.id === permissions.levelId);
+    if (!currentLevel) {
+      // Fallback to initial permissions if no level selected
+      if (initialPermissions) {
+        setPermissions(initialPermissions);
+      }
+      return;
+    }
+
+    try {
+      const tierConfig = await api.getTierConfig(currentLevel.name);
+      if (tierConfig.success && tierConfig.tier) {
+        const tier = tierConfig.tier;
+
+        // Reset permissions to tier defaults
+        setPermissions({
+          ...permissions,
+          levelId: tier.id,
+          levelName: tier.name,
+          canReport: true,
+          bypassLimits: tier.dailyDownloads === -1,
+          betaTester: tier.earlyAccess || false,
+          isAdmin: tier.name.toLowerCase() === 'administrador',
+          role: tier.name.toLowerCase() === 'administrador' ? 'admin' : 'free',
+        });
+      }
+    } catch (err) {
+      console.error('Error resetting to tier defaults:', err);
+      // Fallback to initial permissions
+      if (initialPermissions) {
+        setPermissions(initialPermissions);
+      }
     }
   };
 
@@ -364,6 +407,35 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
               <button className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 text-sm font-medium hover:bg-white/5 transition-colors text-gray-300">
                 <MessageSquare className="w-4 h-4" />
                 Mensaje
+              </button>
+            </div>
+
+            {/* Action Buttons - Desktop/Tablet */}
+            <div className="hidden md:flex items-center justify-end gap-3 mb-6">
+              <button
+                onClick={handleUndo}
+                disabled={!initialPermissions || JSON.stringify(permissions) === JSON.stringify(initialPermissions)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all disabled:opacity-30 disabled:cursor-not-allowed text-gray-300"
+              >
+                <Undo2 className="w-4 h-4" />
+                Restablecer
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || !initialPermissions || JSON.stringify(permissions) === JSON.stringify(initialPermissions)}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Guardar Cambios
+                  </>
+                )}
               </button>
             </div>
 
