@@ -61,6 +61,12 @@ class EpubMetadataExtractor:
                     self.metadata['book_type'] = self._get_dc_value(metadata_node, 'type')
                     self.metadata['published_at'] = self._get_dc_value(metadata_node, 'date')
 
+                    # Extraer fecha de modificación de dc:date (específico de EPUB2/Calibre)
+                    for date_node in metadata_node.findall('dc:date', self.NAMESPACE):
+                        if date_node.get('{http://www.idpf.org/2007/opf}event') == 'modification':
+                            self.metadata['modified_at_opf'] = date_node.text
+                            break
+
                     # 3.1 Mapear Roles de Creadores y Contribuidores
                     # Guardamos IDs de creadores para asociar roles refinados
                     creators = {}  # id -> text

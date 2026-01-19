@@ -241,7 +241,8 @@ class LibraryService:
             elif sort_by == 'rating':
                 group_query = group_query.order_by(func.avg(func.nullif(LocalBook.rating_average, 0.0)).desc())
             elif sort_by in ('added', 'updated'):
-                group_query = group_query.order_by(func.max(LocalBook.file_created_at).desc())
+                # Priorizar fecha de modificación OPF para ordenamiento cronológico de serie
+                group_query = group_query.order_by(func.max(func.coalesce(LocalBook.modified_at_opf, LocalBook.file_created_at)).desc())
             else:
                 group_query = group_query.order_by(func.min(title_expr).asc())
             
@@ -270,6 +271,7 @@ class LibraryService:
                     "rating_count": int(votes or 0),
                     "download_count": total_downloads,
                     "numBooks": num_vols,
+                    "updatedDate": rep.modified_at_opf or (rep.file_modified_at.isoformat() if rep.file_modified_at else None),
                     "is_series": True,
                     "is_folder": True
                 })

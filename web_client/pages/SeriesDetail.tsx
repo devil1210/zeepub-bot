@@ -86,7 +86,9 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               readTime: v.readingTime ? `${v.readingTime} min` : 'N/A',
               size: v.fileSize ? `${(v.fileSize / (1024 * 1024)).toFixed(2)} MB` : '0 MB',
               language: v.language || 'Español',
-              epubVersion: v.epubVersion
+              epubVersion: v.epubVersion,
+              modifiedAt: v.modifiedAt,
+              modifiedAtOpf: v.modifiedAtOpf
             }));
             setVolumes(mappedVols);
 

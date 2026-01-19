@@ -99,6 +99,7 @@ class ScannerService:
                 and book.file_modified_at == mtime
                 and book.file_size == size
                 and book.content_hash
+                and book.cover_thumb_path
             ):
                 return False
 

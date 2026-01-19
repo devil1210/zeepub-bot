@@ -223,6 +223,14 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
                         <p className="text-white font-bold text-sm truncate">{book.isbn}</p>
                     </div>
                 )}
+                {(book.modifiedAtOpf || book.modifiedAt) && (
+                    <div className="glass-panel p-4 rounded-xl border border-white/5">
+                        <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Actualizado</p>
+                        <p className="text-white font-bold text-sm truncate">
+                            {new Date(book.modifiedAtOpf || book.modifiedAt).toLocaleDateString()}
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

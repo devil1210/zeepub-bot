@@ -43,6 +43,8 @@ export interface Volume {
   isbn?: string;
   asin?: string;
   epubVersion?: string;
+  modifiedAt?: string;
+  modifiedAtOpf?: string;
 }
 
 export interface Series {
