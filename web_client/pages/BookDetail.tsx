@@ -24,7 +24,9 @@ import {
   Download,
   Home,
   Reply,
-  Check
+  Check,
+  X,
+  Loader2
 } from 'lucide-react';
 import { Volume, Series } from '../types';
 import { ReportIssueModal } from '../components/ReportIssueModal';
@@ -32,28 +34,125 @@ import { RatingModal } from '../components/RatingModal';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface BookDetailProps {
-  volume: Volume;
-  series: Series;
+  volume?: Volume;
+  series?: Series;
+  bookId?: string;
   onBack: () => void;
   onSearch?: (term: string, type?: string) => void;
   onNavigate?: (tab: string) => void;
 }
 
-export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, onSearch, onNavigate }) => {
+export const BookDetail: React.FC<BookDetailProps> = ({
+  volume: initialVolume,
+  series: initialSeries,
+  bookId,
+  onBack,
+  onSearch,
+  onNavigate
+}) => {
   const { settings } = useTheme();
+
+  // Data State
+  const [curVolume, setCurVolume] = useState<Volume | null>(initialVolume || null);
+  const [curSeries, setCurSeries] = useState<Series | null>(initialSeries || null);
+  const [loading, setLoading] = useState(!initialVolume);
+
+  // UI State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+  const [isFullscreenCover, setIsFullscreenCover] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
-  const [localRating, setLocalRating] = useState(volume.rating || 0);
-  const [localDownloadCount, setLocalDownloadCount] = useState(volume.downloadCount || 0);
+  const [localRating, setLocalRating] = useState(initialVolume?.rating || 0);
+  const [localDownloadCount, setLocalDownloadCount] = useState(initialVolume?.downloadCount || 0);
 
-  // Check persistent download status on mount
+  // Fetch Data if needed
   useEffect(() => {
+    const fetchData = async () => {
+      if (initialVolume && initialSeries) {
+        setLoading(false);
+        return;
+      }
+
+      const idToFetch = bookId || initialVolume?.id;
+      if (!idToFetch) return;
+
+      try {
+        setLoading(true);
+        const res = await api.getBookDetail(idToFetch);
+        // The API might return { book: ... } or the object directly
+        const bookData = res.book || (res.id ? res : null);
+
+        if (bookData) {
+          // Map backend book to Volume
+          const mappedVolume: Volume = {
+            id: bookData.id,
+            seriesId: bookData.seriesHash || 'unknown',
+            title: bookData.title,
+            volumeNumber: bookData.seriesIndex || 0,
+            coverUrl: bookData.cover || '',
+            coverThumbUrl: bookData.cover_thumb || bookData.cover || '',
+            publishedDate: bookData.publishedAt || 'N/A',
+            pages: bookData.pageCount || 0,
+            format: (bookData.bookType || 'EPUB') as any,
+            rating: bookData.rating_average || 0,
+            description: bookData.description || bookData.summary,
+            romajiTitle: bookData.romaji,
+            language: bookData.language || 'Español',
+            size: bookData.fileSize ? `${(bookData.fileSize / 1024 / 1024).toFixed(2)} MB` : 'N/A',
+            uploader: 'ZeePub',
+            wordCount: bookData.wordCount,
+            readTime: bookData.readingTime,
+            tags: bookData.tags || [],
+            demography: bookData.demographics || [],
+            downloadCount: bookData.download_count || 0,
+            illustrator: bookData.illustrator,
+            translator: bookData.translator,
+            typesetter: bookData.layoutBy,
+            group: bookData.group,
+            isbn: bookData.isbn,
+            asin: bookData.asin,
+            epubVersion: bookData.epubVersion,
+            modifiedAt: bookData.modifiedAt,
+            modifiedAtOpf: bookData.modifiedAtOpf
+          };
+
+          const mappedSeries: Series = {
+            id: bookData.seriesHash || 'unknown',
+            title: bookData.series || bookData.title,
+            author: bookData.author || 'Desconocido',
+            coverUrl: bookData.cover || '',
+            description: bookData.description || '',
+            genre: bookData.tags ? bookData.tags.join(', ') : '',
+            rating: bookData.rating_average || 0,
+            volumesCount: 1,
+            status: 'Completed',
+            lastUpdated: bookData.modifiedAt_opf || bookData.modifiedAt || 'N/A',
+            volumes: []
+          };
+
+          setCurVolume(mappedVolume);
+          setCurSeries(mappedSeries);
+          setLocalRating(mappedVolume.rating);
+          setLocalDownloadCount(mappedVolume.downloadCount || 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch book detail", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [bookId, initialVolume?.id]);
+
+
+  // Check persistent download status
+  useEffect(() => {
+    if (!curVolume) return;
     const checkDownloadStatus = async () => {
       try {
         const historyRes = await api.getDownloadHistory();
         if (historyRes && historyRes.downloads) {
-          const found = historyRes.downloads.some((d: any) => d.id === volume.id || d.title === volume.title);
+          const found = historyRes.downloads.some((d: any) => d.id === curVolume.id || d.title === curVolume.title);
           if (found) setHasDownloaded(true);
         }
       } catch (err) {
@@ -61,9 +160,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
       }
     };
     checkDownloadStatus();
-  }, [volume.id, volume.title]);
+  }, [curVolume?.id, curVolume?.title]);
 
-  // Helper to handle safe search navigation
   const handleSearch = (term?: string, type?: string) => {
     if (term && onSearch) {
       onSearch(term, type);
@@ -71,8 +169,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
   };
 
   const handleDownload = async () => {
+    if (!curVolume) return;
     try {
-      await api.requestDownload(volume.id);
+      await api.requestDownload(curVolume.id);
       setHasDownloaded(true);
       setLocalDownloadCount(prev => prev + 1);
     } catch (err) {
@@ -82,9 +181,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
   };
 
   const handleRateSubmit = async (rating: number) => {
+    if (!curVolume) return;
     try {
-      await api.rateBook(volume.id, rating);
-      // Logic to update local rating (simulated average update or just show user's rating for now)
+      await api.rateBook(curVolume.id, rating);
       setLocalRating(rating);
       setIsRatingModalOpen(false);
     } catch (err) {
@@ -93,64 +192,70 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
     }
   };
 
-  // Helper for date formatting
   const formatDate = (dateStr?: string) => {
     if (!dateStr || dateStr === 'N/A' || dateStr === 'Reciente') return 'N/A';
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
+      return d.toLocaleDateString();
     } catch {
       return dateStr;
     }
   };
 
-  // Helper for reading time formatting
   const formatReadingTime = (minutes?: number) => {
     if (!minutes) return 'N/A';
     const hours = (minutes / 60).toFixed(2);
     return `${minutes} m / ${hours.replace('.', ',')} horas`;
   };
 
-  // Fallback data if fields are missing (mapped to backend Volume)
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+        <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Cargando detalles...</p>
+      </div>
+    );
+  }
+
+  if (!curVolume || !curSeries) return (
+    <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
+      <p className="text-red-400 font-bold mb-4">No se pudo cargar la información del libro</p>
+      <button onClick={onBack} className="px-6 py-2 bg-primary text-white rounded-xl">Volver</button>
+    </div>
+  );
+
   const displayData = {
-    ...volume,
+    ...curVolume,
     rating: localRating,
     downloadCount: localDownloadCount,
-    title: String(volume.title || ''),
-    romajiTitle: String(volume.romajiTitle || ''),
-    language: String(volume.language || 'Español'),
-    size: String(volume.size || '0 MB'),
-    format: String(volume.format || 'EPUB'),
-    epubVersion: String(volume.epubVersion || '3.0'),
+    title: String(curVolume.title || ''),
+    romajiTitle: String(curVolume.romajiTitle || ''),
+    language: String(curVolume.language || 'Español'),
+    size: String(curVolume.size || '0 MB'),
+    format: String(curVolume.format || 'EPUB'),
+    epubVersion: String(curVolume.epubVersion || '3.0'),
     uploader: 'ZeePub',
-    wordCount: volume.wordCount || 0,
-    pages: volume.pages || 0,
-    readTime: formatReadingTime(volume.wordCount ? Math.ceil(volume.wordCount / 200) : (typeof volume.readTime === 'number' ? volume.readTime : undefined)),
-    lastUpdated: volume.modifiedAtOpf ? formatDate(String(volume.modifiedAtOpf)) : (volume.modifiedAt ? formatDate(String(volume.modifiedAt)) : 'N/A'),
-    publishedDate: formatDate(String(volume.publishedDate || '')),
-    description: String(volume.description || 'Sin sinopsis disponible.'),
-    displayTitle: String(volume.englishTitle || series?.title || volume.title || 'Libro sin título'),
-    illustrator: String(volume.illustrator || 'N/A'),
-    translator: String(volume.translator || 'ZeePub'),
-    group: String(volume.group || 'ZeePub'),
-    typesetter: String(volume.typesetter || 'N/A'),
-    isbn: String(volume.isbn || 'N/A'),
-    asin: String(volume.asin || 'N/A'),
-    demography: Array.isArray(volume.demography) ? volume.demography : (Array.isArray((volume as any).demographics) ? (volume as any).demographics : []),
-    genres: Array.isArray((volume as any).genres) ? (volume as any).genres : (Array.isArray((volume as any).tags) ? (volume as any).tags : (Array.isArray(series?.genres) ? series.genres : []))
+    wordCount: curVolume.wordCount || 0,
+    pages: curVolume.pages || 0,
+    readTime: formatReadingTime(curVolume.wordCount ? Math.ceil(curVolume.wordCount / 200) : (typeof curVolume.readTime === 'number' ? curVolume.readTime : undefined)),
+    lastUpdated: curVolume.modifiedAtOpf ? formatDate(String(curVolume.modifiedAtOpf)) : (curVolume.modifiedAt ? formatDate(String(curVolume.modifiedAt)) : 'N/A'),
+    publishedDate: formatDate(String(curVolume.publishedDate || '')),
+    description: String(curVolume.description || 'Sin sinopsis disponible.'),
+    displayTitle: String(curVolume.englishTitle || curSeries?.title || curVolume.title || 'Libro sin título'),
+    illustrator: String(curVolume.illustrator || 'N/A'),
+    translator: String(curVolume.translator || 'ZeePub'),
+    group: String(curVolume.group || 'ZeePub'),
+    typesetter: String(curVolume.typesetter || 'N/A'),
+    isbn: String(curVolume.isbn || 'N/A'),
+    asin: String(curVolume.asin || 'N/A'),
+    demography: Array.isArray(curVolume.demography) ? curVolume.demography : (Array.isArray((curVolume as any).demographics) ? (curVolume as any).demographics : []),
+    genres: Array.isArray((curVolume as any).genres) ? (curVolume as any).genres : (Array.isArray((curVolume as any).tags) ? (curVolume as any).tags : (Array.isArray(curSeries?.genres) ? curSeries.genres : []))
   };
 
   const formatDescription = (desc: string) => {
     if (!desc) return null;
-
-    // Clean up <br/> tags first
     const cleanDesc = desc.replace(/<br\s*\/?>/gi, '\n');
-
-    // Collapse double breaks and split by single breaks
     const paragraphs = cleanDesc
       .split(/\n\s*\n/)
       .join('\n')
@@ -164,8 +269,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
     ));
   };
 
-  if (!series || !volume) return null;
-
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-900 dark:text-gray-100 bg-transparent">
       <ReportIssueModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
@@ -175,6 +278,27 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
         onSubmit={handleRateSubmit}
         title={displayData.title}
       />
+
+      {/* Fullscreen Image Overlay */}
+      {isFullscreenCover && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={() => setIsFullscreenCover(false)}
+        >
+          <button
+            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-[101]"
+            onClick={(e) => { e.stopPropagation(); setIsFullscreenCover(false); }}
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <img
+            src={displayData.coverUrl}
+            alt={displayData.title}
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* Navbar for Mobile */}
       <header
@@ -213,10 +337,17 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
             {/* LEFT COLUMN: Cover & Actions */}
             <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
               {/* Cover Wrapper */}
-              <div className="relative w-[70%] sm:w-[60%] lg:w-full mx-auto lg:mx-0">
-                <div className="aspect-[2/3] rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-black/5 dark:ring-white/10 relative group">
-                  <img src={displayData.coverUrl} alt={displayData.title} className="w-full h-full object-cover" />
+              <div
+                className="relative w-[70%] sm:w-[60%] lg:w-full mx-auto lg:mx-0 cursor-zoom-in group"
+                onClick={() => setIsFullscreenCover(true)}
+              >
+                <div className="aspect-[2/3] rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-black/5 dark:ring-white/10 relative">
+                  <img src={displayData.coverUrl} alt={displayData.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                  {/* Zoom Hint */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
+                    <BookOpen className="w-10 h-10 text-white" />
+                  </div>
                 </div>
               </div>
 
@@ -238,6 +369,17 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                     </>
                   )}
                 </button>
+
+                {hasDownloaded && (
+                  <button
+                    onClick={() => onNavigate && onNavigate('reader')}
+                    className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <BookOpen className="w-5 h-5" />
+                    Leer Online
+                  </button>
+                )}
+
                 <div className="flex flex-col gap-3">
                   <button onClick={() => setIsReportModalOpen(true)} className="py-3.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 rounded-xl border border-red-200 dark:border-red-500/20 transition-colors flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider">
                     <Flag className="w-4 h-4" />
@@ -255,7 +397,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Valoración</span>
                   <div className="flex items-center gap-1.5 text-yellow-500">
                     <Star className="w-4 h-4 fill-current" />
-                    <span className="text-gray-900 dark:text-white font-bold">{displayData.rating || 4.7}</span>
+                    <span className="text-gray-900 dark:text-white font-bold">{displayData.rating?.toFixed(1) || 4.7}</span>
                   </div>
                 </div>
 
@@ -307,15 +449,14 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
 
                 {/* Author/Stats Row - CLICKABLE */}
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-600 dark:text-gray-400 border-b border-black/5 dark:border-white/5 pb-6 mb-2">
-                  <button onClick={() => handleSearch(series.author, 'author')} className="flex items-center gap-2 text-gray-900 dark:text-white group">
+                  <button onClick={() => handleSearch(curSeries.author, 'author')} className="flex items-center gap-2 text-gray-900 dark:text-white group">
                     <User className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-                    <span className="font-bold group-hover:underline cursor-pointer group-hover:text-primary transition-colors">{series.author}</span>
+                    <span className="font-bold group-hover:underline cursor-pointer group-hover:text-primary transition-colors">{curSeries.author}</span>
                   </button>
 
-                  {/* Added Rating & Downloads here for visibility on Mobile */}
                   <div className="flex items-center gap-1.5 text-yellow-500">
                     <Star className="w-4 h-4 fill-current" />
-                    <span className="text-gray-900 dark:text-white font-bold">{displayData.rating || 4.7}</span>
+                    <span className="text-gray-900 dark:text-white font-bold">{displayData.rating?.toFixed(1) || 4.7}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-primary">
                     <Download className="w-4 h-4" />
@@ -328,7 +469,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                   </button>
                   <div className="flex items-center gap-2">
                     <Hash className="w-4 h-4" />
-                    <span>{volume.volumeNumber > 0 ? `Volumen ${volume.volumeNumber}` : 'Volumen Único'}</span>
+                    <span>{curVolume.volumeNumber > 0 ? `Volumen ${curVolume.volumeNumber}` : 'Volumen Único'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
@@ -392,11 +533,11 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                   </div>
                   <div className="space-y-0.5">
                     {[
-                      { label: 'Serie', value: series.title, highlight: true, clickable: true, type: 'series' },
-                      { label: 'Volumen', value: `${volume.volumeNumber} (Único)` },
+                      { label: 'Serie', value: curSeries.title, highlight: true, clickable: true, type: 'series' },
+                      { label: 'Volumen', value: curVolume.volumeNumber > 0 ? `${curVolume.volumeNumber}` : 'Único' },
                       { label: 'ISBN', value: displayData.isbn, highlight: true, font: 'mono' },
                       { label: 'ASIN', value: displayData.asin, highlight: true, font: 'mono' },
-                      { label: 'Grupo', value: displayData.group, color: 'text-primary', clickable: true, type: 'group' },
+                      { label: 'Group', value: displayData.group, color: 'text-primary', clickable: true, type: 'group' },
                       { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
                     ].map((item, idx) => (
                       <div key={idx} className="flex justify-between py-3 border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/[0.02] px-2 -mx-2 rounded transition-colors">
@@ -429,8 +570,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                       { label: 'Formato', value: displayData.format, highlight: true },
                       { label: 'Versión Epub', value: `v${displayData.epubVersion}` },
                       { label: 'Idioma', value: displayData.language },
-                      { label: 'Palabras', value: displayData.wordCount.toLocaleString() },
-                      { label: 'Páginas', value: displayData.pages },
+                      { label: 'Palabras', value: displayData.wordCount?.toLocaleString() || 'N/A' },
+                      { label: 'Páginas', value: displayData.pages || 'N/A' },
                       { label: 'Lectura Aprox.', value: displayData.readTime },
                       { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
                       { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400' },
@@ -462,7 +603,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
         </div>
       </div>
 
-      {/* Floating Bottom Navigation - Updated Design: Squared with rounded corners and transparency settings */}
+      {/* Floating Bottom Navigation */}
       <div className="md:hidden fixed bottom-6 left-8 right-8 z-40 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
@@ -498,9 +639,20 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
 
           <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
-          {/* Rate (Persistent if downloaded) */}
+          {/* Rate */}
           {hasDownloaded && (
             <>
+              <button
+                onClick={() => onNavigate && onNavigate('reader')}
+                className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-indigo-500 hover:text-indigo-600 active:scale-95"
+              >
+                <div className="p-1.5">
+                  <BookOpen className="w-4 h-4" strokeWidth={2} />
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-widest mt-1">Leer</span>
+              </button>
+              <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
+
               <button
                 onClick={() => setIsRatingModalOpen(true)}
                 className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-yellow-500 hover:text-yellow-600 active:scale-95"
