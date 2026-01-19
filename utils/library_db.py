@@ -26,10 +26,20 @@ def check_migrations():
     durante actualizaciones en fase alpha.
     """
     import sqlite3
+    import logging
+    _log = logging.getLogger(__name__)
 
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
+        
+        # Verificar si la tabla existe antes de pedir info
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='local_books'")
+        if not cursor.fetchone():
+            _log.info("La tabla local_books no existe aún, saltando migraciones de columnas.")
+            conn.close()
+            return
+
         cursor.execute("PRAGMA table_info(local_books)")
         existing_cols = [row[1] for row in cursor.fetchall()]
 
@@ -57,7 +67,7 @@ def check_migrations():
         # 1. Migración de columnas (local_books)
         for col_name, col_type in new_cols:
             if col_name not in existing_cols:
-                print(f"Migración: Añadiendo columna '{col_name}' a local_books...")
+                _log.info(f"Migración: Añadiendo columna '{col_name}' a local_books...")
                 cursor.execute(
                     f"ALTER TABLE local_books ADD COLUMN {col_name} {col_type}"
                 )
@@ -87,7 +97,7 @@ def check_migrations():
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"Error en migración automática: {e}")
+        _log.error(f"Error en migración automática: {e}")
 
 
 def init_fts():
@@ -95,6 +105,8 @@ def init_fts():
     Inicializa la búsqueda de texto completo (FTS5) y los triggers de sincronización.
     """
     import sqlite3
+    import logging
+    _log = logging.getLogger(__name__)
 
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -111,7 +123,7 @@ def init_fts():
             cursor.execute("PRAGMA table_info(books_fts)")
             cols = [r[1] for r in cursor.fetchall()]
             if "layout_by" not in cols:
-                print("Migración: FTS5 no tiene 'layout_by'. Recreando índice...")
+                _log.info("Migración: FTS5 no tiene 'layout_by'. Recreando índice...")
                 cursor.execute("DROP TABLE books_fts")
                 cursor.execute("DROP TRIGGER IF EXISTS books_ai")
                 cursor.execute("DROP TRIGGER IF EXISTS books_ad")
@@ -119,7 +131,7 @@ def init_fts():
                 exists = False
 
         if not exists:
-            print("Inicializando búsqueda de texto completo (FTS5)...")
+            _log.info("Inicializando búsqueda de texto completo (FTS5)...")
 
             # Crear tabla virtual FTS5
             # Usamos content='local_books' para una external content table (más eficiente en espacio)
@@ -186,17 +198,48 @@ def init_fts():
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"Error inicializando FTS5: {e}")
+        _log.error(f"Error inicializando FTS5: {e}")
 
 
 def init_library_db():
     """
     Inicializa la base de datos creando las tablas si no existen.
     """
-    Base.metadata.create_all(engine)
-    check_migrations()  # Asegurar que columnas nuevas existan
-    init_fts()  # Inicializar búsqueda de texto completo
-    print(f"Base de datos de librería inicializada en: {DB_PATH}")
+    import logging
+    _log = logging.getLogger(__name__)
+    
+    _log.info(f"Probando conexión a base de datos de librería: {DB_PATH}")
+    
+    try:
+        # Si el archivo es nuevo o fue borrado, forzamos que el motor se reinicie
+        # para evitar problemas con pools de conexiones obsoletos
+        engine.dispose()
+        
+        # Verificar que los modelos estén registrados
+        if not Base.metadata.tables:
+            _log.warning("No se detectaron tablas registradas en Base.metadata. ¿Están importados los modelos?")
+        else:
+            _log.info(f"Tablas detectadas en metadata: {', '.join(Base.metadata.tables.keys())}")
+
+        # Crear tablas
+        Base.metadata.create_all(engine)
+        
+        # Configurar PRAGMAs para rendimiento (SQLite)
+        with engine.connect() as conn:
+            from sqlalchemy import text
+            conn.execute(text("PRAGMA journal_mode=WAL"))
+            conn.execute(text("PRAGMA synchronous=NORMAL"))
+            conn.commit()
+            
+        _log.info("Tablas de base de datos de librería aseguradas.")
+        
+        check_migrations()  # Asegurar que columnas nuevas existan
+        init_fts()  # Inicializar búsqueda de texto completo
+        
+        _log.info(f"Base de datos de librería inicializada exitosamente en: {DB_PATH}")
+    except Exception as e:
+        _log.error(f"Error crítico inicializando base de datos de librería: {e}", exc_info=True)
+        raise
 
 
 def get_session():
