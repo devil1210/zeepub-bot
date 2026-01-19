@@ -255,6 +255,64 @@ export const InfrastructureDashboard: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Synchronization Summary Table */}
+                <div className="glass-panel mb-8 p-6 rounded-xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md shadow-sm">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Database className="w-5 h-5 text-blue-500" />
+                        <h3 className="font-bold text-slate-900 dark:text-white">Synchronization Strategy</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                            <thead>
+                                <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-400 font-bold uppercase tracking-wider">
+                                    <th className="pb-3 px-2">Table / Record</th>
+                                    <th className="pb-3 px-2">Primary Storage</th>
+                                    <th className="pb-3 px-2">Sync Status</th>
+                                    <th className="pb-3 px-2">Cloud Backup Trigger</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                <tr>
+                                    <td className="py-3 px-2 font-bold">Books & Metadata</td>
+                                    <td className="py-3 px-2">SQLite (Local)</td>
+                                    <td className="py-3 px-2 text-amber-500">Manual Only</td>
+                                    <td className="py-3 px-2 italic text-slate-500 font-mono text-[10px]">Cloud Sync → Library</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-3 px-2 font-bold">Library Sources</td>
+                                    <td className="py-3 px-2">SQLite (Local)</td>
+                                    <td className="py-3 px-2 text-amber-500">Manual Only</td>
+                                    <td className="py-3 px-2 italic text-slate-500 font-mono text-[10px]">Cloud Sync → Library</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-3 px-2 font-bold">Users & Roles</td>
+                                    <td className="py-3 px-2">SQLite (Local)</td>
+                                    <td className="py-3 px-2 text-amber-500">Manual Only</td>
+                                    <td className="py-3 px-2 italic text-slate-500 font-mono text-[10px]">Cloud Sync → Users</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-3 px-2 font-bold">User Levels (Tiers)</td>
+                                    <td className="py-3 px-2">SQLite (Local)</td>
+                                    <td className="py-3 px-2 text-amber-500">Manual Only</td>
+                                    <td className="py-3 px-2 italic text-slate-500 font-mono text-[10px]">Cloud Sync → Users</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-3 px-2 font-bold">System Logs</td>
+                                    <td className="py-3 px-2">Volatile (Memory)</td>
+                                    <td className="py-3 px-2 text-slate-400">None</td>
+                                    <td className="py-3 px-2 text-slate-400 italic">N/A</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-3 px-2 font-bold">Audit Logs</td>
+                                    <td className="py-3 px-2">Supabase (Remote)</td>
+                                    <td className="py-3 px-2 text-green-500">Automatic / Real-time</td>
+                                    <td className="py-3 px-2 text-green-500 font-bold uppercase text-[9px]">Live Push</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Maintenance Section */}
                     <div className="lg:col-span-1 glass-panel border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-xl p-6 flex flex-col shadow-sm">

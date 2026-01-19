@@ -200,16 +200,26 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-100">
 
-      <div className="relative w-full h-80 shrink-0 overflow-hidden">
+      <div className="relative w-full min-h-[480px] sm:min-h-[520px] shrink-0 overflow-hidden flex flex-col justify-end">
         <div
           className="absolute inset-0 bg-cover bg-center blur-sm scale-110 opacity-50"
           style={{ backgroundImage: `url('${getCoverUrl(realSeries.coverUrl, realSeries.coverThumbUrl, settings.coverQuality)}')` }}
         ></div>
 
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent"></div>
 
-        <div className="absolute bottom-0 w-full px-4 sm:px-6 lg:px-8 pb-8 z-20">
+        {/* Action Buttons Overlay - Desktop/Tablet */}
+        <div className="absolute top-6 left-6 right-6 z-30 flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="p-3 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          </button>
+        </div>
+
+        <div className="relative w-full px-4 sm:px-6 lg:px-8 pb-10 pt-44 z-20">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
             <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 -mb-4 shadow-2xl rounded-lg overflow-hidden">
               <img alt={`${realSeries.title} Cover`} className="w-full h-full object-cover" src={getCoverUrl(realSeries.coverUrl, realSeries.coverThumbUrl, settings.coverQuality)} />
@@ -323,7 +333,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                   onClick={() => onSelectVolume(vol, realSeries)}
                   className="group relative flex gap-4 p-4 rounded-xl border border-white/5 hover:bg-white/5 hover:border-primary/30 transition-all duration-200 cursor-pointer overflow-hidden shadow-sm"
                   style={{
-                    backgroundColor: `rgba(var(--glass - rgb), ${settings.glassOpacity / 2})`,
+                    backgroundColor: `rgba(var(--glass-rgb), ${settings.glassOpacity / 2})`,
                     backdropFilter: `blur(${settings.glassBlur}px)`,
                     WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
                   }}
@@ -394,7 +404,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                   onClick={() => onSelectVolume(vol, realSeries)}
                   className="group relative flex flex-col gap-3 rounded-xl p-3 transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5 cursor-pointer border border-white/5"
                   style={{
-                    backgroundColor: `rgba(var(--glass - rgb), ${settings.glassOpacity / 2})`,
+                    backgroundColor: `rgba(var(--glass-rgb), ${settings.glassOpacity / 2})`,
                     backdropFilter: `blur(${settings.glassBlur}px)`,
                     WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
                   }}
@@ -442,7 +452,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           <div
             className="glass-panel rounded-3xl p-4 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
             style={{
-              background: `rgba(var(--glass - rgb), ${settings.navOpacity})`,
+              background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
               backdropFilter: `blur(${settings.glassBlur}px)`,
               WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
             }}
@@ -460,7 +470,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     setActiveSort(option.id);
                     setIsSortMenuOpen(false);
                   }}
-                  className={`flex items - center justify - center gap - 2 px - 3 py - 3 rounded - xl text - [10px] font - black uppercase tracking - widest transition - all border ${activeSort === option.id ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white'} `}
+                  className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${activeSort === option.id ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white'}`}
                 >
                   <option.icon className="w-3.5 h-3.5" />
                   {option.label}
@@ -473,7 +483,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
-            background: `rgba(var(--glass - rgb), ${settings.navOpacity})`,
+            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
             WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
           }}
@@ -481,7 +491,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           <button
             onClick={handlePrevPage}
             disabled={currentPage === 1}
-            className={`flex - 1 flex flex - col items - center justify - center py - 2 rounded - 2xl transition - all duration - 300 relative z - 10 text - gray - 500 hover: text - black dark: hover: text - white ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : ''} `}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
               <ChevronLeft className="w-4 h-4" strokeWidth={2} />
@@ -493,19 +503,19 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
           <button
             onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-            className={`flex - 1 flex flex - col items - center justify - center py - 2 rounded - 2xl transition - all duration - 300 relative z - 10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'} `}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
           >
-            <div className={`p - 1.5 rounded - full transition - all duration - 300 ${isSortMenuOpen ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''} `}>
-              <ArrowDownUp className={`w - 4 h - 4 ${isSortMenuOpen ? 'text-white' : ''} `} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
+              <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'text-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
             </div>
-            <span className={`text - [9px] font - black uppercase tracking - widest mt - 1`}>Ordenar</span>
+            <span className={`text-[9px] font-black uppercase tracking-widest mt-1`}>Ordenar</span>
           </button>
 
           <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
 
           <button
             onClick={onBack}
-            className={`flex - 1 flex flex - col items - center justify - center py - 2 rounded - 2xl transition - all duration - 300 relative z - 10 text - gray - 500 hover: text - black dark: hover: text - white`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white`}
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
               <Reply className="w-4 h-4" strokeWidth={2} />
@@ -518,7 +528,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           <button
             onClick={handleNextPage}
             disabled={currentPage === totalPages}
-            className={`flex - 1 flex flex - col items - center justify - center py - 2 rounded - 2xl transition - all duration - 300 relative z - 10 text - gray - 500 hover: text - black dark: hover: text - white ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : ''} `}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : ''}`}
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
               <ChevronRight className="w-4 h-4" strokeWidth={2} />

@@ -287,27 +287,39 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         </div>
                     )}
 
-                    {/* Level Selector */}
-                    <div className="relative group min-w-[240px]">
-                        <div className="absolute -top-2 -left-2 px-2 py-0.5 rounded-full bg-black border border-white/10 text-[8px] font-black uppercase tracking-widest text-gray-500 z-10">
-                            Seleccionar Nivel a Editar
+                    {/* Level Selector & Save */}
+                    <div className="flex items-center gap-3">
+                        <div className="relative group min-w-[240px]">
+                            <div className="absolute -top-2 -left-2 px-2 py-0.5 rounded-full bg-black border border-white/10 text-[8px] font-black uppercase tracking-widest text-gray-500 z-10">
+                                Seleccionar Nivel a Editar
+                            </div>
+                            <div className="relative">
+                                <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
+                                <select
+                                    value={selectedTierName}
+                                    onChange={(e) => setSelectedTierName(e.target.value)}
+                                    className="w-full pl-12 pr-10 py-4 bg-black/40 border-2 border-white/5 rounded-2xl text-base font-black text-white appearance-none focus:outline-none focus:border-primary/50 transition-all cursor-pointer hover:bg-black/60 shadow-xl"
+                                    style={{ color: allLevels.find(l => l.name === selectedTierName)?.color || '#fff' }}
+                                >
+                                    {allLevels.map(lvl => (
+                                        <option key={lvl.id} value={lvl.name} style={{ color: lvl.color }}>
+                                            {lvl.name.toUpperCase()}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none group-hover:text-primary transition-colors" />
+                            </div>
                         </div>
-                        <div className="relative">
-                            <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
-                            <select
-                                value={selectedTierName}
-                                onChange={(e) => setSelectedTierName(e.target.value)}
-                                className="w-full pl-12 pr-10 py-4 bg-black/40 border-2 border-white/5 rounded-2xl text-base font-black text-white appearance-none focus:outline-none focus:border-primary/50 transition-all cursor-pointer hover:bg-black/60 shadow-xl"
-                                style={{ color: allLevels.find(l => l.name === selectedTierName)?.color || '#fff' }}
-                            >
-                                {allLevels.map(lvl => (
-                                    <option key={lvl.id} value={lvl.name} style={{ color: lvl.color }}>
-                                        {lvl.name.toUpperCase()}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none group-hover:text-primary transition-colors" />
-                        </div>
+
+                        <button
+                            onClick={handleSave}
+                            disabled={saving || (JSON.stringify(config) === JSON.stringify(originalConfig))}
+                            className="h-[58px] px-8 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all
+                            bg-primary text-white shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:grayscale disabled:scale-100"
+                        >
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            Guardar
+                        </button>
                     </div>
                 </div>
 

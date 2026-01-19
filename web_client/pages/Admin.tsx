@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { UserPermissions } from './UserPermissions';
 import { TierConfiguration } from './TierConfiguration';
+import { InfrastructureDashboard } from './InfrastructureDashboard';
 import { api } from '../src/services/api';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -387,673 +388,615 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
             {/* ==================== SYSTEM VIEW ==================== */}
             {currentView === 'system' && (
-              <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+              <InfrastructureDashboard />
+            )}
 
-                {/* Metric Cards from New Infrastructure Layout */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
-                    <div className="relative z-10">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Usuarios Activos</p>
-                      <h3 className="text-2xl font-bold text-white mt-1">{stats?.totalUsers?.toLocaleString() || '0'}</h3>
-                      <div className="flex items-center mt-2 text-[10px] text-green-500 font-bold uppercase tracking-wider">
-                        <TrendingUp className="w-3 h-3 mr-1" /> Sincronizado
-                      </div>
-                    </div>
-                    <div className="p-3 bg-blue-500/10 rounded-xl text-primary">
-                      <User className="w-5 h-5" />
-                    </div>
-                  </div>
+            {/* Duplicates Section */}
+            <div className="glass-panel rounded-3xl p-6 border border-white/5 mb-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                  <Copy className="text-orange-400 w-4 h-4" /> Duplicados
+                </h3>
+                <button
+                  onClick={fetchDuplicates}
+                  disabled={loadingDuplicates}
+                  className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors border border-orange-500/20 disabled:opacity-50"
+                >
+                  {loadingDuplicates ? 'Buscando...' : 'Buscar Duplicados'}
+                </button>
+              </div>
 
-                  <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
-                    <div className="relative z-10">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Índice Biblioteca</p>
-                      <h3 className="text-2xl font-bold text-white mt-1">{stats?.totalBooks?.toLocaleString() || '0'}</h3>
-                      <div className="flex items-center mt-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                        <Archive className="w-3 h-3 mr-1" /> {stats?.storageUsedGB} GB utilizados
-                      </div>
-                    </div>
-                    <div className="p-3 bg-purple-500/10 rounded-xl text-purple-400">
-                      <Layers className="w-5 h-5" />
-                    </div>
-                  </div>
-
-                  <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
-                    <div className="relative z-10">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Descargas (24h)</p>
-                      <h3 className="text-2xl font-bold text-white mt-1">{stats?.downloads24h?.toLocaleString() || '0'}</h3>
-                      <div className="flex items-center mt-2 text-[10px] text-green-500 font-bold uppercase tracking-wider">
-                        <TrendingUp className="w-3 h-3 mr-1" /> Hoy
-                      </div>
-                    </div>
-                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
-                      <Download className="w-5 h-5" />
-                    </div>
-                  </div>
-
-                  <div className="glass-panel p-5 rounded-2xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
-                    <div className="relative z-10">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Estado Sistema</p>
-                      <h3 className="text-2xl font-bold text-white mt-1">{stats?.uptime || '99.9%'}</h3>
-                      <div className="flex items-center mt-2 text-[10px] text-green-500 font-bold uppercase tracking-wider">
-                        <Zap className="w-3 h-3 mr-1" /> Online
-                      </div>
-                    </div>
-                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400">
-                      <Activity className="w-5 h-5" />
-                    </div>
-                  </div>
+              {duplicates.length === 0 && !loadingDuplicates && (
+                <div className="text-center py-12 text-gray-500">
+                  <Copy className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="text-sm">No se encontraron duplicados</p>
+                  <p className="text-xs mt-1">Haz click en "Buscar Duplicados" para analizar</p>
                 </div>
+              )}
 
-                {/* Duplicates Section */}
-                <div className="glass-panel rounded-3xl p-6 border border-white/5 mb-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                      <Copy className="text-orange-400 w-4 h-4" /> Duplicados
-                    </h3>
-                    <button
-                      onClick={fetchDuplicates}
-                      disabled={loadingDuplicates}
-                      className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors border border-orange-500/20 disabled:opacity-50"
-                    >
-                      {loadingDuplicates ? 'Buscando...' : 'Buscar Duplicados'}
-                    </button>
-                  </div>
-
-                  {duplicates.length === 0 && !loadingDuplicates && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Copy className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                      <p className="text-sm">No se encontraron duplicados</p>
-                      <p className="text-xs mt-1">Haz click en "Buscar Duplicados" para analizar</p>
-                    </div>
-                  )}
-
-                  {loadingDuplicates && (
-                    <div className="text-center py-12">
-                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-orange-400" />
-                      <p className="text-sm text-gray-400 mt-3">Analizando biblioteca...</p>
-                    </div>
-                  )}
-
-                  {duplicates.length > 0 && (
-                    <>
-                      <div className="mb-4 p-4 bg-orange-500/5 border border-orange-500/20 rounded-xl">
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <p className="text-[10px] text-gray-500 uppercase font-bold">Total Duplicados</p>
-                            <p className="text-2xl font-black text-white">{duplicates.reduce((sum, g) => sum + (g.count - 1), 0)}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-gray-500 uppercase font-bold">Grupos Afectados</p>
-                            <p className="text-2xl font-black text-white">{duplicates.length}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-gray-500 uppercase font-bold">Espacio Desperdiciado</p>
-                            <p className="text-2xl font-black text-orange-400">
-                              {(duplicates.reduce((sum, g) => sum + g.wasted_space, 0) / (1024 * 1024)).toFixed(1)} MB
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {selectedDuplicates.size > 0 && (
-                        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-bold text-white">{selectedDuplicates.size} archivos seleccionados</p>
-                            <p className="text-xs text-gray-400">Listos para eliminar</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setSelectedDuplicates(new Set())}
-                              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDuplicates(Array.from(selectedDuplicates))}
-                              disabled={deletingDuplicates}
-                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50"
-                            >
-                              {deletingDuplicates ? 'Eliminando...' : `Eliminar ${selectedDuplicates.size}`}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                        {duplicates.map((group, idx) => (
-                          <div key={group.content_hash} className="p-4 bg-white/5 border border-white/5 rounded-xl hover:border-orange-500/30 transition-colors">
-                            <div className="flex items-start justify-between mb-3">
-                              <div>
-                                <h4 className="font-bold text-white text-sm">{group.title}</h4>
-                                {group.author && <p className="text-xs text-gray-400">{group.author}</p>}
-                                {group.series && group.volume && (
-                                  <p className="text-xs text-gray-500">{group.series} - Vol. {group.volume}</p>
-                                )}
-                              </div>
-                              <div className="text-right">
-                                <span className="px-2 py-1 bg-orange-500/10 text-orange-400 text-[8px] font-bold rounded border border-orange-500/20 uppercase">
-                                  {group.count} copias
-                                </span>
-                                <p className="text-[10px] text-gray-500 mt-1">{(group.wasted_space / (1024 * 1024)).toFixed(2)} MB desperdiciado</p>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              {group.books.map((book: any) => {
-                                const isSelected = selectedDuplicates.has(book.id);
-                                const isOldest = book.is_oldest;
-                                const isNewest = book.is_newest;
-
-                                return (
-                                  <div
-                                    key={book.id}
-                                    className={`p-3 rounded-lg border transition-all ${isSelected
-                                      ? 'bg-red-500/10 border-red-500/50'
-                                      : 'bg-black/20 border-white/5 hover:border-white/10'
-                                      }`}
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={(e) => {
-                                          const newSet = new Set(selectedDuplicates);
-                                          if (e.target.checked) {
-                                            newSet.add(book.id);
-                                          } else {
-                                            newSet.delete(book.id);
-                                          }
-                                          setSelectedDuplicates(newSet);
-                                        }}
-                                        className="mt-1 w-4 h-4 rounded border-gray-600 text-red-600 focus:ring-red-500"
-                                      />
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <code className="text-[10px] text-gray-400 break-all">{book.filename}</code>
-                                          {isOldest && (
-                                            <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-400 text-[8px] font-bold rounded uppercase">Más viejo</span>
-                                          )}
-                                          {isNewest && (
-                                            <span className="px-1.5 py-0.5 bg-green-500/10 text-green-400 text-[8px] font-bold rounded uppercase">Más nuevo</span>
-                                          )}
-                                        </div>
-                                        <p className="text-[9px] text-gray-500">
-                                          {(book.file_size / (1024 * 1024)).toFixed(2)} MB •
-                                          Indexado: {new Date(book.indexed_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            <div className="mt-3 pt-3 border-t border-white/5 flex gap-2">
-                              <button
-                                onClick={() => {
-                                  const newSet = new Set(selectedDuplicates);
-                                  group.books.slice(1).forEach((b: any) => newSet.add(b.id));
-                                  setSelectedDuplicates(newSet);
-                                }}
-                                className="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded text-[8px] font-bold uppercase tracking-wider transition-colors border border-blue-500/20"
-                              >
-                                Mantener más viejo
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const newSet = new Set(selectedDuplicates);
-                                  group.books.slice(0, -1).forEach((b: any) => newSet.add(b.id));
-                                  setSelectedDuplicates(newSet);
-                                }}
-                                className="px-2 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded text-[8px] font-bold uppercase tracking-wider transition-colors border border-green-500/20"
-                              >
-                                Mantener más nuevo
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
+              {loadingDuplicates && (
+                <div className="text-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-orange-400" />
+                  <p className="text-sm text-gray-400 mt-3">Analizando biblioteca...</p>
                 </div>
+              )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Maintenance Section */}
-                  <div className="lg:col-span-1 glass-panel rounded-3xl p-6 flex flex-col border border-white/5">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <Settings className="text-primary w-4 h-4" /> Mantenimiento
-                      </h3>
-                      <span className="px-2 py-1 bg-green-500/10 text-green-500 text-[8px] font-bold rounded border border-green-500/20 uppercase">Operativo</span>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-white text-[10px] uppercase">Escanear Biblioteca</h4>
-                          <Activity className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
-                        </div>
-                        <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Indexar nuevo contenido en /mnt/books/incoming</p>
-                        <button
-                          onClick={() => handleScanLibrary(true)}
-                          disabled={loading}
-                          className="w-full py-2 text-[9px] font-black text-center bg-primary hover:bg-primary-dark text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50"
-                        >
-                          {loading ? "Ejecutando..." : "Ejecutar Escaneo (Forzado)"}
-                        </button>
+              {duplicates.length > 0 && (
+                <>
+                  <div className="mb-4 p-4 bg-orange-500/5 border border-orange-500/20 rounded-xl">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold">Total Duplicados</p>
+                        <p className="text-2xl font-black text-white">{duplicates.reduce((sum, g) => sum + (g.count - 1), 0)}</p>
                       </div>
-
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-white text-[10px] uppercase">Backup Biblioteca a Supabase</h4>
-                          <Database className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
-                        </div>
-                        <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Sincronizar libros y fuentes con Supabase Cloud</p>
-                        <button
-                          onClick={handleBackupLibrary}
-                          disabled={loading}
-                          className="w-full py-2 text-[9px] font-black text-center bg-purple-500 hover:bg-purple-600 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-purple-500/20 active:scale-95 disabled:opacity-50"
-                        >
-                          {loading ? "Sincronizando..." : "Respaldar Biblioteca"}
-                        </button>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold">Grupos Afectados</p>
+                        <p className="text-2xl font-black text-white">{duplicates.length}</p>
                       </div>
-
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-white text-[10px] uppercase">Actualizar Metadatos Online</h4>
-                          <Globe className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
-                        </div>
-                        <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Busca info extra (títulos ES/EN, descripción) via ISBN</p>
-                        <button
-                          onClick={handleEnrichMetadata}
-                          disabled={loading}
-                          className="w-full py-2 text-[9px] font-black text-center bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50"
-                        >
-                          {loading ? "Ejecutando..." : "Sincronizar Metadatos Web"}
-                        </button>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-white text-[10px] uppercase">🐳 Reiniciar Bot Docker</h4>
-                          <RefreshCw className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
-                        </div>
-                        <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Reinicia el contenedor Docker del bot</p>
-                        <button
-                          onClick={async () => {
-                            if (!confirm('¿Reiniciar el contenedor Docker del bot?\n\nEl bot estará offline por unos segundos.')) {
-                              return;
-                            }
-                            try {
-                              const response = await api.rpc('admin_restart_docker', {});
-                              if (response.success) {
-                                alert(`✅ ${response.message}\n\nEl bot se está reiniciando...`);
-                              } else {
-                                alert(`❌ Error: ${response.message}`);
-                              }
-                            } catch (error: any) {
-                              alert(`❌ Error al reiniciar: ${error.message}`);
-                            }
-                          }}
-                          className="w-full py-2 text-[9px] font-black text-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95"
-                        >
-                          🐳 Reiniciar Bot
-                        </button>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-white text-[10px] uppercase">⬆️ Update System</h4>
-                          <Download className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
-                        </div>
-                        <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Ejecuta git pull y reinicia el sistema</p>
-                        <button
-                          onClick={async () => {
-                            const forceUpdate = confirm('¿Actualizar el sistema?\n\nEsto ejecutará git pull y reiniciará el bot.\n\n❗ Click "Cancelar" para actualización normal\n❗ Click "OK" para forzar y sobrescribir cambios locales');
-                            try {
-                              const response = await api.rpc('admin_update_system', { force: forceUpdate });
-                              if (response.success) {
-                                alert(`✅ ${response.message}\n\nOutput:\n${response.output || 'Sin cambios'}`);
-                              } else {
-                                alert(`❌ Error: ${response.message}\n\n${response.output || ''}`);
-                              }
-                            } catch (error: any) {
-                              alert(`❌ Error al actualizar: ${error.message}`);
-                            }
-                          }}
-                          className="w-full py-2 text-[9px] font-black text-center bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-green-600/20 active:scale-95"
-                        >
-                          ⬆️ Update System
-                        </button>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-white text-[10px] uppercase">Backup Base de Datos (SQLite)</h4>
-                          <HardDrive className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
-                        </div>
-                        <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Generar archivo .bak de la base de datos local</p>
-                        <button className="w-full py-2 text-[9px] font-black text-center bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all uppercase tracking-widest active:scale-95 disabled:opacity-50 font-black">Generar .bak local</button>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/10 hover:border-red-500/50 transition-colors group cursor-pointer">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-red-400 text-[10px] uppercase">Resetear Sistema</h4>
-                          <RotateCcw className="w-4 h-4 text-gray-500 group-hover:text-red-400 transition-colors" />
-                        </div>
-                        <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Reinicia contadores y limpia cache global</p>
-                        <button className="w-full py-2 text-[9px] font-black text-center bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-red-600/20 active:scale-95">Reiniciar Global</button>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:border-red-500/50 transition-colors group">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-red-400 text-[10px] uppercase">🗑️ Reset Base de Datos Local</h4>
-                          <Database className="w-4 h-4 text-red-500 group-hover:text-red-400 transition-colors" />
-                        </div>
-                        <p className="text-[10px] text-gray-400 mb-3 uppercase tracking-tight">
-                          ⚠️ Elimina toda la biblioteca indexada, portadas y thumbnails
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold">Espacio Desperdiciado</p>
+                        <p className="text-2xl font-black text-orange-400">
+                          {(duplicates.reduce((sum, g) => sum + g.wasted_space, 0) / (1024 * 1024)).toFixed(1)} MB
                         </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedDuplicates.size > 0 && (
+                    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-white">{selectedDuplicates.size} archivos seleccionados</p>
+                        <p className="text-xs text-gray-400">Listos para eliminar</p>
+                      </div>
+                      <div className="flex gap-2">
                         <button
-                          onClick={async () => {
-                            if (!confirm('⚠️ ¿Estás ABSOLUTAMENTE SEGURO de que quieres RESETEAR toda la base de datos local?\n\nEsta acción NO SE PUEDE DESHACER.\n\nTendrás que volver a escanear toda tu biblioteca.\n\nClick OK para continuar.')) {
-                              return;
-                            }
-
-                            const confirmText = prompt('Por favor escribe "CONFIRMAR" en mayúsculas para proceder:');
-                            if (confirmText !== 'CONFIRMAR') {
-                              alert('❌ Operación cancelada. No se escribió CONFIRMAR correctamente.');
-                              return;
-                            }
-
-                            try {
-                              const response = await api.rpc('admin_reset_library', { confirmed: true });
-
-                              if (response.success) {
-                                alert(`✅ ${response.message}\n\n📊 Detalles:\n${response.details?.join('\n') || ''}\n\n📝 Próximo paso: Escanea tu biblioteca para reindexar tus libros.`);
-                              } else {
-                                alert(`❌ Error: ${response.message}`);
-                              }
-                            } catch (error: any) {
-                              alert(`❌ Error al resetear base de datos: ${error.message}`);
-                            }
-                          }}
-                          className="w-full py-2 text-[9px] font-black text-center bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-red-600/30 active:scale-95"
+                          onClick={() => setSelectedDuplicates(new Set())}
+                          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors"
                         >
-                          🗑️ RESET BIBLIOTECA LOCAL
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDuplicates(Array.from(selectedDuplicates))}
+                          disabled={deletingDuplicates}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50"
+                        >
+                          {deletingDuplicates ? 'Eliminando...' : `Eliminar ${selectedDuplicates.size}`}
                         </button>
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* System Logs */}
-                  <div className="lg:col-span-2 glass-panel rounded-3xl p-0 overflow-hidden flex flex-col h-[600px] border border-white/5">
-                    <div className="p-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
-                      <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <Terminal className="w-4 h-4 text-gray-500" /> Live System Logs
-                      </h3>
-                      <div className="flex gap-1.5 px-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500/30"></span>
-                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30"></span>
-                        <span className="w-2.5 h-2.5 rounded-full bg-green-500/30"></span>
-                      </div>
-                    </div>
-                    <div className="flex-1 bg-black/40 p-4 font-mono text-[10px] overflow-y-auto leading-relaxed">
-                      <div className="space-y-1">
-                        <div className="text-gray-500">[10:42:01] <span className="text-blue-400 font-bold">INFO</span>: Worker process started with PID 8821</div>
-                        <div className="text-gray-500">[10:42:05] <span className="text-blue-400 font-bold">INFO</span>: Connecting to Telegram API... <span className="text-green-400 font-bold">OK</span></div>
-                        <div className="text-gray-500">[10:42:06] <span className="text-yellow-400 font-bold">WARN</span>: High latency detected on webhook (450ms)</div>
-                        <div className="text-gray-500">[10:43:12] <span className="text-blue-400 font-bold">INFO</span>: User <span className="text-purple-400">@devil1210</span> requested /scan_library</div>
-                        <div className="text-gray-500 pl-4">→ Initializing Universal Hash Architecture scanner...</div>
-                        <div className="text-gray-500 pl-4">→ Found 12 new EPUB files in /mnt/books/incoming</div>
-                        <div className="text-gray-500 pl-4">→ Generating thumbnails (Glassmorphism applied)</div>
-                        <div className="text-gray-500">[10:43:45] <span className="text-green-400 font-bold uppercase">SUCCESS</span>: Library index updated. +12 items.</div>
-                        <div className="text-gray-500">[10:45:00] <span className="text-blue-400 font-bold">INFO</span>: Watchtower checking for updates...</div>
-                        <div className="text-gray-300 animate-pulse">_</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-
-            {/* ==================== TIERS VIEW ==================== */}
-            {currentView === 'tiers' && !selectedUserId && !configuringTier && (
-              <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-10 animate-in fade-in duration-300 px-1">
-                {/* Page Heading */}
-                <div className="flex flex-wrap justify-between gap-6">
-                  <div className="flex min-w-72 flex-col gap-3">
-                    <h1 className="text-4xl font-black text-white leading-tight tracking-tighter uppercase">Niveles y Acceso</h1>
-                    <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-2xl">
-                      Configura permisos globales y niveles de suscripción para toda la base de usuarios.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Tier Cards Row - Dynamic */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {levels.sort((a, b) => a.priority - b.priority).map((level) => {
-                    const isDefault = level.id === '1' || level.name.toLowerCase() === 'gratis' || level.name.toLowerCase() === 'gratuito';
-                    const isPopular = level.name.toLowerCase() === 'vip';
-
-                    return (
-                      <div
-                        key={level.id}
-                        className="glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all flex flex-col justify-between"
-                      >
-                        {isPopular && (
-                          <div className="absolute top-0 right-0 p-4 opacity-5">
-                            <Star className="w-16 h-16 text-primary" />
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                    {duplicates.map((group, idx) => (
+                      <div key={group.content_hash} className="p-4 bg-white/5 border border-white/5 rounded-xl hover:border-orange-500/30 transition-colors">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="font-bold text-white text-sm">{group.title}</h4>
+                            {group.author && <p className="text-xs text-gray-400">{group.author}</p>}
+                            {group.series && group.volume && (
+                              <p className="text-xs text-gray-500">{group.series} - Vol. {group.volume}</p>
+                            )}
                           </div>
-                        )}
-
-                        <div className="relative z-10">
-                          <div className="flex justify-between items-start mb-4">
-                            <div>
-                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1 block">
-                                {isDefault ? 'Nivel por Defecto' : isPopular ? 'Más Popular' : 'Nivel de Usuario'}
-                              </span>
-                              <h3 className="text-2xl font-black text-white" style={{ color: level.color }}>{level.name}</h3>
-                            </div>
-                            <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                              <Layers className="w-5 h-5" style={{ color: level.color }} />
-                            </div>
+                          <div className="text-right">
+                            <span className="px-2 py-1 bg-orange-500/10 text-orange-400 text-[8px] font-bold rounded border border-orange-500/20 uppercase">
+                              {group.count} copias
+                            </span>
+                            <p className="text-[10px] text-gray-500 mt-1">{(group.wasted_space / (1024 * 1024)).toFixed(2)} MB desperdiciado</p>
                           </div>
-
-                          <ul className="space-y-2 mb-6 text-xs text-gray-400">
-                            <li className="flex items-center gap-2">
-                              <ShieldCheck className="w-3 h-3 text-green-500" />
-                              {level.dailyDownloads === -1 ? 'Descargas Ilimitadas' : `${level.dailyDownloads} descargas diarias`}
-                            </li>
-                            {level.earlyAccess && (
-                              <li className="flex items-center gap-2">
-                                <ShieldCheck className="w-3 h-3 text-green-500" /> Acceso Anticipado
-                              </li>
-                            )}
-                            {level.customThemes && (
-                              <li className="flex items-center gap-2">
-                                <ShieldCheck className="w-3 h-3 text-green-500" /> Temas Personalizados
-                              </li>
-                            )}
-                            {(level.priority && level.priority < 5) && (
-                              <li className="flex items-center gap-2">
-                                <ShieldCheck className="w-3 h-3 text-green-500" /> Soporte Prioritario
-                              </li>
-                            )}
-                          </ul>
                         </div>
 
-                        <button
-                          onClick={() => setConfiguringTier({ name: level.name, color: level.color })}
-                          className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all mt-auto"
-                          style={{
-                            backgroundColor: `${level.color}15`,
-                            color: level.color,
-                            border: `1px solid ${level.color}30`
-                          }}
-                        >
-                          Configurar
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+                        <div className="space-y-2">
+                          {group.books.map((book: any) => {
+                            const isSelected = selectedDuplicates.has(book.id);
+                            const isOldest = book.is_oldest;
+                            const isNewest = book.is_newest;
 
-
-                {/* Active Registrations Table */}
-                <div className="glass-panel rounded-2xl border border-white/5 overflow-hidden">
-                  <div className="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between md:items-center gap-4">
-                    <div>
-                      <h3 className="text-lg font-black text-white uppercase tracking-tight">Registros Activos</h3>
-                      <p className="text-xs text-gray-400">Gestionar cuentas individuales y anular permisos.</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                        <input
-                          type="text"
-                          placeholder="Filtrar por ID o Usuario..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-9 pr-4 py-2 bg-black/20 border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:border-primary w-64"
-                        />
-                      </div>
-                      <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold uppercase tracking-wider border border-white/5 transition-colors">Filtros</button>
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <div className="flex flex-col gap-3">
-                      {users.map((user) => {
-                        const tierName = user.level?.name || 'Gratis';
-                        const tierColor = user.level?.color || '#6b7280';
-                        const isWarning = user.downloads.used >= user.downloads.limit && user.downloads.limit !== -1;
-
-                        return (
-                          <div
-                            key={user.id}
-                            onClick={() => setSelectedUserId(user.id)}
-                            className="glass-panel p-4 rounded-xl border border-white/5 hover:border-primary/30 transition-all cursor-pointer group 
-                            flex flex-col md:flex-row gap-4 md:items-center md:justify-between"
-                          >
-                            {/* User Avatar and Info */}
-                            <div className="flex items-center gap-3 md:min-w-[250px]">
+                            return (
                               <div
-                                className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold shadow-lg flex-shrink-0"
-                                style={{ backgroundColor: `${tierColor}20`, color: tierColor, border: `1px solid ${tierColor}30` }}
+                                key={book.id}
+                                className={`p-3 rounded-lg border transition-all ${isSelected
+                                  ? 'bg-red-500/10 border-red-500/50'
+                                  : 'bg-black/20 border-white/5 hover:border-white/10'
+                                  }`}
                               >
-                                {user.username.charAt(0).toUpperCase()}
+                                <div className="flex items-start gap-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      const newSet = new Set(selectedDuplicates);
+                                      if (e.target.checked) {
+                                        newSet.add(book.id);
+                                      } else {
+                                        newSet.delete(book.id);
+                                      }
+                                      setSelectedDuplicates(newSet);
+                                    }}
+                                    className="mt-1 w-4 h-4 rounded border-gray-600 text-red-600 focus:ring-red-500"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <code className="text-[10px] text-gray-400 break-all">{book.filename}</code>
+                                      {isOldest && (
+                                        <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-400 text-[8px] font-bold rounded uppercase">Más viejo</span>
+                                      )}
+                                      {isNewest && (
+                                        <span className="px-1.5 py-0.5 bg-green-500/10 text-green-400 text-[8px] font-bold rounded uppercase">Más nuevo</span>
+                                      )}
+                                    </div>
+                                    <p className="text-[9px] text-gray-500">
+                                      {(book.file_size / (1024 * 1024)).toFixed(2)} MB •
+                                      Indexado: {new Date(book.indexed_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex flex-col min-w-0 flex-1">
-                                <span className="text-base font-bold text-white truncate">{user.name || user.username}</span>
-                                <span className="text-xs font-mono text-gray-500 truncate">
-                                  {user.telegram_username ? `@${user.telegram_username}` : `#${user.id}`}
-                                </span>
-                              </div>
-                            </div>
+                            );
+                          })}
+                        </div>
 
-                            {/* Tier Badge */}
-                            <div className="flex items-center md:min-w-[120px] md:justify-center">
-                              <span
-                                className="px-3 py-1 rounded text-[10px] font-black uppercase tracking-wider whitespace-nowrap"
-                                style={{ backgroundColor: `${tierColor}15`, color: tierColor, border: `1px solid ${tierColor}20` }}
-                              >
-                                {tierName}
-                              </span>
-                            </div>
-
-                            {/* Usage Stats - Horizontal on desktop */}
-                            <div className="space-y-1.5 pt-2 md:pt-0 border-t md:border-t-0 md:border-l border-white/5 md:pl-4 md:min-w-[300px] md:flex-1">
-                              <div className="flex justify-between items-center text-[10px] uppercase tracking-widest font-bold">
-                                <span className="text-gray-500">Uso de Cuota</span>
-                                <span className={isWarning ? 'text-red-400' : 'text-primary'}>
-                                  {Math.min(100, user.downloads.limit === -1 ? 0 : (user.downloads.used / user.downloads.limit) * 100).toFixed(0)}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full ${isWarning ? 'bg-red-500' : 'bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]'}`}
-                                  style={{ width: user.downloads.limit === -1 ? '5%' : `${Math.min(100, (user.downloads.used / user.downloads.limit) * 100)}%` }}
-                                ></div>
-                              </div>
-                              <div className="flex justify-between text-[10px] font-mono text-gray-500">
-                                <span>{user.downloads.used} descargas</span>
-                                <span>{user.downloads.limit === -1 ? '∞' : user.downloads.limit} lím.</span>
-                              </div>
-                            </div>
-
-                            {/* Arrow indicator for desktop */}
-                            <div className="hidden md:flex items-center justify-center text-gray-600 group-hover:text-primary transition-colors">
-                              <ChevronRight className="w-5 h-5" />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                        <div className="mt-3 pt-3 border-t border-white/5 flex gap-2">
+                          <button
+                            onClick={() => {
+                              const newSet = new Set(selectedDuplicates);
+                              group.books.slice(1).forEach((b: any) => newSet.add(b.id));
+                              setSelectedDuplicates(newSet);
+                            }}
+                            className="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded text-[8px] font-bold uppercase tracking-wider transition-colors border border-blue-500/20"
+                          >
+                            Mantener más viejo
+                          </button>
+                          <button
+                            onClick={() => {
+                              const newSet = new Set(selectedDuplicates);
+                              group.books.slice(0, -1).forEach((b: any) => newSet.add(b.id));
+                              setSelectedDuplicates(newSet);
+                            }}
+                            className="px-2 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded text-[8px] font-bold uppercase tracking-wider transition-colors border border-green-500/20"
+                          >
+                            Mantener más nuevo
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="p-4 border-t border-white/5 bg-white/5 flex justify-center">
-                    <button className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-colors">
-                      Recuperar Dataset Expandido <ArrowRight className="w-3 h-3" />
+                </>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Maintenance Section */}
+              <div className="lg:col-span-1 glass-panel rounded-3xl p-6 flex flex-col border border-white/5">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                    <Settings className="text-primary w-4 h-4" /> Mantenimiento
+                  </h3>
+                  <span className="px-2 py-1 bg-green-500/10 text-green-500 text-[8px] font-bold rounded border border-green-500/20 uppercase">Operativo</span>
+                </div>
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-white text-[10px] uppercase">Escanear Biblioteca</h4>
+                      <Activity className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Indexar nuevo contenido en /mnt/books/incoming</p>
+                    <button
+                      onClick={() => handleScanLibrary(true)}
+                      disabled={loading}
+                      className="w-full py-2 text-[9px] font-black text-center bg-primary hover:bg-primary-dark text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50"
+                    >
+                      {loading ? "Ejecutando..." : "Ejecutar Escaneo (Forzado)"}
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-white text-[10px] uppercase">Backup Biblioteca a Supabase</h4>
+                      <Database className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Sincronizar libros y fuentes con Supabase Cloud</p>
+                    <button
+                      onClick={handleBackupLibrary}
+                      disabled={loading}
+                      className="w-full py-2 text-[9px] font-black text-center bg-purple-500 hover:bg-purple-600 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-purple-500/20 active:scale-95 disabled:opacity-50"
+                    >
+                      {loading ? "Sincronizando..." : "Respaldar Biblioteca"}
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-white text-[10px] uppercase">Actualizar Metadatos Online</h4>
+                      <Globe className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Busca info extra (títulos ES/EN, descripción) via ISBN</p>
+                    <button
+                      onClick={handleEnrichMetadata}
+                      disabled={loading}
+                      className="w-full py-2 text-[9px] font-black text-center bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50"
+                    >
+                      {loading ? "Ejecutando..." : "Sincronizar Metadatos Web"}
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-white text-[10px] uppercase">🐳 Reiniciar Bot Docker</h4>
+                      <RefreshCw className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Reinicia el contenedor Docker del bot</p>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('¿Reiniciar el contenedor Docker del bot?\n\nEl bot estará offline por unos segundos.')) {
+                          return;
+                        }
+                        try {
+                          const response = await api.rpc('admin_restart_docker', {});
+                          if (response.success) {
+                            alert(`✅ ${response.message}\n\nEl bot se está reiniciando...`);
+                          } else {
+                            alert(`❌ Error: ${response.message}`);
+                          }
+                        } catch (error: any) {
+                          alert(`❌ Error al reiniciar: ${error.message}`);
+                        }
+                      }}
+                      className="w-full py-2 text-[9px] font-black text-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95"
+                    >
+                      🐳 Reiniciar Bot
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-white text-[10px] uppercase">⬆️ Update System</h4>
+                      <Download className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Ejecuta git pull y reinicia el sistema</p>
+                    <button
+                      onClick={async () => {
+                        const forceUpdate = confirm('¿Actualizar el sistema?\n\nEsto ejecutará git pull y reiniciará el bot.\n\n❗ Click "Cancelar" para actualización normal\n❗ Click "OK" para forzar y sobrescribir cambios locales');
+                        try {
+                          const response = await api.rpc('admin_update_system', { force: forceUpdate });
+                          if (response.success) {
+                            alert(`✅ ${response.message}\n\nOutput:\n${response.output || 'Sin cambios'}`);
+                          } else {
+                            alert(`❌ Error: ${response.message}\n\n${response.output || ''}`);
+                          }
+                        } catch (error: any) {
+                          alert(`❌ Error al actualizar: ${error.message}`);
+                        }
+                      }}
+                      className="w-full py-2 text-[9px] font-black text-center bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-green-600/20 active:scale-95"
+                    >
+                      ⬆️ Update System
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-white text-[10px] uppercase">Backup Base de Datos (SQLite)</h4>
+                      <HardDrive className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Generar archivo .bak de la base de datos local</p>
+                    <button className="w-full py-2 text-[9px] font-black text-center bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all uppercase tracking-widest active:scale-95 disabled:opacity-50 font-black">Generar .bak local</button>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/10 hover:border-red-500/50 transition-colors group cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-red-400 text-[10px] uppercase">Resetear Sistema</h4>
+                      <RotateCcw className="w-4 h-4 text-gray-500 group-hover:text-red-400 transition-colors" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Reinicia contadores y limpia cache global</p>
+                    <button className="w-full py-2 text-[9px] font-black text-center bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-red-600/20 active:scale-95">Reiniciar Global</button>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:border-red-500/50 transition-colors group">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-red-400 text-[10px] uppercase">🗑️ Reset Base de Datos Local</h4>
+                      <Database className="w-4 h-4 text-red-500 group-hover:text-red-400 transition-colors" />
+                    </div>
+                    <p className="text-[10px] text-gray-400 mb-3 uppercase tracking-tight">
+                      ⚠️ Elimina toda la biblioteca indexada, portadas y thumbnails
+                    </p>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('⚠️ ¿Estás ABSOLUTAMENTE SEGURO de que quieres RESETEAR toda la base de datos local?\n\nEsta acción NO SE PUEDE DESHACER.\n\nTendrás que volver a escanear toda tu biblioteca.\n\nClick OK para continuar.')) {
+                          return;
+                        }
+
+                        const confirmText = prompt('Por favor escribe "CONFIRMAR" en mayúsculas para proceder:');
+                        if (confirmText !== 'CONFIRMAR') {
+                          alert('❌ Operación cancelada. No se escribió CONFIRMAR correctamente.');
+                          return;
+                        }
+
+                        try {
+                          const response = await api.rpc('admin_reset_library', { confirmed: true });
+
+                          if (response.success) {
+                            alert(`✅ ${response.message}\n\n📊 Detalles:\n${response.details?.join('\n') || ''}\n\n📝 Próximo paso: Escanea tu biblioteca para reindexar tus libros.`);
+                          } else {
+                            alert(`❌ Error: ${response.message}`);
+                          }
+                        } catch (error: any) {
+                          alert(`❌ Error al resetear base de datos: ${error.message}`);
+                        }
+                      }}
+                      className="w-full py-2 text-[9px] font-black text-center bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-red-600/30 active:scale-95"
+                    >
+                      🗑️ RESET BIBLIOTECA LOCAL
                     </button>
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* Tier Configuration Editor */}
-            {currentView === 'tiers' && configuringTier && (
-              <TierConfiguration
-                tierName={configuringTier.name}
-                tierColor={configuringTier.color}
-                onBack={() => setConfiguringTier(null)}
-                onNavigate={onNavigate}
-                onSave={(config) => {
-                  console.log('Saving tier config:', config);
-                  // TODO: Save to backend
-                }}
-                // Callbacks for parent navigation control
-                onSavingChange={(saving) => setSavingTierConfig(saving)}
-                onCanUndoChange={(canUndo) => setCanUndoTier(canUndo)}
-                onCanApplyChange={(canApply) => setCanApplyTier(canApply)}
-                onUndoRef={(undoFn) => tierUndoRef.current = undoFn}
-                onSaveRef={(saveFn) => tierSaveRef.current = saveFn}
-              />
-            )}
+              {/* System Logs */}
+              <div className="lg:col-span-2 glass-panel rounded-3xl p-0 overflow-hidden flex flex-col h-[600px] border border-white/5">
+                <div className="p-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+                  <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-gray-500" /> Live System Logs
+                  </h3>
+                  <div className="flex gap-1.5 px-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500/30"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500/30"></span>
+                  </div>
+                </div>
+                <div className="flex-1 bg-black/40 p-4 font-mono text-[10px] overflow-y-auto leading-relaxed">
+                  <div className="space-y-1">
+                    <div className="text-gray-500">[10:42:01] <span className="text-blue-400 font-bold">INFO</span>: Worker process started with PID 8821</div>
+                    <div className="text-gray-500">[10:42:05] <span className="text-blue-400 font-bold">INFO</span>: Connecting to Telegram API... <span className="text-green-400 font-bold">OK</span></div>
+                    <div className="text-gray-500">[10:42:06] <span className="text-yellow-400 font-bold">WARN</span>: High latency detected on webhook (450ms)</div>
+                    <div className="text-gray-500">[10:43:12] <span className="text-blue-400 font-bold">INFO</span>: User <span className="text-purple-400">@devil1210</span> requested /scan_library</div>
+                    <div className="text-gray-500 pl-4">→ Initializing Universal Hash Architecture scanner...</div>
+                    <div className="text-gray-500 pl-4">→ Found 12 new EPUB files in /mnt/books/incoming</div>
+                    <div className="text-gray-500 pl-4">→ Generating thumbnails (Glassmorphism applied)</div>
+                    <div className="text-gray-500">[10:43:45] <span className="text-green-400 font-bold uppercase">SUCCESS</span>: Library index updated. +12 items.</div>
+                    <div className="text-gray-500">[10:45:00] <span className="text-blue-400 font-bold">INFO</span>: Watchtower checking for updates...</div>
+                    <div className="text-gray-300 animate-pulse">_</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-            {/* User Permissions Editor */}
-            {currentView === 'tiers' && selectedUserId && !configuringTier && (() => {
-              const selectedUser = users.find(u => String(u.id) === String(selectedUserId));
-              console.log('[Admin] Rendering UserPermissions for:', selectedUserId, selectedUser);
-              if (!selectedUser) return null;
 
-              return (
-                <UserPermissions
-                  key={selectedUserId}
-                  userId={String(selectedUserId)}
-                  userData={{
-                    username: selectedUser.username,
-                    id: String(selectedUser.id),
-                    level: selectedUser.level?.name || 'Lector'
-                  }}
-                  onBack={() => setSelectedUserId(null)}
-                  onSavingChange={setSavingUserPerms}
-                  onCanUndoChange={setCanUndoPerms}
-                  onCanApplyChange={setCanApplyPerms}
-                  onUndoRef={(fn) => { permissionsUndoRef.current = fn; }}
-                  onSaveRef={(fn) => { permissionsSaveRef.current = fn; }}
-                  onSaveSuccess={() => {
-                    console.log('[Admin] User permissions saved successfully, refreshing list...');
-                    fetchAdminData();
-                  }}
-                />
-              );
-            })()}
+      {/* ==================== TIERS VIEW ==================== */}
+      {currentView === 'tiers' && !selectedUserId && !configuringTier && (
+        <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-10 animate-in fade-in duration-300 px-1">
+          {/* Page Heading */}
+          <div className="flex flex-wrap justify-between gap-6">
+            <div className="flex min-w-72 flex-col gap-3">
+              <h1 className="text-4xl font-black text-white leading-tight tracking-tighter uppercase">Niveles y Acceso</h1>
+              <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-2xl">
+                Configura permisos globales y niveles de suscripción para toda la base de usuarios.
+              </p>
+            </div>
           </div>
 
-        )
-      }
+          {/* Tier Cards Row - Dynamic */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {levels.sort((a, b) => a.priority - b.priority).map((level) => {
+              const isDefault = level.id === '1' || level.name.toLowerCase() === 'gratis' || level.name.toLowerCase() === 'gratuito';
+              const isPopular = level.name.toLowerCase() === 'vip';
 
-      {/* Admin Floating Navigation - Mobile Only: changes buttons based on context */}
-      <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
+              return (
+                <div
+                  key={level.id}
+                  className="glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all flex flex-col justify-between"
+                >
+                  {isPopular && (
+                    <div className="absolute top-0 right-0 p-4 opacity-5">
+                      <Star className="w-16 h-16 text-primary" />
+                    </div>
+                  )}
+
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1 block">
+                          {isDefault ? 'Nivel por Defecto' : isPopular ? 'Más Popular' : 'Nivel de Usuario'}
+                        </span>
+                        <h3 className="text-2xl font-black text-white" style={{ color: level.color }}>{level.name}</h3>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                        <Layers className="w-5 h-5" style={{ color: level.color }} />
+                      </div>
+                    </div>
+
+                    <ul className="space-y-2 mb-6 text-xs text-gray-400">
+                      <li className="flex items-center gap-2">
+                        <ShieldCheck className="w-3 h-3 text-green-500" />
+                        {level.dailyDownloads === -1 ? 'Descargas Ilimitadas' : `${level.dailyDownloads} descargas diarias`}
+                      </li>
+                      {level.earlyAccess && (
+                        <li className="flex items-center gap-2">
+                          <ShieldCheck className="w-3 h-3 text-green-500" /> Acceso Anticipado
+                        </li>
+                      )}
+                      {level.customThemes && (
+                        <li className="flex items-center gap-2">
+                          <ShieldCheck className="w-3 h-3 text-green-500" /> Temas Personalizados
+                        </li>
+                      )}
+                      {(level.priority && level.priority < 5) && (
+                        <li className="flex items-center gap-2">
+                          <ShieldCheck className="w-3 h-3 text-green-500" /> Soporte Prioritario
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+
+                  <button
+                    onClick={() => setConfiguringTier({ name: level.name, color: level.color })}
+                    className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all mt-auto"
+                    style={{
+                      backgroundColor: `${level.color}15`,
+                      color: level.color,
+                      border: `1px solid ${level.color}30`
+                    }}
+                  >
+                    Configurar
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+
+          {/* Active Registrations Table */}
+          <div className="glass-panel rounded-2xl border border-white/5 overflow-hidden">
+            <div className="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between md:items-center gap-4">
+              <div>
+                <h3 className="text-lg font-black text-white uppercase tracking-tight">Registros Activos</h3>
+                <p className="text-xs text-gray-400">Gestionar cuentas individuales y anular permisos.</p>
+              </div>
+              <div className="flex gap-2">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Filtrar por ID o Usuario..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-4 py-2 bg-black/20 border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:border-primary w-64"
+                  />
+                </div>
+                <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold uppercase tracking-wider border border-white/5 transition-colors">Filtros</button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="flex flex-col gap-3">
+                {users.map((user) => {
+                  const tierName = user.level?.name || 'Gratis';
+                  const tierColor = user.level?.color || '#6b7280';
+                  const isWarning = user.downloads.used >= user.downloads.limit && user.downloads.limit !== -1;
+
+                  return (
+                    <div
+                      key={user.id}
+                      onClick={() => setSelectedUserId(user.id)}
+                      className="glass-panel p-4 rounded-xl border border-white/5 hover:border-primary/30 transition-all cursor-pointer group 
+                            flex flex-col md:flex-row gap-4 md:items-center md:justify-between"
+                    >
+                      {/* User Avatar and Info */}
+                      <div className="flex items-center gap-3 md:min-w-[250px]">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold shadow-lg flex-shrink-0"
+                          style={{ backgroundColor: `${tierColor}20`, color: tierColor, border: `1px solid ${tierColor}30` }}
+                        >
+                          {user.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="text-base font-bold text-white truncate">{user.name || user.username}</span>
+                          <span className="text-xs font-mono text-gray-500 truncate">
+                            {user.telegram_username ? `@${user.telegram_username}` : `#${user.id}`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Tier Badge */}
+                      <div className="flex items-center md:min-w-[120px] md:justify-center">
+                        <span
+                          className="px-3 py-1 rounded text-[10px] font-black uppercase tracking-wider whitespace-nowrap"
+                          style={{ backgroundColor: `${tierColor}15`, color: tierColor, border: `1px solid ${tierColor}20` }}
+                        >
+                          {tierName}
+                        </span>
+                      </div>
+
+                      {/* Usage Stats - Horizontal on desktop */}
+                      <div className="space-y-1.5 pt-2 md:pt-0 border-t md:border-t-0 md:border-l border-white/5 md:pl-4 md:min-w-[300px] md:flex-1">
+                        <div className="flex justify-between items-center text-[10px] uppercase tracking-widest font-bold">
+                          <span className="text-gray-500">Uso de Cuota</span>
+                          <span className={isWarning ? 'text-red-400' : 'text-primary'}>
+                            {Math.min(100, user.downloads.limit === -1 ? 0 : (user.downloads.used / user.downloads.limit) * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${isWarning ? 'bg-red-500' : 'bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]'}`}
+                            style={{ width: user.downloads.limit === -1 ? '5%' : `${Math.min(100, (user.downloads.used / user.downloads.limit) * 100)}%` }}
+                          ></div>
+                        </div>
+                        <div className="flex justify-between text-[10px] font-mono text-gray-500">
+                          <span>{user.downloads.used} descargas</span>
+                          <span>{user.downloads.limit === -1 ? '∞' : user.downloads.limit} lím.</span>
+                        </div>
+                      </div>
+
+                      {/* Arrow indicator for desktop */}
+                      <div className="hidden md:flex items-center justify-center text-gray-600 group-hover:text-primary transition-colors">
+                        <ChevronRight className="w-5 h-5" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="p-4 border-t border-white/5 bg-white/5 flex justify-center">
+              <button className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-colors">
+                Recuperar Dataset Expandido <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tier Configuration Editor */}
+      {currentView === 'tiers' && configuringTier && (
+        <TierConfiguration
+          tierName={configuringTier.name}
+          tierColor={configuringTier.color}
+          onBack={() => setConfiguringTier(null)}
+          onNavigate={onNavigate}
+          onSave={(config) => {
+            console.log('Saving tier config:', config);
+            // TODO: Save to backend
+          }}
+          // Callbacks for parent navigation control
+          onSavingChange={(saving) => setSavingTierConfig(saving)}
+          onCanUndoChange={(canUndo) => setCanUndoTier(canUndo)}
+          onCanApplyChange={(canApply) => setCanApplyTier(canApply)}
+          onUndoRef={(undoFn) => tierUndoRef.current = undoFn}
+          onSaveRef={(saveFn) => tierSaveRef.current = saveFn}
+        />
+      )}
+
+      {/* User Permissions Editor */}
+      {currentView === 'tiers' && selectedUserId && !configuringTier && (() => {
+        const selectedUser = users.find(u => String(u.id) === String(selectedUserId));
+        console.log('[Admin] Rendering UserPermissions for:', selectedUserId, selectedUser);
+        if (!selectedUser) return null;
+
+        return (
+          <UserPermissions
+            key={selectedUserId}
+            userId={String(selectedUserId)}
+            userData={{
+              username: selectedUser.username,
+              id: String(selectedUser.id),
+              level: selectedUser.level?.name || 'Lector'
+            }}
+            onBack={() => setSelectedUserId(null)}
+            onSavingChange={setSavingUserPerms}
+            onCanUndoChange={setCanUndoPerms}
+            onCanApplyChange={setCanApplyPerms}
+            onUndoRef={(fn) => { permissionsUndoRef.current = fn; }}
+            onSaveRef={(fn) => { permissionsSaveRef.current = fn; }}
+            onSaveSuccess={() => {
+              console.log('[Admin] User permissions saved successfully, refreshing list...');
+              fetchAdminData();
+            }}
+          />
+        );
+      })()}
+
+      {/* Admin Floating Navigation: changes buttons based on context */}
+      <div className="fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
         <div
           className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
