@@ -1408,7 +1408,9 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             "name": "name",
             "username": "username",
             "betaTester": "beta_tester",
-            "expiresAt": "expires_at"
+            "expiresAt": "expires_at",
+            "canRequestBooks": "can_request_books",
+            "hasLibraryAccess": "has_library_access"
         }
         
         for frontend_key, db_key in fields_to_track.items():
@@ -1443,10 +1445,15 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             created_by=int(user_data.get("telegram_id", 0))
         )
         
-        # Special flag beta_tester (if enabled specifically)
-        if "betaTester" in data:
-            if config.ENABLE_SUPABASE:
-                supabase_manager.get_client().table('users').update({"beta_tester": data["betaTester"]}).eq('telegram_id', int(user_id)).execute()
+        # Update additional boolean flags
+        if config.ENABLE_SUPABASE:
+            update_data = {}
+            if "betaTester" in data: update_data["beta_tester"] = data["betaTester"]
+            if "canRequestBooks" in data: update_data["can_request_books"] = data["canRequestBooks"]
+            if "hasLibraryAccess" in data: update_data["has_library_access"] = data["hasLibraryAccess"]
+            
+            if update_data:
+                supabase_manager.get_client().table('users').update(update_data).eq('telegram_id', int(user_id)).execute()
 
         # Log changes to audit log if there were any
         if changes:

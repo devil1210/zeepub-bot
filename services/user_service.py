@@ -138,6 +138,8 @@ async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional
             "username": info.get("username") if info else username_from_tg,
             "roles": info.get("roles") if info else ["Administrador"],
             "has_mini_app_access": True,
+            "can_request_books": info.get("can_request_books", True) if info else True,
+            "has_library_access": info.get("has_library_access", True) if info else True,
             "settings": info.get("settings", {}) if info else {},
         }
         await user_cache.set(cache_key, result)
@@ -179,6 +181,8 @@ async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional
                 "username": info.get("username") or username_from_tg,
                 "roles": info.get("roles") or [],
                 "custom_status": custom_status,
+                "can_request_books": info.get("can_request_books", True),
+                "has_library_access": info.get("has_library_access", True),
                 "settings": info.get("settings", {}),
                 # has_mini_app_access will be set by default logic below
             }

@@ -200,14 +200,6 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-100">
 
-      {/* Mobile Header */}
-      <header className="md:hidden h-16 bg-background/80 backdrop-blur border-b border-white/10 flex items-center justify-between px-4 shrink-0 z-40 sticky top-0">
-        <span className="font-bold text-lg">Zeepub<span className="text-primary">Bot</span></span>
-        <button onClick={onBack} className="text-gray-400 hover:text-primary">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-      </header>
-
       <div className="relative w-full h-80 shrink-0 overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center blur-sm scale-110 opacity-50"

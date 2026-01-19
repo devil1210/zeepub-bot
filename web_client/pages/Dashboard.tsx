@@ -161,13 +161,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {/* Quick Actions Grid */}
           <div>
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Acciones Rápidas</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className={`grid gap-4 ${[
+                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
+                { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
+                { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', visible: status?.user?.can_request_books !== false },
+                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true },
+              ].filter(a => a.visible).length === 2 ? 'grid-cols-2' :
+                [
+                  { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
+                  { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
+                  { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', visible: status?.user?.can_request_books !== false },
+                  { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true },
+                ].filter(a => a.visible).length === 3 ? 'grid-cols-2 sm:grid-cols-3' :
+                  'grid-cols-2 sm:grid-cols-4'
+              }`}>
               {[
-                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-                { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-                { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
-                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-              ].map((item, i) => {
+                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
+                { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
+                { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', visible: status?.user?.can_request_books !== false },
+                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true },
+              ].filter(a => a.visible).map((item, i) => {
                 const colorStyle = colorfulCardStyles[i];
                 return (
                   <button

@@ -160,6 +160,8 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 insignias: Array.isArray(res.user.insignias) ? res.user.insignias : [],
                 expiresAt: res.user.expiresAt || null,
                 customStatus: res.user.customStatus || '',
+                hasLibraryAccess: res.user.hasLibraryAccess ?? true,
+                canRequestBooks: res.user.canRequestBooks ?? true,
               };
               console.log('[UserPermissions] Setting permissions to:', newPerms);
               setPermissions(newPerms);
@@ -252,6 +254,8 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           isAdmin: tier.name.toLowerCase() === 'administrador' || prev.isAdmin,
           bypassLimits: tier.dailyDownloads === -1,
           betaTester: tier.earlyAccess || false,
+          hasLibraryAccess: tier.name.toLowerCase() !== 'lector', // For example
+          canRequestBooks: true
         }));
       }
     } catch (err) {
@@ -542,6 +546,46 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       type="checkbox"
                       checked={permissions.betaTester}
                       onChange={(e) => setPermissions({ ...permissions, betaTester: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+
+                {/* Library Access Toggle */}
+                <div className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-white/5 transition-colors">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-white">Acceso a Mi Biblioteca</span>
+                      <Library className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <p className="text-sm text-gray-400">Muestra u oculta la tarjeta "Mi Biblioteca" en el inicio.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={permissions.hasLibraryAccess}
+                      onChange={(e) => setPermissions({ ...permissions, hasLibraryAccess: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+
+                {/* Request Books Toggle */}
+                <div className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-white/5 transition-colors">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-white">Solicitar Libros</span>
+                      <BookOpen className="w-4 h-4 text-green-400" />
+                    </div>
+                    <p className="text-sm text-gray-400">Permite al usuario solicitar libros y ver la tarjeta en el inicio.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={permissions.canRequestBooks}
+                      onChange={(e) => setPermissions({ ...permissions, canRequestBooks: e.target.checked })}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>

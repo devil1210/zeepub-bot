@@ -375,6 +375,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                   )}
                 </button>
 
+                {/* 
                 {hasDownloaded && (
                   <button
                     onClick={() => onNavigate && onNavigate('reader')}
@@ -383,7 +384,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                     <BookOpen className="w-5 h-5" />
                     Leer Online
                   </button>
-                )}
+                )} 
+                */}
 
                 <div className="flex flex-col gap-3">
                   <button onClick={() => setIsReportModalOpen(true)} className="py-3.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 rounded-xl border border-red-200 dark:border-red-500/20 transition-colors flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider">
@@ -647,6 +649,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
           {/* Rate */}
           {hasDownloaded && (
             <>
+              {/* 
               <button
                 onClick={() => onNavigate && onNavigate('reader')}
                 className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-indigo-500 hover:text-indigo-600 active:scale-95"
@@ -657,6 +660,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                 <span className="text-[9px] font-black uppercase tracking-widest mt-1">Leer</span>
               </button>
               <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
+              */}
 
               <button
                 onClick={() => setIsRatingModalOpen(true)}
