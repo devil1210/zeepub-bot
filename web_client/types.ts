@@ -1,8 +1,17 @@
+export interface CoverPaths {
+  cover_low?: string;
+  cover_medium?: string;
+  cover_high?: string;
+  cover_original?: string;
+  cover?: string;
+  cover_thumb?: string;
+}
+
 export interface Book {
   id: string;
   title: string;
   author: string;
-  coverUrl: string;
+  coverUrl: string | CoverPaths;
   coverThumbUrl?: string;
   format: 'EPUB' | 'PDF' | 'MOBI';
   rating: number;
@@ -18,7 +27,7 @@ export interface Volume {
   seriesId: string;
   title: string;
   volumeNumber: number;
-  coverUrl: string;
+  coverUrl: string | CoverPaths;
   coverThumbUrl?: string;
   publishedDate: string;
   pages: number;
@@ -57,7 +66,7 @@ export interface Series {
   id: string;
   title: string;
   author: string;
-  coverUrl: string;
+  coverUrl: string | CoverPaths;
   coverThumbUrl?: string;
   description: string;
   genre: string; // Used for display list

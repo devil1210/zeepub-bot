@@ -67,8 +67,14 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               seriesId: data.id,
               title: v.title,
               volumeNumber: v.seriesIndex || 1,
-              coverUrl: v.cover || data.cover,
-              coverThumbUrl: v.cover_thumb || v.cover || data.cover_thumb || data.cover,
+              coverUrl: {
+                cover_low: v.cover_low,
+                cover_medium: v.cover_medium,
+                cover_high: v.cover_high,
+                cover_original: v.cover_original,
+                cover: v.cover || data.cover
+              },
+              coverThumbUrl: v.cover_thumb || v.cover_low || v.cover || data.cover_thumb || data.cover,
               publishedDate: v.publishedAt || 'N/A',
               pages: v.pageCount || 0,
               format: (v.bookType || 'EPUB').toUpperCase(),
@@ -101,7 +107,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             setVolumes(mappedVols);
 
             // Preload volume thumbnails for faster grid/list viewing
-            const volCovers = mappedVols.map(v => v.coverThumbUrl || v.coverUrl);
+            const volCovers = mappedVols.map(v => getCoverUrl(v.coverUrl, v.coverThumbUrl, settings.coverQuality));
             preloadImages(volCovers);
 
             // Update synopsis from the first volume if available

@@ -16,7 +16,9 @@ import {
     Zap,
     Layout,
     Download,
-    BookOpen
+    BookOpen,
+    Shield,
+    Library
 } from 'lucide-react';
 import { useTheme, adjustBrightness } from '../contexts/ThemeContext';
 import { api } from '../src/services/api';
@@ -60,6 +62,7 @@ interface TierConfig {
     backgroundColor: string;
     cardColor: string;
     bannerContentOffset: number;
+    forceSettings: boolean;
 }
 
 interface LevelOption {
@@ -112,7 +115,8 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         canRequestBooks: true,
         backgroundColor: settings.backgroundColor,
         cardColor: settings.cardColor,
-        bannerContentOffset: settings.bannerContentOffset
+        bannerContentOffset: settings.bannerContentOffset,
+        forceSettings: false
     });
 
     const [originalConfig, setOriginalConfig] = useState<TierConfig | null>(null);
@@ -172,7 +176,8 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         canRequestBooks: res.tier.canRequestBooks ?? true,
                         backgroundColor: res.tier.backgroundColor || settings.backgroundColor,
                         cardColor: res.tier.cardColor || settings.cardColor,
-                        bannerContentOffset: res.tier.bannerContentOffset ?? settings.bannerContentOffset
+                        bannerContentOffset: res.tier.bannerContentOffset ?? settings.bannerContentOffset,
+                        forceSettings: res.tier.forceSettings ?? false
                     };
                     setConfig(newConfig);
                     setOriginalConfig(newConfig);
@@ -517,14 +522,21 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                             sub: 'Muestra acceso a libros propios',
                                             val: config.hasLibraryAccess,
                                             key: 'hasLibraryAccess',
-                                            icon: Layout
+                                            icon: Library
                                         },
                                         {
                                             label: 'Solicitar Libros',
-                                            sub: 'Habilita botón de pedidos',
+                                            sub: 'Permitir peticiones de descargas',
                                             val: config.canRequestBooks,
                                             key: 'canRequestBooks',
-                                            icon: Info
+                                            icon: Download
+                                        },
+                                        {
+                                            label: 'Forzar Configuración',
+                                            sub: 'Ignora ajustes del usuario',
+                                            val: config.forceSettings,
+                                            key: 'forceSettings',
+                                            icon: Shield
                                         }
                                     ].map((p) => (
                                         <div key={p.key} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
@@ -664,6 +676,26 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                             <option value="light">Light (Claro)</option>
                                         </select>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/5">
+                                <div className="space-y-6">
+                                    <div>
+                                        <div className="flex justify-between items-center mb-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Ancho de Portadas (Grid)</label>
+                                            <span className="text-xs font-black text-primary">{config.coverWidth || 120}px</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="80"
+                                            max="200"
+                                            step="10"
+                                            value={config.coverWidth || 120}
+                                            onChange={(e) => setConfig({ ...config, coverWidth: parseInt(e.target.value) })}
+                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
 
                                     <div>
                                         <div className="flex justify-between items-center mb-3">
@@ -696,7 +728,9 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                             className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
                                         />
                                     </div>
+                                </div>
 
+                                <div className="space-y-6">
                                     <div>
                                         <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Color de Fondo (Hex + Alpha)</label>
                                         <div className="flex items-center gap-3 p-2 bg-black/40 border border-white/10 rounded-xl">

@@ -75,7 +75,7 @@ export const MonitorDashboard: React.FC = () => {
 
             {/* Metric Cards - Image 2 style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="glass-panel p-6 rounded-3xl border border-white/5 bg-white/5 flex items-start justify-between relative overflow-hidden group">
+                <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group">
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Users</p>
                         <h3 className="text-4xl font-bold text-white mt-2">

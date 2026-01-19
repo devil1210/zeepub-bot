@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../src/services/api';
+import { getCoverUrl } from '../src/utils/imageUtils';
 import {
   ArrowLeft,
   Share2,
@@ -89,8 +90,14 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             seriesId: bookData.seriesHash || 'unknown',
             title: bookData.title,
             volumeNumber: bookData.seriesIndex || 0,
-            coverUrl: bookData.cover || '',
-            coverThumbUrl: bookData.cover_thumb || bookData.cover || '',
+            coverUrl: {
+              cover_low: bookData.cover_low,
+              cover_medium: bookData.cover_medium,
+              cover_high: bookData.cover_high,
+              cover_original: bookData.cover_original,
+              cover: bookData.cover || ''
+            },
+            coverThumbUrl: bookData.cover_thumb || bookData.cover_low || bookData.cover || '',
             publishedDate: bookData.publishedAt || 'N/A',
             pages: bookData.pageCount || 0,
             format: (bookData.bookType || 'EPUB') as any,
@@ -122,7 +129,13 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             id: bookData.seriesHash || 'unknown',
             title: bookData.series || bookData.title,
             author: bookData.author || 'Desconocido',
-            coverUrl: bookData.cover || '',
+            coverUrl: {
+              cover_low: bookData.cover_low,
+              cover_medium: bookData.cover_medium,
+              cover_high: bookData.cover_high,
+              cover_original: bookData.cover_original,
+              cover: bookData.cover || ''
+            },
             description: bookData.description || '',
             genre: bookData.tags ? bookData.tags.join(', ') : '',
             rating: bookData.rating_average || 0,
@@ -297,7 +310,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             <X className="w-6 h-6 text-white" />
           </button>
           <img
-            src={displayData.coverUrl}
+            src={getCoverUrl(displayData.coverUrl, displayData.coverThumbUrl, 'original')}
             alt={displayData.title}
             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
@@ -347,7 +360,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                 onClick={() => setIsFullscreenCover(true)}
               >
                 <div className="aspect-[2/3] rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-black/5 dark:ring-white/10 relative">
-                  <img src={displayData.coverUrl} alt={displayData.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <img src={getCoverUrl(displayData.coverUrl, displayData.coverThumbUrl, settings.coverQuality)} alt={displayData.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                   {/* Zoom Hint */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">

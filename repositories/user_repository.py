@@ -339,6 +339,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "bannerContentOffset": int(lvl.get('banner_content_offset', 0)),
                             "backgroundColor": lvl.get('background_color', '#0f172a'),
                             "cardColor": lvl.get('card_color', '#1e293b'),
+                            "forceSettings": bool(lvl.get('force_settings', False)),
                         },
                         "hasAccess": bool(lvl.get('has_mini_app_access')) or is_admin,
                         "isAdmin": is_admin,
@@ -389,7 +390,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.can_request_books as ul_can_request_books,
                 ul.banner_content_offset,
                 ul.background_color,
-                ul.card_color
+                ul.card_color,
+                ul.force_settings
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -442,6 +444,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "bannerContentOffset": int(row[32]) if len(row) > 32 else 0,
                         "backgroundColor": row[33] if len(row) > 33 else '#0f172a',
                         "cardColor": row[34] if len(row) > 34 else '#1e293b',
+                        "forceSettings": bool(row[35]) if len(row) > 35 else False,
                     },
                     "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
                     "isAdmin": is_admin,

@@ -481,14 +481,17 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
                     "showRecommendations": lvl.get("showRecommendations"),
                     "bannerContentOffset": lvl.get("bannerContentOffset"),
                     "backgroundColor": lvl.get("backgroundColor"),
-                    "cardColor": lvl.get("cardColor")
+                    "cardColor": lvl.get("cardColor"),
+                    "forceSettings": lvl.get("forceSettings")
                 }
                 # Filter out None values
                 tier_overrides = {k: v for k, v in tier_overrides.items() if v is not None}
                 final_settings.update(tier_overrides)
 
-        # 3. Personal Overrides (Highest priority)
-        if user_record and user_record.get("settings"):
+        # 3. Personal Overrides (Priority unless forced)
+        is_forced = access_info.get("level", {}).get("forceSettings") if access_info else False
+        
+        if user_record and user_record.get("settings") and not is_forced:
             final_settings.update(user_record.get("settings", {}))
             
         return final_settings
@@ -1335,7 +1338,8 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             "canRequestBooks": "can_request_books",
             "bannerContentOffset": "banner_content_offset",
             "backgroundColor": "background_color",
-            "cardColor": "card_color"
+            "cardColor": "card_color",
+            "forceSettings": "force_settings"
         }
         
         for frontend_key, db_key in field_mapping.items():

@@ -31,11 +31,9 @@ export const getCoverUrl = (
             case 'pequeña':
                 return thumbPath || coverPath;
             case 'mediana':
-                return coverPath;
             case 'grande':
-                return coverPath.replace('.jpg', '_high.jpg');
             case 'original':
-                return coverPath.replace('.jpg', '_original.jpg');
+                return coverPath;
             default:
                 return coverPath;
         }
