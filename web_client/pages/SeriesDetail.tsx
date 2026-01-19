@@ -307,16 +307,16 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               <ListOrdered className="w-5 h-5 text-primary" />
               Lista de Volúmenes
             </h2>
-            <div className="flex gap-2 bg-white/5 p-1 rounded-xl border border-white/5">
+            <div className="flex gap-2 glass-panel p-1 rounded-xl border border-white/10 shadow-lg">
               <button
                 onClick={() => setViewMode('list')}
-                className={`p - 1.5 rounded - lg transition - all ${viewMode === 'list' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-500 hover:text-gray-300'} `}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
               >
                 <List className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p - 1.5 rounded - lg transition - all ${viewMode === 'grid' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-500 hover:text-gray-300'} `}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>

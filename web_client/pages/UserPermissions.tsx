@@ -229,21 +229,35 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
   const handleLevelChange = async (levelId: number) => {
     const level = allLevels.find(l => l.id === levelId);
 
-    // Update level immediately
-    setPermissions({
-      ...permissions,
+    // Update basic info immediately
+    setPermissions(prev => ({
+      ...prev,
       levelId,
       levelName: level?.name || 'Básico'
-    });
+    }));
 
-    // Load tier configuration in background
+    // Notify user of loading defaults
+    setLoading(true);
+
     try {
       const tierConfig = await api.getTierConfig(level?.name || '');
       if (tierConfig.success && tierConfig.tier) {
-        console.log('[UserPermissions] Tier config loaded:', tierConfig.tier);
+        const tier = tierConfig.tier;
+        console.log('[UserPermissions] Auto-loading tier defaults for:', tier.name);
+
+        // Load role, bypassLimits, betaTester etc based on level defaults
+        setPermissions(prev => ({
+          ...prev,
+          role: tier.name.toLowerCase() === 'administrador' ? 'admin' : (prev.role === 'admin' ? 'admin' : 'free'),
+          isAdmin: tier.name.toLowerCase() === 'administrador' || prev.isAdmin,
+          bypassLimits: tier.dailyDownloads === -1,
+          betaTester: tier.earlyAccess || false,
+        }));
       }
     } catch (err) {
-      console.error('Error loading tier config:', err);
+      console.error('Error auto-loading tier config:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -659,33 +673,45 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 <button className="text-xs text-primary hover:underline">Ver Todo</button>
               </div>
               <div className="p-4 overflow-y-auto max-h-[600px]">
-                <div className="relative pl-4 border-l-2 border-white/10 space-y-6">
-                  <div className="relative">
-                    <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-white dark:ring-[#121212]"></div>
-                    <p className="text-xs text-gray-500 mb-0.5 font-mono">Ahora</p>
-                    <p className="text-sm text-gray-200 mb-1">
-                      Editando permisos de <span className="font-bold text-primary">{displayName}</span>
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center text-[8px] text-white font-bold">A</div>
-                      <span className="text-xs text-gray-500">Admin</span>
+                {loadingHistory ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : auditHistory.length === 0 ? (
+                  <div className="relative pl-4 border-l-2 border-white/10 space-y-6">
+                    <div className="relative">
+                      <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-white dark:ring-[#121212]"></div>
+                      <p className="text-xs text-gray-500 mb-0.5 font-mono">Ahora</p>
+                      <p className="text-sm text-gray-200 mb-1">
+                        Sin actividad reciente
+                      </p>
                     </div>
                   </div>
-                  <div className="relative">
-                    <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-gray-600 ring-4 ring-white dark:ring-[#121212]"></div>
-                    <p className="text-xs text-gray-500 mb-0.5 font-mono">Nivel Actual</p>
-                    <p className="text-sm text-gray-200 mb-1">
-                      <span style={{ color: displayColor }}>{displayLevel}</span>
-                    </p>
+                ) : (
+                  <div className="relative pl-4 border-l-2 border-white/10 space-y-6">
+                    {auditHistory.map((log, index) => {
+                      const isRecent = index === 0;
+                      const date = new Date(log.created_at);
+                      const timeAgo = getTimeAgo(date);
+
+                      return (
+                        <div key={log.id || index} className="relative">
+                          <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full ${isRecent ? 'bg-primary shadow-[0_0_8px_rgba(43,108,238,0.5)]' : 'bg-gray-600'} ring-4 ring-white dark:ring-[#121212]`}></div>
+                          <p className="text-xs text-gray-500 mb-0.5 font-mono">{timeAgo}</p>
+                          <p className="text-sm text-gray-200 mb-1">
+                            {getChangeDescription(log)}
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center text-[8px] text-white font-bold">
+                              {log.changed_by_username?.charAt(0).toUpperCase() || 'A'}
+                            </div>
+                            <span className="text-xs text-gray-500">{log.changed_by_username || 'Admin'}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="relative">
-                    <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-gray-600 ring-4 ring-white dark:ring-[#121212]"></div>
-                    <p className="text-xs text-gray-500 mb-0.5 font-mono">ID de Usuario</p>
-                    <p className="text-sm text-gray-200 mb-1 font-mono">
-                      {displayId}
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -694,3 +720,76 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
     </div>
   );
 };
+
+// Helper function to get time ago
+function getTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Ahora';
+  if (diffMins < 60) return `Hace ${diffMins}m`;
+  if (diffHours < 24) return `Hace ${diffHours}h`;
+  if (diffDays < 7) return `Hace ${diffDays}d`;
+  return date.toLocaleDateString();
+}
+
+// Helper function to get change description
+function getChangeDescription(log: any): string {
+  const changes = log.changes_summary || {};
+
+  if (log.action === 'update_level' && (changes.from || changes.to)) {
+    return `Nivel cambiado: ${changes.from || '?'} → ${changes.to || '?'}`;
+  }
+
+  if (log.action === 'update_permissions') {
+    const changeKeys = Object.keys(changes);
+    if (changeKeys.length === 1) {
+      const key = changeKeys[0];
+      const change = changes[key];
+      return `${formatFieldName(key)}: ${formatValue(change.old)} → ${formatValue(change.new)}`;
+    }
+    return `${changeKeys.length} permisos actualizados`;
+  }
+
+  if (log.action === 'update_profile') {
+    const changeKeys = Object.keys(changes);
+    if (changeKeys.length === 1) {
+      const key = changeKeys[0];
+      const change = changes[key];
+      return `${formatFieldName(key)}: ${formatValue(change.old)} → ${formatValue(change.new)}`;
+    }
+    return `Perfil actualizado (${changeKeys.length} campos)`;
+  }
+
+  return log.action || 'Cambio realizado';
+}
+
+// Helper function to format field names
+function formatFieldName(field: string): string {
+  const names: Record<string, string> = {
+    'level': 'Nivel',
+    'role': 'Rol',
+    'custom_status': 'Estado',
+    'nickname': 'Apodo',
+    'name': 'Nombre',
+    'username': 'Usuario',
+    'beta_tester': 'Beta Tester',
+    'expires_at': 'Vencimiento',
+    'insignias': 'Insignias',
+    'can_report': 'Reportar',
+    'bypass_limits': 'Sin Límites'
+  };
+  return names[field] || field;
+}
+
+// Helper function to format values
+function formatValue(value: any): string {
+  if (value === null || value === undefined) return 'N/A';
+  if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+  if (Array.isArray(value)) return value.join(', ') || 'Ninguno';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
