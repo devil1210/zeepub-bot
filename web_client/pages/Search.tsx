@@ -49,7 +49,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const [activeSort, setActiveSort] = useState('a-z');
   const [selectedScope, setSelectedScope] = useState('TODOS');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(navState.searchTerm);
 
   // Data State
   const [series, setSeries] = useState<Series[]>([]);
@@ -159,6 +159,11 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       setLoading(false);
     }
   };
+
+  // Reset page on search term or scope change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedScope]);
 
   // Initial Search & Search on Enter
   useEffect(() => {

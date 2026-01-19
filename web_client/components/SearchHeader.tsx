@@ -31,7 +31,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
 
     return (
         <div
-            className="md:hidden z-30 px-4 py-2 border-b border-white/5"
+            className="z-30 px-4 md:px-8 py-3 md:py-4 border-b border-white/5"
             style={{
                 background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
                 backdropFilter: `blur(${settings.glassBlur}px)`,

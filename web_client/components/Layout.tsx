@@ -151,7 +151,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         </header>
 
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto relative scroll-smooth custom-scrollbar pb-24 md:pb-0 md:pt-8">
+        <main className={`flex-1 overflow-y-auto relative scroll-smooth custom-scrollbar pb-24 md:pb-0 ${activeTab === 'search' ? '' : 'md:pt-8'}`}>
           {/* Search Header - Sticky inside scroll area */}
           {activeTab === 'search' && searchNavState.isVisible && (
             <div className="sticky top-0 z-30 transition-all duration-300">
