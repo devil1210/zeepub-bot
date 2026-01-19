@@ -1516,7 +1516,9 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
                 "customStatus": raw_user.get("custom_status"),
                 "expiresAt": raw_user["expires_at"].isoformat() if raw_user.get("expires_at") else None,
                 "isAdmin": access_info["isAdmin"],
-                "isBetaTester": access_info["isBetaTester"],
+                "betaTester": raw_user.get("beta_tester", access_info["isBetaTester"]),
+                "hasLibraryAccess": raw_user.get("has_library_access", True),
+                "canRequestBooks": raw_user.get("can_request_books", True),
                 "insignias": raw_user.get("insignias") or []
             }
         }

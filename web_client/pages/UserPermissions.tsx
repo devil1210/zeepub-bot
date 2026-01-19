@@ -13,7 +13,9 @@ import {
   Loader2,
   Undo2,
   CheckCircle,
-  Home
+  Home,
+  Library,
+  BookOpen
 } from 'lucide-react';
 import { api } from '../src/services/api';
 
