@@ -259,14 +259,18 @@ class ScannerService:
                     session.add(book)
 
 
-            # Guardar Portada
+            # Guardar Portada en 4 calidades
             if extractor.cover_data:
                 cover_filename = f"{hashlib.md5(filepath.encode()).hexdigest()}.jpg"
                 cover_dest = os.path.join(COVERS_DIR, cover_filename)
-                if extractor.save_cover(cover_dest):
-                    book.cover_path = f"/api/library/covers/{cover_filename}"
-                    # Thumbnail path (generado automáticamente por save_cover)
-                    book.cover_thumb_path = f"/api/library/covers/{cover_filename.replace('.jpg', '_thumb.jpg')}"
+                cover_paths = extractor.save_cover(cover_dest)
+                if cover_paths:
+                    # Guardar las 4 versiones en la base de datos
+                    base_url = "/api/library/covers/"
+                    book.cover_original = base_url + os.path.basename(cover_paths['original'])
+                    book.cover_high = base_url + os.path.basename(cover_paths['high'])
+                    book.cover_medium = base_url + os.path.basename(cover_paths['medium'])
+                    book.cover_low = base_url + os.path.basename(cover_paths['low'])
 
 
             # session.commit()  # Movido a nivel de batch o fuente

@@ -67,6 +67,10 @@ def check_migrations():
             ("series_hash", "VARCHAR(64)"),
             ("spanish_title", "TEXT"),
             ("jap_title", "TEXT"),
+            ("cover_original", "TEXT"),
+            ("cover_high", "TEXT"),
+            ("cover_medium", "TEXT"),
+            ("cover_low", "TEXT"),
         ]
 
         # 1. Migración de columnas (local_books)

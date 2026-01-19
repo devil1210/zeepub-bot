@@ -251,9 +251,13 @@ class EpubMetadataExtractor:
 
     def save_cover(self, output_path):
         """
-        Guarda la portada extraída en el disco en dos versiones:
-        1. Standard (600px) para desktop/vista detalle
-        2. Thumbnail móvil (200px, calidad 70%) para listas - carga ultra rápida
+        Guarda la portada extraída en el disco en 4 versiones progresivas:
+        1. Original: Sin modificar (full quality)
+        2. High: 800px, quality 85%
+        3. Medium: 400px, quality 80%
+        4. Low: 200px, quality 70% (default para UI - carga ultra rápida)
+        
+        Returns dict with paths for all versions
         """
         if self.cover_data and self.cover_extension:
             try:
@@ -262,29 +266,43 @@ class EpubMetadataExtractor:
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
 
-                # 1. VERSION STANDARD (600px, quality 85)
-                standard_img = img.copy()
-                if standard_img.width > 600:
-                    ratio = 600 / float(standard_img.width)
-                    height = int((float(standard_img.height) * float(ratio)))
-                    standard_img = standard_img.resize((600, height), Image.LANCZOS)
+                # 1. VERSION ORIGINAL (sin modificar, full quality)
+                original_path = output_path.replace('.jpg', '_original.jpg')
+                img.save(original_path, "JPEG", quality=95, optimize=True)
                 
-                standard_img.save(output_path, "JPEG", quality=85, optimize=True)
+                # 2. VERSION HIGH (800px, quality 85)
+                high_path = output_path.replace('.jpg', '_high.jpg')
+                high_img = img.copy()
+                if high_img.width > 800:
+                    ratio = 800 / float(high_img.width)
+                    height = int((float(high_img.height) * float(ratio)))
+                    high_img = high_img.resize((800, height), Image.LANCZOS)
+                high_img.save(high_path, "JPEG", quality=85, optimize=True)
                 
-                # 2. VERSION THUMBNAIL MÓVIL (200px, quality 70) - SUPER LIVIANA
-                thumbnail_path = output_path.replace('.jpg', '_thumb.jpg')
-                mobile_img = img.copy()
+                # 3. VERSION MEDIUM (400px, quality 80)
+                medium_path = output_path.replace('.jpg', '_medium.jpg')
+                medium_img = img.copy()
+                if medium_img.width > 400:
+                    ratio = 400 / float(medium_img.width)
+                    height = int((float(medium_img.height) * float(ratio)))
+                    medium_img = medium_img.resize((400, height), Image.LANCZOS)
+                medium_img.save(medium_path, "JPEG", quality=80, optimize=True)
                 
-                # Thumbnail: 200px de ancho máximo
-                if mobile_img.width > 200:
-                    ratio = 200 / float(mobile_img.width)
-                    height = int((float(mobile_img.height) * float(ratio)))
-                    mobile_img = mobile_img.resize((200, height), Image.LANCZOS)
+                # 4. VERSION LOW (200px, quality 70) - DEFAULT PARA UI
+                low_path = output_path.replace('.jpg', '_low.jpg')
+                low_img = img.copy()
+                if low_img.width > 200:
+                    ratio = 200 / float(low_img.width)
+                    height = int((float(low_img.height) * float(ratio)))
+                    low_img = low_img.resize((200, height), Image.LANCZOS)
+                low_img.save(low_path, "JPEG", quality=70, optimize=True, progressive=True)
                 
-                # Quality 70% con optimización agresiva para máxima compresión
-                mobile_img.save(thumbnail_path, "JPEG", quality=70, optimize=True, progressive=True)
-                
-                return True
+                return {
+                    'original': original_path,
+                    'high': high_path,
+                    'medium': medium_path,
+                    'low': low_path
+                }
             except Exception as e:
                 print(f"Error guardando portada: {e}")
-        return False
+        return None

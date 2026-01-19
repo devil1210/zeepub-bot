@@ -905,13 +905,19 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "demographics": b.demographics,
                     "tags": b.tags,
                     "language": b.language,
-                    "cover_path": b.cover_path,
+                    # Cover images - all quality levels
+                    "cover_original": b.cover_original,
+                    "cover_high": b.cover_high,
+                    "cover_medium": b.cover_medium,
+                    "cover_low": b.cover_low,
+                    # Legacy cover paths for backward compatibility
+                    "cover_path": b.cover_low or b.cover_medium,  # Fallback to low quality
+                    "cover_thumb_path": b.cover_low,  # Thumbnail is now low quality
                     "file_created_at": b.file_created_at.isoformat() if b.file_created_at else None,
                     "file_modified_at": b.file_modified_at.isoformat() if b.file_modified_at else None,
                     "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
                     "series_hash": b.series_hash,
                     "content_hash": b.content_hash,
-                    "cover_thumb_path": b.cover_thumb_path,
                     "book_hash": b.book_hash or b.content_hash  # Use book_hash, fallback to content_hash
                 })
             client.table('local_books').upsert(books_data).execute()

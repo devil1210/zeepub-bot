@@ -83,13 +83,12 @@ class LocalBook(Base):
     tags = Column(JSON)  # Lista de géneros/etiquetas
     language = Column(String(10), default="es")
 
-    # UI
-    cover_path = Column(
-        String(1024)
-    )  # Ruta a la miniatura extraída en data/library/covers/
-    cover_thumb_path = Column(
-        String(1024)
-    )  # Ruta al thumbnail móvil optimizado (200px, 70% quality) para carga ultra rápida
+
+    # UI - Cover Images (Progressive Quality Levels)
+    cover_original = Column(String(1024))  # Original extracted from EPUB (full quality)
+    cover_high = Column(String(1024))      # High quality: 800px width, 85% quality
+    cover_medium = Column(String(1024))    # Medium quality: 400px width, 80% quality
+    cover_low = Column(String(1024))       # Low quality: 200px width, 70% quality (default for UI)
 
 
     # Trazabilidad
@@ -126,8 +125,14 @@ class LocalBook(Base):
             "modifiedAt": (
                 self.file_modified_at.isoformat() if self.file_modified_at else None
             ),
-            "cover": self.cover_path,  # Alias para compatibilidad
-            "cover_thumb": self.cover_thumb_path,
+            # Cover images - all quality levels
+            "cover_original": self.cover_original,
+            "cover_high": self.cover_high,
+            "cover_medium": self.cover_medium,
+            "cover_low": self.cover_low,
+            # Backward compatibility aliases
+            "cover": self.cover_low or self.cover_medium or self.cover_high or self.cover_original,
+            "cover_thumb": self.cover_low,
             "downloadUrl": self.filepath,  # Ruta local para enviar_libro_directo
             "is_folder": False,
             # Enriched data
