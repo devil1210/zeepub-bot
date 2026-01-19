@@ -62,18 +62,22 @@ class LibraryService:
                 books = books_query.limit(100).all()
             else:
                 # Búsqueda FTS5
-                if search_type == "all":
+                if search_type == "all" or search_type == "todos":
                     match_expr = "books_fts MATCH :q"
-                elif search_type == "title":
+                elif search_type == "title" or search_type == "título":
                     match_expr = "title MATCH :q"
-                elif search_type == "author":
+                elif search_type == "author" or search_type == "autor":
                     match_expr = "author MATCH :q"
-                elif search_type in ("illustrator", "translator", "genres", "layout"):
+                elif search_type in ("illustrator", "ilustrador", "translator", "traductor", "genres", "géneros", "layout", "maquetador"):
                     field_map = {
                         "illustrator": "illustrator",
+                        "ilustrador": "illustrator",
                         "translator": "translator",
+                        "traductor": "translator",
                         "genres": "tags",
+                        "géneros": "tags",
                         "layout": "layout_by",
+                        "maquetador": "layout_by",
                     }
                     match_expr = f"{field_map[search_type]} MATCH :q"
                 else:
@@ -160,6 +164,7 @@ class LibraryService:
         page: int = 1,
         items_per_page: int = 20,
         source_id: Optional[int] = None,
+        search_type: str = "todos"
     ) -> Dict[str, Any]:
         """
         Búsqueda agrupada por series_hash. Retorna un objeto similar a Series
@@ -181,13 +186,34 @@ class LibraryService:
                 group_query = group_query.filter(LocalBook.source_id == source_id)
 
             if query:
-                # Usar FTS o LIKE para filtrar los representantes
-                # Por simplicidad aquí usamos LIKE sobre el título/serie_clean
-                group_query = group_query.filter(
-                    (LocalBook.title.ilike(f"%{query}%")) | 
-                    (LocalBook.series.ilike(f"%{query}%")) |
-                    (LocalBook.author.ilike(f"%{query}%"))
-                )
+                # Normalizar search_type (el frontend envía 'todos', 'título', etc)
+                s_type = search_type.lower()
+                
+                if s_type == "título":
+                    group_query = group_query.filter(
+                        (LocalBook.title.ilike(f"%{query}%")) | 
+                        (LocalBook.series.ilike(f"%{query}%"))
+                    )
+                elif s_type == "autor":
+                    group_query = group_query.filter(LocalBook.author.ilike(f"%{query}%"))
+                elif s_type == "ilustrador":
+                    group_query = group_query.filter(LocalBook.illustrator.ilike(f"%{query}%"))
+                elif s_type == "traductor":
+                    group_query = group_query.filter(LocalBook.translator.ilike(f"%{query}%"))
+                elif s_type in ("maquetador", "layout"):
+                    group_query = group_query.filter(LocalBook.layout_by.ilike(f"%{query}%"))
+                elif s_type in ("géneros", "genres", "categoria"):
+                    # tags es una columna JSON, ilike sobre su representación string en SQLite funciona para búsqueda básica
+                    group_query = group_query.filter(
+                        (LocalBook.tags.ilike(f"%{query}%")) |
+                        (LocalBook.book_type.ilike(f"%{query}%"))
+                    )
+                else: # todos o fallback
+                    group_query = group_query.filter(
+                        (LocalBook.title.ilike(f"%{query}%")) | 
+                        (LocalBook.series.ilike(f"%{query}%")) |
+                        (LocalBook.author.ilike(f"%{query}%"))
+                    )
 
             group_query = group_query.group_by(LocalBook.series_hash)
             

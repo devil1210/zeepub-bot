@@ -42,15 +42,15 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
     user_id = user_data.get("user_id", 0)
     user_role = user_data.get("role", "free")
     query = data.get("query")
-    page_url = data.get("pageUrl")
     page = data.get("page", 1)
+    search_type = data.get("type", "todos")
 
     is_local_search = True # Always enforced for web interface
     
     if is_local_search:
-        logger.info(f"[search] Using LibraryService for grouped series search. Query: '{query or ''}'")
+        logger.info(f"[search] Using LibraryService for grouped series search. Query: '{query or ''}' Type: '{search_type}'")
         return await LibraryService.search_series(
-            query or "", page=page
+            query or "", page=page, search_type=search_type
         )
 
     # REMOVED: OPDS Fallback Logic
