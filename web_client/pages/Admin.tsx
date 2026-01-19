@@ -563,7 +563,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                                         </div>
                                         <p className="text-[9px] text-gray-500">
                                           {(book.file_size / (1024 * 1024)).toFixed(2)} MB •
-                                          Indexado: {new Date(book.indexed_at).toLocaleDateString()}
+                                          Indexado: {new Date(book.indexed_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                         </p>
                                       </div>
                                     </div>

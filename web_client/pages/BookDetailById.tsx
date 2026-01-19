@@ -233,7 +233,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
                     <div className="glass-panel p-4 rounded-xl border border-white/5">
                         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Actualizado</p>
                         <p className="text-white font-bold text-sm truncate">
-                            {new Date(book.modifiedAtOpf || book.modifiedAt).toLocaleDateString()}
+                            {new Date(book.modifiedAtOpf || book.modifiedAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </p>
                     </div>
                 )}

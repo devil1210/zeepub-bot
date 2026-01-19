@@ -202,7 +202,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString();
+      return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
     } catch {
       return dateStr;
     }
