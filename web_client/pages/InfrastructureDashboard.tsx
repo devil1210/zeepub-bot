@@ -34,6 +34,8 @@ export const InfrastructureDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [logs, setLogs] = useState<{ time: string, level: string, msg: string, color: string }[]>([]);
+    const [auditLogs, setAuditLogs] = useState<any[]>([]);
+    const [auditLoading, setAuditLoading] = useState(false);
 
     const fetchStats = async () => {
         try {
@@ -45,6 +47,20 @@ export const InfrastructureDashboard: React.FC = () => {
             addLog('ERROR', 'Failed to fetch system stats');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchAuditLogs = async () => {
+        setAuditLoading(true);
+        try {
+            const res = await api.getRecentAuditLogs(20);
+            if (res.success) {
+                setAuditLogs(res.logs || []);
+            }
+        } catch (error) {
+            console.error('Error fetching audit logs:', error);
+        } finally {
+            setAuditLoading(false);
         }
     };
 
@@ -67,6 +83,7 @@ export const InfrastructureDashboard: React.FC = () => {
         ]);
 
         const interval = setInterval(fetchStats, 60000); // Refresh every minute
+        fetchAuditLogs();
         return () => clearInterval(interval);
     }, []);
 
@@ -267,22 +284,50 @@ export const InfrastructureDashboard: React.FC = () => {
                                 </button>
                             </div>
 
-                            <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-[#0d93f2]/50 transition-colors group cursor-default shadow-sm">
+                            <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-amber-500/50 transition-colors group cursor-default shadow-sm">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Backup Database</h4>
-                                    <Database className="w-4 h-4 text-slate-400 group-hover:text-[#0d93f2] transition-colors" />
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Enrich Metadata</h4>
+                                    <Zap className="w-4 h-4 text-slate-400 group-hover:text-amber-500 transition-colors" />
                                 </div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
-                                    Sync SQLite library data to Supabase for persistence.
+                                    Fetch missing descriptions and covers from online sources.
                                 </p>
                                 <button
                                     disabled={!!actionLoading}
-                                    onClick={() => handleAction('Backup', api.adminBackupLibrary)}
-                                    className="w-full py-2 text-xs font-black text-center bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 disabled:bg-slate-500 text-slate-700 dark:text-slate-200 rounded-lg transition-colors uppercase tracking-widest flex items-center justify-center gap-2"
+                                    onClick={() => handleAction('Enrich Metadata', api.adminEnrichMetadata)}
+                                    className="w-full py-2 text-xs font-black text-center bg-amber-500/10 hover:bg-amber-500 text-amber-600 hover:text-white border border-amber-500/20 rounded-lg transition-all uppercase tracking-widest flex items-center justify-center gap-2"
                                 >
-                                    {actionLoading === 'Backup' ? <Loader2 className="w-3 h-3 animate-spin" /> : <CloudDownload className="w-3 h-3" />}
-                                    Start Backup
+                                    {actionLoading === 'Enrich Metadata' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                                    Run Enrichment
                                 </button>
+                            </div>
+
+                            <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-[#0d93f2]/50 transition-colors group cursor-default shadow-sm">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Cloud Sync</h4>
+                                    <Shield className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
+                                    Sync local database and users to Supabase for double persistence.
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        disabled={!!actionLoading}
+                                        onClick={() => handleAction('Sync Users', api.adminSyncUsersCloud)}
+                                        className="py-2 text-[10px] font-black text-center bg-blue-500/10 hover:bg-blue-500 text-blue-600 hover:text-white border border-blue-500/20 rounded-lg transition-all uppercase tracking-widest flex items-center justify-center gap-1.5"
+                                    >
+                                        {actionLoading === 'Sync Users' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Users className="w-3 h-3" />}
+                                        Users
+                                    </button>
+                                    <button
+                                        disabled={!!actionLoading}
+                                        onClick={() => handleAction('Backup', api.adminBackupLibrary)}
+                                        className="py-2 text-[10px] font-black text-center bg-purple-500/10 hover:bg-purple-500 text-purple-600 hover:text-white border border-purple-500/20 rounded-lg transition-all uppercase tracking-widest flex items-center justify-center gap-1.5"
+                                    >
+                                        {actionLoading === 'Backup' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Library className="w-3 h-3" />}
+                                        Library
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 border-red-500/20 hover:border-red-500/50 transition-colors group cursor-default shadow-sm">
@@ -309,8 +354,78 @@ export const InfrastructureDashboard: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Recent Activity Section */}
+                    <div className="lg:col-span-2 glass-panel border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-xl p-6 shadow-sm flex flex-col min-h-[400px]">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <Activity className="text-purple-500 w-5 h-5" />
+                                Recent Activity
+                            </h3>
+                            <button
+                                onClick={fetchAuditLogs}
+                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                            >
+                                <RefreshCw className={`w-4 h-4 text-slate-400 ${auditLoading ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead>
+                                    <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
+                                        <th className="pb-3 px-2">Time</th>
+                                        <th className="pb-3 px-2">Admin</th>
+                                        <th className="pb-3 px-2">Action</th>
+                                        <th className="pb-3 px-2">Target User</th>
+                                        <th className="pb-3 px-2">Detail</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                    {auditLogs.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="py-10 text-center text-slate-400 italic">No activity logs found.</td>
+                                        </tr>
+                                    ) : (
+                                        auditLogs.map((log) => (
+                                            <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                                <td className="py-3 px-2 text-slate-400">{new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td>
+                                                <td className="py-3 px-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold">
+                                                            {log.changed_by_username?.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <span className="font-medium">{log.changed_by_username}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-2">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${log.action === 'update_permissions' ? 'bg-blue-100 text-blue-600' :
+                                                        log.action === 'update_level' ? 'bg-purple-100 text-purple-600' :
+                                                            'bg-slate-100 text-slate-600'
+                                                        }`}>
+                                                        {log.action.replace('update_', '')}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-2 font-medium">{log.username || log.user_id}</td>
+                                                <td className="py-3 px-2">
+                                                    <div className="max-w-[200px] truncate">
+                                                        {log.changes_summary ? (
+                                                            Object.entries(log.changes_summary).map(([key, val]: [string, any]) => (
+                                                                <span key={key} className="inline-block mr-2 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-[9px]">
+                                                                    <span className="text-slate-400">{key}:</span> {typeof val === 'object' ? (val.new || val.to) : val}
+                                                                </span>
+                                                            ))
+                                                        ) : 'No summary'}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     {/* System Logs Section */}
-                    <div className="lg:col-span-2 glass-panel border border-white/50 dark:border-white/10 bg-white/30 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-xl p-0 overflow-hidden flex flex-col h-[500px] lg:h-auto shadow-sm">
+                    <div className="lg:col-span-1 glass-panel border border-white/50 dark:border-white/10 bg-white/30 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-xl p-0 overflow-hidden flex flex-col h-[500px] lg:h-auto shadow-sm">
                         <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 flex justify-between items-center">
                             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                                 <Terminal className="w-4 h-4 text-slate-400" />

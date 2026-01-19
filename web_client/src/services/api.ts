@@ -91,6 +91,7 @@ export const api = {
     setAdminUserLevel: (userId: string, levelId: number) =>
         rpc('admin_set_user_level', { userId, levelId }),
     adminBackupLibrary: () => rpc('admin_backup_library'),
+    adminSyncUsersCloud: () => rpc('admin_sync_users_cloud'),
     adminScanLibrary: (force: boolean = false) => rpc('admin_scan_library', { force }),
     adminEnrichMetadata: () => rpc('admin_enrich_metadata'),
     adminResetLibrary: (confirmed: boolean) => rpc('admin_reset_library', { confirmed }),
@@ -144,6 +145,9 @@ export const api = {
     // User Audit History
     getUserAuditHistory: (userId: string, limit: number = 50, offset: number = 0) =>
         rpc('get_user_audit_history', { userId, limit, offset }),
+
+    getRecentAuditLogs: (limit: number = 20, offset: number = 0) =>
+        rpc('admin_get_recent_audit_logs', { limit, offset }),
 
     // Raw RPC Access
     rpc: rpc

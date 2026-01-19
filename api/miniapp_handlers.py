@@ -932,6 +932,97 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
         logger.error(f"Error backup library to Supabase: {e}")
         return {"success": False, "message": str(e)}
 
+
+async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Sincroniza usuarios y niveles locales a Supabase."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    if not config.ENABLE_SUPABASE:
+        return {"success": False, "message": "Supabase no está habilitado."}
+
+    try:
+        from core.db_manager import db_manager
+        from core.supabase_client import supabase_manager
+        import json
+        
+        client = supabase_manager.get_client()
+        
+        async with db_manager.connection() as conn:
+            # 1. Sync User Levels
+            cursor = await conn.execute("SELECT * FROM user_levels")
+            levels = await cursor.fetchall()
+            
+            # Get columns from user_levels
+            cursor = await conn.execute("PRAGMA table_info(user_levels)")
+            lvl_cols = [c[1] for c in await cursor.fetchall()]
+            
+            for lvl in levels:
+                lvl_data = {}
+                for idx, col in enumerate(lvl_cols):
+                    val = lvl[idx]
+                    # Map SQLite names to Supabase if needed, or keep same
+                    lvl_data[col] = val
+                
+                # Special handling for Supabase bools if SQLite stored 0/1
+                bool_cols = ["has_mini_app_access", "early_access", "custom_themes", "show_recommendations", "can_download", "can_read"]
+                for bc in bool_cols:
+                    if bc in lvl_data:
+                        lvl_data[bc] = bool(lvl_data[bc])
+
+                client.table('user_levels').upsert(lvl_data).execute()
+
+            # 2. Sync Users
+            cursor = await conn.execute("SELECT * FROM users")
+            users = await cursor.fetchall()
+            
+            cursor = await conn.execute("PRAGMA table_info(users)")
+            usr_cols = [c[1] for c in await cursor.fetchall()]
+            
+            user_batch = []
+            for u in users:
+                u_data = {}
+                for idx, col in enumerate(usr_cols):
+                    val = u[idx]
+                    u_data[col] = val
+                
+                # Handle dates and JSON
+                if u_data.get("added_at"):
+                    if isinstance(u_data["added_at"], str):
+                        pass # SQLite stores as string
+                
+                if u_data.get("expires_at") and not isinstance(u_data["expires_at"], str):
+                    u_data["expires_at"] = u_data["expires_at"].isoformat()
+
+                # Boolean fix
+                for bc in ["has_library_access", "can_request_books"]:
+                    if bc in u_data:
+                        u_data[bc] = bool(u_data[bc])
+
+                # JSON parse/re-encode to ensure validity
+                for jc in ["roles", "insignias", "settings"]:
+                    if u_data.get(jc):
+                        try:
+                            if isinstance(u_data[jc], str):
+                                u_data[jc] = json.loads(u_data[jc])
+                        except:
+                            pass
+                
+                user_batch.append(u_data)
+                
+                if len(user_batch) >= 50:
+                    client.table('users').upsert(user_batch).execute()
+                    user_batch = []
+            
+            if user_batch:
+                client.table('users').upsert(user_batch).execute()
+
+        return {"success": True, "message": f"Sincronizados {len(levels)} niveles y {len(users)} usuarios a la nube."}
+    except Exception as e:
+        logger.error(f"Error syncing users to Supabase: {e}")
+        return {"success": False, "message": str(e)}
+
 async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Activates forced library scan."""
     user_role = user_data.get("role", "free")
@@ -1774,4 +1865,31 @@ async def handle_get_user_audit_history(data: Dict[str, Any], user_data: Dict[st
         }
     except Exception as e:
         logger.error(f"Error getting user audit history: {e}")
+        return {"success": False, "message": str(e)}
+        
+        
+async def handle_admin_get_recent_audit_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Obtiene los cambios recientes en el sistema."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    try:
+        from services.user_audit_service import UserAuditService
+        
+        limit = data.get("limit", 100)
+        offset = data.get("offset", 0)
+        
+        recent = UserAuditService.get_recent_changes(
+            limit=limit,
+            offset=offset
+        )
+        
+        return {
+            "success": True,
+            "logs": recent,
+            "count": len(recent)
+        }
+    except Exception as e:
+        logger.error(f"Error getting recent audit logs: {e}")
         return {"success": False, "message": str(e)}

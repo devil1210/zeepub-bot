@@ -118,6 +118,7 @@ async def handle_bot_request(
             handle_admin_get_users,
             handle_admin_set_user_level,
             handle_admin_backup_library,
+            handle_admin_sync_users_cloud,
             handle_admin_scan_library,
             handle_admin_reset_library,
             handle_admin_restart_docker,
@@ -131,6 +132,7 @@ async def handle_bot_request(
             handle_admin_enrich_metadata,
             handle_update_user_setting,
             handle_get_user_audit_history,
+            handle_admin_get_recent_audit_logs,
         )
 
         ACTION_HANDLERS = {
@@ -155,6 +157,7 @@ async def handle_bot_request(
             "admin_get_users": handle_admin_get_users,
             "admin_set_user_level": handle_admin_set_user_level,
             "admin_backup_library": handle_admin_backup_library,
+            "admin_sync_users_cloud": handle_admin_sync_users_cloud,
             "admin_scan_library": handle_admin_scan_library,
             "admin_reset_library": handle_admin_reset_library,
             "admin_restart_docker": handle_admin_restart_docker,
@@ -163,6 +166,7 @@ async def handle_bot_request(
             "admin_get_tier_config": handle_admin_get_tier_config,
             "admin_save_user_permissions": handle_admin_save_user_permissions,
             "admin_get_user_permissions": handle_admin_get_user_permissions,
+            "admin_get_recent_audit_logs": handle_admin_get_recent_audit_logs,
             "admin_find_duplicates": handle_admin_find_duplicates,
             "admin_delete_duplicate": handle_admin_delete_duplicate,
             "admin_enrich_metadata": handle_admin_enrich_metadata,
