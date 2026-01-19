@@ -65,7 +65,8 @@ def check_migrations():
             ("rating_count", "INTEGER DEFAULT 0"),
             ("content_hash", "VARCHAR(64)"),
             ("series_hash", "VARCHAR(64)"),
-            ("spanish_title", "TEXT"), # Added spanish_title
+            ("spanish_title", "TEXT"),
+            ("jap_title", "TEXT"),
         ]
 
         # 1. Migración de columnas (local_books)
@@ -126,8 +127,8 @@ def init_fts():
             # Verificar si tiene el campo nuevo 'layout_by'
             cursor.execute("PRAGMA table_info(books_fts)")
             cols = [r[1] for r in cursor.fetchall()]
-            if "layout_by" not in cols:
-                _log.info("Migración: FTS5 no tiene 'layout_by'. Recreando índice...")
+            if "jap_title" not in cols:
+                _log.info("Migración: FTS5 no tiene 'jap_title'. Recreando índice...")
                 cursor.execute("DROP TABLE books_fts")
                 cursor.execute("DROP TRIGGER IF EXISTS books_ai")
                 cursor.execute("DROP TRIGGER IF EXISTS books_ad")
@@ -152,6 +153,7 @@ def init_fts():
                     layout_by,
                     publisher,
                     tags,
+                    jap_title,
                     content='local_books',
                     content_rowid='id'
                 )
@@ -161,8 +163,8 @@ def init_fts():
             # Poblar inicialmente
             cursor.execute(
                 """
-                INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags)
-                SELECT id, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags FROM local_books
+                INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags, jap_title)
+                SELECT id, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags, jap_title FROM local_books
             """
             )
 
@@ -171,8 +173,8 @@ def init_fts():
             cursor.execute(
                 """
                 CREATE TRIGGER IF NOT EXISTS books_ai AFTER INSERT ON local_books BEGIN
-                  INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags)
-                  VALUES (new.id, new.title, new.romaji_title, new.english_title, new.series, new.author, new.illustrator, new.translator, new.layout_by, new.publisher, new.tags);
+                  INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags, jap_title)
+                  VALUES (new.id, new.title, new.romaji_title, new.english_title, new.series, new.author, new.illustrator, new.translator, new.layout_by, new.publisher, new.tags, new.jap_title);
                 END;
             """
             )
@@ -181,8 +183,8 @@ def init_fts():
             cursor.execute(
                 """
                 CREATE TRIGGER IF NOT EXISTS books_ad AFTER DELETE ON local_books BEGIN
-                  INSERT INTO books_fts(books_fts, rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags)
-                  VALUES('delete', old.id, old.title, old.romaji_title, old.english_title, old.series, old.author, old.illustrator, old.translator, old.layout_by, old.publisher, old.tags);
+                  INSERT INTO books_fts(books_fts, rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags, jap_title)
+                  VALUES('delete', old.id, old.title, old.romaji_title, old.english_title, old.series, old.author, old.illustrator, old.translator, old.layout_by, old.publisher, old.tags, old.jap_title);
                 END;
             """
             )
@@ -191,10 +193,10 @@ def init_fts():
             cursor.execute(
                 """
                 CREATE TRIGGER IF NOT EXISTS books_au AFTER UPDATE ON local_books BEGIN
-                  INSERT INTO books_fts(books_fts, rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags)
-                  VALUES('delete', old.id, old.title, old.romaji_title, old.english_title, old.series, old.author, old.illustrator, old.translator, old.layout_by, old.publisher, old.tags);
-                  INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags)
-                  VALUES (new.id, new.title, new.romaji_title, new.english_title, new.series, new.author, new.illustrator, new.translator, new.layout_by, new.publisher, new.tags);
+                  INSERT INTO books_fts(books_fts, rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags, jap_title)
+                  VALUES('delete', old.id, old.title, old.romaji_title, old.english_title, old.series, old.author, old.illustrator, old.translator, old.layout_by, old.publisher, old.tags, old.jap_title);
+                  INSERT INTO books_fts(rowid, title, romaji_title, english_title, series, author, illustrator, translator, layout_by, publisher, tags, jap_title)
+                  VALUES (new.id, new.title, new.romaji_title, new.english_title, new.series, new.author, new.illustrator, new.translator, new.layout_by, new.publisher, new.tags, new.jap_title);
                 END;
             """
             )

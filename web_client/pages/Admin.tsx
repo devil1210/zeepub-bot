@@ -35,7 +35,8 @@ import {
   CheckCircle,
   Loader2,
   Copy,
-  Trash2
+  Trash2,
+  Globe
 } from 'lucide-react';
 import { UserPermissions } from './UserPermissions';
 import { TierConfiguration } from './TierConfiguration';
@@ -192,6 +193,18 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       const res = await api.adminScanLibrary(force);
       alert(res.message || "Escaneo completado");
       fetchAdminData();
+    } catch (error: any) {
+      alert("Error: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEnrichMetadata = async () => {
+    try {
+      setLoading(true);
+      const res = await api.adminEnrichMetadata();
+      alert(res.message || "Proceso de enriquecimiento iniciado");
     } catch (error: any) {
       alert("Error: " + error.message);
     } finally {
@@ -640,6 +653,21 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                           className="w-full py-2 text-[9px] font-black text-center bg-purple-500 hover:bg-purple-600 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-purple-500/20 active:scale-95 disabled:opacity-50"
                         >
                           {loading ? "Sincronizando..." : "Respaldar Biblioteca"}
+                        </button>
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group cursor-pointer">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-white text-[10px] uppercase">Actualizar Metadatos Online</h4>
+                          <Globe className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                        </div>
+                        <p className="text-[10px] text-gray-500 mb-3 uppercase tracking-tight">Busca info extra (títulos ES/EN, descripción) via ISBN</p>
+                        <button
+                          onClick={handleEnrichMetadata}
+                          disabled={loading}
+                          className="w-full py-2 text-[9px] font-black text-center bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50"
+                        >
+                          {loading ? "Ejecutando..." : "Sincronizar Metadatos Web"}
                         </button>
                       </div>
 

@@ -882,6 +882,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "english_title": b.english_title,
                     "series": b.series,
                     "spanish_title": b.spanish_title,
+                    "jap_title": b.jap_title,
                     "volume": float(b.volume) if b.volume is not None else None,
                     "author": b.author,
                     "illustrator": b.illustrator,
@@ -939,6 +940,10 @@ async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, A
 
     try:
         from services.scanner_service import ScannerService
+        
+        if ScannerService._is_scanning:
+            return {"success": False, "message": "⚠️ Ya hay un escaneo de librería en progreso."}
+
         libs_json = os.getenv("LOCAL_LIBRARIES")
         if not libs_json:
             return {"success": False, "message": "LOCAL_LIBRARIES no configurada."}
@@ -955,6 +960,36 @@ async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, A
         }
     except Exception as e:
         logger.error(f"Error starting background scan: {e}")
+        return {"success": False, "message": str(e)}
+
+
+async def handle_admin_enrich_metadata(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Activates manual enrichment of metadata from online sources."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    async def run_enrichment_in_background(scanner_obj):
+        try:
+            logger.info("Background metadata enrichment started")
+            await asyncio.to_thread(scanner_obj.enrich_all_metadata)
+            logger.info("Background metadata enrichment completed.")
+        except Exception as e:
+            logger.error(f"Background enrichment error: {e}")
+
+    try:
+        from services.scanner_service import ScannerService
+        libs_json = os.getenv("LOCAL_LIBRARIES")
+        scanner = ScannerService(libs_json or "{}")
+        
+        asyncio.create_task(run_enrichment_in_background(scanner))
+        
+        return {
+            "success": True, 
+            "message": "Enriquecimiento de metadatos iniciado en segundo plano. Se procesarán libros con ISBN que no tengan título en español o descripción."
+        }
+    except Exception as e:
+        logger.error(f"Error starting enrichment task: {e}")
         return {"success": False, "message": str(e)}
 
 

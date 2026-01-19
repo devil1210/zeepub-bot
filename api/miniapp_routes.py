@@ -124,6 +124,7 @@ async def handle_bot_request(
             handle_admin_get_user_permissions,
             handle_admin_find_duplicates,
             handle_admin_delete_duplicate,
+            handle_admin_enrich_metadata,
             handle_update_user_setting,
         )
 
@@ -159,6 +160,7 @@ async def handle_bot_request(
             "admin_get_user_permissions": handle_admin_get_user_permissions,
             "admin_find_duplicates": handle_admin_find_duplicates,
             "admin_delete_duplicate": handle_admin_delete_duplicate,
+            "admin_enrich_metadata": handle_admin_enrich_metadata,
             "update_user_setting": handle_update_user_setting,
         }
 

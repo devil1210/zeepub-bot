@@ -92,6 +92,7 @@ export const api = {
         rpc('admin_set_user_level', { userId, levelId }),
     adminBackupLibrary: () => rpc('admin_backup_library'),
     adminScanLibrary: (force: boolean = false) => rpc('admin_scan_library', { force }),
+    adminEnrichMetadata: () => rpc('admin_enrich_metadata'),
 
     // Tier Configuration
     getTierConfig: (name: string) => rpc('admin_get_tier_config', { name }),

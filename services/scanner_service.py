@@ -18,6 +18,9 @@ class ScannerService:
     Servicio encargado de sincronizar las carpetas físicas con la base de datos.
     """
 
+    _scan_lock = asyncio.Lock()
+    _is_scanning = False
+
     def __init__(self, libraries_config_json: str):
         """
         libraries_config_json: JSON string con formato '{"Nombre": "/ruta", ...}'
@@ -34,6 +37,11 @@ class ScannerService:
         """
         Sincroniza todas las fuentes configuradas.
         """
+        if ScannerService._is_scanning:
+            logger.warning("Ya hay un escaneo en curso. Saltando.")
+            return False
+
+        ScannerService._is_scanning = True
         session = get_session()
         try:
             for name, path in self.libraries.items():
@@ -52,8 +60,10 @@ class ScannerService:
                 session.commit()
 
             print("Escaneo completado exitosamente.")
+            return True
         finally:
             session.close()
+            ScannerService._is_scanning = False
 
     def _scan_directory(self, source, session, force_scan=False):
         """
@@ -200,9 +210,8 @@ class ScannerService:
             # Enriched identifiers and dates
             book.isbn = meta.get("isbn")
             
-            # 5. Enriquecimiento vía ISBN si está disponible
-            if book.isbn:
-                self._enrich_from_isbn(book)
+            # Enriquecimientos adicionales se hacen manualmente via admin panel 
+            # para evitar 429 Too Many Requests y bloqueos de DB innecesarios
 
             book.asin = meta.get("asin")
             book.uri_id = meta.get("uri")
@@ -294,17 +303,61 @@ class ScannerService:
             book_type=book.book_type
         )
 
+    def enrich_all_metadata(self, delay_seconds=2.0):
+        """
+        Busca metadatos online para libros que tienen ISBN pero les falta info,
+        procesando uno a uno con esperas para evitar 429.
+        """
+        if ScannerService._is_scanning:
+            logger.warning("No se puede enriquecer metadatos mientras hay un escaneo en curso.")
+            return False
+
+        ScannerService._is_scanning = True
+        session = get_session()
+        try:
+            # Buscar libros con ISBN pero sin spanish_title o descripción
+            books = session.query(LocalBook).filter(
+                LocalBook.isbn != None,
+                LocalBook.isbn != '',
+                (LocalBook.spanish_title == None) | (LocalBook.description == None)
+            ).all()
+
+            logger.info(f"Iniciando enriquecimiento manual para {len(books)} libros.")
+            
+            for i, book in enumerate(books):
+                if self._enrich_from_isbn(book):
+                    session.commit()
+                    logger.info(f"[{i+1}/{len(books)}] Enriquecido: {book.title}")
+                    import time
+                    time.sleep(delay_seconds)
+                else:
+                    # Si falla o no encuentra, no paramos pero notificamos
+                    logger.debug(f"[{i+1}/{len(books)}] No se encontró info extra para: {book.title}")
+
+            logger.info("Enriquecimiento masivo completado.")
+            return True
+        finally:
+            session.close()
+            ScannerService._is_scanning = False
+
     def _enrich_from_isbn(self, book):
         """
         Busca metadatos adicionales (títulos en inglés/español) usando Google Books API.
+        Retorna True si encontró algo y lo aplicó.
         """
         import httpx
         try:
+            if not book.isbn: return False
             isbn = re.sub(r'[^\d]', '', str(book.isbn))
-            if not isbn: return
+            if not isbn: return False
 
             url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}&hl=es"
-            response = httpx.get(url, timeout=5.0)
+            response = httpx.get(url, timeout=10.0)
+            
+            if response.status_code == 429:
+                logger.warning(f"Google Books API rate limited (429). Esperando...")
+                return False
+
             if response.status_code == 200:
                 data = response.json()
                 if data.get("totalItems", 0) > 0:
@@ -312,19 +365,28 @@ class ScannerService:
                     api_title = item.get("title")
                     api_lang = item.get("language", "en")
                     
+                    found_something = False
                     if api_lang == "es":
-                        book.spanish_title = api_title
+                        if not book.spanish_title:
+                            book.spanish_title = api_title
+                            found_something = True
+                    elif api_lang in ("ja", "jp"):
+                        if not book.jap_title:
+                            book.jap_title = api_title
+                            found_something = True
                     else:
                         if not book.english_title:
                             book.english_title = api_title
-                    
-                    # Search for secondary title/translated title if possible
-                    # Google Books sometimes has 'originalTitle' or similar in other contexts, 
-                    # but for basic volumesInfo we only have the main title in the requested language.
+                            found_something = True
                     
                     if not book.description and item.get("description"):
                         book.description = item.get("description")
+                        found_something = True
                     
-                    logger.info(f"Metadatos enriquecidos (Lang: {api_lang}) para ISBN {isbn}: {api_title}")
+                    if found_something:
+                        logger.info(f"Metadatos extraídos para ISBN {isbn}: {api_title}")
+                        return True
+            return False
         except Exception as e:
             logger.error(f"Error enriqueciendo desde ISBN {book.isbn}: {e}")
+            return False

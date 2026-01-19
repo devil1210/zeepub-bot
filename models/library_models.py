@@ -46,6 +46,7 @@ class LocalBook(Base):
     romaji_title = Column(String(512))
     spanish_title = Column(String(512))  # Nueva columna
     english_title = Column(String(512))
+    jap_title = Column(String(512))
     series = Column(String(255))
     volume = Column(Float)  # Soporta 1, 1.5, etc
 
@@ -113,6 +114,7 @@ class LocalBook(Base):
             "romajiTitle": self.romaji_title,
             "spanishTitle": self.spanish_title,
             "englishTitle": self.english_title,
+            "japTitle": self.jap_title,
             "series": self.series,
             "seriesHash": self.series_hash,
             "seriesIndex": self.volume,
@@ -144,6 +146,7 @@ class LocalBook(Base):
             "pageCount": self.page_count,
             "english_title": self.english_title,
             "spanish_title": self.spanish_title,
+            "jap_title": self.jap_title,
             "romaji_title": self.romaji_title,
 
             "readingTime": self.reading_time,
@@ -153,7 +156,7 @@ class LocalBook(Base):
             "autor": self.author,
             "categoria": self.book_type,
             "book_type": self.book_type,
-            "clean_title": self.english_title or self.series,
+            "clean_title": self.series or self.english_title or self.title,
             "series_hash": self.series_hash,
             "titulo_serie": self.series,
             "rating_average": self.rating_average,
