@@ -32,8 +32,13 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "expires_at": self._parse_datetime(user['expires_at']),
                         "custom_status": user['custom_status'],
                         "nickname": user['nickname'],
+                        "name": user.get('name'),
+                        "username": user.get('username'),
+                        "roles": user.get('roles') or [],
+                        "insignias": user.get('insignias') or [],
                         "settings": user['settings'] or {},
                         "total_downloads": user['total_downloads'] or 0,
+                        "level_id": user.get('level_id', 6),
                     }
                 return None
             except Exception as e:
@@ -42,18 +47,28 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
         async with self.db.connection() as conn:
             cursor = await conn.execute(
-                "SELECT role, expires_at, custom_status, nickname, settings, total_downloads FROM users WHERE telegram_id = ?",
+                "SELECT role, expires_at, custom_status, nickname, settings, total_downloads, name, username, roles, level_id, insignias FROM users WHERE telegram_id = ?",
                 (telegram_id,),
             )
             row = await cursor.fetchone()
             if row:
-                role, expires_at_raw, custom_status, nickname, settings_raw, total_downloads = row
+                role, expires_at_raw, custom_status, nickname, settings_raw, total_downloads, name, username, roles_raw, level_id, insignias_raw = row
                 expires_at = self._parse_datetime(expires_at_raw)
                 import json
                 try:
                     settings = json.loads(settings_raw) if settings_raw else {}
                 except Exception:
                     settings = {}
+                
+                try:
+                    roles = json.loads(roles_raw) if roles_raw else []
+                except Exception:
+                    roles = []
+
+                try:
+                    insignias = json.loads(insignias_raw) if insignias_raw else []
+                except Exception:
+                    insignias = []
 
                 return {
                     "telegram_id": telegram_id,
@@ -61,8 +76,13 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "expires_at": expires_at,
                     "custom_status": custom_status,
                     "nickname": nickname,
+                    "name": name,
+                    "username": username,
+                    "roles": roles,
+                    "insignias": insignias,
                     "settings": settings,
                     "total_downloads": total_downloads or 0,
+                    "level_id": level_id
                 }
             return None
 
@@ -96,6 +116,11 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         custom_status: Optional[str] = None,
         created_by: Optional[int] = None,
         nickname: Optional[str] = None,
+        name: Optional[str] = None,
+        username: Optional[str] = None,
+        roles: Optional[list] = None,
+        insignias: Optional[list] = None,
+        level_id: Optional[int] = None,
     ):
         # Admin level mapping
         role_to_level = {
@@ -108,15 +133,20 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 logger.info(f"[UPSERT DEBUG] Attempting upsert for user {telegram_id}, role={role}")
                 logger.info(f"[UPSERT DEBUG] Supabase client active: {self.supabase.is_active}")
                 
+                import json
                 data = {
                     "telegram_id": telegram_id,
                     "role": role.lower(),
-                    "level_id": level_id
+                    "level_id": level_id if level_id is not None else role_to_level.get(role.lower(), 6)
                 }
                 if expires_at: data["expires_at"] = expires_at.isoformat()
-                if custom_status: data["custom_status"] = custom_status
+                if custom_status is not None: data["custom_status"] = custom_status
                 if created_by: data["created_by"] = created_by
-                if nickname: data["nickname"] = nickname
+                if nickname is not None: data["nickname"] = nickname
+                if name is not None: data["name"] = name
+                if username is not None: data["username"] = username
+                if roles is not None: data["roles"] = json.dumps(roles)
+                if insignias is not None: data["insignias"] = json.dumps(insignias)
                 
                 logger.info(f"[UPSERT DEBUG] Data to upsert: {data}")
                 
@@ -148,8 +178,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             exists = await cursor.fetchone()
 
             if exists:
+                import json
                 fields = ["role = ?", "level_id = ?"]
-                params = [role, level_id]
+                params = [role, level_id if level_id is not None else role_to_level.get(role.lower(), 6)]
                 if expires_at is not None:
                     fields.append("expires_at = ?")
                     params.append(expires_at)
@@ -162,22 +193,39 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if nickname is not None:
                     fields.append("nickname = ?")
                     params.append(nickname)
+                if name is not None:
+                    fields.append("name = ?")
+                    params.append(name)
+                if username is not None:
+                    fields.append("username = ?")
+                    params.append(username)
+                if roles is not None:
+                    fields.append("roles = ?")
+                    params.append(json.dumps(roles))
+                if insignias is not None:
+                    fields.append("insignias = ?")
+                    params.append(json.dumps(insignias))
 
                 params.append(telegram_id)
                 sql = f"UPDATE users SET {', '.join(fields)} WHERE telegram_id = ?"
                 await conn.execute(sql, tuple(params))
             else:
+                import json
                 await conn.execute(
-                    "INSERT INTO users (telegram_id, role, level_id, added_at, expires_at, custom_status, created_by, nickname, settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '{}')",
+                    "INSERT INTO users (telegram_id, role, level_id, added_at, expires_at, custom_status, created_by, nickname, name, username, roles, insignias, settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}')",
                     (
                         telegram_id,
                         role,
-                        level_id,
+                        level_id if level_id is not None else role_to_level.get(role.lower(), 6),
                         datetime.utcnow(),
                         expires_at,
                         custom_status,
                         created_by,
                         nickname,
+                        name,
+                        username,
+                        json.dumps(roles) if roles is not None else '[]',
+                        json.dumps(insignias) if insignias is not None else '[]',
                     ),
                 )
 
@@ -275,7 +323,11 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         },
                         "hasAccess": bool(lvl.get('has_mini_app_access')) or is_admin,
                         "isAdmin": is_admin,
-                        "isBetaTester": beta_tester
+                        "isBetaTester": beta_tester,
+                        "name": user.get('name'),
+                        "username": user.get('username'),
+                        "roles": user.get('roles') or [],
+                        "insignias": user.get('insignias') or []
                     }
             except Exception as e:
                 logger.error(f"Supabase access info error: {e}")
@@ -302,7 +354,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.ui_nav_opacity,
                 ul.ui_accent_opacity,
                 ul.panel_transparency,
-                ul.ui_primary_color
+                ul.ui_primary_color,
+                u.name,
+                u.username,
+                u.roles,
+                u.nickname,
+                u.insignias
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -326,6 +383,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
                 # For SQLite, treat admin and staff as beta testers 
                 beta_tester = is_admin or role in ('admin', 'staff')
+                
+                import json
                 return {
                     "level": {
                         "id": str(row[0]),
@@ -349,7 +408,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     },
                     "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
                     "isAdmin": is_admin,
-                    "isBetaTester": beta_tester
+                    "isBetaTester": beta_tester,
+                    "name": row[21] if len(row) > 21 else None,
+                    "username": row[22] if len(row) > 22 else None,
+                    "roles": json.loads(row[23]) if len(row) > 23 and row[23] else [],
+                    "nickname": row[24] if len(row) > 24 else None,
+                    "insignias": json.loads(row[25]) if len(row) > 25 and row[25] else []
                 }
             return None
 
@@ -457,6 +521,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     results.append({
                         "id": str(user['telegram_id']),
                         "username": user['nickname'] or f"User_{user['telegram_id']}",
+                        "name": user.get('name'),
+                        "telegram_username": user.get('username'),
                         "role": user['role'],
                         "level": {
                             "name": lvl.get('name') or "N/A",
@@ -483,7 +549,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.name as level_name, 
                 ul.color as level_color,
                 u.total_downloads,
-                ul.daily_downloads
+                ul.daily_downloads,
+                u.name,
+                u.username
             FROM users u
             LEFT JOIN user_levels ul ON u.level_id = ul.id
         """
@@ -509,6 +577,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 results.append({
                     "id": str(tid),
                     "username": nickname or f"User_{tid}",
+                    "name": row[7] if len(row) > 7 else None,
+                    "telegram_username": row[8] if len(row) > 8 else None,
                     "role": role,
                     "level": {
                         "name": l_name or "N/A",

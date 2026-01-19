@@ -19,6 +19,10 @@ async def upsert_user(
     created_by: Optional[int] = None,
     duration_days: Optional[int] = None,
     nickname: Optional[str] = None,
+    name: Optional[str] = None,
+    username: Optional[str] = None,
+    roles: Optional[list] = None,
+    level_id: Optional[int] = None,
 ):
     """
     Agrega o actualiza un usuario.
@@ -37,7 +41,7 @@ async def upsert_user(
         expires_at = now + timedelta(days=days)
 
     await user_repo.upsert(
-        telegram_id, role, expires_at, custom_status, created_by, nickname
+        telegram_id, role, expires_at, custom_status, created_by, nickname, name, username, roles, level_id
     )
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
@@ -109,6 +113,10 @@ async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional
         else:
             # From Bot (Telegram User object)
             nickname_from_tg = getattr(tg_user, 'full_name', getattr(tg_user, 'first_name', None))
+        
+        # Propagate name and username from tg_user if present
+        name_from_tg = nickname_from_tg
+        username_from_tg = getattr(tg_user, 'username', None) if not isinstance(tg_user, dict) else tg_user.get("username")
 
     result = {
         "role": "free",
@@ -126,6 +134,9 @@ async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional
             "status_label": "Admin",
             "expires_at": None,
             "nickname": info.get("nickname") if info else None,
+            "name": info.get("name") if info else name_from_tg,
+            "username": info.get("username") if info else username_from_tg,
+            "roles": info.get("roles") if info else ["Administrador"],
             "has_mini_app_access": True,
             "settings": info.get("settings", {}) if info else {},
         }
@@ -164,6 +175,9 @@ async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional
                 "status_label": custom_status or role_str.capitalize(),
                 "expires_at": expires_at,
                 "nickname": db_nickname,
+                "name": info.get("name") or name_from_tg,
+                "username": info.get("username") or username_from_tg,
+                "roles": info.get("roles") or [],
                 "custom_status": custom_status,
                 "settings": info.get("settings", {}),
                 # has_mini_app_access will be set by default logic below
@@ -207,6 +221,12 @@ async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional
         if access_info["isAdmin"]:
             result["role"] = "admin"
             result["has_mini_app_access"] = True
+            
+        # Overwrite aesthetic data if present in DB
+        if access_info.get("name"): result["name"] = access_info["name"]
+        if access_info.get("username"): result["username"] = access_info["username"]
+        if access_info.get("roles"): result["roles"] = access_info["roles"]
+        if access_info.get("nickname"): result["nickname"] = access_info["nickname"]
 
     # 4. Legacy Config Fallbacks (non-admins)
     elif uid in config.FACEBOOK_PUBLISHERS:

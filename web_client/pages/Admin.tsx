@@ -75,6 +75,8 @@ interface UserLevel {
 interface AdminUser {
   id: string;
   username: string;
+  name?: string;
+  telegram_username?: string;
   role: string;
   level: {
     name: string;
@@ -913,8 +915,10 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                                 {user.username.charAt(0).toUpperCase()}
                               </div>
                               <div className="flex flex-col min-w-0">
-                                <span className="text-sm md:text-base font-bold text-white truncate">{user.username}</span>
-                                <span className="text-[10px] md:text-xs font-mono text-gray-500 truncate">#{user.id}</span>
+                                <span className="text-sm md:text-base font-bold text-white truncate">{user.name || user.username}</span>
+                                <span className="text-[10px] md:text-xs font-mono text-gray-500 truncate">
+                                  {user.telegram_username ? `@${user.telegram_username} • ` : ''}#{user.id}
+                                </span>
                               </div>
                             </div>
 

@@ -15,7 +15,11 @@ os.makedirs(COVERS_DIR, exist_ok=True)
 os.makedirs(THUMBNAILS_DIR, exist_ok=True)
 
 # Motor de base de datos
-engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+engine = create_engine(
+    f"sqlite:///{DB_PATH}", 
+    echo=False, 
+    connect_args={"timeout": 30}
+)
 session_factory = sessionmaker(bind=engine)
 Session = scoped_session(session_factory)
 
@@ -203,16 +207,48 @@ def init_fts():
 
 def init_library_db():
     """
-    Inicializa la base de datos creando las tablas si no existen.
+    Inicializa la base de datos creando las tablas si no existen con chequeo de integridad.
     """
     import logging
+    import sqlite3
+    import shutil
+    from datetime import datetime
     _log = logging.getLogger(__name__)
-    
+
     _log.info(f"Probando conexión a base de datos de librería: {DB_PATH}")
-    
+
+    # --- 1. Chequeo de Integridad (SQLite) ---
+    if os.path.exists(DB_PATH):
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            # Integrity check can be slow on large DBs, but malformed error is worse
+            res = conn.execute("PRAGMA integrity_check;").fetchone()
+            conn.close()
+            
+            if res[0] != "ok":
+                _log.error(f"⚠️ BASE DE DATOS MALFORMADA DETECTADA: {res[0]}")
+                raise sqlite3.DatabaseError("Database image is malformed")
+        except Exception as e:
+            _log.error(f"❌ Corrupción detectada en library.db: {e}")
+            
+            # Backup corrupted file
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            corrupt_backup = f"{DB_PATH}.corrupt_{timestamp}"
+            try:
+                shutil.move(DB_PATH, corrupt_backup)
+                _log.warning(f"Se ha movido la DB corrupta a: {corrupt_backup}")
+            except Exception as move_err:
+                _log.error(f"No se pudo mover la DB corrupta: {move_err}")
+                # If we can't move it, we might need to delete it if we want to recover
+                try:
+                    os.remove(DB_PATH)
+                    _log.warning("DB corrupta eliminada ante imposibilidad de moverla.")
+                except:
+                    pass
+
+    # --- 2. Inicialización Normal ---
     try:
         # Si el archivo es nuevo o fue borrado, forzamos que el motor se reinicie
-        # para evitar problemas con pools de conexiones obsoletos
         engine.dispose()
         
         # Verificar que los modelos estén registrados
@@ -229,6 +265,7 @@ def init_library_db():
             from sqlalchemy import text
             conn.execute(text("PRAGMA journal_mode=WAL"))
             conn.execute(text("PRAGMA synchronous=NORMAL"))
+            conn.execute(text("PRAGMA busy_timeout=5000")) # Esperar hasta 5 segundos si está ocupada
             conn.commit()
             
         _log.info("Tablas de base de datos de librería aseguradas.")

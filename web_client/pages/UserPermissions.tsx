@@ -43,6 +43,12 @@ interface PermissionsState {
   betaTester: boolean;
   isAdmin: boolean;
   role: string;
+  nickname: string;
+  name: string;
+  username: string;
+  insignias: string[];
+  expiresAt: string | null;
+  customStatus: string;
 }
 
 interface Level {
@@ -85,6 +91,12 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
     betaTester: false,
     isAdmin: false,
     role: userData?.level === 'Administrador' ? 'admin' : 'free',
+    nickname: '',
+    name: '',
+    username: '',
+    insignias: [],
+    expiresAt: null,
+    customStatus: '',
   });
 
   // Load all available levels and user permissions from API
@@ -138,6 +150,12 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 betaTester: res.user.betaTester ?? false,
                 isAdmin: res.user.isAdmin ?? false,
                 role: res.user.role || 'free',
+                nickname: res.user.nickname || '',
+                name: res.user.name || '',
+                username: res.user.username || '',
+                insignias: Array.isArray(res.user.insignias) ? res.user.insignias : [],
+                expiresAt: res.user.expiresAt || null,
+                customStatus: res.user.customStatus || '',
               };
               console.log('[UserPermissions] Setting permissions to:', newPerms);
               setPermissions(newPerms);
@@ -214,6 +232,12 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
         betaTester: permissions.betaTester,
         isAdmin: permissions.isAdmin,
         role: permissions.role,
+        nickname: permissions.nickname,
+        name: permissions.name,
+        username: permissions.username,
+        insignias: permissions.insignias,
+        expiresAt: permissions.expiresAt,
+        customStatus: permissions.customStatus,
       });
 
       if (res.success) {
@@ -433,6 +457,93 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                     />
                     <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-900 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                   </label>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-white/5 border-t border-white/5">
+                <h3 className="font-bold text-white uppercase tracking-wider text-xs mb-4">Información Estética y Roles</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Nickname / Apodo */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Apodo (Elegido por el usuario)</label>
+                    <input
+                      type="text"
+                      value={permissions.nickname}
+                      onChange={(e) => setPermissions({ ...permissions, nickname: e.target.value })}
+                      placeholder="Ej: El Bibliotecario"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+
+                  {/* Custom Status */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Estado Personalizado</label>
+                    <input
+                      type="text"
+                      value={permissions.customStatus}
+                      onChange={(e) => setPermissions({ ...permissions, customStatus: e.target.value })}
+                      placeholder="Ej: Miembro Fundador"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+
+                  {/* Name (Telegram) */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Nombre (Real/Telegram)</label>
+                    <input
+                      type="text"
+                      value={permissions.name}
+                      onChange={(e) => setPermissions({ ...permissions, name: e.target.value })}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+
+                  {/* Username (Telegram) */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Username (Telegram)</label>
+                    <input
+                      type="text"
+                      value={permissions.username}
+                      onChange={(e) => setPermissions({ ...permissions, username: e.target.value })}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+
+                  {/* Expiration Date */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Vence el</label>
+                    <input
+                      type="date"
+                      value={permissions.expiresAt ? permissions.expiresAt.split('T')[0] : ''}
+                      onChange={(e) => setPermissions({ ...permissions, expiresAt: e.target.value ? e.target.value + 'T23:59:59' : null })}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+
+                  {/* Insignias (Multi-select) */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Insignias Especiales</label>
+                    <div className="flex flex-wrap gap-2 p-2.5 bg-white/5 border border-white/10 rounded-lg min-h-[42px]">
+                      {['⭐ Fundador', '🚀 Beta', '🎨 Maquetador', '✍️ Autor', '💎 VIP', '🔥 Top'].map(badge => (
+                        <button
+                          key={badge}
+                          onClick={() => {
+                            const newInsignias = permissions.insignias.includes(badge)
+                              ? permissions.insignias.filter(b => b !== badge)
+                              : [...permissions.insignias, badge];
+                            setPermissions({ ...permissions, insignias: newInsignias });
+                          }}
+                          className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${permissions.insignias.includes(badge)
+                            ? 'bg-primary text-white scale-105 shadow-md shadow-primary/20'
+                            : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                            }`}
+                        >
+                          {badge}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 

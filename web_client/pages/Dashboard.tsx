@@ -23,7 +23,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { user: tgUser, status, showRecommendations } = useTelegram();
+  const { user: tgUser, status, showRecommendations, extendedInfo } = useTelegram();
   const { settings } = useTheme();
   const [history, setHistory] = useState<any[]>([]);
   const [recommendations, setRecommendations] = useState<any[]>([]);
@@ -80,7 +80,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     fetchData();
   }, [showRecommendations]);
 
-  const userName = tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : (status?.user?.username || "Lector");
+  const userName = extendedInfo?.nickname || extendedInfo?.name || (tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : (status?.user?.username || "Lector"));
   const userLevel = status?.user?.status_label || "Lector";
   const downloadsUsed = status?.user?.downloads?.used || 0;
   const downloadsLimit = status?.user?.downloads?.limit || 0;
@@ -118,9 +118,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white tracking-tight mb-3">
               Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400 dark:to-blue-400">{userName}</span> 👋
             </h1>
-            <p className="text-gray-400 text-lg">
-              Tu biblioteca personal está lista.
+            <p className="text-gray-400 text-lg mb-2">
+              {extendedInfo?.customStatus || "Tu biblioteca personal está lista."}
             </p>
+            {extendedInfo?.insignias && extendedInfo.insignias.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {extendedInfo.insignias.map((badge, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 animate-in zoom-in duration-300"
+                    style={{ animationDelay: `${idx * 100}ms` }}
+                  >
+                    {badge}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Main Search Bar */}

@@ -1311,46 +1311,58 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
     if not user_id:
         raise HTTPException(status_code=400, detail="Falta userId")
     
-    if not config.ENABLE_SUPABASE:
-        return {"success": False, "message": "Supabase no está habilitado."}
-    
     try:
-        # from core.supabase_client import get_supabase_client
-        client = supabase_manager.get_client()
-        
-        # Build update data
-        update_data = {
-            "updated_at": "now()"
-        }
-        
-        # Map frontend fields to database columns
-        field_mapping = {
-            "levelId": "level_id",
-            "canReport": "can_report",
-            "bypassLimits": "bypass_limits",
-            "betaTester": "beta_tester",
-            "isAdmin": "is_super_admin",
-            "role": "role"
-        }
-        
-        for frontend_key, db_key in field_mapping.items():
-            if frontend_key in data and data[frontend_key] is not None:
-                # Special handling for isAdmin -> sets role to 'admin'
-                if frontend_key == "isAdmin" and data[frontend_key]:
-                    update_data["role"] = "admin"
-                elif frontend_key == "isAdmin" and not data[frontend_key]:
-                    # Don't downgrade if we're not explicitly setting role
-                    if "role" not in data:
-                        continue
-                else:
-                    update_data[db_key] = data[frontend_key]
-        
-        # Update user in Supabase
-        client.table('users').update(update_data).eq('telegram_id', int(user_id)).execute()
-        
-        # Invalidate bot's user cache so changes are reflected immediately
+        from repositories.user_repository import user_repo
         from services.user_service import invalidate_user_cache
+        from datetime import datetime
         import asyncio
+        
+        # Get existing user to preserve values if not provided
+        existing = await user_repo.get_by_id(int(user_id))
+        if not existing:
+             # Create minimal user if not exists
+             await user_repo.create_minimal_user(int(user_id))
+             existing = await user_repo.get_by_id(int(user_id))
+
+        # Parse expires_at if provided
+        expires_at = None
+        if data.get("expiresAt"):
+            try:
+                from dateutil import parser
+                expires_at = parser.parse(data["expiresAt"])
+            except Exception:
+                pass
+        
+        # Build upsert arguments
+        # Map frontend 'role' and 'levelId'
+        level_id = data.get("levelId", existing.get("level_id", 6))
+        role = data.get("role", existing.get("role", "free"))
+        
+        # Admin safety
+        if data.get("isAdmin"):
+            role = "admin"
+            level_id = 1
+        
+        await user_repo.upsert(
+            telegram_id=int(user_id),
+            role=role,
+            level_id=level_id,
+            expires_at=expires_at or existing.get("expires_at"),
+            custom_status=data.get("customStatus", existing.get("custom_status")),
+            nickname=data.get("nickname", existing.get("nickname")),
+            name=data.get("name", existing.get("name")),
+            username=data.get("username", existing.get("username")),
+            roles=data.get("roles", existing.get("roles", [])),
+            insignias=data.get("insignias", existing.get("insignias", [])),
+            created_by=int(user_data.get("telegram_id", 0))
+        )
+        
+        # Special flag beta_tester (if enabled specifically)
+        if "betaTester" in data:
+            if config.ENABLE_SUPABASE:
+                supabase_manager.get_client().table('users').update({"beta_tester": data["betaTester"]}).eq('telegram_id', int(user_id)).execute()
+
+        # Invalidate cache
         asyncio.create_task(invalidate_user_cache(int(user_id)))
         
         logger.info(f"ADMIN: Saved user permissions for user {user_id}")
@@ -1362,7 +1374,6 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
 
 async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene los permisos de un usuario específico."""
-    logger.info(f"ADMIN: Get permissions request for data: {data}")
     user_role = user_data.get("role", "free")
     if user_role != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
@@ -1371,43 +1382,34 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
     if not user_id:
         raise HTTPException(status_code=400, detail="Falta userId")
     
-    if not config.ENABLE_SUPABASE:
-        return {"success": False, "message": "Supabase no está habilitado."}
-    
     try:
-        # from core.supabase_client import get_supabase_client
-        client = supabase_manager.get_client()
+        from repositories.user_repository import user_repo
         
-        result = client.table('users').select(
-            'telegram_id, nickname, role, level_id, can_report, bypass_limits, beta_tester, added_at'
-        ).eq('telegram_id', int(user_id)).execute()
+        # Get extended info joining with levels
+        access_info = await user_repo.get_access_info(int(user_id))
+        # Get raw user info for fields not in access_info
+        raw_user = await user_repo.get_by_id(int(user_id))
         
-        if not result.data:
+        if not access_info or not raw_user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
-        user = result.data[0]
-        
-        # Get level info
-        level_info = None
-        if user.get("level_id"):
-            level_result = client.table('user_levels').select('name, color').eq('id', user['level_id']).execute()
-            if level_result.data:
-                level_info = level_result.data[0]
         
         return {
             "success": True,
             "user": {
-                "id": str(user.get("telegram_id")),
-                "username": user.get("nickname", f"User_{user.get('telegram_id')}"),
-                "role": user.get("role", "free"),
-                "levelId": user.get("level_id"),
-                "levelName": level_info.get("name") if level_info else "Básico",
-                "levelColor": level_info.get("color") if level_info else "#6b7280",
-                "canReport": user.get("can_report", True),
-                "bypassLimits": user.get("bypass_limits", False),
-                "betaTester": user.get("beta_tester", False),
-                "isAdmin": user.get("role") == "admin",
-                "addedAt": user.get("added_at")
+                "id": str(user_id),
+                "username": raw_user.get("username"),
+                "name": raw_user.get("name"),
+                "nickname": raw_user.get("nickname"),
+                "role": raw_user.get("role", "free"),
+                "roles": raw_user.get("roles") or [],
+                "levelId": access_info["level"]["id"],
+                "levelName": access_info["level"]["name"],
+                "levelColor": access_info["level"]["color"],
+                "customStatus": raw_user.get("custom_status"),
+                "expiresAt": raw_user["expires_at"].isoformat() if raw_user.get("expires_at") else None,
+                "isAdmin": access_info["isAdmin"],
+                "isBetaTester": access_info["isBetaTester"],
+                "insignias": raw_user.get("insignias") or []
             }
         }
     except HTTPException:

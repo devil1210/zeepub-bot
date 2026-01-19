@@ -128,6 +128,13 @@ export const api = {
         betaTester?: boolean;
         isAdmin?: boolean;
         role?: string;
+        nickname?: string;
+        name?: string;
+        username?: string;
+        roles?: string[];
+        insignias?: string[];
+        expiresAt?: string | null;
+        customStatus?: string;
     }) => rpc('admin_save_user_permissions', permissions),
 
     // Raw RPC Access

@@ -18,10 +18,30 @@ class DatabaseManager:
         self._active_connections = 0
 
     async def initialize(self):
-        """Inicializa la base de datos (WAL mode y esquemas básicos)."""
+        """Inicializa la base de datos (WAL mode, integridad y esquemas básicos)."""
+        import os
+        import shutil
+        from datetime import datetime
+
+        if os.path.exists(self.db_path):
+            try:
+                import sqlite3
+                conn_check = sqlite3.connect(self.db_path)
+                res = conn_check.execute("PRAGMA integrity_check;").fetchone()
+                conn_check.close()
+                if res[0] != "ok":
+                    logger.error(f"⚠️ BASE DE DATOS {self.db_path} MALFORMADA: {res[0]}")
+                    raise sqlite3.DatabaseError("Malformed")
+            except Exception as e:
+                logger.error(f"❌ Corrupción detectada en {self.db_path}: {e}")
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                shutil.move(self.db_path, f"{self.db_path}.corrupt_{timestamp}")
+                logger.warning(f"Se ha reseteado la base de datos por corrupción. Backup en .corrupt_{timestamp}")
+
         async with self.connection() as conn:
             await conn.execute("PRAGMA journal_mode=WAL")
             await conn.execute("PRAGMA synchronous=NORMAL")
+            await conn.execute("PRAGMA busy_timeout=5000")
 
             # Crear tabla de niveles si no existe
             await conn.execute("""
@@ -87,17 +107,43 @@ class DatabaseManager:
                     custom_status TEXT,
                     created_by INTEGER,
                     nickname TEXT,
+                    name TEXT,
+                    username TEXT,
+                    roles TEXT DEFAULT '[]',
+                    insignias TEXT DEFAULT '[]',
                     settings JSON DEFAULT '{}',
+                    total_downloads INTEGER DEFAULT 0,
                     FOREIGN KEY (level_id) REFERENCES user_levels(id)
                 )
             """)
 
-            # Migración: Verificar y añadir columna settings si no existe
+            # Migraciones: Verificar y añadir columnas si no existen
             cursor = await conn.execute("PRAGMA table_info(users)")
             cols = [row[1] for row in await cursor.fetchall()]
-            if 'settings' not in cols:
-                print("Migración: Añadiendo columna 'settings' a tabla users...")
-                await conn.execute("ALTER TABLE users ADD COLUMN settings JSON DEFAULT '{}'")
+            
+            user_migrations = [
+                ('settings', "JSON DEFAULT '{}'"),
+                ('nickname', "TEXT"),
+                ('name', "TEXT"),
+                ('username', "TEXT"),
+                ('roles', "TEXT DEFAULT '[]'"),
+                ('insignias', "TEXT DEFAULT '[]'"),
+                ('level_id', "INTEGER DEFAULT 6"),
+                ('total_downloads', "INTEGER DEFAULT 0"),
+                ('custom_status', "TEXT"),
+                ('expires_at', "TIMESTAMP")
+            ]
+            
+            for col_name, col_def in user_migrations:
+                if col_name not in cols:
+                    try:
+                        logger.info(f"Migración: Añadiendo columna '{col_name}' a tabla users...")
+                        await conn.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}")
+                    except Exception as e:
+                        logger.error(f"Error en migración de columna {col_name}: {e}")
+
+            # Crear índice para level_id si no existe
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id)")
 
             # Crear tabla de admins si no existe
             await conn.execute("""
@@ -129,39 +175,6 @@ class DatabaseManager:
                 CREATE INDEX IF NOT EXISTS idx_download_history_user_id
                 ON download_history(user_id, downloaded_at DESC)
             """)
-
-            # Migración: Agregar columna nickname si no existe
-            try:
-                await conn.execute("ALTER TABLE users ADD COLUMN nickname TEXT")
-                logger.info("Migración: Agregada columna 'nickname' a tabla users")
-            except Exception as e:
-                if "duplicate column" not in str(e).lower():
-                    logger.debug(f"Notice during migration (nickname): {e}")
-
-            # Migración: Agregar columna level_id si no existe
-            try:
-                await conn.execute("ALTER TABLE users ADD COLUMN level_id INTEGER DEFAULT 6")
-                await conn.execute("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id)")
-                logger.info("Migración: Agregada columna 'level_id' a tabla users")
-            except Exception as e:
-                if "duplicate column" not in str(e).lower():
-                    logger.debug(f"Notice during migration (level_id): {e}")
-
-            # Migración: Agregar columna settings si no existe
-            try:
-                await conn.execute("ALTER TABLE users ADD COLUMN settings TEXT DEFAULT '{}'")
-                logger.info("Migración: Agregada columna 'settings' a tabla users")
-            except Exception as e:
-                if "duplicate column" not in str(e).lower():
-                    logger.debug(f"Notice during migration (settings): {e}")
-
-            # Migración: Agregar columna total_downloads si no existe
-            try:
-                await conn.execute("ALTER TABLE users ADD COLUMN total_downloads INTEGER DEFAULT 0")
-                logger.info("Migración: Agregada columna 'total_downloads' a tabla users")
-            except Exception as e:
-                if "duplicate column" not in str(e).lower():
-                    logger.debug(f"Notice during migration (total_downloads): {e}")
 
             # Migración: Agregar nuevas columnas a download_history para historial enriquecido
             for col in [
@@ -248,7 +261,7 @@ class DatabaseManager:
                 elif self._active_connections < self._pool_size:
                     # Crear nueva conexión
                     try:
-                        conn = await aiosqlite.connect(self.db_path)
+                        conn = await aiosqlite.connect(self.db_path, timeout=30)
                         self._active_connections += 1
                         break
                     except Exception as e:

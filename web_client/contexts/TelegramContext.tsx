@@ -10,6 +10,15 @@ interface TelegramUser {
   photo_url?: string;
 }
 
+export interface TelegramExtendedInfo {
+  nickname?: string;
+  name?: string;
+  username?: string;
+  roles: string[];
+  insignias: string[];
+  customStatus?: string;
+}
+
 export interface UserStatus {
   user: {
     id: number;
@@ -36,6 +45,7 @@ interface TelegramContextType {
   isExpanded: boolean;
   ready: boolean;
   refreshStatus: () => Promise<void>;
+  extendedInfo: TelegramExtendedInfo | null;
   // Level simulation for admins
   simulatedLevel: number | null;
   setSimulatedLevel: (levelId: number | null) => void;
@@ -52,6 +62,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isBetaTester, setIsBetaTester] = useState(false);
   const [customThemes, setCustomThemes] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(true);
+  const [extendedInfo, setExtendedInfo] = useState<TelegramExtendedInfo | null>(null);
   const [simulatedLevel, setSimulatedLevel] = useState<number | null>(null);
   const { updateSettings } = useTheme();
 
@@ -81,6 +92,14 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsBetaTester(data.isBetaTester || data.isAdmin || false);
         setCustomThemes(data.customThemes || data.isAdmin || false);
         setShowRecommendations(data.showRecommendations);
+        setExtendedInfo({
+          nickname: data.nickname,
+          name: data.name,
+          username: data.username,
+          roles: data.roles || [],
+          insignias: data.insignias || [],
+          customStatus: data.customStatus
+        });
       }
     } catch (e) {
       console.log('Could not fetch beta tester status from access endpoint');
@@ -162,6 +181,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isExpanded,
       ready,
       refreshStatus,
+      extendedInfo,
       simulatedLevel,
       setSimulatedLevel
     }}>

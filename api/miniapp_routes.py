@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -38,6 +38,12 @@ class AccessResponse(BaseModel):
     isBetaTester: bool = False  # Controls new vs old UI
     customThemes: bool = False
     showRecommendations: bool = True
+    nickname: Optional[str] = None
+    name: Optional[str] = None
+    username: Optional[str] = None
+    roles: List[str] = []
+    insignias: List[str] = []
+    customStatus: Optional[str] = None
 
 
 class LevelUpdate(BaseModel):
@@ -270,7 +276,13 @@ async def check_user_access(
         isAdmin=is_admin,
         isBetaTester=is_beta_tester,
         customThemes=access_info["level"].get("customThemes", False) or is_admin,
-        showRecommendations=final_show_recommendations
+        showRecommendations=final_show_recommendations,
+        nickname=access_info.get("nickname") or eff.get("nickname"),
+        name=access_info.get("name") or eff.get("name"),
+        username=access_info.get("username") or eff.get("username"),
+        roles=access_info.get("roles") or eff.get("roles") or [],
+        insignias=access_info.get("insignias") or eff.get("insignias") or [],
+        customStatus=eff.get("custom_status") or access_info.get("custom_status")
     )
 
 
