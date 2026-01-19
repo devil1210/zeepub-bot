@@ -52,7 +52,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       </div>
 
       {/* ================= DESKTOP SIDEBAR ================= */}
-      <aside className="hidden md:flex flex-col w-72 h-full z-20 glass-panel border-r border-white/5 relative bg-[#08080a]/60 backdrop-blur-xl">
+      <aside className="hidden md:flex flex-col w-72 h-full z-20 glass-panel border-r-0 border-r border-white/5 relative">
 
         {/* Logo Area */}
         <div className="p-8 pb-4">
@@ -108,7 +108,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
 
         {/* User Profile (Bottom of Sidebar) */}
         <div className="p-4 mt-auto">
-          <div className="glass-panel p-3 rounded-2xl border border-white/5 bg-black/20 flex items-center gap-3 hover:border-primary/30 transition-colors cursor-pointer group">
+          <div className="glass-panel p-3 rounded-2xl border border-white/5 flex items-center gap-3 hover:border-primary/30 transition-colors cursor-pointer group">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 p-[1px]">
               <img
                 src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"}

@@ -63,7 +63,7 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
                             key={item.id}
                             className="glass-panel group rounded-3xl overflow-hidden border border-white/5 hover:border-primary/30 transition-all duration-300 flex flex-col"
                             style={{
-                                background: `rgba(var(--glass-rgb), ${settings.interfaceOpacity})`,
+                                background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
                                 backdropFilter: `blur(${settings.glassBlur}px)`,
                                 WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
                             }}

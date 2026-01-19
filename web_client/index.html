@@ -69,6 +69,8 @@
     :root {
       --color-primary: #2b6cee;
       --color-primary-dark: #1a4bb0;
+
+      /* Base Glass Settings (Default) */
       --glass-opacity: 0.6;
       --glass-blur: 12px;
       --glass-border-opacity: 0.08;
@@ -76,12 +78,33 @@
       /* Theme Defaults */
       --app-bg: #050505;
       --glass-rgb: 30, 35, 45;
+      /* Dark glass base */
     }
 
+    /* Light Theme Overrides */
+    :root:not(.dark) {
+      --app-bg: #f0f2f5;
+      --glass-rgb: 255, 255, 255;
+      /* White glass base */
+      --glass-border-opacity: 0.2;
+    }
+
+    /* AMOLED Theme Overrides */
+    .amoled {
+      --app-bg: #000000;
+      --glass-rgb: 0, 0, 0;
+      --glass-opacity: 1 !important;
+      /* Force opaque for AMOLED */
+      --glass-blur: 0px !important;
+      /* No blur for AMOLED */
+      --glass-border-opacity: 0.15;
+    }
+
+    /* Global scrollbar styling */
     body {
       background-color: var(--app-bg);
       overscroll-behavior-y: none;
-      /* Prevent pull-to-refresh on mobile */
+      transition: background-color 0.3s ease;
     }
 
     ::-webkit-scrollbar {
@@ -94,33 +117,57 @@
     }
 
     ::-webkit-scrollbar-thumb {
-      background: #3f3f46;
+      background: rgba(128, 128, 128, 0.2);
       border-radius: 3px;
     }
 
-    .dark ::-webkit-scrollbar-thumb {
-      background: #27272a;
-    }
-
     ::-webkit-scrollbar-thumb:hover {
-      background: var(--color-primary-dark);
+      background: var(--color-primary);
     }
 
+    /* 
+      CORE GLASS CLASS 
+      - Uses variables for runtime configurability 
+      - Handles the "crystal" look
+    */
     .glass-panel,
     .glass-card {
+      /* Base background using RGB variable and Opacity variable */
       background: rgba(var(--glass-rgb), var(--glass-opacity));
+
+      /* Blur effect */
       backdrop-filter: blur(var(--glass-blur));
       -webkit-backdrop-filter: blur(var(--glass-blur));
+
+      /* Border handling */
       border: 1px solid rgba(255, 255, 255, var(--glass-border-opacity));
+
+      /* Shadows */
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+
+      /* Transition for smooth settings updates */
+      transition: all 0.2s ease-in-out;
     }
 
-    /* Light Mode Overrides for compatibility */
-    html:not(.dark) .glass-panel,
-    html:not(.dark) .glass-card {
-      border-color: rgba(0, 0, 0, 0.08);
-      background: rgba(255, 255, 255, 0.7);
+    /* Light mode border adjustment */
+    :root:not(.dark) .glass-panel,
+    :root:not(.dark) .glass-card {
+      border-color: rgba(0, 0, 0, 0.05);
+      /* Darker border for visibility on light */
     }
 
+    /* AMOLED Specific Overrides for Panels */
+    .amoled .glass-panel,
+    .amoled .glass-card {
+      background: #000000 !important;
+      /* Pure black */
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border-color: #333 !important;
+      /* Visible generic border */
+    }
+
+    /* Text Compatibility Helpers */
     html:not(.dark) .text-white {
       color: #111827 !important;
     }
@@ -165,17 +212,7 @@
       background-color: rgba(0, 0, 0, 0.05) !important;
     }
 
-    /* Toggle Checkbox Custom Styles */
-    .toggle-checkbox:checked {
-      right: 0;
-      border-color: var(--color-primary);
-    }
-
-    .toggle-checkbox:checked+.toggle-label {
-      background-color: var(--color-primary);
-    }
-
-    /* Range Slider Styling */
+    /* Custom Input Range */
     input[type=range] {
       -webkit-appearance: none;
       appearance: none;
@@ -184,58 +221,22 @@
 
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      appearance: none;
       height: 16px;
       width: 16px;
       border-radius: 50%;
       background: var(--color-primary);
       cursor: pointer;
       margin-top: -6px;
-      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 0 4px rgba(var(--glass-rgb), 0.5);
+      /* Adaptive shadow ring */
     }
 
     input[type=range]::-webkit-slider-runnable-track {
       width: 100%;
       height: 4px;
       cursor: pointer;
-      background: #334155;
+      background: rgba(128, 128, 128, 0.3);
       border-radius: 2px;
-    }
-
-    /* Book Reflection Effect */
-    .book-reflection {
-      position: relative;
-    }
-
-    .book-reflection::after {
-      content: '';
-      position: absolute;
-      bottom: -48px;
-      left: 0;
-      right: 0;
-      height: 40px;
-      opacity: 0.2;
-      filter: blur(12px);
-      border-radius: 9999px;
-      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), transparent);
-      transform: perspective(500px) rotateX(60deg);
-    }
-
-    .bg-accent-dynamic {
-      background-color: rgba(var(--color-primary-rgb), var(--accent-opacity)) !important;
-    }
-
-    .text-accent-dynamic {
-      color: rgba(var(--color-primary-rgb), var(--accent-opacity)) !important;
-    }
-
-    .border-accent-dynamic {
-      border-color: rgba(var(--color-primary-rgb), var(--accent-opacity)) !important;
-    }
-
-    .glass-backdrop {
-      position: relative;
-      overflow: hidden;
     }
 
     .glass-backdrop::before {

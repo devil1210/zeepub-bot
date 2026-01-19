@@ -375,7 +375,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   </div>
 
                   {/* Details Container */}
-                  <div className="p-4 flex flex-col flex-1 bg-white/50 dark:bg-[#0d1117]">
+                  <div className="p-4 flex flex-col flex-1 bg-transparent">
                     {/* Top Row: Genre & Rating */}
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20 truncate max-w-[70%]">

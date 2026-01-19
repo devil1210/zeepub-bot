@@ -244,7 +244,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
 
 
               {/* Extra Info visible in sidebar (Desktop) */}
-              <div className="hidden md:block glass-panel p-4 rounded-xl border border-black/5 dark:border-white/5 space-y-4 bg-white/50 dark:bg-transparent">
+              <div className="hidden md:block glass-panel p-4 rounded-xl border border-black/5 dark:border-white/5 space-y-4">
 
                 {/* Rating Block */}
                 <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
@@ -368,7 +368,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
               </div>
 
               {/* Synopsis */}
-              <div className="glass-panel border border-black/5 dark:border-white/5 bg-white/50 dark:bg-transparent rounded-2xl p-6 lg:p-8 shadow-sm dark:shadow-xl">
+              <div className="glass-panel border border-black/5 dark:border-white/5 rounded-2xl p-6 lg:p-8 shadow-sm dark:shadow-xl">
                 <div className="flex items-center gap-2 mb-4 text-primary">
                   <FileText className="w-5 h-5" />
                   <h3 className="text-xs font-black uppercase tracking-widest">Sinopsis</h3>
@@ -381,7 +381,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
               {/* Two Column Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Book Details */}
-                <div className="glass-panel border border-black/5 dark:border-white/5 bg-white/50 dark:bg-transparent rounded-2xl p-6 shadow-sm dark:shadow-xl h-full">
+                <div className="glass-panel border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-sm dark:shadow-xl h-full">
                   <div className="flex items-center gap-2 mb-6 text-primary">
                     <Library className="w-5 h-5" />
                     <h3 className="text-xs font-black uppercase tracking-widest">Detalles del Libro</h3>
@@ -415,7 +415,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
                 </div>
 
                 {/* Tech Specs */}
-                <div className="glass-panel border border-black/5 dark:border-white/5 bg-white/50 dark:bg-transparent rounded-2xl p-6 shadow-sm dark:shadow-xl h-full">
+                <div className="glass-panel border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-sm dark:shadow-xl h-full">
                   <div className="flex items-center gap-2 mb-6 text-primary">
                     <Database className="w-5 h-5" />
                     <h3 className="text-xs font-black uppercase tracking-widest">Ficha Técnica</h3>

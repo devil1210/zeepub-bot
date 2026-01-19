@@ -299,7 +299,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative flex gap-4 p-4 rounded-xl border border-white/5 bg-black/40 hover:bg-white/5 hover:border-primary/30 transition-all duration-200 cursor-pointer overflow-hidden shadow-sm"
+                  className="group relative flex gap-4 p-4 rounded-xl border border-white/5 hover:bg-white/5 hover:border-primary/30 transition-all duration-200 cursor-pointer overflow-hidden shadow-sm"
                   style={{
                     backgroundColor: `rgba(var(--glass-rgb), ${settings.glassOpacity / 2})`,
                     backdropFilter: `blur(${settings.glassBlur}px)`,

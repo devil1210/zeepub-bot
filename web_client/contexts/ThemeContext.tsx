@@ -104,17 +104,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Handle Theme Classes & Variables
     if (settings.theme === 'light') {
       root.classList.remove('dark');
-      root.style.setProperty('--app-bg', '#f0f2f5');
-      root.style.setProperty('--glass-rgb', '255, 255, 255');
+      root.classList.remove('amoled');
     } else {
       root.classList.add('dark');
-      root.style.setProperty('--glass-rgb', '30, 35, 45');
 
       if (settings.theme === 'amoled') {
-        root.style.setProperty('--app-bg', '#000000');
+        root.classList.add('amoled');
       } else {
-        // Default Dark
-        root.style.setProperty('--app-bg', '#050505');
+        root.classList.remove('amoled');
       }
     }
 
