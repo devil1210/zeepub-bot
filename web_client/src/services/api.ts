@@ -138,6 +138,10 @@ export const api = {
         customStatus?: string;
     }) => rpc('admin_save_user_permissions', permissions),
 
+    // User Audit History
+    getUserAuditHistory: (userId: string, limit: number = 50, offset: number = 0) =>
+        rpc('get_user_audit_history', { userId, limit, offset }),
+
     // Raw RPC Access
     rpc: rpc
 };

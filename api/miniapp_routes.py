@@ -126,6 +126,7 @@ async def handle_bot_request(
             handle_admin_delete_duplicate,
             handle_admin_enrich_metadata,
             handle_update_user_setting,
+            handle_get_user_audit_history,
         )
 
         ACTION_HANDLERS = {
@@ -162,6 +163,7 @@ async def handle_bot_request(
             "admin_delete_duplicate": handle_admin_delete_duplicate,
             "admin_enrich_metadata": handle_admin_enrich_metadata,
             "update_user_setting": handle_update_user_setting,
+            "get_user_audit_history": handle_get_user_audit_history,
         }
 
         handler = ACTION_HANDLERS.get(action)

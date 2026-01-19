@@ -1355,6 +1355,7 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
     try:
         from repositories.user_repository import user_repo
         from services.user_service import invalidate_user_cache
+        from services.user_audit_service import UserAuditService
         from datetime import datetime
         import asyncio
         
@@ -1384,6 +1385,50 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             role = "admin"
             level_id = 1
         
+        # Track changes for audit log
+        changes = {}
+        
+        # Check level change
+        old_level_id = existing.get("level_id")
+        if level_id != old_level_id:
+            changes["level"] = {
+                "old": {"id": old_level_id, "name": existing.get("level_name")},
+                "new": {"id": level_id, "name": data.get("levelName", "Unknown")}
+            }
+        
+        # Check role change
+        old_role = existing.get("role")
+        if role != old_role:
+            changes["role"] = {"old": old_role, "new": role}
+        
+        # Check other permission changes
+        fields_to_track = {
+            "customStatus": "custom_status",
+            "nickname": "nickname",
+            "name": "name",
+            "username": "username",
+            "betaTester": "beta_tester",
+            "expiresAt": "expires_at"
+        }
+        
+        for frontend_key, db_key in fields_to_track.items():
+            if frontend_key in data:
+                old_val = existing.get(db_key)
+                new_val = data[frontend_key]
+                if frontend_key == "expiresAt":
+                    new_val = expires_at.isoformat() if expires_at else None
+                    old_val = existing.get(db_key).isoformat() if existing.get(db_key) else None
+                
+                if old_val != new_val:
+                    changes[db_key] = {"old": old_val, "new": new_val}
+        
+        # Check insignias changes
+        old_insignias = existing.get("insignias", [])
+        new_insignias = data.get("insignias", existing.get("insignias", []))
+        if set(old_insignias or []) != set(new_insignias or []):
+            changes["insignias"] = {"old": old_insignias, "new": new_insignias}
+        
+        # Save to database
         await user_repo.upsert(
             telegram_id=int(user_id),
             role=role,
@@ -1394,7 +1439,7 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             name=data.get("name", existing.get("name")),
             username=data.get("username", existing.get("username")),
             roles=data.get("roles", existing.get("roles", [])),
-            insignias=data.get("insignias", existing.get("insignias", [])),
+            insignias=new_insignias,
             created_by=int(user_data.get("telegram_id", 0))
         )
         
@@ -1403,11 +1448,26 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             if config.ENABLE_SUPABASE:
                 supabase_manager.get_client().table('users').update({"beta_tester": data["betaTester"]}).eq('telegram_id', int(user_id)).execute()
 
+        # Log changes to audit log if there were any
+        if changes:
+            try:
+                UserAuditService.log_permissions_change(
+                    user_id=str(user_id),
+                    username=data.get("username") or existing.get("username") or f"User_{user_id}",
+                    changes=changes,
+                    changed_by_id=str(user_data.get("telegram_id", 0)),
+                    changed_by_username=user_data.get("username", "Admin")
+                )
+                logger.info(f"[Audit] Logged {len(changes)} changes for user {user_id}")
+            except Exception as audit_error:
+                logger.error(f"Error logging audit: {audit_error}")
+                # Don't fail the whole operation if audit logging fails
+
         # Invalidate cache
         asyncio.create_task(invalidate_user_cache(int(user_id)))
         
         logger.info(f"ADMIN: Saved user permissions for user {user_id}")
-        return {"success": True}
+        return {"success": True, "changes_logged": len(changes)}
     except Exception as e:
         logger.error(f"Error saving user permissions: {e}")
         return {"success": False, "message": str(e)}
@@ -1666,3 +1726,35 @@ async def handle_update_user_setting(data: Dict[str, Any], user_data: Dict[str, 
     except Exception as e:
         logger.error(f"Error updating user setting for {user_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def handle_get_user_audit_history(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Obtiene el historial de cambios de un usuario."""
+    user_role = user_data.get("role", "free")
+    if user_role != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    user_id = data.get("userId")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Falta userId")
+    
+    try:
+        from services.user_audit_service import UserAuditService
+        
+        limit = data.get("limit", 50)
+        offset = data.get("offset", 0)
+        
+        history = UserAuditService.get_user_history(
+            user_id=str(user_id),
+            limit=limit,
+            offset=offset
+        )
+        
+        return {
+            "success": True,
+            "history": history,
+            "count": len(history)
+        }
+    except Exception as e:
+        logger.error(f"Error getting user audit history: {e}")
+        return {"success": False, "message": str(e)}

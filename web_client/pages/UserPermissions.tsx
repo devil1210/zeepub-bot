@@ -99,6 +99,10 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
     customStatus: '',
   });
 
+  // Audit history state
+  const [auditHistory, setAuditHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   // Load all available levels and user permissions from API
   useEffect(() => {
     console.log('[UserPermissions] Component mounted, loading data for:', userId, userData?.id);
@@ -173,7 +177,26 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
         setLoading(false);
       }
     };
+
+    const loadAuditHistory = async () => {
+      const userIdToFetch = userId || userData?.id;
+      if (!userIdToFetch) return;
+
+      try {
+        setLoadingHistory(true);
+        const res = await api.getUserAuditHistory(userIdToFetch, 50, 0);
+        if (res.success && res.history) {
+          setAuditHistory(res.history);
+        }
+      } catch (err) {
+        console.error('Error loading audit history:', err);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
     loadData();
+    loadAuditHistory();
   }, [userId, userData?.id]);
 
   // Update level color when level changes
