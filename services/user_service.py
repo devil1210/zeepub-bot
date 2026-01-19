@@ -217,10 +217,16 @@ async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional
         if not info or not info.get("custom_status"):
             result["status_label"] = access_info["level"]["name"]
 
-        # Admin override from DB (hardcoded check)
-        if access_info["isAdmin"]:
-            result["role"] = "admin"
+        # Admin check from DB/Config
+        # ONLY promote to admin role if the user doesn't have a more specific role (like staff)
+        # or if they are explicitly marked as admin in the DB roles.
+        is_hard_admin = access_info["isAdmin"] or uid in config.ADMIN_USERS
+        
+        if is_hard_admin:
             result["has_mini_app_access"] = True
+            # Only set role to admin if it's currently free or if it was already admin
+            if result["role"] in ("free", "admin"):
+                result["role"] = "admin"
             
         # Overwrite aesthetic data if present in DB
         if access_info.get("name"): result["name"] = access_info["name"]

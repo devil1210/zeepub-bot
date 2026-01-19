@@ -24,7 +24,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, showMobileBottomNav = false }) => {
   const { settings } = useTheme();
-  const { user: tgUser, status } = useTelegram();
+  const { user: tgUser, status, isAdmin } = useTelegram();
   const {
     state: searchNavState,
     handlePrevPage,
@@ -40,7 +40,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
     { id: 'search', icon: Search, label: 'Búsqueda y Catálogos' },
     { id: 'library', icon: Library, label: 'Mi Biblioteca' },
     { id: 'settings', icon: Settings, label: 'Ajustes' },
-    { id: 'admin', icon: ShieldCheck, label: 'Admin' },
+    ...(isAdmin ? [{ id: 'admin', icon: ShieldCheck, label: 'Admin' }] : []),
   ];
 
   return (
@@ -91,19 +91,21 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             );
           })}
 
-          <div className="pt-6 pb-2">
-            <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Administración</p>
-            <button
-              onClick={() => onTabChange('admin')}
-              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${activeTab === 'admin'
-                ? 'bg-white/10 text-white'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
-            >
-              <ShieldCheck className="w-5 h-5 group-hover:text-red-400 transition-colors" />
-              <span className="text-sm font-medium">Panel Admin</span>
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="pt-6 pb-2">
+              <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Administración</p>
+              <button
+                onClick={() => onTabChange('admin')}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${activeTab === 'admin'
+                  ? 'bg-white/10 text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+              >
+                <ShieldCheck className="w-5 h-5 group-hover:text-red-400 transition-colors" />
+                <span className="text-sm font-medium">Panel Admin</span>
+              </button>
+            </div>
+          )}
         </nav>
 
         {/* User Profile (Bottom of Sidebar) */}
