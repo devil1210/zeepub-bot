@@ -109,9 +109,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const doSearch = async (query: string, page: number) => {
     setLoading(true);
     try {
-      // If query is empty, we might want to show "Recent" or nothing.
-      // For now let's search empty string which backend might handle as "all" or specific logic
-      const res = await api.searchBooks(query, page, selectedScope.toLowerCase());
+      // Pass the activeSort to the backend for global sorting
+      const res = await api.searchBooks(query, page, selectedScope.toLowerCase(), activeSort);
 
       if (res && res.results) {
         // Map backend results to Series type
@@ -143,7 +142,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
         // Preload next page in background if available
         if (page < (res.totalPages || 1)) {
-          api.searchBooks(query, page + 1, selectedScope.toLowerCase()).then(nextRes => {
+          api.searchBooks(query, page + 1, selectedScope.toLowerCase(), activeSort).then(nextRes => {
             if (nextRes && nextRes.results) {
               const nextCovers = nextRes.results.map((item: any) => item.cover_thumb || item.cover || '');
               preloadImages(nextCovers);
@@ -163,7 +162,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   // Reset page on search term or scope change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedScope]);
+  }, [searchTerm, selectedScope, activeSort]);
 
   // Initial Search & Search on Enter
   useEffect(() => {
@@ -172,7 +171,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       doSearch(searchTerm, currentPage);
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchTerm, currentPage, selectedScope]);
+  }, [searchTerm, currentPage, selectedScope, activeSort]);
 
   // Restore Scroll Position on Mount
   useEffect(() => {
@@ -226,23 +225,11 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   };
 
   const currentSeries = React.useMemo(() => {
-    const sorted = [...series];
-    switch (activeSort) {
-      case 'a-z':
-        return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' }));
-      case 'z-a':
-        return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '', undefined, { numeric: true, sensitivity: 'base' }));
-      case 'downloads':
-        return sorted.sort((a, b) => (b.downloadCount || 0) - (a.downloadCount || 0));
-      case 'rating':
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      case 'added':
-      case 'updated':
-        return sorted.sort((a, b) => String(b.lastUpdated).localeCompare(String(a.lastUpdated)));
-      default:
-        return sorted;
-    }
-  }, [series, activeSort]);
+    // Now that results are sorted on the backend, we don't need to re-sort here
+    // unless we want to handle numeric nuances better than the DB ILIKE/ORDER BY.
+    // However, the user wants global sorting, so we return the series as they come.
+    return series;
+  }, [series]);
 
   const sortOptions = [
     { id: 'a-z', label: 'A-Z', icon: ArrowUp },

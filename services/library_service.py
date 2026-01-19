@@ -166,7 +166,8 @@ class LibraryService:
         page: int = 1,
         items_per_page: int = 20,
         source_id: Optional[int] = None,
-        search_type: str = "todos"
+        search_type: str = "todos",
+        sort_by: str = "a-z"
     ) -> Dict[str, Any]:
         """
         Búsqueda agrupada por series_hash. Retorna un objeto similar a Series
@@ -229,9 +230,24 @@ class LibraryService:
 
             group_query = group_query.group_by(LocalBook.series_hash)
             
+            # Aplicar ordenamiento global
+            # Usamos COALESCE para ordenar por el mismo campo que se muestra en el frontend
+            title_expr = func.coalesce(LocalBook.series_clean, LocalBook.series, LocalBook.title)
+            
+            if sort_by == 'a-z':
+                group_query = group_query.order_by(func.min(title_expr).asc())
+            elif sort_by == 'z-a':
+                group_query = group_query.order_by(func.min(title_expr).desc())
+            elif sort_by == 'rating':
+                group_query = group_query.order_by(func.avg(func.nullif(LocalBook.rating_average, 0.0)).desc())
+            elif sort_by in ('added', 'updated'):
+                group_query = group_query.order_by(func.max(LocalBook.file_created_at).desc())
+            else:
+                group_query = group_query.order_by(func.min(title_expr).asc())
+            
             # Paginación sobre los grupos
             total_items = group_query.count()
-            groups = group_query.order_by(func.min(LocalBook.title).asc()).offset((page - 1) * items_per_page).limit(items_per_page).all()
+            groups = group_query.offset((page - 1) * items_per_page).limit(items_per_page).all()
 
             results = []
             for s_hash, rep_id, num_vols, rating, votes in groups:

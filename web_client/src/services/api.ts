@@ -61,8 +61,8 @@ export const api = {
     getDownloadHistory: () => rpc('user_downloads_history'),
 
     // Search & Content
-    searchBooks: (query: string, page: number = 1, type: string = 'all') =>
-        rpc('search', { query, page, type }),
+    searchBooks: (query: string, page: number = 1, type: string = 'all', sort: string = 'a-z') =>
+        rpc('search', { query, page, type, sort }),
 
     getRecommendations: (limit: number = 10) =>
         rpc('recommendations', { limit }),
