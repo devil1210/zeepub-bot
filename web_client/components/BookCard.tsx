@@ -2,6 +2,8 @@ import React from 'react';
 import { Download, Star } from 'lucide-react';
 import { Book } from '../types';
 import { ProgressiveImage } from './ProgressiveImage';
+import { useTheme } from '../contexts/ThemeContext';
+import { getCoverUrl } from '../src/utils/imageUtils';
 
 interface BookCardProps {
   book: Book;
@@ -10,6 +12,9 @@ interface BookCardProps {
 }
 
 export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = false }) => {
+  const { settings } = useTheme();
+  const coverSrc = getCoverUrl(book.coverUrl, book.coverThumbUrl, settings.coverQuality);
+
   return (
     <div className="group relative glass-panel rounded-xl overflow-hidden border border-white/5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full">
       <div className="absolute top-3 right-3 z-10">
@@ -22,7 +27,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
         <ProgressiveImage
           alt={book.title}
           className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-          src={book.coverThumbUrl || book.coverUrl}
+          src={coverSrc}
           containerClassName="w-full h-full"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-60 pointer-events-none"></div>

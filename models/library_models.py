@@ -44,9 +44,9 @@ class LocalBook(Base):
     # Metadata del EPUB
     title = Column(String(512), nullable=False)
     romaji_title = Column(String(512))
+    spanish_title = Column(String(512))  # Nueva columna
     english_title = Column(String(512))
     series = Column(String(255))
-    series_clean = Column(String(255))
     volume = Column(Float)  # Soporta 1, 1.5, etc
 
     # Personas
@@ -57,12 +57,12 @@ class LocalBook(Base):
     publisher = Column(String(255))
 
     # Identificadores
-    isbn = Column(String(20))
+    isbn = Column(String(50))
     asin = Column(String(50))  # Amazon ID
-    uri_id = Column(String(512))  # URI identifer
+    uri_id = Column(String(255))  # URI identifer
 
     # Fechas y Tipo
-    published_at = Column(String(50))
+    published_at = Column(String(100))
     modified_at_opf = Column(String(50))
     book_type = Column(String(100))  # Ej: Novela Ligera, Novela Web
     epub_version = Column(String(20))  # Ej: 2.0, 3.0
@@ -110,10 +110,10 @@ class LocalBook(Base):
             "content_hash": self.content_hash,
             "title": self.title,
             "author": self.author,
-            "romaji": self.romaji_title,
+            "romajiTitle": self.romaji_title,
+            "spanishTitle": self.spanish_title,
             "englishTitle": self.english_title,
             "series": self.series,
-            "series_clean": self.series_clean,
             "seriesHash": self.series_hash,
             "seriesIndex": self.volume,
             "tags": self.tags,
@@ -142,6 +142,8 @@ class LocalBook(Base):
             "epubVersion": self.epub_version,
             "wordCount": self.word_count,
             "pageCount": self.page_count,
+            "english_title": self.english_title,
+            "spanish_title": self.spanish_title,
 
             "readingTime": self.reading_time,
 
@@ -150,7 +152,7 @@ class LocalBook(Base):
             "autor": self.author,
             "categoria": self.book_type,
             "book_type": self.book_type,
-            "clean_title": self.series_clean,
+            "clean_title": self.english_title or self.series,
             "series_hash": self.series_hash,
             "titulo_serie": self.series,
             "rating_average": self.rating_average,

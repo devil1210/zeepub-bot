@@ -881,7 +881,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "romaji_title": b.romaji_title,
                     "english_title": b.english_title,
                     "series": b.series,
-                    "series_clean": b.series_clean,
+                    "spanish_title": b.spanish_title,
                     "volume": float(b.volume) if b.volume is not None else None,
                     "author": b.author,
                     "illustrator": b.illustrator,
@@ -910,6 +910,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
                     "series_hash": b.series_hash,
                     "content_hash": b.content_hash,
+                    "cover_thumb_path": b.cover_thumb_path,
                     "book_hash": b.book_hash or b.content_hash  # Use book_hash, fallback to content_hash
                 })
             client.table('local_books').upsert(books_data).execute()

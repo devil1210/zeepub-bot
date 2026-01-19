@@ -409,6 +409,34 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Cover Quality Preference */}
+              <div className="pt-4 border-t border-white/5">
+                <label className="block text-xs font-black text-gray-400 mb-3 uppercase tracking-widest">Calidad de Imágenes de Portada</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { id: 'pequeña', label: 'Baja (200px)', desc: 'Ahorro' },
+                    { id: 'mediana', label: 'Media (600px)', desc: 'Estándar' },
+                    { id: 'grande', label: 'Alta (1000px)', desc: 'Nítida' },
+                    { id: 'original', label: 'Original', desc: 'Máxima' }
+                  ].map((q) => (
+                    <label key={q.id} className="cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="coverQuality"
+                        className="hidden peer"
+                        checked={settings.coverQuality === q.id}
+                        onChange={() => updateSettings({ coverQuality: q.id as any })}
+                      />
+                      <div className="p-3 rounded-xl border-2 border-white/10 bg-black/20 flex flex-col items-center justify-center text-center peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary transition-all hover:bg-black/30">
+                        <span className="text-[10px] font-black text-white uppercase tracking-wider">{q.label}</span>
+                        <span className="text-[9px] text-gray-500 font-bold mt-0.5">{q.desc}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-500 mt-3 italic">Nota: Las calidades "Alta" y "Original" pueden aumentar significativamente el consumo de datos.</p>
+              </div>
             </div>
           </div>
 

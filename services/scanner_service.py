@@ -148,6 +148,8 @@ class ScannerService:
             book.publisher = meta.get("publisher")
             book.description = meta.get("description")
             book.language = meta.get("language") or "es"
+            book.english_title = meta.get("english_title") # Probablemente vacío de OPF
+            book.spanish_title = meta.get("spanish_title")
 
             # Smart Tag Categorization
             raw_tags = meta.get("tags", [])
@@ -195,26 +197,13 @@ class ScannerService:
             book.series = meta.get("series")
             book.volume = meta.get("volume")
 
-            # series_clean: series already comes cleaned from extractor
-            # If series is empty, extract from title as fallback
-            if book.series:
-                book.series_clean = book.series
-            elif book.title:
-                # Fallback: extract series name from title
-                clean = re.sub(r'\s*-\s*Volumen\s+\d+.*$', '', book.title, flags=re.IGNORECASE).strip()
-                clean = re.sub(r'\s*\[.*?\]\s*', ' ', clean).strip()
-                clean = re.sub(r'\s+', ' ', clean).strip()
-                book.series_clean = clean
-            else:
-                book.series_clean = None
-
-            # Debug log for series metadata
-            logger.debug(
-                f"[SCAN] {book.filename} | Series: '{book.series}' | Series Clean: '{book.series_clean}' | Title: '{book.title}'"
-            )
-
             # Enriched identifiers and dates
             book.isbn = meta.get("isbn")
+            
+            # 5. Enriquecimiento vía ISBN si está disponible
+            if book.isbn:
+                self._enrich_from_isbn(book)
+
             book.asin = meta.get("asin")
             book.uri_id = meta.get("uri")
             book.published_at = meta.get("published_at")
@@ -286,7 +275,7 @@ class ScannerService:
         return generate_book_hash(
             title=book.title,
             author=book.author,
-            series=book.series_clean,
+            series=book.series or book.english_title,
             volume=book.volume,
             book_type=book.book_type,
             language=book.language,
@@ -297,10 +286,45 @@ class ScannerService:
         """
         Genera un hash estable para agrupar volúmenes de la misma serie.
         """
-        # Usar series_clean preferentemente
-        series_name = book.series_clean or book.series or book.title
+        # Usar english_title preferentemente si series está vacía
+        series_name = book.series or book.english_title or book.title
         return generate_series_hash(
-            series=series_name,
+                series=series_name,
             author=book.author,
             book_type=book.book_type
         )
+
+    def _enrich_from_isbn(self, book):
+        """
+        Busca metadatos adicionales (títulos en inglés/español) usando Google Books API.
+        """
+        import httpx
+        try:
+            isbn = re.sub(r'[^\d]', '', str(book.isbn))
+            if not isbn: return
+
+            url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}&hl=es"
+            response = httpx.get(url, timeout=5.0)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("totalItems", 0) > 0:
+                    item = data["items"][0]["volumeInfo"]
+                    api_title = item.get("title")
+                    api_lang = item.get("language", "en")
+                    
+                    if api_lang == "es":
+                        book.spanish_title = api_title
+                    else:
+                        if not book.english_title:
+                            book.english_title = api_title
+                    
+                    # Search for secondary title/translated title if possible
+                    # Google Books sometimes has 'originalTitle' or similar in other contexts, 
+                    # but for basic volumesInfo we only have the main title in the requested language.
+                    
+                    if not book.description and item.get("description"):
+                        book.description = item.get("description")
+                    
+                    logger.info(f"Metadatos enriquecidos (Lang: {api_lang}) para ISBN {isbn}: {api_title}")
+        except Exception as e:
+            logger.error(f"Error enriqueciendo desde ISBN {book.isbn}: {e}")

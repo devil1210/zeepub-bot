@@ -15,6 +15,7 @@ interface ThemeSettings {
   coverWidth: number;
   colorfulCards: boolean;
   colorfulCardOpacity: number;
+  coverQuality: 'pequeña' | 'mediana' | 'grande' | 'original';
 }
 
 interface ThemeContextType {
@@ -37,6 +38,7 @@ const defaultSettings: ThemeSettings = {
   coverWidth: 120,
   colorfulCards: false,
   colorfulCardOpacity: 0.85,
+  coverQuality: 'mediana',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

@@ -130,7 +130,7 @@ class LibraryService:
                 )
                 # Cleaning for legacy compatibility
                 d["cleanTitle"] = (
-                    b.series_clean
+                    b.english_title
                     or re.sub(r"\s*\[.*?\]\s*", " ", b.series or b.title).strip()
                 )
                 results.append(d)
@@ -199,7 +199,8 @@ class LibraryService:
                 elif s_type == "serie":
                     group_query = group_query.filter(
                         (LocalBook.series.ilike(f"%{query}%")) |
-                        (LocalBook.series_clean.ilike(f"%{query}%"))
+                        (LocalBook.english_title.ilike(f"%{query}%")) |
+                        (LocalBook.spanish_title.ilike(f"%{query}%"))
                     )
                 elif s_type == "autor":
                     group_query = group_query.filter(LocalBook.author.ilike(f"%{query}%"))
@@ -219,7 +220,8 @@ class LibraryService:
                     group_query = group_query.filter(
                         (LocalBook.title.ilike(f"%{query}%")) | 
                         (LocalBook.series.ilike(f"%{query}%")) |
-                        (LocalBook.series_clean.ilike(f"%{query}%")) |
+                        (LocalBook.english_title.ilike(f"%{query}%")) |
+                        (LocalBook.spanish_title.ilike(f"%{query}%")) |
                         (LocalBook.author.ilike(f"%{query}%")) |
                         (LocalBook.illustrator.ilike(f"%{query}%")) |
                         (LocalBook.translator.ilike(f"%{query}%")) |
@@ -232,7 +234,7 @@ class LibraryService:
             
             # Aplicar ordenamiento global
             # Usamos COALESCE para ordenar por el mismo campo que se muestra en el frontend
-            title_expr = func.coalesce(LocalBook.series_clean, LocalBook.series, LocalBook.title)
+            title_expr = func.coalesce(LocalBook.english_title, LocalBook.series, LocalBook.title)
             
             if sort_by == 'a-z':
                 group_query = group_query.order_by(func.min(title_expr).asc())
@@ -260,7 +262,9 @@ class LibraryService:
                 results.append({
                     "id": f"series_{s_hash}",
                     "series_hash": s_hash,
-                    "title": rep.series_clean or rep.series or rep.title,
+                    "title": rep.english_title or rep.series or rep.title,
+                    "englishTitle": rep.english_title,
+                    "spanishTitle": rep.spanish_title,
                     "author": rep.author,
                     "cover": rep.cover_path,
                     "cover_thumb": rep.cover_thumb_path,
@@ -486,7 +490,9 @@ class LibraryService:
                 items.append(
                     {
                         "id": f"series_{s_hash}",
-                        "title": rep.series_clean or rep.series or rep.title,
+                        "title": rep.english_title or rep.series or rep.title,
+                        "englishTitle": rep.english_title,
+                        "spanishTitle": rep.spanish_title,
                         "is_folder": True,
                         "series_hash": s_hash,
                         "source_id": source_id,
@@ -495,7 +501,8 @@ class LibraryService:
                         "author": rep.author,
                         "numBooks": num_vols,
                         "series": rep.series,
-                        "series_clean": rep.series_clean,
+                        "englishTitle": rep.english_title,
+                        "spanishTitle": rep.spanish_title,
                         "tags": rep.tags,
                         "demographics": rep.demographics,
                         "book_type": rep.book_type,
