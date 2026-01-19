@@ -121,6 +121,11 @@ export const api = {
         headerOpacity?: number;
         colorfulCards?: boolean;
         showRecommendations?: boolean;
+        bannerContentOffset?: number;
+        backgroundColor?: string;
+        cardColor?: string;
+        hasLibraryAccess?: boolean;
+        canRequestBooks?: boolean;
     }) => rpc('admin_save_tier_config', config),
 
     // User Permissions

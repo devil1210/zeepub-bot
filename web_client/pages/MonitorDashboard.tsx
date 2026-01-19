@@ -71,40 +71,7 @@ export const MonitorDashboard: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-8 animate-in fade-in duration-500">
-            {/* Header info / Settings bar like in images */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4 text-sm font-medium text-slate-600 dark:text-slate-400 bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-                    <span className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                        Bot Status: Online
-                    </span>
-                    <span className="h-4 w-px bg-slate-300 dark:bg-slate-700"></span>
-                    <span>Version: v7.1.1</span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="relative hidden sm:block">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input
-                            className="pl-10 pr-4 py-1.5 bg-black/20 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64 text-white placeholder-slate-500"
-                            placeholder="Search logs, books..."
-                            type="text"
-                        />
-                    </div>
-                    <button className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white transition-colors relative">
-                        <Bell className="w-5 h-5" />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900"></span>
-                    </button>
-                    <button
-                        onClick={fetchStats}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-black uppercase tracking-widest text-white bg-slate-800 rounded-xl hover:bg-slate-700 transition-all border border-white/5 active:scale-95"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </button>
-                </div>
-            </div>
+        <div className="flex flex-col gap-8 animate-in fade-in duration-500 pt-4">
 
             {/* Metric Cards - Image 2 style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

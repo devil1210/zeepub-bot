@@ -25,7 +25,9 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const history = await api.getDownloadHistory();
+                const res = await api.getDownloadHistory();
+                // Extract downloads array from the response object
+                const history = Array.isArray(res) ? res : (res?.downloads || []);
                 setDownloadHistory(history);
             } catch (error) {
                 console.error("Error fetching download history:", error);

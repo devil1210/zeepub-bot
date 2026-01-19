@@ -1,22 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     Settings,
     Database,
     RefreshCw,
     Activity,
-    Zap,
     Trash2,
     Shield,
-    Users,
     Library,
-    AlertTriangle,
     Loader2,
     Globe,
     HardDrive,
     RotateCcw,
-    TrendingUp,
-    Search,
-    Bell
+    TrendingUp
 } from 'lucide-react';
 import { api } from '../src/services/api';
 
@@ -39,29 +34,7 @@ export const SystemDashboard: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col gap-8 animate-in fade-in duration-500">
-            {/* Consistent Header bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4 text-sm font-medium text-slate-600 dark:text-slate-400 bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-                    <span className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                        Bot Status: Online
-                    </span>
-                    <span className="h-4 w-px bg-slate-300 dark:bg-slate-700"></span>
-                    <span>Version: v7.1.1</span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="relative hidden sm:block">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input
-                            className="pl-10 pr-4 py-1.5 bg-black/20 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64 text-white placeholder-slate-500"
-                            placeholder="Search settings..."
-                            type="text"
-                        />
-                    </div>
-                </div>
-            </div>
+        <div className="flex flex-col gap-8 animate-in fade-in duration-500 pt-4">
 
             {/* Synchronization Strategy Table */}
             <div className="glass-panel p-8 rounded-3xl border border-white/5 bg-white/5 shadow-sm">
@@ -196,7 +169,7 @@ export const SystemDashboard: React.FC = () => {
                         </div>
                         <p className="text-[11px] text-gray-500 mb-6 leading-relaxed">Ejecuta git pull para obtener los últimos cambios y reinicia.</p>
                         <button
-                            onClick={() => handleAction('Actualizando', () => api.adminUpdateSystem({ force: false }))}
+                            onClick={() => handleAction('Actualizando', () => api.adminUpdateSystem())}
                             className="mt-auto w-full py-2.5 text-[10px] font-black text-center bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-green-600/20 active:scale-95"
                         >
                             {actionLoading === 'Actualizando' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : "Update System"}

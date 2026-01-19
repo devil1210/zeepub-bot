@@ -16,6 +16,9 @@ interface ThemeSettings {
   colorfulCards: boolean;
   colorfulCardOpacity: number;
   coverQuality: 'pequeña' | 'mediana' | 'grande' | 'original';
+  backgroundColor: string;
+  cardColor: string;
+  bannerContentOffset: number;
 }
 
 interface ThemeContextType {
@@ -39,6 +42,9 @@ const defaultSettings: ThemeSettings = {
   colorfulCards: false,
   colorfulCardOpacity: 0.85,
   coverQuality: 'mediana',
+  backgroundColor: '#0f172a',
+  cardColor: '#1e293b',
+  bannerContentOffset: 0,
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -99,6 +105,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--header-opacity', (settings.headerOpacity ?? 0.9).toString());
     root.style.setProperty('--glass-blur', `${settings.glassBlur ?? 12}px`);
     root.style.setProperty('--cover-width', `${settings.coverWidth ?? 120}px`);
+    root.style.setProperty('--banner-content-offset', `${settings.bannerContentOffset ?? 0}px`);
+    root.style.setProperty('--bg-color', settings.backgroundColor ?? '#0f172a');
+    root.style.setProperty('--card-color', settings.cardColor ?? '#1e293b');
+
+    // Handle background color RGB for variations
+    if (settings.backgroundColor) {
+      const bgR = parseInt(settings.backgroundColor.substring(1, 3), 16);
+      const bgG = parseInt(settings.backgroundColor.substring(3, 5), 16);
+      const bgB = parseInt(settings.backgroundColor.substring(5, 7), 16);
+      root.style.setProperty('--bg-color-rgb', `${bgR}, ${bgG}, ${bgB}`);
+      if (settings.backgroundColor.length === 9) {
+        const bgA = parseInt(settings.backgroundColor.substring(7, 9), 16) / 255;
+        root.style.setProperty('--bg-opacity', bgA.toString());
+      } else {
+        root.style.setProperty('--bg-opacity', '1');
+      }
+    }
 
     // Apply base font size (simplistic approach for demo)
     root.style.fontSize = `${settings.fontSize}px`;

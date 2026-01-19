@@ -645,23 +645,23 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
 
                   {/* Name (Telegram) */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Nombre (Real/Telegram)</label>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 px-1">Nombre (Real/Telegram)</label>
                     <input
                       type="text"
                       value={permissions.name}
-                      onChange={(e) => setPermissions({ ...permissions, name: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
+                      readOnly
+                      className="w-full bg-white/[0.03] border border-white/5 rounded-xl p-3 text-sm text-gray-400 cursor-not-allowed italic"
                     />
                   </div>
 
                   {/* Username (Telegram) */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Username (Telegram)</label>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 px-1">Username (Telegram)</label>
                     <input
                       type="text"
                       value={permissions.username}
-                      onChange={(e) => setPermissions({ ...permissions, username: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
+                      readOnly
+                      className="w-full bg-white/[0.03] border border-white/5 rounded-xl p-3 text-sm text-gray-400 cursor-not-allowed italic"
                     />
                   </div>
 

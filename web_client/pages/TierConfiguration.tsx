@@ -55,6 +55,11 @@ interface TierConfig {
     fontSize?: number;
     canDownload: boolean;
     canRead: boolean;
+    hasLibraryAccess: boolean;
+    canRequestBooks: boolean;
+    backgroundColor: string;
+    cardColor: string;
+    bannerContentOffset: number;
 }
 
 interface LevelOption {
@@ -102,7 +107,12 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         theme: settings.theme,
         fontSize: settings.fontSize,
         canDownload: true,
-        canRead: true
+        canRead: true,
+        hasLibraryAccess: true,
+        canRequestBooks: true,
+        backgroundColor: settings.backgroundColor,
+        cardColor: settings.cardColor,
+        bannerContentOffset: settings.bannerContentOffset
     });
 
     const [originalConfig, setOriginalConfig] = useState<TierConfig | null>(null);
@@ -157,7 +167,12 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         theme: res.tier.uiTheme || settings.theme,
                         fontSize: res.tier.uiFontSize || settings.fontSize,
                         canDownload: res.tier.canDownload ?? true,
-                        canRead: res.tier.canRead ?? true
+                        canRead: res.tier.canRead ?? true,
+                        hasLibraryAccess: res.tier.hasLibraryAccess ?? true,
+                        canRequestBooks: res.tier.canRequestBooks ?? true,
+                        backgroundColor: res.tier.backgroundColor || settings.backgroundColor,
+                        cardColor: res.tier.cardColor || settings.cardColor,
+                        bannerContentOffset: res.tier.bannerContentOffset ?? settings.bannerContentOffset
                     };
                     setConfig(newConfig);
                     setOriginalConfig(newConfig);
@@ -496,6 +511,20 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                             val: config.canRead,
                                             key: 'canRead',
                                             icon: BookOpen
+                                        },
+                                        {
+                                            label: 'Ver Mi Biblioteca',
+                                            sub: 'Muestra acceso a libros propios',
+                                            val: config.hasLibraryAccess,
+                                            key: 'hasLibraryAccess',
+                                            icon: Layout
+                                        },
+                                        {
+                                            label: 'Solicitar Libros',
+                                            sub: 'Habilita botón de pedidos',
+                                            val: config.canRequestBooks,
+                                            key: 'canRequestBooks',
+                                            icon: Info
                                         }
                                     ].map((p) => (
                                         <div key={p.key} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
@@ -650,6 +679,64 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                             onChange={(e) => setConfig({ ...config, fontSize: parseInt(e.target.value) })}
                                             className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
                                         />
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between items-center mb-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Offset Banner Serie (PX)</label>
+                                            <span className="text-xs font-black text-primary">{config.bannerContentOffset}px</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="-200"
+                                            max="200"
+                                            step="5"
+                                            value={config.bannerContentOffset}
+                                            onChange={(e) => setConfig({ ...config, bannerContentOffset: parseInt(e.target.value) })}
+                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Color de Fondo (Hex + Alpha)</label>
+                                        <div className="flex items-center gap-3 p-2 bg-black/40 border border-white/10 rounded-xl">
+                                            <input
+                                                type="color"
+                                                value={config.backgroundColor.substring(0, 7)}
+                                                onChange={(e) => {
+                                                    const alpha = config.backgroundColor.length === 9 ? config.backgroundColor.substring(7, 9) : 'FF';
+                                                    setConfig({ ...config, backgroundColor: e.target.value + alpha });
+                                                }}
+                                                className="size-10 bg-transparent border-none p-0 cursor-pointer rounded-lg"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={config.backgroundColor}
+                                                onChange={(e) => setConfig({ ...config, backgroundColor: e.target.value })}
+                                                className="bg-transparent border-none text-xs font-mono text-white uppercase w-24 focus:ring-0"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Color de Tarjetas (Hex + Alpha)</label>
+                                        <div className="flex items-center gap-3 p-2 bg-black/40 border border-white/10 rounded-xl">
+                                            <input
+                                                type="color"
+                                                value={config.cardColor.substring(0, 7)}
+                                                onChange={(e) => {
+                                                    const alpha = config.cardColor.length === 9 ? config.cardColor.substring(7, 9) : 'FF';
+                                                    setConfig({ ...config, cardColor: e.target.value + alpha });
+                                                }}
+                                                className="size-10 bg-transparent border-none p-0 cursor-pointer rounded-lg"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={config.cardColor}
+                                                onChange={(e) => setConfig({ ...config, cardColor: e.target.value })}
+                                                className="bg-transparent border-none text-xs font-mono text-white uppercase w-24 focus:ring-0"
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-center gap-4 group hover:bg-primary/10 transition-all cursor-default overflow-hidden relative">

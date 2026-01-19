@@ -334,6 +334,11 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "primaryColor": lvl.get('ui_primary_color', '#2b6cee'),
                             "canDownload": bool(lvl.get('can_download', True)),
                             "canRead": bool(lvl.get('can_read', True)),
+                            "hasLibraryAccess": bool(lvl.get('has_library_access', True)),
+                            "canRequestBooks": bool(lvl.get('can_request_books', True)),
+                            "bannerContentOffset": int(lvl.get('banner_content_offset', 0)),
+                            "backgroundColor": lvl.get('background_color', '#0f172a'),
+                            "cardColor": lvl.get('card_color', '#1e293b'),
                         },
                         "hasAccess": bool(lvl.get('has_mini_app_access')) or is_admin,
                         "isAdmin": is_admin,
@@ -379,7 +384,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 u.has_library_access,
                 u.can_request_books,
                 ul.can_download,
-                ul.can_read
+                ul.can_read,
+                ul.has_library_access as ul_has_library_access,
+                ul.can_request_books as ul_can_request_books,
+                ul.banner_content_offset,
+                ul.background_color,
+                ul.card_color
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -427,6 +437,11 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "primaryColor": row[20] if len(row) > 20 else '#2b6cee',
                         "canDownload": bool(row[28]) if len(row) > 28 else True,
                         "canRead": bool(row[29]) if len(row) > 29 else True,
+                        "hasLibraryAccess": bool(row[30]) if len(row) > 30 else True,
+                        "canRequestBooks": bool(row[31]) if len(row) > 31 else True,
+                        "bannerContentOffset": int(row[32]) if len(row) > 32 else 0,
+                        "backgroundColor": row[33] if len(row) > 33 else '#0f172a',
+                        "cardColor": row[34] if len(row) > 34 else '#1e293b',
                     },
                     "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
                     "isAdmin": is_admin,

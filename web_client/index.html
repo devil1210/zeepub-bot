@@ -78,6 +78,8 @@
       /* Theme Defaults */
       --app-bg: #050505;
       --glass-rgb: 30, 35, 45;
+      --bg-color: #101622;
+      --card-color: rgba(30, 35, 45, 0.6);
       /* Dark glass base */
     }
 
@@ -102,7 +104,7 @@
 
     /* Global scrollbar styling */
     body {
-      background-color: var(--app-bg);
+      background-color: var(--bg-color);
       overscroll-behavior-y: none;
       transition: background-color 0.3s ease;
     }
@@ -133,7 +135,7 @@
     .glass-panel,
     .glass-card {
       /* Base background using RGB variable and Opacity variable */
-      background: rgba(var(--glass-rgb), var(--glass-opacity));
+      background: var(--card-color);
 
       /* Blur effect */
       backdrop-filter: blur(var(--glass-blur));

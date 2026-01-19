@@ -219,7 +219,10 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           </button>
         </div>
 
-        <div className="relative w-full px-4 sm:px-6 lg:px-8 pb-10 pt-44 z-20">
+        <div
+          className="relative w-full px-4 sm:px-6 lg:px-8 pb-10 z-20"
+          style={{ paddingTop: `calc(11rem + var(--banner-content-offset, 0px))` }}
+        >
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
             <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 -mb-4 shadow-2xl rounded-lg overflow-hidden">
               <img alt={`${realSeries.title} Cover`} className="w-full h-full object-cover" src={getCoverUrl(realSeries.coverUrl, realSeries.coverThumbUrl, settings.coverQuality)} />

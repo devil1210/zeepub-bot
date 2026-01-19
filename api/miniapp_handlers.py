@@ -200,8 +200,8 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
             "username": user_data.get("nickname") or f"User_{user_id}",
             "role": role_key,
             "status_label": system_role_text,
-            "has_library_access": user_data.get("has_library_access", True),
-            "can_request_books": user_data.get("can_request_books", True),
+            "has_library_access": (user_data.get("has_library_access", True) is not False) and (user_data.get("level_info", {}).get("hasLibraryAccess", True) is not False),
+            "can_request_books": (user_data.get("can_request_books", True) is not False) and (user_data.get("level_info", {}).get("canRequestBooks", True) is not False),
             "can_download": user_data.get("level_info", {}).get("canDownload", True),
             "can_read": user_data.get("level_info", {}).get("canRead", True),
             "downloads": {
@@ -478,7 +478,10 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
                     "accentOpacity": lvl.get("accentOpacity"),
                     "glassOpacity": lvl.get("glassOpacity", 0.6),
                     "primaryColor": lvl.get("primaryColor"),
-                    "showRecommendations": lvl.get("showRecommendations")
+                    "showRecommendations": lvl.get("showRecommendations"),
+                    "bannerContentOffset": lvl.get("bannerContentOffset"),
+                    "backgroundColor": lvl.get("backgroundColor"),
+                    "cardColor": lvl.get("cardColor")
                 }
                 # Filter out None values
                 tier_overrides = {k: v for k, v in tier_overrides.items() if v is not None}
@@ -944,7 +947,7 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
 
     try:
         from core.db_manager import db_manager
-        from core.supabase_client import supabase_manager
+        from core.supabase_manager import supabase_manager
         import json
         
         client = supabase_manager.get_client()
@@ -1266,7 +1269,12 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
                 "uiFontSize": "fontSize",
                 "uiAccentOpacity": "accentOpacity",
                 "canDownload": "can_download",
-                "canRead": "can_read"
+                "canRead": "can_read",
+                "hasLibraryAccess": "has_library_access",
+                "canRequestBooks": "can_request_books",
+                "bannerContentOffset": "banner_content_offset",
+                "backgroundColor": "background_color",
+                "cardColor": "card_color"
             }
             
             for frontend_key, setting_key in field_mapping.items():
@@ -1322,7 +1330,12 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             "accentOpacity": "ui_accent_opacity",
             "showRecommendations": "show_recommendations",
             "canDownload": "can_download",
-            "canRead": "can_read"
+            "canRead": "can_read",
+            "hasLibraryAccess": "has_library_access",
+            "canRequestBooks": "can_request_books",
+            "bannerContentOffset": "banner_content_offset",
+            "backgroundColor": "background_color",
+            "cardColor": "card_color"
         }
         
         for frontend_key, db_key in field_mapping.items():
@@ -1434,7 +1447,12 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                 "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(tier.get("ui_accent_opacity", 0.2)),
                 "showRecommendations": bool(tier.get("show_recommendations", True)),
                 "canDownload": bool(tier.get("can_download", True)),
-                "canRead": bool(tier.get("can_read", True))
+                "canRead": bool(tier.get("can_read", True)),
+                "hasLibraryAccess": bool(tier.get("has_library_access", True)),
+                "canRequestBooks": bool(tier.get("can_request_books", True)),
+                "bannerContentOffset": int(tier.get("banner_content_offset", 0)),
+                "backgroundColor": tier.get("background_color", "#0f172a"),
+                "cardColor": tier.get("card_color", "#1e293b")
             }
         }
     except HTTPException:
