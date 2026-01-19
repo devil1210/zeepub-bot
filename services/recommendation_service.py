@@ -1,5 +1,6 @@
 import logging
 import random
+from datetime import date
 from typing import List, Dict, Any
 from sqlalchemy import desc, or_
 from utils.library_db import get_session
@@ -13,6 +14,7 @@ class RecommendationService:
     async def get_recommendations(user_id: int, limit: int = 4) -> List[Dict[str, Any]]:
         """
         Genera recomendaciones basadas en descargas y valoraciones.
+        Cambia una vez al día por usuario.
         """
         try:
             downloaded_hashes = set()
@@ -35,7 +37,7 @@ class RecommendationService:
             combined_hashes = downloaded_hashes.union(liked_hashes)
 
             if not combined_hashes:
-                return await RecommendationService._get_popular_recommendations(limit, downloaded_hashes)
+                return await RecommendationService._get_popular_recommendations(user_id, limit, downloaded_hashes)
 
             # 2. Analizar perfiles (Tags y Autores)
             session = get_session()
@@ -82,14 +84,19 @@ class RecommendationService:
                 candidates = query.order_by(
                     desc(LocalBook.rating_average), 
                     desc(LocalBook.rating_count)
-                ).limit(limit * 4).all()
+                ).limit(limit * 6).all()
 
                 if not candidates:
-                    return await RecommendationService._get_popular_recommendations(limit, downloaded_hashes)
+                    return await RecommendationService._get_popular_recommendations(user_id, limit, downloaded_hashes)
 
                 # Convert to dicts first to avoid session issues after shuffle
                 results = [book.to_dict() for book in candidates]
-                random.shuffle(results)
+                
+                # Semilla diaria por usuario para que no cambie en cada carga
+                daily_seed = f"{user_id}_{date.today().isoformat()}"
+                r = random.Random(daily_seed)
+                r.shuffle(results)
+                
                 return results[:limit]
 
             finally:
@@ -97,10 +104,10 @@ class RecommendationService:
 
         except Exception as e:
             logger.error(f"Error generating recommendations: {e}", exc_info=True)
-            return await RecommendationService._get_popular_recommendations(limit, set())
+            return await RecommendationService._get_popular_recommendations(user_id, limit, set())
 
     @staticmethod
-    async def _get_popular_recommendations(limit: int, exclude_hashes: set) -> List[Dict[str, Any]]:
+    async def _get_popular_recommendations(user_id: int, limit: int, exclude_hashes: set) -> List[Dict[str, Any]]:
         """Fallback: Libros populares del catálogo total si no hay historial."""
         session = get_session()
         try:
@@ -113,10 +120,15 @@ class RecommendationService:
                 desc(LocalBook.cover_thumb_path != None),
                 desc(LocalBook.rating_average), 
                 desc(LocalBook.rating_count)
-            ).limit(limit * 2).all()
+            ).limit(limit * 3).all()
 
             results = [book.to_dict() for book in books]
-            random.shuffle(results)
+            
+            # Semilla diaria por usuario
+            daily_seed = f"{user_id}_{date.today().isoformat()}"
+            r = random.Random(daily_seed)
+            r.shuffle(results)
+            
             return results[:limit]
         except Exception as e:
             logger.error(f"Error getting popular recommendations: {e}")
@@ -124,3 +136,4 @@ class RecommendationService:
             return [book.to_dict() for book in books]
         finally:
             session.close()
+

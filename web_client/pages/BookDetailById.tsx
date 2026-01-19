@@ -19,8 +19,14 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
             try {
                 setLoading(true);
                 const res = await api.getBookDetail(bookId);
-                if (res && res.book) {
-                    setBook(res.book);
+                if (res) {
+                    // El backend puede devolver {book: {...}} o el libro directamente
+                    const bookData = res.book || (res.id ? res : null);
+                    if (bookData) {
+                        setBook(bookData);
+                    } else {
+                        setError('No se encontró el libro');
+                    }
                 } else {
                     setError('No se encontró el libro');
                 }

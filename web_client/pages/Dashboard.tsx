@@ -32,21 +32,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const promises: Promise<any>[] = [api.getDownloadHistory()];
+        const historyPromise = api.getDownloadHistory();
 
-        // Only fetch recommendations if enabled in settings
+        let recommendationsRes;
+        const today = new Date().toDateString();
+        const cachedRecs = localStorage.getItem('zeepub_daily_recs');
+        const cachedDate = localStorage.getItem('zeepub_recs_date');
+
         if (showRecommendations) {
-          promises.push(api.getRecommendations(4));
+          if (cachedRecs && cachedDate === today) {
+            try {
+              const parsed = JSON.parse(cachedRecs);
+              setRecommendations(parsed);
+              preloadImages(parsed.map((r: any) => r.cover_thumb || r.cover || ''));
+              recommendationsRes = { results: parsed }; // Already set
+            } catch (e) {
+              recommendationsRes = api.getRecommendations(4);
+            }
+          } else {
+            recommendationsRes = api.getRecommendations(4);
+          }
         }
 
-        const [historyRes, recRes] = await Promise.all(promises);
+        const [historyRes, recRes] = await Promise.all([
+          historyPromise,
+          recommendationsRes instanceof Promise ? recommendationsRes : Promise.resolve(recommendationsRes)
+        ]);
 
         if (historyRes && historyRes.downloads) {
           setHistory(historyRes.downloads);
         }
 
-        if (showRecommendations && recRes && recRes.results) {
+        if (showRecommendations && recRes && recRes.results && !(cachedRecs && cachedDate === today)) {
           setRecommendations(recRes.results);
+          localStorage.setItem('zeepub_daily_recs', JSON.stringify(recRes.results));
+          localStorage.setItem('zeepub_recs_date', today);
           // Preload recommendation thumbnails for faster grid viewing
           const covers = recRes.results.map((r: any) => r.cover_thumb || r.cover || '');
           preloadImages(covers);
