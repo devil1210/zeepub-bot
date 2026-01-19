@@ -71,10 +71,13 @@ class LibraryMaintenanceService:
             covers_in_use = set()
 
             for book in books:
-                if book.cover_path:
-                    # Extraer nombre del archivo
-                    filename = book.cover_path.split("/")[-1]
-                    covers_in_use.add(filename)
+                # Check all cover quality levels
+                for cover_attr in ['cover_low', 'cover_medium', 'cover_high', 'cover_original']:
+                    cover_path = getattr(book, cover_attr, None)
+                    if cover_path:
+                        # Extraer nombre del archivo
+                        filename = cover_path.split("/")[-1]
+                        covers_in_use.add(filename)
 
             # Escanear directorio de portadas
             covers_dir = Path(COVERS_DIR)
@@ -145,10 +148,15 @@ class LibraryMaintenanceService:
             # Tamaño total de archivos
             total_file_size = session.query(func.sum(LocalBook.file_size)).scalar() or 0
 
-            # Portadas
+            # Portadas (check any cover quality level)
             books_with_covers = (
                 session.query(LocalBook)
-                .filter(LocalBook.cover_path.isnot(None))
+                .filter(
+                    (LocalBook.cover_low.isnot(None)) |
+                    (LocalBook.cover_medium.isnot(None)) |
+                    (LocalBook.cover_high.isnot(None)) |
+                    (LocalBook.cover_original.isnot(None))
+                )
                 .count()
             )
 

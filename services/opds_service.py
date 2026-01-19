@@ -412,7 +412,7 @@ async def mostrar_recomendaciones(update: Update, context: ContextTypes.DEFAULT_
             "autor": book["author"],
             "href": book.get("filepath") or book.get("download_url", ""),  # Local path
             "descarga": book.get("filepath"),
-            "portada": book.get("cover_path"),
+            "portada": book.get("cover") or book.get("cover_low"),
             "rating_average": book.get("rating_average")
         }
         st["libros"][key] = b_state
