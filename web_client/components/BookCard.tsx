@@ -33,7 +33,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-60 pointer-events-none"></div>
         {!compact && (
           <div className="absolute bottom-4 left-4 right-4">
-            <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 drop-shadow-md">{book.title}</h3>
+            <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 drop-shadow-md">{book.cleanTitle || book.title}</h3>
             <p className="text-gray-200 dark:text-gray-300 text-sm font-medium mt-1 truncate">{book.author}</p>
           </div>
         )}
@@ -42,7 +42,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
       <div className="p-4 flex flex-col flex-1">
         {compact && (
           <div className="mb-3">
-            <h3 className="text-gray-900 dark:text-white font-bold text-base leading-tight line-clamp-1">{book.title}</h3>
+            <h3 className="text-gray-900 dark:text-white font-bold text-base leading-tight line-clamp-1">{book.cleanTitle || book.title}</h3>
             <p className="text-gray-500 dark:text-gray-400 text-xs mt-1 truncate">{book.author}</p>
           </div>
         )}

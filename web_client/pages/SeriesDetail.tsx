@@ -94,7 +94,9 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               language: v.language || 'Español',
               epubVersion: v.epubVersion,
               modifiedAt: v.modifiedAt,
-              modifiedAtOpf: v.modifiedAtOpf
+              modifiedAtOpf: v.modifiedAtOpf,
+              series: v.series,
+              cleanTitle: v.clean_title
             }));
             setVolumes(mappedVols);
 
@@ -343,7 +345,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                   <div className="flex-1 min-w-0 flex flex-col">
                     <div className="mb-1">
                       <h3 className="text-white font-bold text-base sm:text-lg leading-tight line-clamp-2">
-                        {vol.romajiTitle || vol.title}
+                        {vol.cleanTitle || vol.title}
                       </h3>
                       <p className="text-gray-500 text-xs italic font-serif mt-0.5 line-clamp-1">
                         {vol.romajiTitle ? vol.title : ''}
@@ -418,7 +420,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                   </div>
                   <div className="flex flex-col gap-1">
                     <h3 className="truncate text-sm font-bold text-white group-hover:text-primary transition-colors">
-                      {vol.romajiTitle || vol.title}
+                      {vol.cleanTitle || vol.title}
                     </h3>
                     <div className="flex items-center justify-between text-[10px] font-bold text-gray-400">
                       <div className="flex items-center gap-1">

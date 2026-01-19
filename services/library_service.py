@@ -262,7 +262,8 @@ class LibraryService:
                 results.append({
                     "id": f"series_{s_hash}",
                     "series_hash": s_hash,
-                    "title": rep.english_title or rep.series or rep.title,
+                    "title": rep.series or rep.english_title or rep.title,
+                    "clean_title": rep.series or rep.english_title or rep.title,
                     "englishTitle": rep.english_title,
                     "spanishTitle": rep.spanish_title,
                     "author": rep.author,

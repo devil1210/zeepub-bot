@@ -268,7 +268,7 @@ async def handle_recommendations(data: Dict[str, Any], user_data: Dict[str, Any]
                 "is_folder": False,
                 "series": book_data.get("series"),
                 "seriesIndex": book_data.get("seriesIndex"),
-                "cleanTitle": book_data.get("title"),
+                "cleanTitle": book_data.get("clean_title") or book_data.get("series") or book_data.get("title"),
                 "rating_average": book_data.get("rating_average", 0),
             }
         )

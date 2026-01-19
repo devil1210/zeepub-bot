@@ -36,7 +36,8 @@ import {
   Loader2,
   Copy,
   Trash2,
-  Globe
+  Globe,
+  ChevronRight
 } from 'lucide-react';
 import { UserPermissions } from './UserPermissions';
 import { TierConfiguration } from './TierConfiguration';
@@ -921,7 +922,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                   </div>
 
                   <div className="p-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="flex flex-col gap-3">
                       {users.map((user) => {
                         const tierName = user.level?.name || 'Gratis';
                         const tierColor = user.level?.color || '#6b7280';
@@ -932,28 +933,28 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                             key={user.id}
                             onClick={() => setSelectedUserId(user.id)}
                             className="glass-panel p-4 rounded-xl border border-white/5 hover:border-primary/30 transition-all cursor-pointer group 
-                            flex flex-col md:flex-row gap-4 md:items-center"
+                            flex flex-col md:flex-row gap-4 md:items-center md:justify-between"
                           >
                             {/* User Avatar and Info */}
-                            <div className="flex items-center gap-3 md:flex-1">
+                            <div className="flex items-center gap-3 md:min-w-[250px]">
                               <div
-                                className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm md:text-base font-bold shadow-lg flex-shrink-0"
+                                className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold shadow-lg flex-shrink-0"
                                 style={{ backgroundColor: `${tierColor}20`, color: tierColor, border: `1px solid ${tierColor}30` }}
                               >
                                 {user.username.charAt(0).toUpperCase()}
                               </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-sm md:text-base font-bold text-white truncate">{user.name || user.username}</span>
-                                <span className="text-[10px] md:text-xs font-mono text-gray-500 truncate">
-                                  {user.telegram_username ? `@${user.telegram_username} • ` : ''}#{user.id}
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span className="text-base font-bold text-white truncate">{user.name || user.username}</span>
+                                <span className="text-xs font-mono text-gray-500 truncate">
+                                  {user.telegram_username ? `@${user.telegram_username}` : `#${user.id}`}
                                 </span>
                               </div>
                             </div>
 
                             {/* Tier Badge */}
-                            <div className="flex items-center justify-between md:justify-start md:gap-4">
+                            <div className="flex items-center md:min-w-[120px] md:justify-center">
                               <span
-                                className="px-2 py-0.5 rounded text-[9px] md:text-[10px] font-black uppercase tracking-wider whitespace-nowrap"
+                                className="px-3 py-1 rounded text-[10px] font-black uppercase tracking-wider whitespace-nowrap"
                                 style={{ backgroundColor: `${tierColor}15`, color: tierColor, border: `1px solid ${tierColor}20` }}
                               >
                                 {tierName}
@@ -961,8 +962,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                             </div>
 
                             {/* Usage Stats - Horizontal on desktop */}
-                            <div className="space-y-1.5 pt-2 md:pt-0 border-t md:border-t-0 md:border-l border-white/5 md:pl-4 md:flex-1">
-                              <div className="flex justify-between items-center text-[9px] md:text-[10px] uppercase tracking-widest font-bold">
+                            <div className="space-y-1.5 pt-2 md:pt-0 border-t md:border-t-0 md:border-l border-white/5 md:pl-4 md:min-w-[300px] md:flex-1">
+                              <div className="flex justify-between items-center text-[10px] uppercase tracking-widest font-bold">
                                 <span className="text-gray-500">Uso de Cuota</span>
                                 <span className={isWarning ? 'text-red-400' : 'text-primary'}>
                                   {Math.min(100, user.downloads.limit === -1 ? 0 : (user.downloads.used / user.downloads.limit) * 100).toFixed(0)}%
@@ -978,6 +979,11 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                                 <span>{user.downloads.used} descargas</span>
                                 <span>{user.downloads.limit === -1 ? '∞' : user.downloads.limit} lím.</span>
                               </div>
+                            </div>
+
+                            {/* Arrow indicator for desktop */}
+                            <div className="hidden md:flex items-center justify-center text-gray-600 group-hover:text-primary transition-colors">
+                              <ChevronRight className="w-5 h-5" />
                             </div>
                           </div>
                         );

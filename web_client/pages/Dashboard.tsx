@@ -235,10 +235,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             <Star className="w-2.5 h-2.5 fill-current" />
                             <span className="text-[10px] font-bold">{book.rating_average || 'N/A'}</span>
                           </div>
-                          <span className="text-[10px] font-black text-white line-clamp-2 leading-tight">{book.title}</span>
+                          <span className="text-[10px] font-black text-white line-clamp-2 leading-tight">{book.cleanTitle || book.title}</span>
                         </div>
                       </div>
-                      <p className="text-[11px] font-bold text-gray-400 truncate px-1 group-hover:text-primary transition-colors text-center">{book.title}</p>
+                      <p className="text-[11px] font-bold text-gray-400 truncate px-1 group-hover:text-primary transition-colors text-center">{book.cleanTitle || book.title}</p>
                     </div>
                   ))
                 )}

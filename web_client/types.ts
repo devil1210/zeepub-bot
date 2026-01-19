@@ -9,6 +9,8 @@ export interface Book {
   size: string;
   added: string;
   tags: string[];
+  series?: string;
+  cleanTitle?: string;
 }
 
 export interface Volume {
@@ -47,6 +49,8 @@ export interface Volume {
   modifiedAtOpf?: string;
   englishTitle?: string;
   spanishTitle?: string;
+  series?: string;
+  cleanTitle?: string;
 }
 
 export interface Series {

@@ -129,7 +129,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
                 {/* Info */}
                 <div className="flex-1 space-y-4">
                     <h1 className="text-2xl md:text-3xl font-black text-white leading-tight">
-                        {book.title}
+                        {book.clean_title || book.title}
                     </h1>
 
                     {book.author && (
