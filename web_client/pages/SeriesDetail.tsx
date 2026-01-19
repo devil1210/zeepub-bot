@@ -30,9 +30,10 @@ interface SeriesDetailProps {
   series: Series;
   onBack: () => void;
   onSelectVolume: (volume: Volume, series: Series) => void;
+  onSearch?: (term: string) => void;
 }
 
-export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSelectVolume }) => {
+export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSelectVolume, onSearch }) => {
   const { settings } = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -210,9 +211,12 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
             <div className="flex-1 pb-2 w-full">
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-black bg-green-500/20 text-green-400 border border-green-500/30 uppercase tracking-widest leading-relaxed">
+                <button
+                  onClick={() => onSearch?.(realSeries.genre || '')}
+                  className="px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-black bg-green-500/20 text-green-400 border border-green-500/30 uppercase tracking-widest leading-relaxed hover:bg-green-500/30 transition-all"
+                >
                   {realSeries.genre}
-                </span>
+                </button>
                 <span className="flex items-center gap-1.5 text-yellow-500 text-xs sm:text-sm font-black">
                   <Star className="w-4 h-4 fill-current" />
                   {realSeries.rating}
@@ -222,7 +226,12 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 leading-tight">
                 {realSeries.title}
               </h1>
-              <p className="text-white/80 text-sm sm:text-base mb-6 font-medium">Por {realSeries.author}</p>
+              <button
+                onClick={() => onSearch?.(realSeries.author || '')}
+                className="text-white/80 text-sm sm:text-base mb-6 font-medium hover:text-primary transition-colors hover:underline"
+              >
+                Por {realSeries.author}
+              </button>
 
               <div className="relative mb-6">
                 <div className="text-gray-200 text-xs sm:text-sm line-clamp-3 max-w-2xl leading-relaxed font-medium">
@@ -240,7 +249,12 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
               <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-gray-300 font-mono">
                 <span className="flex items-center gap-1.5"><Library className="w-4 h-4 text-primary" /> {volumes.length} Volúmenes</span>
-                <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-primary" /> {realSeries.status || 'Completado'}</span>
+                <button
+                  onClick={() => onSearch?.(realSeries.status || 'Completado')}
+                  className="flex items-center gap-1.5 hover:text-primary transition-colors"
+                >
+                  <Clock className="w-4 h-4 text-primary" /> {realSeries.status || 'Completado'}
+                </button>
                 {realSeries.lastUpdated && (
                   <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-primary" /> Actualizado: {realSeries.lastUpdated}</span>
                 )}
@@ -313,7 +327,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                         {series.author} {vol.illustrator ? `- ${vol.illustrator}` : ''}
                       </p>
                       <p className="text-gray-400 text-xs mt-0.5">
-                        Volumen {vol.volumeNumber} <span className="text-primary font-bold">{vol.uploader}</span>
+                        Volumen {vol.volumeNumber} <button onClick={(e) => { e.stopPropagation(); onSearch?.(vol.uploader || 'ZeePub'); }} className="text-primary font-bold hover:underline">{vol.uploader}</button>
                       </p>
                     </div>
 

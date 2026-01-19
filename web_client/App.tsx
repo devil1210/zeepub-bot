@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { MemoryRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
-import { SearchNavProvider } from './contexts/SearchNavContext';
+import { SearchNavProvider, useSearchNav } from './contexts/SearchNavContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Search } from './pages/Search';
@@ -173,16 +173,23 @@ const BookDetailByIdWrapper = () => {
 const SeriesDetailWrapper = () => {
   const navigate = useNavigate();
   const onNavigate = useLegacyNavigation();
+  const { setSearchTerm } = useSearchNav();
   const location = useLocation();
   const series = location.state?.series as Series;
 
   if (!series) return <Navigate to="/" />; // Fallback if no state
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    onNavigate('search');
+  };
 
   return (
     <SeriesDetail
       series={series}
       onBack={() => navigate(-1)}
       onSelectVolume={(vol) => onNavigate('search', series, vol)}
+      onSearch={handleSearch}
     />
   );
 };
@@ -190,17 +197,23 @@ const SeriesDetailWrapper = () => {
 const BookDetailWrapper = () => {
   const navigate = useNavigate();
   const onNavigate = useLegacyNavigation();
+  const { setSearchTerm } = useSearchNav();
   const location = useLocation();
   const { series, volume } = location.state || {}; // Cast as needed
 
   if (!series || !volume) return <Navigate to="/" />;
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    onNavigate('search');
+  };
 
   return (
     <BookDetail
       series={series}
       volume={volume}
       onBack={() => navigate(-1)}
-      onSearch={(term) => onNavigate('search')}
+      onSearch={handleSearch}
       onNavigate={onNavigate}
     />
   );
