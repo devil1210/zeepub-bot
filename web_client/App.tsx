@@ -85,6 +85,19 @@ const PageWrapper: React.FC<{ Component: React.FC<any>; props?: any }> = ({ Comp
   return <Component onNavigate={onNavigate} {...props} />;
 };
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const main = document.querySelector('main');
+    if (main) {
+      main.scrollTo(0, 0);
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname]);
+  return null;
+};
+
 const AppContent: React.FC = () => {
   const onNavigate = useLegacyNavigation();
   const location = useLocation();
@@ -98,6 +111,7 @@ const AppContent: React.FC = () => {
 
   return (
     <>
+      <ScrollToTop />
       <TelegramNavigationHandler />
       <Layout activeTab={getActiveTab(location.pathname)} onTabChange={onNavigate}>
         <Routes>

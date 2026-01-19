@@ -151,9 +151,9 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   const scrollToTop = () => {
     const mainContainer = document.querySelector('main');
     if (mainContainer) {
-      mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      mainContainer.scrollTo({ top: 0, behavior: 'instant' });
     } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo(0, 0);
     }
   };
 

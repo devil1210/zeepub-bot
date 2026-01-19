@@ -136,9 +136,9 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         setTotalPages(res.totalPages || 1);
         setTotalResults(res.totalResults || mapped.length);
 
-        // Preload current results (thumbnails first)
         const currentCovers = mapped.map(s => s.coverThumbUrl || s.coverUrl);
         preloadImages(currentCovers);
+        scrollToTop();
 
         // Preload next page in background if available
         if (page < (res.totalPages || 1)) {
@@ -194,20 +194,17 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
     onSelectSeries(series);
   };
 
-  const scrollToTop = () => {
+  const scrollToTop = (behavior: ScrollBehavior = 'smooth') => {
     const mainContainer = document.querySelector('main');
     if (mainContainer) {
-      mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      mainContainer.scrollTo({ top: 0, behavior });
     } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior });
     }
   };
 
   useEffect(() => {
-    const mainContainer = document.querySelector('main');
-    if (mainContainer && sessionStorage.getItem('search_scroll_pos') === null) {
-      mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    scrollToTop('instant');
   }, [currentPage]);
 
   const handleNextPage = () => {
