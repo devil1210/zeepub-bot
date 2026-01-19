@@ -161,53 +161,51 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {/* Quick Actions Grid */}
           <div>
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Acciones Rápidas</h3>
-            <div className={`grid gap-4 ${[
+            {(() => {
+              const actions = [
                 { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
                 { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
                 { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', visible: status?.user?.can_request_books !== false },
                 { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true },
-              ].filter(a => a.visible).length === 2 ? 'grid-cols-2' :
-                [
-                  { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
-                  { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
-                  { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', visible: status?.user?.can_request_books !== false },
-                  { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true },
-                ].filter(a => a.visible).length === 3 ? 'grid-cols-2 sm:grid-cols-3' :
-                  'grid-cols-2 sm:grid-cols-4'
-              }`}>
-              {[
-                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
-                { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
-                { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', visible: status?.user?.can_request_books !== false },
-                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true },
-              ].filter(a => a.visible).map((item, i) => {
-                const colorStyle = colorfulCardStyles[i];
-                return (
-                  <button
-                    key={i}
-                    onClick={() => onNavigate && onNavigate(item.id)}
-                    className={`relative p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 hover:scale-[1.02] active:scale-95 transition-all duration-300 group shadow-lg overflow-hidden ${settings.colorfulCards ? colorStyle.shadow : ''}`}
-                  >
-                    {/* Gradient border effect when colorful cards enabled */}
-                    {settings.colorfulCards && (
-                      <div className={`absolute inset-0 bg-gradient-to-br ${colorStyle.gradient} rounded-2xl`}></div>
-                    )}
-                    <div
-                      className={`absolute inset-[2px] rounded-xl ${settings.colorfulCards ? '' : 'glass-panel'}`}
-                      style={settings.colorfulCards ? { background: `rgba(17, 24, 39, ${cardBgOpacity})` } : {}}
-                    ></div>
-                    <div className={`relative z-10 p-4 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(0,0,0,0.3)]`}>
-                      <item.icon className="w-7 h-7" strokeWidth={1.5} />
-                    </div>
-                    <div className="relative z-10">
-                      <span className="block text-gray-900 dark:text-white font-bold text-base leading-none mb-1">{item.label}</span>
-                      <span className="block text-gray-500 text-[10px] font-medium uppercase tracking-wider">{item.desc}</span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
+              ].filter(a => a.visible);
+
+              const gridCols = actions.length === 2 ? 'grid-cols-2' :
+                actions.length === 3 ? 'grid-cols-2 sm:grid-cols-3' :
+                  'grid-cols-2 sm:grid-cols-4';
+
+              return (
+                <div className={`grid gap-4 ${gridCols}`}>
+                  {actions.map((item, i) => {
+                    const colorStyle = colorfulCardStyles[i % colorfulCardStyles.length];
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => onNavigate && onNavigate(item.id)}
+                        className={`relative p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 hover:scale-[1.02] active:scale-95 transition-all duration-300 group shadow-lg overflow-hidden ${settings.colorfulCards ? colorStyle.shadow : ''}`}
+                      >
+                        {/* Gradient border effect when colorful cards enabled */}
+                        {settings.colorfulCards && (
+                          <div className={`absolute inset-0 bg-gradient-to-br ${colorStyle.gradient} rounded-2xl`}></div>
+                        )}
+                        <div
+                          className={`absolute inset-[2px] rounded-xl ${settings.colorfulCards ? '' : 'glass-panel'}`}
+                          style={settings.colorfulCards ? { background: `rgba(17, 24, 39, ${cardBgOpacity})` } : {}}
+                        ></div>
+                        <div className={`relative z-10 p-4 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(0,0,0,0.3)]`}>
+                          <item.icon className="w-7 h-7" strokeWidth={1.5} />
+                        </div>
+                        <div className="relative z-10">
+                          <span className="block text-gray-900 dark:text-white font-bold text-base leading-none mb-1">{item.label}</span>
+                          <span className="block text-gray-500 text-[10px] font-medium uppercase tracking-wider">{item.desc}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
+
 
           {/* Recommendations Section */}
           {showRecommendations && (

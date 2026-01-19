@@ -93,6 +93,9 @@ export const api = {
     adminBackupLibrary: () => rpc('admin_backup_library'),
     adminScanLibrary: (force: boolean = false) => rpc('admin_scan_library', { force }),
     adminEnrichMetadata: () => rpc('admin_enrich_metadata'),
+    adminResetLibrary: (confirmed: boolean) => rpc('admin_reset_library', { confirmed }),
+    adminRestartDocker: () => rpc('admin_restart_docker'),
+    adminUpdateSystem: () => rpc('admin_update_system'),
 
     // Tier Configuration
     getTierConfig: (name: string) => rpc('admin_get_tier_config', { name }),

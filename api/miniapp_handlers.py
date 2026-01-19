@@ -200,6 +200,10 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
             "username": user_data.get("nickname") or f"User_{user_id}",
             "role": role_key,
             "status_label": system_role_text,
+            "has_library_access": user_data.get("has_library_access", True),
+            "can_request_books": user_data.get("can_request_books", True),
+            "can_download": user_data.get("level_info", {}).get("canDownload", True),
+            "can_read": user_data.get("level_info", {}).get("canRead", True),
             "downloads": {
                 "used": used,
                 "limit": max_dl
@@ -1169,7 +1173,9 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
                 "showRecommendations": "showRecommendations",
                 "uiTheme": "theme",
                 "uiFontSize": "fontSize",
-                "uiAccentOpacity": "accentOpacity"
+                "uiAccentOpacity": "accentOpacity",
+                "canDownload": "can_download",
+                "canRead": "can_read"
             }
             
             for frontend_key, setting_key in field_mapping.items():
@@ -1223,7 +1229,9 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             "coverWidth": "ui_cover_width",
             "navOpacity": "ui_nav_opacity",
             "accentOpacity": "ui_accent_opacity",
-            "showRecommendations": "show_recommendations"
+            "showRecommendations": "show_recommendations",
+            "canDownload": "can_download",
+            "canRead": "can_read"
         }
         
         for frontend_key, db_key in field_mapping.items():
@@ -1289,7 +1297,9 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                     "coverWidth": g.get("coverWidth", 120),
                     "navOpacity": g.get("navOpacity", 0.8),
                     "accentOpacity": g.get("accentOpacity", 0.2),
-                    "showRecommendations": g.get("showRecommendations", True)
+                    "showRecommendations": g.get("showRecommendations", True),
+                    "canDownload": g.get("canDownload", True),
+                    "canRead": g.get("canRead", True)
                 }
             }
 
@@ -1331,7 +1341,9 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                 "coverWidth": tier.get("ui_cover_width", 120),
                 "navOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(tier.get("ui_nav_opacity", 0.8)),
                 "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(tier.get("ui_accent_opacity", 0.2)),
-                "showRecommendations": bool(tier.get("show_recommendations", True))
+                "showRecommendations": bool(tier.get("show_recommendations", True)),
+                "canDownload": bool(tier.get("can_download", True)),
+                "canRead": bool(tier.get("can_read", True))
             }
         }
     except HTTPException:
@@ -1442,18 +1454,14 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             username=data.get("username", existing.get("username")),
             roles=data.get("roles", existing.get("roles", [])),
             insignias=new_insignias,
-            created_by=int(user_data.get("telegram_id", 0))
+            created_by=int(user_data.get("telegram_id", 0)),
+            has_library_access=data.get("hasLibraryAccess"),
+            can_request_books=data.get("canRequestBooks")
         )
         
-        # Update additional boolean flags
-        if config.ENABLE_SUPABASE:
-            update_data = {}
-            if "betaTester" in data: update_data["beta_tester"] = data["betaTester"]
-            if "canRequestBooks" in data: update_data["can_request_books"] = data["canRequestBooks"]
-            if "hasLibraryAccess" in data: update_data["has_library_access"] = data["hasLibraryAccess"]
-            
-            if update_data:
-                supabase_manager.get_client().table('users').update(update_data).eq('telegram_id', int(user_id)).execute()
+        # betaTester is handled separately if needed, or we could add it to upsert too
+        if config.ENABLE_SUPABASE and "betaTester" in data:
+            supabase_manager.get_client().table('users').update({"beta_tester": data["betaTester"]}).eq('telegram_id', int(user_id)).execute()
 
         # Log changes to audit log if there were any
         if changes:

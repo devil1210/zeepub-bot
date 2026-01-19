@@ -67,7 +67,18 @@ class DatabaseManager:
                 ("daily_downloads", "INTEGER DEFAULT 5"),
                 ("early_access", "BOOLEAN DEFAULT 0"),
                 ("custom_themes", "BOOLEAN DEFAULT 0"),
-                ("price", "FLOAT DEFAULT 0.0")
+                ("price", "FLOAT DEFAULT 0.0"),
+                ("show_recommendations", "BOOLEAN DEFAULT 1"),
+                ("ui_theme", "TEXT DEFAULT 'dark'"),
+                ("ui_font_size", "INTEGER DEFAULT 14"),
+                ("ui_glass_blur", "INTEGER DEFAULT 12"),
+                ("ui_cover_width", "INTEGER DEFAULT 120"),
+                ("ui_nav_opacity", "FLOAT DEFAULT 0.8"),
+                ("ui_accent_opacity", "FLOAT DEFAULT 0.2"),
+                ("panel_transparency", "INTEGER DEFAULT 60"),
+                ("ui_primary_color", "TEXT DEFAULT '#2b6cee'"),
+                ("can_download", "BOOLEAN DEFAULT 1"),
+                ("can_read", "BOOLEAN DEFAULT 1")
             ]
             for col_name, col_def in new_tier_cols:
                 if col_name not in tier_cols:
@@ -131,7 +142,9 @@ class DatabaseManager:
                 ('level_id', "INTEGER DEFAULT 6"),
                 ('total_downloads', "INTEGER DEFAULT 0"),
                 ('custom_status', "TEXT"),
-                ('expires_at', "TIMESTAMP")
+                ('expires_at', "TIMESTAMP"),
+                ('has_library_access', "BOOLEAN DEFAULT 1"),
+                ('can_request_books', "BOOLEAN DEFAULT 1")
             ]
             
             for col_name, col_def in user_migrations:

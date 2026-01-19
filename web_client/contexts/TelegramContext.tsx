@@ -17,6 +17,8 @@ export interface TelegramExtendedInfo {
   roles: string[];
   insignias: string[];
   customStatus?: string;
+  hasLibraryAccess?: boolean;
+  canRequestBooks?: boolean;
 }
 
 export interface UserStatus {
@@ -25,6 +27,10 @@ export interface UserStatus {
     username: string;
     role: string;
     status_label: string;
+    has_library_access: boolean;
+    can_request_books: boolean;
+    can_download: boolean;
+    can_read: boolean;
     downloads: {
       used: number;
       limit: number;
@@ -98,7 +104,9 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           username: data.username,
           roles: data.roles || [],
           insignias: data.insignias || [],
-          customStatus: data.customStatus
+          customStatus: data.customStatus,
+          hasLibraryAccess: data.hasLibraryAccess,
+          canRequestBooks: data.canRequestBooks
         });
       }
     } catch (e) {

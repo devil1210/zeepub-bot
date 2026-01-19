@@ -121,6 +121,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         roles: Optional[list] = None,
         insignias: Optional[list] = None,
         level_id: Optional[int] = None,
+        has_library_access: Optional[bool] = None,
+        can_request_books: Optional[bool] = None,
     ):
         # Admin level mapping
         role_to_level = {
@@ -147,6 +149,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if username is not None: data["username"] = username
                 if roles is not None: data["roles"] = json.dumps(roles)
                 if insignias is not None: data["insignias"] = json.dumps(insignias)
+                if has_library_access is not None: data["has_library_access"] = has_library_access
+                if can_request_books is not None: data["can_request_books"] = can_request_books
                 
                 logger.info(f"[UPSERT DEBUG] Data to upsert: {data}")
                 
@@ -205,6 +209,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if insignias is not None:
                     fields.append("insignias = ?")
                     params.append(json.dumps(insignias))
+                if has_library_access is not None:
+                    fields.append("has_library_access = ?")
+                    params.append(1 if has_library_access else 0)
+                if can_request_books is not None:
+                    fields.append("can_request_books = ?")
+                    params.append(1 if can_request_books else 0)
 
                 params.append(telegram_id)
                 sql = f"UPDATE users SET {', '.join(fields)} WHERE telegram_id = ?"
@@ -212,7 +222,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             else:
                 import json
                 await conn.execute(
-                    "INSERT INTO users (telegram_id, role, level_id, added_at, expires_at, custom_status, created_by, nickname, name, username, roles, insignias, settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}')",
+                    "INSERT INTO users (telegram_id, role, level_id, added_at, expires_at, custom_status, created_by, nickname, name, username, roles, insignias, has_library_access, can_request_books, settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}')",
                     (
                         telegram_id,
                         role,
@@ -226,6 +236,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         username,
                         json.dumps(roles) if roles is not None else '[]',
                         json.dumps(insignias) if insignias is not None else '[]',
+                        int(has_library_access if has_library_access is not None else True),
+                        int(can_request_books if can_request_books is not None else True),
                     ),
                 )
 
@@ -320,6 +332,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(lvl.get('ui_accent_opacity', 0.2)),
                             "glassOpacity": (lvl.get('panel_transparency', 60) or 60) / 100.0,
                             "primaryColor": lvl.get('ui_primary_color', '#2b6cee'),
+                            "canDownload": bool(lvl.get('can_download', True)),
+                            "canRead": bool(lvl.get('can_read', True)),
                         },
                         "hasAccess": bool(lvl.get('has_mini_app_access')) or is_admin,
                         "isAdmin": is_admin,
@@ -327,7 +341,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "name": user.get('name'),
                         "username": user.get('username'),
                         "roles": user.get('roles') or [],
-                        "insignias": user.get('insignias') or []
+                        "insignias": user.get('insignias') or [],
+                        "hasLibraryAccess": bool(user.get('has_library_access', True)),
+                        "canRequestBooks": bool(user.get('can_request_books', True)),
                     }
             except Exception as e:
                 logger.error(f"Supabase access info error: {e}")
@@ -359,7 +375,11 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 u.username,
                 u.roles,
                 u.nickname,
-                u.insignias
+                u.insignias,
+                u.has_library_access,
+                u.can_request_books,
+                ul.can_download,
+                ul.can_read
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -405,6 +425,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(row[18] if len(row) > 18 else 0.2),
                         "glassOpacity": (row[19] if len(row) > 19 else 60) / 100.0,
                         "primaryColor": row[20] if len(row) > 20 else '#2b6cee',
+                        "canDownload": bool(row[28]) if len(row) > 28 else True,
+                        "canRead": bool(row[29]) if len(row) > 29 else True,
                     },
                     "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
                     "isAdmin": is_admin,
@@ -413,7 +435,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "username": row[22] if len(row) > 22 else None,
                     "roles": json.loads(row[23]) if len(row) > 23 and row[23] else [],
                     "nickname": row[24] if len(row) > 24 else None,
-                    "insignias": json.loads(row[25]) if len(row) > 25 and row[25] else []
+                    "insignias": json.loads(row[25]) if len(row) > 25 and row[25] else [],
+                    "hasLibraryAccess": bool(row[26]) if len(row) > 26 else True,
+                    "canRequestBooks": bool(row[27]) if len(row) > 27 else True,
                 }
             return None
 
@@ -656,7 +680,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             "navOpacity": "ui_nav_opacity",
             "accentOpacity": "ui_accent_opacity",
             "glassOpacity": "panel_transparency",
-            "primaryColor": "ui_primary_color"
+            "primaryColor": "ui_primary_color",
+            "canDownload": "can_download",
+            "canRead": "can_read"
         }
         
         for key, col in mapping.items():

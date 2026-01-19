@@ -14,7 +14,9 @@ import {
     Layers,
     ChevronDown,
     Zap,
-    Layout
+    Layout,
+    Download,
+    BookOpen
 } from 'lucide-react';
 import { useTheme, adjustBrightness } from '../contexts/ThemeContext';
 import { api } from '../src/services/api';
@@ -51,6 +53,8 @@ interface TierConfig {
     coverWidth?: number;
     theme?: 'dark' | 'amoled' | 'light';
     fontSize?: number;
+    canDownload: boolean;
+    canRead: boolean;
 }
 
 interface LevelOption {
@@ -96,7 +100,9 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         glassBlur: settings.glassBlur,
         coverWidth: settings.coverWidth,
         theme: settings.theme,
-        fontSize: settings.fontSize
+        fontSize: settings.fontSize,
+        canDownload: true,
+        canRead: true
     });
 
     const [originalConfig, setOriginalConfig] = useState<TierConfig | null>(null);
@@ -149,7 +155,9 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         glassBlur: res.tier.glassBlur ?? settings.glassBlur,
                         coverWidth: res.tier.coverWidth ?? settings.coverWidth,
                         theme: res.tier.uiTheme || settings.theme,
-                        fontSize: res.tier.uiFontSize || settings.fontSize
+                        fontSize: res.tier.uiFontSize || settings.fontSize,
+                        canDownload: res.tier.canDownload ?? true,
+                        canRead: res.tier.canRead ?? true
                     };
                     setConfig(newConfig);
                     setOriginalConfig(newConfig);
@@ -349,16 +357,6 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
-                                    <div className="space-y-1">
-                                        <span className="block text-white text-sm font-bold">Mostrar Recomendaciones</span>
-                                        <span className="block text-gray-500 text-xs">Sugerir contenido en inicio</span>
-                                    </div>
-                                    <Toggle
-                                        checked={config.showRecommendations}
-                                        onChange={(val) => setConfig({ ...config, showRecommendations: val })}
-                                    />
-                                </div>
                             </div>
                         </div>
 
@@ -465,6 +463,27 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                             val: config.customThemes,
                                             key: 'customThemes',
                                             icon: Palette
+                                        },
+                                        {
+                                            label: 'Mostrar Recomendaciones',
+                                            sub: 'Sugerir contenido en inicio',
+                                            val: config.showRecommendations,
+                                            key: 'showRecommendations',
+                                            icon: Stars
+                                        },
+                                        {
+                                            label: 'Habilitar Descargas',
+                                            sub: 'Permitir descarga de archivos ePUB',
+                                            val: config.canDownload,
+                                            key: 'canDownload',
+                                            icon: Download
+                                        },
+                                        {
+                                            label: 'Habilitar Lectura',
+                                            sub: 'Permitir leer libros online',
+                                            val: config.canRead,
+                                            key: 'canRead',
+                                            icon: BookOpen
                                         }
                                     ].map((p) => (
                                         <div key={p.key} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">

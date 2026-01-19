@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Activity,
     Settings,
@@ -20,11 +20,81 @@ import {
     Box,
     Trash2,
     Lock,
-    Archive
+    Archive,
+    Zap,
+    AlertTriangle,
+    CheckCircle2,
+    Loader2
 } from 'lucide-react';
+import { api } from '../src/services/api';
 
 export const InfrastructureDashboard: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [stats, setStats] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [logs, setLogs] = useState<{ time: string, level: string, msg: string, color: string }[]>([]);
+
+    const fetchStats = async () => {
+        try {
+            const data = await api.getAdminStats();
+            setStats(data);
+            addLog('INFO', 'System stats refreshed');
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+            addLog('ERROR', 'Failed to fetch system stats');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const addLog = (level: string, msg: string) => {
+        const time = new Date().toLocaleTimeString([], { hour12: false });
+        const color = level === 'ERROR' ? 'text-red-400' :
+            level === 'WARN' ? 'text-yellow-400' :
+                level === 'SUCCESS' ? 'text-green-400' : 'text-blue-400';
+
+        setLogs(prev => [...prev.slice(-14), { time, level, msg, color }]);
+    };
+
+    useEffect(() => {
+        fetchStats();
+
+        // Initial dummy logs
+        setLogs([
+            { time: new Date().toLocaleTimeString([], { hour12: false }), level: 'INFO', msg: 'Admin Dashboard initialized', color: 'text-blue-400' },
+            { time: new Date().toLocaleTimeString([], { hour12: false }), level: 'SUCCESS', msg: 'System connection healthy', color: 'text-green-400' }
+        ]);
+
+        const interval = setInterval(fetchStats, 60000); // Refresh every minute
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleAction = async (name: string, fn: () => Promise<any>) => {
+        setActionLoading(name);
+        addLog('INFO', `Executing ${name}...`);
+        try {
+            const res = await fn();
+            if (res.success) {
+                addLog('SUCCESS', res.message || `${name} completed successfully`);
+                fetchStats();
+            } else {
+                addLog('ERROR', res.message || `${name} failed`);
+            }
+        } catch (error: any) {
+            addLog('ERROR', error.message || `Error executing ${name}`);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const formatBytes = (bytes: number) => {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
 
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-background-light dark:bg-[#101b22] text-slate-800 dark:text-slate-100 font-sans">
@@ -69,21 +139,30 @@ export const InfrastructureDashboard: React.FC = () => {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto p-6 z-10">
+            <main className="flex-1 overflow-y-auto p-6 z-10 scrollbar-hide">
                 {/* Dashboard Header */}
                 <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">System Health & Admin</h2>
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <Shield className="w-6 h-6 text-[#0d93f2]" />
+                            System Health & Admin
+                        </h2>
                         <p className="text-slate-500 dark:text-slate-400 mt-1">Real-time overview of the ZeepubBot ecosystem.</p>
                     </div>
                     <div className="flex gap-2">
-                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 dark:bg-slate-700 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors shadow-lg">
-                            <RefreshCw className="w-4 h-4" />
+                        <button
+                            onClick={fetchStats}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 dark:bg-slate-700 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors shadow-lg"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                             Refresh Stats
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#0d93f2] rounded-lg hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30">
-                            <Plus className="w-4 h-4" />
-                            New Deployment
+                        <button
+                            onClick={() => handleAction('Update System', api.adminUpdateSystem)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#0d93f2] rounded-lg hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
+                        >
+                            {actionLoading === 'Update System' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                            Update System
                         </button>
                     </div>
                 </div>
@@ -92,9 +171,11 @@ export const InfrastructureDashboard: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div className="glass-panel p-5 rounded-xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
                         <div className="relative z-10">
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Users</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">12,482</h3>
-                            <div className="flex items-center mt-2 text-xs text-green-500 font-medium">
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Active Users</p>
+                            <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
+                                {loading ? '...' : stats?.totalUsers?.toLocaleString() || '0'}
+                            </h3>
+                            <div className="flex items-center mt-2 text-xs text-green-500 font-bold">
                                 <TrendingUp className="w-3 h-3 mr-1" />
                                 +4.5% this week
                             </div>
@@ -107,11 +188,13 @@ export const InfrastructureDashboard: React.FC = () => {
 
                     <div className="glass-panel p-5 rounded-xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
                         <div className="relative z-10">
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Library Index</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">843,209</h3>
-                            <div className="flex items-center mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Library Index</p>
+                            <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
+                                {loading ? '...' : stats?.totalBooks?.toLocaleString() || '0'}
+                            </h3>
+                            <div className="flex items-center mt-2 text-xs text-slate-500 dark:text-slate-400 font-bold">
                                 <Archive className="w-3 h-3 mr-1" />
-                                2.4 TB storage used
+                                {stats?.storageUsedGB ? `${stats.storageUsedGB} GB storage` : 'Calculating...'}
                             </div>
                         </div>
                         <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-lg text-purple-600 dark:text-purple-400">
@@ -122,9 +205,11 @@ export const InfrastructureDashboard: React.FC = () => {
 
                     <div className="glass-panel p-5 rounded-xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
                         <div className="relative z-10">
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Downloads (24h)</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">1,024</h3>
-                            <div className="flex items-center mt-2 text-xs text-green-500 font-medium">
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Downloads (24h)</p>
+                            <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
+                                {loading ? '...' : stats?.downloads24h?.toLocaleString() || '0'}
+                            </h3>
+                            <div className="flex items-center mt-2 text-xs text-green-500 font-bold">
                                 <TrendingUp className="w-3 h-3 mr-1" />
                                 +12% vs yesterday
                             </div>
@@ -137,15 +222,17 @@ export const InfrastructureDashboard: React.FC = () => {
 
                     <div className="glass-panel p-5 rounded-xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
                         <div className="relative z-10">
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">System Uptime</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">99.9%</h3>
-                            <div className="flex items-center mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">System Uptime</p>
+                            <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
+                                {loading ? '...' : stats?.uptime || '99.9%'}
+                            </h3>
+                            <div className="flex items-center mt-2 text-xs text-slate-500 dark:text-slate-400 font-bold">
                                 <Activity className="w-3 h-3 mr-1" />
-                                14d 2h since reboot
+                                {stats?.activeSessions || '0'} active sessions
                             </div>
                         </div>
                         <div className="p-3 bg-amber-100 dark:bg-amber-500/20 rounded-lg text-amber-600 dark:text-amber-400">
-                            <Settings className="w-6 h-6" />
+                            <Cpu className="w-6 h-6" />
                         </div>
                         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-all duration-500"></div>
                     </div>
@@ -159,45 +246,64 @@ export const InfrastructureDashboard: React.FC = () => {
                                 <Settings className="text-[#0d93f2] w-5 h-5" />
                                 Maintenance
                             </h3>
-                            <span className="px-2 py-1 bg-green-500/10 text-green-500 text-xs rounded border border-green-500/20 font-bold">Operational</span>
+                            <span className="px-2 py-1 bg-green-500/10 text-green-500 text-[10px] rounded border border-green-500/20 font-black uppercase tracking-widest">Operational</span>
                         </div>
                         <div className="space-y-4 flex-1">
-                            <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-[#0d93f2]/50 transition-colors group cursor-pointer shadow-sm">
+                            <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-[#0d93f2]/50 transition-colors group cursor-default shadow-sm">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Scan Library</h4>
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Scan Library</h4>
                                     <Activity className="w-4 h-4 text-slate-400 group-hover:text-[#0d93f2] transition-colors" />
                                 </div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
                                     Trigger <code className="bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded text-[#0d93f2] font-mono">/scan_library</code> to index new content.
                                 </p>
-                                <button className="w-full py-2 text-xs font-bold text-center bg-[#0d93f2] hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm uppercase tracking-wider">
+                                <button
+                                    disabled={!!actionLoading}
+                                    onClick={() => handleAction('Scan Library', () => api.adminScanLibrary(true))}
+                                    className="w-full py-2 text-xs font-black text-center bg-[#0d93f2] hover:bg-blue-600 disabled:bg-slate-500 text-white rounded-lg transition-colors shadow-sm uppercase tracking-widest flex items-center justify-center gap-2"
+                                >
+                                    {actionLoading === 'Scan Library' ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
                                     Execute Scan
                                 </button>
                             </div>
 
-                            <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-[#0d93f2]/50 transition-colors group cursor-pointer shadow-sm">
+                            <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-[#0d93f2]/50 transition-colors group cursor-default shadow-sm">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Backup Database</h4>
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Backup Database</h4>
                                     <Database className="w-4 h-4 text-slate-400 group-hover:text-[#0d93f2] transition-colors" />
                                 </div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
-                                    Run <code className="bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded text-[#0d93f2] font-mono">/backup_db</code> for manual snapshot.
+                                    Sync SQLite library data to Supabase for persistence.
                                 </p>
-                                <button className="w-full py-2 text-xs font-bold text-center bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors uppercase tracking-wider">
+                                <button
+                                    disabled={!!actionLoading}
+                                    onClick={() => handleAction('Backup', api.adminBackupLibrary)}
+                                    className="w-full py-2 text-xs font-black text-center bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 disabled:bg-slate-500 text-slate-700 dark:text-slate-200 rounded-lg transition-colors uppercase tracking-widest flex items-center justify-center gap-2"
+                                >
+                                    {actionLoading === 'Backup' ? <Loader2 className="w-3 h-3 animate-spin" /> : <CloudDownload className="w-3 h-3" />}
                                     Start Backup
                                 </button>
                             </div>
 
-                            <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-[#0d93f2]/50 transition-colors group cursor-pointer shadow-sm">
+                            <div className="p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 border-red-500/20 hover:border-red-500/50 transition-colors group cursor-default shadow-sm">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Clean Cache</h4>
-                                    <RefreshCw className="w-4 h-4 text-slate-400 group-hover:text-[#0d93f2] transition-colors" />
+                                    <h4 className="font-bold text-red-600 dark:text-red-400 text-sm">Reset Library</h4>
+                                    <Trash2 className="w-4 h-4 text-slate-400 group-hover:text-red-500 transition-colors" />
                                 </div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
-                                    Clear thumbnails and temp files.
+                                    Purge database and covers. <span className="text-red-500 font-bold">Irreversible!</span>
                                 </p>
-                                <button className="w-full py-2 text-xs font-bold text-center bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors uppercase tracking-wider">
-                                    Purge
+                                <button
+                                    disabled={!!actionLoading}
+                                    onClick={() => {
+                                        if (confirm('¿ESTÁS SEGURO? Esta acción eliminará TODA la base de datos de libros y portadas local.')) {
+                                            handleAction('Reset Library', () => api.adminResetLibrary(true));
+                                        }
+                                    }}
+                                    className="w-full py-2 text-xs font-black text-center bg-red-500/10 hover:bg-red-500 text-red-600 hover:text-white border border-red-500/20 rounded-lg transition-colors uppercase tracking-widest flex items-center justify-center gap-2"
+                                >
+                                    {actionLoading === 'Reset Library' ? <Loader2 className="w-3 h-3 animate-spin" /> : <AlertTriangle className="w-3 h-3" />}
+                                    Purge Data
                                 </button>
                             </div>
                         </div>
@@ -218,16 +324,11 @@ export const InfrastructureDashboard: React.FC = () => {
                         </div>
                         <div className="flex-1 bg-slate-950 p-4 font-mono text-[11px] overflow-y-auto leading-relaxed scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
                             <div className="space-y-1.5">
-                                <div className="text-slate-500">[10:42:01] <span className="text-blue-400 font-bold">INFO</span>: Worker process started with PID 8821</div>
-                                <div className="text-slate-500">[10:42:05] <span className="text-blue-400 font-bold">INFO</span>: Connecting to Telegram API... <span className="text-green-400 font-bold">OK</span></div>
-                                <div className="text-slate-500">[10:42:06] <span className="text-yellow-400 font-bold">WARN</span>: High latency detected on webhook (450ms)</div>
-                                <div className="text-slate-500">[10:43:12] <span className="text-blue-400 font-bold">INFO</span>: User <span className="text-purple-400">@devil1210</span> requested /scan_library</div>
-                                <div className="text-slate-500 pl-4">→ Initializing Universal Hash Architecture scanner...</div>
-                                <div className="text-slate-500 pl-4">→ Found 12 new EPUB files in /mnt/books/incoming</div>
-                                <div className="text-slate-500 pl-4">→ Generating thumbnails (Glassmorphism settings applied)</div>
-                                <div className="text-slate-500">[10:43:45] <span className="text-green-400 font-bold">SUCCESS</span>: Library index updated. +12 items.</div>
-                                <div className="text-slate-500">[10:45:00] <span className="text-blue-400 font-bold">INFO</span>: Watchtower checking for container updates...</div>
-                                <div className="text-slate-500">[10:45:02] <span className="text-blue-400 font-bold">INFO</span>: No updates found.</div>
+                                {logs.map((log, i) => (
+                                    <div key={i} className="text-slate-500">
+                                        [{log.time}] <span className={`${log.color} font-bold`}>{log.level}</span>: {log.msg}
+                                    </div>
+                                ))}
                                 <div className="text-slate-300 animate-pulse">_</div>
                             </div>
                         </div>

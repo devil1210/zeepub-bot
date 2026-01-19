@@ -29,6 +29,8 @@ class UserLevelModel(BaseModel):
     hasAccess: bool
     customThemes: bool = False
     showRecommendations: bool = True
+    canDownload: bool = True
+    canRead: bool = True
 
 
 class AccessResponse(BaseModel):
@@ -44,6 +46,8 @@ class AccessResponse(BaseModel):
     roles: List[str] = []
     insignias: List[str] = []
     customStatus: Optional[str] = None
+    hasLibraryAccess: bool = True
+    canRequestBooks: bool = True
 
 
 class LevelUpdate(BaseModel):
@@ -286,7 +290,9 @@ async def check_user_access(
         username=access_info.get("username") or eff.get("username"),
         roles=access_info.get("roles") or eff.get("roles") or [],
         insignias=access_info.get("insignias") or eff.get("insignias") or [],
-        customStatus=eff.get("custom_status") or access_info.get("custom_status")
+        customStatus=eff.get("custom_status") or access_info.get("custom_status"),
+        hasLibraryAccess=access_info.get("hasLibraryAccess", eff.get("has_library_access", True)),
+        canRequestBooks=access_info.get("canRequestBooks", eff.get("can_request_books", True))
     )
 
 
