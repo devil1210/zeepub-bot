@@ -68,6 +68,8 @@ class LibraryService:
                     match_expr = "title MATCH :q"
                 elif search_type == "author" or search_type == "autor":
                     match_expr = "author MATCH :q"
+                elif search_type == "serie":
+                    match_expr = "series MATCH :q"
                 elif search_type in ("illustrator", "ilustrador", "translator", "traductor", "genres", "géneros", "layout", "maquetador"):
                     field_map = {
                         "illustrator": "illustrator",
@@ -191,8 +193,12 @@ class LibraryService:
                 
                 if s_type == "título":
                     group_query = group_query.filter(
-                        (LocalBook.title.ilike(f"%{query}%")) | 
-                        (LocalBook.series.ilike(f"%{query}%"))
+                        (LocalBook.title.ilike(f"%{query}%"))
+                    )
+                elif s_type == "serie":
+                    group_query = group_query.filter(
+                        (LocalBook.series.ilike(f"%{query}%")) |
+                        (LocalBook.series_clean.ilike(f"%{query}%"))
                     )
                 elif s_type == "autor":
                     group_query = group_query.filter(LocalBook.author.ilike(f"%{query}%"))
@@ -212,7 +218,13 @@ class LibraryService:
                     group_query = group_query.filter(
                         (LocalBook.title.ilike(f"%{query}%")) | 
                         (LocalBook.series.ilike(f"%{query}%")) |
-                        (LocalBook.author.ilike(f"%{query}%"))
+                        (LocalBook.series_clean.ilike(f"%{query}%")) |
+                        (LocalBook.author.ilike(f"%{query}%")) |
+                        (LocalBook.illustrator.ilike(f"%{query}%")) |
+                        (LocalBook.translator.ilike(f"%{query}%")) |
+                        (LocalBook.layout_by.ilike(f"%{query}%")) |
+                        (LocalBook.tags.ilike(f"%{query}%")) |
+                        (LocalBook.book_type.ilike(f"%{query}%"))
                     )
 
             group_query = group_query.group_by(LocalBook.series_hash)

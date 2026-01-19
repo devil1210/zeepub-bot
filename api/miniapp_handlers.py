@@ -927,6 +927,14 @@ async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, A
     
     force = data.get("force", False)
     
+    async def run_scan_in_background(scanner_obj, force_val):
+        try:
+            logger.info(f"Background scan started (Force: {force_val})")
+            await asyncio.to_thread(scanner_obj.sync_all, force_scan=force_val)
+            logger.info("Background scan completed successfully.")
+        except Exception as e:
+            logger.error(f"Background scan error: {e}")
+
     try:
         from services.scanner_service import ScannerService
         libs_json = os.getenv("LOCAL_LIBRARIES")
@@ -934,12 +942,17 @@ async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, A
             return {"success": False, "message": "LOCAL_LIBRARIES no configurada."}
             
         scanner = ScannerService(libs_json)
-        # We use asyncio.to_thread to not block the FastAPI loop
-        await asyncio.to_thread(scanner.sync_all, force_scan=force)
         
-        return {"success": True, "message": "Escaneo completado."}
+        # Start the intensive task in background and return immediately
+        # to avoid Cloudflare 524 (Timeout) errors
+        asyncio.create_task(run_scan_in_background(scanner, force))
+        
+        return {
+            "success": True, 
+            "message": "Escaneo iniciado en segundo plano. Esto puede tardar varios minutos dependiendo del tamaño de la librería."
+        }
     except Exception as e:
-        logger.error(f"Error scanning library via API: {e}")
+        logger.error(f"Error starting background scan: {e}")
         return {"success": False, "message": str(e)}
 
 

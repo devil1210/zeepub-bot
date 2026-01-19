@@ -28,6 +28,7 @@ export const SearchScopeModal: React.FC<SearchScopeModalProps> = ({
   const scopes = [
     { id: 'TODOS', label: 'TODOS', icon: Library },
     { id: 'TÍTULO', label: 'TÍTULO', icon: BookType },
+    { id: 'SERIE', label: 'SERIE', icon: Folder },
     { id: 'AUTOR', label: 'AUTOR', icon: User },
     { id: 'ILUSTRADOR', label: 'ILUSTRADOR', icon: PenTool },
     { id: 'TRADUCTOR', label: 'TRADUCTOR', icon: Languages },
@@ -67,8 +68,8 @@ export const SearchScopeModal: React.FC<SearchScopeModalProps> = ({
                     onClose();
                   }}
                   className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border ${isSelected
-                      ? 'bg-primary/10 border-primary/30 text-primary'
-                      : 'bg-transparent border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'bg-transparent border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
                     }`}
                 >
                   <div className="flex items-center gap-4">
