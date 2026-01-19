@@ -169,8 +169,12 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
   const formatDescription = (desc: string) => {
     if (!desc) return null;
+
+    // Clean up <br/> tags first
+    const cleanDesc = desc.replace(/<br\s*\/?>/gi, '\n');
+
     // Collapse double breaks and split by single breaks
-    const paragraphs = desc
+    const paragraphs = cleanDesc
       .split(/\n\s*\n/)
       .join('\n')
       .split('\n')

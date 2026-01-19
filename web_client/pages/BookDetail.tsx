@@ -146,8 +146,12 @@ export const BookDetail: React.FC<BookDetailProps> = ({ volume, series, onBack, 
 
   const formatDescription = (desc: string) => {
     if (!desc) return null;
+
+    // Clean up <br/> tags first
+    const cleanDesc = desc.replace(/<br\s*\/?>/gi, '\n');
+
     // Collapse double breaks and split by single breaks
-    const paragraphs = desc
+    const paragraphs = cleanDesc
       .split(/\n\s*\n/)
       .join('\n')
       .split('\n')
