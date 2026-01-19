@@ -44,8 +44,8 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
 
    const sortedBooks = React.useMemo(() => {
       const sorted = [...initialBooks];
-      if (activeSort === 'a-z') return sorted.sort((a, b) => a.title.localeCompare(b.title));
-      if (activeSort === 'z-a') return sorted.sort((a, b) => b.title.localeCompare(a.title));
+      if (activeSort === 'a-z') return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' }));
+      if (activeSort === 'z-a') return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '', undefined, { numeric: true, sensitivity: 'base' }));
       return sorted;
    }, [activeSort]);
 

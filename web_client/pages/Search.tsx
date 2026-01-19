@@ -229,10 +229,9 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
     const sorted = [...series];
     switch (activeSort) {
       case 'a-z':
-        // Sort by series title (use title as fallback)
-        return sorted.sort((a, b) => (a.title || a.title).localeCompare(b.title || b.title));
+        return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' }));
       case 'z-a':
-        return sorted.sort((a, b) => (b.title || b.title).localeCompare(a.title || a.title));
+        return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '', undefined, { numeric: true, sensitivity: 'base' }));
       case 'downloads':
         return sorted.sort((a, b) => (b.downloadCount || 0) - (a.downloadCount || 0));
       case 'rating':
