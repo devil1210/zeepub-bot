@@ -742,14 +742,19 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         
         if self.supabase.is_active:
             try:
-                self.supabase.get_client().table('users').update({
+                # Use upsert to create user if doesn't exist
+                self.supabase.get_client().table('users').upsert({
+                    "telegram_id": telegram_id,
                     "level_id": level_id,
                     "level": level_key
-                }).eq('telegram_id', telegram_id).execute()
+                }, on_conflict="telegram_id").execute()
                 
-                # Sync admins table in Supabase
+                # Sync admins table in Supabase (only if user now exists)
                 if level_key == 'admin':
-                    self.supabase.get_client().table('admins').upsert({"user_id": telegram_id}).execute()
+                    try:
+                        self.supabase.get_client().table('admins').upsert({"user_id": telegram_id}).execute()
+                    except Exception as admin_err:
+                        logger.warning(f"Could not add to admins table: {admin_err}")
                 else:
                     self.supabase.get_client().table('admins').delete().eq('user_id', telegram_id).execute()
             except Exception as e:
