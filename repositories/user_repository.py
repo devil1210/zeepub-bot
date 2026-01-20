@@ -74,28 +74,18 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
         async with self.db.connection() as conn:
             cursor = await conn.execute(
-                "SELECT level, expires_at, role, nickname, settings, total_downloads, name, username, roles, level_id, insignias FROM users WHERE telegram_id = ?",
+                "SELECT level, expires_at, role, nickname, settings, total_downloads, name, username, level_id FROM users WHERE telegram_id = ?",
                 (telegram_id,),
             )
             row = await cursor.fetchone()
             if row:
-                level, expires_at_raw, role, nickname, settings_raw, total_downloads, name, username, roles_raw, level_id, insignias_raw = row
+                level, expires_at_raw, role, nickname, settings_raw, total_downloads, name, username, level_id = row
                 expires_at = self._parse_datetime(expires_at_raw)
                 import json
                 try:
                     settings = json.loads(settings_raw) if settings_raw else {}
                 except Exception:
                     settings = {}
-                
-                try:
-                    roles = json.loads(roles_raw) if roles_raw else []
-                except Exception:
-                    roles = []
-
-                try:
-                    insignias = json.loads(insignias_raw) if insignias_raw else []
-                except Exception:
-                    insignias = []
 
                 return {
                     "telegram_id": telegram_id,
@@ -105,8 +95,6 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "nickname": nickname,
                     "name": name,
                     "username": username,
-                    "roles": roles,
-                    "insignias": insignias,
                     "settings": settings,
                     "total_downloads": total_downloads or 0,
                     "level_id": level_id
