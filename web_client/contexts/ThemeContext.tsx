@@ -52,39 +52,30 @@ const defaultSettings: ThemeSettings = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Use CloudStorage hook for persistent theme settings
-  const { value: settings, saveValue: setSavedSettings, isLoading } = useCloudStorage<ThemeSettings>(
-    'zeepub_theme_settings',
-    defaultSettings
-  );
+  // Use local state instead of CloudStorage to avoid flickering
+  const [settings, setSettings] = React.useState<ThemeSettings>(defaultSettings);
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  // Sync with backend on mount
+  // Load from backend on mount (single source of truth)
   useEffect(() => {
-    const syncWithBackend = async () => {
+    const loadFromBackend = async () => {
       try {
         const { api } = await import('../src/services/api');
         const backendSettings = await api.getUiSettings();
         if (backendSettings) {
-          // Merge backend settings into CloudStorage
-          // We prioritize backend settings if they exist
-          const merged = { ...settings, ...backendSettings };
-
-          // Map backend keys to frontend keys if they differ
-          if (backendSettings.glassOpacity !== undefined) {
-            merged.glassOpacity = backendSettings.glassOpacity;
-          }
-
-          setSavedSettings(merged);
+          // Backend is the authority. We use defaultSettings as base, then apply backend on top.
+          const merged = { ...defaultSettings, ...backendSettings };
+          setSettings(merged);
         }
       } catch (e) {
-        console.error("Failed to sync theme with backend", e);
+        console.error("Failed to load theme from backend", e);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    if (!isLoading) {
-      syncWithBackend();
-    }
-  }, [isLoading]);
+    loadFromBackend();
+  }, []);
 
   useEffect(() => {
     // Apply settings to CSS variables (no localStorage needed - handled by hook)
@@ -165,14 +156,29 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   }, [settings]);
 
-  const updateSettings = (newSettings: Partial<ThemeSettings>) => {
+  const updateSettings = async (newSettings: Partial<ThemeSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
-    setSavedSettings(updatedSettings);
+    setSettings(updatedSettings);
+
+    // Persist to backend
+    try {
+      const { api } = await import('../src/services/api');
+      await api.rpc('update_user_setting', { settings: updatedSettings });
+    } catch (e) {
+      console.error("Failed to persist theme settings to backend", e);
+    }
   };
 
-  const resetSettings = () => {
-    // CloudStorage will handle persistence automatically
-    setSavedSettings(defaultSettings);
+  const resetSettings = async () => {
+    setSettings(defaultSettings);
+
+    // Persist to backend
+    try {
+      const { api } = await import('../src/services/api');
+      await api.rpc('update_user_setting', { settings: defaultSettings });
+    } catch (e) {
+      console.error("Failed to reset theme settings on backend", e);
+    }
   };
 
   return (
