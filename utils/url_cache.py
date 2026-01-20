@@ -134,7 +134,14 @@ def _get_sa_engine():
         raise RuntimeError("DATABASE_URL not configured")
     
     # Force synchronous driver for this module
-    db_url = config.DATABASE_URL.replace("+asyncpg", "+psycopg2").replace("postgresql://", "postgresql+psycopg2://") if "postgresql" in config.DATABASE_URL else config.DATABASE_URL
+    db_url = config.DATABASE_URL
+    if "postgresql" in db_url or "postgres" in db_url:
+        # Standardize prefix and remove async driver
+        db_url = db_url.replace("postgres://", "postgresql://")
+        db_url = db_url.replace("+asyncpg", "")
+        # Force psycopg2
+        if "+psycopg2" not in db_url:
+            db_url = db_url.replace("postgresql://", "postgresql+psycopg2://")
     
     engine = sa.create_engine(db_url, future=True, pool_pre_ping=True)
     return engine
