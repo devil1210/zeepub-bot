@@ -654,9 +654,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "username": user['nickname'] or f"User_{user['telegram_id']}",
                         "name": user.get('name'),
                         "telegram_username": user.get('username'),
-                        "level_name": user.get('level', 'free'),
-                        "level_info": {
-                            "name": lvl.get('name') or "N/A",
+                        "level_name": user.get('level_id'), # String/ID level
+                        "level": { # Rename from level_info to level to match AdminUser interface
+                            "name": lvl.get('name') or "N-A",
                             "color": lvl.get('color') or "#888888"
                         },
                         "role": user.get('role'),
@@ -713,10 +713,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "username": nickname or f"User_{tid}",
                     "name": row[7] if len(row) > 7 else None,
                     "telegram_username": row[8] if len(row) > 8 else None,
-                    "level": tier,
-                    "role": role,
-                    "level_info": {
-                        "name": l_name or "N/A",
+                    "level_name": tier,
+                    "level": { # Rename from level_info to level
+                        "name": l_name or "N-A",
                         "color": l_color or "#888888"
                     },
                     "downloads": {
