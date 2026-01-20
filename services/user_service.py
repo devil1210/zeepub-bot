@@ -212,38 +212,41 @@ async def get_effective_user(
         result["is_admin_db"] = access_info["isAdmin"]
         result["level_info"] = access_info["level"]
 
-        # Map Level ID to standardized role key (more stable than names)
-        # IDs: 1:admin, 2:staff, 3:premium, 4:vip, 5:white, 6:free
-        lvl_id_raw = access_info["level"].get("id")
-        try:
-            lvl_id = int(lvl_id_raw) if lvl_id_raw is not None else 6
-        except (ValueError, TypeError):
-            lvl_id = 6
-
-        level_to_role = {
-            1: "admin",
-            2: "staff",
-            3: "premium",
-            4: "vip",
-            5: "white",
-            6: "free"
-        }
-        
-        if lvl_id in level_to_role:
-            result["level"] = level_to_role[lvl_id]
-        else:
-            # Fallback to normalized level name if ID not in standard map
-            result["level"] = access_info["level"]["name"].lower().strip()
-
-        # Priority: level name as status label if no role/label defined
-        if not info or not info.get("role"):
-            result["status_label"] = access_info["level"]["name"]
-
+        # Check if this is a hard admin FIRST (before any level overwriting)
         is_hard_admin = access_info["isAdmin"] or uid in config.ADMIN_USERS
+        
         if is_hard_admin:
+            # For hard admins: ALWAYS force admin status, regardless of DB level_id
             result["has_mini_app_access"] = True
-            result["level"] = "admin" # Always force admin level for hard admins
-            result["status_label"] = "Admin" # Force status label for hard admins
+            result["level"] = "admin"
+            result["status_label"] = "Admin"
+        else:
+            # Map Level ID to standardized role key (more stable than names)
+            # IDs: 1:admin, 2:staff, 3:premium, 4:vip, 5:white, 6:free
+            lvl_id_raw = access_info["level"].get("id")
+            try:
+                lvl_id = int(lvl_id_raw) if lvl_id_raw is not None else 6
+            except (ValueError, TypeError):
+                lvl_id = 6
+
+            level_to_role = {
+                1: "admin",
+                2: "staff",
+                3: "premium",
+                4: "vip",
+                5: "white",
+                6: "free"
+            }
+            
+            if lvl_id in level_to_role:
+                result["level"] = level_to_role[lvl_id]
+            else:
+                # Fallback to normalized level name if ID not in standard map
+                result["level"] = access_info["level"]["name"].lower().strip()
+
+            # Priority: level name as status label if no role/label defined
+            if not info or not info.get("role"):
+                result["status_label"] = access_info["level"]["name"]
             
         # Implement forceSettings logic
         level_settings = access_info["level"]
