@@ -2,6 +2,7 @@ import logging
 import os
 import html
 from sqlalchemy import create_engine, Column, String, Boolean, BigInteger
+import sqlalchemy as sa
 from sqlalchemy.orm import declarative_base, sessionmaker
 from telegram import Update, ChatMember, ChatMemberUpdated
 from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler, MessageHandler, filters
@@ -39,7 +40,19 @@ class GroupManagerPlugin(BasePlugin):
         self.enabled = False
         # We need access to CustomMessages DB to fetch welcome messages
         self.custom_msg_engine = None
-        self.CustomMsgSession = None
+    self.CustomMsgSession = None
+
+    def _get_sync_engine(self, db_url_in):
+        if "sqlite" in db_url_in:
+             return sa.create_engine(db_url_in, future=True)
+        
+        db_url = db_url_in
+        if "postgresql" in db_url or "postgres" in db_url:
+            db_url = db_url.replace("postgres://", "postgresql://")
+            db_url = db_url.replace("+asyncpg", "")
+            if "+psycopg2" not in db_url:
+                db_url = db_url.replace("postgresql://", "postgresql+psycopg2://")
+        return sa.create_engine(db_url, future=True, pool_pre_ping=True)
 
     async def initialize(self, bot_instance) -> bool:
         self.enabled = config.ENABLE_GROUP_MANAGER
@@ -89,7 +102,7 @@ class GroupManagerPlugin(BasePlugin):
             db_path = os.path.join("data", "group_manager.db")
             db_url = f"sqlite:///{db_path}"
 
-        self.engine = create_engine(db_url, future=True)
+        self.engine = self._get_sync_engine(db_url)
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
 
@@ -102,7 +115,7 @@ class GroupManagerPlugin(BasePlugin):
             db_url = f"sqlite:///{db_path}"
 
         try:
-            self.custom_msg_engine = create_engine(db_url, future=True)
+            self.custom_msg_engine = self._get_sync_engine(db_url)
             self.CustomMsgSession = sessionmaker(bind=self.custom_msg_engine)
         except Exception as e:
             logger.warning(f"GroupManager no pudo conectar a CustomMessages DB: {e}")

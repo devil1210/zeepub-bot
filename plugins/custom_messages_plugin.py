@@ -13,6 +13,7 @@ from sqlalchemy import (
     Text,
     DateTime,
 )
+import sqlalchemy as sa
 from sqlalchemy.sql import text  # Importar text explícitamente
 from sqlalchemy.orm import declarative_base, sessionmaker
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -1508,6 +1509,18 @@ class CustomMessagesPlugin(BasePlugin):
         self.app = None
         self.bot = None
 
+    def _get_sync_engine(self, db_url_in):
+        if "sqlite" in db_url_in:
+             return sa.create_engine(db_url_in, future=True)
+        
+        db_url = db_url_in
+        if "postgresql" in db_url or "postgres" in db_url:
+            db_url = db_url.replace("postgres://", "postgresql://")
+            db_url = db_url.replace("+asyncpg", "")
+            if "+psycopg2" not in db_url:
+                db_url = db_url.replace("postgresql://", "postgresql+psycopg2://")
+        return sa.create_engine(db_url, future=True, pool_pre_ping=True)
+
     async def initialize(self, bot_instance) -> bool:
         self.app = bot_instance
         self.bot = bot_instance.bot
@@ -1529,7 +1542,7 @@ class CustomMessagesPlugin(BasePlugin):
             db_url = f"sqlite:///{db_path}"
 
         try:
-            self.engine = create_engine(db_url, future=True)
+            self.engine = self._get_sync_engine(db_url)
             Base.metadata.create_all(self.engine)
 
             # Migration: Ensure text_content column exists

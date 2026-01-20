@@ -83,7 +83,8 @@ class SyncEngine:
                         "total_downloads": u.get('total_downloads', 0),
                         "insignias": u.get('insignias', []),
                         "settings": u.get('settings', {}),
-                        "expires_at": u.get('expires_at'),
+                        # Parse timestamps if present
+                        "expires_at": datetime.fromisoformat(u['expires_at'].replace('Z', '+00:00')) if u.get('expires_at') else None,
                         # "updated_at": u.get('updated_at') # Let Postgres handle its own updated_at or sync it? Sync it.
                     }
                     

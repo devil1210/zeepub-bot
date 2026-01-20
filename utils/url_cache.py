@@ -109,7 +109,7 @@ def _init_with_sqlalchemy():
     if not _HAS_SQLALCHEMY:
         raise RuntimeError("SQLAlchemy not available")
 
-    engine = sa.create_engine(config.DATABASE_URL, future=True, pool_pre_ping=True)
+    engine = _get_sa_engine()
     meta = MetaData()
     Table(
         "url_mappings",
