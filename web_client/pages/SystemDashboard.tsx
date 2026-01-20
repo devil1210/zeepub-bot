@@ -105,109 +105,139 @@ export const SystemDashboard: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* Scan Library */}
-                    <div className="p-6 rounded-2xl border border-white/5 hover:border-primary/50 transition-all group flex flex-col">
-                        <div className="flex justify-between items-start mb-3">
-                            <h4 className="font-bold text-white text-xs uppercase tracking-tight">Escanear Biblioteca</h4>
-                            <Activity className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="flex flex-col">
+                                <h4 className="font-black text-white text-[10px] uppercase tracking-widest mb-1">Escanear Biblioteca</h4>
+                                <p className="text-[11px] text-gray-500 leading-relaxed max-w-[180px]">Indexar nuevo contenido en /mnt/books/incoming.</p>
+                            </div>
+                            <div className="p-3 bg-primary/20 rounded-2xl text-primary border border-primary/20 shadow-lg shadow-primary/10">
+                                <Activity className="w-5 h-5" />
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 mb-6 leading-relaxed">Indexar nuevo contenido en /mnt/books/incoming de forma forzada.</p>
                         <button
                             onClick={() => handleAction('Escaneo', () => api.adminScanLibrary(true))}
                             disabled={loading}
-                            className="mt-auto w-full py-2.5 text-[10px] font-black text-center bg-primary hover:bg-primary-dark text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50"
+                            className="mt-4 w-full py-3 text-[10px] font-black text-center bg-primary hover:bg-primary-dark text-white rounded-2xl transition-all uppercase tracking-widest shadow-xl shadow-primary/20 active:scale-95 disabled:opacity-50 relative z-10"
                         >
-                            {actionLoading === 'Escaneo' ? "Ejecutando..." : "Ejecutar Escaneo"}
+                            {actionLoading === 'Escaneo' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Ejecutar Escaneo"}
                         </button>
+                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all duration-700"></div>
                     </div>
 
                     {/* Enrich Metadata */}
-                    <div className="p-6 rounded-2xl border border-white/5 hover:border-amber-500/50 transition-all group flex flex-col">
-                        <div className="flex justify-between items-start mb-3">
-                            <h4 className="font-bold text-white text-xs uppercase tracking-tight">Actualizar Metadatos</h4>
-                            <Globe className="w-4 h-4 text-gray-500 group-hover:text-amber-400 transition-colors" />
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="flex flex-col">
+                                <h4 className="font-black text-white text-[10px] uppercase tracking-widest mb-1">Actualizar Metadatos</h4>
+                                <p className="text-[11px] text-gray-500 leading-relaxed max-w-[180px]">Busca información extra via ISBN y web.</p>
+                            </div>
+                            <div className="p-3 bg-amber-500/20 rounded-2xl text-amber-500 border border-amber-500/20 shadow-lg shadow-amber-500/10">
+                                <Globe className="w-5 h-5" />
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 mb-6 leading-relaxed">Busca información extra (títulos ES/EN, descripción) via ISBN y web.</p>
                         <button
                             onClick={() => handleAction('Metadatos', api.adminEnrichMetadata)}
                             disabled={loading}
-                            className="mt-auto w-full py-2.5 text-[10px] font-black text-center bg-amber-500/10 hover:bg-amber-500 text-amber-500 hover:text-white border border-amber-500/20 rounded-xl transition-all uppercase tracking-widest active:scale-95 disabled:opacity-50"
+                            className="mt-4 w-full py-3 text-[10px] font-black text-center bg-amber-500/10 hover:bg-amber-500 text-amber-500 hover:text-white border border-amber-500/20 rounded-2xl transition-all uppercase tracking-widest active:scale-95 disabled:opacity-50 relative z-10"
                         >
-                            {actionLoading === 'Metadatos' ? "Ejecutando..." : "Sincronizar Web"}
+                            {actionLoading === 'Metadatos' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Sincronizar Web"}
                         </button>
+                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all duration-700"></div>
                     </div>
 
                     {/* Cloud Sync */}
-                    <div className="p-6 rounded-2xl border border-white/5 hover:border-blue-500/50 transition-all group flex flex-col">
-                        <div className="flex justify-between items-start mb-3">
-                            <h4 className="font-bold text-white text-xs uppercase tracking-tight">Cloud Sync (Supabase)</h4>
-                            <Shield className="w-4 h-4 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="flex flex-col">
+                                <h4 className="font-black text-white text-[10px] uppercase tracking-widest mb-1">Cloud Sync (Supabase)</h4>
+                                <p className="text-[11px] text-gray-500 leading-relaxed max-w-[180px]">Sincroniza base local a la nube.</p>
+                            </div>
+                            <div className="p-3 bg-blue-500/20 rounded-2xl text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-500/10">
+                                <Shield className="w-5 h-5" />
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 mb-6 leading-relaxed">Sincroniza base de datos local a la nube para doble persistencia.</p>
-                        <div className="grid grid-cols-2 gap-3 mt-auto">
+                        <div className="grid grid-cols-2 gap-3 mt-4 relative z-10">
                             <button
                                 onClick={() => handleAction('Sync Usuarios', api.adminSyncUsersCloud)}
                                 disabled={loading}
-                                className="py-2.5 text-[9px] font-black text-center bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/10 rounded-xl transition-all uppercase tracking-widest active:scale-95"
+                                className="py-3 text-[9px] font-black text-center bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/10 rounded-2xl transition-all uppercase tracking-widest active:scale-95 shadow-sm"
                             >
                                 Usuarios
                             </button>
                             <button
                                 onClick={() => handleAction('Backup Biblioteca', api.adminBackupLibrary)}
                                 disabled={loading}
-                                className="py-2.5 text-[9px] font-black text-center bg-purple-500/10 hover:bg-purple-500 text-purple-400 hover:text-white border border-purple-500/10 rounded-xl transition-all uppercase tracking-widest active:scale-95"
+                                className="py-3 text-[9px] font-black text-center bg-purple-500/10 hover:bg-purple-500 text-purple-400 hover:text-white border border-purple-500/10 rounded-2xl transition-all uppercase tracking-widest active:scale-95 shadow-sm"
                             >
                                 Biblioteca
                             </button>
                         </div>
+                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all duration-700"></div>
                     </div>
 
                     {/* System Updates */}
-                    <div className="p-6 rounded-2xl border border-white/5 hover:border-green-500/50 transition-all group flex flex-col">
-                        <div className="flex justify-between items-start mb-3">
-                            <h4 className="font-bold text-white text-xs uppercase tracking-tight">System Update</h4>
-                            <TrendingUp className="w-4 h-4 text-gray-500 group-hover:text-green-400 transition-colors" />
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="flex flex-col">
+                                <h4 className="font-black text-white text-[10px] uppercase tracking-widest mb-1">System Update</h4>
+                                <p className="text-[11px] text-gray-500 leading-relaxed max-w-[180px]">Pull de git y reinicio de servicios.</p>
+                            </div>
+                            <div className="p-3 bg-green-500/20 rounded-2xl text-green-400 border border-green-500/20 shadow-lg shadow-green-500/10">
+                                <TrendingUp className="w-5 h-5" />
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 mb-6 leading-relaxed">Ejecuta git pull para obtener los últimos cambios y reinicia.</p>
                         <button
                             onClick={() => handleAction('Actualizando', () => api.adminUpdateSystem())}
-                            className="mt-auto w-full py-2.5 text-[10px] font-black text-center bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-green-600/20 active:scale-95"
+                            className="mt-4 w-full py-3 text-[10px] font-black text-center bg-green-600 hover:bg-green-700 text-white rounded-2xl transition-all uppercase tracking-widest shadow-xl shadow-green-600/20 active:scale-95 relative z-10"
                         >
-                            {actionLoading === 'Actualizando' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : "Update System"}
+                            {actionLoading === 'Actualizando' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Update System"}
                         </button>
+                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-green-500/5 rounded-full blur-2xl group-hover:bg-green-500/10 transition-all duration-700"></div>
                     </div>
 
                     {/* Docker Restart */}
-                    <div className="p-6 rounded-2xl border border-white/5 hover:border-blue-400/50 transition-all group flex flex-col">
-                        <div className="flex justify-between items-start mb-3">
-                            <h4 className="font-bold text-white text-xs uppercase tracking-tight">Bot Docker</h4>
-                            <RefreshCw className="w-4 h-4 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="flex flex-col">
+                                <h4 className="font-black text-white text-[10px] uppercase tracking-widest mb-1">Bot Docker</h4>
+                                <p className="text-[11px] text-gray-500 leading-relaxed max-w-[180px]">Reinicia el contenedor Docker.</p>
+                            </div>
+                            <div className="p-3 bg-blue-400/20 rounded-2xl text-blue-400 border border-blue-400/20 shadow-lg shadow-blue-400/10">
+                                <RefreshCw className="w-5 h-5" />
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 mb-6 leading-relaxed">Reinicia el contenedor Docker del bot instantáneamente.</p>
                         <button
                             onClick={() => handleAction('Reiniciando', () => api.adminRestartDocker())}
-                            className="mt-auto w-full py-2.5 text-[10px] font-black text-center bg-blue-500/20 hover:bg-blue-500 text-white rounded-xl transition-all uppercase tracking-widest active:scale-95"
+                            className="mt-4 w-full py-3 text-[10px] font-black text-center bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-2xl transition-all uppercase tracking-widest active:scale-95 relative z-10"
                         >
-                            Reset Container
+                            {actionLoading === 'Reiniciando' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Reset Container"}
                         </button>
+                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all duration-700"></div>
                     </div>
 
                     {/* Reset Library */}
-                    <div className="p-6 rounded-2xl bg-red-500/5 border border-red-500/10 hover:border-red-500/50 transition-all group flex flex-col">
-                        <div className="flex justify-between items-start mb-3">
-                            <h4 className="font-bold text-red-400 text-xs uppercase tracking-tight">Reset Library</h4>
-                            <Trash2 className="w-4 h-4 text-gray-500 group-hover:text-red-400 transition-colors" />
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="flex flex-col">
+                                <h4 className="font-black text-red-400 text-[10px] uppercase tracking-widest mb-1">Reset Library</h4>
+                                <p className="text-[11px] text-gray-500 leading-relaxed max-w-[180px]">Purga base de datos - <span className="text-red-500 font-bold">Irreversible.</span></p>
+                            </div>
+                            <div className="p-3 bg-red-500/20 rounded-2xl text-red-400 border border-red-500/20 shadow-lg shadow-red-500/10">
+                                <Trash2 className="w-5 h-5" />
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 mb-6 leading-relaxed">Purga toda la base de datos de libros. <span className="text-red-500 font-bold italic">Irreversible.</span></p>
                         <button
                             onClick={() => {
                                 if (confirm('¿ESTÁS ABSOLUTAMENTE SEGURO?')) {
                                     handleAction('Reset', () => api.adminResetLibrary(true));
                                 }
                             }}
-                            className="mt-auto w-full py-2.5 text-[10px] font-black text-center bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white border border-red-500/20 rounded-xl transition-all uppercase tracking-widest active:scale-95"
+                            className="mt-4 w-full py-3 text-[10px] font-black text-center bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white border border-red-500/20 rounded-2xl transition-all uppercase tracking-widest active:scale-95 relative z-10"
                         >
-                            Purge Data
+                            {actionLoading === 'Reset' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Purge Data"}
                         </button>
+                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-red-500/5 rounded-full blur-2xl group-hover:bg-red-500/10 transition-all duration-700"></div>
                     </div>
                 </div>
             </div>

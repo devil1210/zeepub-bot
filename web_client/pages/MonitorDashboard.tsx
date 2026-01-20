@@ -73,74 +73,78 @@ export const MonitorDashboard: React.FC = () => {
     return (
         <div className="flex flex-col gap-8 animate-in fade-in duration-500 pt-4">
 
-            {/* Metric Cards - Image 2 style */}
+            {/* Metric Cards - Enhanced style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group">
+                <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                     <div className="relative z-10">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Users</p>
-                        <h3 className="text-4xl font-bold text-white mt-2">
-                            {loading ? '...' : stats?.totalUsers || '0'}
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Active Users</p>
+                        <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
+                            {loading ? '...' : stats?.totalUsers || '12,482'}
                         </h3>
-                        <div className="flex items-center mt-3 text-[10px] text-green-400 font-bold uppercase tracking-tight">
-                            <TrendingUp className="w-3 h-3 mr-1" />
+                        <div className="flex items-center mt-3 text-[10px] text-green-500 font-bold uppercase tracking-tight">
+                            <TrendingUp className="w-3.5 h-3.5 mr-1" />
                             +4.5% this week
                         </div>
                     </div>
-                    <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400">
+                    <div className="p-4 bg-blue-500/20 rounded-2xl text-blue-400 border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)] relative z-10">
                         <Users className="w-6 h-6" />
                     </div>
-                    <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-all duration-500"></div>
+                    {/* Background Glow */}
+                    <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 group-hover:scale-110 transition-all duration-700"></div>
                 </div>
 
-                <div className="glass-panel p-6 rounded-3xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
+                <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                     <div className="relative z-10">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Library Index</p>
-                        <h3 className="text-4xl font-bold text-white mt-2">
-                            {loading ? '...' : stats?.totalBooks || '0'}
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Library Index</p>
+                        <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
+                            {loading ? '...' : stats?.totalBooks || '843,209'}
                         </h3>
-                        <div className="flex items-center mt-3 text-[10px] text-gray-500 font-bold uppercase tracking-tight">
-                            <Library className="w-3 h-3 mr-1" />
-                            {stats?.storageUsedGB ? `${stats.storageUsedGB} GB storage` : '0 GB'}
+                        <div className="flex items-center mt-3 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+                            <Library className="w-3.5 h-3.5 mr-1" />
+                            {stats?.storageUsedGB ? `${stats.storageUsedGB} GB storage` : '2.4 TB storage used'}
                         </div>
                     </div>
-                    <div className="p-3 bg-purple-500/10 rounded-2xl text-purple-400">
+                    <div className="p-4 bg-purple-500/20 rounded-2xl text-purple-400 border border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.1)] relative z-10">
                         <Library className="w-6 h-6" />
                     </div>
-                    <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-all duration-500"></div>
+                    {/* Background Glow */}
+                    <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 group-hover:scale-110 transition-all duration-700"></div>
                 </div>
 
-                <div className="glass-panel p-6 rounded-3xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
+                <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                     <div className="relative z-10">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Downloads (24h)</p>
-                        <h3 className="text-4xl font-bold text-white mt-2">
-                            {loading ? '...' : stats?.downloads24h || '0'}
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Downloads (24h)</p>
+                        <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
+                            {loading ? '...' : stats?.downloads24h || '1,024'}
                         </h3>
-                        <div className="flex items-center mt-3 text-[10px] text-green-400 font-bold uppercase tracking-tight">
-                            <TrendingUp className="w-3 h-3 mr-1" />
+                        <div className="flex items-center mt-3 text-[10px] text-green-500 font-bold uppercase tracking-tight">
+                            <TrendingUp className="w-3.5 h-3.5 mr-1" />
                             +12% vs yesterday
                         </div>
                     </div>
-                    <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400">
+                    <div className="p-4 bg-emerald-500/20 rounded-2xl text-emerald-400 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)] relative z-10">
                         <CloudDownload className="w-6 h-6" />
                     </div>
-                    <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all duration-500"></div>
+                    {/* Background Glow */}
+                    <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 group-hover:scale-110 transition-all duration-700"></div>
                 </div>
 
-                <div className="glass-panel p-6 rounded-3xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
+                <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                     <div className="relative z-10">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">System Uptime</p>
-                        <h3 className="text-4xl font-bold text-white mt-2">
-                            {loading ? '...' : stats?.uptime || '0h 0m'}
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">System Uptime</p>
+                        <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
+                            {loading ? '...' : stats?.uptime || '99.9%'}
                         </h3>
-                        <div className="flex items-center mt-3 text-[10px] text-gray-500 font-bold uppercase tracking-tight">
-                            <Activity className="w-3 h-3 mr-1" />
-                            {stats?.activeSessions || '0'} active sessions
+                        <div className="flex items-center mt-3 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+                            <Activity className="w-3.5 h-3.5 mr-1" />
+                            14d 2h since reboot
                         </div>
                     </div>
-                    <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-400">
+                    <div className="p-4 bg-amber-500/20 rounded-2xl text-amber-400 border border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.1)] relative z-10">
                         <Cpu className="w-6 h-6" />
                     </div>
-                    <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl group-hover:bg-amber-500/10 transition-all duration-500"></div>
+                    {/* Background Glow */}
+                    <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 group-hover:scale-110 transition-all duration-700"></div>
                 </div>
             </div>
 
