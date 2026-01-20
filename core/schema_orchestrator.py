@@ -29,7 +29,6 @@ class SchemaOrchestrator:
                 # Create all tables defined in SQLAlchemy models
                 # This only creates tables that don't exist; it won't update existing frames
                 await conn.run_sync(Base.metadata.create_all)
-                await conn.run_sync(Base.metadata.create_all)
                 logger.info("Schema verification completed.")
                 
                 # Auto-Migration for UserLevel (Add missing columns to existing table)
