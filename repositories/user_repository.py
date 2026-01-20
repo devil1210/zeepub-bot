@@ -22,7 +22,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
     async def get_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
         if self.supabase.is_active:
             try:
-                res = self.supabase.get_client().table('users').select("*").eq('telegram_id', telegram_id).execute()
+                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books"
+                res = self.supabase.get_client().table('users').select(cols).eq('telegram_id', telegram_id).execute()
                 if res.data:
                     user = res.data[0]
                     settings = user['settings'] or {}
@@ -61,7 +62,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "nickname": user['nickname'],
                         "name": user.get('name'),
                         "username": user.get('username'),
-                        "roles": user.get('roles') or [],
+                        "roles": [], # Roles column removed
                         "insignias": user.get('insignias') or [],
                         "settings": settings,
                         "total_downloads": user['total_downloads'] or 0,
@@ -74,18 +75,23 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
         async with self.db.connection() as conn:
             cursor = await conn.execute(
-                "SELECT level, expires_at, role, nickname, settings, total_downloads, name, username, level_id FROM users WHERE telegram_id = ?",
+                "SELECT level, expires_at, role, nickname, settings, total_downloads, name, username, level_id, insignias FROM users WHERE telegram_id = ?",
                 (telegram_id,),
             )
             row = await cursor.fetchone()
             if row:
-                level, expires_at_raw, role, nickname, settings_raw, total_downloads, name, username, level_id = row
+                level, expires_at_raw, role, nickname, settings_raw, total_downloads, name, username, level_id, insignias_raw = row
                 expires_at = self._parse_datetime(expires_at_raw)
                 import json
                 try:
                     settings = json.loads(settings_raw) if settings_raw else {}
                 except Exception:
                     settings = {}
+
+                try:
+                    insignias = json.loads(insignias_raw) if insignias_raw else []
+                except Exception:
+                    insignias = []
 
                 return {
                     "telegram_id": telegram_id,
@@ -97,7 +103,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "username": username,
                     "settings": settings,
                     "total_downloads": total_downloads or 0,
-                    "level_id": level_id
+                    "level_id": level_id,
+                    "insignias": insignias
                 }
             return None
 
@@ -159,7 +166,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if nickname is not None: data["nickname"] = nickname
                 if name is not None: data["name"] = name
                 if username is not None: data["username"] = username
-                if roles is not None: data["roles"] = json.dumps(roles)
+                # roles column removed from Supabase
                 if insignias is not None: data["insignias"] = json.dumps(insignias)
                 if has_library_access is not None: data["has_library_access"] = has_library_access
                 if can_request_books is not None: data["can_request_books"] = can_request_books
@@ -315,9 +322,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
     async def get_access_info(self, telegram_id: int) -> Optional[Dict[str, Any]]:
         if self.supabase.is_active:
             try:
-                # Use RPC or multi-table select if possible, but simplest is two calls or a view
-                # For now, let's join in Supabase
-                res = self.supabase.get_client().table('users').select("*, level:user_levels(*)").eq('telegram_id', telegram_id).execute()
+                # Use explicit column list instead of * to avoid error with defunct 'roles' column
+                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books"
+                res = self.supabase.get_client().table('users').select(f"{cols}, level:user_levels(*)").eq('telegram_id', telegram_id).execute()
                 if res.data:
                     user = res.data[0]
                     lvl = user.get('level_info', user.get('level', {})) # Join name is 'level' but column is also 'level'
@@ -362,7 +369,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "isBetaTester": beta_tester,
                         "name": user.get('name'),
                         "username": user.get('username'),
-                        "roles": user.get('roles') or [],
+                        "roles": [], # Roles column removed
                         "insignias": user.get('insignias') or [],
                         "hasLibraryAccess": bool(user.get('has_library_access', True)),
                         "canRequestBooks": bool(user.get('can_request_books', True)),
@@ -395,7 +402,6 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.ui_primary_color,
                 u.name,
                 u.username,
-                u.roles,
                 u.nickname,
                 u.insignias,
                 u.has_library_access,
@@ -453,25 +459,25 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(row[18] if len(row) > 18 else 0.2),
                         "glassOpacity": (row[19] if len(row) > 19 else 60) / 100.0,
                         "primaryColor": row[20] if len(row) > 20 else '#2b6cee',
-                        "canDownload": bool(row[28]) if len(row) > 28 else True,
-                        "canRead": bool(row[29]) if len(row) > 29 else True,
-                        "hasLibraryAccess": bool(row[30]) if len(row) > 30 else True,
-                        "canRequestBooks": bool(row[31]) if len(row) > 31 else True,
-                        "bannerContentOffset": int(row[32]) if len(row) > 32 else 0,
-                        "backgroundColor": row[33] if len(row) > 33 else '#0f172a',
-                        "cardColor": row[34] if len(row) > 34 else '#1e293b',
-                        "forceSettings": bool(row[35]) if len(row) > 35 else False,
+                        "canDownload": bool(row[27]) if len(row) > 27 else True,
+                        "canRead": bool(row[28]) if len(row) > 28 else True,
+                        "hasLibraryAccess": bool(row[29]) if len(row) > 29 else True,
+                        "canRequestBooks": bool(row[30]) if len(row) > 30 else True,
+                        "bannerContentOffset": int(row[31]) if len(row) > 31 else 0,
+                        "backgroundColor": row[32] if len(row) > 32 else '#0f172a',
+                        "cardColor": row[33] if len(row) > 33 else '#1e293b',
+                        "forceSettings": bool(row[34]) if len(row) > 34 else False,
                     },
                     "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
                     "isAdmin": is_admin,
                     "isBetaTester": beta_tester,
                     "name": row[21] if len(row) > 21 else None,
                     "username": row[22] if len(row) > 22 else None,
-                    "roles": json.loads(row[23]) if len(row) > 23 and row[23] else [],
-                    "nickname": row[24] if len(row) > 24 else None,
-                    "insignias": json.loads(row[25]) if len(row) > 25 and row[25] else [],
-                    "hasLibraryAccess": bool(row[26]) if len(row) > 26 else True,
-                    "canRequestBooks": bool(row[27]) if len(row) > 27 else True,
+                    "roles": [], # Roles column removed
+                    "nickname": row[23] if len(row) > 23 else None,
+                    "insignias": json.loads(row[24]) if len(row) > 24 and row[24] else [],
+                    "hasLibraryAccess": bool(row[25]) if len(row) > 25 else True,
+                    "canRequestBooks": bool(row[26]) if len(row) > 26 else True,
                 }
             return None
 
@@ -654,7 +660,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
     async def list_users(self, limit: int = 50, offset: int = 0, search: str = None) -> list[Dict[str, Any]]:
         if self.supabase.is_active:
             try:
-                query = self.supabase.get_client().table('users').select("*, level:user_levels(name, color, daily_downloads)")
+                cols = "telegram_id, nickname, name, username, level_id, role, total_downloads, updated_at"
+                query = self.supabase.get_client().table('users').select(f"{cols}, level:user_levels(name, color, daily_downloads)")
                 if search:
                     # Supabase doesn't support easy OR complex filters via wrapper as nicely, but we can try
                     query = query.or_(f"nickname.ilike.%{search}%,telegram_id.eq.{search}")
