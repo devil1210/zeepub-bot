@@ -132,7 +132,11 @@ def _get_sa_engine():
         raise RuntimeError("SQLAlchemy not installed")
     if not config.DATABASE_URL:
         raise RuntimeError("DATABASE_URL not configured")
-    engine = sa.create_engine(config.DATABASE_URL, future=True, pool_pre_ping=True)
+    
+    # Force synchronous driver for this module
+    db_url = config.DATABASE_URL.replace("+asyncpg", "+psycopg2").replace("postgresql://", "postgresql+psycopg2://") if "postgresql" in config.DATABASE_URL else config.DATABASE_URL
+    
+    engine = sa.create_engine(db_url, future=True, pool_pre_ping=True)
     return engine
 
 
