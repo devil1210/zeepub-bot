@@ -1448,6 +1448,59 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
         return {"success": False, "message": str(e)}
 
 
+async def handle_admin_get_themes(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Retorna la lista de plantillas de temas disponibles."""
+    if user_data.get("level") != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+    
+    client = supabase_manager.get_client()
+    try:
+        res = client.table('app_themes').select('*').order('name').execute()
+        return {"success": True, "themes": res.data}
+    except Exception as e:
+        logger.error(f"Error fetching themes: {e}")
+        return {"success": False, "message": str(e)}
+
+async def handle_admin_save_theme(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Guarda una configuración actual como una plantilla de tema."""
+    if user_data.get("level") != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+    
+    theme_name = data.get("name")
+    if not theme_name:
+        return {"success": False, "message": "El tema necesita un nombre"}
+    
+    client = supabase_manager.get_client()
+    
+    # Map frontend keys to DB columns
+    insert_data = {
+        "name": theme_name,
+        "description": data.get("description", ""),
+        "primary_color": data.get("primaryColor"),
+        "glass_blur": data.get("glassBlur"),
+        "glass_opacity": data.get("glassOpacity"),
+        "nav_opacity": data.get("navOpacity"),
+        "accent_opacity": data.get("accentOpacity"),
+        "card_glow_intensity": data.get("cardGlowIntensity"),
+        "background_color": data.get("backgroundColor"),
+        "card_color": data.get("cardColor"),
+        "theme_type": data.get("theme"),
+        "font_size": data.get("fontSize"),
+        "cover_width": data.get("coverWidth"),
+        "updated_at": "now()"
+    }
+    
+    # Remove None values
+    insert_data = {k: v for k, v in insert_data.items() if v is not None}
+    
+    try:
+        res = client.table('app_themes').upsert(insert_data, on_conflict='name').execute()
+        return {"success": True, "theme": res.data[0]}
+    except Exception as e:
+        logger.error(f"Error saving theme: {e}")
+        return {"success": False, "message": str(e)}
+
+
 async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda los permisos de un usuario específico."""
     logger.info(f"ADMIN: Save permissions request for data: {data}")

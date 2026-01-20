@@ -166,6 +166,10 @@ export const api = {
     getRecentAuditLogs: (limit: number = 20, offset: number = 0) =>
         rpc('admin_get_recent_audit_logs', { limit, offset }),
 
+    // Themes
+    getAvailableThemes: () => rpc('admin_get_themes'),
+    saveAsTheme: (themeData: any) => rpc('admin_save_theme', themeData),
+
     // Raw RPC Access
     rpc: rpc
 };

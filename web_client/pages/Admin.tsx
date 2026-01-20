@@ -79,7 +79,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     }
   };
 
-  const isEditMode = !!selectedUserId || !!configuringTier;
+  const isEditMode = !!selectedUserId || !!configuringTier || currentView === 'interface';
 
   return (
     <div className="relative min-h-screen">

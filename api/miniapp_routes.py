@@ -169,6 +169,8 @@ async def handle_bot_request(
             "admin_save_user_permissions": handle_admin_save_user_permissions,
             "admin_get_user_permissions": handle_admin_get_user_permissions,
             "admin_get_recent_audit_logs": handle_admin_get_recent_audit_logs,
+            "admin_get_themes": handle_admin_get_themes,
+            "admin_save_theme": handle_admin_save_theme,
             "admin_find_duplicates": handle_admin_find_duplicates,
             "admin_delete_duplicate": handle_admin_delete_duplicate,
             "admin_enrich_metadata": handle_admin_enrich_metadata,

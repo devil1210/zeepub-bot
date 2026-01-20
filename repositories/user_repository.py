@@ -25,6 +25,33 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 res = self.supabase.get_client().table('users').select("*").eq('telegram_id', telegram_id).execute()
                 if res.data:
                     user = res.data[0]
+                    settings = user['settings'] or {}
+                    
+                    # Fetch relational UI settings if they exist
+                    try:
+                        ui_res = self.supabase.get_client().table('user_ui_settings').select("*").eq('user_id', str(telegram_id)).execute()
+                        if ui_res.data:
+                            ui_fields = ui_res.data[0]
+                            # Map relational columns back to settings keys
+                            mapping = {
+                                "primary_color": "primaryColor",
+                                "glass_blur": "glassBlur",
+                                "glass_opacity": "glassOpacity",
+                                "nav_opacity": "navOpacity",
+                                "accent_opacity": "accentOpacity",
+                                "card_glow_intensity": "cardGlowIntensity",
+                                "background_color": "backgroundColor",
+                                "card_color": "cardColor",
+                                "font_size": "fontSize",
+                                "cover_width": "coverWidth",
+                                "theme_type": "theme"
+                            }
+                            for col, key in mapping.items():
+                                if ui_fields.get(col) is not None:
+                                    settings[key] = ui_fields[col]
+                    except Exception as e:
+                        logger.warning(f"Error fetching user_ui_settings: {e}")
+
                     # Map Supabase result to expected format
                     return {
                         "telegram_id": int(user['telegram_id']),
@@ -36,7 +63,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "username": user.get('username'),
                         "roles": user.get('roles') or [],
                         "insignias": user.get('insignias') or [],
-                        "settings": user['settings'] or {},
+                        "settings": settings,
                         "total_downloads": user['total_downloads'] or 0,
                         "level_id": user.get('level_id', 6),
                     }
@@ -864,9 +891,34 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         
         if self.supabase.is_active:
             try:
+                # 1. Update main user record (JSON blob)
                 self.supabase.get_client().table('users').update({
                     "settings": settings
                 }).eq('telegram_id', telegram_id).execute()
+
+                # 2. Update relational UI settings (columns)
+                mapping = {
+                    "primaryColor": "primary_color",
+                    "glassBlur": "glass_blur",
+                    "glassOpacity": "glass_opacity",
+                    "navOpacity": "nav_opacity",
+                    "accentOpacity": "accent_opacity",
+                    "cardGlowIntensity": "card_glow_intensity",
+                    "backgroundColor": "background_color",
+                    "cardColor": "card_color",
+                    "fontSize": "font_size",
+                    "coverWidth": "cover_width",
+                    "theme": "theme_type"
+                }
+                
+                ui_data = {"user_id": str(telegram_id), "updated_at": "now()"}
+                for key, col in mapping.items():
+                    if key in settings:
+                        ui_data[col] = settings[key]
+                
+                if len(ui_data) > 2: # More than just user_id and updated_at
+                    self.supabase.get_client().table('user_ui_settings').upsert(ui_data, on_conflict='user_id').execute()
+
             except Exception as e:
                 logger.error(f"Supabase update settings error: {e}")
 
@@ -922,6 +974,19 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         Resetea (borra) la configuración personal de todos los usuarios de un nivel.
         Establece 'settings' a '{}'.
         """
+        if self.supabase.is_active:
+            try:
+                # 1. Get user IDs of this level
+                res = self.supabase.get_client().table('users').select('telegram_id').eq('level_id', level_id).execute()
+                uids = [str(r['telegram_id']) for r in res.data]
+                if uids:
+                    # 2. Reset main settings
+                    self.supabase.get_client().table('users').update({"settings": {}}).eq('level_id', level_id).execute()
+                    # 3. Delete from relational settings
+                    self.supabase.get_client().table('user_ui_settings').delete().in_('user_id', uids).execute()
+            except Exception as e:
+                logger.error(f"Supabase reset error: {e}")
+
         async with self.db.connection() as conn:
             await conn.execute(
                 "UPDATE users SET settings = '{}' WHERE level_id = ?",

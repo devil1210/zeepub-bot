@@ -63,6 +63,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [allLevels, setAllLevels] = useState<any[]>([]);
+    const [availableThemes, setAvailableThemes] = useState<any[]>([]);
     const [selectedLevelId, setSelectedLevelId] = useState<string | number>('global');
     const [config, setConfig] = useState<UIConfig | null>(null);
     const [originalConfig, setOriginalConfig] = useState<UIConfig | null>(null);
@@ -83,15 +84,23 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
     useEffect(() => {
         const fetchBaseData = async () => {
             try {
-                const res = await api.getAdminTiers();
-                if (res.levels) {
+                const [levelsRes, themesRes] = await Promise.all([
+                    api.getAdminTiers(),
+                    api.getAvailableThemes()
+                ]);
+
+                if (levelsRes.levels) {
                     setAllLevels([
                         { id: 'global', name: 'Global (Por Defecto)', color: '#ffffff' },
-                        ...res.levels
+                        ...levelsRes.levels
                     ]);
                 }
+
+                if (themesRes.success && themesRes.themes) {
+                    setAvailableThemes(themesRes.themes);
+                }
             } catch (err) {
-                console.error("Error fetching levels", err);
+                console.error("Error fetching admin data", err);
             } finally {
                 setLoading(false);
             }
@@ -189,6 +198,53 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
     const handleUndo = () => {
         if (originalConfig) {
             setConfig(JSON.parse(JSON.stringify(originalConfig)));
+            setMsg({ type: 'success', text: 'Cambios revertidos' });
+            setTimeout(() => setMsg(null), 2000);
+        }
+    };
+
+    const handleApplyTheme = (theme: any) => {
+        if (!config) return;
+
+        setConfig({
+            ...config,
+            primaryColor: theme.primary_color || config.primaryColor,
+            glassBlur: theme.glass_blur ?? config.glassBlur,
+            glassOpacity: theme.glass_opacity ?? config.glassOpacity,
+            navOpacity: theme.nav_opacity ?? config.navOpacity,
+            accentOpacity: theme.accent_opacity ?? config.accentOpacity,
+            cardGlowIntensity: theme.card_glow_intensity ?? config.cardGlowIntensity,
+            backgroundColor: theme.background_color || config.backgroundColor,
+            cardColor: theme.card_color || config.cardColor,
+            theme: theme.theme_type || config.theme,
+            fontSize: theme.font_size ?? config.fontSize,
+            coverWidth: theme.cover_width ?? config.coverWidth,
+        });
+
+        setMsg({ type: 'success', text: `Tema "${theme.name}" aplicado (pulsa Guardar para confirmar)` });
+        setTimeout(() => setMsg(null), 3000);
+    };
+
+    const handleSaveAsTheme = async () => {
+        if (!config) return;
+        const name = prompt("Nombre para la nueva plantilla de tema:");
+        if (!name) return;
+
+        try {
+            const res = await api.saveAsTheme({
+                name,
+                ...config
+            });
+            if (res.success) {
+                setMsg({ type: 'success', text: 'Tema guardado como plantilla' });
+                // Refresh themes list
+                const themesRes = await api.getAvailableThemes();
+                if (themesRes.themes) setAvailableThemes(themesRes.themes);
+            } else {
+                setMsg({ type: 'error', text: res.message || 'Error al guardar tema' });
+            }
+        } catch (err: any) {
+            setMsg({ type: 'error', text: err.message || 'Error' });
         }
     };
 
@@ -232,18 +288,46 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <label className="text-xs font-black text-gray-500 uppercase tracking-widest hidden sm:block">EDITANDO:</label>
-                    <select
-                        value={selectedLevelId}
-                        onChange={(e) => setSelectedLevelId(e.target.value)}
-                        className="bg-black/40 border border-white/10 rounded-2xl px-6 py-3 text-sm font-bold text-white focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer appearance-none min-w-[200px]"
-                        style={{ outline: 'none' }}
-                    >
-                        {allLevels.map(lvl => (
-                            <option key={lvl.id} value={lvl.id}>{lvl.name}</option>
-                        ))}
-                    </select>
+                <div className="flex flex-wrap items-center gap-6">
+                    <div className="flex items-center gap-3">
+                        <label className="text-[9px] font-black text-primary uppercase tracking-[0.2em] hidden lg:block">CARGAR TEMA:</label>
+                        <select
+                            onChange={(e) => {
+                                const theme = availableThemes.find(t => String(t.id) === e.target.value);
+                                if (theme) handleApplyTheme(theme);
+                            }}
+                            className="bg-primary/10 border border-primary/20 rounded-2xl px-4 py-2.5 text-[10px] font-black uppercase text-primary tracking-widest focus:ring-1 focus:ring-primary transition-all cursor-pointer appearance-none min-w-[160px] hover:bg-primary/20"
+                            style={{ outline: 'none' }}
+                            defaultValue=""
+                        >
+                            <option value="" disabled>Seleccionar Plantilla...</option>
+                            {availableThemes.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={handleSaveAsTheme}
+                            className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-primary hover:bg-primary/10 transition-all title='Guardar como Plantilla'"
+                        >
+                            <Copy className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="h-8 w-px bg-white/5 hidden md:block"></div>
+
+                    <div className="flex items-center gap-3">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-widest hidden sm:block">EDITANDO:</label>
+                        <select
+                            value={selectedLevelId}
+                            onChange={(e) => setSelectedLevelId(e.target.value)}
+                            className="bg-black/40 border border-white/10 rounded-2xl px-6 py-3 text-sm font-bold text-white focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer appearance-none min-w-[200px]"
+                            style={{ outline: 'none' }}
+                        >
+                            {allLevels.map(lvl => (
+                                <option key={lvl.id} value={lvl.id}>{lvl.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
