@@ -1549,11 +1549,11 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
         changes = {}
         
         # Check level change
-        old_level_id = existing.get("level_id")
-        if level_id != old_level_id:
+        old_level_id = int(existing.get("level_id") or 6)
+        if int(level_id) != old_level_id:
             changes["level"] = {
-                "old": {"id": old_level_id, "name": existing.get("level_name")},
-                "new": {"id": level_id, "name": data.get("levelName", "Unknown")}
+                "old": {"id": old_level_id, "name": existing.get("level")},
+                "new": {"id": int(level_id), "name": data.get("levelName", "Unknown")}
             }
         
         # Check role change
@@ -1661,16 +1661,16 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
             "success": True,
             "user": {
                 "id": str(user_id),
-                "username": raw_user.get("username"),
-                "name": raw_user.get("name"),
-                "nickname": raw_user.get("nickname"),
+                "username": raw_user.get("username") or "",
+                "name": raw_user.get("name") or raw_user.get("nickname") or "Usuario",
+                "nickname": raw_user.get("nickname") or "",
                 "level": raw_user.get("level", "free"),
                 "roles": raw_user.get("roles") or [],
-                "levelId": access_info["level"]["id"],
+                "levelId": int(access_info["level"]["id"]),
                 "levelName": access_info["level"]["name"],
-                "levelColor": access_info["level"]["color"],
+                "levelColor": access_info["level"].get("color", "#3b82f6"),
                 "role": raw_user.get("role"),
-                "expiresAt": raw_user["expires_at"].isoformat() if raw_user.get("expires_at") else None,
+                "expiresAt": raw_user["expires_at"].isoformat() if raw_user.get("expires_at") and hasattr(raw_user["expires_at"], "isoformat") else None,
                 "isAdmin": access_info["isAdmin"],
                 "betaTester": raw_user.get("beta_tester", access_info["isBetaTester"]),
                 "hasLibraryAccess": raw_user.get("has_library_access", True),

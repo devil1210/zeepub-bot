@@ -72,12 +72,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "expires_at": user.expires_at,
                             "role": user.role,
                             "nickname": user.nickname,
-                            "name": user.name,
+                            "name": user.name or user.nickname, # UI Fallback
                             "username": user.username,
                             "roles": [], # Legacy
                             "insignias": user.insignias or [],
                             "settings": settings,
-                            "total_downloads": user.total_downloads,
+                            "total_downloads": user.total_downloads or 0,
                             "level_id": user.level_id,
                             "beta_tester": user.beta_tester,
                             "has_library_access": user.has_library_access,
@@ -238,27 +238,45 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if has_library_access is not None: data["has_library_access"] = has_library_access
                 if can_request_books is not None: data["can_request_books"] = can_request_books
                 
-                logger.info(f"[UPSERT DEBUG] Data to upsert: {data}")
-                
-                result = self.supabase.get_client().table('users').upsert(data).execute()
-                logger.info(f"[UPSERT DEBUG] Upsert successful for user {telegram_id}")
-                logger.debug(f"[UPSERT DEBUG] Supabase response: {result}")
+                logger.debug(f"[SUPABASE UPSERT] Data: {data}")
+                self.supabase.get_client().table('users').upsert(data).execute()
                 
                 if level.lower() == 'admin':
                     self.supabase.get_client().table('admins').upsert({"user_id": telegram_id, "granted_by": created_by}).execute()
                 else:
                     self.supabase.get_client().table('admins').delete().eq('user_id', telegram_id).execute()
-                    
-                return {"telegram_id": telegram_id, "level": level}
             except Exception as e:
-                import traceback
-                logger.error(f"[UPSERT ERROR] Supabase upsert failed for user {telegram_id}")
-                logger.error(f"[UPSERT ERROR] Exception type: {type(e).__name__}")
-                logger.error(f"[UPSERT ERROR] Exception message: {str(e)}")
-                logger.error(f"[UPSERT ERROR] Data attempted: {data}")
-                logger.error(f"[UPSERT ERROR] Full traceback:\n{traceback.format_exc()}")
-                # Don't fall through to SQLite - re-raise to make it visible
-                raise
+                logger.error(f"Supabase upsert error: {e}")
+
+        # 2. Postgres / Offline-First (ORM)
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    # Fetch or create user
+                    stmt = select(User).where(User.telegram_id == telegram_id)
+                    result = await session.execute(stmt)
+                    user = result.scalar_one_or_none()
+                    
+                    if not user:
+                        user = User(telegram_id=telegram_id)
+                        session.add(user)
+                    
+                    user.level_id = level_id
+                    if expires_at is not None: user.expires_at = expires_at
+                    if role is not None: user.role = role
+                    if nickname is not None: user.nickname = nickname
+                    if name is not None: user.name = name
+                    if username is not None: user.username = username
+                    if insignias is not None: user.insignias = insignias
+                    if has_library_access is not None: user.has_library_access = has_library_access
+                    if can_request_books is not None: user.can_request_books = can_request_books
+                    
+                    await session.commit()
+                    logger.info(f"[POSTGRES UPSERT] Success for user {telegram_id}")
+            except Exception as e:
+                logger.error(f"Postgres ORM error in upsert: {e}")
+
+        # 3. SQLite Fallback (Optional, but kept for legacy)
 
         async with self.db.connection() as conn:
             # Check existence
@@ -409,28 +427,31 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "id": str(lvl.id) if lvl else "6",
                             "name": lvl.name if lvl else "python_free",
                             "priority": lvl.priority if lvl else 0,
+                            "color": lvl.color if lvl else "#3b82f6",
                             "hasAccess": lvl.has_mini_app_access if lvl else True,
                             "dailyDownloads": lvl.daily_downloads if lvl else 5,
                             "canDownload": lvl.can_download if lvl else True,
+                            "canRead": lvl.can_read if lvl else True,
+                            "earlyAccess": lvl.early_access if lvl else False,
+                            "customThemes": lvl.custom_themes if lvl else False,
+                            "price": lvl.price if lvl else 0,
+                            "showRecommendations": lvl.show_recommendations if lvl else True,
                             
-                            # UI Defaults from Level (Fallback for settings)
+                            # UI Tokens
                             "theme": lvl.ui_theme if lvl else "dark",
                             "primaryColor": lvl.ui_primary_color if lvl else "#3b82f6",
-                            "glassOpacity": 0.60, # simplified default
-                            
-                            # Legacy / Hardcoded defaults for now (since they might not be in UserLevel model yet)
-                            "earlyAccess": False,
-                            "customThemes": False,
-                            "price": 0,
-                            "showRecommendations": True,
-                            "fontSize": 14,
-                            "glassBlur": 12,
-                            "coverWidth": 120,
-                            "navOpacity": 0.8,
-                            "accentOpacity": 0.2,
-                            "backgroundColor": "#0f172a",
-                            "cardColor": "#1e293b",
-                            "forceSettings": False
+                            "fontSize": lvl.ui_font_size if lvl else 14,
+                            "glassBlur": lvl.ui_glass_blur if lvl else 12,
+                            "coverWidth": lvl.ui_cover_width if lvl else 120,
+                            "navOpacity": lvl.ui_nav_opacity if lvl else 0.8,
+                            "accentOpacity": lvl.ui_accent_opacity if lvl else 0.2,
+                            "glassOpacity": (lvl.panel_transparency or 60) / 100.0 if lvl else 0.6,
+                            "backgroundColor": lvl.background_color if lvl else "#0f172a",
+                            "cardColor": lvl.card_color if lvl else "#1e293b",
+                            "forceSettings": lvl.force_settings if lvl else False,
+                            "bannerContentOffset": lvl.banner_content_offset if lvl else 0,
+                            "hasLibraryAccess": lvl.has_library_access if lvl else True,
+                            "canRequestBooks": lvl.can_request_books if lvl else True
                         }
                         
                         # Apply User UI Settings Overrides
@@ -438,16 +459,24 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             ui = user.ui_settings
                             mapping = {
                                 "primary_color": "primaryColor",
+                                "glass_blur": "glassBlur",
                                 "glass_opacity": "glassOpacity",
+                                "nav_opacity": "navOpacity",
+                                "accent_opacity": "accentOpacity",
                                 "card_glow_intensity": "cardGlowIntensity",
+                                "background_color": "backgroundColor",
+                                "card_color": "cardColor",
+                                "font_size": "fontSize",
+                                "cover_width": "coverWidth",
                                 "theme_type": "theme"
                             }
-                            # Note: Not all columns exist in `models.UserUISettings` yet (it was partial).
-                            # Assuming basic fields.
                             for col, key in mapping.items():
                                 val = getattr(ui, col, None)
                                 if val is not None:
-                                    level_dict[key] = val
+                                    if key in ["glassOpacity", "navOpacity", "accentOpacity"] and float(val) > 1:
+                                        level_dict[key] = float(val) / 100.0
+                                    else:
+                                        level_dict[key] = val
 
                         # Admin Check
                         is_admin = (user.role == 'admin') or (user.telegram_id in config.ADMIN_USERS)
@@ -458,7 +487,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "hasAccess": level_dict["hasAccess"] or is_admin,
                             "isAdmin": is_admin,
                             "isBetaTester": beta_tester,
-                            "name": user.name,
+                            "name": user.name or user.nickname, # UI Fallback
                             "username": user.username,
                             "roles": [],
                             "insignias": user.insignias or [],
@@ -977,6 +1006,21 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             except Exception as e:
                 logger.error(f"Supabase update_user_level error: {e}")
 
+        # Postgres Plugin
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    stmt = select(User).where(User.telegram_id == telegram_id)
+                    result = await session.execute(stmt)
+                    user = result.scalar_one_or_none()
+                    if user:
+                        user.level_id = level_id
+                        user.level = level_key
+                        if level_key == 'admin': user.role = 'admin'
+                        await session.commit()
+            except Exception as e:
+                logger.error(f"Postgres update_user_level error: {e}")
+
         async with self.db.connection() as conn:
             await conn.execute(
                 "UPDATE users SET level_id = ?, level = ? WHERE telegram_id = ?",
@@ -1043,6 +1087,21 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 self.supabase.get_client().table('user_levels').update(sb_data).eq('id', level_id).execute()
             except Exception as e:
                 logger.error(f"Supabase update_level error: {e}")
+        
+        # Postgres Plugin
+        if config.ENABLE_POSTGRES_PLUGIN and sb_data:
+            try:
+                async with pg_manager.get_session() as session:
+                    stmt = select(UserLevel).where(UserLevel.id == level_id)
+                    result = await session.execute(stmt)
+                    lvl = result.scalar_one_or_none()
+                    if lvl:
+                        for col, val in sb_data.items():
+                            if hasattr(lvl, col):
+                                setattr(lvl, col, val)
+                        await session.commit()
+            except Exception as e:
+                logger.error(f"Postgres update_level error: {e}")
             
         fields.append("updated_at = CURRENT_TIMESTAMP")
         params.append(level_id)
@@ -1111,6 +1170,51 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
             except Exception as e:
                 logger.error(f"Supabase update settings error: {e}")
+
+        # Postgres Plugin
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    # 1. Update User.settings (JSON)
+                    stmt = select(User).where(User.telegram_id == telegram_id)
+                    result = await session.execute(stmt)
+                    user = result.scalar_one_or_none()
+                    if user:
+                        user.settings = settings
+                        
+                        # 2. Update UserUISettings (Relation)
+                        mapping = {
+                            "primaryColor": "primary_color",
+                            "glassBlur": "glass_blur",
+                            "glassOpacity": "glass_opacity",
+                            "navOpacity": "nav_opacity",
+                            "accentOpacity": "accent_opacity",
+                            "cardGlowIntensity": "card_glow_intensity",
+                            "backgroundColor": "background_color",
+                            "cardColor": "card_color",
+                            "fontSize": "font_size",
+                            "coverWidth": "cover_width",
+                            "theme": "theme_type"
+                        }
+                        
+                        stmt_ui = select(UserUISettings).where(UserUISettings.user_id == telegram_id)
+                        res_ui = await session.execute(stmt_ui)
+                        ui = res_ui.scalar_one_or_none()
+                        
+                        if not ui:
+                            ui = UserUISettings(user_id=telegram_id)
+                            session.add(ui)
+                        
+                        for key, col in mapping.items():
+                            if key in settings:
+                                val = settings[key]
+                                if key in ["glassOpacity", "navOpacity", "accentOpacity"] and float(val) > 1:
+                                    val = float(val) / 100.0
+                                setattr(ui, col, val)
+                        
+                        await session.commit()
+            except Exception as e:
+                logger.error(f"Postgres update_user_settings error: {e}")
 
         async with self.db.connection() as conn:
             await conn.execute(
