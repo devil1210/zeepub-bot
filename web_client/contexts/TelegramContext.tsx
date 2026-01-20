@@ -77,6 +77,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [extendedInfo, setExtendedInfo] = useState<TelegramExtendedInfo | null>(null);
   const [simulatedLevel, setSimulatedLevel] = useState<number | null>(null);
   const [uiExportedSettings, setUiExportedSettings] = useState<string[]>(['theme', 'primaryColor', 'fontSize']);
+  const [isAdminFromAccess, setIsAdminFromAccess] = useState(false);
   const { updateSettings } = useTheme();
 
   // Load simulated level from storage on mount
@@ -126,8 +127,9 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (response.ok) {
         const data = await response.json();
         setIsBetaTester(data.isBetaTester || data.isAdmin || false);
-        setCustomThemes(data.custom_themes || false);
+        setCustomThemes(data.custom_themes || data.customThemes || false);
         setShowRecommendations(data.show_recommendations !== false);
+        setIsAdminFromAccess(data.isAdmin || false);
 
         if (data.ui_exported_settings) {
           setUiExportedSettings(data.ui_exported_settings);
@@ -144,6 +146,25 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           hasLibraryAccess: data.hasLibraryAccess,
           canRequestBooks: data.canRequestBooks
         });
+
+        // If the access endpoint says we're admin, update the status to reflect it
+        if (data.isAdmin && !status) {
+          setStatus({
+            user: {
+              id: userId,
+              username: data.nickname || `User_${userId}`,
+              level: 'admin',
+              role: data.role || null,
+              status_label: data.status_label || 'Admin',
+              has_library_access: data.hasLibraryAccess !== false,
+              can_request_books: data.canRequestBooks !== false,
+              can_download: true,
+              can_read: true,
+              downloads: { used: 0, limit: null }
+            },
+            hasUnlimitedDownloads: true
+          });
+        }
       }
     } catch (e) {
       console.log('Could not fetch beta tester status from access endpoint');
@@ -195,8 +216,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const isRealAdmin = (status as any)?.user?.is_real_admin || (status?.user?.level === 'admin' && simulatedLevel === null);
-  const isAdmin = status?.user?.level === 'admin';
+  const isRealAdmin = (status as any)?.user?.is_real_admin || (status?.user?.level === 'admin' && simulatedLevel === null) || (isAdminFromAccess && simulatedLevel === null);
+  const isAdmin = status?.user?.level === 'admin' || isAdminFromAccess;
 
 
   // Admins are always beta testers
