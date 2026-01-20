@@ -1874,23 +1874,41 @@ async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[st
 
 
 async def handle_update_user_setting(data: Dict[str, Any], user_data: Dict[str, Any]):
-    """Actualiza una configuración específica del usuario (ej: show_recommendations)"""
+    """Actualiza una o múltiples configuraciones del usuario."""
     from services.user_service import update_user_setting
     
     user_id = user_data.get("user_id")
-    key = data.get("key")
-    value = data.get("value")
     
-    if not key:
-        raise HTTPException(status_code=400, detail="Missing 'key' parameter")
+    # Support two modes:
+    # 1. Single setting: { "key": "show_recommendations", "value": true }
+    # 2. Bulk settings: { "settings": { "primaryColor": "#xxx", "theme": "dark", ... } }
     
-    try:
-        logger.info(f"User {user_id} updating setting: {key} = {value}")
-        result = await update_user_setting(user_id, key, value)
-        return {"success": True, "settings": result}
-    except Exception as e:
-        logger.error(f"Error updating user setting for {user_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    settings_obj = data.get("settings")
+    
+    if settings_obj:
+        # Bulk update mode
+        try:
+            logger.info(f"User {user_id} updating {len(settings_obj)} settings")
+            await user_repo.update_user_settings(user_id, settings_obj)
+            return {"success": True, "message": "Settings updated"}
+        except Exception as e:
+            logger.error(f"Error bulk updating user settings for {user_id}: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+    else:
+        # Single setting mode (legacy)
+        key = data.get("key")
+        value = data.get("value")
+        
+        if not key:
+            raise HTTPException(status_code=400, detail="Missing 'key' or 'settings' parameter")
+        
+        try:
+            logger.info(f"User {user_id} updating setting: {key} = {value}")
+            result = await update_user_setting(user_id, key, value)
+            return {"success": True, "settings": result}
+        except Exception as e:
+            logger.error(f"Error updating user setting for {user_id}: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 async def handle_get_user_audit_history(data: Dict[str, Any], user_data: Dict[str, Any]):
