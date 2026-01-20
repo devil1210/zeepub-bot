@@ -44,28 +44,28 @@ class SchemaOrchestrator:
         from models.user_models import UserLevel
         from sqlalchemy import select
         
+        
         async with pg_manager.get_session() as session:
             try:
-                # Check if levels exist
-                result = await session.execute(select(UserLevel).limit(1))
-                if not result.scalar():
-                    logger.info("Seeding default User Levels...")
-                    
-                    levels = [
-                        UserLevel(id=1, name='admin', priority=100, color='#FF5252', price=0.0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark'),
-                        UserLevel(id=2, name='staff', priority=90, color='#7C4DFF', price=0.0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark'),
-                        UserLevel(id=3, name='premium', priority=50, color='#FFD740', price=4.99, daily_downloads=50, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark'),
-                        UserLevel(id=4, name='vip', priority=40, color='#69F0AE', price=9.99, daily_downloads=20, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark'),
-                        UserLevel(id=5, name='white', priority=20, color='#E0E0E0', price=0.0, daily_downloads=10, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark'),
-                        UserLevel(id=6, name='free', priority=10, color='#607D8B', price=0.0, daily_downloads=5, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark'),
-                    ]
-                    
-                    session.add_all(levels)
-                    await session.commit()
-                    logger.info("Default User Levels seeded successfully.")
-                else:
-                    # Optional: Verify Admin exists
-                     pass
+                # Upsert default User Levels to ensure they exist
+                logger.info("Verifying/Seeding User Levels...")
+                
+                # We use merge to upsert based on Primary Key (id)
+                levels = [
+                    UserLevel(id=1, name='admin', priority=100, color='#FF5252', price=0.0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark'),
+                    UserLevel(id=2, name='staff', priority=90, color='#7C4DFF', price=0.0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark'),
+                    UserLevel(id=3, name='premium', priority=50, color='#FFD740', price=4.99, daily_downloads=50, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark'),
+                    UserLevel(id=4, name='vip', priority=40, color='#69F0AE', price=9.99, daily_downloads=20, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark'),
+                    UserLevel(id=5, name='white', priority=20, color='#E0E0E0', price=0.0, daily_downloads=10, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark'),
+                    UserLevel(id=6, name='free', priority=10, color='#607D8B', price=0.0, daily_downloads=5, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark'),
+                ]
+                
+                for lvl in levels:
+                    await session.merge(lvl)
+                
+                await session.commit()
+                logger.info("User Levels verified/seeded successfully.")
+
             except Exception as e:
                 logger.error(f"Error seeding initial data: {e}")
 
