@@ -467,6 +467,7 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
 
         # 2. Tier Defaults (Override Global)
         user_record = await user_repo.get_by_id(user_id)
+        access_info = None
         if user_record:
             access_info = await user_repo.get_access_info(user_id)
             if access_info and "level" in access_info:

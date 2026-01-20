@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes, CommandHandler
 from plugins.base_plugin import BasePlugin
 from config.config_settings import config
 from utils.helpers import get_thread_id
-from services.user_service import get_effective_user, get_users_by_role
+from services.user_service import get_effective_user, get_users_by_level
 from datetime import datetime
 from dateutil import parser as date_parser
 
@@ -57,23 +57,23 @@ class StatsPlugin(BasePlugin):
         uid = update.effective_user.id
         # Verificar permisos (Admin o Staff)
         user_info = await get_effective_user(uid)
-        role = user_info.get("role", "free")
-        is_admin = role == "admin" or uid in config.ADMIN_USERS
-        if not is_admin and role != "staff":
+        level = user_info.get("level", "free")
+        is_admin = level == "admin" or uid in config.ADMIN_USERS
+        if not is_admin and level != "staff":
             return
 
         thread_id = get_thread_id(update)
 
         # Modo Listar Usuarios por Rol: /stats premium
         if context.args:
-            target_role = context.args[0].lower()
-            users_list = get_users_by_role(target_role)
+            target_level = context.args[0].lower()
+            users_list = get_users_by_level(target_level)
 
             if not users_list:
                 cms = context.application.plugin_manager.get_plugin("custom_messages")
-                base_no = f"ℹ️ No se encontraron usuarios con el rol <b>{target_role}</b> en base de datos."
+                base_no = f"ℹ️ No se encontraron usuarios con el nivel <b>{target_level}</b> en base de datos."
                 text_no = (
-                    await cms.get_text("stats_no_users", Rol=target_role)
+                    await cms.get_text("stats_no_users", Rol=target_level)
                     if (cms and cms.enabled)
                     else base_no
                 )
@@ -86,9 +86,9 @@ class StatsPlugin(BasePlugin):
                 return
 
             cms = context.application.plugin_manager.get_plugin("custom_messages")
-            base_header = f"📋 <b>Usuarios con rol: {target_role.capitalize()}</b> ({len(users_list)})\n\n"
+            base_header = f"📋 <b>Usuarios con nivel: {target_level.capitalize()}</b> ({len(users_list)})\n\n"
             msg = (
-                await cms.get_text("stats_list_header", Rol=target_role.capitalize(), Cantidad=len(users_list))
+                await cms.get_text("stats_list_header", Rol=target_level.capitalize(), Cantidad=len(users_list))
                 if (cms and cms.enabled)
                 else base_header
             )
