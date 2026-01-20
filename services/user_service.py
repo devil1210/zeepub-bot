@@ -140,6 +140,14 @@ async def get_effective_user(
 
     # 1. Config Admins always have top precedence
     if uid in config.ADMIN_USERS:
+        # AUTO-SYNC: Ensure config admins have level_id=1 in DB
+        # This runs every time to ensure consistency
+        try:
+            await user_repo.update_user_level(uid, 1)  # Level 1 = Admin
+            logger.info(f"Auto-synced config admin {uid} to level_id=1 in database")
+        except Exception as e:
+            logger.warning(f"Could not auto-sync admin {uid} to DB: {e}")
+        
         # Load DB info even for config admins to preserve personal settings
         info = await get_user_info(uid)
         
