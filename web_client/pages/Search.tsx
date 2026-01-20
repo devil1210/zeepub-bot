@@ -136,16 +136,27 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         setTotalPages(res.totalPages || 1);
         setTotalResults(res.totalResults || mapped.length);
 
-        const currentCovers = mapped.map(s => s.coverThumbUrl || s.coverUrl);
-        preloadImages(currentCovers);
+        const currentCovers = mapped
+          .map(s => {
+            const url = s.coverThumbUrl || s.coverUrl;
+            return typeof url === 'string' ? url : url?.cover || '';
+          })
+          .filter(Boolean);
+
+        preloadImages(currentCovers as string[]);
         scrollToTop();
 
         // Preload next page in background if available
         if (page < (res.totalPages || 1)) {
           api.searchBooks(query, page + 1, selectedScope.toLowerCase(), activeSort).then(nextRes => {
             if (nextRes && nextRes.results) {
-              const nextCovers = nextRes.results.map((item: any) => item.cover_thumb || item.cover || '');
-              preloadImages(nextCovers);
+              const nextCovers = nextRes.results
+                .map((item: any) => {
+                  const url = item.cover_thumb || item.cover || '';
+                  return typeof url === 'string' ? url : url?.cover || '';
+                })
+                .filter(Boolean);
+              preloadImages(nextCovers as string[]);
             }
           });
         }

@@ -178,8 +178,8 @@ async def get_effective_user(
                 "has_mini_app_access": False,
             })
         else:
-            role_db = info.get("role", "free")
-            role_str = role_db.lower() if isinstance(role_db, str) else "free"
+            level_db = info.get("level", "free")
+            level_str = level_db.lower() if isinstance(level_db, str) else "free"
             
             # Merge personal settings on top of global defaults
             personal_settings = info.get("settings", {})
@@ -243,6 +243,7 @@ async def get_effective_user(
         if is_hard_admin:
             result["has_mini_app_access"] = True
             result["level"] = "admin" # Always force admin level for hard admins
+            result["status_label"] = "Admin" # Force status label for hard admins
             
         # Implement forceSettings logic
         level_settings = access_info["level"]
