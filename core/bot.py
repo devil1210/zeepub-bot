@@ -126,9 +126,12 @@ class ZeePubBot:
         # 0. Inicializar Base de Datos primero
         from core.db_manager import db_manager
         from core.metrics_db import metrics_db
+        from utils.library_db import init_library_db
         try:
             await db_manager.initialize()
             await metrics_db.initialize()
+            # Asegurar que la DB de la librería (y audit logs) esté inicializada
+            init_library_db()
         except Exception as e:
             logger.error(f"Error inicializando base de datos: {e}")
             # Continuamos, pero es probable que fallen cosas después

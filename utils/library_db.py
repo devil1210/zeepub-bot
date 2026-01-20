@@ -248,7 +248,32 @@ def init_library_db():
 
     _log.info(f"Probando conexión a base de datos de librería: {DB_PATH}")
 
-    # --- 1. Chequeo de Integridad (SQLite) ---
+    # --- 0. Pre-crear tablas críticas via SQLite directo (Garantía) ---
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=10)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_audit_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id VARCHAR(64) NOT NULL,
+                username VARCHAR(255),
+                changed_by_id VARCHAR(64),
+                changed_by_username VARCHAR(255),
+                action VARCHAR(50) NOT NULL,
+                field_changed VARCHAR(100),
+                old_value JSON,
+                new_value JSON,
+                changes_summary JSON,
+                ip_address VARCHAR(45),
+                user_agent VARCHAR(512),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON user_audit_logs(user_id)")
+        conn.commit()
+        conn.close()
+        _log.info("Tabla user_audit_logs verificada vía SQLite directo.")
+    except Exception as e:
+        _log.warning(f"Error en pre-creación de audit logs: {e}")
     if os.path.exists(DB_PATH):
         try:
             conn = sqlite3.connect(DB_PATH)
@@ -313,8 +338,20 @@ def init_library_db():
         raise
 
 
+_lib_db_initialized = False
+
 def get_session():
     """
     Retorna una nueva sesión de base de datos.
+    Asegura que la DB esté inicializada al menos una vez por proceso.
     """
+    global _lib_db_initialized
+    if not _lib_db_initialized:
+        try:
+            init_library_db()
+            _lib_db_initialized = True
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Fallo en inicialización tardía de DB: {e}")
+            
     return Session()
