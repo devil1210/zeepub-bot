@@ -1,6 +1,6 @@
 import json
 import logging
-from sqlalchemy import func
+from sqlalchemy import func, or_
 import urllib.parse
 import asyncio
 import time
@@ -695,7 +695,7 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
                     }
                     # Get author from library
                     session = get_session()
-                    lb = session.query(LocalBook).filter((LocalBook.content_hash == b_hash) | (LocalBook.title == b_title)).first()
+                    lb = session.query(LocalBook).filter(or_(LocalBook.content_hash == b_hash, LocalBook.title == b_title)).first()
                     if lb:
                         popular_book["author"] = lb.author
                         popular_book["cover"] = lb.cover_path
@@ -721,7 +721,7 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
                     "author": "N/A"
                 }
                 session = get_session()
-                lb = session.query(LocalBook).filter((LocalBook.content_hash == book_hash) | (LocalBook.title == title)).first()
+                lb = session.query(LocalBook).filter(or_(LocalBook.content_hash == book_hash, LocalBook.title == title)).first()
                 if lb:
                     popular_book["author"] = lb.author
                     popular_book["cover"] = lb.cover_path
