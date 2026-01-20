@@ -257,6 +257,9 @@ def init_library_db():
         # Si el archivo es nuevo o fue borrado, forzamos que el motor se reinicie
         engine.dispose()
         
+        # Importar modelos para asegurar que se registren en metadata
+        import models.user_audit_models  # noqa
+
         # Verificar que los modelos estén registrados
         if not Base.metadata.tables:
             _log.warning("No se detectaron tablas registradas en Base.metadata. ¿Están importados los modelos?")

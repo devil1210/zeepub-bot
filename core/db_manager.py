@@ -223,28 +223,7 @@ class DatabaseManager:
                 ON users(added_at)
             """)
 
-            # Crear tabla de audit logs si no existe
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS user_audit_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id TEXT NOT NULL,
-                    username TEXT,
-                    changed_by_id TEXT,
-                    changed_by_username TEXT,
-                    action TEXT NOT NULL,
-                    field_changed TEXT,
-                    old_value TEXT,
-                    new_value TEXT,
-                    changes_summary TEXT,
-                    ip_address TEXT,
-                    user_agent TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            await conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id
-                ON user_audit_logs(user_id, created_at DESC)
-            """)
+
 
             await conn.commit()
             logger.info(f"Database initialized and schema verified at {self.db_path}")
