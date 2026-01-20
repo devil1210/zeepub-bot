@@ -943,8 +943,8 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
 
 async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Sincroniza usuarios y niveles locales a Supabase."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     if not config.ENABLE_SUPABASE:
