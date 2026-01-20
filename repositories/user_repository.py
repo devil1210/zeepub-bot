@@ -387,6 +387,88 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             await conn.commit()
 
     async def get_access_info(self, telegram_id: int) -> Optional[Dict[str, Any]]:
+        # 1. Postgres / Offline-First (ORM)
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                # Same eagerness as get_by_id
+                async with pg_manager.get_session() as session:
+                    stmt = select(User).options(
+                        selectinload(User.ui_settings),
+                        selectinload(User.level_info)
+                    ).where(User.telegram_id == telegram_id)
+                    
+                    result = await session.execute(stmt)
+                    user = result.scalar_one_or_none()
+
+                    if user:
+                        lvl = user.level_info
+                        # Map Level
+                        # Basic logic: If no level, assume free
+                        # This mapping MUST match the dict returned by Supabase/SQLite for frontend/bot consistency
+                        level_dict = {
+                            "id": str(lvl.id) if lvl else "6",
+                            "name": lvl.name if lvl else "python_free",
+                            "priority": lvl.priority if lvl else 0,
+                            "hasAccess": lvl.has_mini_app_access if lvl else True,
+                            "dailyDownloads": lvl.daily_downloads if lvl else 5,
+                            "canDownload": lvl.can_download if lvl else True,
+                            
+                            # UI Defaults from Level (Fallback for settings)
+                            "theme": lvl.ui_theme if lvl else "dark",
+                            "primaryColor": lvl.ui_primary_color if lvl else "#3b82f6",
+                            "glassOpacity": 0.60, # simplified default
+                            
+                            # Legacy / Hardcoded defaults for now (since they might not be in UserLevel model yet)
+                            "earlyAccess": False,
+                            "customThemes": False,
+                            "price": 0,
+                            "showRecommendations": True,
+                            "fontSize": 14,
+                            "glassBlur": 12,
+                            "coverWidth": 120,
+                            "navOpacity": 0.8,
+                            "accentOpacity": 0.2,
+                            "backgroundColor": "#0f172a",
+                            "cardColor": "#1e293b",
+                            "forceSettings": False
+                        }
+                        
+                        # Apply User UI Settings Overrides
+                        if user.ui_settings:
+                            ui = user.ui_settings
+                            mapping = {
+                                "primary_color": "primaryColor",
+                                "glass_opacity": "glassOpacity",
+                                "card_glow_intensity": "cardGlowIntensity",
+                                "theme_type": "theme"
+                            }
+                            # Note: Not all columns exist in `models.UserUISettings` yet (it was partial).
+                            # Assuming basic fields.
+                            for col, key in mapping.items():
+                                val = getattr(ui, col, None)
+                                if val is not None:
+                                    level_dict[key] = val
+
+                        # Admin Check
+                        is_admin = (user.role == 'admin') or (user.telegram_id in config.ADMIN_USERS)
+                        beta_tester = user.beta_tester or is_admin
+
+                        return {
+                            "level": level_dict,
+                            "hasAccess": level_dict["hasAccess"] or is_admin,
+                            "isAdmin": is_admin,
+                            "isBetaTester": beta_tester,
+                            "name": user.name,
+                            "username": user.username,
+                            "roles": [],
+                            "insignias": user.insignias or [],
+                            "hasLibraryAccess": user.has_library_access,
+                            "canRequestBooks": user.can_request_books,
+                        }
+            except Exception as e:
+                logger.error(f"Postgres ORM Error in get_access_info: {e}")
+                # Fallthrough to Supabase REST / SQLite
+
         if self.supabase.is_active:
             try:
                 # Use explicit column list instead of * to avoid error with defunct 'roles' column
@@ -725,6 +807,53 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             ]
 
     async def list_users(self, limit: int = 50, offset: int = 0, search: str = None) -> list[Dict[str, Any]]:
+        # 1. Postgres / Offline-First (ORM)
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    stmt = select(User).options(selectinload(User.level_info)).order_by(User.updated_at.desc())
+                    
+                    if search:
+                        # Simple case-insensitive search
+                        stmt = stmt.where(
+                            (User.nickname.ilike(f"%{search}%")) | 
+                            (User.username.ilike(f"%{search}%")) |
+                            (User.name.ilike(f"%{search}%")) |
+                            (cast(User.telegram_id, String).ilike(f"%{search}%"))
+                        )
+                    
+                    stmt = stmt.limit(limit).offset(offset)
+                    result = await session.execute(stmt)
+                    users = result.scalars().all()
+                    
+                    results = []
+                    for user in users:
+                        lvl = user.level_info
+                        level_dict = {
+                            "name": lvl.name if lvl else "N-A",
+                            "color": getattr(lvl, 'ui_primary_color', '#888888') # Fallback color
+                        }
+                        
+                        results.append({
+                            "id": str(user.telegram_id),
+                            "username": user.nickname or f"User_{user.telegram_id}",
+                            "name": user.name,
+                            "telegram_username": user.username,
+                            "level_name": lvl.name if lvl else "free",
+                            "level": level_dict,
+                            "role": user.role,
+                            "downloads": {
+                                "used": 0, # TODO: Query actual daily usage
+                                "limit": lvl.daily_downloads if lvl else 5,
+                                "total": user.total_downloads
+                            }
+                        })
+                    return results
+
+            except Exception as e:
+                logger.error(f"Postgres ORM Error in list_users: {e}")
+                # Fallthrough
+
         if self.supabase.is_active:
             try:
                 cols = "telegram_id, nickname, name, username, level_id, role, total_downloads, updated_at"
