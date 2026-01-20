@@ -71,14 +71,18 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
 
     // Available UI settings for the "visibility" list
     const exportedOptions = [
-        { key: 'theme', label: 'Tema (Oscuro/Clar/AMOLED)', icon: Monitor },
+        { key: 'theme', label: 'Tema (Oscuro/Claro/AMOLED)', icon: Monitor },
         { key: 'primaryColor', label: 'Color de Acento', icon: Palette },
+        { key: 'backgroundColor', label: 'Color de Fondo', icon: Layers },
+        { key: 'cardColor', label: 'Color de Tarjetas', icon: Layers },
         { key: 'glassBlur', label: 'Nivel de Blur', icon: GlassWater },
         { key: 'glassOpacity', label: 'Transparencia Paneles', icon: MousePointer2 },
+        { key: 'navOpacity', label: 'Opacidad Barra Nav', icon: Layout },
+        { key: 'accentOpacity', label: 'Opacidad Acento', icon: Sliders },
         { key: 'cardGlowIntensity', label: 'Resplandor Cards', icon: Star },
         { key: 'fontSize', label: 'Tamaño de Letra', icon: Type },
         { key: 'coverWidth', label: 'Ancho de Portadas', icon: ImageIcon },
-        { key: 'navOpacity', label: 'Opacidad Barra Nav', icon: Layout },
+        { key: 'showRecommendations', label: 'Mostrar Recomendaciones', icon: Eye },
     ];
 
     useEffect(() => {
@@ -389,6 +393,25 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                         />
                                     </div>
                                 </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Color de Tarjetas (Cards)</label>
+                                    <div className="flex items-center gap-3 p-3 bg-black/40 rounded-2xl border border-white/5">
+                                        <div className="size-12 rounded-xl border border-white/10" style={{ backgroundColor: config.cardColor }}></div>
+                                        <input
+                                            type="text"
+                                            value={config.cardColor}
+                                            onChange={(e) => setConfig({ ...config, cardColor: e.target.value })}
+                                            className="flex-1 bg-transparent border-none text-sm font-mono text-white uppercase focus:ring-0"
+                                        />
+                                        <input
+                                            type="color"
+                                            value={config.cardColor.substring(0, 7)}
+                                            onChange={(e) => setConfig({ ...config, cardColor: e.target.value + (config.cardColor.substring(7) || 'FF') })}
+                                            className="size-8 cursor-pointer bg-transparent border-none p-0"
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="space-y-6">
@@ -459,6 +482,36 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                     max="240"
                                     value={config.coverWidth}
                                     onChange={(e) => setConfig({ ...config, coverWidth: parseInt(e.target.value) })}
+                                    className="w-full accent-primary h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer"
+                                />
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Opacidad Navegación</label>
+                                    <span className="text-xs font-black text-primary font-mono">{Math.round(config.navOpacity * 100)}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={config.navOpacity * 100}
+                                    onChange={(e) => setConfig({ ...config, navOpacity: parseInt(e.target.value) / 100 })}
+                                    className="w-full accent-primary h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer"
+                                />
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Opacidad Acento</label>
+                                    <span className="text-xs font-black text-primary font-mono">{Math.round(config.accentOpacity * 100)}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={config.accentOpacity * 100}
+                                    onChange={(e) => setConfig({ ...config, accentOpacity: parseInt(e.target.value) / 100 })}
                                     className="w-full accent-primary h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer"
                                 />
                             </div>

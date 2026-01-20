@@ -488,6 +488,64 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   </div>
                 )}
 
+                {/* Background Color Selection */}
+                {isVisible('backgroundColor') && (
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Color de Fondo</label>
+                    <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-2xl">
+                      {['#0f172a', '#1e293b', '#111827', '#18181b', '#0c0a09'].map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => updateSettings({ backgroundColor: color })}
+                          className={`w-10 h-10 rounded-xl transition-all border-2 flex items-center justify-center group ${settings.backgroundColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
+                          style={{ backgroundColor: color }}
+                        >
+                          {settings.backgroundColor === color && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-lg" />}
+                        </button>
+                      ))}
+                      <div className="w-px h-8 bg-white/5 mx-1" />
+                      <label className="w-10 h-10 rounded-xl bg-gradient-to-tr from-gray-900 to-gray-700 flex items-center justify-center cursor-pointer hover:scale-105 transition-all relative overflow-hidden">
+                        <Palette className="w-4 h-4 text-white" />
+                        <input
+                          type="color"
+                          value={settings.backgroundColor || '#0f172a'}
+                          onChange={(e) => updateSettings({ backgroundColor: e.target.value })}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full scale-150"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Card Color Selection */}
+                {isVisible('cardColor') && (
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Color de Tarjetas</label>
+                    <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-2xl">
+                      {['#1e293b', '#334155', '#1f2937', '#27272a', '#292524'].map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => updateSettings({ cardColor: color })}
+                          className={`w-10 h-10 rounded-xl transition-all border-2 flex items-center justify-center group ${settings.cardColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
+                          style={{ backgroundColor: color }}
+                        >
+                          {settings.cardColor === color && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-lg" />}
+                        </button>
+                      ))}
+                      <div className="w-px h-8 bg-white/5 mx-1" />
+                      <label className="w-10 h-10 rounded-xl bg-gradient-to-tr from-gray-700 to-gray-500 flex items-center justify-center cursor-pointer hover:scale-105 transition-all relative overflow-hidden">
+                        <Palette className="w-4 h-4 text-white" />
+                        <input
+                          type="color"
+                          value={settings.cardColor || '#1e293b'}
+                          onChange={(e) => updateSettings({ cardColor: e.target.value })}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full scale-150"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+
                 {/* Transparency Sliders Section */}
                 {(isVisible('glassBlur') || isVisible('glassOpacity')) && (
                   <div className="space-y-6">
