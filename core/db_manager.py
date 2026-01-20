@@ -78,7 +78,14 @@ class DatabaseManager:
                 ("panel_transparency", "INTEGER DEFAULT 60"),
                 ("ui_primary_color", "TEXT DEFAULT '#2b6cee'"),
                 ("can_download", "BOOLEAN DEFAULT 1"),
-                ("can_read", "BOOLEAN DEFAULT 1")
+                ("can_read", "BOOLEAN DEFAULT 1"),
+                ("ui_glow_intensity", "FLOAT DEFAULT 0.5"),
+                ("background_color", "TEXT DEFAULT '#0f172a'"),
+                ("card_color", "TEXT DEFAULT '#1e293b'"),
+                ("force_settings", "BOOLEAN DEFAULT 0"),
+                ("banner_content_offset", "INTEGER DEFAULT 0"),
+                ("has_library_access", "BOOLEAN DEFAULT 1"),
+                ("can_request_books", "BOOLEAN DEFAULT 1")
             ]
             for col_name, col_def in new_tier_cols:
                 if col_name not in tier_cols:

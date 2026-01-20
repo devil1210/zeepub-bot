@@ -1257,29 +1257,33 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             # Filter out non-UI fields for global UI defaults
             ui_settings = {}
             field_mapping = {
-                "uiPrimaryColor": "primaryColor",
-                "panelTransparency": "panelTransparency",
+                "primaryColor": "primaryColor",
+                "glassOpacity": "glassOpacity",
                 "navOpacity": "navOpacity",
                 "glassBlur": "glassBlur",
                 "coverWidth": "coverWidth",
                 "showRecommendations": "showRecommendations",
-                "uiTheme": "theme",
-                "uiFontSize": "fontSize",
-                "uiAccentOpacity": "accentOpacity",
-                "canDownload": "can_download",
-                "canRead": "can_read",
-                "hasLibraryAccess": "has_library_access",
-                "canRequestBooks": "can_request_books",
-                "bannerContentOffset": "banner_content_offset",
-                "backgroundColor": "background_color",
-                "cardColor": "card_color"
+                "theme": "theme",
+                "fontSize": "fontSize",
+                "accentOpacity": "accentOpacity",
+                "canDownload": "canDownload",
+                "canRead": "canRead",
+                "hasLibraryAccess": "hasLibraryAccess",
+                "canRequestBooks": "canRequestBooks",
+                "bannerContentOffset": "bannerContentOffset",
+                "backgroundColor": "backgroundColor",
+                "cardColor": "cardColor",
+                "forceSettings": "forceSettings",
+                "cardGlowIntensity": "cardGlowIntensity"
             }
             
             for frontend_key, setting_key in field_mapping.items():
                 if frontend_key in data:
                     val = data[frontend_key]
-                    if frontend_key == "panelTransparency":
-                        val = val / 100.0 # Convert % to 0-1
+                    if frontend_key == "glassOpacity" or frontend_key == "navOpacity" or frontend_key == "accentOpacity":
+                        # If value is > 1, it's likely a percentage (0-100)
+                        if isinstance(val, (int, float)) and val > 1:
+                            val = val / 100.0
                     ui_settings[setting_key] = val
             
             # Additional fields that might be in data but not in mapping
@@ -1334,7 +1338,8 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             "bannerContentOffset": "banner_content_offset",
             "backgroundColor": "background_color",
             "cardColor": "card_color",
-            "forceSettings": "force_settings"
+            "forceSettings": "force_settings",
+            "cardGlowIntensity": "ui_glow_intensity"
         }
         
         for frontend_key, db_key in field_mapping.items():
@@ -1414,7 +1419,12 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                     "accentOpacity": g.get("accentOpacity", 0.2),
                     "showRecommendations": g.get("showRecommendations", True),
                     "canDownload": g.get("canDownload", True),
-                    "canRead": g.get("canRead", True)
+                    "canRead": g.get("canRead", True),
+                    "forceSettings": g.get("forceSettings", False),
+                    "cardGlowIntensity": g.get("cardGlowIntensity", 0.5),
+                    "backgroundColor": g.get("backgroundColor", "#0f172a"),
+                    "cardColor": g.get("cardColor", "#1e293b"),
+                    "bannerContentOffset": g.get("bannerContentOffset", 0)
                 }
             }
 
@@ -1463,7 +1473,9 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                 "canRequestBooks": bool(tier.get("can_request_books", True)),
                 "bannerContentOffset": int(tier.get("banner_content_offset", 0)),
                 "backgroundColor": tier.get("background_color", "#0f172a"),
-                "cardColor": tier.get("card_color", "#1e293b")
+                "cardColor": tier.get("card_color", "#1e293b"),
+                "forceSettings": bool(tier.get("force_settings", False)),
+                "cardGlowIntensity": float(tier.get("ui_glow_intensity", 0.5))
             }
         }
     except HTTPException:

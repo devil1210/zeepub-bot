@@ -511,7 +511,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(lvl.get('ui_accent_opacity', 0.2)),
                         "glassOpacity": (lvl.get('panel_transparency', 60) or 60) / 100.0,
                         "primaryColor": lvl.get('ui_primary_color', '#2b6cee'),
+                        "cardGlowIntensity": lvl.get('ui_glow_intensity', 0.5),
                         "canDownload": bool(lvl.get('can_download', True)),
+
                         "canRead": bool(lvl.get('can_read', True)),
                         "hasLibraryAccess": bool(lvl.get('has_library_access', True)),
                         "canRequestBooks": bool(lvl.get('can_request_books', True)),
@@ -531,8 +533,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     id, name, priority, color, has_mini_app_access, daily_downloads, early_access, 
                     custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, 
                     ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, 
-                    ui_primary_color, can_download, can_read, has_library_access, can_request_books, 
-                    banner_content_offset, background_color, card_color, force_settings
+                    "ui_primary_color", "can_download", "can_read", "has_library_access", "can_request_books", 
+                    "banner_content_offset", "background_color", "card_color", "force_settings", "ui_glow_intensity"
                 FROM user_levels WHERE id = ?
             """
             cursor = await conn.execute(query, (level_id,))
@@ -565,7 +567,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "backgroundColor": r[23] or '#0f172a',
                     "cardColor": r[24] or '#1e293b',
                     "forceSettings": bool(r[25]) if r[25] is not None else False,
+                    "cardGlowIntensity": r[26] if len(r) > 26 else 0.5,
                 }
+
         return None
 
     async def get_all_levels(self) -> list[Dict[str, Any]]:
@@ -783,9 +787,17 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             "accentOpacity": "ui_accent_opacity",
             "glassOpacity": "panel_transparency",
             "primaryColor": "ui_primary_color",
+            "cardGlowIntensity": "ui_glow_intensity",
             "canDownload": "can_download",
-            "canRead": "can_read"
+            "canRead": "can_read",
+            "backgroundColor": "background_color",
+            "cardColor": "card_color",
+            "forceSettings": "force_settings",
+            "bannerContentOffset": "banner_content_offset",
+            "hasLibraryAccess": "has_library_access",
+            "canRequestBooks": "can_request_books"
         }
+
         
         for key, col in mapping.items():
             if key in data:

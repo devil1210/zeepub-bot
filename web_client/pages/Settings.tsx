@@ -534,41 +534,25 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     </div>
                   </div>
 
-                  {/* Colorful Cards Toggle */}
+                  {/* Card Glow Effect Slider */}
                   <div>
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Tarjetas Coloridas</label>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => updateSettings({ colorfulCards: !settings.colorfulCards })}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.colorfulCards ? 'bg-primary' : 'bg-gray-600'}`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.colorfulCards ? 'translate-x-6' : 'translate-x-1'}`} />
-                      </button>
-                      <span className="text-xs text-gray-400">
-                        {settings.colorfulCards ? 'Activado' : 'Desactivado'}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-gray-500 mt-2">Aplica bordes de gradiente coloridos a las tarjetas de acceso rápido</p>
-
-                    {/* Colorful Card Opacity Slider - only show when colorful cards enabled */}
-                    {settings.colorfulCards && (
-                      <div className="mt-4 p-3 rounded-lg bg-black/20 border border-white/5">
-                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">Transparencia de Tarjetas</label>
-                        <input
-                          className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                          max="95"
-                          min="50"
-                          type="range"
-                          value={(settings.colorfulCardOpacity ?? 0.85) * 100}
-                          onChange={(e) => updateSettings({ colorfulCardOpacity: parseInt(e.target.value) / 100 })}
-                        />
-                        <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5 mt-1">
-                          <span>Más color</span>
-                          <span className="text-primary font-bold">{Math.round((settings.colorfulCardOpacity ?? 0.85) * 100)}%</span>
-                          <span>Más sólido</span>
-                        </div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Efecto Resplandor de Tarjetas</label>
+                    <div className="pt-2 flex flex-col gap-2">
+                      <input
+                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
+                        max="100"
+                        min="0"
+                        type="range"
+                        value={(settings.cardGlowIntensity ?? 0.5) * 100}
+                        onChange={(e) => updateSettings({ cardGlowIntensity: parseInt(e.target.value) / 100 })}
+                      />
+                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
+                        <span>Menos brillo</span>
+                        <span className="text-primary font-bold">{Math.round((settings.cardGlowIntensity ?? 0.5) * 100)}%</span>
+                        <span>Más intenso</span>
                       </div>
-                    )}
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-2">Ajusta la intensidad de los efectos de luz y resplandor en los paneles y tarjetas.</p>
                   </div>
 
                   {/* Element Selector for Per-Element Opacity */}

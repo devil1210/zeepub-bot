@@ -125,18 +125,29 @@ async def get_effective_user(
         name_from_tg = nickname_from_tg
         username_from_tg = getattr(tg_user, 'username', None) if not isinstance(tg_user, dict) else tg_user.get("username")
 
+    # 0. Load Global UI Defaults
+    global_raw = get_setting("ui_defaults_global", "{}")
+    global_ui = json.loads(global_raw)
+
     result = {
         "role": "free",
         "status_label": "Lector",
         "expires_at": None,
         "nickname": nickname_from_tg,
+        "settings": global_ui.copy()
     }
 
     # 1. Config Admins always have top precedence
     if uid in config.ADMIN_USERS:
         # Load DB info even for config admins to preserve personal settings
         info = await get_user_info(uid)
-        result = {
+        
+        # Merge personal settings on top of global defaults
+        personal_settings = info.get("settings", {}) if info else {}
+        base_settings = global_ui.copy()
+        base_settings.update(personal_settings)
+        
+        result.update({
             "role": "admin",
             "status_label": "Admin",
             "expires_at": None,
@@ -147,66 +158,51 @@ async def get_effective_user(
             "has_mini_app_access": True,
             "can_request_books": info.get("can_request_books", True) if info else True,
             "has_library_access": info.get("has_library_access", True) if info else True,
-            "settings": info.get("settings", {}) if info else {},
-        }
-        await user_cache.set(cache_key, result)
-        return result
-
-    # 2. Check DB (Async)
+            "settings": base_settings
+        })
+        # Note: We DON'T return early here anymore to allow enrichment and simulation
+    
+    # 2. Check DB Info
     info: Optional[Dict[str, Any]] = await get_user_info(uid)
-    if info:
+    if info and uid not in config.ADMIN_USERS: # Admins already handled result base above
         # Check expiration
         expires_at: Optional[datetime] = info.get("expires_at")
         if expires_at and expires_at < datetime.now():
             # Expired
-            result = {
+            result.update({
                 "role": "free",
                 "status_label": "Expirado",
                 "expires_at": expires_at,
-                "nickname": info.get("nickname"),
-                "custom_status": None,
                 "has_mini_app_access": False,
-            }
+            })
         else:
             role_db = info.get("role", "free")
             role_str = role_db.lower() if isinstance(role_db, str) else "free"
-            custom_status = info.get("custom_status")
+            
+            # Merge personal settings on top of global defaults
+            personal_settings = info.get("settings", {})
+            final_settings = global_ui.copy()
+            final_settings.update(personal_settings)
 
-            # Update nickname if missing and we have it now
-            db_nickname = info.get("nickname")
-            if nickname_from_tg and not db_nickname:
-                await update_user_nickname(uid, nickname_from_tg)
-                db_nickname = nickname_from_tg
-
-            # Normalize DB roles to internal standards just in case
-            result = {
+            result.update({
                 "role": role_str,
-                "status_label": custom_status or role_str.capitalize(),
+                "status_label": info.get("custom_status") or role_str.capitalize(),
                 "expires_at": expires_at,
-                "nickname": db_nickname,
-                "name": info.get("name") or name_from_tg,
-                "username": info.get("username") or username_from_tg,
+                "nickname": info.get("nickname") or result.get("nickname"),
+                "name": info.get("name") or result.get("name"),
+                "username": info.get("username") or result.get("username"),
                 "roles": info.get("roles") or [],
-                "custom_status": custom_status,
                 "can_request_books": info.get("can_request_books", True),
                 "has_library_access": info.get("has_library_access", True),
-                "settings": info.get("settings", {}),
-                # has_mini_app_access will be set by default logic below
-            }
+                "settings": final_settings
+            })
 
-    # 4. Fallback default policy for non-DB users
+    # 3. PROACTIVE SYNC: Create minimal user record if not exists
     if not info and uid not in config.ADMIN_USERS:
-        # PROACTIVE SYNC: Create minimal user record if not exists
         logger.info(f"Auto-registering user {uid} (Lector level)")
         await user_repo.create_minimal_user(uid, nickname=nickname_from_tg)
-        # Re-fetch access info to ensure result is populated
-        access_info = await user_repo.get_access_info(uid)
 
-    if "has_mini_app_access" not in result:
-        # Default policy: Restricted access for unknown users (matching Lector behavior)
-        # Admins and Staff from config will have this set to True explicitly below/above
-        result["has_mini_app_access"] = False
-
+    # 4. Access Info (Levels & Permissions)
     access_info = await user_repo.get_access_info(uid)
     if access_info:
         result["has_mini_app_access"] = access_info["hasAccess"]
@@ -220,7 +216,7 @@ async def get_effective_user(
         elif level_name == "lector":
             result["role"] = "free"
         elif level_name == "patrocinador":
-            result["role"] = "white"  # Legacy mapping for whitelist
+            result["role"] = "white"
         else:
             result["role"] = level_name
 
@@ -228,22 +224,36 @@ async def get_effective_user(
         if not info or not info.get("custom_status"):
             result["status_label"] = access_info["level"]["name"]
 
-        # Admin check from DB/Config
-        # ONLY promote to admin role if the user doesn't have a more specific role (like staff)
-        # or if they are explicitly marked as admin in the DB roles.
+        # Admin check
         is_hard_admin = access_info["isAdmin"] or uid in config.ADMIN_USERS
-        
         if is_hard_admin:
             result["has_mini_app_access"] = True
-            # Only set role to admin if it's currently free or if it was already admin
             if result["role"] in ("free", "admin"):
                 result["role"] = "admin"
             
-        # Overwrite aesthetic data if present in DB
+        # Implement forceSettings logic
+        level_settings = access_info["level"]
+        if level_settings.get("forceSettings"):
+            # Start with existing settings (Global + Personal)
+            final_settings = result.get("settings", global_ui.copy())
+            
+            # These keys are defined by the level design
+            override_keys = [
+                "theme", "fontSize", "glassBlur", "coverWidth", "navOpacity", 
+                "accentOpacity", "primaryColor", "showRecommendations",
+                "backgroundColor", "cardColor", "cardGlowIntensity"
+            ]
+            for k in override_keys:
+                if k in level_settings and level_settings[k] is not None:
+                    final_settings[k] = level_settings[k]
+            
+            result["settings"] = final_settings
+
+        # Overwrite identities if present
+        if access_info.get("nickname"): result["nickname"] = access_info["nickname"]
         if access_info.get("name"): result["name"] = access_info["name"]
         if access_info.get("username"): result["username"] = access_info["username"]
         if access_info.get("roles"): result["roles"] = access_info["roles"]
-        if access_info.get("nickname"): result["nickname"] = access_info["nickname"]
 
     # 4. Legacy Config Fallbacks (non-admins)
     elif uid in config.FACEBOOK_PUBLISHERS:
@@ -307,26 +317,29 @@ async def get_effective_user(
             else:
                 result["role"] = level_name
                 
-            # If the level has forced settings, override them too
-            if sim_level.get("forceSettings"):
-                # Merge settings from level
-                level_settings = {
-                    "theme": sim_level.get("theme"),
-                    "fontSize": sim_level.get("fontSize"),
-                    "glassBlur": sim_level.get("glassBlur"),
-                    "coverWidth": sim_level.get("coverWidth"),
-                    "navOpacity": sim_level.get("navOpacity"),
-                    "accentOpacity": sim_level.get("accentOpacity"),
-                    "primaryColor": sim_level.get("primaryColor"),
-                    "showRecommendations": sim_level.get("showRecommendations"),
-                    "backgroundColor": sim_level.get("backgroundColor"),
-                    "cardColor": sim_level.get("cardColor"),
-                }
-                # Remove None values
-                level_settings = {k: v for k, v in level_settings.items() if v is not None}
-                if "settings" not in result:
-                    result["settings"] = {}
-                result["settings"].update(level_settings)
+            # Simulación: Priorizamos los ajustes del nivel para "ver" la identidad del rango
+            # Si forceSettings es True, se aplicarán siempre. Si es False, aquí los forzamos
+            # solo porque estamos en modo simulación.
+            
+            # Merge settings from level
+            level_settings = {
+                "theme": sim_level.get("theme"),
+                "fontSize": sim_level.get("fontSize"),
+                "glassBlur": sim_level.get("glassBlur"),
+                "coverWidth": sim_level.get("coverWidth"),
+                "navOpacity": sim_level.get("navOpacity"),
+                "accentOpacity": sim_level.get("accentOpacity"),
+                "primaryColor": sim_level.get("primaryColor"),
+                "showRecommendations": sim_level.get("showRecommendations"),
+                "backgroundColor": sim_level.get("backgroundColor"),
+                "cardColor": sim_level.get("cardColor"),
+                "cardGlowIntensity": sim_level.get("cardGlowIntensity"),
+            }
+            # Remove None values
+            level_settings = {k: v for k, v in level_settings.items() if v is not None}
+            if "settings" not in result:
+                result["settings"] = {}
+            result["settings"].update(level_settings)
             
             # Special flag to let frontend know it's a simulation
             result["is_simulated"] = True

@@ -393,172 +393,144 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         </div>
 
                         {/* Limits */}
-                        {selectedTierName === 'Global' ? (
-                            <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg opacity-60">
-                                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                                    <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
-                                        <Gauge className="w-5 h-5" />
-                                    </div>
-                                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Límites</h3>
-                                    <div className="ml-auto px-2 py-0.5 rounded bg-white/5 text-[8px] font-bold text-gray-500 uppercase">Read Only</div>
+                        <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg">
+                            <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                                <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
+                                    <Gauge className="w-5 h-5" />
                                 </div>
-                                <div className="space-y-6 grayscale-[0.5] pointer-events-none">
-                                    <p className="text-[10px] text-gray-400 italic">Los límites no se aplican a la configuración global.</p>
-                                </div>
+                                <h3 className="text-lg font-black text-white uppercase tracking-tight">Límites</h3>
                             </div>
-                        ) : (
-                            <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg">
-                                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                                    <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
-                                        <Gauge className="w-5 h-5" />
+                            <div className="space-y-6">
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Descargas ePub (24h)</label>
+                                        <span className="text-xs font-mono font-black text-primary">{config.dailyDownloads === -1 ? '∞' : config.dailyDownloads}</span>
                                     </div>
-                                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Límites</h3>
+                                    <input
+                                        type="number"
+                                        value={config.dailyDownloads}
+                                        onChange={(e) => setConfig({ ...config, dailyDownloads: parseInt(e.target.value) || 0 })}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                                    />
+                                    <p className="mt-2 text-[9px] text-gray-500 italic">Usa -1 para descargas ilimitadas.</p>
                                 </div>
-                                <div className="space-y-6">
-                                    <div>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Descargas ePub (24h)</label>
-                                            <span className="text-xs font-mono font-black text-primary">{config.dailyDownloads === -1 ? '∞' : config.dailyDownloads}</span>
-                                        </div>
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Descargas Simultáneas</label>
+                                        <span className="text-xs font-mono font-black text-primary">{config.maxConcurrent}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
                                         <input
-                                            type="number"
-                                            value={config.dailyDownloads}
-                                            onChange={(e) => setConfig({ ...config, dailyDownloads: parseInt(e.target.value) || 0 })}
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                                            type="range"
+                                            min="1"
+                                            max="10"
+                                            value={config.maxConcurrent}
+                                            onChange={(e) => setConfig({ ...config, maxConcurrent: parseInt(e.target.value) })}
+                                            className="flex-1 accent-primary h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer"
                                         />
-                                        <p className="mt-2 text-[9px] text-gray-500 italic">Usa -1 para descargas ilimitadas.</p>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Descargas Simultáneas</label>
-                                            <span className="text-xs font-mono font-black text-primary">{config.maxConcurrent}</span>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <input
-                                                type="range"
-                                                min="1"
-                                                max="10"
-                                                value={config.maxConcurrent}
-                                                onChange={(e) => setConfig({ ...config, maxConcurrent: parseInt(e.target.value) })}
-                                                className="flex-1 accent-primary h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer"
-                                            />
-                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
+
                     </div>
 
                     {/* Right Side: Privileges & Appearance */}
                     <div className="lg:col-span-8 space-y-6">
                         {/* Privileges */}
-                        {selectedTierName === 'Global' ? (
-                            <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg opacity-60">
-                                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                                    <div className="p-2 rounded-lg bg-yellow-500/10 text-yellow-500">
-                                        <Stars className="w-5 h-5" />
-                                    </div>
-                                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Privilegios y Acceso</h3>
-                                    <div className="ml-auto px-2 py-0.5 rounded bg-white/5 text-[8px] font-bold text-gray-500 uppercase">Read Only</div>
+                        <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg">
+                            <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                                <div className="p-2 rounded-lg bg-yellow-500/10 text-yellow-500">
+                                    <Stars className="w-5 h-5" />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 grayscale-[0.5] pointer-events-none">
-                                    <p className="text-[10px] text-gray-400 italic">Los privilegios base son fijos para la configuración global.</p>
-                                </div>
+                                <h3 className="text-lg font-black text-white uppercase tracking-tight">Privilegios y Acceso</h3>
                             </div>
-                        ) : (
-                            <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg">
-                                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                                    <div className="p-2 rounded-lg bg-yellow-500/10 text-yellow-500">
-                                        <Stars className="w-5 h-5" />
-                                    </div>
-                                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Privilegios y Acceso</h3>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {[
-                                        {
-                                            label: 'Prioridad en Solicitudes',
-                                            sub: 'Cola de procesamiento preferencial',
-                                            val: config.priorityRequests,
-                                            key: 'priorityRequests',
-                                            icon: Zap
-                                        },
-                                        {
-                                            label: 'Acceso Anticipado',
-                                            sub: 'Prueba de funciones Beta nuevas',
-                                            val: config.earlyAccess,
-                                            key: 'earlyAccess',
-                                            icon: Eye
-                                        },
-                                        {
-                                            label: 'Temas Personalizados',
-                                            sub: 'Permitir que el usuario cambie UI',
-                                            val: config.customThemes,
-                                            key: 'customThemes',
-                                            icon: Palette
-                                        },
-                                        {
-                                            label: 'Mostrar Recomendaciones',
-                                            sub: 'Sugerir contenido en inicio',
-                                            val: config.showRecommendations,
-                                            key: 'showRecommendations',
-                                            icon: Stars
-                                        },
-                                        {
-                                            label: 'Habilitar Descargas',
-                                            sub: 'Permitir descarga de archivos ePUB',
-                                            val: config.canDownload,
-                                            key: 'canDownload',
-                                            icon: Download
-                                        },
-                                        {
-                                            label: 'Habilitar Lectura',
-                                            sub: 'Permitir leer libros online',
-                                            val: config.canRead,
-                                            key: 'canRead',
-                                            icon: BookOpen
-                                        },
-                                        {
-                                            label: 'Ver Mi Biblioteca',
-                                            sub: 'Muestra acceso a libros propios',
-                                            val: config.hasLibraryAccess,
-                                            key: 'hasLibraryAccess',
-                                            icon: Library
-                                        },
-                                        {
-                                            label: 'Solicitar Libros',
-                                            sub: 'Permitir peticiones de descargas',
-                                            val: config.canRequestBooks,
-                                            key: 'canRequestBooks',
-                                            icon: Download
-                                        },
-                                        {
-                                            label: 'Forzar Configuración',
-                                            sub: 'Ignora ajustes del usuario',
-                                            val: config.forceSettings,
-                                            key: 'forceSettings',
-                                            icon: Shield
-                                        }
-                                    ].map((p) => (
-                                        <div key={p.key} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-xl bg-white/5 text-gray-400">
-                                                    {/* @ts-ignore */}
-                                                    <p.icon className="w-4 h-4" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-black text-white">{p.label}</span>
-                                                    <span className="text-[10px] text-gray-500 uppercase tracking-tight font-bold">{p.sub}</span>
-                                                </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {[
+                                    {
+                                        label: 'Prioridad en Solicitudes',
+                                        sub: 'Cola de procesamiento preferencial',
+                                        val: config.priorityRequests,
+                                        key: 'priorityRequests',
+                                        icon: Zap
+                                    },
+                                    {
+                                        label: 'Acceso Anticipado',
+                                        sub: 'Prueba de funciones Beta nuevas',
+                                        val: config.earlyAccess,
+                                        key: 'earlyAccess',
+                                        icon: Eye
+                                    },
+                                    {
+                                        label: 'Temas Personalizados',
+                                        sub: 'Permitir que el usuario cambie UI',
+                                        val: config.customThemes,
+                                        key: 'customThemes',
+                                        icon: Palette
+                                    },
+                                    {
+                                        label: 'Mostrar Recomendaciones',
+                                        sub: 'Sugerir contenido en inicio',
+                                        val: config.showRecommendations,
+                                        key: 'showRecommendations',
+                                        icon: Stars
+                                    },
+                                    {
+                                        label: 'Habilitar Descargas',
+                                        sub: 'Permitir descarga de archivos ePUB',
+                                        val: config.canDownload,
+                                        key: 'canDownload',
+                                        icon: Download
+                                    },
+                                    {
+                                        label: 'Habilitar Lectura',
+                                        sub: 'Permitir leer libros online',
+                                        val: config.canRead,
+                                        key: 'canRead',
+                                        icon: BookOpen
+                                    },
+                                    {
+                                        label: 'Ver Mi Biblioteca',
+                                        sub: 'Muestra acceso a libros propios',
+                                        val: config.hasLibraryAccess,
+                                        key: 'hasLibraryAccess',
+                                        icon: Library
+                                    },
+                                    {
+                                        label: 'Solicitar Libros',
+                                        sub: 'Permitir peticiones de descargas',
+                                        val: config.canRequestBooks,
+                                        key: 'canRequestBooks',
+                                        icon: Download
+                                    },
+                                    {
+                                        label: 'Forzar Configuración',
+                                        sub: 'Ignora ajustes del usuario',
+                                        val: config.forceSettings,
+                                        key: 'forceSettings',
+                                        icon: Shield
+                                    }
+                                ].map((p) => (
+                                    <div key={p.key} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-xl bg-white/5 text-gray-400">
+                                                {/* @ts-ignore */}
+                                                <p.icon className="w-4 h-4" />
                                             </div>
-                                            <Toggle
-                                                checked={p.val as boolean}
-                                                onChange={(val) => setConfig({ ...config, [p.key]: val })}
-                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-black text-white">{p.label}</span>
+                                                <span className="text-[10px] text-gray-500 uppercase tracking-tight font-bold">{p.sub}</span>
+                                            </div>
                                         </div>
-                                    ))}
-                                </div>
+                                        <Toggle
+                                            checked={p.val as boolean}
+                                            onChange={(val) => setConfig({ ...config, [p.key]: val })}
+                                        />
+                                    </div>
+                                ))}
                             </div>
-                        )}
+                        </div>
+
 
                         {/* Appearance Customization */}
                         <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg">
