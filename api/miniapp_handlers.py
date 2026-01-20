@@ -1190,27 +1190,21 @@ async def handle_admin_restart_docker(data: Dict[str, Any], user_data: Dict[str,
         
         logger.info(f"Admin {user_data.get('telegram_id')} requesting Docker restart for container: {container_name}")
         
-        # Execute docker restart command
-        result = subprocess.run(
-            ["docker", "restart", container_name],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
+        async def do_restart():
+            try:
+                # Execute docker restart command in thread
+                await asyncio.to_thread(subprocess.run, ["docker", "restart", container_name], timeout=30)
+            except Exception as e:
+                logger.error(f"Error in background docker restart: {e}")
+
+        # Start in background
+        asyncio.create_task(do_restart())
         
-        if result.returncode == 0:
-            logger.info(f"Docker container {container_name} restart initiated successfully")
-            return {
-                "success": True,
-                "message": f"Contenedor {container_name} reiniciándose...",
-                "output": result.stdout.strip()
-            }
-        else:
-            logger.error(f"Docker restart failed: {result.stderr}")
-            return {
-                "success": False,
-                "message": f"Error al reiniciar: {result.stderr}"
-            }
+        return {
+            "success": True,
+            "message": f"Contenedor {container_name} reiniciándose...",
+            "restarting": True
+        }
     except subprocess.TimeoutExpired:
         return {"success": False, "message": "Timeout al ejecutar comando docker"}
     except FileNotFoundError:
@@ -1231,12 +1225,13 @@ async def handle_admin_update_system(data: Dict[str, Any], user_data: Dict[str, 
         
         logger.info(f"Admin {user_data.get('telegram_id')} requesting system update via Watchtower")
         
-        success, message = await trigger_watchtower_update()
+        # Ejecutar en segundo plano para evitar 502/504 de Nginx/Cloudflare
+        asyncio.create_task(trigger_watchtower_update())
         
         return {
-            "success": success,
-            "message": message,
-            "restarting": success
+            "success": True,
+            "message": "Actualización solicitada. El bot contactará con Watchtower para buscar nuevas versiones y se reiniciará si es necesario.",
+            "restarting": True
         }
     except Exception as e:
         logger.error(f"Error en handle_admin_update_system: {e}")

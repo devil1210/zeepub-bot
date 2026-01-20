@@ -143,7 +143,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                     return (
                         <div
                             key={level.id}
-                            className="glass-panel p-6 rounded-3xl border border-white/5 bg-white/5 relative overflow-hidden group hover:border-primary/30 transition-all flex flex-col justify-between"
+                            className="glass-panel p-6 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all flex flex-col justify-between"
                         >
                             <div className="relative z-10">
                                 <div className="flex justify-between items-start mb-6">
@@ -186,7 +186,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
             </div>
 
             {/* Users List - Dynamic Grid (Square Cards on Mobile) */}
-            <div className="glass-panel border border-white/5 bg-white/5 rounded-3xl p-6 sm:p-8">
+            <div className="glass-panel border border-white/5 rounded-3xl p-6 sm:p-8">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
                     <div className="flex items-center gap-3">
                         <Users className="text-primary w-5 h-5" />

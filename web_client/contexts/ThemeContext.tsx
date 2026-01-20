@@ -109,6 +109,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--bg-color', settings.backgroundColor ?? '#0f172a');
     root.style.setProperty('--card-color', settings.cardColor ?? '#1e293b');
 
+    // Handle card color RGB for glass effects (e.g. Nav Bar)
+    if (settings.cardColor) {
+      const cR = parseInt(settings.cardColor.substring(1, 3), 16);
+      const cG = parseInt(settings.cardColor.substring(3, 5), 16);
+      const cB = parseInt(settings.cardColor.substring(5, 7), 16);
+      root.style.setProperty('--glass-rgb', `${cR}, ${cG}, ${cB}`);
+    }
+
     // Handle background color RGB for variations
     if (settings.backgroundColor) {
       const bgR = parseInt(settings.backgroundColor.substring(1, 3), 16);
