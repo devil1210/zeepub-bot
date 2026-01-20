@@ -1010,7 +1010,7 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
                         u_data[bc] = bool(u_data[bc])
 
                 # JSON parse/re-encode to ensure validity
-                for jc in ["roles", "insignias", "settings"]:
+                for jc in ["insignias", "settings"]:
                     if u_data.get(jc):
                         try:
                             if isinstance(u_data[jc], str):
@@ -1018,12 +1018,16 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
                         except:
                             pass
                 
-                # Remove custom_status column (renamed to 'role' in new schema)
-                # Map custom_status to role if role is not set
+                # Remove columns that don't exist in Supabase
+                # custom_status was renamed to 'role'
                 if "custom_status" in u_data:
                     if not u_data.get("role"):
                         u_data["role"] = u_data["custom_status"]
                     del u_data["custom_status"]
+                
+                # Remove 'roles' column (consolidated into 'insignias')
+                if "roles" in u_data:
+                    del u_data["roles"]
                 
                 user_batch.append(u_data)
                 
