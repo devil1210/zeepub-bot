@@ -215,72 +215,102 @@ async def get_effective_user(
         logger.info(f"Auto-registering user {uid} (Lector level)")
         await user_repo.create_minimal_user(uid, nickname=nickname_from_tg)
 
-    # 4. Access Info (Levels & Permissions)
-    access_info = await user_repo.get_access_info(uid)
-    if access_info:
-        result["has_mini_app_access"] = access_info["hasAccess"]
-        result["is_admin_db"] = access_info["isAdmin"]
-        result["level_info"] = access_info["level"]
+        # 4. Access Info (Levels & Permissions)
+        access_info = await user_repo.get_access_info(uid)
+        if access_info:
+            result["has_mini_app_access"] = access_info["hasAccess"]
+            result["is_admin_db"] = access_info["isAdmin"]
+            result["level_info"] = access_info["level"]
 
-        # Check if this is a hard admin FIRST (before any level overwriting)
-        is_hard_admin = access_info["isAdmin"] or uid in config.ADMIN_USERS
-        
-        if is_hard_admin:
-            # For hard admins: ALWAYS force admin status, regardless of DB level_id
-            result["has_mini_app_access"] = True
-            result["level"] = "admin"
-            result["status_label"] = "Admin"
-        else:
-            # Map Level ID to standardized role key (more stable than names)
-            # IDs: 1:admin, 2:staff, 3:premium, 4:vip, 5:white, 6:free
-            lvl_id_raw = access_info["level"].get("id")
-            try:
-                lvl_id = int(lvl_id_raw) if lvl_id_raw is not None else 6
-            except (ValueError, TypeError):
-                lvl_id = 6
-
-            level_to_role = {
-                1: "admin",
-                2: "staff",
-                3: "premium",
-                4: "vip",
-                5: "white",
-                6: "free"
-            }
+            # Check if this is a hard admin FIRST (before any level overwriting)
+            is_hard_admin = access_info["isAdmin"] or uid in config.ADMIN_USERS
             
-            if lvl_id in level_to_role:
-                result["level"] = level_to_role[lvl_id]
+            if is_hard_admin:
+                # For hard admins: ALWAYS force admin status, regardless of DB level_id
+                result["has_mini_app_access"] = True
+                result["level"] = "admin"
+                result["status_label"] = "Admin"
             else:
-                # Fallback to normalized level name if ID not in standard map
-                result["level"] = access_info["level"]["name"].lower().strip()
+                # Map Level ID to standardized role key (more stable than names)
+                lvl_id_raw = access_info["level"].get("id")
+                try:
+                    lvl_id = int(lvl_id_raw) if lvl_id_raw is not None else 6
+                except (ValueError, TypeError):
+                    lvl_id = 6
 
-            # Priority: level name as status label if no role/label defined
-            if not info or not info.get("role"):
-                result["status_label"] = access_info["level"]["name"]
+                level_to_role = {
+                    1: "admin", 2: "staff", 3: "premium", 4: "vip", 5: "white", 6: "free"
+                }
+                
+                if lvl_id in level_to_role:
+                    result["level"] = level_to_role[lvl_id]
+                else:
+                    result["level"] = access_info["level"]["name"].lower().strip()
+
+                if not info or not info.get("role"):
+                    result["status_label"] = access_info["level"]["name"]
+
+            # --- Refined Personalized UI Logic ---
+            level_settings = access_info["level"]
             
-        # Implement forceSettings logic
-        level_settings = access_info["level"]
-        if level_settings.get("forceSettings"):
-            # Start with existing settings (Global + Personal)
-            final_settings = result.get("settings", global_ui.copy())
+            # 1. Start with Global UI as base
+            final_ui = global_ui.copy()
             
-            # These keys are defined by the level design
+            # 2. Overlay Level Defaults (if defined)
             override_keys = [
                 "theme", "fontSize", "glassBlur", "coverWidth", "navOpacity", 
                 "accentOpacity", "primaryColor", "showRecommendations",
-                "backgroundColor", "cardColor", "cardGlowIntensity"
+                "backgroundColor", "cardColor", "cardGlowIntensity",
+                "bannerContentOffset", "glassOpacity"
             ]
             for k in override_keys:
                 if k in level_settings and level_settings[k] is not None:
-                    final_settings[k] = level_settings[k]
+                    final_ui[k] = level_settings[k]
+                    
+            # 3. Overlay Personal Settings (Respecting forceSettings and ui_exported_settings)
+            personal_settings = info.get("settings", {}) if info else {}
             
-            result["settings"] = final_settings
+            # Get exported settings list
+            exported_raw = level_settings.get("ui_exported_settings")
+            exported_list = []
+            if exported_raw:
+                try:
+                    exported_list = json.loads(exported_raw) if isinstance(exported_raw, str) else exported_raw
+                except:
+                    exported_list = []
+            
+            is_forced = level_settings.get("forceSettings", False)
+            
+            for k, v in personal_settings.items():
+                if not is_forced:
+                    # Not forced: user settings always win
+                    final_ui[k] = v
+                else:
+                    # Forced: only if specifically exported by admin
+                    if k in exported_list:
+                        final_ui[k] = v
+            
+            result["settings"] = final_ui
 
         # Overwrite identities if present
         if access_info.get("nickname"): result["nickname"] = access_info["nickname"]
         if access_info.get("name"): result["name"] = access_info["name"]
         if access_info.get("username"): result["username"] = access_info["username"]
         if access_info.get("roles"): result["roles"] = access_info["roles"]
+        
+        # Add exported UI settings list to result
+        exported = level_settings.get("ui_exported_settings")
+        if exported:
+            try:
+                if isinstance(exported, str):
+                    result["ui_exported_settings"] = json.loads(exported)
+                else:
+                    result["ui_exported_settings"] = exported
+            except:
+                result["ui_exported_settings"] = []
+        else:
+            # Fallback for old/empty tiers
+            result["ui_exported_settings"] = ["theme", "primaryColor", "fontSize"]
 
     # 4. Legacy Config Fallbacks (non-admins)
     elif uid in config.FACEBOOK_PUBLISHERS:

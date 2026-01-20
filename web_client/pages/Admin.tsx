@@ -10,12 +10,14 @@ import {
   RotateCcw,
   Save,
   Layers,
-  UserCircle
+  UserCircle,
+  Palette
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { MonitorDashboard } from './MonitorDashboard';
 import { SystemDashboard } from './SystemDashboard';
 import { AccessDashboard } from './AccessDashboard';
+import { AppearanceDashboard } from './AppearanceDashboard';
 
 interface AdminProps {
   onNavigate?: (tab: string) => void;
@@ -23,7 +25,7 @@ interface AdminProps {
 
 export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const { settings } = useTheme();
-  const [currentView, setCurrentView] = useState<'monitor' | 'system' | 'access'>('monitor');
+  const [currentView, setCurrentView] = useState<'monitor' | 'system' | 'access' | 'interface'>('monitor');
 
   // Child view states (inherited from children or managed here)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -39,6 +41,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const viewOptions = [
     { id: 'monitor', label: 'Monitor', icon: BarChart3 },
     { id: 'system', label: 'Sistema', icon: Server },
+    { id: 'interface', label: 'Interfaz', icon: Palette },
     { id: 'access', label: 'Niveles y Acceso', icon: ShieldCheck },
   ] as const;
 
@@ -54,6 +57,16 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             onSelectUser={setSelectedUserId}
             onConfigureTier={setConfiguringTier}
             // Connect refs and states if needed
+            onSavingChange={setSaving}
+            onCanUndoChange={setCanUndo}
+            onCanSaveChange={setCanSave}
+            setUndoRef={(fn) => { undoRef.current = fn; }}
+            setSaveRef={(fn) => { saveRef.current = fn; }}
+          />
+        );
+      case 'interface':
+        return (
+          <AppearanceDashboard
             onSavingChange={setSaving}
             onCanUndoChange={setCanUndo}
             onCanSaveChange={setCanSave}

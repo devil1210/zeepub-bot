@@ -32,7 +32,18 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { settings, updateSettings, resetSettings } = useTheme();
-  const { user: tgUser, isAdmin, isRealAdmin, status, customThemes, simulatedLevel, setSimulatedLevel, showRecommendations, setShowRecommendations } = useTelegram();
+  const {
+    user: tgUser,
+    isAdmin,
+    isRealAdmin,
+    status,
+    customThemes,
+    simulatedLevel,
+    setSimulatedLevel,
+    showRecommendations,
+    setShowRecommendations,
+    uiExportedSettings
+  } = useTelegram();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [availableLevels, setAvailableLevels] = useState<Array<{ id: number, name: string, color: string }>>([]);
@@ -97,6 +108,14 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
       });
     }
   }, [isRealAdmin]);
+
+  const isVisible = (key: string) => {
+    if (isAdmin) return true;
+    if (!customThemes) return false;
+    return uiExportedSettings.includes(key);
+  };
+
+  const hasPersonalization = isAdmin || customThemes;
 
   return (
     <div className="max-w-6xl mx-auto pb-32 md:pb-12 p-4 md:p-8 animate-in fade-in duration-300 font-sans text-gray-900 dark:text-gray-100">
@@ -320,64 +339,17 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Right Column: Settings */}
+        {/* Right Column: Settings and Personalization */}
         <div className="lg:col-span-8 space-y-6">
 
-          {/* Appearance Section */}
+          {/* Standard Settings Section */}
           <div className="glass-panel p-8 rounded-2xl border border-white/5 shadow-xl">
             <h3 className="text-lg font-black text-white flex items-center gap-2 mb-6 uppercase tracking-tight">
               <Palette className="text-primary w-5 h-5" />
-              Apariencia
+              Ajustes de Lectura y Sistema
             </h3>
 
             <div className="space-y-8">
-              {/* Theme Preference */}
-              <div>
-                <label className="block text-xs font-black text-gray-400 mb-3 uppercase tracking-widest">Preferencia de Tema</label>
-                <div className="grid grid-cols-3 gap-4">
-                  <label className="cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="theme"
-                      className="hidden peer"
-                      checked={settings.theme === 'dark'}
-                      onChange={() => updateSettings({ theme: 'dark' })}
-                    />
-                    <div className="h-28 rounded-xl border-2 border-white/10 bg-[#1a1a1e] flex flex-col items-center justify-center gap-2 peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary transition-all relative overflow-hidden hover:bg-[#202025]">
-                      <div className="absolute inset-0 bg-black/20"></div>
-                      <Moon className="text-gray-400 z-10 w-6 h-6" />
-                      <span className="text-xs font-bold text-gray-300 z-10 uppercase tracking-wider">Noche</span>
-                    </div>
-                  </label>
-                  <label className="cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="theme"
-                      className="hidden peer"
-                      checked={settings.theme === 'amoled'}
-                      onChange={() => updateSettings({ theme: 'amoled' })}
-                    />
-                    <div className="h-28 rounded-xl border-2 border-white/10 bg-black flex flex-col items-center justify-center gap-2 peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary transition-all hover:border-white/20">
-                      <Contrast className="text-white w-6 h-6" />
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">AMOLED</span>
-                    </div>
-                  </label>
-                  <label className="cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="theme"
-                      className="hidden peer"
-                      checked={settings.theme === 'light'}
-                      onChange={() => updateSettings({ theme: 'light' })}
-                    />
-                    <div className="h-28 rounded-xl border-2 border-white/10 bg-white flex flex-col items-center justify-center gap-2 peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary transition-all opacity-100 hover:border-gray-300">
-                      <Sun className="text-gray-600 w-6 h-6" />
-                      <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">Claro</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <div className="flex justify-between items-center mb-2">
@@ -429,8 +401,8 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                         type="radio"
                         name="coverQuality"
                         className="hidden peer"
-                        checked={settings.coverQuality === q.id}
-                        onChange={() => updateSettings({ coverQuality: q.id as any })}
+                        checked={(settings as any).coverQuality === q.id}
+                        onChange={() => updateSettings({ coverQuality: q.id as any } as any)}
                       />
                       <div className="p-3 rounded-xl border-2 border-white/10 bg-black/20 flex flex-col items-center justify-center text-center peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary transition-all hover:bg-black/30">
                         <span className="text-[10px] font-black text-white uppercase tracking-wider">{q.label}</span>
@@ -439,253 +411,220 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     </label>
                   ))}
                 </div>
-                <p className="text-[10px] text-gray-500 mt-3 italic">Nota: Las calidades "Alta" y "Original" pueden aumentar significativamente el consumo de datos.</p>
+                <p className="text-[10px] text-gray-500 mt-3 italic">Nota: Las calidades "Alta" y "Original" pueden aumentar el consumo de datos.</p>
               </div>
             </div>
           </div>
 
-          {/* User Specific UI Personalization (Visible if tier has customThemes enabled or is Admin) */}
-          {(customThemes || isAdmin) && (
-            <div className="glass-panel p-8 rounded-2xl border-l-4 border-primary relative overflow-hidden animate-in slide-in-from-bottom-4 duration-500 shadow-xl">
-              <h3 className="text-lg font-black text-white flex items-center gap-2 mb-6 uppercase tracking-tight">
-                <PenTool className="text-primary w-5 h-5" />
-                Personalización de Interfaz
-              </h3>
-
-              <div className="space-y-8">
-                <div>
-                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Color de Acento Personal</label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <input
-                        className="w-full pl-10 pr-3 py-2 text-sm font-mono bg-black/20 border-white/10 rounded-lg text-white focus:ring-primary focus:border-primary transition-all uppercase"
-                        type="text"
-                        value={settings.primaryColor}
-                        onChange={(e) => handleColorChange(e.target.value)}
-                      />
-                      <div className="absolute left-3 top-2.5 w-4 h-4 rounded shadow-sm border border-white/20" style={{ backgroundColor: settings.primaryColor }}></div>
-                    </div>
-                    <div className="relative overflow-hidden rounded-lg w-10 h-10 border border-white/10">
-                      <input
-                        className="absolute -top-2 -left-2 w-16 h-16 p-0 border-none bg-transparent cursor-pointer"
-                        type="color"
-                        value={settings.primaryColor}
-                        onChange={(e) => handleColorChange(e.target.value)}
-                      />
-                    </div>
+          {/* User Specific UI Personalization */}
+          {hasPersonalization && (
+            <div className="glass-panel p-6 rounded-2xl flex flex-col gap-8 border border-white/5 shadow-xl">
+              <div className="flex border-b border-white/5 pb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-2xl bg-primary/10 text-primary border border-primary/20">
+                    <Palette className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight">Personalización</h2>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-none mt-1">Transforma tu experiencia visual</p>
                   </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Nivel de Glassmorphism (Blur)</label>
-                    <div className="pt-2 flex flex-col gap-2">
-                      <input
-                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                        max="40"
-                        min="0"
-                        type="range"
-                        value={settings.glassBlur}
-                        onChange={(e) => updateSettings({ glassBlur: parseInt(e.target.value) })}
-                      />
-                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
-                        <span>0px</span>
-                        <span className="text-primary font-bold">{settings.glassBlur}px</span>
-                        <span>40px</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Transparencia de Paneles</label>
-                    <div className="pt-2 flex flex-col gap-2">
-                      <input
-                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                        max="100"
-                        min="10"
-                        type="range"
-                        value={settings.glassOpacity * 100}
-                        onChange={(e) => updateSettings({ glassOpacity: parseInt(e.target.value) / 100 })}
-                      />
-                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
-                        <span>10%</span>
-                        <span className="text-primary font-bold">{Math.round(settings.glassOpacity * 100)}%</span>
-                        <span>100%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Ancho de Portadas (px)</label>
-                    <div className="pt-2 flex flex-col gap-2">
-                      <input
-                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                        max="200"
-                        min="80"
-                        type="range"
-                        value={settings.coverWidth}
-                        onChange={(e) => updateSettings({ coverWidth: parseInt(e.target.value) })}
-                      />
-                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
-                        <span>80px</span>
-                        <span className="text-primary font-bold">{settings.coverWidth}px</span>
-                        <span>200px</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Glow Effect Slider */}
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Efecto Resplandor de Tarjetas</label>
-                    <div className="pt-2 flex flex-col gap-2">
-                      <input
-                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                        max="100"
-                        min="0"
-                        type="range"
-                        value={(settings.cardGlowIntensity ?? 0.5) * 100}
-                        onChange={(e) => updateSettings({ cardGlowIntensity: parseInt(e.target.value) / 100 })}
-                      />
-                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5">
-                        <span>Menos brillo</span>
-                        <span className="text-primary font-bold">{Math.round((settings.cardGlowIntensity ?? 0.5) * 100)}%</span>
-                        <span>Más intenso</span>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-gray-500 mt-2">Ajusta la intensidad de los efectos de luz y resplandor en los paneles y tarjetas.</p>
-                  </div>
-
-                  {/* Element Selector for Per-Element Opacity */}
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Configurar Elemento</label>
-                    <div className="flex flex-wrap gap-2 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                {/* Theme Selection */}
+                {isVisible('theme') && (
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Apariencia del Sistema</label>
+                    <div className="grid grid-cols-3 gap-3">
                       {[
-                        { id: 'nav' as const, label: 'Navegación' },
-                        { id: 'searchbar' as const, label: 'Barra de Búsqueda' },
-                        { id: 'header' as const, label: 'Encabezados' },
-                      ].map((el) => (
+                        { id: 'light', icon: Sun, label: 'Claro' },
+                        { id: 'dark', icon: Moon, label: 'Oscuro' },
+                        { id: 'amoled', icon: Contrast, label: 'AMOLED' },
+                      ].map((t) => (
                         <button
-                          key={el.id}
-                          onClick={() => setSelectedElement(el.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${selectedElement === el.id
-                            ? 'bg-primary/20 text-primary border-primary/30'
-                            : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
+                          key={t.id}
+                          onClick={() => updateSettings({ theme: t.id as any })}
+                          className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all group ${settings.theme === t.id
+                            ? 'bg-primary/10 border-primary text-primary shadow-lg shadow-primary/10 scale-105'
+                            : 'bg-black/20 border-white/5 text-gray-400 hover:border-white/10'
                             }`}
                         >
-                          {el.label}
+                          <t.icon className={`w-6 h-6 transition-transform ${settings.theme === t.id ? 'scale-110' : 'group-hover:scale-110'}`} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">{t.label}</span>
                         </button>
                       ))}
                     </div>
+                  </div>
+                )}
 
-                    {/* Per-Element Opacity Slider */}
-                    <div className="p-4 rounded-xl bg-black/20 border border-white/5">
-                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">
-                        Opacidad de {selectedElement === 'nav' ? 'Navegación' : selectedElement === 'searchbar' ? 'Barra de Búsqueda' : 'Encabezados'}
+                {/* Accent Color Selection */}
+                {isVisible('primaryColor') && (
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Color de Énfasis (Primario)</label>
+                    <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-2xl">
+                      {['#FB7185', '#38BDF8', '#4ADE80', '#FBBF24', '#818CF8', '#F472B6', '#A78BFA'].map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => handleColorChange(color)}
+                          className={`w-10 h-10 rounded-xl transition-all border-2 flex items-center justify-center group ${settings.primaryColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
+                          style={{ backgroundColor: color }}
+                        >
+                          {settings.primaryColor === color && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-lg" />}
+                        </button>
+                      ))}
+                      <div className="w-px h-8 bg-white/5 mx-1" />
+                      <label className="w-10 h-10 rounded-xl bg-gradient-to-tr from-gray-700 to-gray-500 flex items-center justify-center cursor-pointer hover:scale-105 transition-all relative overflow-hidden">
+                        <Palette className="w-4 h-4 text-white" />
+                        <input
+                          type="color"
+                          value={settings.primaryColor}
+                          onChange={(e) => handleColorChange(e.target.value)}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full scale-150"
+                        />
                       </label>
-                      <input
-                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-primary"
-                        max="100"
-                        min="10"
-                        type="range"
-                        value={
-                          selectedElement === 'nav'
-                            ? settings.navOpacity * 100
-                            : selectedElement === 'searchbar'
-                              ? settings.searchBarOpacity * 100
-                              : settings.headerOpacity * 100
-                        }
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) / 100;
-                          if (selectedElement === 'nav') updateSettings({ navOpacity: val });
-                          else if (selectedElement === 'searchbar') updateSettings({ searchBarOpacity: val });
-                          else updateSettings({ headerOpacity: val });
-                        }}
-                      />
-                      <div className="flex justify-between text-[10px] text-gray-400 font-medium px-0.5 mt-2">
-                        <span>10%</span>
-                        <span className="text-primary font-bold">
-                          {Math.round(
-                            selectedElement === 'nav'
-                              ? settings.navOpacity * 100
-                              : selectedElement === 'searchbar'
-                                ? settings.searchBarOpacity * 100
-                                : settings.headerOpacity * 100
-                          )}%
-                        </span>
-                        <span>100%</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Transparency Sliders Section */}
+                {(isVisible('glassBlur') || isVisible('glassOpacity')) && (
+                  <div className="space-y-6">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 inline-block">Efectos de Transparencia</label>
+                    {isVisible('glassBlur') && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                          <span className="text-xs font-bold text-gray-300">Intensidad del Desenfoque (Blur)</span>
+                          <span className="text-sm font-black text-primary font-mono">{settings.glassBlur}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="40"
+                          value={settings.glassBlur}
+                          onChange={(e) => updateSettings({ glassBlur: parseInt(e.target.value) })}
+                          className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                    )}
+                    {isVisible('glassOpacity') && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                          <span className="text-xs font-bold text-gray-300">Opacidad de Paneles</span>
+                          <span className="text-sm font-black text-primary font-mono">{Math.round(settings.glassOpacity * 100)}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={settings.glassOpacity * 100}
+                          onChange={(e) => updateSettings({ glassOpacity: parseInt(e.target.value) / 100 })}
+                          className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* UI Element Transparency */}
+                {isVisible('navOpacity') && (
+                  <div className="space-y-4 col-span-full border-t border-white/5 pt-8">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Zonas de Transparencia</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="flex flex-col gap-3">
+                        <span className="text-xs font-bold text-gray-300">Navegación</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={settings.navOpacity * 100}
+                          onChange={(e) => updateSettings({ navOpacity: parseInt(e.target.value) / 100 })}
+                          className="w-full accent-primary h-1 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <span className="text-xs font-bold text-gray-300">Búsqueda</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={((settings as any).searchBarOpacity || 0.8) * 100}
+                          onChange={(e) => updateSettings({ searchBarOpacity: parseInt(e.target.value) / 100 } as any)}
+                          className="w-full accent-primary h-1 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <span className="text-xs font-bold text-gray-300">Cabeceras</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={(settings.headerOpacity ?? 0.8) * 100}
+                          onChange={(e) => updateSettings({ headerOpacity: parseInt(e.target.value) / 100 })}
+                          className="w-full accent-primary h-1 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                        />
                       </div>
                     </div>
                   </div>
+                )}
 
-                  {/* Live Preview */}
-                  <div className="md:col-span-2 p-4 rounded-xl bg-black/30 border border-white/5">
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-3">Vista Previa</label>
-                    {selectedElement === 'nav' && (
-                      <div
-                        className="rounded-xl p-3 border border-white/10 flex items-center gap-3"
-                        style={{ background: `rgba(var(--glass-rgb), ${settings.navOpacity ?? 0.8})` }}
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white text-xs">🏠</div>
-                        <span className="text-sm text-white font-medium">Navegación</span>
-                        <div className="ml-auto flex gap-2">
-                          <div className="w-6 h-6 rounded bg-white/10"></div>
-                          <div className="w-6 h-6 rounded bg-white/10"></div>
+                {/* Glow & Recommendations */}
+                <div className="col-span-full border-t border-white/5 pt-8 space-y-6">
+                  {isVisible('cardGlowIntensity') && (
+                    <div className="space-y-4">
+                      <div className="flex justify-between">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Resplandor de Tarjetas</label>
+                        <span className="text-sm font-black text-primary">{Math.round((settings.cardGlowIntensity || 0.5) * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={settings.cardGlowIntensity || 0.5}
+                        onChange={(e) => updateSettings({ cardGlowIntensity: parseFloat(e.target.value) })}
+                        className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+                  )}
+
+                  {isVisible('showRecommendations') && (
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+                      <div className="flex items-center gap-3">
+                        <Eye className="w-5 h-5 text-primary" />
+                        <div>
+                          <p className="text-sm font-bold text-white">Recomendaciones</p>
+                          <p className="text-[9px] text-gray-500 uppercase">Mostrar sugerencias en inicio</p>
                         </div>
                       </div>
-                    )}
-                    {selectedElement === 'searchbar' && (
                       <div
-                        className="rounded-xl p-3 border border-white/10 flex items-center gap-2"
-                        style={{ background: `rgba(var(--glass-rgb), ${settings.searchBarOpacity ?? 0.8})` }}
+                        onClick={() => setShowRecommendations(!showRecommendations)}
+                        className={`w-12 h-6 rounded-full p-1 transition-colors cursor-pointer flex items-center ${showRecommendations ? 'bg-primary' : 'bg-gray-700'}`}
                       >
-                        <div className="text-gray-400">🔍</div>
-                        <div className="flex-1 h-8 rounded-lg bg-black/20 border border-white/5"></div>
-                        <div className="px-2 py-1 rounded bg-primary/20 text-primary text-[10px] font-bold">TODOS</div>
+                        <div className={`bg-white w-4 h-4 rounded-full transition-transform ${showRecommendations ? 'translate-x-6' : 'translate-x-0'}`} />
                       </div>
-                    )}
-                    {selectedElement === 'header' && (
-                      <div
-                        className="rounded-xl p-4 border border-white/10"
-                        style={{ background: `rgba(var(--glass-rgb), ${settings.headerOpacity ?? 0.9})` }}
-                      >
-                        <div className="text-lg font-bold text-white mb-1">Título de Sección</div>
-                        <div className="text-xs text-gray-400">Descripción del encabezado</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Show Recommendations Toggle - Only for users with custom themes permission */}
-                  {customThemes && (
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2.5">Mostrar Recomendaciones</label>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={async () => {
-                            const newValue = !showRecommendations;
-                            try {
-                              const { api } = await import('../src/services/api');
-                              // Save to backend with consistent camelCase key
-                              await api.rpc('update_user_setting', { key: 'showRecommendations', value: newValue });
-                              // Update local state via context immediately
-                              setShowRecommendations(newValue);
-                            } catch (e) {
-                              console.error('Failed to update show recommendations setting', e);
-                            }
-                          }}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showRecommendations ? 'bg-primary' : 'bg-gray-600'
-                            }`}
-                        >
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showRecommendations ? 'translate-x-6' : 'translate-x-1'
-                            }`} />
-                        </button>
-                        <span className="text-xs text-gray-400">
-                          {showRecommendations ? 'Visible' : 'Oculto'}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-gray-500 mt-2">Controla si la sección de recomendaciones aparece en el inicio</p>
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-6 pt-6 border-t border-white/5 mt-auto">
+                <button
+                  onClick={resetSettings}
+                  className="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white border border-white/5 hover:bg-white/5 transition-all flex items-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Restaurar
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className={`px-10 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-white shadow-xl flex items-center gap-2 transition-all hover:scale-105 active:scale-95 ${isSaving ? 'bg-gray-700 cursor-not-allowed opacity-50' : 'bg-primary shadow-primary/30'
+                    }`}
+                >
+                  <Save className="w-4 h-4" />
+                  {isSaving ? 'Guardando...' : 'Guardar Todo'}
+                </button>
               </div>
             </div>
           )}
@@ -699,44 +638,24 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 bg-red-900/10 border border-red-900/30 rounded-xl">
               <div>
                 <p className="text-sm font-bold text-red-200">Almacenamiento de Caché Local</p>
-                <p className="text-xs text-red-400 mt-1">Si experimentas problemas de visualización, intenta limpiar la caché.</p>
+                <p className="text-xs text-red-400 mt-1">Si notas comportamientos extraños, limpia la caché.</p>
               </div>
               <button
                 onClick={handleClearCache}
-                className="flex-shrink-0 px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-200 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-800 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-200 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-800 transition-colors"
+                title="Limpiar Caché"
               >
-                <Trash2 className="w-4 h-4" />
                 Limpiar Caché
               </button>
             </div>
           </div>
-
-          {/* Action Buttons (Desktop Only - Hidden on Mobile) */}
-          <div className="hidden md:flex items-center justify-end gap-3 pt-4">
-            <button
-              onClick={resetSettings}
-              className="px-6 py-3 text-gray-300 hover:bg-white/5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors flex items-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Restaurar
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/30 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? <RotateCcw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          </div>
-
         </div>
       </div>
 
-      {/* Mobile Bottom Floating Action Bar for Settings */}
+      {/* Mobile Bottom Floating Action Bar */}
       <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300">
         <div
-          className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+          className="glass-panel rounded-3xl p-1 border border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
             background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,

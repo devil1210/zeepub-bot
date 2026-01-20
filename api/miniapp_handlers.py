@@ -421,82 +421,32 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
     sub_action = data.get("subAction", "get")
 
     if sub_action == "get":
-        target_role = data.get("role", "global")
-        if target_role == "auto":
-            target_role = user_level
-
-        final_settings = {
-            "primaryColor": "#3b82f6",
-            "uiScale": 1.0,
-            "avatarScale": 1.0,
-            "isDarkMode": True,
-            "showSearchCard": True,
-            "showSearchBar": False,
-            "showDonateCard": True,
-            "showHelpCard": True,
-            "showSettingsInMenu": False,
-            "dataSaver": False,
-            "badgePosTop": 8,
-            "badgePosRight": 8,
-            "showPosTool": False,
-            "badgePosMode": "relative",
-        }
-
-        # Load global and badge config
+        # We can mostly rely on user_data["settings"] which is pre-calculated by get_effective_user
+        # but we also add the badge settings which are not in the main settings blob yet.
+        
+        final_settings = user_data.get("settings", {}).copy()
+        
+        # Add badge config (stored as separate settings)
         try:
             final_settings.update(
                 {
                     "badgePosTop": int(get_setting("badge_pos_top", "8")),
                     "badgePosRight": int(get_setting("badge_pos_right", "8")),
-                    "showPosTool": get_setting("show_pos_tool", "false").lower()
-                    == "true",
+                    "showPosTool": get_setting("show_pos_tool", "false").lower() == "true",
                     "badgePosMode": get_setting("badge_pos_mode", "relative"),
+                    "uiScale": 1.0,
+                    "avatarScale": 1.0,
+                    "isDarkMode": True,
+                    "showSearchCard": True,
+                    "showSearchBar": False,
+                    "showDonateCard": True,
+                    "showHelpCard": True,
+                    "dataSaver": False,
                 }
             )
         except Exception as e:
             logger.error(f"Error loading UI base defaults: {e}")
 
-        # 1. Load Global Defaults
-        global_raw = get_setting("ui_defaults_global", "{}")
-        if global_raw:
-            try:
-                global_defaults = json.loads(global_raw)
-                final_settings.update(global_defaults)
-            except Exception:
-                pass
-
-        # 2. Tier Defaults (Override Global)
-        user_record = await user_repo.get_by_id(user_id)
-        access_info = None
-        if user_record:
-            access_info = await user_repo.get_access_info(user_id)
-            if access_info and "level" in access_info:
-                lvl = access_info["level"]
-                tier_overrides = {
-                    "theme": lvl.get("theme"),
-                    "fontSize": lvl.get("fontSize"),
-                    "glassBlur": lvl.get("glassBlur"),
-                    "coverWidth": lvl.get("coverWidth"),
-                    "navOpacity": lvl.get("navOpacity"),
-                    "accentOpacity": lvl.get("accentOpacity"),
-                    "glassOpacity": lvl.get("glassOpacity", 0.6),
-                    "primaryColor": lvl.get("primaryColor"),
-                    "showRecommendations": lvl.get("showRecommendations"),
-                    "bannerContentOffset": lvl.get("bannerContentOffset"),
-                    "backgroundColor": lvl.get("backgroundColor"),
-                    "cardColor": lvl.get("cardColor"),
-                    "forceSettings": lvl.get("forceSettings")
-                }
-                # Filter out None values
-                tier_overrides = {k: v for k, v in tier_overrides.items() if v is not None}
-                final_settings.update(tier_overrides)
-
-        # 3. Personal Overrides (Priority unless forced)
-        is_forced = access_info.get("level", {}).get("forceSettings") if access_info else False
-        
-        if user_record and user_record.get("settings") and not is_forced:
-            final_settings.update(user_record.get("settings", {}))
-            
         return final_settings
 
     elif sub_action == "set":
@@ -1307,7 +1257,8 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             current_global.update(ui_settings)
             set_setting("ui_defaults_global", json.dumps(current_global))
             
-            logger.info(f"ADMIN: Saved GLOBAL tier config")
+            # Record change for audit if needed (can be added later)
+            logger.info(f"ADMIN: Saved GLOBAL tier config locally and to Supabase (if active)")
             return {"success": True, "tierId": "global"}
 
         # from core.supabase_client import get_supabase_client
@@ -1353,7 +1304,8 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             "backgroundColor": "background_color",
             "cardColor": "card_color",
             "forceSettings": "force_settings",
-            "cardGlowIntensity": "ui_glow_intensity"
+            "cardGlowIntensity": "ui_glow_intensity",
+            "ui_exported_settings": "ui_exported_settings"
         }
         
         for frontend_key, db_key in field_mapping.items():
@@ -1383,7 +1335,15 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
                     return {"success": True, "tierId": tier_id, "warning": "Partial save: Schema update required"}
             raise e
         
-        logger.info(f"ADMIN: Saved tier config for '{tier_name}' (ID: {tier_id})")
+        # Update tier locally (SQLite)
+        try:
+            from repositories.user_repository import user_repo
+            await user_repo.update_level(tier_id, data)
+        except Exception as e:
+            logger.error(f"Error updating tier locally: {e}")
+            # Non-fatal, we continue since Supabase was updated
+        
+        logger.info(f"ADMIN: Saved tier config for '{tier_name}' (ID: {tier_id}) in Cloud and Local")
         return {"success": True, "tierId": tier_id}
     except HTTPException:
         raise

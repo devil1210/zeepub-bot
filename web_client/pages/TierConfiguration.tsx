@@ -532,279 +532,51 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         </div>
 
 
-                        {/* Appearance Customization */}
-                        <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                                        <Palette className="w-5 h-5" />
-                                    </div>
-                                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Identidad Visual del Rango</h3>
-                                </div>
-                                <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full">
-                                    <span className="text-[8px] font-black text-primary uppercase tracking-widest">
-                                        {selectedTierName === 'Global' ? 'Afecta a todos por defecto' : 'Afecta solo a este nivel'}
-                                    </span>
-                                </div>
+                        {/* Info Note about Interface section */}
+                        <div className="glass-panel p-8 rounded-2xl border border-primary/20 bg-primary/5 flex flex-col md:flex-row items-center gap-6 shadow-xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+                                <Palette className="w-16 h-16 text-primary" />
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Color Primario de TMA</label>
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex-1 flex items-center justify-between p-2 bg-black/40 border-2 border-white/5 rounded-xl">
-                                                <div className="flex items-center gap-3">
-                                                    <div
-                                                        className="size-10 rounded-lg shadow-inner border border-white/10"
-                                                        style={{ backgroundColor: config.primaryColor }}
-                                                    />
-                                                    <span className="text-xs font-black font-mono text-gray-300 uppercase">{config.primaryColor}</span>
-                                                </div>
-                                                <label className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all cursor-pointer shadow-lg shadow-primary/20">
-                                                    Pick
-                                                    <input
-                                                        type="color"
-                                                        value={config.primaryColor}
-                                                        onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
-                                                        className="hidden"
-                                                    />
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Intensidad Glassmorphism (Blur)</label>
-                                            <span className="text-xs font-black text-primary">{config.glassBlur || 12}px</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="40"
-                                            value={config.glassBlur}
-                                            onChange={(e) => setConfig({ ...config, glassBlur: parseInt(e.target.value) })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Transparencia Paneles (Alpha)</label>
-                                            <span className="text-xs font-black text-primary">{Math.round((config.glassOpacity ?? 0.7) * 100)}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="100"
-                                            value={(config.glassOpacity ?? 0.7) * 100}
-                                            onChange={(e) => setConfig({ ...config, glassOpacity: parseInt(e.target.value) / 100 })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6">
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Transparencia Nav Bar</label>
-                                            <span className="text-xs font-black text-primary">{Math.round((config.navOpacity || settings.navOpacity) * 100)}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="100"
-                                            value={(config.navOpacity || settings.navOpacity) * 100}
-                                            onChange={(e) => setConfig({ ...config, navOpacity: parseInt(e.target.value) / 100 })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Opacidad de Acentos</label>
-                                            <span className="text-xs font-black text-primary">{Math.round((config.accentOpacity ?? 0.2) * 100)}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="100"
-                                            value={(config.accentOpacity ?? 0.2) * 100}
-                                            onChange={(e) => setConfig({ ...config, accentOpacity: parseInt(e.target.value) / 100 })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Tema Base por Defecto</label>
-                                        <select
-                                            value={config.theme || 'dark'}
-                                            onChange={(e) => setConfig({ ...config, theme: e.target.value as any })}
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold focus:ring-1 focus:ring-primary focus:border-primary transition-all appearance-none"
-                                        >
-                                            <option value="dark">Dark (Noche)</option>
-                                            <option value="amoled">AMOLED (Negro Puro)</option>
-                                            <option value="light">Light (Claro)</option>
-                                        </select>
-                                    </div>
-                                </div>
+                            <div className="p-4 rounded-2xl bg-primary/20 text-primary shrink-0">
+                                <Palette className="w-8 h-8" />
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/5">
-                                <div className="space-y-6">
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Ancho de Portadas (Grid)</label>
-                                            <span className="text-xs font-black text-primary">{config.coverWidth || 120}px</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="80"
-                                            max="200"
-                                            step="10"
-                                            value={config.coverWidth || 120}
-                                            onChange={(e) => setConfig({ ...config, coverWidth: parseInt(e.target.value) })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Tamaño de Fuente Base</label>
-                                            <span className="text-xs font-black text-primary">{config.fontSize || 14}px</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="12"
-                                            max="20"
-                                            step="1"
-                                            value={config.fontSize || 14}
-                                            onChange={(e) => setConfig({ ...config, fontSize: parseInt(e.target.value) })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Offset Banner Serie (PX)</label>
-                                            <span className="text-xs font-black text-primary">{config.bannerContentOffset}px</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="-200"
-                                            max="200"
-                                            step="5"
-                                            value={config.bannerContentOffset}
-                                            onChange={(e) => setConfig({ ...config, bannerContentOffset: parseInt(e.target.value) })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Intensidad de Resplandor</label>
-                                            <span className="text-xs font-black text-primary">{Math.round((config.cardGlowIntensity || 0.5) * 100)}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="1"
-                                            step="0.05"
-                                            value={config.cardGlowIntensity || 0.5}
-                                            onChange={(e) => setConfig({ ...config, cardGlowIntensity: parseFloat(e.target.value) })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Color de Fondo (Hex + Alpha)</label>
-                                        <div className="flex items-center gap-3 p-2 bg-black/40 border border-white/10 rounded-xl">
-                                            <input
-                                                type="color"
-                                                value={config.backgroundColor.substring(0, 7)}
-                                                onChange={(e) => {
-                                                    const alpha = config.backgroundColor.length === 9 ? config.backgroundColor.substring(7, 9) : 'FF';
-                                                    setConfig({ ...config, backgroundColor: e.target.value + alpha });
-                                                }}
-                                                className="size-10 bg-transparent border-none p-0 cursor-pointer rounded-lg"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={config.backgroundColor}
-                                                onChange={(e) => setConfig({ ...config, backgroundColor: e.target.value })}
-                                                className="bg-transparent border-none text-xs font-mono text-white uppercase w-24 focus:ring-0"
-                                            />
-                                        </div>
-                                        <div className="mt-2 text-right">
-                                            <span className="text-[10px] font-black text-primary uppercase">Alpha: {Math.round((config.backgroundColor.length === 9 ? parseInt(config.backgroundColor.substring(7, 9), 16) : 255) / 2.55)}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="255"
-                                            value={config.backgroundColor.length === 9 ? parseInt(config.backgroundColor.substring(7, 9), 16) : 255}
-                                            onChange={(e) => {
-                                                const alpha = parseInt(e.target.value).toString(16).padStart(2, '0').toUpperCase();
-                                                setConfig({ ...config, backgroundColor: config.backgroundColor.substring(0, 7) + alpha });
-                                            }}
-                                            className="w-full accent-primary h-1 bg-white/10 rounded-lg appearance-none cursor-pointer mt-1"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Color de Tarjetas (Hex + Alpha)</label>
-                                        <div className="flex items-center gap-3 p-2 bg-black/40 border border-white/10 rounded-xl">
-                                            <input
-                                                type="color"
-                                                value={config.cardColor.substring(0, 7)}
-                                                onChange={(e) => {
-                                                    const alpha = config.cardColor.length === 9 ? config.cardColor.substring(7, 9) : 'FF';
-                                                    setConfig({ ...config, cardColor: e.target.value + alpha });
-                                                }}
-                                                className="size-10 bg-transparent border-none p-0 cursor-pointer rounded-lg"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={config.cardColor}
-                                                onChange={(e) => setConfig({ ...config, cardColor: e.target.value })}
-                                                className="bg-transparent border-none text-xs font-mono text-white uppercase w-24 focus:ring-0"
-                                            />
-                                        </div>
-                                        <div className="mt-2 text-right">
-                                            <span className="text-[10px] font-black text-primary uppercase">Alpha: {Math.round((config.cardColor.length === 9 ? parseInt(config.cardColor.substring(7, 9), 16) : 255) / 2.55)}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="255"
-                                            value={config.cardColor.length === 9 ? parseInt(config.cardColor.substring(7, 9), 16) : 255}
-                                            onChange={(e) => {
-                                                const alpha = parseInt(e.target.value).toString(16).padStart(2, '0').toUpperCase();
-                                                setConfig({ ...config, cardColor: config.cardColor.substring(0, 7) + alpha });
-                                            }}
-                                            className="w-full accent-primary h-1 bg-white/10 rounded-lg appearance-none cursor-pointer mt-1"
-                                        />
-                                    </div>
-
-                                    <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-center gap-4 group hover:bg-primary/10 transition-all cursor-default overflow-hidden relative">
-                                        <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12 group-hover:rotate-45 transition-transform">
-                                            <Eye className="w-12 h-12 text-primary" />
-                                        </div>
-                                        <div className="relative z-10 flex items-center gap-4">
-                                            <div className="p-2 rounded-xl bg-primary text-white shadow-lg shadow-primary/30">
-                                                <Eye className="w-5 h-5" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-black text-white uppercase tracking-tight">Vista Previa en Vivo</span>
-                                                <span className="text-[9px] text-gray-500 font-bold uppercase">Los usuarios verán estos cambios al navegar</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div className="flex-1">
+                                <h4 className="text-white font-black uppercase tracking-tight mb-1">Personalización Visual Movida</h4>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-relaxed">
+                                    Los ajustes de colores, transparencias, desenfoques y efectos visuales de la interfaz se han movido a la nueva pestaña
+                                    <span className="text-primary font-black ml-1 uppercase">"Interfaz"</span> en el menú principal del panel admin.
+                                </p>
                             </div>
+                            <button
+                                onClick={() => onNavigate?.('interface')}
+                                className="px-6 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all whitespace-nowrap"
+                            >
+                                Ir a Interfaz
+                            </button>
+                        </div>
+
+
+                        {/* Info Note about Interface section */}
+                        <div className="glass-panel p-8 rounded-2xl border border-primary/20 bg-primary/5 flex flex-col md:flex-row items-center gap-6 shadow-xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+                                <Palette className="w-16 h-16 text-primary" />
+                            </div>
+                            <div className="p-4 rounded-2xl bg-primary/20 text-primary shrink-0">
+                                <Palette className="w-8 h-8" />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-white font-black uppercase tracking-tight mb-1">Personalización Visual Movida</h4>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-relaxed">
+                                    Los ajustes de colores, transparencias, desenfoques y efectos visuales de la interfaz se han movido a la nueva pestaña
+                                    <span className="text-primary font-black ml-1 uppercase">"Interfaz"</span> en el menú principal del panel admin.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => onNavigate?.('interface')}
+                                className="px-6 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all whitespace-nowrap"
+                            >
+                                Ir a Interfaz
+                            </button>
                         </div>
                     </div>
                 </div>

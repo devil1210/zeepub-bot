@@ -49,6 +49,7 @@ class AccessResponse(BaseModel):
     role: Optional[str] = None
     hasLibraryAccess: bool = True
     canRequestBooks: bool = True
+    ui_exported_settings: List[str] = []
 
 
 class LevelUpdate(BaseModel):
@@ -295,9 +296,11 @@ async def check_user_access(
         username=access_info.get("username") or eff.get("username"),
         roles=access_info.get("roles") or eff.get("roles") or [],
         insignias=access_info.get("insignias") or eff.get("insignias") or [],
+        customStatus=eff.get("role"),
         role=eff.get("role"),
-        hasLibraryAccess=access_info.get("hasLibraryAccess", eff.get("has_library_access", True)),
-        canRequestBooks=access_info.get("canRequestBooks", eff.get("can_request_books", True))
+        hasLibraryAccess=eff.get("has_library_access", True),
+        canRequestBooks=eff.get("can_request_books", True),
+        ui_exported_settings=eff.get("ui_exported_settings", ["theme", "primaryColor", "fontSize"])
     )
 
 

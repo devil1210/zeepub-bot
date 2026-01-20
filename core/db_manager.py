@@ -85,7 +85,8 @@ class DatabaseManager:
                 ("force_settings", "BOOLEAN DEFAULT 0"),
                 ("banner_content_offset", "INTEGER DEFAULT 0"),
                 ("has_library_access", "BOOLEAN DEFAULT 1"),
-                ("can_request_books", "BOOLEAN DEFAULT 1")
+                ("can_request_books", "BOOLEAN DEFAULT 1"),
+                ("ui_exported_settings", "TEXT")
             ]
             for col_name, col_def in new_tier_cols:
                 if col_name not in tier_cols:

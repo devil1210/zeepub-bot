@@ -804,7 +804,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             "forceSettings": "force_settings",
             "bannerContentOffset": "banner_content_offset",
             "hasLibraryAccess": "has_library_access",
-            "canRequestBooks": "can_request_books"
+            "canRequestBooks": "can_request_books",
+            "ui_exported_settings": "ui_exported_settings"
         }
 
         

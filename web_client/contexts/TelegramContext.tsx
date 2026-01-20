@@ -60,6 +60,7 @@ interface TelegramContextType {
   // Level simulation for admins
   simulatedLevel: number | null;
   setSimulatedLevel: (levelId: number | null) => void;
+  uiExportedSettings: string[];
 }
 
 const TelegramContext = createContext<TelegramContextType | undefined>(undefined);
@@ -75,6 +76,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [showRecommendations, setShowRecommendations] = useState(true);
   const [extendedInfo, setExtendedInfo] = useState<TelegramExtendedInfo | null>(null);
   const [simulatedLevel, setSimulatedLevel] = useState<number | null>(null);
+  const [uiExportedSettings, setUiExportedSettings] = useState<string[]>(['theme', 'primaryColor', 'fontSize']);
   const { updateSettings } = useTheme();
 
   // Load simulated level from storage on mount
@@ -124,8 +126,14 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (response.ok) {
         const data = await response.json();
         setIsBetaTester(data.isBetaTester || data.isAdmin || false);
-        setCustomThemes(data.customThemes || data.isAdmin || false);
-        setShowRecommendations(data.showRecommendations);
+        setCustomThemes(data.custom_themes || false);
+        setShowRecommendations(data.show_recommendations !== false);
+
+        if (data.ui_exported_settings) {
+          setUiExportedSettings(data.ui_exported_settings);
+        }
+
+        // Update theme settings if server provided them (initial load or refresh):
         setExtendedInfo({
           nickname: data.nickname,
           name: data.name,
@@ -211,7 +219,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       refreshStatus,
       extendedInfo,
       simulatedLevel,
-      setSimulatedLevel: handleSetSimulatedLevel
+      setSimulatedLevel: handleSetSimulatedLevel,
+      uiExportedSettings
     }}>
 
       {children}
