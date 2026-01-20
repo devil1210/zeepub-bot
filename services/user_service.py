@@ -4,6 +4,7 @@ from datetime import datetime
 from config.config_settings import config
 from repositories.user_repository import user_repo
 from services.cache_service import AsyncTTLCache
+from services.settings_service import get_setting
 
 logger = logging.getLogger(__name__)
 
