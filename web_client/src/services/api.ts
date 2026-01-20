@@ -149,6 +149,7 @@ export const api = {
         bypassLimits?: boolean;
         betaTester?: boolean;
         isAdmin?: boolean;
+        level?: string;
         role?: string;
         nickname?: string;
         name?: string;
@@ -156,7 +157,6 @@ export const api = {
         roles?: string[];
         insignias?: string[];
         expiresAt?: string | null;
-        customStatus?: string;
     }) => rpc('admin_save_user_permissions', permissions),
 
     // User Audit History

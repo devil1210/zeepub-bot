@@ -45,7 +45,7 @@ class CommandHandlers:
         try:
             synced = await sync_user_from_env(uid, tg_user=update.effective_user)
             if synced:
-                logger.info(f"User {uid} auto-synced from ENV: role={synced.get('role')}")
+                logger.info(f"User {uid} auto-synced from ENV: level={synced.get('level')}")
         except Exception as e:
             logger.error(f"Error syncing user {uid} from ENV: {e}")
         
@@ -116,14 +116,11 @@ class CommandHandlers:
         # Publishers (ephemeral choice for next book). Admin-only users (not publishers)
         # will be handled separately (go directly to Evil). For users that are both
         # admin+publisher we still show the ephemeral choice here.
-        # Helper: Determine if user is a Publisher
-        # Logic: Nivel Staff AND Rol Publicador
-        from services.user_service import get_effective_user
         user_data_start = await get_effective_user(uid, tg_user=update.effective_user)
-        role_start = user_data_start.get("role", "free")
-        custom_status_start = user_data_start.get("custom_status")
+        level_start = user_data_start.get("level", "free")
+        role_start = user_data_start.get("role")
 
-        is_publisher = (role_start == "staff" and custom_status_start == "Publicador")
+        is_publisher = (level_start == "staff" and role_start == "Publicador")
 
         # Legacy fallback or Override: Check config list too?
         # User said "para esta nueva combinacion es...", implying strict definition.
@@ -252,7 +249,8 @@ class CommandHandlers:
             "free": "Lector 📚",
         }
 
-        role_key = user_data.get("role", "free")
+        level_key = user_data.get("level", "free")
+        role_label = user_data.get("role")
         status_label = user_data.get("status_label")
         expires_at = user_data.get("expires_at")
 
@@ -260,16 +258,16 @@ class CommandHandlers:
         # Nivel = System Role (Admin, Staff, etc.)
         # Rol = Custom Label (Maquetador, etc)
 
-        system_role_text = roles_display.get(role_key, "Lector")
-        if role_key == "banned":
+        system_role_text = roles_display.get(level_key, "Lector")
+        if level_key == "banned":
             system_role_text = "🚫 Baneado"
 
         # Max dl logic
-        if role_key in ("admin", "staff", "premium", "banned"):
+        if level_key in ("admin", "staff", "premium", "banned"):
             max_dl = None
-        elif role_key == "vip":
+        elif level_key == "vip":
             max_dl = config.VIP_DOWNLOADS_PER_DAY
-        elif role_key == "white":
+        elif level_key == "white":
             max_dl = config.WHITELIST_DOWNLOADS_PER_DAY
         else:
             max_dl = config.MAX_DOWNLOADS_PER_DAY
@@ -278,7 +276,7 @@ class CommandHandlers:
         used = st.get("downloads_used", 0)
 
         if max_dl is None:
-            if role_key == "banned":
+            if level_key == "banned":
                 left_text = "⛔ Acceso denegado"
             else:
                 left_text = "✅ Descargas ilimitadas"
@@ -305,8 +303,8 @@ class CommandHandlers:
         version = get_version_string()
 
         if expires_at:
-            fmt = "%d/%m/%Y %H:%M" if role_key == "banned" else "%d/%m/%Y"
-            label = "Castigo hasta" if role_key == "banned" else "Vence"
+            fmt = "%d/%m/%Y %H:%M" if level_key == "banned" else "%d/%m/%Y"
+            label = "Castigo hasta" if level_key == "banned" else "Vence"
             expires_str = expires_at.strftime(fmt)
         else:
             expires_str = None  # Ensure it is None so {{if}} sees it as False
@@ -475,7 +473,7 @@ class CommandHandlers:
         from services.user_service import get_effective_user
 
         user_info = await get_effective_user(uid)
-        if user_info.get("role") == "banned":
+        if user_info.get("level") == "banned":
             expires_at = user_info.get("expires_at")
 
             cms = context.application.plugin_manager.get_plugin("custom_messages")

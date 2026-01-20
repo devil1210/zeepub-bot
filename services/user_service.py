@@ -13,9 +13,9 @@ user_cache = AsyncTTLCache(ttl_seconds=300)
 
 async def upsert_user(
     telegram_id: int,
-    role: str,
+    level: str,
     duration_months: Optional[int] = None,
-    custom_status: Optional[str] = None,
+    role: Optional[str] = None,
     created_by: Optional[int] = None,
     duration_days: Optional[int] = None,
     nickname: Optional[str] = None,
@@ -41,7 +41,7 @@ async def upsert_user(
         expires_at = now + timedelta(days=days)
 
     await user_repo.upsert(
-        telegram_id, role, expires_at, custom_status, created_by, nickname, name, username, roles, level_id
+        telegram_id, level, expires_at, role, created_by, nickname, name, username, roles, level_id=level_id
     )
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
@@ -51,18 +51,18 @@ async def remove_user(telegram_id: int):
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
-async def update_user_status_label(telegram_id: int, new_label: Optional[str]) -> None:
+async def update_user_status_label(telegram_id: int, new_role: Optional[str]) -> None:
     # Check if user exists first
     info = await get_user_info(telegram_id)
     if not info:
-        # User not in DB, retrieve effective role (e.g. from config) and upsert
+        # User not in DB, retrieve effective level (e.g. from config) and upsert
         eff = await get_effective_user(telegram_id)
-        role = eff.get("role", "free")
-        # Upsert with new label
-        await upsert_user(telegram_id, role=str(role), custom_status=new_label)
+        level = eff.get("level", "free")
+        # Upsert with new role (functional label)
+        await upsert_user(telegram_id, level=str(level), role=new_role)
     else:
-        # Just update
-        await user_repo.update_status(telegram_id, new_label)
+        # Just update the role column (the functional role)
+        await user_repo.update_status(telegram_id, new_role)
 
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
@@ -71,11 +71,11 @@ async def update_user_nickname(telegram_id: int, new_nickname: Optional[str]) ->
     # Check if user exists first
     info = await get_user_info(telegram_id)
     if not info:
-        # User not in DB, retrieve effective role and upsert
+        # User not in DB, retrieve effective level and upsert
         eff = await get_effective_user(telegram_id)
-        role = eff.get("role", "free")
+        level = eff.get("level", "free")
         # Upsert with new nickname
-        await upsert_user(telegram_id, role=str(role), nickname=new_nickname)
+        await upsert_user(telegram_id, level=str(level), nickname=new_nickname)
     else:
         await user_repo.update_nickname(telegram_id, new_nickname)
 
@@ -97,9 +97,9 @@ async def get_effective_user(
 ) -> Dict[str, Any]:
 
     """
-    Determina el rol efectivo del usuario y estado, considerando DB y Config (legacy).
-    Retorna un dict con keys: role, status_label, expires_at (puede ser None).
-    Roles: 'admin', 'staff', 'premium', 'vip', 'white', 'free'.
+    Determina el nivel efectivo del usuario y estado, considerando DB y Config (legacy).
+    Retorna un dict con keys: level (tier), role (label), status_label, expires_at.
+    Tiers (level): 'admin', 'staff', 'premium', 'vip', 'white', 'free'.
     """
     # 0. Check Cache (Bypass if simulating)
     cache_key = f"user_effective:{uid}"
@@ -130,7 +130,8 @@ async def get_effective_user(
     global_ui = json.loads(global_raw)
 
     result = {
-        "role": "free",
+        "level": "free",
+        "role": None, # Functional role (e.g. Publicador)
         "status_label": "Lector",
         "expires_at": None,
         "nickname": nickname_from_tg,
@@ -148,7 +149,8 @@ async def get_effective_user(
         base_settings.update(personal_settings)
         
         result.update({
-            "role": "admin",
+            "level": "admin",
+            "role": info.get("role") if info else None,
             "status_label": "Admin",
             "expires_at": None,
             "nickname": info.get("nickname") if info else None,
@@ -170,7 +172,7 @@ async def get_effective_user(
         if expires_at and expires_at < datetime.now():
             # Expired
             result.update({
-                "role": "free",
+                "level": "free",
                 "status_label": "Expirado",
                 "expires_at": expires_at,
                 "has_mini_app_access": False,
@@ -185,8 +187,9 @@ async def get_effective_user(
             final_settings.update(personal_settings)
 
             result.update({
-                "role": role_str,
-                "status_label": info.get("custom_status") or role_str.capitalize(),
+                "level": level_str,
+                "role": info.get("role"),
+                "status_label": info.get("role") or level_str.capitalize(),
                 "expires_at": expires_at,
                 "nickname": info.get("nickname") or result.get("nickname"),
                 "name": info.get("name") or result.get("name"),
@@ -209,27 +212,37 @@ async def get_effective_user(
         result["is_admin_db"] = access_info["isAdmin"]
         result["level_info"] = access_info["level"]
 
-        # Override role with level name for consistent UI settings
-        level_name = access_info["level"]["name"].lower()
-        if level_name == "administrador":
-            result["role"] = "admin"
-        elif level_name == "lector":
-            result["role"] = "free"
-        elif level_name == "patrocinador":
-            result["role"] = "white"
-        else:
-            result["role"] = level_name
+        # Map Level ID to standardized role key (more stable than names)
+        # IDs: 1:admin, 2:staff, 3:premium, 4:vip, 5:white, 6:free
+        lvl_id_raw = access_info["level"].get("id")
+        try:
+            lvl_id = int(lvl_id_raw) if lvl_id_raw is not None else 6
+        except (ValueError, TypeError):
+            lvl_id = 6
 
-        # Priority: level name as status label if no custom status
-        if not info or not info.get("custom_status"):
+        level_to_role = {
+            1: "admin",
+            2: "staff",
+            3: "premium",
+            4: "vip",
+            5: "white",
+            6: "free"
+        }
+        
+        if lvl_id in level_to_role:
+            result["level"] = level_to_role[lvl_id]
+        else:
+            # Fallback to normalized level name if ID not in standard map
+            result["level"] = access_info["level"]["name"].lower().strip()
+
+        # Priority: level name as status label if no role/label defined
+        if not info or not info.get("role"):
             result["status_label"] = access_info["level"]["name"]
 
-        # Admin check
         is_hard_admin = access_info["isAdmin"] or uid in config.ADMIN_USERS
         if is_hard_admin:
             result["has_mini_app_access"] = True
-            if result["role"] in ("free", "admin"):
-                result["role"] = "admin"
+            result["level"] = "admin" # Always force admin level for hard admins
             
         # Implement forceSettings logic
         level_settings = access_info["level"]
@@ -258,8 +271,9 @@ async def get_effective_user(
     # 4. Legacy Config Fallbacks (non-admins)
     elif uid in config.FACEBOOK_PUBLISHERS:
         result = {
-            "role": "staff",
-            "status_label": "Publisher",
+            "level": "staff",
+            "role": "Publicador",
+            "status_label": "Publicador",
             "expires_at": None,
             "nickname": None,
             "has_mini_app_access": True,
@@ -267,7 +281,7 @@ async def get_effective_user(
 
     elif uid in config.PREMIUM_LIST:
         result = {
-            "role": "premium",
+            "level": "premium",
             "status_label": "Premium (Legacy)",
             "expires_at": None,
             "nickname": None,
@@ -276,7 +290,7 @@ async def get_effective_user(
 
     elif uid in config.VIP_LIST:
         result = {
-            "role": "vip",
+            "level": "vip",
             "status_label": "VIP (Legacy)",
             "expires_at": None,
             "nickname": None,
@@ -285,7 +299,7 @@ async def get_effective_user(
 
     elif uid in config.WHITELIST:
         result = {
-            "role": "white",
+            "level": "white",
             "status_label": "Patrocinador (Legacy)",
             "expires_at": None,
             "nickname": None,
@@ -306,16 +320,17 @@ async def get_effective_user(
             result["status_label"] = f"Simulando: {sim_level['name']}"
             result["level_info"] = sim_level
             
-            # Map name to role
-            level_name = sim_level["name"].lower()
-            if level_name == "administrador":
-                result["role"] = "admin"
-            elif level_name == "lector":
-                result["role"] = "free"
-            elif level_name == "patrocinador":
-                result["role"] = "white"
+            # Fallback for simulated level role
+            lvl_id_sim = sim_level.get("id")
+            try:
+                sid = int(lvl_id_sim) if lvl_id_sim is not None else 6
+            except:
+                sid = 6
+                
+            if sid in level_to_role:
+                result["level"] = level_to_role[sid]
             else:
-                result["role"] = level_name
+                result["level"] = sim_level["name"].lower().strip()
                 
             # Simulación: Priorizamos los ajustes del nivel para "ver" la identidad del rango
             # Si forceSettings es True, se aplicarán siempre. Si es False, aquí los forzamos
@@ -355,11 +370,11 @@ async def get_effective_user(
 
 
 
-async def get_users_by_role(role: str) -> list[Dict[str, Any]]:
+async def get_users_by_level(level: str) -> list[Dict[str, Any]]:
     """
-    Retorna lista de usuarios con un rol específico desde la DB.
+    Retorna lista de usuarios con un nivel específico desde la DB.
     """
-    return await user_repo.get_by_role(role)
+    return await user_repo.get_by_level(level)
 
 
 async def upgrade_user_level(telegram_id: int, new_level_name: str) -> None:
@@ -442,7 +457,7 @@ async def update_user_setting(telegram_id: int, key: str, value: Any) -> Dict[st
     info = await get_user_info(telegram_id)
     if not info:
         eff = await get_effective_user(telegram_id)
-        await upsert_user(telegram_id, role=str(eff.get("role", "free")))
+        await upsert_user(telegram_id, level=str(eff.get("level", "free")))
 
     await user_repo.update_user_settings(telegram_id, current_settings)
     await user_cache.invalidate(f"user_effective:{telegram_id}")
@@ -469,45 +484,45 @@ async def sync_user_from_env(telegram_id: int, tg_user=None) -> Optional[Dict]:
     Returns:
         Dict con rol asignado o None si no cambió nada
     """
-    # Determinar rol según ENV
+    # Determinar nivel según ENV
+    target_level = None
     target_role = None
-    custom_status = None
     
     if telegram_id in config.ADMIN_USERS:
-        target_role = "admin"
+        target_level = "admin"
     elif telegram_id in config.FACEBOOK_PUBLISHERS:
-        target_role = "staff"
-        custom_status = "Publicador"
+        target_level = "staff"
+        target_role = "Publicador"
     elif telegram_id in config.PREMIUM_LIST:
-        target_role = "premium"
+        target_level = "premium"
     elif telegram_id in config.VIP_LIST:
-        target_role = "vip"
+        target_level = "vip"
     elif telegram_id in config.WHITELIST:
-        target_role = "white"
+        target_level = "white"
     
-    if not target_role:
+    if not target_level:
         return None  # No está en ninguna lista del ENV
     
-    # Obtener usuario actual de Supabase
+    # Obtener usuario actual
     current_user = await get_effective_user(telegram_id, tg_user=tg_user, use_cache=False)
-    current_role = current_user.get("role", "free")
-    current_custom_status = current_user.get("custom_status")
+    current_level = current_user.get("level", "free")
+    current_role = current_user.get("role")
     
     # Verificar si necesita actualización
     needs_update = False
-    if current_role != target_role:
+    if current_level != target_level:
         needs_update = True
-        logger.info(f"Auto-syncing user {telegram_id} from ENV: {current_role} -> {target_role}")
-    elif custom_status and current_custom_status != custom_status:
+        logger.info(f"Auto-syncing user {telegram_id} from ENV (Level): {current_level} -> {target_level}")
+    elif target_role and current_role != target_role:
         needs_update = True
-        logger.info(f"Updating custom_status for user {telegram_id}: {current_custom_status} -> {custom_status}")
+        logger.info(f"Updating functional role for user {telegram_id}: {current_role} -> {target_role}")
     
     if needs_update:
-        # Actualizar rol en Supabase (sin expiración, es permanente desde ENV)
+        # Actualizar en DB
         await upsert_user(
             telegram_id=telegram_id,
+            level=target_level,
             role=target_role,
-            custom_status=custom_status,
             duration_months=None,  # Permanente
         )
         

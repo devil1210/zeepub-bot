@@ -137,7 +137,7 @@ class UserManagerPlugin(BasePlugin):
             if len(context.args) > 2:
                 duration_arg_idx = 2
 
-        valid_roles = [
+        valid_levels = [
             "white",
             "vip",
             "premium",
@@ -147,9 +147,9 @@ class UserManagerPlugin(BasePlugin):
             "free",
             "user",
         ]
-        if role not in valid_roles:
+        if role not in valid_levels:
             await update.message.reply_text(
-                f"❌ Rol inválido. Use: {', '.join(valid_roles)}",
+                f"❌ Nivel inválido. Use: {', '.join(valid_levels)}",
                 message_thread_id=thread_id,
             )
             return
@@ -173,7 +173,7 @@ class UserManagerPlugin(BasePlugin):
 
         await upsert_user(
             target_id,
-            role,
+            level=role,
             duration_months=duration,
             created_by=uid,
             duration_days=duration_days,
@@ -227,7 +227,7 @@ class UserManagerPlugin(BasePlugin):
     async def set_rol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /set_rol <id> <label>
-        Cambia el 'custom_status' de un usuario (ej: 'El Chambeador', 'Editor Jefe').
+        Cambia el 'role' (label) de un usuario (ej: 'El Chambeador', 'Editor Jefe').
         Solo para Admins.
         """
         uid = update.effective_user.id
@@ -256,13 +256,13 @@ class UserManagerPlugin(BasePlugin):
             args_start_idx = 1
             if len(context.args) < 2:
                 await msg.reply_text(
-                    "❌ Indica el label/status.", message_thread_id=thread_id
+                    "❌ Indica el rol/label.", message_thread_id=thread_id
                 )
                 return
         else:
             if len(context.args) < 1:
                 await msg.reply_text(
-                    "❌ Al responder, indica el label/status.",
+                    "❌ Al responder, indica el rol/label.",
                     message_thread_id=thread_id,
                 )
                 return
@@ -276,11 +276,11 @@ class UserManagerPlugin(BasePlugin):
         if len(context.args) == args_start_idx + 1 and first_word in delete_keywords:
             new_label = None
             success_msg = (
-                f"✅ Status eliminado para <code>{target_id}</code> (vuelve a default)."
+                f"✅ Rol/label eliminado para <code>{target_id}</code> (vuelve a default)."
             )
         else:
             new_label = " ".join(context.args[args_start_idx:])
-            success_msg = f"✅ Status actualizado para <code>{target_id}</code> ({target_name}): <b>{new_label}</b>"
+            success_msg = f"✅ Rol/label actualizado para <code>{target_id}</code> ({target_name}): <b>{new_label}</b>"
 
         try:
             await update_user_status_label(target_id, new_label)
@@ -478,10 +478,10 @@ class UserManagerPlugin(BasePlugin):
             if len(context.args) > 2:
                 duration_arg_idx = 2
 
-        valid_roles = ["white", "vip", "premium", "staff", "admin"]
-        if role not in valid_roles:
+        valid_levels = ["white", "vip", "premium", "staff", "admin"]
+        if role not in valid_levels:
             await update.message.reply_text(
-                f"❌ Rol inválido. Use: {', '.join(valid_roles)}",
+                f"❌ Nivel inválido. Use: {', '.join(valid_levels)}",
                 message_thread_id=thread_id,
             )
             return
@@ -494,7 +494,7 @@ class UserManagerPlugin(BasePlugin):
                 duration_days = int(val_str) * 30  # meses -> días
 
         # Update user
-        result = await upsert_user(target_id, role, duration_days)
+        result = await upsert_user(target_id, level=role, duration_days=duration_days)
 
         # Send notification to user
         cms = context.application.plugin_manager.get_plugin("custom_messages")

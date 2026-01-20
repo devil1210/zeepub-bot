@@ -158,7 +158,7 @@ async def handle_bot_info(data: Dict[str, Any], user_data: Dict[str, Any]):
 async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Devuelve el nivel del usuario e información de descargas (límites, etc)."""
     user_id = user_data.get("user_id")
-    role_key = user_data.get("role", "free")
+    level_key = user_data.get("level", "free")
     st = state_manager.get_user_state(user_id)
 
     roles_display = {
@@ -171,14 +171,15 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
         "banned": "🚫 Baneado",
     }
 
-    system_role_text = roles_display.get(role_key, "Lector")
-
+    # Prioritize label from user_data (which comes from get_effective_user)
+    system_role_text = user_data.get("status_label") or roles_display.get(level_key, "Lector")
+    
     # Determine max downloads
-    if role_key in ("admin", "staff", "premium", "banned"):
+    if level_key in ("admin", "staff", "premium", "banned"):
         max_dl = None
-    elif role_key == "vip":
+    elif level_key == "vip":
         max_dl = config.VIP_DOWNLOADS_PER_DAY
-    elif role_key == "white":
+    elif level_key == "white":
         max_dl = config.WHITELIST_DOWNLOADS_PER_DAY
     else:
         max_dl = config.MAX_DOWNLOADS_PER_DAY
@@ -198,7 +199,8 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
         "user": {
             "id": user_id,
             "username": user_data.get("nickname") or f"User_{user_id}",
-            "role": role_key,
+            "level": level_key,
+            "role": user_data.get("role"), # Now returns the functional role label
             "status_label": system_role_text,
             "has_library_access": (user_data.get("has_library_access", True) is not False) and (user_data.get("level_info", {}).get("hasLibraryAccess", True) is not False),
             "can_request_books": (user_data.get("can_request_books", True) is not False) and (user_data.get("level_info", {}).get("canRequestBooks", True) is not False),
@@ -210,9 +212,9 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
             }
         },
         "timeUntilReset": f"{hours}h {minutes}m",
-        "hasUnlimitedDownloads": max_dl is None and role_key != "banned",
-        "isBanned": role_key == "banned",
-        "isAdmin": role_key == "admin",
+        "hasUnlimitedDownloads": max_dl is None and level_key != "banned",
+        "isBanned": level_key == "banned",
+        "isAdmin": level_key == "admin",
     }
 
 
@@ -315,8 +317,8 @@ async def handle_remove_rating(data: Dict[str, Any], user_data: Dict[str, Any]):
 
 async def handle_save_badge_config(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda la configuración global de los badges (solo Admin)."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(
             status_code=403,
             detail="Solo administradores pueden guardar configuración global",
@@ -413,9 +415,9 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
 
 
 async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
-    """Gestiona configuraciones de UI (globales, por rol o personales)."""
+    """Gestiona configuraciones de UI (globales, por nivel o personales)."""
     user_id = user_data.get("user_id")
-    user_role = user_data.get("role", "free")
+    user_level = user_data.get("level", "free")
     sub_action = data.get("subAction", "get")
 
     if sub_action == "get":
@@ -511,7 +513,7 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
             await user_repo.update_user_settings(user_id, settings_obj)
             return {"success": True, "message": "Configuración personal guardada"}
         else:
-            if user_role != "admin":
+            if user_level != "admin":
                 raise HTTPException(
                     status_code=403,
                     detail="Solo administradores pueden cambiar la configuración global",
@@ -638,8 +640,8 @@ async def handle_rating_breakdown(data: Dict[str, Any], user_data: Dict[str, Any
 
 async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Calcula y devuelve estadísticas globales para el Panel Admin."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
 
     # 1. Dynamic System Metrics
@@ -794,8 +796,8 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
 
 async def handle_admin_get_tiers(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene todos los niveles y su configuración."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     levels = await user_repo.get_all_levels()
@@ -1547,7 +1549,7 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
         
         # Check other permission changes
         fields_to_track = {
-            "customStatus": "custom_status",
+            "role": "role",
             "nickname": "nickname",
             "name": "name",
             "username": "username",
@@ -1577,10 +1579,9 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
         # Save to database
         await user_repo.upsert(
             telegram_id=int(user_id),
-            role=role,
-            level_id=level_id,
+            level=data.get("level", "free"), # Assuming level is passed or use role if it means tier
             expires_at=expires_at or existing.get("expires_at"),
-            custom_status=data.get("customStatus", existing.get("custom_status")),
+            role=data.get("role", existing.get("role")),
             nickname=data.get("nickname", existing.get("nickname")),
             name=data.get("name", existing.get("name")),
             username=data.get("username", existing.get("username")),
@@ -1588,7 +1589,8 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             insignias=new_insignias,
             created_by=int(user_data.get("telegram_id", 0)),
             has_library_access=data.get("hasLibraryAccess"),
-            can_request_books=data.get("canRequestBooks")
+            can_request_books=data.get("canRequestBooks"),
+            level_id=level_id
         )
         
         # betaTester is handled separately if needed, or we could add it to upsert too
@@ -1622,8 +1624,8 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
 
 async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene los permisos de un usuario específico."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     user_id = data.get("userId")
@@ -1648,12 +1650,12 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
                 "username": raw_user.get("username"),
                 "name": raw_user.get("name"),
                 "nickname": raw_user.get("nickname"),
-                "role": raw_user.get("role", "free"),
+                "level": raw_user.get("level", "free"),
                 "roles": raw_user.get("roles") or [],
                 "levelId": access_info["level"]["id"],
                 "levelName": access_info["level"]["name"],
                 "levelColor": access_info["level"]["color"],
-                "customStatus": raw_user.get("custom_status"),
+                "role": raw_user.get("role"),
                 "expiresAt": raw_user["expires_at"].isoformat() if raw_user.get("expires_at") else None,
                 "isAdmin": access_info["isAdmin"],
                 "betaTester": raw_user.get("beta_tester", access_info["isBetaTester"]),
@@ -1674,8 +1676,8 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
     Find all duplicate books grouped by content_hash.
     Returns duplicate groups with file info and statistics.
     """
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     try:
@@ -1769,8 +1771,8 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
 
 async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Delete duplicate books safely, ensuring at least one copy remains."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     book_ids = data.get("book_ids", [])
@@ -1879,8 +1881,8 @@ async def handle_update_user_setting(data: Dict[str, Any], user_data: Dict[str, 
 
 async def handle_get_user_audit_history(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene el historial de cambios de un usuario."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     user_id = data.get("userId")
@@ -1911,8 +1913,8 @@ async def handle_get_user_audit_history(data: Dict[str, Any], user_data: Dict[st
         
 async def handle_admin_get_recent_audit_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene los cambios recientes en el sistema."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     try:

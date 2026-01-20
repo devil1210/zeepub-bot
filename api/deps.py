@@ -49,7 +49,7 @@ async def get_current_user_data(
     Dependency that returns the full effective user data.
     """
     if user_id == 0:
-        return {"user_id": 0, "role": "anonymous", "has_mini_app_access": False}
+        return {"user_id": 0, "level": "anonymous", "role": None, "has_mini_app_access": False}
 
     # Extract user metadata from initData to allow nickname sync
     init_data = x_telegram_init_data or x_telegram_data
@@ -79,7 +79,7 @@ async def require_admin(user_data: Dict[str, Any] = Depends(get_current_user_dat
     Dependency that enforces admin role.
     Allows real admins even if they are currently simulating another level.
     """
-    if user_data.get("role") != "admin" and not user_data.get("is_real_admin"):
+    if user_data.get("level") != "admin" and not user_data.get("is_real_admin"):
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return user_data
 
@@ -90,7 +90,7 @@ async def require_mini_app_access(
     """
     Dependency that enforces Mini App access permissions.
     """
-    if not user_data.get("has_mini_app_access") and user_data.get("role") != "admin":
+    if not user_data.get("has_mini_app_access") and user_data.get("level") != "admin":
         raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.",

@@ -46,6 +46,7 @@ class AccessResponse(BaseModel):
     roles: List[str] = []
     insignias: List[str] = []
     customStatus: Optional[str] = None
+    role: Optional[str] = None
     hasLibraryAccess: bool = True
     canRequestBooks: bool = True
 
@@ -72,7 +73,7 @@ async def handle_bot_request(
     Dispatches actions: search, download, status, etc.
     """
     user_id = user_data.get("user_id", 0)
-    user_role = user_data.get("role", "free")
+    user_level = user_data.get("level", "free")
     # Store for further use
     user_effective = user_data
 
@@ -92,7 +93,7 @@ async def handle_bot_request(
             status_code=403, detail="Tu nivel de usuario no tiene acceso a la Mini App"
         )
 
-    logger.info(f"Miniapp action: {action} User: {user_id} Role: {user_role}")
+    logger.info(f"Miniapp action: {action} User: {user_id} Level: {user_level}")
 
     try:
         # Mapping of actions to their respective handlers
@@ -216,10 +217,10 @@ async def check_user_access(
     if not access_info:
         # Si no existe en la tabla de niveles, creamos registro.
         # Si get_effective_user ya sabe que es staff/admin/premium, usamos ese nivel.
-        role = eff.get("role", "free")
+        level_tier = eff.get("level", "free")
         # El nivel id por defecto para free es 6 (Lector)
         # IDs mapping: Admin=1, Staff=2, Premium=3, VIP=4, Patrocinador=5, Lector=6
-        role_to_level = {
+        level_to_tier_id = {
             "admin": 1,
             "staff": 2,
             "premium": 3,
@@ -227,10 +228,10 @@ async def check_user_access(
             "white": 5,
             "free": 6,
         }
-        level_id = role_to_level.get(role, 6)
+        level_id = level_to_tier_id.get(level_tier, 6)
 
         logger.info(
-            f"User {uid} not found in user_levels. Role effective: {role}. Creating entry with Level ID {level_id}."
+            f"User {uid} not found in user_levels. Level effective: {level_tier}. Creating entry with Level ID {level_id}."
         )
         await user_repo.create_minimal_user(uid, level_id=level_id)
         access_info = await user_repo.get_access_info(uid)
@@ -243,7 +244,7 @@ async def check_user_access(
                 id="6", name="Lector", priority=1, color="#9E9E9E", hasAccess=False
             ),
             hasAccess=eff.get("has_mini_app_access", False),
-            isAdmin=(eff.get("role") == "admin"),
+            isAdmin=(eff.get("level") == "admin"),
         )
 
     # 3. Determinar flags finales mezclando ambos sistemas
@@ -253,8 +254,8 @@ async def check_user_access(
     # - Tiene acceso explícito por su nivel de DB
     # - Tiene acceso explícito por get_effective_user (fallbacks de config)
 
-    is_admin = (eff.get("role") == "admin") or access_info.get("isAdmin", False)
-    is_staff = eff.get("role") == "staff"
+    is_admin = (eff.get("level") == "admin") or access_info.get("isAdmin", False)
+    is_staff = eff.get("level") == "staff"
 
     # Priority: Roles admin/staff TRUMP level restrictions
     has_access = (
@@ -294,7 +295,7 @@ async def check_user_access(
         username=access_info.get("username") or eff.get("username"),
         roles=access_info.get("roles") or eff.get("roles") or [],
         insignias=access_info.get("insignias") or eff.get("insignias") or [],
-        customStatus=eff.get("custom_status") or access_info.get("custom_status"),
+        role=eff.get("role"),
         hasLibraryAccess=access_info.get("hasLibraryAccess", eff.get("has_library_access", True)),
         canRequestBooks=access_info.get("canRequestBooks", eff.get("can_request_books", True))
     )

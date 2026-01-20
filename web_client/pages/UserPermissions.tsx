@@ -45,13 +45,13 @@ interface PermissionsState {
   bypassLimits: boolean;
   betaTester: boolean;
   isAdmin: boolean;
+  level: string;
   role: string;
   nickname: string;
   name: string;
   username: string;
   insignias: string[];
   expiresAt: string | null;
-  customStatus: string;
 }
 
 interface Level {
@@ -94,13 +94,13 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
     bypassLimits: false,
     betaTester: false,
     isAdmin: false,
-    role: userData?.level === 'Administrador' ? 'admin' : 'free',
+    level: userData?.level === 'Administrador' ? 'admin' : 'free',
     nickname: '',
     name: '',
     username: '',
     insignias: [],
     expiresAt: null,
-    customStatus: '',
+    role: '',
   });
 
   // Audit history state
@@ -157,13 +157,13 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 bypassLimits: res.user.bypassLimits ?? false,
                 betaTester: res.user.betaTester ?? false,
                 isAdmin: res.user.isAdmin ?? false,
-                role: res.user.role || 'free',
+                level: res.user.level || 'free',
                 nickname: res.user.nickname || '',
                 name: res.user.name || '',
                 username: res.user.username || '',
                 insignias: Array.isArray(res.user.insignias) ? res.user.insignias : [],
                 expiresAt: res.user.expiresAt || null,
-                customStatus: res.user.customStatus || '',
+                role: res.user.role || '',
                 hasLibraryAccess: res.user.hasLibraryAccess ?? true,
                 canRequestBooks: res.user.canRequestBooks ?? true,
               };
@@ -254,7 +254,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
         // Load role, bypassLimits, betaTester etc based on level defaults
         setPermissions(prev => ({
           ...prev,
-          role: tier.name.toLowerCase() === 'administrador' ? 'admin' : (prev.role === 'admin' ? 'admin' : 'free'),
+          level: tier.name.toLowerCase() === 'administrador' ? 'admin' : (prev.level === 'admin' ? 'admin' : 'free'),
           isAdmin: tier.name.toLowerCase() === 'administrador' || prev.isAdmin,
           bypassLimits: tier.dailyDownloads === -1,
           betaTester: tier.earlyAccess || false,
@@ -294,7 +294,8 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           bypassLimits: tier.dailyDownloads === -1,
           betaTester: tier.earlyAccess || false,
           isAdmin: tier.name.toLowerCase() === 'administrador',
-          role: tier.name.toLowerCase() === 'administrador' ? 'admin' : 'free',
+          level: tier.name.toLowerCase() === 'administrador' ? 'admin' : 'free',
+          role: '',
         });
       }
     } catch (err) {
@@ -319,13 +320,13 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
         bypassLimits: permissions.bypassLimits,
         betaTester: permissions.betaTester,
         isAdmin: permissions.isAdmin,
+        level: permissions.level,
         role: permissions.role,
         nickname: permissions.nickname,
         name: permissions.name,
         username: permissions.username,
         insignias: permissions.insignias,
         expiresAt: permissions.expiresAt,
-        customStatus: permissions.customStatus,
       });
 
       if (res.success) {
@@ -644,14 +645,14 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                     />
                   </div>
 
-                  {/* Custom Status */}
+                  {/* Functional Role */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Estado Personalizado</label>
+                    <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Rol / Etiqueta</label>
                     <input
                       type="text"
-                      value={permissions.customStatus}
-                      onChange={(e) => setPermissions({ ...permissions, customStatus: e.target.value })}
-                      placeholder="Ej: Miembro Fundador"
+                      value={permissions.role}
+                      onChange={(e) => setPermissions({ ...permissions, role: e.target.value })}
+                      placeholder="Ej: Publicador, Maquetador"
                       className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white focus:ring-primary focus:border-primary"
                     />
                   </div>

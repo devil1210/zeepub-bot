@@ -27,7 +27,8 @@ export interface UserStatus {
   user: {
     id: number;
     username: string;
-    role: string;
+    level: string;
+    role: string | null;
     status_label: string;
     has_library_access: boolean;
     can_request_books: boolean;
@@ -186,8 +187,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const isRealAdmin = (status as any)?.user?.is_real_admin || (status?.user?.role === 'admin' && simulatedLevel === null);
-  const isAdmin = status?.user?.role === 'admin';
+  const isRealAdmin = (status as any)?.user?.is_real_admin || (status?.user?.level === 'admin' && simulatedLevel === null);
+  const isAdmin = status?.user?.level === 'admin';
 
 
   // Admins are always beta testers
