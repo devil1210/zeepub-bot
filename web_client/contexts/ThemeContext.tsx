@@ -51,30 +51,101 @@ const defaultSettings: ThemeSettings = {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Helper functions for CloudStorage cache
+const CACHE_KEY = 'zeepub_theme_cache';
+
+const loadFromCloudStorage = async (): Promise<{ settings: ThemeSettings; version: number } | null> => {
+  try {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.CloudStorage) {
+      return new Promise((resolve) => {
+        window.Telegram.WebApp.CloudStorage.getItem(CACHE_KEY, (error, result) => {
+          if (error || !result) {
+            resolve(null);
+            return;
+          }
+          try {
+            resolve(JSON.parse(result));
+          } catch {
+            resolve(null);
+          }
+        });
+      });
+    }
+
+    // Fallback to localStorage
+    const cached = localStorage.getItem(CACHE_KEY);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveToCloudStorage = async (settings: ThemeSettings, version: number): Promise<void> => {
+  const cacheData = JSON.stringify({ settings, version, timestamp: Date.now() });
+
+  try {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.CloudStorage) {
+      return new Promise((resolve) => {
+        window.Telegram.WebApp.CloudStorage.setItem(CACHE_KEY, cacheData, () => {
+          resolve();
+        });
+      });
+    }
+
+    // Fallback to localStorage
+    localStorage.setItem(CACHE_KEY, cacheData);
+  } catch (e) {
+    console.error("Failed to save theme cache", e);
+  }
+};
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Use local state instead of CloudStorage to avoid flickering
+  // Use local state with smart caching
   const [settings, setSettings] = React.useState<ThemeSettings>(defaultSettings);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [settingsVersion, setSettingsVersion] = React.useState<number>(0);
 
-  // Load from backend on mount (single source of truth)
+  // Load from backend with smart caching
   useEffect(() => {
-    const loadFromBackend = async () => {
+    const loadWithCache = async () => {
       try {
         const { api } = await import('../src/services/api');
+
+        // 1. Try to load from CloudStorage first (instant)
+        const cached = await loadFromCloudStorage();
+        if (cached) {
+          setSettings(cached.settings);
+          setSettingsVersion(cached.version || 0);
+          setIsLoading(false); // Show UI immediately with cached data
+        }
+
+        // 2. Check backend version
         const backendSettings = await api.getUiSettings();
+
         if (backendSettings) {
-          // Backend is the authority. We use defaultSettings as base, then apply backend on top.
-          const merged = { ...defaultSettings, ...backendSettings };
-          setSettings(merged);
+          const backendVersion = backendSettings.ui_version || backendSettings.last_updated || 0;
+
+          // 3. Only update if backend has newer version
+          if (!cached || backendVersion > (cached.version || 0)) {
+            console.log(`🔄 Updating theme from backend (v${backendVersion})`);
+            const merged = { ...defaultSettings, ...backendSettings };
+            setSettings(merged);
+            setSettingsVersion(backendVersion);
+
+            // Save to cache for next time
+            await saveToCloudStorage(merged, backendVersion);
+          } else {
+            console.log(`✅ Using cached theme (v${cached.version})`);
+          }
         }
       } catch (e) {
-        console.error("Failed to load theme from backend", e);
+        console.error("Failed to load theme", e);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadFromBackend();
+    loadWithCache();
   }, []);
 
   useEffect(() => {
@@ -164,6 +235,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const { api } = await import('../src/services/api');
       await api.rpc('update_user_setting', { settings: updatedSettings });
+
+      // Update cache with new version
+      const newVersion = Date.now();
+      setSettingsVersion(newVersion);
+      await saveToCloudStorage(updatedSettings, newVersion);
     } catch (e) {
       console.error("Failed to persist theme settings to backend", e);
     }
@@ -176,6 +252,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const { api } = await import('../src/services/api');
       await api.rpc('update_user_setting', { settings: defaultSettings });
+
+      // Update cache with new version
+      const newVersion = Date.now();
+      setSettingsVersion(newVersion);
+      await saveToCloudStorage(defaultSettings, newVersion);
     } catch (e) {
       console.error("Failed to reset theme settings on backend", e);
     }
