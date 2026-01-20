@@ -103,6 +103,31 @@ def check_migrations():
             "CREATE INDEX IF NOT EXISTS idx_ratings_book ON user_ratings(book_id)"
         )
 
+
+        # 3. Fallback: Crear explícitamente tabla user_audit_logs (si falla ORM)
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_audit_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id VARCHAR(64) NOT NULL,
+                username VARCHAR(255),
+                changed_by_id VARCHAR(64),
+                changed_by_username VARCHAR(255),
+                action VARCHAR(50) NOT NULL,
+                field_changed VARCHAR(100),
+                old_value JSON,
+                new_value JSON,
+                changes_summary JSON,
+                ip_address VARCHAR(45),
+                user_agent VARCHAR(512),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON user_audit_logs(user_id)"
+        )
+
         conn.commit()
         conn.close()
     except Exception as e:
