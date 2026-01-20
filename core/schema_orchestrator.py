@@ -62,12 +62,12 @@ class SchemaOrchestrator:
                 
                 # We use merge to upsert based on Primary Key (id)
                 levels = [
-                    UserLevel(id=1, name='admin', priority=100, color='#FF5252', price=0.0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark'),
-                    UserLevel(id=2, name='staff', priority=90, color='#7C4DFF', price=0.0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark'),
-                    UserLevel(id=3, name='premium', priority=50, color='#FFD740', price=4.99, daily_downloads=50, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark'),
-                    UserLevel(id=4, name='vip', priority=40, color='#69F0AE', price=9.99, daily_downloads=20, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark'),
-                    UserLevel(id=5, name='white', priority=20, color='#E0E0E0', price=0.0, daily_downloads=10, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark'),
-                    UserLevel(id=6, name='free', priority=10, color='#607D8B', price=0.0, daily_downloads=5, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark'),
+                    UserLevel(id=1, name='Administrador', priority=100, color='#FF5252', price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark'),
+                    UserLevel(id=2, name='Staff', priority=90, color='#7C4DFF', price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark'),
+                    UserLevel(id=3, name='Premium', priority=50, color='#FFD740', price=499, daily_downloads=50, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark'),
+                    UserLevel(id=4, name='VIP', priority=40, color='#69F0AE', price=999, daily_downloads=20, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark'),
+                    UserLevel(id=5, name='Patrocinador', priority=20, color='#E0E0E0', price=0, daily_downloads=10, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark'),
+                    UserLevel(id=6, name='Lector', priority=10, color='#607D8B', price=0, daily_downloads=5, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark'),
                 ]
                 
                 for lvl in levels:
