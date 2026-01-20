@@ -89,18 +89,25 @@ async def get_user_info(telegram_id: int) -> Optional[Dict[str, Any]]:
     return await user_repo.get_by_id(telegram_id)
 
 
-async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional[Any] = None) -> Dict[str, Any]:
+async def get_effective_user(
+    uid: int, 
+    use_cache: bool = True, 
+    tg_user: Optional[Any] = None,
+    simulated_level_id: Optional[int] = None
+) -> Dict[str, Any]:
+
     """
     Determina el rol efectivo del usuario y estado, considerando DB y Config (legacy).
     Retorna un dict con keys: role, status_label, expires_at (puede ser None).
     Roles: 'admin', 'staff', 'premium', 'vip', 'white', 'free'.
     """
-    # 0. Check Cache
+    # 0. Check Cache (Bypass if simulating)
     cache_key = f"user_effective:{uid}"
-    if use_cache:
+    if use_cache and simulated_level_id is None:
         cached = await user_cache.get(cache_key)
         if cached:
             return cached
+
 
     # Extract nickname if tg_user provided
     nickname_from_tg = None
@@ -275,9 +282,64 @@ async def get_effective_user(uid: int, use_cache: bool = True, tg_user: Optional
             "has_mini_app_access": True,
         }
 
-    # Save to cache
-    await user_cache.set(cache_key, result)
+    # 5. Admin Level Simulation
+    # If the user IS an admin (Config or DB) and a simulated_level_id is provided,
+    # we fetch that level's info and override the current result.
+    is_real_admin = (uid in config.ADMIN_USERS) or result.get("is_admin_db", False)
+    
+    if is_real_admin and simulated_level_id is not None:
+        logger.info(f"ADMIN SIMULATION: User {uid} simulating level {simulated_level_id}")
+        sim_level = await user_repo.get_level_by_id(simulated_level_id)
+        if sim_level:
+            # Override essential access flags
+            result["has_mini_app_access"] = sim_level.get("hasAccess", True)
+            result["status_label"] = f"Simulando: {sim_level['name']}"
+            result["level_info"] = sim_level
+            
+            # Map name to role
+            level_name = sim_level["name"].lower()
+            if level_name == "administrador":
+                result["role"] = "admin"
+            elif level_name == "lector":
+                result["role"] = "free"
+            elif level_name == "patrocinador":
+                result["role"] = "white"
+            else:
+                result["role"] = level_name
+                
+            # If the level has forced settings, override them too
+            if sim_level.get("forceSettings"):
+                # Merge settings from level
+                level_settings = {
+                    "theme": sim_level.get("theme"),
+                    "fontSize": sim_level.get("fontSize"),
+                    "glassBlur": sim_level.get("glassBlur"),
+                    "coverWidth": sim_level.get("coverWidth"),
+                    "navOpacity": sim_level.get("navOpacity"),
+                    "accentOpacity": sim_level.get("accentOpacity"),
+                    "primaryColor": sim_level.get("primaryColor"),
+                    "showRecommendations": sim_level.get("showRecommendations"),
+                    "backgroundColor": sim_level.get("backgroundColor"),
+                    "cardColor": sim_level.get("cardColor"),
+                }
+                # Remove None values
+                level_settings = {k: v for k, v in level_settings.items() if v is not None}
+                if "settings" not in result:
+                    result["settings"] = {}
+                result["settings"].update(level_settings)
+            
+            # Special flag to let frontend know it's a simulation
+            result["is_simulated"] = True
+            result["real_uid"] = uid
+    
+    result["is_real_admin"] = is_real_admin
+
+    # Save to cache (only if not simulating)
+
+    if simulated_level_id is None:
+        await user_cache.set(cache_key, result)
     return result
+
 
 
 async def get_users_by_role(role: str) -> list[Dict[str, Any]]:

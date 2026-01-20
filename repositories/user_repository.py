@@ -485,7 +485,91 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             )
             await conn.commit()
 
+    async def get_level_by_id(self, level_id: int) -> Optional[Dict[str, Any]]:
+        """Busca la configuración de un nivel por su ID."""
+        if self.supabase.is_active:
+            try:
+                res = self.supabase.get_client().table('user_levels').select("*").eq('id', level_id).execute()
+                if res.data:
+                    lvl = res.data[0]
+                    return {
+                        "id": str(lvl.get('id')),
+                        "name": lvl.get('name'),
+                        "priority": lvl.get('priority'),
+                        "color": lvl.get('color'),
+                        "hasAccess": bool(lvl.get('has_mini_app_access')),
+                        "dailyDownloads": lvl.get('daily_downloads'),
+                        "earlyAccess": bool(lvl.get('early_access')),
+                        "customThemes": bool(lvl.get('custom_themes')),
+                        "price": lvl.get('price'),
+                        "showRecommendations": bool(lvl.get('show_recommendations', True)),
+                        "theme": lvl.get('ui_theme', 'dark'),
+                        "fontSize": lvl.get('ui_font_size', 14),
+                        "glassBlur": lvl.get('ui_glass_blur', 12),
+                        "coverWidth": lvl.get('ui_cover_width', 120),
+                        "navOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(lvl.get('ui_nav_opacity', 0.8)),
+                        "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(lvl.get('ui_accent_opacity', 0.2)),
+                        "glassOpacity": (lvl.get('panel_transparency', 60) or 60) / 100.0,
+                        "primaryColor": lvl.get('ui_primary_color', '#2b6cee'),
+                        "canDownload": bool(lvl.get('can_download', True)),
+                        "canRead": bool(lvl.get('can_read', True)),
+                        "hasLibraryAccess": bool(lvl.get('has_library_access', True)),
+                        "canRequestBooks": bool(lvl.get('can_request_books', True)),
+                        "bannerContentOffset": int(lvl.get('banner_content_offset', 0)),
+                        "backgroundColor": lvl.get('background_color', '#0f172a'),
+                        "cardColor": lvl.get('card_color', '#1e293b'),
+                        "forceSettings": bool(lvl.get('force_settings', False)),
+                    }
+                return None
+            except Exception as e:
+                logger.error(f"Supabase error in get_level_by_id: {e}")
+
+        async with self.db.connection() as conn:
+            # Explicit column selection to avoid index issues
+            query = """
+                SELECT 
+                    id, name, priority, color, has_mini_app_access, daily_downloads, early_access, 
+                    custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, 
+                    ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, 
+                    ui_primary_color, can_download, can_read, has_library_access, can_request_books, 
+                    banner_content_offset, background_color, card_color, force_settings
+                FROM user_levels WHERE id = ?
+            """
+            cursor = await conn.execute(query, (level_id,))
+            r = await cursor.fetchone()
+            if r:
+                return {
+                    "id": str(r[0]),
+                    "name": r[1],
+                    "priority": r[2],
+                    "color": r[3],
+                    "hasAccess": bool(r[4]),
+                    "dailyDownloads": r[5],
+                    "earlyAccess": bool(r[6]),
+                    "customThemes": bool(r[7]),
+                    "price": r[8],
+                    "showRecommendations": bool(r[9]),
+                    "theme": r[10] or 'dark',
+                    "fontSize": r[11] or 14,
+                    "glassBlur": r[12] or 12,
+                    "coverWidth": r[13] or 120,
+                    "navOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(r[14] or 0.8),
+                    "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(r[15] or 0.2),
+                    "glassOpacity": (r[16] or 60) / 100.0,
+                    "primaryColor": r[17] or '#2b6cee',
+                    "canDownload": bool(r[18]) if r[18] is not None else True,
+                    "canRead": bool(r[19]) if r[19] is not None else True,
+                    "hasLibraryAccess": bool(r[20]) if r[20] is not None else True,
+                    "canRequestBooks": bool(r[21]) if r[21] is not None else True,
+                    "bannerContentOffset": int(r[22]) if r[22] is not None else 0,
+                    "backgroundColor": r[23] or '#0f172a',
+                    "cardColor": r[24] or '#1e293b',
+                    "forceSettings": bool(r[25]) if r[25] is not None else False,
+                }
+        return None
+
     async def get_all_levels(self) -> list[Dict[str, Any]]:
+
         if self.supabase.is_active:
             try:
                 res = self.supabase.get_client().table('user_levels').select("*").order('priority', desc=True).execute()

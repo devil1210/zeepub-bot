@@ -32,7 +32,7 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { settings, updateSettings, resetSettings } = useTheme();
-  const { user: tgUser, isAdmin, status, customThemes, simulatedLevel, setSimulatedLevel, showRecommendations, setShowRecommendations } = useTelegram();
+  const { user: tgUser, isAdmin, isRealAdmin, status, customThemes, simulatedLevel, setSimulatedLevel, showRecommendations, setShowRecommendations } = useTelegram();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [availableLevels, setAvailableLevels] = useState<Array<{ id: number, name: string, color: string }>>([]);
@@ -80,7 +80,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
   // Fetch available levels for admin simulation
   useEffect(() => {
-    if (isAdmin) {
+    if (isRealAdmin) {
       import('../src/services/api').then(({ api }) => {
         api.getAdminTiers().then((res: any) => {
           if (res.levels) {
@@ -96,7 +96,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         }).catch(console.error);
       });
     }
-  }, [isAdmin]);
+  }, [isRealAdmin]);
 
   return (
     <div className="max-w-6xl mx-auto pb-32 md:pb-12 p-4 md:p-8 animate-in fade-in duration-300 font-sans text-gray-900 dark:text-gray-100">
@@ -104,7 +104,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
       <RequestBookModal isOpen={isRequestModalOpen} onClose={() => setIsRequestModalOpen(false)} />
 
       {/* Admin Level Simulation Banner */}
-      {isAdmin && (
+      {isRealAdmin && (
         <div className="glass-panel p-4 rounded-2xl border border-purple-500/30 bg-purple-500/10 mb-6 animate-in slide-in-from-top-4 duration-300">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">

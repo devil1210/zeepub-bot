@@ -41,8 +41,10 @@ async def get_telegram_user_id(
 async def get_current_user_data(
     x_telegram_init_data: Optional[str] = Header(None, alias="x-telegram-init-data"),
     x_telegram_data: Optional[str] = Header(None, alias="X-Telegram-Data"),
+    x_simulated_level: Optional[str] = Header(None, alias="x-simulated-level"),
     user_id: int = Depends(get_telegram_user_id),
 ) -> Dict[str, Any]:
+
     """
     Dependency that returns the full effective user data.
     """
@@ -60,7 +62,13 @@ async def get_current_user_data(
         except Exception:
             pass
 
-    data = await get_effective_user(user_id, tg_user=tg_user)
+    # If simulated level is provided, convert to int
+    sim_level = None
+    if x_simulated_level and x_simulated_level.isdigit():
+        sim_level = int(x_simulated_level)
+
+    data = await get_effective_user(user_id, tg_user=tg_user, simulated_level_id=sim_level)
+
     data["user_id"] = user_id
     data["telegram_id"] = user_id
     return data
@@ -69,8 +77,9 @@ async def get_current_user_data(
 async def require_admin(user_data: Dict[str, Any] = Depends(get_current_user_data)):
     """
     Dependency that enforces admin role.
+    Allows real admins even if they are currently simulating another level.
     """
-    if user_data.get("role") != "admin":
+    if user_data.get("role") != "admin" and not user_data.get("is_real_admin"):
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return user_data
 

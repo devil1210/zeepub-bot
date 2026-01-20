@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
 from models.user_audit_models import UserAuditLog
-from core.db_manager import get_session
+from utils.library_db import get_session
 
 logger = logging.getLogger(__name__)
 

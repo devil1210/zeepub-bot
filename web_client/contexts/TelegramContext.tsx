@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTheme } from './ThemeContext';
+import { setSimulatedLevelHeader } from '../src/services/api';
+
 
 interface TelegramUser {
   id: number;
@@ -44,6 +46,8 @@ interface TelegramContextType {
   user: TelegramUser | null;
   status: UserStatus | null;
   isAdmin: boolean;
+  isRealAdmin: boolean;
+
   isBetaTester: boolean;  // Controls new vs old UI
   customThemes: boolean;  // Controls if user can personalize UI
   showRecommendations: boolean; // Controls if recommendations are shown
@@ -71,6 +75,29 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [extendedInfo, setExtendedInfo] = useState<TelegramExtendedInfo | null>(null);
   const [simulatedLevel, setSimulatedLevel] = useState<number | null>(null);
   const { updateSettings } = useTheme();
+
+  // Load simulated level from storage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('simulatedLevel');
+    if (saved && saved !== 'null') {
+      const levelId = parseInt(saved);
+      setSimulatedLevel(levelId);
+      setSimulatedLevelHeader(levelId);
+    }
+  }, []);
+
+  const handleSetSimulatedLevel = (levelId: number | null) => {
+    setSimulatedLevel(levelId);
+    setSimulatedLevelHeader(levelId);
+    if (levelId === null) {
+      localStorage.removeItem('simulatedLevel');
+    } else {
+      localStorage.setItem('simulatedLevel', levelId.toString());
+    }
+    // Refresh status to see the effects of simulation
+    refreshStatus();
+    // Also trigger UI settings refresh if possible, or just let the app handle it on next render/refresh
+  };
 
   const refreshStatus = async () => {
     try {
@@ -159,7 +186,9 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
+  const isRealAdmin = (status as any)?.user?.is_real_admin || (status?.user?.role === 'admin' && simulatedLevel === null);
   const isAdmin = status?.user?.role === 'admin';
+
 
   // Admins are always beta testers
   const effectiveBetaTester = isAdmin || isBetaTester;
@@ -170,7 +199,9 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       user,
       status,
       isAdmin,
+      isRealAdmin,
       isBetaTester: effectiveBetaTester,
+
       customThemes: isAdmin || customThemes,
       showRecommendations: showRecommendations,
       setShowRecommendations: setShowRecommendations,
@@ -179,8 +210,9 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       refreshStatus,
       extendedInfo,
       simulatedLevel,
-      setSimulatedLevel
+      setSimulatedLevel: handleSetSimulatedLevel
     }}>
+
       {children}
     </TelegramContext.Provider>
   );

@@ -5,6 +5,13 @@ import axios from 'axios';
 // In development with Vite proxy, this works. In production (served by bot), this works.
 const API_URL = '/api/bot';
 
+let simulatedLevelId: number | null = null;
+
+export const setSimulatedLevelHeader = (levelId: number | null) => {
+    simulatedLevelId = levelId;
+};
+
+
 export interface ApiResponse<T = any> {
     success?: boolean;
     result?: T;
@@ -39,8 +46,13 @@ apiClient.interceptors.request.use((config) => {
     // Fallback/Legacy header if needed by some older middleware
     config.headers['X-Telegram-Data'] = initData;
 
+    if (simulatedLevelId !== null) {
+        config.headers['X-Simulated-Level'] = simulatedLevelId.toString();
+    }
+
     return config;
 });
+
 
 export const rpc = async <T = any>(action: string, data: any = {}): Promise<T> => {
     try {
