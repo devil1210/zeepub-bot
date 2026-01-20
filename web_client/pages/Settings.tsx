@@ -42,7 +42,8 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
     setSimulatedLevel,
     showRecommendations,
     setShowRecommendations,
-    uiExportedSettings
+    uiExportedSettings,
+    extendedInfo
   } = useTelegram();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
@@ -207,7 +208,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   </span>
                 ) : (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                    {status?.user?.status_label || 'Miembro VIP'}
+                    {status?.user?.status_label || extendedInfo?.customStatus || 'Usuario'}
                   </span>
                 )}
               </div>

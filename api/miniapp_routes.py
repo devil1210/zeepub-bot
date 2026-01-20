@@ -47,6 +47,7 @@ class AccessResponse(BaseModel):
     insignias: List[str] = []
     customStatus: Optional[str] = None
     role: Optional[str] = None
+    status_label: Optional[str] = None  # Display label for user status
     hasLibraryAccess: bool = True
     canRequestBooks: bool = True
     ui_exported_settings: List[str] = []
@@ -300,10 +301,12 @@ async def check_user_access(
         insignias=access_info.get("insignias") or eff.get("insignias") or [],
         customStatus=eff.get("role"),
         role=eff.get("role"),
+        status_label=eff.get("status_label"),
         hasLibraryAccess=eff.get("has_library_access", True),
         canRequestBooks=eff.get("can_request_books", True),
         ui_exported_settings=eff.get("ui_exported_settings", ["theme", "primaryColor", "fontSize"])
     )
+
 
 
 @router.get("/api/admin/levels")

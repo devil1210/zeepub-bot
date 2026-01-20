@@ -140,7 +140,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           username: data.username,
           roles: data.roles || [],
           insignias: data.insignias || [],
-          customStatus: data.customStatus,
+          customStatus: data.customStatus || data.status_label,
           hasLibraryAccess: data.hasLibraryAccess,
           canRequestBooks: data.canRequestBooks
         });
