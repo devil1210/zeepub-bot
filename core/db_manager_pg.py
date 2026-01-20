@@ -1,6 +1,7 @@
 import logging
 import asyncio
 from typing import AsyncGenerator
+from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
 from config.config_settings import config
@@ -64,6 +65,7 @@ class PostgresManager:
             logger.error(f"Failed to initialize Postgres connection: {e}")
             raise
 
+    @asynccontextmanager
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
         """Dependency for getting a DB session."""
         if not self.session_maker:
