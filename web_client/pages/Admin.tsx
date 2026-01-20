@@ -11,13 +11,15 @@ import {
   Save,
   Layers,
   UserCircle,
-  Palette
+  Palette,
+  FileWarning
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { MonitorDashboard } from './MonitorDashboard';
 import { SystemDashboard } from './SystemDashboard';
 import { AccessDashboard } from './AccessDashboard';
 import { AppearanceDashboard } from './AppearanceDashboard';
+import { DuplicatesDashboard } from './DuplicatesDashboard';
 
 interface AdminProps {
   onNavigate?: (tab: string) => void;
@@ -25,7 +27,7 @@ interface AdminProps {
 
 export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const { settings } = useTheme();
-  const [currentView, setCurrentView] = useState<'monitor' | 'system' | 'access' | 'interface'>('monitor');
+  const [currentView, setCurrentView] = useState<'monitor' | 'system' | 'access' | 'interface' | 'duplicates'>('monitor');
 
   // Child view states (inherited from children or managed here)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -43,6 +45,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     { id: 'system', label: 'Sistema', icon: Server },
     { id: 'interface', label: 'Interfaz', icon: Palette },
     { id: 'access', label: 'Niveles y Acceso', icon: ShieldCheck },
+    { id: 'duplicates', label: 'Duplicados', icon: FileWarning },
   ] as const;
 
   const renderView = () => {
@@ -74,6 +77,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             setSaveRef={(fn) => { saveRef.current = fn; }}
           />
         );
+      case 'duplicates':
+        return <DuplicatesDashboard />;
       default:
         return <MonitorDashboard />;
     }

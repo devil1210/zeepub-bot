@@ -169,6 +169,8 @@ export const api = {
     // Themes
     getAvailableThemes: () => rpc('admin_get_themes'),
     saveAsTheme: (themeData: any) => rpc('admin_save_theme', themeData),
+    adminGetDuplicates: () => rpc('admin_get_duplicates'),
+    adminClearDuplicates: () => rpc('admin_clear_duplicates'),
 
     // Raw RPC Access
     rpc: rpc
