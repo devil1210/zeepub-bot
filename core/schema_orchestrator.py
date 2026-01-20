@@ -29,7 +29,18 @@ class SchemaOrchestrator:
                 # Create all tables defined in SQLAlchemy models
                 # This only creates tables that don't exist; it won't update existing frames
                 await conn.run_sync(Base.metadata.create_all)
+                await conn.run_sync(Base.metadata.create_all)
                 logger.info("Schema verification completed.")
+                
+                # Auto-Migration for UserLevel (Add missing columns to existing table)
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'color', 'VARCHAR(20) DEFAULT \'#607D8B\'')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'ui_glass_blur', 'INTEGER DEFAULT 12')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'ui_cover_width', 'INTEGER DEFAULT 120')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'ui_accent_opacity', 'INTEGER DEFAULT 20')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'panel_transparency', 'INTEGER DEFAULT 60')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'price', 'INTEGER DEFAULT 0')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'early_access', 'BOOLEAN DEFAULT FALSE')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'custom_themes', 'BOOLEAN DEFAULT FALSE')
                 
                 # Seed Initial Data
                 await SchemaOrchestrator._seed_initial_data()

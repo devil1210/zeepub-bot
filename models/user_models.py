@@ -73,15 +73,28 @@ class UserLevel(Base):
     name = Column(String(50), unique=True, nullable=False) # python_free, python_premium
     priority = Column(Integer, default=0)
     
+    # Metadata visual
+    color = Column(String(20), default='#607D8B') # Color identificador (badges)
+    
     # UI Defaults del nivel
     ui_theme = Column(String(20), default='dark')
     ui_primary_color = Column(String(20), default='#3b82f6')
     ui_nav_opacity = Column(Integer, default=80)
+    ui_glass_blur = Column(Integer, default=12)
+    ui_cover_width = Column(Integer, default=120)
+    ui_accent_opacity = Column(Integer, default=20)
+    panel_transparency = Column(Integer, default=60)
+    
+    # Características / Pricing
+    price = Column(Integer, default=0) # Consider float/Numeric if needed, usually int/cents or simple float
+    # Note: price in miniapp_handlers seems to be float/int.
     
     # Permisos del nivel
     can_download = Column(Boolean, default=True)
     daily_downloads = Column(Integer, default=5)
     has_mini_app_access = Column(Boolean, default=True)
+    early_access = Column(Boolean, default=False)
+    custom_themes = Column(Boolean, default=False)
     
     users = relationship("User", back_populates="level_info")
 
