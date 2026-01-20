@@ -158,15 +158,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Quick Actions Grid */}
           <div>
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Acciones Rápidas</h3>
+            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 px-1">Acciones Rápidas</h3>
             {(() => {
               const actions = [
-                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
-                { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
-                { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', visible: status?.user?.can_request_books !== false },
-                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true },
+                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/20', glow: 'bg-blue-500/10', visible: true },
+                { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/20', glow: 'bg-purple-500/10', visible: status?.user?.has_library_access !== false },
+                { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/20', glow: 'bg-emerald-500/10', visible: status?.user?.can_request_books !== false },
+                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/20', glow: 'bg-amber-500/10', visible: true },
               ].filter(a => a.visible);
 
               const gridCols = actions.length === 2 ? 'grid-cols-2' :
@@ -174,30 +173,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   'grid-cols-2 sm:grid-cols-4';
 
               return (
-                <div className={`grid gap-4 ${gridCols}`}>
+                <div className={`grid gap-6 ${gridCols}`}>
                   {actions.map((item, i) => {
-                    const colorStyle = colorfulCardStyles[i % colorfulCardStyles.length];
                     return (
                       <button
                         key={item.id}
                         onClick={() => onNavigate && onNavigate(item.id)}
-                        className={`relative p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 hover:scale-[1.02] active:scale-95 transition-all duration-300 group shadow-lg overflow-hidden ${settings.colorfulCards ? colorStyle.shadow : ''}`}
+                        className={`glass-panel relative p-6 rounded-[2rem] flex flex-col items-center justify-center text-center gap-4 hover:scale-[1.03] active:scale-95 transition-all duration-300 group shadow-xl overflow-hidden`}
                       >
-                        {/* Gradient border effect when colorful cards enabled */}
-                        {settings.colorfulCards && (
-                          <div className={`absolute inset-0 bg-gradient-to-br ${colorStyle.gradient} rounded-2xl`}></div>
-                        )}
-                        <div
-                          className={`absolute inset-[2px] rounded-xl ${settings.colorfulCards ? '' : 'glass-panel'}`}
-                          style={settings.colorfulCards ? { background: `rgba(17, 24, 39, ${cardBgOpacity})` } : {}}
-                        ></div>
-                        <div className={`relative z-10 p-4 rounded-full ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(0,0,0,0.3)]`}>
-                          <item.icon className="w-7 h-7" strokeWidth={1.5} />
+                        <div className={`relative z-10 p-5 rounded-3xl ${item.bg} ${item.color} border border-white/5 shadow-inner group-hover:scale-110 transition-transform duration-500`}>
+                          <item.icon className="w-8 h-8" strokeWidth={2} />
                         </div>
                         <div className="relative z-10">
-                          <span className="block text-gray-900 dark:text-white font-bold text-base leading-none mb-1">{item.label}</span>
-                          <span className="block text-gray-500 text-[10px] font-medium uppercase tracking-wider">{item.desc}</span>
+                          <span className="block text-white font-black text-sm uppercase tracking-wider mb-1 mt-1">{item.label}</span>
+                          <span className="block text-gray-500 text-[10px] font-black uppercase tracking-widest opacity-60">{item.desc}</span>
                         </div>
+
+                        {/* Background Glow */}
+                        <div
+                          className={`absolute -right-8 -bottom-8 w-24 h-24 ${item.glow} rounded-full blur-2xl group-hover:scale-150 transition-all duration-700`}
+                          style={{ opacity: settings.cardGlowIntensity }}
+                        />
                       </button>
                     );
                   })}
@@ -263,59 +259,73 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="lg:col-span-4 space-y-6">
 
           {/* Profile / Stats Widget */}
-          <div className="glass-panel rounded-3xl p-6 border border-white/5 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[60px] pointer-events-none"></div>
+          <div className="glass-panel rounded-[2.5rem] p-8 relative overflow-hidden group hover:scale-[1.01] transition-all duration-500 shadow-2xl">
+            <div
+              className="absolute -top-12 -right-12 w-48 h-48 bg-primary/10 rounded-full blur-[80px] group-hover:bg-primary/20 transition-all duration-700 pointer-events-none"
+              style={{ opacity: settings.cardGlowIntensity }}
+            ></div>
 
-            <div className="flex items-center justify-between mb-6 relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 to-yellow-600 shadow-lg flex items-center justify-center bg-black">
-                  <span className="text-xl">👤</span>
+            <div className="flex items-center justify-between mb-8 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-3xl p-1 bg-gradient-to-tr from-yellow-400 via-amber-500 to-yellow-600 shadow-[0_10px_30px_-5px_rgba(245,158,11,0.3)] flex items-center justify-center relative group-hover:scale-105 transition-transform duration-500">
+                  <div className="w-full h-full rounded-[1.25rem] bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
+                    <span className="text-3xl">👤</span>
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-[#0a0a0a] rounded-full shadow-lg"></div>
                 </div>
                 <div>
-                  <h3 className="text-gray-900 dark:text-white font-bold leading-none">{userLevel}</h3>
-                  <p className="text-xs text-yellow-500 font-bold uppercase tracking-wider mt-1">{status?.user?.role || "Free"}</p>
+                  <h3 className="text-white font-black text-xl tracking-tight leading-none">{userLevel}</h3>
+                  <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em] mt-2 opacity-80">{status?.user?.role || "Free"}</p>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4 relative z-10">
-              <div className="bg-black/20 rounded-xl p-4 border border-white/5">
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                    <Zap className="w-3 h-3 text-primary" />
+            <div className="space-y-6 relative z-10">
+              <div className="bg-white/[0.03] rounded-3xl p-6 border border-white/5 shadow-inner">
+                <div className="flex justify-between items-end mb-3">
+                  <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <Zap className="w-3.5 h-3.5 text-primary" />
                     Cuota Diaria
                   </span>
-                  <span className="text-gray-900 dark:text-white font-bold">{downloadsUsed} <span className="text-gray-500 font-normal">/ {limitDisplay}</span></span>
+                  <span className="text-white font-black text-base">{downloadsUsed} <span className="text-gray-600 font-bold ml-1">/ {limitDisplay}</span></span>
                 </div>
                 {!isUnlimited && (
-                  <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-primary to-blue-400 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" style={{ width: `${progressPercent}%` }}></div>
+                  <div className="w-full h-3 bg-white/[0.05] rounded-full overflow-hidden p-[2px] border border-white/5">
+                    <div className="h-full bg-gradient-to-r from-primary via-blue-400 to-primary rounded-full shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)] transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
                   </div>
                 )}
                 {isUnlimited && (
-                  <div className="w-full h-2 bg-gradient-to-r from-yellow-500 to-yellow-200 rounded-full opacity-50"></div>
+                  <div className="w-full h-3 bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-200 rounded-full opacity-30 blur-[1px]"></div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-3 border border-black/5 dark:border-white/5 flex flex-col items-center justify-center text-center">
-                  <TrendingUp className="w-5 h-5 text-green-500 mb-1" />
-                  <span className="text-gray-900 dark:text-white font-bold text-lg">Top 5%</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Ranking</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="glass-panel rounded-3xl p-5 border border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] transition-all">
+                  <div className="p-3 bg-green-500/20 rounded-2xl text-green-400 mb-3 border border-green-500/20 shadow-lg shadow-green-500/5 group-hover/stat:scale-110 transition-transform">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <span className="text-white font-black text-2xl tracking-tight">Top 5%</span>
+                  <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-1">Ranking</span>
                 </div>
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-3 border border-black/5 dark:border-white/5 flex flex-col items-center justify-center text-center">
-                  <Download className="w-5 h-5 text-primary mb-1" />
-                  <span className="text-gray-900 dark:text-white font-bold text-lg">{totalDownloads}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total DLS</span>
+                <div className="glass-panel rounded-3xl p-5 border border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] transition-all">
+                  <div className="p-3 bg-primary/20 rounded-2xl text-primary mb-3 border border-primary/20 shadow-lg shadow-primary/5 group-hover/stat:scale-110 transition-transform">
+                    <Download className="w-5 h-5" />
+                  </div>
+                  <span className="text-white font-black text-2xl tracking-tight">{totalDownloads}</span>
+                  <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-1">Total DLS</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Daily Quote / Tip */}
-          <div className="glass-panel p-5 rounded-2xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent">
-            <p className="text-gray-300 text-sm italic leading-relaxed">"Un lector vive mil vidas antes de morir. Aquel que nunca lee vive solo una."</p>
-            <p className="text-gray-500 text-xs font-bold mt-3 text-right">— George R.R. Martin</p>
+          <div className="glass-panel p-8 rounded-[2rem] border border-white/5 bg-gradient-to-br from-white/5 to-transparent relative overflow-hidden group">
+            <p className="text-gray-300 text-sm italic font-medium leading-relaxed relative z-10">"Un lector vive mil vidas antes de morir. Aquel que nunca lee vive solo una."</p>
+            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-4 text-right relative z-10 opacity-60">— George R.R. Martin</p>
+            <div
+              className="absolute -right-4 -bottom-4 w-16 h-16 bg-white/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-700"
+              style={{ opacity: settings.cardGlowIntensity }}
+            ></div>
           </div>
 
         </div>

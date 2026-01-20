@@ -18,6 +18,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { api } from '../src/services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface UserPermissionsProps {
   onBack: () => void;
@@ -70,6 +71,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
   onSaveRef,
   onSaveSuccess
 }) => {
+  const { settings } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -387,46 +389,52 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           {/* Main Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* User Header Card */}
-            <div className="glass-panel rounded-2xl border border-white/5 p-6 flex items-start sm:items-center gap-5 shadow-lg">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-cyan-300 p-1">
+            <div className="glass-panel rounded-[2rem] border border-white/5 p-8 flex flex-col sm:flex-row items-center gap-8 shadow-2xl relative overflow-hidden group">
+              <div
+                className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-[80px] pointer-events-none transition-all duration-700 group-hover:bg-opacity-20"
+                style={{ backgroundColor: `${displayColor}20`, opacity: settings.cardGlowIntensity }}
+              ></div>
+
+              <div className="relative z-10">
+                <div className="w-24 h-24 rounded-3xl p-1 bg-gradient-to-br from-white/10 to-transparent shadow-xl">
                   <div
-                    className="w-full h-full rounded-full border-2 border-white/20 dark:border-[#121212] flex items-center justify-center text-2xl font-black text-white"
-                    style={{ background: `linear-gradient(135deg, ${displayColor}40, ${displayColor}20)` }}
+                    className="w-full h-full rounded-[1.25rem] flex items-center justify-center text-3xl font-black text-white shadow-inner"
+                    style={{ background: `linear-gradient(135deg, ${displayColor}50, ${displayColor}20)` }}
                   >
                     {displayName.charAt(0).toUpperCase()}
                   </div>
                 </div>
-                <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-4 border-white dark:border-[#121212] rounded-full"></div>
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 border-4 border-[#121212] rounded-full shadow-lg"></div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                  <h2 className="text-xl font-bold text-white truncate">{displayName}</h2>
+
+              <div className="flex-1 min-w-0 relative z-10 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+                  <h2 className="text-3xl font-black text-white truncate tracking-tight">@{displayName}</h2>
                   <span
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border"
+                    className="inline-flex items-center px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border shadow-lg"
                     style={{
-                      backgroundColor: `${displayColor}20`,
+                      backgroundColor: `${displayColor}15`,
                       color: displayColor,
-                      borderColor: `${displayColor}40`
+                      borderColor: `${displayColor}30`
                     }}
                   >
                     {displayLevel}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-400">
-                  <span className="flex items-center gap-1">
-                    <AtSign className="w-4 h-4" />
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-6 gap-y-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                  <span className="flex items-center gap-2">
+                    <AtSign className="w-4 h-4 text-primary" />
                     {displayName.toLowerCase().replace(/\s/g, '_')}
                   </span>
-                  <span className="flex items-center gap-1 font-mono">
+                  <span className="flex items-center gap-2 font-mono tabular-nums opacity-60">
                     <Fingerprint className="w-4 h-4" />
                     ID: {displayId}
                   </span>
                 </div>
               </div>
-              <button className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 text-sm font-medium hover:bg-white/5 transition-colors text-gray-300">
+              <button className="relative z-10 hidden sm:flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/[0.03] hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all border border-white/5 active:scale-95 shadow-lg">
                 <MessageSquare className="w-4 h-4" />
-                Mensaje
+                Mensaje Directo
               </button>
             </div>
 
@@ -460,12 +468,17 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
             </div>
 
             {/* Access Control */}
-            <div className="glass-panel rounded-2xl border border-white/5 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-white/5 bg-white/5">
-                <h3 className="font-bold text-white uppercase tracking-wider text-xs">Control de Acceso</h3>
-                <p className="text-xs text-gray-400 mt-1">Gestiona qué puede hacer este usuario dentro del bot.</p>
+            <div className="glass-panel rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden relative group/access">
+              <div
+                className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none transition-all duration-700 group-hover/access:bg-opacity-20"
+                style={{ opacity: settings.cardGlowIntensity }}
+              ></div>
+
+              <div className="px-8 py-6 border-b border-white/5 bg-white/[0.02] relative z-10">
+                <h3 className="font-black text-white uppercase tracking-[0.2em] text-[10px]">Control de Acceso</h3>
+                <p className="text-[11px] text-gray-500 mt-2 font-bold uppercase tracking-tight">Gestiona privilegios y límites del usuario</p>
               </div>
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-white/5 relative z-10">
 
                 {/* Tier Selection */}
                 <div className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-white/5 transition-colors">
@@ -710,13 +723,18 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
 
           {/* Right Column - Logs */}
           <div className="lg:col-span-1">
-            <div className="glass-panel rounded-2xl border border-white/5 shadow-sm h-full flex flex-col">
-              <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
-                <h3 className="font-bold text-white flex items-center gap-2 text-sm uppercase tracking-wider">
-                  <History className="w-4 h-4 text-gray-400" />
+            <div className="glass-panel rounded-[2rem] border border-white/5 shadow-2xl h-full flex flex-col relative overflow-hidden group/logs">
+              <div
+                className="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none transition-all duration-700 group-hover/logs:bg-opacity-20"
+                style={{ opacity: settings.cardGlowIntensity }}
+              ></div>
+
+              <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between relative z-10">
+                <h3 className="font-black text-white flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
+                  <History className="w-4 h-4 text-gray-500" />
                   Registro de Cambios
                 </h3>
-                <button className="text-xs text-primary hover:underline">Ver Todo</button>
+                <button className="text-[10px] font-black text-primary hover:text-white uppercase tracking-widest transition-colors">Ver Todo</button>
               </div>
               <div className="p-4 overflow-y-auto max-h-[600px]">
                 {loadingHistory ? (

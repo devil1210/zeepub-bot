@@ -14,8 +14,10 @@ import {
     TrendingUp
 } from 'lucide-react';
 import { api } from '../src/services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 export const SystemDashboard: React.FC = () => {
+    const { settings } = useTheme();
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -173,7 +175,10 @@ export const SystemDashboard: React.FC = () => {
                                 Biblioteca
                             </button>
                         </div>
-                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all duration-700"></div>
+                        <div
+                            className="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all duration-700 pointer-events-none"
+                            style={{ opacity: settings.cardGlowIntensity }}
+                        ></div>
                     </div>
 
                     {/* System Updates */}
@@ -193,7 +198,10 @@ export const SystemDashboard: React.FC = () => {
                         >
                             {actionLoading === 'Actualizando' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Update System"}
                         </button>
-                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-green-500/5 rounded-full blur-2xl group-hover:bg-green-500/10 transition-all duration-700"></div>
+                        <div
+                            className="absolute -right-6 -bottom-6 w-24 h-24 bg-green-500/5 rounded-full blur-2xl group-hover:bg-green-500/10 transition-all duration-700 pointer-events-none"
+                            style={{ opacity: settings.cardGlowIntensity }}
+                        ></div>
                     </div>
 
                     {/* Docker Restart */}
@@ -213,7 +221,10 @@ export const SystemDashboard: React.FC = () => {
                         >
                             {actionLoading === 'Reiniciando' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Reset Container"}
                         </button>
-                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all duration-700"></div>
+                        <div
+                            className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all duration-700 pointer-events-none"
+                            style={{ opacity: settings.cardGlowIntensity }}
+                        ></div>
                     </div>
 
                     {/* Reset Library */}
@@ -237,7 +248,10 @@ export const SystemDashboard: React.FC = () => {
                         >
                             {actionLoading === 'Reset' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Purge Data"}
                         </button>
-                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-red-500/5 rounded-full blur-2xl group-hover:bg-red-500/10 transition-all duration-700"></div>
+                        <div
+                            className="absolute -right-6 -bottom-6 w-24 h-24 bg-red-500/5 rounded-full blur-2xl group-hover:bg-red-500/10 transition-all duration-700 pointer-events-none"
+                            style={{ opacity: settings.cardGlowIntensity }}
+                        ></div>
                     </div>
                 </div>
             </div>

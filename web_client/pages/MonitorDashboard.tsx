@@ -12,8 +12,10 @@ import {
     Bell
 } from 'lucide-react';
 import { api } from '../src/services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 export const MonitorDashboard: React.FC = () => {
+    const { settings } = useTheme();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -90,7 +92,10 @@ export const MonitorDashboard: React.FC = () => {
                         <Users className="w-6 h-6" />
                     </div>
                     {/* Background Glow */}
-                    <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 group-hover:scale-110 transition-all duration-700"></div>
+                    <div
+                        className="absolute -right-6 -bottom-6 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 group-hover:scale-110 transition-all duration-700 pointer-events-none"
+                        style={{ opacity: settings.cardGlowIntensity }}
+                    ></div>
                 </div>
 
                 <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
@@ -108,7 +113,10 @@ export const MonitorDashboard: React.FC = () => {
                         <Library className="w-6 h-6" />
                     </div>
                     {/* Background Glow */}
-                    <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 group-hover:scale-110 transition-all duration-700"></div>
+                    <div
+                        className="absolute -right-6 -bottom-6 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 group-hover:scale-110 transition-all duration-700 pointer-events-none"
+                        style={{ opacity: settings.cardGlowIntensity }}
+                    ></div>
                 </div>
 
                 <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
@@ -126,7 +134,10 @@ export const MonitorDashboard: React.FC = () => {
                         <CloudDownload className="w-6 h-6" />
                     </div>
                     {/* Background Glow */}
-                    <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 group-hover:scale-110 transition-all duration-700"></div>
+                    <div
+                        className="absolute -right-6 -bottom-6 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 group-hover:scale-110 transition-all duration-700 pointer-events-none"
+                        style={{ opacity: settings.cardGlowIntensity }}
+                    ></div>
                 </div>
 
                 <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">

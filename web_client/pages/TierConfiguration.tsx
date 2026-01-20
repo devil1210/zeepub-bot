@@ -728,6 +728,22 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                             className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
                                         />
                                     </div>
+
+                                    <div>
+                                        <div className="flex justify-between items-center mb-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Intensidad de Resplandor</label>
+                                            <span className="text-xs font-black text-primary">{Math.round((config.cardGlowIntensity || 0.5) * 100)}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="1"
+                                            step="0.05"
+                                            value={config.cardGlowIntensity || 0.5}
+                                            onChange={(e) => setConfig({ ...config, cardGlowIntensity: parseFloat(e.target.value) })}
+                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="space-y-6">

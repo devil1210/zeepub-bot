@@ -19,6 +19,7 @@ interface ThemeSettings {
   backgroundColor: string;
   cardColor: string;
   bannerContentOffset: number;
+  cardGlowIntensity: number;
 }
 
 interface ThemeContextType {
@@ -45,6 +46,7 @@ const defaultSettings: ThemeSettings = {
   backgroundColor: '#0f172a',
   cardColor: '#1e293b',
   bannerContentOffset: 0,
+  cardGlowIntensity: 0.5,
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -106,6 +108,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--glass-blur', `${settings.glassBlur ?? 12}px`);
     root.style.setProperty('--cover-width', `${settings.coverWidth ?? 120}px`);
     root.style.setProperty('--banner-content-offset', `${settings.bannerContentOffset ?? 0}px`);
+    root.style.setProperty('--card-glow-intensity', (settings.cardGlowIntensity ?? 0.5).toString());
     const bgColor = settings.theme === 'amoled' ? '#000000' : (settings.backgroundColor ?? '#0f172a');
     root.style.setProperty('--bg-color', bgColor);
     root.style.setProperty('--app-bg', bgColor);
