@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Busca libros en la base de datos local o en el servidor OPDS."""
     user_id = user_data.get("user_id", 0)
-    user_role = user_data.get("role", "free")
+    user_level = user_data.get("level", "free")
     query = data.get("query")
     page = data.get("page", 1)
     search_type = data.get("type", "todos")
@@ -505,7 +505,7 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
 
         if target_role == "personal":
             try:
-                role_raw = get_setting(f"ui_defaults_{user_role}", "{}")
+                role_raw = get_setting(f"ui_defaults_{user_level}", "{}")
                 role_data = json.loads(role_raw)
                 settings_obj["last_seen_version"] = role_data.get("ui_version", 0)
             except Exception:
@@ -808,8 +808,8 @@ async def handle_admin_get_tiers(data: Dict[str, Any], user_data: Dict[str, Any]
 
 async def handle_admin_save_tier(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda cambios en un nivel."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     level_id = data.get("id")
@@ -822,8 +822,8 @@ async def handle_admin_save_tier(data: Dict[str, Any], user_data: Dict[str, Any]
 
 async def handle_admin_get_users(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene la lista paginada de usuarios para el panel admin."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     limit = data.get("limit", 20)
@@ -837,8 +837,8 @@ async def handle_admin_get_users(data: Dict[str, Any], user_data: Dict[str, Any]
 
 async def handle_admin_set_user_level(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Cambia el nivel de un usuario específico."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     target_id = data.get("userId")
@@ -853,8 +853,8 @@ async def handle_admin_set_user_level(data: Dict[str, Any], user_data: Dict[str,
 
 async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Syncs SQLite library data to Supabase."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     if not config.ENABLE_SUPABASE:
@@ -1018,6 +1018,13 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
                         except:
                             pass
                 
+                # Remove custom_status column (renamed to 'role' in new schema)
+                # Map custom_status to role if role is not set
+                if "custom_status" in u_data:
+                    if not u_data.get("role"):
+                        u_data["role"] = u_data["custom_status"]
+                    del u_data["custom_status"]
+                
                 user_batch.append(u_data)
                 
                 if len(user_batch) >= 50:
@@ -1034,8 +1041,8 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
 
 async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Activates forced library scan."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     force = data.get("force", False)
@@ -1075,8 +1082,8 @@ async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, A
 
 async def handle_admin_enrich_metadata(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Activates manual enrichment of metadata from online sources."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     async def run_enrichment_in_background(scanner_obj):
@@ -1105,8 +1112,8 @@ async def handle_admin_enrich_metadata(data: Dict[str, Any], user_data: Dict[str
 
 async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Reset complete library database (admin only, requires confirmation)."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     # Require explicit confirmation
@@ -1181,8 +1188,8 @@ async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, 
 
 async def handle_admin_restart_docker(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Restart Docker container (admin only)."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     try:
@@ -1219,8 +1226,8 @@ async def handle_admin_restart_docker(data: Dict[str, Any], user_data: Dict[str,
 
 async def handle_admin_update_system(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Trigger system update (git pull + restart) using existing bot infrastructure."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     try:
@@ -1243,8 +1250,8 @@ async def handle_admin_update_system(data: Dict[str, Any], user_data: Dict[str, 
 
 async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda la configuración completa de un nivel/tier."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     tier_name = data.get("name")
@@ -1383,8 +1390,8 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
 
 async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene la configuración completa de un nivel/tier."""
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     tier_name = data.get("name")
@@ -1491,8 +1498,8 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
 async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda los permisos de un usuario específico."""
     logger.info(f"ADMIN: Save permissions request for data: {data}")
-    user_role = user_data.get("role", "free")
-    if user_role != "admin":
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     user_id = data.get("userId")
