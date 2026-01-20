@@ -103,7 +103,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
         const loadLevelConfig = async () => {
             setLoading(true);
             try {
-                const levelName = allLevels.find(l => String(l.id) === String(selectedLevelId))?.name || 'Global';
+                const levelName = selectedLevelId === 'global' ? 'Global' : (allLevels.find(l => String(l.id) === String(selectedLevelId))?.name || 'Global');
                 const res = await api.getTierConfig(levelName);
                 if (res.success && res.tier) {
                     const t = res.tier;

@@ -1209,14 +1209,8 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     tier_name = data.get("name")
-    if not tier_name:
-        raise HTTPException(status_code=400, detail="Falta el nombre del tier")
-    
-    if not config.ENABLE_SUPABASE:
-        return {"success": False, "message": "Supabase no está habilitado."}
-    
     try:
-        if tier_name == "Global":
+        if tier_name == "Global" or (tier_name and "Global" in str(tier_name)) or data.get("id") == "global":
             # Global settings are stored in bot_settings table
             # Filter out non-UI fields for global UI defaults
             ui_settings = {}
@@ -1361,14 +1355,9 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
     tier_name = data.get("name")
     tier_id = data.get("id")
     
-    if not tier_name and not tier_id:
-        raise HTTPException(status_code=400, detail="Falta name o id del tier")
-    
-    if not config.ENABLE_SUPABASE and tier_name != "Global":
-        return {"success": False, "message": "Supabase no está habilitado."}
-    
     try:
-        if tier_name == "Global":
+        # Check if it's the global tier (by ID or name)
+        if tier_id == "global" or (tier_name and "Global" in str(tier_name)):
             global_raw = get_setting("ui_defaults_global", "{}")
             g = json.loads(global_raw)
             return {
