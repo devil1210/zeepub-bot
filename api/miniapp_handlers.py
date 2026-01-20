@@ -423,7 +423,7 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
     if sub_action == "get":
         target_role = data.get("role", "global")
         if target_role == "auto":
-            target_role = user_role
+            target_role = user_level
 
         final_settings = {
             "primaryColor": "#3b82f6",
