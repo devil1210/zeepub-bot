@@ -8,6 +8,12 @@ from dateutil import parser
 logger = logging.getLogger(__name__)
 
 
+from core.db_manager_pg import pg_manager
+from models.user_models import User, UserLevel, UserUISettings
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from config.config_settings import config
+
 class UserRepository(BaseRepository[Dict[str, Any]]):
     """
     Repositorio para gestión de usuarios (roles, expiración, status).
@@ -20,6 +26,67 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         self.supabase = supabase_manager
 
     async def get_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
+        # 1. Postgres / Offline-First (ORM)
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    # Eager load UI settings and Level
+                    stmt = select(User).options(
+                        selectinload(User.ui_settings),
+                        selectinload(User.level_info)
+                    ).where(User.telegram_id == telegram_id)
+                    
+                    result = await session.execute(stmt)
+                    user = result.scalar_one_or_none()
+                    
+                    if user:
+                        # Map ORM object to dict (similar structure to old one)
+                        settings = user.settings or {}
+                        
+                        # Apply UI Settings overrides from relation
+                        if user.ui_settings:
+                            ui = user.ui_settings
+                            mapping = {
+                                "primary_color": "primaryColor",
+                                "glass_blur": "glassBlur",
+                                "glass_opacity": "glassOpacity",
+                                "nav_opacity": "navOpacity",
+                                "accent_opacity": "accentOpacity",
+                                "card_glow_intensity": "cardGlowIntensity",
+                                "background_color": "backgroundColor",
+                                "card_color": "cardColor",
+                                "font_size": "fontSize",
+                                "cover_width": "coverWidth",
+                                "theme_type": "theme"
+                            }
+                            for col, key in mapping.items():
+                                val = getattr(ui, col, None)
+                                if val is not None:
+                                    settings[key] = val
+
+                        level_name = user.level_info.name if user.level_info else "free"
+                        
+                        return {
+                            "telegram_id": user.telegram_id,
+                            "level": level_name,
+                            "expires_at": user.expires_at,
+                            "role": user.role,
+                            "nickname": user.nickname,
+                            "name": user.name,
+                            "username": user.username,
+                            "roles": [], # Legacy
+                            "insignias": user.insignias or [],
+                            "settings": settings,
+                            "total_downloads": user.total_downloads,
+                            "level_id": user.level_id,
+                            "beta_tester": user.beta_tester,
+                            "has_library_access": user.has_library_access,
+                            "can_request_books": user.can_request_books
+                        }
+            except Exception as e:
+                logger.error(f"Postgres ORM Error in get_by_id: {e}")
+                # Fallthrough to Supabase REST / SQLite
+
         if self.supabase.is_active:
             try:
                 cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books"

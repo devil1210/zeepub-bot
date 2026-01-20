@@ -37,6 +37,7 @@ python-multipart==0.0.12
 # Optional DB backend via SQLAlchemy (supports external DBs like Postgres)
 SQLAlchemy==2.0.36
 psycopg2-binary==2.9.10
+asyncpg==0.30.0
 alembic==1.15.1
 
 # Metadata Extraction

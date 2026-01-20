@@ -1,9 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, JSON, ForeignKey, Float
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
-
-Base = declarative_base()
+from .base import Base
 
 
 class LibrarySource(Base):
@@ -98,16 +96,24 @@ class LocalBook(Base):
 
     # Identificadores estables basados en metadatos
     series_hash = Column(String(64), index=True)  # Agrupa volúmenes de la misma serie/tipo
-    content_hash = Column(String(64), index=True)  # Identifica el EPUB específico (incluye volumen y traductor)
-    book_hash = Column(String(64), index=True)  # Identificador único del libro para reportes y descargas
+    book_hash = Column(String(64), index=True, unique=True)  # Identificador único del libro (antes content_hash)
+    
+    # Property for backward compatibility
+    @property
+    def content_hash(self):
+        return self.book_hash
+
+    @content_hash.setter
+    def content_hash(self, value):
+        self.book_hash = value
 
     source = relationship("LibrarySource", back_populates="books")
 
     def to_dict(self):
         return {
             "id": f"local_{self.id}",  # Prefijo para distinguir de Kavita IDs
-            "hash": self.content_hash,
-            "content_hash": self.content_hash,
+            "hash": self.book_hash,
+            "content_hash": self.book_hash,
             "title": self.title,
             "author": self.author,
             "romajiTitle": self.romaji_title,
@@ -177,9 +183,31 @@ class UserRating(Base):
     __tablename__ = "user_ratings"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, nullable=False)
-    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=False)
+    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False)
+    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=False, index=True)
     rating = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     book = relationship("LocalBook")
+
+
+class UserDownload(Base):
+    """
+    Historial de descargas de usuarios.
+    """
+    __tablename__ = "user_downloads"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
+    
+    # Relación flexible: Preferimos ID si existe, pero guardamos hashes por si el libro se borra
+    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=True)
+    book_hash = Column(String(64), index=True) # Persistencia histórica
+    series_hash = Column(String(64), index=True)
+    
+    title = Column(String(512)) # Snapshot del título
+    downloaded_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relaciones
+    book = relationship("LocalBook")
+    # user = relationship("User") # Definido en user_models (back_populates no necesario aquí si no se usa)
