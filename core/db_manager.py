@@ -147,6 +147,7 @@ class DatabaseManager:
                 ('roles', "TEXT DEFAULT '[]'"),
                 ('insignias', "TEXT DEFAULT '[]'"),
                 ('level_id', "INTEGER DEFAULT 6"),
+                ('level', "TEXT DEFAULT 'free'"),  # User tier string (admin, staff, premium, vip, white, free)
                 ('total_downloads', "INTEGER DEFAULT 0"),
                 ('custom_status', "TEXT"),
                 ('expires_at', "TIMESTAMP"),
