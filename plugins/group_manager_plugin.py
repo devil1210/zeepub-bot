@@ -40,7 +40,7 @@ class GroupManagerPlugin(BasePlugin):
         self.enabled = False
         # We need access to CustomMessages DB to fetch welcome messages
         self.custom_msg_engine = None
-    self.CustomMsgSession = None
+        self.CustomMsgSession = None
 
     def _get_sync_engine(self, db_url_in):
         if "sqlite" in db_url_in:
