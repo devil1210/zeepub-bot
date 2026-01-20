@@ -1,5 +1,6 @@
 services:
   zeepubs_bot:
+    build: .
     image: ghcr.io/devil1210/zeepub-bot:feat-integrate-web-client
     container_name: zeepubs_bot_v6
     restart: unless-stopped
