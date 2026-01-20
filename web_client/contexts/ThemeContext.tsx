@@ -181,6 +181,25 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // Don't render children until settings are loaded from backend
+  // This prevents the flash of default theme
+  if (isLoading) {
+    return (
+      <div style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#0f172a'
+      }}>
+        <div style={{ color: '#2b6cee', fontSize: '14px', fontWeight: 'bold' }}>
+          Cargando...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ThemeContext.Provider value={{ settings, updateSettings, resetSettings }}>
       {children}
