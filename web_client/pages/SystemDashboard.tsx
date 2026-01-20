@@ -37,7 +37,7 @@ export const SystemDashboard: React.FC = () => {
         <div className="flex flex-col gap-8 animate-in fade-in duration-500 pt-4">
 
             {/* Synchronization Strategy Table */}
-            <div className="glass-panel p-8 rounded-3xl border border-white/5 bg-white/5 shadow-sm">
+            <div className="glass-panel p-8 rounded-3xl border border-white/5 shadow-sm">
                 <div className="flex items-center gap-3 mb-8">
                     <Database className="w-5 h-5 text-primary" />
                     <h3 className="text-sm font-black text-white uppercase tracking-widest">Synchronization Strategy</h3>
@@ -95,7 +95,7 @@ export const SystemDashboard: React.FC = () => {
             </div>
 
             {/* Maintenance Section - Refined layout */}
-            <div className="glass-panel rounded-3xl p-8 border border-white/5 bg-white/5">
+            <div className="glass-panel rounded-3xl p-8 border border-white/5">
                 <div className="flex items-center justify-between mb-8">
                     <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
                         <Settings className="text-primary w-5 h-5" /> Mantenimiento
@@ -105,7 +105,7 @@ export const SystemDashboard: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* Scan Library */}
-                    <div className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-all group flex flex-col">
+                    <div className="p-6 rounded-2xl border border-white/5 hover:border-primary/50 transition-all group flex flex-col">
                         <div className="flex justify-between items-start mb-3">
                             <h4 className="font-bold text-white text-xs uppercase tracking-tight">Escanear Biblioteca</h4>
                             <Activity className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
@@ -121,7 +121,7 @@ export const SystemDashboard: React.FC = () => {
                     </div>
 
                     {/* Enrich Metadata */}
-                    <div className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-amber-500/50 transition-all group flex flex-col">
+                    <div className="p-6 rounded-2xl border border-white/5 hover:border-amber-500/50 transition-all group flex flex-col">
                         <div className="flex justify-between items-start mb-3">
                             <h4 className="font-bold text-white text-xs uppercase tracking-tight">Actualizar Metadatos</h4>
                             <Globe className="w-4 h-4 text-gray-500 group-hover:text-amber-400 transition-colors" />
@@ -137,7 +137,7 @@ export const SystemDashboard: React.FC = () => {
                     </div>
 
                     {/* Cloud Sync */}
-                    <div className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-blue-500/50 transition-all group flex flex-col">
+                    <div className="p-6 rounded-2xl border border-white/5 hover:border-blue-500/50 transition-all group flex flex-col">
                         <div className="flex justify-between items-start mb-3">
                             <h4 className="font-bold text-white text-xs uppercase tracking-tight">Cloud Sync (Supabase)</h4>
                             <Shield className="w-4 h-4 text-gray-500 group-hover:text-blue-400 transition-colors" />
@@ -162,7 +162,7 @@ export const SystemDashboard: React.FC = () => {
                     </div>
 
                     {/* System Updates */}
-                    <div className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-green-500/50 transition-all group flex flex-col">
+                    <div className="p-6 rounded-2xl border border-white/5 hover:border-green-500/50 transition-all group flex flex-col">
                         <div className="flex justify-between items-start mb-3">
                             <h4 className="font-bold text-white text-xs uppercase tracking-tight">System Update</h4>
                             <TrendingUp className="w-4 h-4 text-gray-500 group-hover:text-green-400 transition-colors" />
@@ -177,7 +177,7 @@ export const SystemDashboard: React.FC = () => {
                     </div>
 
                     {/* Docker Restart */}
-                    <div className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-blue-400/50 transition-all group flex flex-col">
+                    <div className="p-6 rounded-2xl border border-white/5 hover:border-blue-400/50 transition-all group flex flex-col">
                         <div className="flex justify-between items-start mb-3">
                             <h4 className="font-bold text-white text-xs uppercase tracking-tight">Bot Docker</h4>
                             <RefreshCw className="w-4 h-4 text-gray-500 group-hover:text-blue-400 transition-colors" />
@@ -214,7 +214,7 @@ export const SystemDashboard: React.FC = () => {
 
             {/* Extra Maintenance Tools */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/20 transition-all flex flex-col gap-4">
+                <div className="p-8 rounded-3xl border border-white/5 hover:border-white/20 transition-all flex flex-col gap-4">
                     <div className="flex items-center gap-3">
                         <HardDrive className="w-5 h-5 text-gray-500" />
                         <h4 className="font-bold text-white text-xs uppercase tracking-widest">Backup Database (Local)</h4>

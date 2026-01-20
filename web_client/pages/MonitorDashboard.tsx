@@ -92,7 +92,7 @@ export const MonitorDashboard: React.FC = () => {
                     <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-all duration-500"></div>
                 </div>
 
-                <div className="glass-panel p-6 rounded-3xl border border-white/5 bg-white/5 flex items-start justify-between relative overflow-hidden group">
+                <div className="glass-panel p-6 rounded-3xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Library Index</p>
                         <h3 className="text-4xl font-bold text-white mt-2">
@@ -109,7 +109,7 @@ export const MonitorDashboard: React.FC = () => {
                     <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-all duration-500"></div>
                 </div>
 
-                <div className="glass-panel p-6 rounded-3xl border border-white/5 bg-white/5 flex items-start justify-between relative overflow-hidden group">
+                <div className="glass-panel p-6 rounded-3xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Downloads (24h)</p>
                         <h3 className="text-4xl font-bold text-white mt-2">
@@ -126,7 +126,7 @@ export const MonitorDashboard: React.FC = () => {
                     <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all duration-500"></div>
                 </div>
 
-                <div className="glass-panel p-6 rounded-3xl border border-white/5 bg-white/5 flex items-start justify-between relative overflow-hidden group">
+                <div className="glass-panel p-6 rounded-3xl border border-white/5 flex items-start justify-between relative overflow-hidden group">
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">System Uptime</p>
                         <h3 className="text-4xl font-bold text-white mt-2">
@@ -145,7 +145,7 @@ export const MonitorDashboard: React.FC = () => {
             </div>
 
             {/* Recent Activity Table - Image 3 style */}
-            <div className="glass-panel border border-white/5 bg-white/5 rounded-3xl p-8 shadow-sm flex flex-col">
+            <div className="glass-panel border border-white/5 rounded-3xl p-8 shadow-sm flex flex-col">
                 <div className="flex items-center justify-between mb-8">
                     <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
                         <Activity className="text-purple-500 w-5 h-5" />
