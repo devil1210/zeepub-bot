@@ -136,6 +136,8 @@ async def handle_bot_request(
             handle_update_user_setting,
             handle_get_user_audit_history,
             handle_admin_get_recent_audit_logs,
+            handle_admin_get_themes,
+            handle_admin_save_theme,
         )
 
         ACTION_HANDLERS = {
