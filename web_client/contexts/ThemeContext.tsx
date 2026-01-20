@@ -109,14 +109,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const bgColor = settings.theme === 'amoled' ? '#000000' : (settings.backgroundColor ?? '#0f172a');
     root.style.setProperty('--bg-color', bgColor);
     root.style.setProperty('--app-bg', bgColor);
-    root.style.setProperty('--card-color', settings.cardColor ?? '#1e293b');
-
     // Handle card color RGB for glass effects (e.g. Nav Bar)
     if (settings.cardColor) {
       const cR = parseInt(settings.cardColor.substring(1, 3), 16);
       const cG = parseInt(settings.cardColor.substring(3, 5), 16);
       const cB = parseInt(settings.cardColor.substring(5, 7), 16);
       root.style.setProperty('--glass-rgb', `${cR}, ${cG}, ${cB}`);
+
+      // Construct card color with transparency
+      // If cardColor is HEX8 (#RRGGBBAA), use its alpha. Otherwise use glassOpacity.
+      let cardAlpha = settings.theme === 'amoled' ? 1 : (settings.glassOpacity ?? 0.6);
+      if (settings.theme !== 'amoled' && settings.cardColor.length === 9) {
+        cardAlpha = parseInt(settings.cardColor.substring(7, 9), 16) / 255;
+      }
+
+      root.style.setProperty('--card-color', settings.theme === 'amoled' ? '#000000' : `rgba(${cR}, ${cG}, ${cB}, ${cardAlpha})`);
     }
 
     // Handle background color RGB for variations
@@ -125,11 +132,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const bgG = parseInt(settings.backgroundColor.substring(3, 5), 16);
       const bgB = parseInt(settings.backgroundColor.substring(5, 7), 16);
       root.style.setProperty('--bg-color-rgb', `${bgR}, ${bgG}, ${bgB}`);
+
       if (settings.backgroundColor.length === 9) {
         const bgA = parseInt(settings.backgroundColor.substring(7, 9), 16) / 255;
         root.style.setProperty('--bg-opacity', bgA.toString());
+        root.style.setProperty('--bg-color', settings.backgroundColor);
       } else {
         root.style.setProperty('--bg-opacity', '1');
+        root.style.setProperty('--bg-color', settings.backgroundColor);
       }
     }
 

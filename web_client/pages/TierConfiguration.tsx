@@ -750,6 +750,20 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                                 className="bg-transparent border-none text-xs font-mono text-white uppercase w-24 focus:ring-0"
                                             />
                                         </div>
+                                        <div className="mt-2 text-right">
+                                            <span className="text-[10px] font-black text-primary uppercase">Alpha: {Math.round((config.backgroundColor.length === 9 ? parseInt(config.backgroundColor.substring(7, 9), 16) : 255) / 2.55)}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="255"
+                                            value={config.backgroundColor.length === 9 ? parseInt(config.backgroundColor.substring(7, 9), 16) : 255}
+                                            onChange={(e) => {
+                                                const alpha = parseInt(e.target.value).toString(16).padStart(2, '0').toUpperCase();
+                                                setConfig({ ...config, backgroundColor: config.backgroundColor.substring(0, 7) + alpha });
+                                            }}
+                                            className="w-full accent-primary h-1 bg-white/10 rounded-lg appearance-none cursor-pointer mt-1"
+                                        />
                                     </div>
 
                                     <div>
@@ -771,6 +785,20 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                                 className="bg-transparent border-none text-xs font-mono text-white uppercase w-24 focus:ring-0"
                                             />
                                         </div>
+                                        <div className="mt-2 text-right">
+                                            <span className="text-[10px] font-black text-primary uppercase">Alpha: {Math.round((config.cardColor.length === 9 ? parseInt(config.cardColor.substring(7, 9), 16) : 255) / 2.55)}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="255"
+                                            value={config.cardColor.length === 9 ? parseInt(config.cardColor.substring(7, 9), 16) : 255}
+                                            onChange={(e) => {
+                                                const alpha = parseInt(e.target.value).toString(16).padStart(2, '0').toUpperCase();
+                                                setConfig({ ...config, cardColor: config.cardColor.substring(0, 7) + alpha });
+                                            }}
+                                            className="w-full accent-primary h-1 bg-white/10 rounded-lg appearance-none cursor-pointer mt-1"
+                                        />
                                     </div>
 
                                     <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-center gap-4 group hover:bg-primary/10 transition-all cursor-default overflow-hidden relative">
