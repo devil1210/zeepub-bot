@@ -11,6 +11,7 @@ from utils.download_limiter import downloads_left
 from services.opds_service import mostrar_colecciones, get_cached_feed
 from config.config_settings import config
 from utils.helpers import get_thread_id, is_command_for_bot, build_search_url
+from services.user_service import get_effective_user
 
 # from utils.http_client import parse_feed_from_url  <-- Removing this
 from utils.decorators import rate_limit

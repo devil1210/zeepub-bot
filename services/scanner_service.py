@@ -6,7 +6,7 @@ import logging
 import asyncio
 from datetime import datetime
 from utils.library_db import get_session, init_library_db, COVERS_DIR
-from models.library_models import LibrarySource, LocalBook
+from models.library_models import LibrarySource, LocalBook, DuplicateBook
 from utils.epub_extractor import EpubMetadataExtractor
 from utils.helpers import generate_book_hash, generate_series_hash, extract_author
 
@@ -31,8 +31,6 @@ class ScannerService:
             print(f"Error parseando configuración de librerías: {e}")
             self.libraries = {}
 
-        init_library_db()
-
     def sync_all(self, force_scan=False):
         """
         Sincroniza todas las fuentes configuradas.
@@ -44,8 +42,18 @@ class ScannerService:
         ScannerService._is_scanning = True
         session = get_session()
         try:
+            results = {
+                "total_scanned": 0,
+                "added": 0,
+                "updated": 0,
+                "duplicates": 0,
+                "failed": 0,
+                "covers_created": 0,
+                "sources_scanned": len(self.libraries)
+            }
+
             for name, path in self.libraries.items():
-                print(f"Iniciando escaneo de fuente: {name} ({path})")
+                logger.info(f"Iniciando escaneo de fuente: {name} ({path})")
 
                 # 1. Asegurar que la fuente existe en DB
                 source = session.query(LibrarySource).filter_by(path=path).first()
@@ -54,13 +62,20 @@ class ScannerService:
                     session.add(source)
                     session.commit()
 
-                self._scan_directory(source, session, force_scan)
+                source_results = self._scan_directory(source, session, force_scan)
+                
+                # Update global results
+                for k, v in source_results.items():
+                    results[k] += v
 
                 source.last_scanned = datetime.utcnow()
                 session.commit()
 
-            print("Escaneo completado exitosamente.")
-            return True
+            logger.info(f"Escaneo completado: {results}")
+            return results
+        except Exception as e:
+            logger.error(f"Error en sync_all: {e}")
+            return None
         finally:
             session.close()
             ScannerService._is_scanning = False
@@ -69,17 +84,37 @@ class ScannerService:
         """
         Recorre el directorio y procesa archivos nuevos o modificados.
         """
-        count = 0
+        results = {
+            "total_scanned": 0,
+            "added": 0,
+            "updated": 0,
+            "duplicates": 0,
+            "failed": 0,
+            "covers_created": 0
+        }
+        
         for root, dirs, files in os.walk(source.path):
             for file in files:
                 if file.lower().endswith(".epub"):
+                    results["total_scanned"] += 1
                     full_path = os.path.join(root, file)
-                    if self._process_book(full_path, source, session, force_scan):
-                        count += 1
-                        # Batch commit para no bloquear DB mucho tiempo pero asegurar progreso
-                        if count % 100 == 0:
-                            session.commit()
-                            logger.info(f"Progreso de escaneo: {count} libros procesados en {source.name}")
+                    book_result = self._process_book(full_path, source, session, force_scan)
+                    
+                    if book_result == "added":
+                        results["added"] += 1
+                    elif book_result == "updated":
+                        results["updated"] += 1
+                    elif book_result == "duplicate":
+                        results["duplicates"] += 1
+                    elif book_result is False:
+                        results["failed"] += 1
+                    
+                    # Batch commit para no bloquear DB mucho tiempo pero asegurar progreso
+                    if (results["added"] + results["updated"]) % 50 == 0 and (results["added"] + results["updated"]) > 0:
+                        session.commit()
+                        logger.info(f"Progreso de escaneo: {results['added'] + results['updated']} libros procesados en {source.name}")
+        
+        return results
 
     def _process_book(self, filepath, source, session, force_scan=False) -> bool:
         """
@@ -234,6 +269,7 @@ class ScannerService:
                 LocalBook.filepath == filepath
             ).first()
             
+            outcome = "updated"
             if existing_same_file:
                 # Same file, just update metadata
                 book = existing_same_file
@@ -241,22 +277,34 @@ class ScannerService:
             else:
                 # Check if there's another file with same content (real duplicate)
                 existing_with_same_hash = session.query(LocalBook).filter(
-                    LocalBook.content_hash == book.content_hash,
-                    LocalBook.filepath != filepath
+                    LocalBook.book_hash == book.book_hash
                 ).first()
                 
                 if existing_with_same_hash:
                     # This is a REAL duplicate (different file, same content)
+                    # We SKIP it to avoid UNIQUE constraint violation on book_hash
+                    # But we RECORD it for the user to review
                     logger.warning(f"📕 Duplicado detectado: {book.title}")
-                    logger.warning(f"   Archivo existente: {existing_with_same_hash.filepath}")
-                    logger.warning(f"   Archivo duplicado: {filepath}")
-                    logger.warning(f"   Hash: {book.content_hash[:8]}...")
                     
-                    # Add as new record (both files coexist)
-                    session.add(book)
+                    try:
+                        dup = DuplicateBook(
+                            book_hash=book.book_hash,
+                            original_filepath=existing_with_same_hash.filepath,
+                            duplicate_filepath=filepath,
+                            title=book.title,
+                            author=book.author
+                        )
+                        session.add(dup)
+                        session.commit() # Save duplicate immediately to be safe
+                    except Exception as de:
+                        logger.error(f"Error guardando registro de duplicado: {de}")
+                        session.rollback()
+
+                    return "duplicate"
                 else:
                     # New unique file, add to session
                     session.add(book)
+                    outcome = "added"
 
 
             # Guardar Portada en 4 calidades
@@ -272,9 +320,8 @@ class ScannerService:
                     book.cover_medium = base_url + os.path.basename(cover_paths['medium'])
                     book.cover_low = base_url + os.path.basename(cover_paths['low'])
 
-
             # session.commit()  # Movido a nivel de batch o fuente
-            return True
+            return outcome
         except Exception as e:
             logger.error(f"Error procesando libro {filepath}: {e}")
             session.rollback()

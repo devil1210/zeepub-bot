@@ -138,6 +138,8 @@ async def handle_bot_request(
             handle_admin_get_recent_audit_logs,
             handle_admin_get_themes,
             handle_admin_save_theme,
+            handle_admin_get_duplicates,
+            handle_admin_clear_duplicates,
         )
 
         ACTION_HANDLERS = {
@@ -179,6 +181,8 @@ async def handle_bot_request(
             "admin_enrich_metadata": handle_admin_enrich_metadata,
             "update_user_setting": handle_update_user_setting,
             "get_user_audit_history": handle_get_user_audit_history,
+            "admin_get_duplicates": handle_admin_get_duplicates,
+            "admin_clear_duplicates": handle_admin_clear_duplicates,
         }
 
         handler = ACTION_HANDLERS.get(action)

@@ -653,15 +653,29 @@ class MaintenancePlugin(BasePlugin):
 
             # Ejecutar escaneo en un hilo separado para no bloquear el bot
             scanner = ScannerService(libs_json)
-            await asyncio.to_thread(scanner.sync_all, force_scan=force)
+            results = await asyncio.to_thread(scanner.sync_all, force_scan=force)
+
+            if results:
+                summary = (
+                    "✅ <b>Escaneo completado con éxito.</b>\n\n"
+                    f"📊 <b>Resumen:</b>\n"
+                    f"• Fuentes: {results.get('sources_scanned', 0)}\n"
+                    f"• Procesados: {results.get('total_scanned', 0)}\n"
+                    f"• Nuevos: {results.get('added', 0)}\n"
+                    f"• Actualizados: {results.get('updated', 0)}\n"
+                    f"• Duplicados: {results.get('duplicates', 0)}\n"
+                    f"• Fallidos: {results.get('failed', 0)}"
+                )
+            else:
+                summary = "✅ <b>Escaneo completado con éxito.</b>\nLa base de datos local ha sido actualizada."
 
             await context.bot.edit_message_text(
                 chat_id=update.effective_chat.id,
                 message_id=msg.message_id,
-                text="✅ <b>Escaneo completado con éxito.</b>\nLa base de datos local ha sido actualizada.",
+                text=summary,
                 parse_mode="HTML"
             )
-            logger.info(f"Admin {uid} inició y completó escaneo de biblioteca.")
+            logger.info(f"Admin {uid} inició y completó escaneo de biblioteca. Resumen: {results}")
 
         except Exception as e:
             logger.error(f"Error en scan_library: {e}", exc_info=True)

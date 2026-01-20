@@ -211,3 +211,25 @@ class UserDownload(Base):
     # Relaciones
     book = relationship("LocalBook")
     # user = relationship("User") # Definido en user_models (back_populates no necesario aquí si no se usa)
+
+
+class DuplicateBook(Base):
+    """
+    Registra archivos EPUB que tienen el mismo book_hash que otro ya existente.
+    """
+    __tablename__ = "duplicate_books"
+
+    id = Column(Integer, primary_key=True)
+    book_hash = Column(String(64), index=True, nullable=False)
+    
+    # El archivo que ya estaba en la base de datos
+    original_filepath = Column(String(1024))
+    
+    # El archivo nuevo que se intentó añadir y fue rechazado
+    duplicate_filepath = Column(String(1024), nullable=False)
+    
+    # Metadata básica para visualización
+    title = Column(String(512))
+    author = Column(String(255))
+    
+    detected_at = Column(DateTime, default=datetime.utcnow)

@@ -4,7 +4,7 @@ from core.db_manager_pg import pg_manager
 from models.base import Base
 # Import custom models so they are registered in Base.metadata
 from models.user_models import User, UserLevel, UserUISettings
-from models.library_models import LibrarySource, LocalBook, UserRating, UserDownload
+from models.library_models import LibrarySource, LocalBook, UserRating, UserDownload, DuplicateBook
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +33,28 @@ class SchemaOrchestrator:
                 
                 # Auto-Migration for UserLevel (Add missing columns to existing table)
                 await SchemaOrchestrator._check_and_add_column('user_levels', 'color', 'VARCHAR(20) DEFAULT \'#607D8B\'')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'ui_font_size', 'INTEGER DEFAULT 14')
                 await SchemaOrchestrator._check_and_add_column('user_levels', 'ui_glass_blur', 'INTEGER DEFAULT 12')
                 await SchemaOrchestrator._check_and_add_column('user_levels', 'ui_cover_width', 'INTEGER DEFAULT 120')
                 await SchemaOrchestrator._check_and_add_column('user_levels', 'ui_accent_opacity', 'INTEGER DEFAULT 20')
                 await SchemaOrchestrator._check_and_add_column('user_levels', 'panel_transparency', 'INTEGER DEFAULT 60')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'background_color', 'VARCHAR(20) DEFAULT \'#0f172a\'')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'card_color', 'VARCHAR(20) DEFAULT \'#1e293b\'')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'banner_content_offset', 'INTEGER DEFAULT 0')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'force_settings', 'BOOLEAN DEFAULT FALSE')
                 await SchemaOrchestrator._check_and_add_column('user_levels', 'price', 'INTEGER DEFAULT 0')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'can_read', 'BOOLEAN DEFAULT TRUE')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'has_library_access', 'BOOLEAN DEFAULT TRUE')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'can_request_books', 'BOOLEAN DEFAULT TRUE')
                 await SchemaOrchestrator._check_and_add_column('user_levels', 'early_access', 'BOOLEAN DEFAULT FALSE')
                 await SchemaOrchestrator._check_and_add_column('user_levels', 'custom_themes', 'BOOLEAN DEFAULT FALSE')
+                await SchemaOrchestrator._check_and_add_column('user_levels', 'show_recommendations', 'BOOLEAN DEFAULT TRUE')
+
+                # Auto-Migration for UserUISettings
+                await SchemaOrchestrator._check_and_add_column('user_ui_settings', 'font_size', 'INTEGER')
+                await SchemaOrchestrator._check_and_add_column('user_ui_settings', 'nav_opacity', 'INTEGER')
+                await SchemaOrchestrator._check_and_add_column('user_ui_settings', 'accent_opacity', 'INTEGER')
+                await SchemaOrchestrator._check_and_add_column('user_ui_settings', 'show_recommendations', 'BOOLEAN')
                 
                 # Seed Initial Data
                 await SchemaOrchestrator._seed_initial_data()
@@ -62,12 +77,12 @@ class SchemaOrchestrator:
                 
                 # We use merge to upsert based on Primary Key (id)
                 levels = [
-                    UserLevel(id=1, name='Administrador', priority=100, color='#FF5252', price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark'),
-                    UserLevel(id=2, name='Staff', priority=90, color='#7C4DFF', price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark'),
-                    UserLevel(id=3, name='Premium', priority=50, color='#FFD740', price=499, daily_downloads=50, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark'),
-                    UserLevel(id=4, name='VIP', priority=40, color='#69F0AE', price=999, daily_downloads=20, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark'),
-                    UserLevel(id=5, name='Patrocinador', priority=20, color='#E0E0E0', price=0, daily_downloads=10, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark'),
-                    UserLevel(id=6, name='Lector', priority=10, color='#607D8B', price=0, daily_downloads=5, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark'),
+                    UserLevel(id=1, name='Administrador', priority=100, color='#FF5252', price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                    UserLevel(id=2, name='Staff', priority=90, color='#7C4DFF', price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                    UserLevel(id=3, name='Premium', priority=50, color='#FFD740', price=499, daily_downloads=50, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                    UserLevel(id=4, name='VIP', priority=40, color='#69F0AE', price=999, daily_downloads=20, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                    UserLevel(id=5, name='Patrocinador', priority=20, color='#E0E0E0', price=0, daily_downloads=10, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                    UserLevel(id=6, name='Lector', priority=10, color='#607D8B', price=0, daily_downloads=5, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
                 ]
                 
                 for lvl in levels:

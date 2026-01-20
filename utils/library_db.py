@@ -1,7 +1,8 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from models.library_models import Base
+from config.config_settings import config
 
 # Carpeta dedicada para la base de datos y adjuntos (para backups fáciles)
 DB_DIR = os.path.abspath("data/library")
@@ -15,11 +16,32 @@ os.makedirs(COVERS_DIR, exist_ok=True)
 os.makedirs(THUMBNAILS_DIR, exist_ok=True)
 
 # Motor de base de datos
-engine = create_engine(
-    f"sqlite:///{DB_PATH}", 
-    echo=False, 
-    connect_args={"timeout": 30}
-)
+def create_library_engine():
+    db_url = config.DATABASE_URL
+    
+    if db_url:
+        # For synchronous SQLAlchemy (psycopg2), ensure url starts with postgresql://
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        
+        # If it's the async url, convert back to sync for this module
+        if "+asyncpg" in db_url:
+            db_url = db_url.replace("+asyncpg", "", 1)
+            
+        return create_engine(
+            db_url,
+            echo=False,
+            pool_pre_ping=True
+        )
+    else:
+        # Fallback to SQLite
+        return create_engine(
+            f"sqlite:///{DB_PATH}", 
+            echo=False, 
+            connect_args={"timeout": 30}
+        )
+
+engine = create_library_engine()
 session_factory = sessionmaker(bind=engine)
 Session = scoped_session(session_factory)
 
@@ -29,9 +51,13 @@ def check_migrations():
     Añade columnas nuevas a tablas existentes para evitar OperationalError
     durante actualizaciones en fase alpha.
     """
-    import sqlite3
     import logging
     _log = logging.getLogger(__name__)
+
+    # Solo aplica a SQLite
+    if engine.url.drivername != "sqlite":
+        _log.info("Skiping SQLite-specific migrations for non-SQLite DB.")
+        return
 
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -138,9 +164,13 @@ def init_fts():
     """
     Inicializa la búsqueda de texto completo (FTS5) y los triggers de sincronización.
     """
-    import sqlite3
     import logging
     _log = logging.getLogger(__name__)
+
+    # Solo aplica a SQLite
+    if engine.url.drivername != "sqlite":
+        _log.info("Skiping SQLite-specific FTS initialization for non-SQLite DB.")
+        return
 
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -246,35 +276,38 @@ def init_library_db():
     from datetime import datetime
     _log = logging.getLogger(__name__)
 
-    _log.info(f"Probando conexión a base de datos de librería: {DB_PATH}")
+    _log.info(f"Probando conexión a base de datos de librería: {engine.url}")
 
-    # --- 0. Pre-crear tablas críticas via SQLite directo (Garantía) ---
+    # --- 0. Pre-crear tablas críticas via engine ---
     try:
-        conn = sqlite3.connect(DB_PATH, timeout=10)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_audit_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id VARCHAR(64) NOT NULL,
-                username VARCHAR(255),
-                changed_by_id VARCHAR(64),
-                changed_by_username VARCHAR(255),
-                action VARCHAR(50) NOT NULL,
-                field_changed VARCHAR(100),
-                old_value JSON,
-                new_value JSON,
-                changes_summary JSON,
-                ip_address VARCHAR(45),
-                user_agent VARCHAR(512),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON user_audit_logs(user_id)")
-        conn.commit()
-        conn.close()
-        _log.info("Tabla user_audit_logs verificada vía SQLite directo.")
+        if engine.url.drivername == "sqlite":
+            import sqlite3
+            conn = sqlite3.connect(DB_PATH, timeout=10)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_audit_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id VARCHAR(64) NOT NULL,
+                    username VARCHAR(255),
+                    changed_by_id VARCHAR(64),
+                    changed_by_username VARCHAR(255),
+                    action VARCHAR(50) NOT NULL,
+                    field_changed VARCHAR(100),
+                    old_value JSON,
+                    new_value JSON,
+                    changes_summary JSON,
+                    ip_address VARCHAR(45),
+                    user_agent VARCHAR(512),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON user_audit_logs(user_id)")
+            conn.commit()
+            conn.close()
+            _log.info("Tabla user_audit_logs verificada vía SQLite directo.")
     except Exception as e:
         _log.warning(f"Error en pre-creación de audit logs: {e}")
-    if os.path.exists(DB_PATH):
+
+    if engine.url.drivername == "sqlite" and os.path.exists(DB_PATH):
         try:
             conn = sqlite3.connect(DB_PATH)
             # Integrity check can be slow on large DBs, but malformed error is worse
@@ -309,6 +342,7 @@ def init_library_db():
         
         # Importar modelos para asegurar que se registren en metadata
         import models.user_audit_models  # noqa
+        import models.library_models     # noqa
 
         # Verificar que los modelos estén registrados
         if not Base.metadata.tables:
@@ -319,13 +353,14 @@ def init_library_db():
         # Crear tablas
         Base.metadata.create_all(engine)
         
-        # Configurar PRAGMAs para rendimiento (SQLite)
-        with engine.connect() as conn:
-            from sqlalchemy import text
-            conn.execute(text("PRAGMA journal_mode=WAL"))
-            conn.execute(text("PRAGMA synchronous=NORMAL"))
-            conn.execute(text("PRAGMA busy_timeout=5000")) # Esperar hasta 5 segundos si está ocupada
-            conn.commit()
+        if engine.url.drivername == "sqlite":
+            # Configurar PRAGMAs para rendimiento (SQLite)
+            with engine.connect() as conn:
+                from sqlalchemy import text
+                conn.execute(text("PRAGMA journal_mode=WAL"))
+                conn.execute(text("PRAGMA synchronous=NORMAL"))
+                conn.execute(text("PRAGMA busy_timeout=5000")) # Esperar hasta 5 segundos si está ocupada
+                conn.commit()
             
         _log.info("Tablas de base de datos de librería aseguradas.")
         

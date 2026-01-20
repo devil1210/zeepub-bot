@@ -79,22 +79,30 @@ class UserLevel(Base):
     # UI Defaults del nivel
     ui_theme = Column(String(20), default='dark')
     ui_primary_color = Column(String(20), default='#3b82f6')
+    ui_font_size = Column(Integer, default=14)
     ui_nav_opacity = Column(Integer, default=80)
     ui_glass_blur = Column(Integer, default=12)
     ui_cover_width = Column(Integer, default=120)
     ui_accent_opacity = Column(Integer, default=20)
     panel_transparency = Column(Integer, default=60)
+    background_color = Column(String(20), default='#0f172a')
+    card_color = Column(String(20), default='#1e293b')
+    banner_content_offset = Column(Integer, default=0)
+    force_settings = Column(Boolean, default=False)
     
     # Características / Pricing
-    price = Column(Integer, default=0) # Consider float/Numeric if needed, usually int/cents or simple float
-    # Note: price in miniapp_handlers seems to be float/int.
+    price = Column(Float, default=0.0)
     
     # Permisos del nivel
     can_download = Column(Boolean, default=True)
+    can_read = Column(Boolean, default=True)
     daily_downloads = Column(Integer, default=5)
     has_mini_app_access = Column(Boolean, default=True)
+    has_library_access = Column(Boolean, default=True)
+    can_request_books = Column(Boolean, default=True)
     early_access = Column(Boolean, default=False)
     custom_themes = Column(Boolean, default=False)
+    show_recommendations = Column(Boolean, default=True)
     
     users = relationship("User", back_populates="level_info")
 
@@ -109,8 +117,11 @@ class UserUISettings(Base):
     
     theme_type = Column(String(20))
     primary_color = Column(String(20))
+    font_size = Column(Integer)
     glass_opacity = Column(Integer)
+    nav_opacity = Column(Integer)
+    accent_opacity = Column(Integer)
     card_glow_intensity = Column(Integer)
-    # ... otros campos UI
+    show_recommendations = Column(Boolean)
     
     user = relationship("User", back_populates="ui_settings")

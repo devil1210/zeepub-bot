@@ -15,7 +15,7 @@ import shutil
 from core.db_manager import db_manager
 from core.supabase_manager import supabase_manager
 from utils.library_db import get_session
-from models.library_models import LocalBook, LibrarySource
+from models.library_models import LocalBook, LibrarySource, DuplicateBook
 from core.state_manager import state_manager
 from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
@@ -23,6 +23,7 @@ from services.library_service import LibraryService
 from services.opds_service import get_cached_feed
 from services.rating_service import RatingService
 from services.settings_service import get_setting, set_setting
+from sqlalchemy import desc
 from services.telegram_service import enviar_libro_directo
 from utils.helpers import (
     build_search_url,
@@ -698,7 +699,7 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
                     lb = session.query(LocalBook).filter(or_(LocalBook.content_hash == b_hash, LocalBook.title == b_title)).first()
                     if lb:
                         popular_book["author"] = lb.author
-                        popular_book["cover"] = lb.cover_path
+                        popular_book["cover"] = lb.cover_low
                     session.close()
         except Exception as e:
             logger.error(f"Supabase popular book error: {e}")
@@ -724,7 +725,7 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
                 lb = session.query(LocalBook).filter(or_(LocalBook.content_hash == book_hash, LocalBook.title == title)).first()
                 if lb:
                     popular_book["author"] = lb.author
-                    popular_book["cover"] = lb.cover_path
+                    popular_book["cover"] = lb.cover_low
                 session.close()
 
     return {
@@ -1080,21 +1081,36 @@ async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, 
         }
     
     try:
-        from utils.library_db import DB_PATH, COVERS_DIR
+        from utils.library_db import DB_PATH, COVERS_DIR, engine
+        import sqlalchemy as sa
         
         items_deleted = []
         cover_count = 0
         
-        # 1. Delete database file
-        if os.path.exists(DB_PATH):
+        # 0. If Postgres, clear tables instead of deleting file
+        if engine.url.drivername != "sqlite":
             try:
-                os.remove(DB_PATH)
-                items_deleted.append("Base de datos eliminada")
+                with engine.begin() as conn:
+                    # Order of deletion matters due to FKs
+                    conn.execute(sa.text("DELETE FROM user_ratings"))
+                    conn.execute(sa.text("DELETE FROM user_downloads"))
+                    conn.execute(sa.text("DELETE FROM local_books"))
+                    conn.execute(sa.text("DELETE FROM library_sources"))
+                items_deleted.append("Tablas de PostgreSQL limpiadas (local_books, sources, ratings, downloads)")
             except Exception as e:
-                logger.error(f"Error deleting DB: {e}")
-                return {"success": False, "message": f"Error eliminando base de datos: {e}"}
+                logger.error(f"Error clearing Postgres tables: {e}")
+                return {"success": False, "message": f"Error limpiando tablas Postgres: {e}"}
         else:
-            items_deleted.append("Base de datos no existía")
+            # 1. Delete SQLite database file
+            if os.path.exists(DB_PATH):
+                try:
+                    os.remove(DB_PATH)
+                    items_deleted.append("Archivo de base de datos SQLite eliminado")
+                except Exception as e:
+                    logger.error(f"Error deleting DB: {e}")
+                    return {"success": False, "message": f"Error eliminando base de datos: {e}"}
+            else:
+                items_deleted.append("Base de datos SQLite no existía")
         
         # 2. Delete covers directory
         if os.path.exists(COVERS_DIR):
@@ -1968,3 +1984,48 @@ async def handle_admin_get_recent_audit_logs(data: Dict[str, Any], user_data: Di
     except Exception as e:
         logger.error(f"Error getting recent audit logs: {e}")
         return {"success": False, "message": str(e)}
+
+
+async def handle_admin_get_duplicates(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Retorna la lista de archivos duplicados detectados."""
+    if user_data.get("level") != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+    
+    session = get_session()
+    try:
+        dups = session.query(DuplicateBook).order_by(desc(DuplicateBook.detected_at)).all()
+        
+        result = []
+        for d in dups:
+            result.append({
+                "id": d.id,
+                "title": d.title,
+                "author": d.author,
+                "hash": d.book_hash,
+                "original": d.original_filepath,
+                "duplicate": d.duplicate_filepath,
+                "detectedAt": d.detected_at.isoformat() if d.detected_at else None
+            })
+            
+        return {"success": True, "duplicates": result}
+    except Exception as e:
+        logger.error(f"Error fetching duplicates: {e}")
+        return {"success": False, "message": str(e)}
+    finally:
+        session.close()
+
+async def handle_admin_clear_duplicates(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Limpia la tabla de registros de duplicados."""
+    if user_data.get("level") != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+    
+    session = get_session()
+    try:
+        session.query(DuplicateBook).delete()
+        session.commit()
+        return {"success": True, "message": "Registros de duplicados limpiados."}
+    except Exception as e:
+        logger.error(f"Error clearing duplicates: {e}")
+        return {"success": False, "message": str(e)}
+    finally:
+        session.close()
