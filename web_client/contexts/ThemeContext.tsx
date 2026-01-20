@@ -106,7 +106,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--glass-blur', `${settings.glassBlur ?? 12}px`);
     root.style.setProperty('--cover-width', `${settings.coverWidth ?? 120}px`);
     root.style.setProperty('--banner-content-offset', `${settings.bannerContentOffset ?? 0}px`);
-    root.style.setProperty('--bg-color', settings.backgroundColor ?? '#0f172a');
+    const bgColor = settings.theme === 'amoled' ? '#000000' : (settings.backgroundColor ?? '#0f172a');
+    root.style.setProperty('--bg-color', bgColor);
+    root.style.setProperty('--app-bg', bgColor);
     root.style.setProperty('--card-color', settings.cardColor ?? '#1e293b');
 
     // Handle card color RGB for glass effects (e.g. Nav Bar)

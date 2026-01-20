@@ -141,18 +141,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       refreshStatus();
 
       // Sync Theme
-      const applyTelegramTheme = () => {
-        if (tg.themeParams) {
-          const bg = tg.themeParams.bg_color || '#000000';
-          const buttonColor = tg.themeParams.button_color || '#2b6cee';
-          updateSettings({
-            primaryColor: buttonColor
-          });
-          document.documentElement.style.setProperty('--app-bg', bg);
-        }
-      };
-
-      applyTelegramTheme();
 
     } else {
       // Fallback for browser testing
