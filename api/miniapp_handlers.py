@@ -1459,24 +1459,15 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 async def handle_admin_get_themes(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Retorna la lista de plantillas de temas disponibles."""
     if user_data.get("level") != "admin":
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
-    client = supabase_manager.get_client()
+    from repositories.theme_repository import theme_repo
     try:
-        res = client.table('app_themes').select('*').order('name').execute()
-        
-        # Deduplicate by name (keep first occurrence)
-        themes = []
-        seen_names = set()
-        for t in res.data:
-            name = t.get('name')
-            if name and name not in seen_names:
-                themes.append(t)
-                seen_names.add(name)
-                
+        themes = await theme_repo.get_all_themes()
         return {"success": True, "themes": themes}
     except Exception as e:
         logger.error(f"Error fetching themes: {e}")
@@ -1495,12 +1486,12 @@ async def handle_admin_save_theme(data: Dict[str, Any], user_data: Dict[str, Any
     # Clean name: remove trailing numbers that look like " 2", " 3"
     theme_name = re.sub(r'\s+\d+$', '', theme_name).strip()
     
-    client = supabase_manager.get_client()
+    from repositories.theme_repository import theme_repo
     
     # Ensure name uniqueness if it's a new theme request
     if data.get("is_new"):
-        res_names = client.table('app_themes').select('name').execute()
-        existing_names = [t['name'] for t in res_names.data]
+        existing_themes = await theme_repo.get_all_themes()
+        existing_names = [t['name'] for t in existing_themes]
         
         if theme_name in existing_names:
             # Avoid ending in " 2"
@@ -1521,28 +1512,28 @@ async def handle_admin_save_theme(data: Dict[str, Any], user_data: Dict[str, Any
     insert_data = {
         "name": theme_name,
         "description": data.get("description", ""),
-        "primary_color": data.get("primaryColor"),
-        "glass_blur": data.get("glassBlur"),
-        "glass_opacity": data.get("glassOpacity"),
-        "nav_opacity": data.get("navOpacity"),
-        "accent_opacity": data.get("accentOpacity"),
-        "card_glow_intensity": data.get("cardGlowIntensity"),
-        "background_color": data.get("backgroundColor"),
-        "card_color": data.get("cardColor"),
-        "theme_type": data.get("theme"),
-        "font_size": data.get("fontSize"),
-        "cover_width": data.get("coverWidth"),
-        "updated_at": "now()"
+        "primaryColor": data.get("primaryColor"),
+        "glassBlur": data.get("glassBlur"),
+        "glassOpacity": data.get("glassOpacity"),
+        "navOpacity": data.get("navOpacity"),
+        "accentOpacity": data.get("accentOpacity"),
+        "cardGlowIntensity": data.get("cardGlowIntensity"),
+        "backgroundColor": data.get("backgroundColor"),
+        "cardColor": data.get("cardColor"),
+        "theme": data.get("theme"),
+        "fontSize": data.get("fontSize"),
+        "coverWidth": data.get("coverWidth"),
+        "bannerContentOffset": data.get("bannerContentOffset")
     }
     
     # Remove None values
     insert_data = {k: v for k, v in insert_data.items() if v is not None}
     
     try:
-        res = client.table('app_themes').upsert(insert_data, on_conflict='name').execute()
-        if not res.data:
+        res = await theme_repo.upsert(insert_data)
+        if not res:
              return {"success": False, "message": "No se pudo guardar el tema"}
-        return {"success": True, "theme": res.data[0]}
+        return {"success": True, "theme": res}
     except Exception as e:
         logger.error(f"Error saving theme: {e}")
         return {"success": False, "message": str(e)}

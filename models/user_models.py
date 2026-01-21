@@ -135,3 +135,35 @@ class UserUISettings(Base):
     show_recommendations = Column(Boolean)
     
     user = relationship("User", back_populates="ui_settings")
+
+class AppTheme(Base):
+    """
+    Temas globales de la aplicación (Presets).
+    Tabla: app_themes
+    """
+    __tablename__ = 'app_themes'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), unique=True, nullable=False)
+    description = Column(String(500))
+    
+    # Visual Properties
+    theme_type = Column(String(20), default='dark') # 'theme' in frontend
+    primary_color = Column(String(20))
+    background_color = Column(String(20))
+    card_color = Column(String(20))
+    
+    # Opacities & Effects
+    glass_opacity = Column(Integer)
+    nav_opacity = Column(Integer)
+    accent_opacity = Column(Integer)
+    glass_blur = Column(Integer)
+    card_glow_intensity = Column(Integer)
+    
+    # Layout
+    font_size = Column(Integer)
+    cover_width = Column(Integer)
+    banner_content_offset = Column(Integer)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

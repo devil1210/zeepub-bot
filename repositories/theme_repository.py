@@ -1,0 +1,171 @@
+from typing import List, Dict, Any, Optional
+from repositories.base_repository import BaseRepository
+from core.db_manager import DatabaseManager, db_manager
+from models.user_models import AppTheme
+from config.config_settings import config
+from core.db_manager_pg import pg_manager
+from sqlalchemy import select, delete
+from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
+
+class ThemeRepository(BaseRepository[Dict[str, Any]]):
+    """
+    Repositorio para gestión de temas (AppTheme).
+    Soporta Postgres/SQLite/Offline.
+    """
+
+    def __init__(self, db: DatabaseManager = db_manager):
+        self.db = db
+
+    async def get_all_themes(self) -> List[Dict[str, Any]]:
+        # 1. Postgres
+        if config.ENABLE_POSTGRES_PLUGIN:
+             try:
+                async with pg_manager.get_session() as session:
+                    stmt = select(AppTheme).order_by(AppTheme.name)
+                    result = await session.execute(stmt)
+                    themes = result.scalars().all()
+                    return [self._to_dict(t) for t in themes]
+             except Exception as e:
+                logger.error(f"Postgres get_all_themes error: {e}")
+
+        # 2. SQLite
+        try:
+            async with self.db.connection() as conn:
+                # Need to list all columns manually or use * (careful with order)
+                # Using ORM-ish query with sqlite not easy without full ORM bind.
+                # Just use raw SQL.
+                cols = ["id", "name", "description", "theme_type", "primary_color", "background_color", 
+                        "card_color", "glass_opacity", "nav_opacity", "accent_opacity", 
+                        "glass_blur", "card_glow_intensity", "font_size", "cover_width", "banner_content_offset"]
+                
+                query = f"SELECT {', '.join(cols)} FROM app_themes ORDER BY name"
+                cursor = await conn.execute(query)
+                rows = await cursor.fetchall()
+                
+                results = []
+                for row in rows:
+                    res = dict(zip(cols, row))
+                    # Map back to frontend expected keys (theme_type -> theme)
+                    res['theme'] = res.pop('theme_type', 'dark')
+                    # Normalize opacities if needed (assuming DB stores as int 0-100 or float 0-1)
+                    # Frontend expects 0.0-1.0 for opacities usually, but DB might have int.
+                    # Let's assume DB has what frontend sent (which is usually float or int).
+                    # Check imports/saves.
+                    results.append(res)
+                return results
+        except Exception as e:
+            logger.error(f"SQLite get_all_themes error: {e}")
+            return []
+
+    async def upsert(self, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        name = data.get("name")
+        if not name: return None
+        
+        # Mapping
+        theme_data = {
+            "name": name,
+            "description": data.get("description"),
+            "theme_type": data.get("theme_type") or data.get("theme"),
+            "primary_color": data.get("primary_color") or data.get("primaryColor"),
+            "background_color": data.get("background_color") or data.get("backgroundColor"),
+            "card_color": data.get("card_color") or data.get("cardColor"),
+            "glass_opacity": data.get("glass_opacity") or data.get("glassOpacity"),
+            "nav_opacity": data.get("nav_opacity") or data.get("navOpacity"),
+            "accent_opacity": data.get("accent_opacity") or data.get("accentOpacity"),
+            "glass_blur": data.get("glass_blur") or data.get("glassBlur"),
+            "card_glow_intensity": data.get("card_glow_intensity") or data.get("cardGlowIntensity"),
+            "font_size": data.get("font_size") or data.get("fontSize"),
+            "cover_width": data.get("cover_width") or data.get("coverWidth"),
+            "banner_content_offset": data.get("banner_content_offset") or data.get("bannerContentOffset"),
+            "updated_at": datetime.utcnow()
+        }
+
+        # 1. Postgres
+        if config.ENABLE_POSTGRES_PLUGIN:
+             try:
+                async with pg_manager.get_session() as session:
+                    stmt = select(AppTheme).where(AppTheme.name == name)
+                    result = await session.execute(stmt)
+                    existing = result.scalar_one_or_none()
+                    
+                    if existing:
+                        for k, v in theme_data.items():
+                            if v is not None:
+                                setattr(existing, k, v)
+                    else:
+                        existing = AppTheme(**theme_data)
+                        session.add(existing)
+                    
+                    await session.commit()
+                    return self._to_dict(existing)
+             except Exception as e:
+                logger.error(f"Postgres upsert theme error: {e}")
+
+        # 2. SQLite
+        try:
+            async with self.db.connection() as conn:
+                # Check exist
+                cursor = await conn.execute("SELECT id FROM app_themes WHERE name = ?", (name,))
+                row = await cursor.fetchone()
+                
+                cols = [k for k in theme_data.keys() if k != "updated_at"]
+                vals = [theme_data[k] for k in cols]
+
+                if row:
+                    # Update
+                    set_clause = ", ".join([f"{c} = ?" for c in cols])
+                    # Add updated_at
+                    set_clause += ", updated_at = ?"
+                    vals.append(datetime.utcnow())
+                    vals.append(name) # WHERE name = ?
+                    
+                    await conn.execute(f"UPDATE app_themes SET {set_clause} WHERE name = ?", vals)
+                else:
+                    # Insert
+                    placeholders = ", ".join(["?"] * len(cols))
+                    # Add created_at/updated_at default
+                    
+                    await conn.execute(
+                        f"INSERT INTO app_themes ({', '.join(cols)}) VALUES ({placeholders})",
+                        vals
+                    )
+                
+                await conn.commit()
+                return theme_data # Approximation
+        except Exception as e:
+            logger.error(f"SQLite upsert theme error: {e}")
+            return None
+
+    def _to_dict(self, theme: AppTheme) -> Dict[str, Any]:
+        return {
+            "id": theme.id,
+            "name": theme.name,
+            "description": theme.description,
+            "theme": theme.theme_type,
+            "primaryColor": theme.primary_color,
+            "backgroundColor": theme.background_color,
+            "cardColor": theme.card_color,
+            "glassOpacity": theme.glass_opacity,
+            "navOpacity": theme.nav_opacity,
+            "accentOpacity": theme.accent_opacity,
+            "glassBlur": theme.glass_blur,
+            "cardGlowIntensity": theme.card_glow_intensity,
+            "fontSize": theme.font_size,
+            "coverWidth": theme.cover_width,
+            "bannerContentOffset": theme.banner_content_offset
+        }
+
+    # Helper for interface
+    async def get_by_id(self, id: int) -> Optional[Dict[str, Any]]:
+        return None
+    async def create(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+        return await self.upsert(entity)
+    async def update(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+        return await self.upsert(entity)
+    async def delete(self, id: int) -> bool:
+        return False
+
+theme_repo = ThemeRepository()

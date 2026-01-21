@@ -84,8 +84,36 @@ def check_migrations():
                    conn.commit()
                    _log.info("Checked/Added allow_theme_templates to user_levels")
                 except Exception as e:
-                    # Table might not exist yet if not initialized
                     _log.warning(f"Error checking allow_theme_templates: {e}")
+                    conn.rollback()
+
+                # 3. Create app_themes table if not exists (for Postgres)
+                try:
+                    conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS app_themes (
+                            id SERIAL PRIMARY KEY,
+                            name VARCHAR(100) UNIQUE NOT NULL,
+                            description VARCHAR(500),
+                            theme_type VARCHAR(20) DEFAULT 'dark',
+                            primary_color VARCHAR(20),
+                            background_color VARCHAR(20),
+                            card_color VARCHAR(20),
+                            glass_opacity INTEGER,
+                            nav_opacity INTEGER,
+                            accent_opacity INTEGER,
+                            glass_blur INTEGER,
+                            card_glow_intensity INTEGER,
+                            font_size INTEGER,
+                            cover_width INTEGER,
+                            banner_content_offset INTEGER,
+                            created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
+                            updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now()
+                        );
+                    """))
+                    conn.commit()
+                    _log.info("Checked/Created app_themes table")
+                except Exception as e:
+                    _log.warning(f"Error creating app_themes table: {e}")
                     conn.rollback()
         except Exception as e:
             _log.error(f"Postgres migration error: {e}")
