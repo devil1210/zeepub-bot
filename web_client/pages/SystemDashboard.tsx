@@ -52,6 +52,7 @@ export const SystemDashboard: React.FC = () => {
                                 <th className="pb-4 px-2">Primary Storage</th>
                                 <th className="pb-4 px-2">Sync Status</th>
                                 <th className="pb-4 px-2">Cloud Backup Trigger</th>
+                                <th className="pb-4 px-2 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -60,36 +61,78 @@ export const SystemDashboard: React.FC = () => {
                                 <td className="py-4 px-2 text-gray-400">SQLite (Local)</td>
                                 <td className="py-4 px-2"><span className="text-amber-500 font-black uppercase tracking-tighter text-[10px]">Manual Only</span></td>
                                 <td className="py-4 px-2 italic text-gray-500 font-mono">Cloud Sync → Library</td>
+                                <td className="py-4 px-2 text-right">
+                                    <button
+                                        onClick={() => handleAction('Backup Biblioteca', api.adminBackupLibrary)}
+                                        disabled={loading}
+                                        className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"
+                                        title="Sincronizar Biblioteca"
+                                    >
+                                        <RefreshCw className={`w-3.5 h-3.5 ${actionLoading === 'Backup Biblioteca' ? 'animate-spin' : ''}`} />
+                                    </button>
+                                </td>
                             </tr>
                             <tr className="group hover:bg-white/[0.01]">
                                 <td className="py-4 px-2 font-bold text-gray-200">Library Sources</td>
                                 <td className="py-4 px-2 text-gray-400">SQLite (Local)</td>
                                 <td className="py-4 px-2"><span className="text-amber-500 font-black uppercase tracking-tighter text-[10px]">Manual Only</span></td>
                                 <td className="py-4 px-2 italic text-gray-500 font-mono">Cloud Sync → Library</td>
+                                <td className="py-4 px-2 text-right">
+                                    <button
+                                        onClick={() => handleAction('Escaneo', () => api.adminScanLibrary(true))}
+                                        disabled={loading}
+                                        className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"
+                                        title="Escanear Fuentes"
+                                    >
+                                        <Library className={`w-3.5 h-3.5 ${actionLoading === 'Escaneo' ? 'animate-spin' : ''}`} />
+                                    </button>
+                                </td>
                             </tr>
                             <tr className="group hover:bg-white/[0.01]">
                                 <td className="py-4 px-2 font-bold text-gray-200">Users & Roles</td>
-                                <td className="py-4 px-2 text-gray-400">SQLite (Local)</td>
-                                <td className="py-4 px-2"><span className="text-amber-500 font-black uppercase tracking-tighter text-[10px]">Manual Only</span></td>
-                                <td className="py-4 px-2 italic text-gray-500 font-mono">Cloud Sync → Users</td>
+                                <td className="py-4 px-2 text-gray-400">Postgres & Supabase</td>
+                                <td className="py-4 px-2"><span className="text-green-500 font-black uppercase tracking-tighter text-[10px]">Automatic / Real-time</span></td>
+                                <td className="py-4 px-2 italic text-green-500/80 font-mono">Instant Sync</td>
+                                <td className="py-4 px-2 text-right">
+                                    <button
+                                        onClick={() => handleAction('Sync Usuarios', api.adminSyncUsersCloud)}
+                                        disabled={loading}
+                                        className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
+                                        title="Forzar Sync Manual"
+                                    >
+                                        <Globe className={`w-3.5 h-3.5 ${actionLoading === 'Sync Usuarios' ? 'animate-spin' : ''}`} />
+                                    </button>
+                                </td>
                             </tr>
                             <tr className="group hover:bg-white/[0.01]">
                                 <td className="py-4 px-2 font-bold text-gray-200">User Levels (Tiers)</td>
-                                <td className="py-4 px-2 text-gray-400">SQLite (Local)</td>
-                                <td className="py-4 px-2"><span className="text-amber-500 font-black uppercase tracking-tighter text-[10px]">Manual Only</span></td>
-                                <td className="py-4 px-2 italic text-gray-500 font-mono">Cloud Sync → Users</td>
+                                <td className="py-4 px-2 text-gray-400">Postgres & Supabase</td>
+                                <td className="py-4 px-2"><span className="text-green-500 font-black uppercase tracking-tighter text-[10px]">Automatic / Real-time</span></td>
+                                <td className="py-4 px-2 italic text-green-500/80 font-mono">Instant Sync</td>
+                                <td className="py-4 px-2 text-right">
+                                    <button
+                                        onClick={() => handleAction('Sync Usuarios', api.adminSyncUsersCloud)}
+                                        disabled={loading}
+                                        className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
+                                        title="Forzar Sync Manual"
+                                    >
+                                        <Shield className={`w-3.5 h-3.5 ${actionLoading === 'Sync Usuarios' ? 'animate-spin' : ''}`} />
+                                    </button>
+                                </td>
                             </tr>
                             <tr className="group hover:bg-white/[0.01]">
                                 <td className="py-4 px-2 font-bold text-gray-200">System Logs</td>
                                 <td className="py-4 px-2 text-gray-400">Volatile (Memory)</td>
                                 <td className="py-4 px-2 text-gray-600 font-black uppercase text-[10px]">None</td>
                                 <td className="py-4 px-2 text-gray-600 italic">N/A</td>
+                                <td className="py-4 px-2 text-right opacity-20"><RefreshCw className="w-3.5 h-3.5 ml-auto" /></td>
                             </tr>
                             <tr className="group hover:bg-white/[0.01]">
                                 <td className="py-4 px-2 font-bold text-gray-200">Audit Logs</td>
                                 <td className="py-4 px-2 text-gray-400">Supabase (Remote)</td>
                                 <td className="py-4 px-2"><span className="text-green-500 font-black uppercase tracking-tighter text-[10px]">Automatic / Real-time</span></td>
                                 <td className="py-4 px-2 text-green-500 font-black uppercase tracking-widest text-[9px]">Live Push</td>
+                                <td className="py-4 px-2 text-right opacity-20"><RefreshCw className="w-3.5 h-3.5 ml-auto" /></td>
                             </tr>
                         </tbody>
                     </table>
