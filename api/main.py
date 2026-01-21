@@ -15,6 +15,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Configurar captura de logs para la interfaz
+from utils.log_manager import setup_global_logging
+setup_global_logging()
+
 # Instancia global del bot
 bot = ZeePubBot()
 

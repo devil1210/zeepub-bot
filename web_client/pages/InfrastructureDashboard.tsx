@@ -64,6 +64,17 @@ export const InfrastructureDashboard: React.FC = () => {
         }
     };
 
+    const fetchSystemLogs = async () => {
+        try {
+            const res = await api.getSystemLogs();
+            if (res.success && res.logs) {
+                setLogs(res.logs);
+            }
+        } catch (error) {
+            console.error('Error fetching system logs:', error);
+        }
+    };
+
     const addLog = (level: string, msg: string) => {
         const time = new Date().toLocaleTimeString([], { hour12: false });
         const color = level === 'ERROR' ? 'text-red-400' :
@@ -75,16 +86,16 @@ export const InfrastructureDashboard: React.FC = () => {
 
     useEffect(() => {
         fetchStats();
-
-        // Initial dummy logs
-        setLogs([
-            { time: new Date().toLocaleTimeString([], { hour12: false }), level: 'INFO', msg: 'Admin Dashboard initialized', color: 'text-blue-400' },
-            { time: new Date().toLocaleTimeString([], { hour12: false }), level: 'SUCCESS', msg: 'System connection healthy', color: 'text-green-400' }
-        ]);
-
-        const interval = setInterval(fetchStats, 60000); // Refresh every minute
+        fetchSystemLogs();
         fetchAuditLogs();
-        return () => clearInterval(interval);
+
+        const statsInterval = setInterval(fetchStats, 60000); // 1 min
+        const logsInterval = setInterval(fetchSystemLogs, 10000); // 10 sec
+
+        return () => {
+            clearInterval(statsInterval);
+            clearInterval(logsInterval);
+        };
     }, []);
 
     const handleAction = async (name: string, fn: () => Promise<any>) => {

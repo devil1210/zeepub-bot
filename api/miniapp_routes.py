@@ -141,6 +141,7 @@ async def handle_bot_request(
             handle_admin_get_duplicates,
             handle_admin_clear_duplicates,
             handle_admin_scan_user,
+            handle_admin_get_system_logs,
         )
 
         ACTION_HANDLERS = {
@@ -185,6 +186,7 @@ async def handle_bot_request(
             "admin_get_duplicates": handle_admin_get_duplicates,
             "admin_clear_duplicates": handle_admin_clear_duplicates,
             "admin_scan_user": handle_admin_scan_user,
+            "admin_get_system_logs": handle_admin_get_system_logs,
         }
 
         handler = ACTION_HANDLERS.get(action)

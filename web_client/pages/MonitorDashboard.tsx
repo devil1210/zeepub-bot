@@ -48,6 +48,17 @@ export const MonitorDashboard: React.FC = () => {
         }
     };
 
+    const fetchSystemLogs = async () => {
+        try {
+            const res = await api.getSystemLogs();
+            if (res.success && res.logs) {
+                setLogs(res.logs);
+            }
+        } catch (error) {
+            console.error('Error fetching system logs:', error);
+        }
+    };
+
     const addLog = (level: string, msg: string) => {
         const time = new Date().toLocaleTimeString([], { hour12: false });
         const color = level === 'ERROR' ? 'text-red-400' :
@@ -59,17 +70,15 @@ export const MonitorDashboard: React.FC = () => {
     useEffect(() => {
         fetchStats();
         fetchAuditLogs();
+        fetchSystemLogs();
 
-        // Initial simulated logs for visualization
-        setLogs([
-            { time: '10:42:01', level: 'INFO', msg: 'Worker process started with PID 8821', color: 'text-blue-400' },
-            { time: '10:42:05', level: 'INFO', msg: 'Connecting to Telegram API... OK', color: 'text-blue-400' },
-            { time: '10:42:06', level: 'WARN', msg: 'High latency detected on webhook (450ms)', color: 'text-yellow-400' },
-            { time: '10:43:45', level: 'SUCCESS', msg: 'Library index updated. +12 items.', color: 'text-green-400' }
-        ]);
+        const statsInterval = setInterval(fetchStats, 60000);
+        const logsInterval = setInterval(fetchSystemLogs, 5000); // 5 sec for monitor
 
-        const interval = setInterval(fetchStats, 60000);
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(statsInterval);
+            clearInterval(logsInterval);
+        };
     }, []);
 
     return (

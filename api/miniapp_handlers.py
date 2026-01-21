@@ -2053,3 +2053,16 @@ async def handle_admin_clear_duplicates(data: Dict[str, Any], user_data: Dict[st
         return {"success": False, "message": str(e)}
     finally:
         session.close()
+
+async def handle_admin_get_system_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Retorna los últimos logs capturados en memoria."""
+    if user_data.get("level") != "admin" and not user_data.get("is_admin_db"):
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+    
+    try:
+        from utils.log_manager import log_buffer_handler
+        logs = log_buffer_handler.get_logs()
+        return {"success": True, "logs": logs}
+    except Exception as e:
+        logger.error(f"Error fetching system logs: {e}")
+        return {"success": False, "message": str(e)}
