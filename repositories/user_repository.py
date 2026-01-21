@@ -5,8 +5,12 @@ import logging
 from datetime import datetime
 from dateutil import parser
 
+from services.cache_service import AsyncTTLCache
+
 logger = logging.getLogger(__name__)
 
+# Cache for level info (5 minutes)
+level_cache = AsyncTTLCache(ttl_seconds=300)
 
 from core.db_manager_pg import pg_manager
 from models.user_models import User, UserLevel, UserUISettings
@@ -415,6 +419,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             await conn.commit()
 
     async def get_access_info(self, telegram_id: int) -> Optional[Dict[str, Any]]:
+        # 0. Check Cache for user access info
+        # We don't cache access info here because it's already cached in user_service.py
+
         # 1. Postgres / Offline-First (ORM)
         if config.ENABLE_POSTGRES_PLUGIN:
             try:
@@ -701,12 +708,26 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
     async def get_level_by_id(self, level_id: int) -> Optional[Dict[str, Any]]:
         """Busca la configuración de un nivel por su ID."""
+        # 0. Check Cache First
+        cache_key = f"level_info:{level_id}"
+        cached = await level_cache.get(cache_key)
+        if cached:
+            return cached
+            
+        # Also check if it's already in the all_levels cache
+        all_lvls = await level_cache.get("all_levels")
+        if all_lvls:
+            match = next((l for l in all_lvls if l['id'] == str(level_id)), None)
+            if match:
+                await level_cache.set(cache_key, match)
+                return match
+
         if self.supabase.is_active:
             try:
                 res = self.supabase.get_client().table('user_levels').select("*").eq('id', level_id).execute()
                 if res.data:
                     lvl = res.data[0]
-                    return {
+                    result = {
                         "id": str(lvl.get('id')),
                         "name": lvl.get('name'),
                         "priority": lvl.get('priority'),
@@ -736,6 +757,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "cardColor": lvl.get('card_color', '#1e293b'),
                         "forceSettings": bool(lvl.get('force_settings', False)),
                     }
+                    await level_cache.set(cache_key, result)
+                    return result
                 return None
             except Exception as e:
                 logger.error(f"Supabase error in get_level_by_id: {e}")
@@ -754,7 +777,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             cursor = await conn.execute(query, (level_id,))
             r = await cursor.fetchone()
             if r:
-                return {
+                result = {
                     "id": str(r[0]),
                     "name": r[1],
                     "priority": r[2],
@@ -783,16 +806,26 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "forceSettings": bool(r[25]) if r[25] is not None else False,
                     "cardGlowIntensity": r[26] if len(r) > 26 else 0.5,
                 }
+                await level_cache.set(cache_key, result)
+                return result
 
         return None
 
     async def get_all_levels(self) -> list[Dict[str, Any]]:
+        """
+        Retorna todos los niveles configurados con sus límites y características.
+        """
+        # Check Cache
+        cached = await level_cache.get("all_levels")
+        if cached:
+            return cached
 
+        results = []
         if self.supabase.is_active:
             try:
                 res = self.supabase.get_client().table('user_levels').select("*").order('priority', desc=True).execute()
                 if res.data:
-                    return [
+                    results = [
                         {
                             "id": str(row['id']),
                             "name": row['name'],
@@ -804,30 +837,37 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "customThemes": bool(row['custom_themes']),
                             "price": row['price'],
                             "showRecommendations": bool(row.get('show_recommendations', True)),
-                            "uiTheme": row.get('ui_theme', 'dark'),
-                            "uiFontSize": row.get('ui_font_size', 14),
-                            "uiGlassBlur": row.get('ui_glass_blur', 12),
-                            "uiCoverWidth": row.get('ui_cover_width', 120),
-                            "uiNavOpacity": row.get('ui_nav_opacity', 0.8),
-                            "uiAccentOpacity": row.get('ui_accent_opacity', 0.2),
-                            "panelTransparency": row.get('panel_transparency', 60),
+                            "theme": row.get('ui_theme', 'dark'),
+                            "fontSize": row.get('ui_font_size', 14),
+                            "glassBlur": row.get('ui_glass_blur', 12),
+                            "coverWidth": row.get('ui_cover_width', 120),
+                            "navOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(row.get('ui_nav_opacity', 0.8)),
+                            "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(row.get('ui_accent_opacity', 0.2)),
+                            "glassOpacity": (row.get('panel_transparency', 60) or 60) / 100.0,
+                            "primaryColor": row.get('ui_primary_color', '#2b6cee'),
+                            "cardGlowIntensity": row.get('ui_glow_intensity', 0.5),
+                            "canDownload": bool(row.get('can_download', True)),
+                            "canRead": bool(row.get('can_read', True)),
                             "hasLibraryAccess": bool(row.get('has_library_access', True)),
                             "canRequestBooks": bool(row.get('can_request_books', True)),
-                            "photo_url": row.get('photo_url') # This column does not exist in user_levels
+                            "bannerContentOffset": int(row.get('banner_content_offset', 0)),
+                            "backgroundColor": row.get('background_color', '#0f172a'),
+                            "cardColor": row.get('card_color', '#1e293b'),
+                            "forceSettings": bool(row.get('force_settings', False)),
                         }
                         for row in res.data
                     ]
+                    await level_cache.set("all_levels", results)
+                    return results
             except Exception as e:
                 logger.error(f"Supabase get_all_levels error: {e}")
 
-        """
-        Retorna todos los niveles configurados con sus límites y características.
-        """
-        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, ui_primary_color, has_library_access, can_request_books FROM user_levels ORDER BY priority DESC"
+        # SQLite/Postgres Fallback
+        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, ui_primary_color, has_library_access, can_request_books, ui_glow_intensity, can_download, can_read, banner_content_offset, background_color, card_color, force_settings FROM user_levels ORDER BY priority DESC"
         async with self.db.connection() as conn:
             cursor = await conn.execute(query)
             rows = await cursor.fetchall()
-            return [
+            results = [
                 {
                     "id": str(row[0]),
                     "name": row[1],
@@ -838,18 +878,27 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "earlyAccess": bool(row[6]),
                     "customThemes": bool(row[7]),
                     "price": row[8],
-                    "showRecommendations": bool(row[9]) if len(row) > 9 else True,
-                    "theme": row[10] if len(row) > 10 else 'dark',
-                    "fontSize": row[11] if len(row) > 11 else 14,
-                    "glassBlur": row[12] if len(row) > 12 else 12,
-                    "coverWidth": row[13] if len(row) > 13 else 120,
-                    "navOpacity": row[14] if len(row) > 14 else 0.8,
-                    "accentOpacity": row[15] if len(row) > 15 else 0.2,
-                    "glassOpacity": (row[16] if len(row) > 16 else 60) / 100.0,
-                    "primaryColor": row[17] if len(row) > 17 else '#2b6cee',
+                    "showRecommendations": bool(row[9]),
+                    "theme": row[10] or 'dark',
+                    "fontSize": row[11] or 14,
+                    "glassBlur": row[12] or 12,
+                    "coverWidth": row[13] or 120,
+                    "navOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(row[14] or 0.8),
+                    "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(row[15] or 0.2),
+                    "glassOpacity": (row[16] or 60) / 100.0,
+                    "primaryColor": row[17] or '#2b6cee',
+                    "cardGlowIntensity": row[20] if len(row) > 19 else 0.5,
+                    "canDownload": bool(row[21]) if len(row) > 20 else True,
+                    "canRead": bool(row[22]) if len(row) > 21 else True,
+                    "bannerContentOffset": int(row[23]) if len(row) > 22 else 0,
+                    "backgroundColor": row[24] if len(row) > 23 else '#0f172a',
+                    "cardColor": row[25] if len(row) > 24 else '#1e293b',
+                    "forceSettings": bool(row[26]) if len(row) > 25 else False,
                 }
                 for row in rows
             ]
+            await level_cache.set("all_levels", results)
+            return results
 
     async def list_users(self, limit: int = 50, offset: int = 0, search: str = None) -> list[Dict[str, Any]]:
         # 1. Postgres / Offline-First (ORM)

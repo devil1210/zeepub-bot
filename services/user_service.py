@@ -141,6 +141,8 @@ async def get_effective_user(
         "status_label": "Lector",
         "expires_at": None,
         "nickname": nickname_from_tg,
+        "name": None,
+        "username": None,
         "settings": global_ui.copy()
     }
 
@@ -211,7 +213,8 @@ async def get_effective_user(
                 "roles": info.get("roles") or [],
                 "can_request_books": info.get("can_request_books", True),
                 "has_library_access": info.get("has_library_access", True),
-                "settings": final_settings
+                "settings": final_settings,
+                "personal_settings_raw": info.get("settings", {}) # Store for simulation comparison
             })
 
     # 3. PROACTIVE SYNC: Create minimal user record if not exists
@@ -272,27 +275,31 @@ async def get_effective_user(
                 final_ui[k] = level_settings[k]
                 
         # 3. Overlay Personal Settings (Respecting forceSettings and ui_exported_settings)
-        personal_settings = info.get("settings", {}) if info else {}
-        
-        # Get exported settings list
-        exported_raw = level_settings.get("ui_exported_settings")
-        exported_list = []
-        if exported_raw:
-            try:
-                exported_list = json.loads(exported_raw) if isinstance(exported_raw, str) else exported_raw
-            except:
-                exported_list = []
-        
-        is_forced = level_settings.get("forceSettings", False)
-        
-        for k, v in personal_settings.items():
-            if not is_forced:
-                # Not forced: user settings always win
-                final_ui[k] = v
-            else:
-                # Forced: only if specifically exported by admin
-                if k in exported_list:
+        # SKIP PERSONAL OVERRIDES IF SIMULATING
+        if simulated_level_id is None:
+            personal_settings = info.get("settings", {}) if info else {}
+            
+            # Get exported settings list
+            exported_raw = level_settings.get("ui_exported_settings")
+            exported_list = []
+            if exported_raw:
+                try:
+                    exported_list = json.loads(exported_raw) if isinstance(exported_raw, str) else exported_raw
+                except:
+                    exported_list = []
+            
+            is_forced = level_settings.get("forceSettings", False)
+            
+            for k, v in personal_settings.items():
+                if not is_forced:
+                    # Not forced: user settings always win
                     final_ui[k] = v
+                else:
+                    # Forced: only if specifically exported by admin
+                    if k in exported_list:
+                        final_ui[k] = v
+        else:
+            logger.debug(f"Simulation Mode: Skipping personal settings for user {uid}")
         
         result["settings"] = final_ui
 
@@ -381,11 +388,10 @@ async def get_effective_user(
                 result["level"] = sim_level["name"].lower().strip()
                 
             # Simulación: Priorizamos los ajustes del nivel para "ver" la identidad del rango
-            # Si forceSettings es True, se aplicarán siempre. Si es False, aquí los forzamos
-            # solo porque estamos en modo simulación.
+            # En modo simulación, NO usamos ajustes personales. Solo Global + Level.
             
             # Merge settings from level
-            level_settings = {
+            level_settings_overlay = {
                 "theme": sim_level.get("theme"),
                 "fontSize": sim_level.get("fontSize"),
                 "glassBlur": sim_level.get("glassBlur"),
@@ -397,12 +403,17 @@ async def get_effective_user(
                 "backgroundColor": sim_level.get("backgroundColor"),
                 "cardColor": sim_level.get("cardColor"),
                 "cardGlowIntensity": sim_level.get("cardGlowIntensity"),
+                "panelTransparency": sim_level.get("glassOpacity") * 100 if sim_level.get("glassOpacity") else 60,
+                "bannerContentOffset": sim_level.get("bannerContentOffset", 0),
             }
             # Remove None values
-            level_settings = {k: v for k, v in level_settings.items() if v is not None}
-            if "settings" not in result:
-                result["settings"] = {}
-            result["settings"].update(level_settings)
+            level_settings_overlay = {k: v for k, v in level_settings_overlay.items() if v is not None}
+            
+            # Reset settings to Global UI base before applying level overrides
+            final_sim_ui = global_ui.copy()
+            final_sim_ui.update(level_settings_overlay)
+            
+            result["settings"] = final_sim_ui
             
             # Special flag to let frontend know it's a simulation
             result["is_simulated"] = True

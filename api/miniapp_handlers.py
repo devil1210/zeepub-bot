@@ -1397,7 +1397,7 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
     tier_id = data.get("id")
     
     try:
-        # Check if it's the global tier (by ID or name)
+        # Check if it's the global tier
         if tier_id == "global" or (tier_name and "Global" in str(tier_name)):
             global_raw = get_setting("ui_defaults_global", "{}")
             g = json.loads(global_raw)
@@ -1432,61 +1432,28 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                 }
             }
 
-        # from core.supabase_client import get_supabase_client
-        client = supabase_manager.get_client()
-        
-        query = client.table('user_levels').select('*')
+        # Use cached repo method instead of direct Supabase call
+        tier = None
         if tier_id:
-            query = query.eq('id', tier_id)
+            tier = await user_repo.get_level_by_id(int(tier_id))
         else:
-            query = query.ilike('name', tier_name)
+            # Fallback to fetching all and finding by name if no ID
+            all_lvls = await user_repo.get_all_levels()
+            tier = next((l for l in all_lvls if l['name'].lower() == tier_name.lower()), None)
         
-        result = query.execute()
-        
-        if not result.data:
+        if not tier:
             raise HTTPException(status_code=404, detail="Tier no encontrado")
         
-        tier = result.data[0]
+        # Maps keys (note: user_repo.get_level_by_id already does most of this mapping)
         return {
             "success": True,
-            "tier": {
-                "id": tier.get("id"),
-                "name": tier.get("name"),
-                "icon": tier.get("icon", "verified"),
-                "color": tier.get("color", "#0da6f2"),
-                "dailyDownloads": tier.get("daily_downloads", 1),
-                "maxConcurrent": tier.get("max_concurrent", 3),
-                "priority_requests": tier.get("priority_requests", False),
-                "earlyAccess": tier.get("early_access", False),
-                "customThemes": tier.get("custom_themes", False),
-                "uiPrimaryColor": tier.get("ui_primary_color", "#0da6f2"),
-                "panelTransparency": tier.get("panel_transparency", 70),
-                "priority": tier.get("priority", 0),
-                "primaryColor": tier.get("ui_primary_color", "#2b6cee"),
-                "glassOpacity": (tier.get("panel_transparency", 70) or 70) / 100.0,
-                "theme": tier.get("ui_theme", "dark"),
-                "fontSize": tier.get("ui_font_size", 14),
-                "glassBlur": tier.get("ui_glass_blur", 12),
-                "coverWidth": tier.get("ui_cover_width", 120),
-                "navOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(tier.get("ui_nav_opacity", 0.8)),
-                "accentOpacity": (lambda x: float(x)/100.0 if x is not None and float(x) > 1 else x)(tier.get("ui_accent_opacity", 0.2)),
-                "showRecommendations": bool(tier.get("show_recommendations", True)),
-                "canDownload": bool(tier.get("can_download", True)),
-                "canRead": bool(tier.get("can_read", True)),
-                "hasLibraryAccess": bool(tier.get("has_library_access", True)),
-                "canRequestBooks": bool(tier.get("can_request_books", True)),
-                "bannerContentOffset": int(tier.get("banner_content_offset", 0)),
-                "backgroundColor": tier.get("background_color", "#0f172a"),
-                "cardColor": tier.get("card_color", "#1e293b"),
-                "forceSettings": bool(tier.get("force_settings", False)),
-                "cardGlowIntensity": float(tier.get("ui_glow_intensity", 0.5))
-            }
+            "tier": tier
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting tier config: {e}")
-        return {"success": False, "message": str(e)}
+        logger.error(f"Error fetching tier config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def handle_admin_get_themes(data: Dict[str, Any], user_data: Dict[str, Any]):

@@ -225,64 +225,27 @@ async def check_user_access(
     uid = current_uid or request.user_id
     logger.info(f"Access check for UID: {uid} (Force: {request.force})")
 
-    # 1. Obtener información efectiva (Roles config, expiración, etc)
-    # Si force=True, ignoramos el caché del backend
+    # 1. Unified Access Check
+    # This single call now handles everything: Config, DB, Levels, and Personal Settings
     use_cache = not request.force
     eff = await get_effective_user(uid, use_cache=use_cache)
 
-    # 2. Obtener información de niveles de la base de datos
-    access_info = await user_repo.get_access_info(uid)
-
-    if not access_info:
-        # Si no existe en la tabla de niveles, creamos registro.
-        # Si get_effective_user ya sabe que es staff/admin/premium, usamos ese nivel.
-        level_tier = eff.get("level", "free")
-        # El nivel id por defecto para free es 6 (Lector)
-        # IDs mapping: Admin=1, Staff=2, Premium=3, VIP=4, Patrocinador=5, Lector=6
-        level_to_tier_id = {
-            "admin": 1,
-            "staff": 2,
-            "premium": 3,
-            "vip": 4,
-            "white": 5,
-            "free": 6,
-        }
-        level_id = level_to_tier_id.get(level_tier, 6)
-
-        logger.info(
-            f"User {uid} not found in user_levels. Level effective: {level_tier}. Creating entry with Level ID {level_id}."
-        )
-        await user_repo.create_minimal_user(uid, level_id=level_id)
-        access_info = await user_repo.get_access_info(uid)
-
-    if not access_info:
-        logger.error(f"Failed to retrieve access info for user {uid}")
-        # Fallback de emergencia
-        return AccessResponse(
-            level=UserLevelModel(
-                id="6", name="Lector", priority=1, color="#9E9E9E", hasAccess=False
-            ),
-            hasAccess=eff.get("has_mini_app_access", False),
-            isAdmin=(eff.get("level") == "admin"),
-        )
-
-    # 3. Determinar flags finales mezclando ambos sistemas
-    # El usuario tiene acceso si:
-    # - Es Admin (de Config o DB)
-    # - Es Staff (de Config o DB)
-    # - Tiene acceso explícito por su nivel de DB
-    # - Tiene acceso explícito por get_effective_user (fallbacks de config)
-
-    is_admin = (eff.get("level") == "admin") or access_info.get("isAdmin", False)
+    # Everything we need is already in 'eff'
+    is_admin = (eff.get("level") == "admin") or eff.get("is_admin_db", False)
     is_staff = eff.get("level") == "staff"
+    has_access = eff.get("has_mini_app_access", False)
+    is_beta_tester = is_admin or eff.get("isBetaTester", False)
 
-    # Priority: Roles admin/staff TRUMP level restrictions
-    has_access = (
-        is_admin
-        or is_staff
-        or eff.get("has_mini_app_access", False)
-        or access_info.get("hasAccess", False)
+    logger.debug(
+        f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}"
     )
+
+    access_info = eff.get("level_info", {})
+    if not access_info:
+        # Fallback if somehow not populated
+        access_info = {
+            "id": "6", "name": "Lector", "priority": 1, "color": "#9E9E9E", "hasAccess": False
+        }
 
     # Beta tester flag - admins are always beta testers
     is_beta_tester = is_admin or access_info.get("isBetaTester", False)
