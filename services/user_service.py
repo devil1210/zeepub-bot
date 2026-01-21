@@ -1,11 +1,15 @@
 import logging
 import json
+import os
+import io
 from typing import Optional, Dict, Any
 from datetime import datetime
+from PIL import Image
 from config.config_settings import config
 from repositories.user_repository import user_repo
 from services.cache_service import AsyncTTLCache
 from services.settings_service import get_setting
+from utils.library_db import PROFILES_DIR, THUMBNAILS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -575,3 +579,69 @@ async def sync_user_from_env(telegram_id: int, tg_user=None) -> Optional[Dict]:
         return await get_effective_user(telegram_id, tg_user=tg_user, use_cache=False)
     
     return current_user
+
+
+async def sync_user_profile_photo(telegram_id: int, bot) -> Optional[str]:
+    """
+    Obtiene la foto de perfil del usuario desde Telegram y la guarda localmente.
+    Retorna la URL relativa para acceder a la imagen.
+    """
+    try:
+        # 1. Obtener fotos de perfil del usuario
+        photos = await bot.get_user_profile_photos(telegram_id, limit=1)
+        if not photos or not photos.photos:
+            logger.info(f"Usuario {telegram_id} no tiene fotos de perfil públicas.")
+            return None
+        
+        # 2. Obtener la versión más pequeña/mediana (index 0 de la primera foto)
+        # photos.photos[0] es la lista de tamaños de la foto más reciente
+        # Tomamos index 0 o 1 para que no sea gigante
+        photo_size = photos.photos[0][-1] # La última suele ser la mejor calidad
+        file = await bot.get_file(photo_size.file_id)
+        
+        # 3. Preparar ruta local
+        filename = f"user_{telegram_id}.jpg"
+        thumb_filename = f"user_{telegram_id}_thumb.jpg"
+        local_path = os.path.join(PROFILES_DIR, filename)
+        thumb_path = os.path.join(PROFILES_DIR, thumb_filename)
+        
+        # 4. Descargar a memoria primero para procesar
+        photo_bytes = await file.download_as_bytearray()
+        
+        # 5. Guardar original y crear thumbnail
+        with Image.open(io.BytesIO(photo_bytes)) as img:
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Guardar "grande" (pero optimizado)
+            img.save(local_path, "JPEG", quality=85, optimize=True)
+            
+            # Crear thumbnail (120px)
+            thumb_img = img.copy()
+            thumb_img.thumbnail((120, 120), Image.LANCZOS)
+            thumb_img.save(thumb_path, "JPEG", quality=75, optimize=True)
+            
+        logger.info(f"Foto de perfil para {telegram_id} guardada (Original + Thumb)")
+        
+        # 6. Actualizar en DB
+        # Obtenemos info actual para no perder el nivel
+        info = await get_user_info(telegram_id)
+        level_id = info.get("level_id", 6) if info else 6
+        level_name = info.get("level", "free") if info else "free"
+        
+        # Relative URL path (usamos el thumb por defecto en la lista para velocidad)
+        relative_url = f"/api/profiles/{thumb_filename}"
+        
+        await user_repo.upsert(
+            telegram_id=telegram_id,
+            level=level_name,
+            level_id=level_id,
+            photo_url=relative_url
+        )
+        
+        await user_cache.invalidate(f"user_effective:{telegram_id}")
+        return relative_url
+        
+    except Exception as e:
+        logger.error(f"Error sincronizando foto de perfil de {telegram_id}: {e}")
+        return None

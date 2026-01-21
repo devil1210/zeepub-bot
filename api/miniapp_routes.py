@@ -140,6 +140,7 @@ async def handle_bot_request(
             handle_admin_save_theme,
             handle_admin_get_duplicates,
             handle_admin_clear_duplicates,
+            handle_admin_scan_user,
         )
 
         ACTION_HANDLERS = {
@@ -183,6 +184,7 @@ async def handle_bot_request(
             "get_user_audit_history": handle_get_user_audit_history,
             "admin_get_duplicates": handle_admin_get_duplicates,
             "admin_clear_duplicates": handle_admin_clear_duplicates,
+            "admin_scan_user": handle_admin_scan_user,
         }
 
         handler = ACTION_HANDLERS.get(action)
@@ -191,7 +193,14 @@ async def handle_bot_request(
             raise HTTPException(status_code=400, detail=f"Unknown action: {action}")
 
         logger.info(f"Dispatching action '{action}' for user {user_id}")
-        return await handler(data, user_effective)
+        
+        # Check if handler accepts request argument
+        import inspect
+        sig = inspect.signature(handler)
+        if 'request' in sig.parameters:
+            return await handler(data, user_effective, request=request)
+        else:
+            return await handler(data, user_effective)
 
     except HTTPException:
         raise

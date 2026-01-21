@@ -802,6 +802,31 @@ async def handle_admin_set_user_level(data: Dict[str, Any], user_data: Dict[str,
     return {"success": True}
 
 
+async def handle_admin_scan_user(data: Dict[str, Any], user_data: Dict[str, Any], request=None):
+    """Sincroniza la foto de perfil de un usuario desde Telegram."""
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    target_id = data.get("userId")
+    if not target_id:
+        raise HTTPException(status_code=400, detail="Falta parámetro userId")
+    
+    # Obtener bot del app state
+    if not request or not hasattr(request.app.state, "bot_instance"):
+        return {"success": False, "message": "Bot instance no disponible"}
+    
+    bot = request.app.state.bot_instance.app.bot
+    
+    from services.user_service import sync_user_profile_photo
+    photo_url = await sync_user_profile_photo(int(target_id), bot)
+    
+    if photo_url:
+        return {"success": True, "photo_url": photo_url}
+    else:
+        return {"success": False, "message": "No se pudo sincronizar la foto de perfil (el usuario puede no tener una o tenerla privada)."}
+
+
 async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Syncs SQLite library data to Supabase."""
     user_level = user_data.get("level", "free")

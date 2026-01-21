@@ -107,13 +107,20 @@ if enable_miniapp:
     from fastapi.responses import FileResponse
 
     # Montar portadas de la librería local
-    from utils.library_db import COVERS_DIR
+    from utils.library_db import COVERS_DIR, PROFILES_DIR
 
     if os.path.exists(COVERS_DIR):
         app.mount(
             "/api/library/covers",
             StaticFiles(directory=COVERS_DIR),
             name="library_covers",
+        )
+    
+    if os.path.exists(PROFILES_DIR):
+        app.mount(
+            "/api/profiles",
+            StaticFiles(directory=PROFILES_DIR),
+            name="user_profiles",
         )
 
     # Ruta al directorio de build del frontend (Configurable)

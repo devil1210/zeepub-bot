@@ -5,7 +5,8 @@ import {
     Users,
     CheckCircle,
     ChevronRight,
-    Loader2
+    Loader2,
+    RefreshCw
 } from 'lucide-react';
 import { UserPermissions } from './UserPermissions';
 import { TierConfiguration } from './TierConfiguration';
@@ -29,6 +30,7 @@ interface AdminUser {
     username: string;
     name?: string;
     role: string;
+    photo_url?: string;
     level: {
         name: string;
         color: string;
@@ -67,6 +69,8 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
+    const [scanningUser, setScanningUser] = useState<string | null>(null);
+
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -80,6 +84,26 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
             console.error("Error fetching access data:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSyncUserPhoto = async (e: React.MouseEvent, userId: string) => {
+        e.stopPropagation();
+        try {
+            setScanningUser(userId);
+            const res = await api.adminScanUser(userId);
+            if (res.success) {
+                // Update local user state
+                setUsers(prev => prev.map(u =>
+                    u.id === userId ? { ...u, photo_url: res.photo_url } : u
+                ));
+            } else {
+                alert(res.message || "Error al sincronizar foto");
+            }
+        } catch (error) {
+            console.error("Error scanning user:", error);
+        } finally {
+            setScanningUser(null);
         }
     };
 
@@ -236,11 +260,45 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                             >
                                 {/* User Info Block */}
                                 <div className="flex items-center gap-5 lg:min-w-[260px] relative z-10">
-                                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-xl border border-primary/10 shadow-inner group-hover:scale-110 transition-transform duration-500">
-                                        {user.username?.charAt(0).toUpperCase() || '?'}
+                                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-xl border border-primary/10 shadow-inner group-hover:scale-110 transition-transform duration-500 overflow-hidden relative">
+                                        {user.photo_url ? (
+                                            <img
+                                                src={user.photo_url}
+                                                alt={user.username}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    // Fallback if image fails to load
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.style.display = 'none';
+                                                    target.parentElement!.innerText = user.username?.charAt(0).toUpperCase() || '?';
+                                                }}
+                                            />
+                                        ) : (
+                                            user.username?.charAt(0).toUpperCase() || '?'
+                                        )}
+
+                                        {scanningUser === user.id && (
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm">
+                                                <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="min-w-0">
-                                        <p className="font-black text-white truncate text-base tracking-tight group-hover:text-primary transition-colors">@{user.username || 'unknown'}</p>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-black text-white truncate text-base tracking-tight group-hover:text-primary transition-colors">@{user.username || 'unknown'}</p>
+                                            <button
+                                                onClick={(e) => handleSyncUserPhoto(e, user.id)}
+                                                disabled={scanningUser === user.id}
+                                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-primary transition-all active:scale-90"
+                                                title="Sincronizar foto de perfil"
+                                            >
+                                                {scanningUser === user.id ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    <RefreshCw className="w-3 h-3" />
+                                                )}
+                                            </button>
+                                        </div>
                                         <p className="text-[10px] text-gray-600 font-mono tracking-tighter mt-1">ID: {user.id}</p>
                                     </div>
                                 </div>

@@ -49,7 +49,9 @@ async def generate_backup_file() -> str:
         env["PGPASSWORD"] = pg_password
 
         # pg_dump command
-        cmd = ["pg_dump", "-h", pg_host, "-U", pg_user, "-d", pg_db, "-f", filename]
+        # --clean: drop database objects before recreating them
+        # --if-exists: don't error if objects to drop don't exist
+        cmd = ["pg_dump", "-h", pg_host, "-U", pg_user, "-d", pg_db, "-f", filename, "--clean", "--if-exists"]
 
         logger.info(f"Iniciando backup DB: host={pg_host}, user={pg_user}, db={pg_db}")
 

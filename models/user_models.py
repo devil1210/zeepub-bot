@@ -18,6 +18,7 @@ class User(Base):
     username = Column(String(255))
     name = Column(String(255))
     nickname = Column(String(255))
+    photo_url = Column(String(500), nullable=True) # URL local de la foto de perfil
     
     # Nivel/Permisos
     level_id = Column(Integer, ForeignKey('user_levels.id'), default=6) # 6 = Free por defecto
@@ -55,12 +56,19 @@ class User(Base):
             "telegram_id": self.telegram_id,
             "username": self.username,
             "name": self.name,
-            "level": self.level_info.name if self.level_info else "free",
-            "level_id": self.level_id,
+            "nickname": self.nickname,
+            "photo_url": self.photo_url,
+            "level": {
+                "id": self.level_id,
+                "name": self.level_info.name if self.level_info else "free",
+                "color": self.level_info.color if self.level_info else "#888888"
+            },
             "role": self.role,
             "insignias": self.insignias,
             "total_downloads": self.total_downloads,
-            "settings": self.settings
+            "settings": self.settings,
+            "has_library_access": self.has_library_access,
+            "can_request_books": self.can_request_books
         }
 
 class UserLevel(Base):

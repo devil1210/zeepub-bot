@@ -9,11 +9,13 @@ DB_DIR = os.path.abspath("data/library")
 DB_PATH = os.path.join(DB_DIR, "library.db")
 COVERS_DIR = os.path.join(DB_DIR, "covers")
 THUMBNAILS_DIR = os.path.join(DB_DIR, "thumbnails")
+PROFILES_DIR = os.path.join(DB_DIR, "profiles")
 
 # Crear carpetas si no existen
 os.makedirs(DB_DIR, exist_ok=True)
 os.makedirs(COVERS_DIR, exist_ok=True)
 os.makedirs(THUMBNAILS_DIR, exist_ok=True)
+os.makedirs(PROFILES_DIR, exist_ok=True)
 
 # Motor de base de datos
 def create_library_engine():
@@ -150,9 +152,25 @@ def check_migrations():
             )
         """
         )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON user_audit_logs(user_id)"
-        )
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON user_audit_logs(user_id)")
+
+        # 4. Migración: Columnas en la tabla users (photo_url, etc)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(users)")
+            user_cols = [row[1] for row in cursor.fetchall()]
+            
+            if "photo_url" not in user_cols:
+                _log.info("Migración: Añadiendo columna 'photo_url' a la tabla users...")
+                cursor.execute("ALTER TABLE users ADD COLUMN photo_url TEXT")
+            
+            if "has_library_access" not in user_cols:
+                _log.info("Migración: Añadiendo columna 'has_library_access' a la tabla users...")
+                cursor.execute("ALTER TABLE users ADD COLUMN has_library_access INTEGER DEFAULT 1")
+                
+            if "can_request_books" not in user_cols:
+                _log.info("Migración: Añadiendo columna 'can_request_books' a la tabla users...")
+                cursor.execute("ALTER TABLE users ADD COLUMN can_request_books INTEGER DEFAULT 1")
 
         conn.commit()
         conn.close()

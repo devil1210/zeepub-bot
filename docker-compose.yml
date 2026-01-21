@@ -39,7 +39,7 @@ services:
 
   # Servicio de Base de Datos PostgreSQL
   db:
-    image: postgres:15-alpine
+    image: postgres:17-alpine
     container_name: zeepub_db_v6
     restart: always
     environment:

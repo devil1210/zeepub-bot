@@ -212,6 +212,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         level_id: Optional[int] = None,
         has_library_access: Optional[bool] = None,
         can_request_books: Optional[bool] = None,
+        photo_url: Optional[str] = None,
     ):
         # Admin level mapping
         level_to_tier_id = {
@@ -237,6 +238,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if insignias is not None: data["insignias"] = json.dumps(insignias)
                 if has_library_access is not None: data["has_library_access"] = has_library_access
                 if can_request_books is not None: data["can_request_books"] = can_request_books
+                if photo_url is not None: data["photo_url"] = photo_url
                 
                 logger.debug(f"[SUPABASE UPSERT] Data: {data}")
                 self.supabase.get_client().table('users').upsert(data).execute()
@@ -270,6 +272,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     if insignias is not None: user.insignias = insignias
                     if has_library_access is not None: user.has_library_access = has_library_access
                     if can_request_books is not None: user.can_request_books = can_request_books
+                    if photo_url is not None: user.photo_url = photo_url
                     
                     await session.commit()
                     logger.info(f"[POSTGRES UPSERT] Success for user {telegram_id}")
@@ -319,6 +322,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if can_request_books is not None:
                     fields.append("can_request_books = ?")
                     params.append(1 if can_request_books else 0)
+                if photo_url is not None:
+                    fields.append("photo_url = ?")
+                    params.append(photo_url)
 
                 params.append(telegram_id)
                 sql = f"UPDATE users SET {', '.join(fields)} WHERE telegram_id = ?"
@@ -860,7 +866,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         lvl = user.level_info
                         level_dict = {
                             "name": lvl.name if lvl else "N-A",
-                            "color": getattr(lvl, 'ui_primary_color', '#888888') # Fallback color
+                            "color": getattr(lvl, 'color', '#888888')
                         }
                         
                         results.append({
@@ -868,6 +874,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "username": user.nickname or f"User_{user.telegram_id}",
                             "name": user.name,
                             "telegram_username": user.username,
+                            "photo_url": user.photo_url,
                             "level_name": lvl.name if lvl else "free",
                             "level": level_dict,
                             "role": user.role,
@@ -885,7 +892,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
         if self.supabase.is_active:
             try:
-                cols = "telegram_id, nickname, name, username, level_id, role, total_downloads, updated_at"
+                cols = "telegram_id, nickname, name, username, level_id, role, total_downloads, updated_at, photo_url"
                 query = self.supabase.get_client().table('users').select(f"{cols}, level:user_levels(name, color, daily_downloads)")
                 if search:
                     # Supabase doesn't support easy OR complex filters via wrapper as nicely, but we can try
@@ -901,6 +908,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "username": user['nickname'] or f"User_{user['telegram_id']}",
                         "name": user.get('name'),
                         "telegram_username": user.get('username'),
+                        "photo_url": user.get('photo_url'),
                         "level_name": user.get('level_id'), # String/ID level
                         "level": { # Rename from level_info to level to match AdminUser interface
                             "name": lvl.get('name') or "N-A",
@@ -931,7 +939,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.daily_downloads,
                 u.name,
                 u.username,
-                u.role
+                u.role,
+                u.photo_url
             FROM users u
             LEFT JOIN user_levels ul ON u.level_id = ul.id
         """
@@ -960,6 +969,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "username": nickname or f"User_{tid}",
                     "name": row[7] if len(row) > 7 else None,
                     "telegram_username": row[8] if len(row) > 8 else None,
+                    "photo_url": row[10] if len(row) > 10 else None,
                     "level_name": tier,
                     "level": { # Rename from level_info to level
                         "name": l_name or "N-A",
