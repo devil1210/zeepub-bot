@@ -138,6 +138,7 @@ export const api = {
         cardColor?: string;
         hasLibraryAccess?: boolean;
         canRequestBooks?: boolean;
+        allowThemeTemplates?: boolean;
     }) => rpc('admin_save_tier_config', config),
 
     // User Permissions

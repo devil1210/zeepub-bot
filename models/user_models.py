@@ -111,6 +111,7 @@ class UserLevel(Base):
     can_request_books = Column(Boolean, default=True)
     early_access = Column(Boolean, default=False)
     custom_themes = Column(Boolean, default=False)
+    allow_theme_templates = Column(Boolean, default=False)
     show_recommendations = Column(Boolean, default=True)
     
     users = relationship("User", back_populates="level_info")

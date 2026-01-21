@@ -55,6 +55,7 @@ interface TelegramContextType {
   setShowRecommendations: (value: boolean) => void;
   isExpanded: boolean;
   ready: boolean;
+  allowThemeTemplates: boolean; // Controls if user can select theme templates
   refreshStatus: () => Promise<void>;
   extendedInfo: TelegramExtendedInfo | null;
   // Level simulation for admins
@@ -77,6 +78,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [extendedInfo, setExtendedInfo] = useState<TelegramExtendedInfo | null>(null);
   const [simulatedLevel, setSimulatedLevel] = useState<number | null>(null);
   const [uiExportedSettings, setUiExportedSettings] = useState<string[]>(['theme', 'primaryColor', 'fontSize']);
+  const [allowThemeTemplates, setAllowThemeTemplates] = useState(false);
   const [isAdminFromAccess, setIsAdminFromAccess] = useState(false);
   const { updateSettings } = useTheme();
 
@@ -129,6 +131,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsBetaTester(data.isBetaTester || data.isAdmin || false);
         setCustomThemes(data.custom_themes || data.customThemes || false);
         setShowRecommendations(data.show_recommendations !== false);
+        setAllowThemeTemplates(data.allow_theme_templates || data.allowThemeTemplates || false);
         setIsAdminFromAccess(data.isAdmin || false);
 
         if (data.ui_exported_settings) {
@@ -237,6 +240,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setShowRecommendations: setShowRecommendations,
       isExpanded,
       ready,
+      allowThemeTemplates: isAdmin || allowThemeTemplates,
       refreshStatus,
       extendedInfo,
       simulatedLevel,

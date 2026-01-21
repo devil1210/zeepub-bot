@@ -453,6 +453,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "customThemes": lvl.custom_themes if lvl else False,
                             "price": lvl.price if lvl else 0,
                             "showRecommendations": lvl.show_recommendations if lvl else True,
+                            "allowThemeTemplates": lvl.allow_theme_templates if lvl else False,
                             
                             # UI Tokens
                             "theme": lvl.ui_theme if lvl else "dark",
@@ -543,6 +544,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "customThemes": bool(lvl.get('custom_themes')),
                             "price": lvl.get('price'),
                             "showRecommendations": bool(lvl.get('show_recommendations', True)),
+                            "allowThemeTemplates": bool(lvl.get('allow_theme_templates', False)),
                             "theme": lvl.get('ui_theme', 'dark'),
                             "fontSize": lvl.get('ui_font_size', 14),
                             "glassBlur": lvl.get('ui_glass_blur', 12),
@@ -611,7 +613,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.background_color,
                 ul.card_color,
                 ul.force_settings,
-                u.photo_url
+                u.photo_url,
+                ul.allow_theme_templates
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -649,6 +652,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "customThemes": bool(row[7]),
                         "price": row[8],
                         "showRecommendations": bool(row[9]) if len(row) > 9 else True,
+                        "allowThemeTemplates": bool(row[36]) if len(row) > 36 else False,
                         "theme": row[13] if len(row) > 13 else 'dark',
                         "fontSize": row[14] if len(row) > 14 else 14,
                         "glassBlur": row[15] if len(row) > 15 else 12,
@@ -738,6 +742,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "customThemes": bool(lvl.get('custom_themes')),
                         "price": lvl.get('price'),
                         "showRecommendations": bool(lvl.get('show_recommendations', True)),
+                        "allowThemeTemplates": bool(lvl.get('allow_theme_templates', False)),
                         "theme": lvl.get('ui_theme', 'dark'),
                         "fontSize": lvl.get('ui_font_size', 14),
                         "glassBlur": lvl.get('ui_glass_blur', 12),
@@ -771,7 +776,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, 
                     ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, 
                     "ui_primary_color", "can_download", "can_read", "has_library_access", "can_request_books", 
-                    "banner_content_offset", "background_color", "card_color", "force_settings", "ui_glow_intensity"
+                    "banner_content_offset", "background_color", "card_color", "force_settings", "ui_glow_intensity",
+                    "allow_theme_templates"
                 FROM user_levels WHERE id = ?
             """
             cursor = await conn.execute(query, (level_id,))
@@ -788,6 +794,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "customThemes": bool(r[7]),
                     "price": r[8],
                     "showRecommendations": bool(r[9]),
+                    "allowThemeTemplates": bool(r[27]) if len(r) > 27 else False,
                     "theme": r[10] or 'dark',
                     "fontSize": r[11] or 14,
                     "glassBlur": r[12] or 12,
@@ -837,6 +844,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "customThemes": bool(row['custom_themes']),
                             "price": row['price'],
                             "showRecommendations": bool(row.get('show_recommendations', True)),
+                            "allowThemeTemplates": bool(row.get('allow_theme_templates', False)),
                             "theme": row.get('ui_theme', 'dark'),
                             "fontSize": row.get('ui_font_size', 14),
                             "glassBlur": row.get('ui_glass_blur', 12),

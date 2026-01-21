@@ -1,281 +1,118 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Palette,
-    Monitor,
-    Layout,
-    Type,
-    Image as ImageIcon,
-    MousePointer2,
-    Eye,
-    Star,
-    GlassWater,
-    ArrowLeft,
-    Loader2,
-    CheckCircle2,
-    XCircle,
-    Copy,
-    Save,
-    RotateCcw,
-    Layers,
-    Sliders,
-    EyeOff,
-    Sun,
-    Moon,
-    Contrast
-} from 'lucide-react';
+import { Palette, Sun, Moon, Contrast, Sliders, CheckCircle2, RotateCcw, Eye, Save, Loader2, XCircle, AlertCircle } from 'lucide-react';
 import { api } from '../src/services/api';
-import { useTheme, adjustBrightness } from '../contexts/ThemeContext';
 
-interface AppearanceDashboardProps {
-    onNavigate?: (page: string) => void;
-    onSavingChange?: (saving: boolean) => void;
-    onCanUndoChange?: (canUndo: boolean) => void;
-    onCanSaveChange?: (canSave: boolean) => void;
-    setUndoRef?: (fn: () => void) => void;
-    setSaveRef?: (fn: () => Promise<void>) => void;
-}
-
-interface UIConfig {
-    id: string | number;
-    name: string;
-    primaryColor: string;
-    glassBlur: number;
-    glassOpacity: number;
-    navOpacity: number;
-    accentOpacity: number;
-    cardGlowIntensity: number;
-    backgroundColor: string;
-    cardColor: string;
-    bannerContentOffset: number;
-    fontSize: number;
-    coverWidth: number;
-    theme: 'dark' | 'light' | 'amoled';
-    forceSettings: boolean;
-    exportedSettings: string[]; // List of setting keys visible to users
-}
-
-export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
-    onNavigate,
-    onSavingChange,
-    onCanUndoChange,
-    onCanSaveChange,
-    setUndoRef,
-    setSaveRef
-}) => {
-    const { settings: currentTheme } = useTheme();
+const AppearanceDashboard = () => {
+    const [tiers, setTiers] = useState<any[]>([]);
+    const [selectedLevelId, setSelectedLevelId] = useState<string>('global');
+    const [config, setConfig] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [allLevels, setAllLevels] = useState<any[]>([]);
+    const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const [availableThemes, setAvailableThemes] = useState<any[]>([]);
-    const [selectedLevelId, setSelectedLevelId] = useState<string | number>('global');
-    const [config, setConfig] = useState<UIConfig | null>(null);
-    const [originalConfig, setOriginalConfig] = useState<UIConfig | null>(null);
-    const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-    // Available UI settings for the "visibility" list
     const exportedOptions = [
-        { key: 'theme', label: 'Tema (Oscuro/Claro/AMOLED)', icon: Monitor },
+        { key: 'theme', label: 'Modo (Claro/Oscuro)', icon: Moon },
         { key: 'primaryColor', label: 'Color de Acento', icon: Palette },
-        { key: 'backgroundColor', label: 'Color de Fondo', icon: Layers },
-        { key: 'cardColor', label: 'Color de Tarjetas', icon: Layers },
-        { key: 'glassBlur', label: 'Nivel de Blur', icon: GlassWater },
-        { key: 'glassOpacity', label: 'Transparencia Paneles', icon: MousePointer2 },
-        { key: 'navOpacity', label: 'Opacidad Barra Nav', icon: Layout },
-        { key: 'accentOpacity', label: 'Opacidad Acento', icon: Sliders },
-        { key: 'cardGlowIntensity', label: 'Resplandor Cards', icon: Star },
-        { key: 'fontSize', label: 'Tamaño de Letra', icon: Type },
-        { key: 'coverWidth', label: 'Ancho de Portadas', icon: ImageIcon },
-        { key: 'showRecommendations', label: 'Mostrar Recomendaciones', icon: Eye },
+        { key: 'glassBlur', label: 'Efecto Blur', icon: Sliders },
+        { key: 'coverWidth', label: 'Tamaño de Portadas', icon: CheckCircle2 },
+        { key: 'cardGlowIntensity', label: 'Resplandor', icon: Eye },
+        { key: 'fontSize', label: 'Tamaño de Fuente', icon: CheckCircle2 },
+        { key: 'showRecommendations', label: 'Recomendaciones', icon: CheckCircle2 },
     ];
 
     useEffect(() => {
-        const fetchBaseData = async () => {
-            try {
-                const [levelsRes, themesRes] = await Promise.all([
-                    api.getAdminTiers(),
-                    api.getAvailableThemes()
-                ]);
-
-                if (levelsRes.levels) {
-                    setAllLevels([
-                        { id: 'global', name: 'Global (Por Defecto)', color: '#ffffff' },
-                        ...levelsRes.levels
-                    ]);
-                }
-
-                if (themesRes.success && themesRes.themes) {
-                    setAvailableThemes(themesRes.themes);
-                }
-            } catch (err) {
-                console.error("Error fetching admin data", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchBaseData();
+        loadData();
     }, []);
 
-    useEffect(() => {
-        const loadLevelConfig = async () => {
+    const loadData = async () => {
+        try {
             setLoading(true);
-            try {
-                const levelName = selectedLevelId === 'global' ? 'Global' : (allLevels.find(l => String(l.id) === String(selectedLevelId))?.name || 'Global');
-                const res = await api.getTierConfig(levelName);
-                if (res.success && res.tier) {
-                    const t = res.tier;
-                    // Parse exportedSettings from string/JSON if needed
-                    let exported: string[] = [];
-                    if (t.ui_exported_settings) {
-                        try {
-                            exported = JSON.parse(t.ui_exported_settings);
-                        } catch (e) {
-                            exported = String(t.ui_exported_settings).split(',').filter(Boolean);
-                        }
-                    } else {
-                        // Default visible settings if none specified
-                        exported = ['theme', 'primaryColor', 'fontSize'];
-                    }
+            const [tiersRes, themesRes] = await Promise.all([
+                api.getAdminTiers(),
+                api.getAvailableThemes()
+            ]);
 
-                    const newConfig: UIConfig = {
-                        id: selectedLevelId,
-                        name: t.name,
-                        primaryColor: t.primaryColor || '#2b6cee',
-                        glassBlur: t.glassBlur ?? 12,
-                        glassOpacity: t.glassOpacity ?? 0.6,
-                        navOpacity: t.navOpacity ?? 0.8,
-                        accentOpacity: t.accentOpacity ?? 0.2,
-                        cardGlowIntensity: t.cardGlowIntensity ?? 0.5,
-                        backgroundColor: t.backgroundColor || '#0f172a',
-                        cardColor: t.cardColor || '#1e293b',
-                        bannerContentOffset: t.bannerContentOffset ?? 0,
-                        fontSize: t.fontSize ?? 14,
-                        coverWidth: t.coverWidth ?? 120,
-                        theme: t.theme || 'dark',
-                        forceSettings: t.forceSettings || false,
-                        exportedSettings: exported
-                    };
-                    setConfig(newConfig);
-                    setOriginalConfig(JSON.parse(JSON.stringify(newConfig)));
-                }
-            } catch (err) {
-                console.error("Error loading level config", err);
-            } finally {
-                setLoading(false);
+            if (tiersRes.success) {
+                setTiers(tiersRes.tiers || tiersRes.levels || []);
+                // Load global by default
+                loadLevelConfig('global');
             }
-        };
 
-        if (allLevels.length > 0) {
-            loadLevelConfig();
+            if (themesRes.success) {
+                setAvailableThemes(themesRes.themes);
+            }
+        } catch (err) {
+            console.error("Error loading administration data:", err);
+        } finally {
+            setLoading(false);
         }
-    }, [selectedLevelId, allLevels]);
+    };
 
-    // Handle Save/Undo via parent
-    useEffect(() => {
-        const hasChanges = JSON.stringify(config) !== JSON.stringify(originalConfig);
-        onCanUndoChange?.(hasChanges);
-        onCanSaveChange?.(hasChanges);
-    }, [config, originalConfig]);
+    const loadLevelConfig = async (levelId: string) => {
+        try {
+            setLoading(true);
+            const res = await api.getTierConfig(levelId);
+            if (res.success) {
+                setConfig(res.config);
+                setSelectedLevelId(levelId);
+            }
+        } catch (err) {
+            console.error("Error loading level config:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSave = async () => {
-        if (!config) return;
         setSaving(true);
-        onSavingChange?.(true);
+        setMessage(null);
         try {
-            // Prepare data for API
-            const savePayload = {
-                ...config,
-                ui_exported_settings: JSON.stringify(config.exportedSettings)
-            };
-            const res = await api.saveTierConfig(savePayload);
+            const res = await api.saveTierConfig({ ...config, level_id: selectedLevelId });
             if (res.success) {
-                setOriginalConfig(JSON.parse(JSON.stringify(config)));
-                setMsg({ type: 'success', text: 'Apariencia guardada correctamente' });
-                setTimeout(() => setMsg(null), 3000);
+                setMessage({ text: 'Configuración guardada correctamente', type: 'success' });
+                // Optional: refresh local tiers list if name changed
+                if (selectedLevelId !== 'global') {
+                    const newTiers = tiers.map(t => t.id === selectedLevelId ? { ...t, name: config.name } : t);
+                    setTiers(newTiers);
+                }
             } else {
-                setMsg({ type: 'error', text: res.message || 'Error al guardar' });
+                setMessage({ text: res.message || 'Error al guardar', type: 'error' });
             }
-        } catch (err: any) {
-            setMsg({ type: 'error', text: err.message || 'Error de conexión' });
+        } catch (err) {
+            setMessage({ text: 'Error de conexión', type: 'error' });
         } finally {
             setSaving(false);
-            onSavingChange?.(false);
+            setTimeout(() => setMessage(null), 3000);
         }
-    };
-
-    const handleUndo = () => {
-        if (originalConfig) {
-            setConfig(JSON.parse(JSON.stringify(originalConfig)));
-            setMsg({ type: 'success', text: 'Cambios revertidos' });
-            setTimeout(() => setMsg(null), 2000);
-        }
-    };
-
-    const handleColorChange = (color: string) => {
-        if (!config) return;
-        setConfig({
-            ...config,
-            primaryColor: color
-        });
     };
 
     const handleApplyTheme = (theme: any) => {
-        if (!config) return;
-
         setConfig({
             ...config,
-            primaryColor: theme.primary_color || config.primaryColor,
-            glassBlur: theme.glass_blur ?? config.glassBlur,
-            glassOpacity: theme.glass_opacity ?? config.glassOpacity,
-            navOpacity: theme.nav_opacity ?? config.navOpacity,
-            accentOpacity: theme.accent_opacity ?? config.accentOpacity,
-            cardGlowIntensity: theme.card_glow_intensity ?? config.cardGlowIntensity,
-            backgroundColor: theme.background_color || config.backgroundColor,
-            cardColor: theme.card_color || config.cardColor,
-            theme: theme.theme_type || config.theme,
-            fontSize: theme.font_size ?? config.fontSize,
-            coverWidth: theme.cover_width ?? config.coverWidth,
+            theme: theme.theme_type,
+            primaryColor: theme.primaryColor || theme.primary_color,
+            backgroundColor: theme.backgroundColor || theme.background_color,
+            cardColor: theme.cardColor || theme.card_color,
+            glassBlur: theme.glassBlur || theme.glass_blur,
+            glassOpacity: theme.glassOpacity || theme.glass_opacity,
+            navOpacity: theme.navOpacity || theme.nav_opacity,
+            accentOpacity: theme.accentOpacity || theme.accent_opacity,
+            cardGlowIntensity: theme.cardGlowIntensity || theme.card_glow_intensity || 0.5,
         });
-
-        setMsg({ type: 'success', text: `Tema "${theme.name}" aplicado (pulsa Guardar para confirmar)` });
-        setTimeout(() => setMsg(null), 3000);
     };
-
-    const handleSaveAsTheme = async () => {
-        if (!config) return;
-        const name = prompt("Nombre para la nueva plantilla de tema:");
-        if (!name) return;
-
-        try {
-            const res = await api.saveAsTheme({
-                name,
-                ...config
-            });
-            if (res.success) {
-                setMsg({ type: 'success', text: 'Tema guardado como plantilla' });
-                // Refresh themes list
-                const themesRes = await api.getAvailableThemes();
-                if (themesRes.themes) setAvailableThemes(themesRes.themes);
-            } else {
-                setMsg({ type: 'error', text: res.message || 'Error al guardar tema' });
-            }
-        } catch (err: any) {
-            setMsg({ type: 'error', text: err.message || 'Error' });
-        }
-    };
-
-    useEffect(() => {
-        setSaveRef?.(handleSave);
-        setUndoRef?.(handleUndo);
-    }, [config]);
 
     const toggleExported = (key: string) => {
-        if (!config) return;
-        const current = [...config.exportedSettings];
+        const current = [...(config.exportedSettings || [])];
         if (current.includes(key)) {
             setConfig({ ...config, exportedSettings: current.filter(k => k !== key) });
         } else {
             setConfig({ ...config, exportedSettings: [...current, key] });
         }
+    };
+
+    const handleColorChange = (color: string) => {
+        setConfig({ ...config, primaryColor: color });
     };
 
     if (loading && !config) {
@@ -320,36 +157,32 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                 <option key={t.id} value={t.id}>{t.name}</option>
                             ))}
                         </select>
-                        <button
-                            onClick={handleSaveAsTheme}
-                            className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-primary hover:bg-primary/10 transition-all title='Guardar como Plantilla'"
-                        >
-                            <Copy className="w-4 h-4" />
-                        </button>
                     </div>
 
-                    <div className="h-8 w-px bg-white/5 hidden md:block"></div>
+                    <div className="h-10 w-px bg-white/10 mx-2 hidden md:block" />
 
-                    <div className="flex items-center gap-3">
-                        <label className="text-xs font-black text-gray-500 uppercase tracking-widest hidden sm:block">EDITANDO:</label>
-                        <select
-                            value={selectedLevelId}
-                            onChange={(e) => setSelectedLevelId(e.target.value)}
-                            className="bg-black/40 border border-white/10 rounded-2xl px-6 py-3 text-sm font-bold text-white focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer appearance-none min-w-[200px]"
-                            style={{ outline: 'none' }}
-                        >
-                            {allLevels.map(lvl => (
-                                <option key={lvl.id} value={lvl.id}>{lvl.name}</option>
-                            ))}
-                        </select>
+                    <div className="flex items-center gap-2">
+                        {tiers.map((t) => (
+                            <button
+                                key={t.id}
+                                onClick={() => loadLevelConfig(t.id)}
+                                className={`px-4 py-2.5 rounded-2xl border-2 text-[10px] font-bold uppercase tracking-widest transition-all ${selectedLevelId === t.id
+                                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
+                                    : 'bg-white/5 border-white/5 text-gray-500 hover:border-white/10 hover:text-gray-300'
+                                    }`}
+                            >
+                                {t.name}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {msg && (
-                <div className={`p-4 rounded-2xl border flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 ${msg.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                    {msg.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-                    <span className="text-sm font-bold">{msg.text}</span>
+            {/* Alert Message */}
+            {message && (
+                <div className={`p-4 rounded-2xl border flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 ${message.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                    {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                    <span className="text-sm font-bold">{message.text}</span>
                 </div>
             )}
 
@@ -565,36 +398,36 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Global Specifics (Offset Banner) - Full Width row at the end of the grid */}
-                            {selectedLevelId === 'global' && (
-                                <div className="col-span-full border-t border-white/5 pt-8">
-                                    <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10">
-                                        <div className="flex justify-between items-center mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Offset Banner Serie (PX)</label>
-                                                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-black text-[8px] font-black uppercase">Global-Only</span>
-                                            </div>
-                                            <span className="text-xs font-black text-amber-500 font-mono">{config.bannerContentOffset}px</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="-100"
-                                            max="200"
-                                            step="5"
-                                            value={config.bannerContentOffset}
-                                            onChange={(e) => setConfig({ ...config, bannerContentOffset: parseInt(e.target.value) })}
-                                            className="w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                                        />
-                                        <p className="mt-3 text-[9px] text-amber-500/60 italic font-medium">Ajusta la posición vertical del título y sinopsis en el banner. Valores negativos suben el texto.</p>
-                                    </div>
-                                </div>
-                            )}
                         </div>
+
+                        {/* Global Specifics (Offset Banner) */}
+                        {selectedLevelId === 'global' && (
+                            <div className="border-t border-white/5 pt-8">
+                                <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Offset Banner Serie (PX)</label>
+                                            <span className="px-2 py-0.5 rounded-full bg-amber-500 text-black text-[8px] font-black uppercase">Global-Only</span>
+                                        </div>
+                                        <span className="text-xs font-black text-amber-500 font-mono">{config.bannerContentOffset}px</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="-100"
+                                        max="200"
+                                        step="5"
+                                        value={config.bannerContentOffset}
+                                        onChange={(e) => setConfig({ ...config, bannerContentOffset: parseInt(e.target.value) })}
+                                        className="w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                                    />
+                                    <p className="mt-3 text-[9px] text-amber-500/60 italic font-medium">Ajusta la posición vertical del título y sinopsis en el banner.</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Right Column: Visibility / Exported Settings (The Checklist) */}
+                {/* Right Column: Visibility / Exported Settings */}
                 <div className="lg:col-span-4 space-y-8">
                     <div className="glass-panel p-8 rounded-[2.5rem] border-primary/20 bg-primary/5 space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-xl">
                         <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
@@ -611,7 +444,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
 
                         <div className="space-y-3">
                             {exportedOptions.map((opt) => {
-                                const isChecked = config.exportedSettings.includes(opt.key);
+                                const isChecked = (config.exportedSettings || []).includes(opt.key);
                                 return (
                                     <div
                                         key={opt.key}
@@ -635,33 +468,67 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                             })}
                         </div>
 
-                        <div className="p-4 rounded-xl bg-black/40 border border-white/5">
-                            <div className="flex items-center gap-3 mb-2">
-                                <RotateCcw className="w-4 h-4 text-gray-500" />
-                                <span className="text-[10px] font-black text-gray-400 uppercase">Forzar Aplicación</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[9px] text-gray-500 font-bold uppercase w-2/3 leading-relaxed">Sobreescribir ajustes personales con estos valores</span>
-                                <button
-                                    onClick={() => setConfig({ ...config, forceSettings: !config.forceSettings })}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${config.forceSettings ? 'bg-primary' : 'bg-white/10'}`}
-                                >
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config.forceSettings ? 'translate-x-6' : 'translate-x-1'}`} />
-                                </button>
+                        <div className="space-y-4 pt-4 border-t border-white/5">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 mb-2 inline-block">Permisos Especiales</label>
+
+                            <label className="flex items-center justify-between p-4 rounded-xl bg-black/40 border border-white/5 cursor-pointer group hover:border-primary/30 transition-all">
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-primary transition-colors">Selección de Temas</span>
+                                    <span className="text-[9px] text-gray-500 font-bold uppercase leading-relaxed">Permite al usuario elegir plantillas</span>
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        checked={config.allowThemeTemplates}
+                                        onChange={(e) => setConfig({ ...config, allowThemeTemplates: e.target.checked })}
+                                        className="sr-only"
+                                    />
+                                    <div className={`w-10 h-5 rounded-full transition-all duration-300 ${config.allowThemeTemplates ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-white/10'}`}></div>
+                                    <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-all duration-300 ${config.allowThemeTemplates ? 'translate-x-5' : ''}`}></div>
+                                </div>
+                            </label>
+
+                            <div className="p-4 rounded-xl bg-black/40 border border-white/5">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <RotateCcw className="w-4 h-4 text-gray-500" />
+                                    <span className="text-[10px] font-black text-gray-400 uppercase">Forzar Aplicación</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[9px] text-gray-500 font-bold uppercase w-2/3 leading-relaxed">Sobreescribir ajustes personales</span>
+                                    <button
+                                        onClick={() => setConfig({ ...config, forceSettings: !config.forceSettings })}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${config.forceSettings ? 'bg-primary' : 'bg-white/10'}`}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config.forceSettings ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
+
+                        {/* Save Button */}
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-primary/20 transition-all active:scale-95 overflow-hidden group relative"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                            <span>{saving ? 'Guardando...' : 'Guardar Cambios'}</span>
+                        </button>
                     </div>
 
                     {/* Quick Preview Badge */}
-                    <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-black border border-white/5 shadow-xl flex flex-col items-center justify-center text-center gap-4 group">
+                    <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-black border border-white/5 shadow-xl flex flex-col items-center justify-center text-center gap-4 group hover:border-primary/30 transition-all duration-500">
                         <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-500">
-                            <div className="size-14 rounded-full bg-primary shadow-[0_0_30px_rgba(var(--color-primary-rgb),0.5)] flex items-center justify-center">
-                                <Eye className="w-8 h-8 text-white" />
+                            <div className="size-14 rounded-full bg-primary shadow-[0_0_30px_rgba(var(--color-primary-rgb),0.5)] flex items-center justify-center text-white">
+                                <Eye className="w-8 h-8" />
                             </div>
                         </div>
                         <div>
                             <h4 className="text-white font-black uppercase tracking-tighter">Vista en Vivo</h4>
-                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1 leading-relaxed">Los usuarios de este nivel {selectedLevelId === 'global' ? 'por defecto' : ''} verán estos cambios al navegar.</p>
+                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1 leading-relaxed">
+                                Los usuarios de este nivel {selectedLevelId === 'global' ? 'por defecto' : ''} verán estos cambios al navegar.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -669,3 +536,5 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
         </div>
     );
 };
+
+export default AppearanceDashboard;

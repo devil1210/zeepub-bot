@@ -754,7 +754,7 @@ async def handle_admin_get_tiers(data: Dict[str, Any], user_data: Dict[str, Any]
     
     levels = await user_repo.get_all_levels()
     logger.info(f"ADMIN: handle_admin_get_tiers found {len(levels)} levels")
-    return {"levels": levels}
+    return {"success": True, "levels": levels, "tiers": levels}
 
 
 async def handle_admin_save_tier(data: Dict[str, Any], user_data: Dict[str, Any]):
@@ -1273,7 +1273,8 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
                 "backgroundColor": "backgroundColor",
                 "cardColor": "cardColor",
                 "forceSettings": "forceSettings",
-                "cardGlowIntensity": "cardGlowIntensity"
+                "cardGlowIntensity": "cardGlowIntensity",
+                "allowThemeTemplates": "allowThemeTemplates"
             }
             
             for frontend_key, setting_key in field_mapping.items():
@@ -1340,7 +1341,8 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             "cardColor": "card_color",
             "forceSettings": "force_settings",
             "cardGlowIntensity": "ui_glow_intensity",
-            "ui_exported_settings": "ui_exported_settings"
+            "ui_exported_settings": "ui_exported_settings",
+            "allowThemeTemplates": "allow_theme_templates"
         }
         
         for frontend_key, db_key in field_mapping.items():
@@ -1447,6 +1449,7 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
         # Maps keys (note: user_repo.get_level_by_id already does most of this mapping)
         return {
             "success": True,
+            "config": tier,
             "tier": tier
         }
     except HTTPException:

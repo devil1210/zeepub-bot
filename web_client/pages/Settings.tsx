@@ -21,7 +21,8 @@ import {
   Download,
   Terminal,
   Eraser,
-  Eye
+  Eye,
+  CheckCircle2
 } from 'lucide-react';
 import { ReportIssueModal } from '../components/ReportIssueModal';
 import { RequestBookModal } from '../components/RequestBookModal';
@@ -51,6 +52,8 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [selectedElement, setSelectedElement] = useState<'nav' | 'searchbar' | 'header'>('nav');
+  const [availableThemes, setAvailableThemes] = useState<any[]>([]);
+  const { allowThemeTemplates } = useTelegram();
 
   const handleColorChange = (color: string) => {
     updateSettings({
@@ -109,6 +112,19 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
       });
     }
   }, [isRealAdmin]);
+
+  // Fetch themes for templates
+  useEffect(() => {
+    if (allowThemeTemplates || isAdmin) {
+      import('../src/services/api').then(({ api }) => {
+        api.getAvailableThemes().then((res: any) => {
+          if (res.success) {
+            setAvailableThemes(res.themes);
+          }
+        }).catch(console.error);
+      });
+    }
+  }, [allowThemeTemplates, isAdmin]);
 
   const isVisible = (key: string) => {
     if (isAdmin) return true;
@@ -431,6 +447,62 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Theme Templates Selector */}
+              {(allowThemeTemplates || isAdmin) && availableThemes.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Biblioteca de Temas Profesionales</label>
+                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase">{availableThemes.length} Disponibles</span>
+                  </div>
+                  <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                    {availableThemes.map((theme) => {
+                      const isCurrent = settings.theme === theme.theme_type && (settings.primaryColor === theme.primary_color || settings.primaryColor === theme.primaryColor);
+                      return (
+                        <button
+                          key={theme.id}
+                          onClick={() => {
+                            updateSettings({
+                              theme: theme.theme_type,
+                              primaryColor: theme.primaryColor || theme.primary_color,
+                              primaryColorDark: adjustBrightness(theme.primaryColor || theme.primary_color, -20),
+                              backgroundColor: theme.backgroundColor || theme.background_color,
+                              cardColor: theme.cardColor || theme.card_color,
+                              glassBlur: theme.glassBlur || theme.glass_blur,
+                              glassOpacity: theme.glassOpacity || theme.glass_opacity,
+                              navOpacity: theme.navOpacity || theme.nav_opacity,
+                              accentOpacity: theme.accentOpacity || theme.accent_opacity,
+                              cardGlowIntensity: theme.cardGlowIntensity || theme.card_glow_intensity || 0.5,
+                            });
+                          }}
+                          className={`flex-shrink-0 w-40 p-4 rounded-2xl border-2 transition-all flex flex-col gap-3 group relative overflow-hidden ${isCurrent ? 'border-primary bg-primary/10' : 'border-white/5 bg-black/40 hover:border-white/10'}`}
+                        >
+                          <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none">
+                            <Palette className="w-8 h-8" />
+                          </div>
+
+                          <div className="flex flex-col gap-1 z-10">
+                            <span className="text-[11px] font-black text-white truncate text-left">{theme.name}</span>
+                            <span className="text-[8px] font-bold text-gray-500 uppercase text-left">{theme.theme_type}</span>
+                          </div>
+
+                          <div className="flex gap-1.5 mt-auto">
+                            <div className="size-4 rounded-full shadow-lg" style={{ backgroundColor: theme.primary_color || theme.primaryColor }}></div>
+                            <div className="size-4 rounded-full border border-white/10" style={{ backgroundColor: theme.background_color || theme.backgroundColor }}></div>
+                            <div className="size-4 rounded-full border border-white/10" style={{ backgroundColor: theme.card_color || theme.cardColor }}></div>
+                          </div>
+
+                          {isCurrent && (
+                            <div className="absolute top-2 right-2">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                 {/* Theme Selection */}
