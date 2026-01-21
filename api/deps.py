@@ -18,7 +18,7 @@ async def get_telegram_user_id(
     Prioritizes initData validation for security.
     """
     init_data = x_telegram_init_data or x_telegram_data
-    print(f"DEBUG: Received init_data='{init_data}' (type: {type(init_data)})")
+    logger.debug(f"Received init_data='{init_data}' (type: {type(init_data)})")
     bot_token = config.TELEGRAM_TOKEN
 
     # Local development bypass
