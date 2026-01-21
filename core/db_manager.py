@@ -86,6 +86,7 @@ class DatabaseManager:
                 ("banner_content_offset", "INTEGER DEFAULT 0"),
                 ("has_library_access", "BOOLEAN DEFAULT 1"),
                 ("can_request_books", "BOOLEAN DEFAULT 1"),
+                ("allow_theme_templates", "BOOLEAN DEFAULT 0"),
                 ("ui_exported_settings", "TEXT")
             ]
             for col_name, col_def in new_tier_cols:
@@ -153,7 +154,8 @@ class DatabaseManager:
                 ('custom_status', "TEXT"),
                 ('expires_at', "TIMESTAMP"),
                 ('has_library_access', "BOOLEAN DEFAULT 1"),
-                ('can_request_books', "BOOLEAN DEFAULT 1")
+                ('can_request_books', "BOOLEAN DEFAULT 1"),
+                ('photo_url', "TEXT")
             ]
             
             for col_name, col_def in user_migrations:
