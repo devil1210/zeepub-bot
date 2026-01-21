@@ -455,7 +455,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Biblioteca de Temas Profesionales</label>
                     <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase">{availableThemes.length} Disponibles</span>
                   </div>
-                  <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                  <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
                     {availableThemes.map((theme) => {
                       const isCurrent = settings.theme === theme.theme_type && (settings.primaryColor === theme.primary_color || settings.primaryColor === theme.primaryColor);
                       return (

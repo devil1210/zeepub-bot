@@ -77,6 +77,7 @@ class LocalBook(Base):
 
     # Contenido
     description = Column(String(5000))
+    description_clean = Column(String(5000)) # Sin etiquetas HTML
     demographics = Column(JSON)  # Ej: ["Seinen", "Adultos"]
     tags = Column(JSON)  # Lista de géneros/etiquetas
     language = Column(String(10), default="es")
@@ -126,7 +127,8 @@ class LocalBook(Base):
             "tags": self.tags,
             "demographics": self.demographics,
             "description": self.description,
-            "summary": self.description,  # Alias para compatibilidad
+            "description_clean": self.description_clean or self.description,
+            "summary": self.description_clean or self.description,  # Prefer cleaner version
             "fileSize": self.file_size,
             "modifiedAt": (
                 self.file_modified_at.isoformat() if self.file_modified_at else None

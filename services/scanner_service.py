@@ -144,7 +144,7 @@ class ScannerService:
                 and book.file_modified_at == mtime
                 and book.file_size == size
                 and book.content_hash
-                and book.cover_thumb_path
+                and book.cover_low
             ):
                 return False
 
@@ -192,6 +192,11 @@ class ScannerService:
             # Publisher / Translation Group - use full name from OPF
             book.publisher = meta.get("publisher")
             book.description = meta.get("description")
+            
+            # Clean description from HTML
+            from utils.helpers import limpiar_html_basico
+            book.description_clean = limpiar_html_basico(book.description)
+            
             book.language = meta.get("language") or "es"
             book.english_title = meta.get("english_title") # Probablemente vacío de OPF
             book.spanish_title = meta.get("spanish_title")
@@ -432,6 +437,8 @@ class ScannerService:
                     
                     if not book.description and item.get("description"):
                         book.description = item.get("description")
+                        from utils.helpers import limpiar_html_basico
+                        book.description_clean = limpiar_html_basico(book.description)
                         found_something = True
                     
                     if found_something:

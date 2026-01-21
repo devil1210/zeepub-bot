@@ -1467,7 +1467,17 @@ async def handle_admin_get_themes(data: Dict[str, Any], user_data: Dict[str, Any
     client = supabase_manager.get_client()
     try:
         res = client.table('app_themes').select('*').order('name').execute()
-        return {"success": True, "themes": res.data}
+        
+        # Deduplicate by name (keep first occurrence)
+        themes = []
+        seen_names = set()
+        for t in res.data:
+            name = t.get('name')
+            if name and name not in seen_names:
+                themes.append(t)
+                seen_names.add(name)
+                
+        return {"success": True, "themes": themes}
     except Exception as e:
         logger.error(f"Error fetching themes: {e}")
         return {"success": False, "message": str(e)}

@@ -262,15 +262,15 @@ async def check_user_access(
     # Final value: personal setting OR level default
     final_show_recommendations = (
         personal_show_recs if personal_show_recs is not None 
-        else access_info["level"].get("showRecommendations", True)
+        else access_info.get("showRecommendations", True)
     )
 
     return AccessResponse(
-        level=UserLevelModel(**access_info["level"]),
+        level=UserLevelModel(**access_info),
         hasAccess=has_access,
         isAdmin=is_admin,
         isBetaTester=is_beta_tester,
-        customThemes=access_info["level"].get("customThemes", False) or is_admin,
+        customThemes=access_info.get("customThemes", False) or is_admin,
         showRecommendations=final_show_recommendations,
         nickname=access_info.get("nickname") or eff.get("nickname"),
         name=access_info.get("name") or eff.get("name"),

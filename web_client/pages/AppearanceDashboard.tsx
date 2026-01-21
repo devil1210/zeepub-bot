@@ -35,13 +35,14 @@ export const AppearanceDashboard: React.FC = () => {
 
             if (tiersRes.success) {
                 setTiers(tiersRes.tiers || tiersRes.levels || []);
-                // Load global by default
-                loadLevelConfig('global');
             }
 
             if (themesRes.success) {
                 setAvailableThemes(themesRes.themes);
             }
+
+            // Load global by default
+            await loadLevelConfig('global');
         } catch (err) {
             console.error("Error loading administration data:", err);
         } finally {
@@ -51,11 +52,29 @@ export const AppearanceDashboard: React.FC = () => {
 
     const loadLevelConfig = async (levelId: string) => {
         try {
+            console.log("Loading config for level:", levelId);
             setLoading(true);
             const res = await api.getTierConfig(levelId);
             if (res.success) {
+                console.log("Config loaded:", res.config);
                 setConfig(res.config);
                 setSelectedLevelId(levelId);
+            } else {
+                console.warn("Failed to load config:", res.message);
+                if (levelId === 'global') {
+                    // Provide a basic fallback if global fails to load
+                    setConfig({
+                        name: 'Global',
+                        theme: 'dark',
+                        primaryColor: '#2b6cee',
+                        backgroundColor: '#0f172a',
+                        cardColor: '#1e293b',
+                        glassOpacity: 0.6,
+                        glassBlur: 12,
+                        exportedSettings: ['theme', 'primaryColor', 'fontSize']
+                    });
+                    setSelectedLevelId('global');
+                }
             }
         } catch (err) {
             console.error("Error loading level config:", err);

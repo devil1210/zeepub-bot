@@ -151,6 +151,28 @@
       transition: all 0.2s ease-in-out;
     }
 
+    /* Custom scrollbar for horizontal lists */
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 6px;
+      display: block !important;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: var(--color-primary);
+      border-radius: 10px;
+      opacity: 0.5;
+    }
+
+    .custom-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-primary) transparent;
+    }
+
     /* Light mode border adjustment */
     :root:not(.dark) .glass-panel,
     :root:not(.dark) .glass-card {
