@@ -1462,8 +1462,9 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
 
 async def handle_admin_get_themes(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Retorna la lista de plantillas de temas disponibles."""
-    if user_data.get("level") != "admin":
-        raise HTTPException(status_code=403, detail="No tienes permisos")
+    # Relaxed permission: Allow all authorized mini-app users to view themes (controlled by UI)
+    # if user_data.get("level") != "admin":
+    #    raise HTTPException(status_code=403, detail="No tienes permisos")
     
     from repositories.theme_repository import theme_repo
     try:

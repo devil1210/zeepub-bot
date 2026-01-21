@@ -15,6 +15,7 @@
 
 !scripts/
 !scripts/*.sh
+!scripts/*.py
 
 # Virtualenvs
 venv/
