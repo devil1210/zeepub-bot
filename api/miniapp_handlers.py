@@ -1491,8 +1491,32 @@ async def handle_admin_save_theme(data: Dict[str, Any], user_data: Dict[str, Any
     if not theme_name:
         return {"success": False, "message": "El tema necesita un nombre"}
     
+    import re
+    # Clean name: remove trailing numbers that look like " 2", " 3"
+    theme_name = re.sub(r'\s+\d+$', '', theme_name).strip()
+    
     client = supabase_manager.get_client()
     
+    # Ensure name uniqueness if it's a new theme request
+    if data.get("is_new"):
+        res_names = client.table('app_themes').select('name').execute()
+        existing_names = [t['name'] for t in res_names.data]
+        
+        if theme_name in existing_names:
+            # Avoid ending in " 2"
+            suffixes = ["(Nuevo)", "(Alt)", "(Pro)", "(Custom)", "(Modern)", "(Premium)"]
+            unique_found = False
+            for s in suffixes:
+                candidate = f"{theme_name} {s}"
+                if candidate not in existing_names:
+                    theme_name = candidate
+                    unique_found = True
+                    break
+            
+            if not unique_found:
+                import time
+                theme_name = f"{theme_name} ({int(time.time() % 1000)})"
+
     # Map frontend keys to DB columns
     insert_data = {
         "name": theme_name,
@@ -1516,6 +1540,8 @@ async def handle_admin_save_theme(data: Dict[str, Any], user_data: Dict[str, Any
     
     try:
         res = client.table('app_themes').upsert(insert_data, on_conflict='name').execute()
+        if not res.data:
+             return {"success": False, "message": "No se pudo guardar el tema"}
         return {"success": True, "theme": res.data[0]}
     except Exception as e:
         logger.error(f"Error saving theme: {e}")

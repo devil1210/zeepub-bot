@@ -293,6 +293,10 @@ export const useTheme = () => {
   if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
+  // Expose to window for special access (like Admin Live Preview)
+  if (typeof window !== 'undefined') {
+    (window as any).useTheme = () => context;
+  }
   return context;
 };
 

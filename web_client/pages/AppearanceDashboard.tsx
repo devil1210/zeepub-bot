@@ -2,14 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { Palette, Sun, Moon, Contrast, Sliders, CheckCircle2, RotateCcw, Eye, Save, Loader2, XCircle, AlertCircle } from 'lucide-react';
 import { api } from '../src/services/api';
 
-export const AppearanceDashboard: React.FC = () => {
+interface AppearanceDashboardProps {
+    onSavingChange?: (saving: boolean) => void;
+    onCanSaveChange?: (canSave: boolean) => void;
+    onCanUndoChange?: (canUndo: boolean) => void;
+    setSaveRef?: (fn: () => void) => void;
+    setUndoRef?: (fn: () => void) => void;
+}
+
+export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
+    onSavingChange,
+    onCanSaveChange,
+    setSaveRef
+}) => {
     const [tiers, setTiers] = useState<any[]>([]);
     const [selectedLevelId, setSelectedLevelId] = useState<string>('global');
     const [config, setConfig] = useState<any>(null);
+    const [initialConfig, setInitialConfig] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const [availableThemes, setAvailableThemes] = useState<any[]>([]);
+    const [showSaveThemeModal, setShowSaveThemeModal] = useState(false);
+    const [newThemeName, setNewThemeName] = useState('');
+    const [livePreview, setLivePreview] = useState(false);
 
     const exportedOptions = [
         { key: 'theme', label: 'Modo (Claro/Oscuro)', icon: Moon },
@@ -24,6 +40,42 @@ export const AppearanceDashboard: React.FC = () => {
     useEffect(() => {
         loadData();
     }, []);
+
+    useEffect(() => {
+        if (setSaveRef) setSaveRef(handleSave);
+    }, [config, selectedLevelId, tiers]);
+
+    useEffect(() => {
+        if (onCanSaveChange) {
+            const hasChanged = JSON.stringify(config) !== JSON.stringify(initialConfig);
+            onCanSaveChange(hasChanged);
+        }
+    }, [config, initialConfig]);
+
+    useEffect(() => {
+        if (onSavingChange) onSavingChange(saving);
+    }, [saving]);
+
+    // Live Preview Effect
+    const { updateSettings } = (window as any).useTheme ? (window as any).useTheme() : { updateSettings: null };
+
+    useEffect(() => {
+        if (livePreview && config && updateSettings) {
+            updateSettings({
+                theme: config.theme,
+                primaryColor: config.primaryColor,
+                backgroundColor: config.backgroundColor,
+                cardColor: config.cardColor,
+                glassBlur: config.glassBlur,
+                glassOpacity: config.glassOpacity,
+                navOpacity: config.navOpacity,
+                accentOpacity: config.accentOpacity,
+                cardGlowIntensity: config.cardGlowIntensity,
+                coverWidth: config.coverWidth,
+                bannerContentOffset: config.bannerContentOffset
+            });
+        }
+    }, [config, livePreview]);
 
     const loadData = async () => {
         try {
@@ -58,6 +110,7 @@ export const AppearanceDashboard: React.FC = () => {
             if (res.success) {
                 console.log("Config loaded:", res.config);
                 setConfig(res.config);
+                setInitialConfig(res.config);
                 setSelectedLevelId(levelId);
             } else {
                 console.warn("Failed to load config:", res.message);
@@ -84,12 +137,14 @@ export const AppearanceDashboard: React.FC = () => {
     };
 
     const handleSave = async () => {
+        if (!config) return;
         setSaving(true);
         setMessage(null);
         try {
             const res = await api.saveTierConfig({ ...config, level_id: selectedLevelId });
             if (res.success) {
                 setMessage({ text: 'Configuración guardada correctamente', type: 'success' });
+                setInitialConfig(config);
                 // Optional: refresh local tiers list if name changed
                 if (selectedLevelId !== 'global') {
                     const newTiers = tiers.map(t => t.id === selectedLevelId ? { ...t, name: config.name } : t);
@@ -103,6 +158,41 @@ export const AppearanceDashboard: React.FC = () => {
         } finally {
             setSaving(false);
             setTimeout(() => setMessage(null), 3000);
+        }
+    };
+
+    const handleSaveAsTheme = async () => {
+        if (!newThemeName.trim()) {
+            setMessage({ text: 'Ingresa un nombre para el tema', type: 'error' });
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const themeData = {
+                name: newThemeName,
+                description: `Basado en ${selectedLevelId}`,
+                ...config,
+                is_new: true // Tell backend to ensure unique name
+            };
+
+            const res = await api.saveAsTheme(themeData);
+            if (res.success) {
+                setMessage({ text: `Tema "${res.theme.name}" guardado`, type: 'success' });
+                setShowSaveThemeModal(false);
+                setNewThemeName('');
+                // Refresh themes list
+                const themesRes = await api.getAvailableThemes();
+                if (themesRes.success) {
+                    setAvailableThemes(themesRes.themes);
+                }
+            } else {
+                setMessage({ text: res.message || 'Error al guardar tema', type: 'error' });
+            }
+        } catch (err) {
+            setMessage({ text: 'Error al conectar', type: 'error' });
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -194,6 +284,24 @@ export const AppearanceDashboard: React.FC = () => {
                             </button>
                         ))}
                     </div>
+                </div>
+
+                <div className="flex items-center gap-4 border-t border-white/5 pt-4 md:border-t-0 md:pt-0">
+                    <button
+                        onClick={() => setLivePreview(!livePreview)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-black uppercase transition-all ${livePreview ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
+                    >
+                        <Eye className="w-4 h-4" />
+                        {livePreview ? 'Preview: ON' : 'Vista Previa'}
+                    </button>
+
+                    <button
+                        onClick={() => setShowSaveThemeModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 border border-purple-500/30 text-purple-400 rounded-xl text-[10px] font-black uppercase hover:bg-purple-600/30 transition-all"
+                    >
+                        <Save className="w-4 h-4" />
+                        Guardar Tema
+                    </button>
                 </div>
             </div>
 
@@ -552,6 +660,51 @@ export const AppearanceDashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
+            {/* Save Theme Modal */}
+            {showSaveThemeModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-[#121212] border border-white/10 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-purple-500/20 rounded-2xl border border-purple-500/20">
+                                <Palette className="w-6 h-6 text-purple-400" />
+                            </div>
+                            <h3 className="text-xl font-black text-white uppercase tracking-tight">Nuevo Tema de Plantilla</h3>
+                        </div>
+
+                        <p className="text-xs text-gray-400 font-medium">
+                            Esto guardará la configuración actual como una plantilla seleccionable en la biblioteca de temas.
+                        </p>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Nombre del Tema</label>
+                            <input
+                                type="text"
+                                value={newThemeName}
+                                onChange={(e) => setNewThemeName(e.target.value)}
+                                placeholder="Ej: Ocean Blue, Cyberpunk..."
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <button
+                                onClick={() => setShowSaveThemeModal(false)}
+                                className="flex-1 px-6 py-4 rounded-2xl border border-white/10 text-[10px] font-black uppercase text-gray-400 hover:bg-white/5"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSaveAsTheme}
+                                disabled={saving || !newThemeName.trim()}
+                                className="flex-1 px-6 py-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-2xl text-[10px] font-black uppercase text-white shadow-lg shadow-purple-600/20 transition-all"
+                            >
+                                {saving ? 'Guardando...' : 'Crear Tema'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

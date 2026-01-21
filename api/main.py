@@ -29,6 +29,14 @@ app_state = {"start_time": app_start_time}
 async def lifespan(app: FastAPI):
     # Startup: Iniciar el bot
     logger.info("Iniciando ZeePub Bot junto con la API...")
+    
+    # Run DB migrations/checks
+    from utils.library_db import check_migrations
+    try:
+        check_migrations()
+    except Exception as e:
+        logger.error(f"Migration check failed: {e}")
+
     if config.DATABASE_URL:
         logger.info("📦 Base de Datos: PostgreSQL (Configurada)")
     else:

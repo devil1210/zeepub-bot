@@ -1,6 +1,7 @@
 import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
+import sqlite3
 from models.library_models import Base
 from config.config_settings import config
 
@@ -57,8 +58,37 @@ def check_migrations():
     _log = logging.getLogger(__name__)
 
     # Solo aplica a SQLite
-    if engine.url.drivername != "sqlite":
-        _log.info("Skiping SQLite-specific migrations for non-SQLite DB.")
+    # Validar driver
+    is_postgres = "postgres" in engine.url.drivername
+    
+    if not is_postgres and engine.url.drivername != "sqlite":
+        _log.info("Skipping migrations for unknown DB driver.")
+        return
+
+    if is_postgres:
+        _log.info("Running migrations for Postgres...")
+        try:
+            with engine.connect() as conn:
+                # 1. local_books.description_clean
+                try:
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS description_clean VARCHAR(5000);"))
+                   conn.commit()
+                   _log.info("Checked/Added description_clean to local_books")
+                except Exception as e:
+                   _log.warning(f"Error checking description_clean: {e}")
+                   conn.rollback()
+
+                # 2. user_levels.allow_theme_templates
+                try:
+                   conn.execute(text("ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;"))
+                   conn.commit()
+                   _log.info("Checked/Added allow_theme_templates to user_levels")
+                except Exception as e:
+                    # Table might not exist yet if not initialized
+                    _log.warning(f"Error checking allow_theme_templates: {e}")
+                    conn.rollback()
+        except Exception as e:
+            _log.error(f"Postgres migration error: {e}")
         return
 
     try:
@@ -95,6 +125,7 @@ def check_migrations():
             ("series_hash", "VARCHAR(64)"),
             ("spanish_title", "TEXT"),
             ("jap_title", "TEXT"),
+            ("description_clean", "TEXT"),
             ("cover_original", "TEXT"),
             ("cover_high", "TEXT"),
             ("cover_medium", "TEXT"),
