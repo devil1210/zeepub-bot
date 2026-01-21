@@ -33,9 +33,11 @@ export const InfrastructureDashboard: React.FC = () => {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [logs, setLogs] = useState<{ time: string, level: string, msg: string, color: string }[]>([]);
+    const [logs, setLogs] = useState<{ time: string, level: string, msg: string, color: string, timestamp?: number }[]>([]);
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [auditLoading, setAuditLoading] = useState(false);
+    const [logLevel, setLogLevel] = useState('INFO');
+    const [isExporting, setIsExporting] = useState(false);
 
     const fetchStats = async () => {
         try {
@@ -66,12 +68,55 @@ export const InfrastructureDashboard: React.FC = () => {
 
     const fetchSystemLogs = async () => {
         try {
-            const res = await api.getSystemLogs();
+            const res = await api.getSystemLogs(logLevel);
             if (res.success && res.logs) {
                 setLogs(res.logs);
             }
         } catch (error) {
             console.error('Error fetching system logs:', error);
+        }
+    };
+
+    const handleExportLogs = async (hours?: number) => {
+        setIsExporting(true);
+        try {
+            const res = await api.getSystemLogs('DEBUG', hours);
+            if (res.success && res.logs && res.logs.length > 0) {
+                const logText = res.logs.map((l: any) => `[${l.time}] ${l.level}: ${l.msg}`).join('\n');
+
+                // Calculate date range for filename
+                const timestamps = res.logs.map((l: any) => l.timestamp).filter(Boolean);
+                let dateSuffix = 'export';
+                if (timestamps.length > 0) {
+                    const first = new Date(Math.min(...timestamps) * 1000);
+                    const last = new Date(Math.max(...timestamps) * 1000);
+
+                    const fmt = (d: Date) => {
+                        const date = d.toISOString().split('T')[0];
+                        const time = d.toTimeString().split(' ')[0].replace(/:/g, '-');
+                        return `${date}_${time}`;
+                    };
+                    dateSuffix = `${fmt(first)}_to_${fmt(last)}`;
+                }
+
+                const blob = new Blob([logText], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `zeepub_logs_${dateSuffix}.txt`;
+                document.body.appendChild(a);
+                a.click();
+
+                // Small delay for cleanup
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            }
+        } catch (error) {
+            console.error('Error exporting logs:', error);
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -96,7 +141,7 @@ export const InfrastructureDashboard: React.FC = () => {
             clearInterval(statsInterval);
             clearInterval(logsInterval);
         };
-    }, []);
+    }, [logLevel]);
 
     const handleAction = async (name: string, fn: () => Promise<any>) => {
         setActionLoading(name);
@@ -494,16 +539,52 @@ export const InfrastructureDashboard: React.FC = () => {
                     </div>
 
                     {/* System Logs Section */}
-                    <div className="lg:col-span-1 glass-panel border border-white/50 dark:border-white/10 bg-white/30 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-xl p-0 overflow-hidden flex flex-col h-[500px] lg:h-auto shadow-sm">
-                        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                                <Terminal className="w-4 h-4 text-slate-400" />
-                                Live System Logs
-                            </h3>
-                            <div className="flex gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-red-500/50"></span>
-                                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/50"></span>
-                                <span className="w-2.5 h-2.5 rounded-full bg-green-500/50"></span>
+                    <div className="lg:col-span-1 glass-panel border border-white/50 dark:border-white/10 bg-white/30 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-xl p-0 overflow-hidden flex flex-col h-[600px] lg:h-auto shadow-sm">
+                        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 flex flex-col gap-3">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                    <Terminal className="w-4 h-4 text-slate-400" />
+                                    Live System Logs
+                                </h3>
+                                <div className="flex gap-1">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-red-500/50"></span>
+                                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/50"></span>
+                                    <span className="w-2.5 h-2.5 rounded-full bg-green-500/50"></span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2">
+                                <select
+                                    value={logLevel}
+                                    onChange={(e) => setLogLevel(e.target.value)}
+                                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-[10px] font-bold py-1 px-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                                >
+                                    <option value="DEBUG">DEBUG (+ALL)</option>
+                                    <option value="INFO">INFO ONLY</option>
+                                    <option value="WARNING">WARNING+</option>
+                                    <option value="ERROR">ERROR ONLY</option>
+                                </select>
+
+                                <div className="flex gap-1">
+                                    <button
+                                        onClick={() => handleExportLogs(1)}
+                                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                    >
+                                        1H
+                                    </button>
+                                    <button
+                                        onClick={() => handleExportLogs(24)}
+                                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                    >
+                                        24H
+                                    </button>
+                                    <button
+                                        onClick={() => handleExportLogs()}
+                                        className="px-2 py-1 bg-blue-500 text-white rounded text-[9px] font-bold hover:bg-blue-600 transition-colors"
+                                    >
+                                        EXPORT
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div className="flex-1 bg-slate-950 p-4 font-mono text-[11px] overflow-y-auto leading-relaxed scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">

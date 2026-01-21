@@ -20,7 +20,9 @@ export const MonitorDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [auditLoading, setAuditLoading] = useState(false);
-    const [logs, setLogs] = useState<{ time: string, level: string, msg: string, color: string }[]>([]);
+    const [logs, setLogs] = useState<{ time: string, level: string, msg: string, color: string, timestamp?: number }[]>([]);
+    const [logLevel, setLogLevel] = useState('INFO');
+    const [isExporting, setIsExporting] = useState(false);
 
     const fetchStats = async () => {
         try {
@@ -50,12 +52,55 @@ export const MonitorDashboard: React.FC = () => {
 
     const fetchSystemLogs = async () => {
         try {
-            const res = await api.getSystemLogs();
+            const res = await api.getSystemLogs(logLevel);
             if (res.success && res.logs) {
                 setLogs(res.logs);
             }
         } catch (error) {
             console.error('Error fetching system logs:', error);
+        }
+    };
+
+    const handleExportLogs = async (hours?: number) => {
+        setIsExporting(true);
+        try {
+            const res = await api.getSystemLogs('DEBUG', hours);
+            if (res.success && res.logs && res.logs.length > 0) {
+                const logText = res.logs.map((l: any) => `[${l.time}] ${l.level}: ${l.msg}`).join('\n');
+
+                // Calculate date range for filename
+                const timestamps = res.logs.map((l: any) => l.timestamp).filter(Boolean);
+                let dateSuffix = 'export';
+                if (timestamps.length > 0) {
+                    const first = new Date(Math.min(...timestamps) * 1000);
+                    const last = new Date(Math.max(...timestamps) * 1000);
+
+                    const fmt = (d: Date) => {
+                        const date = d.toISOString().split('T')[0];
+                        const time = d.toTimeString().split(' ')[0].replace(/:/g, '-');
+                        return `${date}_${time}`;
+                    };
+                    dateSuffix = `${fmt(first)}_to_${fmt(last)}`;
+                }
+
+                const blob = new Blob([logText], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `zeepub_logs_${dateSuffix}.txt`;
+                document.body.appendChild(a);
+                a.click();
+
+                // Small delay to ensure browser handles the download before cleanup
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            }
+        } catch (error) {
+            console.error('Error exporting logs:', error);
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -79,7 +124,7 @@ export const MonitorDashboard: React.FC = () => {
             clearInterval(statsInterval);
             clearInterval(logsInterval);
         };
-    }, []);
+    }, [logLevel]);
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in duration-500 pt-4">
@@ -239,15 +284,56 @@ export const MonitorDashboard: React.FC = () => {
             </div>
 
             {/* Live System Logs - Bottom section */}
-            <div className="glass-panel rounded-3xl p-0 overflow-hidden flex flex-col h-[500px] border border-white/5 bg-black/20">
-                <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
-                    <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <Terminal className="w-4 h-4 text-gray-500" /> Live System Logs
-                    </h3>
-                    <div className="flex gap-1.5 px-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500/20"></span>
-                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/20"></span>
-                        <span className="w-2.5 h-2.5 rounded-full bg-green-500/20"></span>
+            <div className="glass-panel rounded-3xl p-0 overflow-hidden flex flex-col h-[600px] border border-white/5 bg-black/20">
+                <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                        <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                            <Terminal className="w-4 h-4 text-gray-500" /> Live System Logs
+                        </h3>
+                        <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
+                        <select
+                            value={logLevel}
+                            onChange={(e) => setLogLevel(e.target.value)}
+                            className="bg-black/40 border border-white/10 rounded-lg text-[10px] font-bold text-gray-400 px-2 py-1 focus:outline-none focus:border-primary transition-colors cursor-pointer"
+                        >
+                            <option value="DEBUG">DEBUG (+ALL)</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                        </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center bg-black/40 border border-white/10 rounded-lg p-1">
+                            <button
+                                onClick={() => handleExportLogs(1)}
+                                disabled={isExporting}
+                                className="px-3 py-1 text-[9px] font-black text-gray-400 hover:text-white transition-colors"
+                            >
+                                1H
+                            </button>
+                            <div className="w-px h-3 bg-white/10"></div>
+                            <button
+                                onClick={() => handleExportLogs(24)}
+                                disabled={isExporting}
+                                className="px-3 py-1 text-[9px] font-black text-gray-400 hover:text-white transition-colors"
+                            >
+                                24H
+                            </button>
+                            <div className="w-px h-3 bg-white/10"></div>
+                            <button
+                                onClick={() => handleExportLogs()}
+                                disabled={isExporting}
+                                className="px-3 py-1 text-[9px] font-black text-white bg-primary/20 rounded-md hover:bg-primary/40 transition-colors"
+                            >
+                                EXPORT
+                            </button>
+                        </div>
+                        <div className="flex gap-1.5 px-2 hidden sm:flex">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500/20"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/20"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-green-500/20"></span>
+                        </div>
                     </div>
                 </div>
                 <div className="flex-1 p-6 font-mono text-[11px] overflow-y-auto leading-relaxed scrollbar-hide">
