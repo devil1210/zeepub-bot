@@ -186,20 +186,19 @@ class MaintenancePlugin(BasePlugin):
                 pg_user = os.getenv("POSTGRES_USER")
                 pg_password = os.getenv("POSTGRES_PASSWORD")
                 pg_db = os.getenv("POSTGRES_DB")
-                pg_host = "db"
+                pg_host = os.getenv("POSTGRES_HOST", "db")
 
-                if not pg_user:
-                    try:
-                        from sqlalchemy.engine import make_url
-
-                        url = make_url(config.DATABASE_URL)
-                        pg_user = url.username
-                        pg_password = url.password
-                        if url.host:
-                            pg_host = url.host
-                        pg_db = url.database
-                    except Exception:
-                        pass
+                try:
+                    from sqlalchemy.engine import make_url
+                    url = make_url(config.DATABASE_URL)
+                    if not pg_user: pg_user = url.username
+                    if not pg_password: pg_password = url.password
+                    if not pg_db: pg_db = url.database
+                    # Si la URL tiene un host (ej: localhost o db), lo usamos
+                    if url.host:
+                        pg_host = url.host
+                except Exception as e:
+                    logger.debug(f"Error parseando DATABASE_URL para restore: {e}")
 
                 if not pg_user or not pg_password:
                     raise Exception("No se encontraron credenciales de base de datos.")
