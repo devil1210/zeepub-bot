@@ -52,6 +52,7 @@ interface PermissionsState {
   username: string;
   insignias: string[];
   expiresAt: string | null;
+  photoUrl?: string;
 }
 
 interface Level {
@@ -101,6 +102,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
     insignias: [],
     expiresAt: null,
     role: '',
+    photoUrl: userData?.avatar || '',
   });
 
   // Audit history state
@@ -166,6 +168,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 role: res.user.role || '',
                 hasLibraryAccess: res.user.hasLibraryAccess ?? true,
                 canRequestBooks: res.user.canRequestBooks ?? true,
+                photoUrl: res.user.photo_url || '',
               };
               console.log('[UserPermissions] Setting permissions to:', newPerms);
               setPermissions(newPerms);
@@ -397,12 +400,29 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
               ></div>
 
               <div className="relative z-10">
-                <div className="w-24 h-24 rounded-3xl p-1 bg-gradient-to-br from-white/10 to-transparent shadow-xl">
+                <div className="w-24 h-24 rounded-3xl p-1 bg-gradient-to-br from-white/10 to-transparent shadow-xl overflow-hidden">
                   <div
-                    className="w-full h-full rounded-[1.25rem] flex items-center justify-center text-3xl font-black text-white shadow-inner"
+                    className="w-full h-full rounded-[1.25rem] flex items-center justify-center text-3xl font-black text-white shadow-inner overflow-hidden"
                     style={{ background: `linear-gradient(135deg, ${displayColor}50, ${displayColor}20)` }}
                   >
-                    {displayName.charAt(0).toUpperCase()}
+                    {permissions.photoUrl ? (
+                      <img
+                        src={permissions.photoUrl.startsWith('http') || permissions.photoUrl.startsWith('/') ? permissions.photoUrl : `/api/profiles/${permissions.photoUrl}`}
+                        alt={permissions.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          if (target.parentElement) {
+                            const span = document.createElement('span');
+                            span.innerText = permissions.name?.charAt(0).toUpperCase() || permissions.username?.charAt(0).toUpperCase() || 'U';
+                            target.parentElement.appendChild(span);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span>{permissions.name?.charAt(0).toUpperCase() || permissions.username?.charAt(0).toUpperCase() || 'U'}</span>
+                    )}
                   </div>
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 border-4 border-[#121212] rounded-full shadow-lg"></div>
@@ -410,7 +430,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
 
               <div className="flex-1 min-w-0 relative z-10 text-center sm:text-left">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-                  <h2 className="text-3xl font-black text-white truncate tracking-tight">@{displayName}</h2>
+                  <h2 className="text-3xl font-black text-white truncate tracking-tight">{permissions.name || permissions.username || 'Usuario'}</h2>
                   <span
                     className="inline-flex items-center px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border shadow-lg"
                     style={{
@@ -425,7 +445,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-6 gap-y-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
                   <span className="flex items-center gap-2">
                     <AtSign className="w-4 h-4 text-primary" />
-                    {displayName.toLowerCase().replace(/\s/g, '_')}
+                    @{permissions.username || 'usuario'}
                   </span>
                   <span className="flex items-center gap-2 font-mono tabular-nums opacity-60">
                     <Fingerprint className="w-4 h-4" />

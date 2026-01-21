@@ -68,7 +68,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         
                         return {
                             "telegram_id": user.telegram_id,
-                            "level": level_name,
+                            "level": user.level_id, # Fallback name
                             "expires_at": user.expires_at,
                             "role": user.role,
                             "nickname": user.nickname,
@@ -81,7 +81,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "level_id": user.level_id,
                             "beta_tester": user.beta_tester,
                             "has_library_access": user.has_library_access,
-                            "can_request_books": user.can_request_books
+                            "can_request_books": user.can_request_books,
+                            "photo_url": user.photo_url
                         }
             except Exception as e:
                 logger.error(f"Postgres ORM Error in get_by_id: {e}")
@@ -89,7 +90,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
         if self.supabase.is_active:
             try:
-                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books"
+                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books, photo_url"
                 res = self.supabase.get_client().table('users').select(cols).eq('telegram_id', telegram_id).execute()
                 if res.data:
                     user = res.data[0]
@@ -134,6 +135,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "settings": settings,
                         "total_downloads": user['total_downloads'] or 0,
                         "level_id": user.get('level_id', 6),
+                        "photo_url": user.get('photo_url')
                     }
                 return None
             except Exception as e:
@@ -142,12 +144,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
         async with self.db.connection() as conn:
             cursor = await conn.execute(
-                "SELECT level, expires_at, role, nickname, settings, total_downloads, name, username, level_id, insignias FROM users WHERE telegram_id = ?",
+                "SELECT level, expires_at, role, nickname, settings, total_downloads, name, username, level_id, insignias, photo_url FROM users WHERE telegram_id = ?",
                 (telegram_id,),
             )
             row = await cursor.fetchone()
             if row:
-                level, expires_at_raw, role, nickname, settings_raw, total_downloads, name, username, level_id, insignias_raw = row
+                level, expires_at_raw, role, nickname, settings_raw, total_downloads, name, username, level_id, insignias_raw, photo_url = row
                 expires_at = self._parse_datetime(expires_at_raw)
                 import json
                 try:
@@ -171,7 +173,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "settings": settings,
                     "total_downloads": total_downloads or 0,
                     "level_id": level_id,
-                    "insignias": insignias
+                    "insignias": insignias,
+                    "photo_url": photo_url
                 }
             return None
 
@@ -332,7 +335,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             else:
                 import json
                 await conn.execute(
-                    "INSERT INTO users (telegram_id, level, level_id, added_at, expires_at, role, created_by, nickname, name, username, roles, insignias, has_library_access, can_request_books, settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}')",
+                    "INSERT INTO users (telegram_id, level, level_id, added_at, expires_at, role, created_by, nickname, name, username, roles, insignias, has_library_access, can_request_books, settings, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)",
                     (
                         telegram_id,
                         level,
@@ -348,6 +351,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         json.dumps(insignias) if insignias is not None else '[]',
                         int(has_library_access if has_library_access is not None else True),
                         int(can_request_books if can_request_books is not None else True),
+                        photo_url
                     ),
                 )
 
@@ -499,6 +503,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "insignias": user.insignias or [],
                             "hasLibraryAccess": user.has_library_access,
                             "canRequestBooks": user.can_request_books,
+                            "photo_url": user.photo_url
                         }
             except Exception as e:
                 logger.error(f"Postgres ORM Error in get_access_info: {e}")
@@ -507,7 +512,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         if self.supabase.is_active:
             try:
                 # Use explicit column list instead of * to avoid error with defunct 'roles' column
-                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books"
+                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books, photo_url"
                 res = self.supabase.get_client().table('users').select(f"{cols}, level:user_levels(*)").eq('telegram_id', telegram_id).execute()
                 if res.data:
                     user = res.data[0]
@@ -557,6 +562,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "insignias": user.get('insignias') or [],
                         "hasLibraryAccess": bool(user.get('has_library_access', True)),
                         "canRequestBooks": bool(user.get('can_request_books', True)),
+                        "photo_url": user.get('photo_url')
                     }
             except Exception as e:
                 logger.error(f"Supabase access info error: {e}")
@@ -597,7 +603,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.banner_content_offset,
                 ul.background_color,
                 ul.card_color,
-                ul.force_settings
+                ul.force_settings,
+                u.photo_url
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -662,6 +669,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "insignias": json.loads(row[24]) if len(row) > 24 and row[24] else [],
                     "hasLibraryAccess": bool(row[25]) if len(row) > 25 else True,
                     "canRequestBooks": bool(row[26]) if len(row) > 26 else True,
+                    "photo_url": row[35] if len(row) > 35 else None
                 }
             return None
 
@@ -795,7 +803,6 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "earlyAccess": bool(row['early_access']),
                             "customThemes": bool(row['custom_themes']),
                             "price": row['price'],
-                            "price": row['price'],
                             "showRecommendations": bool(row.get('show_recommendations', True)),
                             "uiTheme": row.get('ui_theme', 'dark'),
                             "uiFontSize": row.get('ui_font_size', 14),
@@ -804,6 +811,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "uiNavOpacity": row.get('ui_nav_opacity', 0.8),
                             "uiAccentOpacity": row.get('ui_accent_opacity', 0.2),
                             "panelTransparency": row.get('panel_transparency', 60),
+                            "hasLibraryAccess": bool(row.get('has_library_access', True)),
+                            "canRequestBooks": bool(row.get('can_request_books', True)),
+                            "photo_url": row.get('photo_url') # This column does not exist in user_levels
                         }
                         for row in res.data
                     ]
@@ -813,7 +823,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         """
         Retorna todos los niveles configurados con sus límites y características.
         """
-        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, ui_primary_color FROM user_levels ORDER BY priority DESC"
+        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, ui_primary_color, has_library_access, can_request_books FROM user_levels ORDER BY priority DESC"
         async with self.db.connection() as conn:
             cursor = await conn.execute(query)
             rows = await cursor.fetchall()
@@ -1297,6 +1307,15 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 (level_id,),
             )
             await conn.commit()
+    
+    async def create_minimal_user(self, telegram_id: int, name: Optional[str] = None, username: Optional[str] = None):
+        """Crea un registro básico para un nuevo usuario."""
+        return await self.upsert(
+            telegram_id=telegram_id,
+            level='free',
+            name=name,
+            username=username
+        )
 
 # Singleton instance
 user_repo = UserRepository()

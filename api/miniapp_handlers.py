@@ -1716,7 +1716,8 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
                 "betaTester": raw_user.get("beta_tester", access_info["isBetaTester"]),
                 "hasLibraryAccess": raw_user.get("has_library_access", True),
                 "canRequestBooks": raw_user.get("can_request_books", True),
-                "insignias": raw_user.get("insignias") or []
+                "insignias": raw_user.get("insignias") or [],
+                "photo_url": access_info.get("photo_url") or raw_user.get("photo_url")
             }
         }
     except HTTPException:

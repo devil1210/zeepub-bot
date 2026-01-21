@@ -217,7 +217,7 @@ async def get_effective_user(
     # 3. PROACTIVE SYNC: Create minimal user record if not exists
     if not info and uid not in config.ADMIN_USERS:
         logger.info(f"Auto-registering user {uid} (Lector level)")
-        await user_repo.create_minimal_user(uid, nickname=nickname_from_tg)
+        await user_repo.create_minimal_user(uid, name=name_from_tg, username=username_from_tg)
 
     # 4. Access Info (Levels & Permissions)
     access_info = await user_repo.get_access_info(uid)
