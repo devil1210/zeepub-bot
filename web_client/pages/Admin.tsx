@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   ShieldCheck,
   BarChart3,
@@ -27,11 +28,16 @@ interface AdminProps {
 
 export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const { settings } = useTheme();
-  const [currentView, setCurrentView] = useState<'monitor' | 'system' | 'access' | 'interface' | 'duplicates'>('monitor');
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Child view states (inherited from children or managed here)
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [configuringTier, setConfiguringTier] = useState<{ name: string; color: string } | null>(null);
+  // Derived state from URL
+  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates') || 'monitor';
+  const selectedUserId = searchParams.get('userId');
+  const tierName = searchParams.get('tierName');
+  const tierColor = searchParams.get('tierColor');
+  const configuringTier = tierName ? { name: tierName, color: tierColor || '' } : null;
+
+  // Local UI state (transient)
   const [saving, setSaving] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canSave, setCanSave] = useState(false);
@@ -47,6 +53,42 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     { id: 'access', label: 'Niveles y Acceso', icon: ShieldCheck },
     { id: 'duplicates', label: 'Duplicados', icon: FileWarning },
   ] as const;
+
+  // State setters wrappers
+  const setCurrentView = (view: string) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.set('view', view);
+      // Clear sub-states when changing main view
+      newParams.delete('userId');
+      newParams.delete('tierName');
+      newParams.delete('tierColor');
+      return newParams;
+    });
+  };
+
+  const setSelectedUserId = (id: string | null) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (id) newParams.set('userId', id);
+      else newParams.delete('userId');
+      return newParams;
+    });
+  };
+
+  const setConfiguringTier = (tier: { name: string; color: string } | null) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (tier) {
+        newParams.set('tierName', tier.name);
+        newParams.set('tierColor', tier.color);
+      } else {
+        newParams.delete('tierName');
+        newParams.delete('tierColor');
+      }
+      return newParams;
+    });
+  };
 
   const renderView = () => {
     switch (currentView) {
@@ -86,6 +128,16 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
   const isEditMode = !!selectedUserId || !!configuringTier || currentView === 'interface';
 
+  // Handle generic back action
+  const handleBack = () => {
+    if (selectedUserId || configuringTier) {
+      setSelectedUserId(null);
+      setConfiguringTier(null);
+    } else {
+      onNavigate && onNavigate('dashboard');
+    }
+  };
+
   return (
     <div className="relative min-h-screen">
       {/* Background Glow */}
@@ -106,7 +158,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
           {/* Sub-Tabs (Desktop) */}
           {!isEditMode && (
-            <div className="flex items-center gap-1 bg-white/[0.03] p-1.5 rounded-2xl border border-white/5 backdrop-blur-md">
+            <div className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1.5 rounded-2xl border border-white/5 backdrop-blur-md">
               {viewOptions.map((option) => (
                 <button
                   key={option.id}
@@ -184,8 +236,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
           {renderView()}
         </div>
 
-        {/* Admin Floating Navigation - Updated Labels */}
-        <div className="fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
+        {/* Admin Floating Navigation - Updated Labels and Styling */}
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-2xl z-50 animate-in slide-in-from-bottom-4 duration-300">
           <div
             className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
             style={{
@@ -198,11 +250,11 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
               /* Edit Mode Nav: Inicio | Restaurar | Guardar | Nivel Acceso */
               <>
                 <button
-                  onClick={() => { setSelectedUserId(null); setConfiguringTier(null); }}
+                  onClick={handleBack}
                   className="flex-1 flex flex-col items-center justify-center py-2.5 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white"
                 >
                   <Home className="w-4 h-4" strokeWidth={2.5} />
-                  <span className="text-[9px] font-black uppercase tracking-widest mt-1">Inicio</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest mt-1">Atrás</span>
                 </button>
 
                 <div className="w-px h-8 bg-white/5"></div>
@@ -213,7 +265,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                   className="flex-1 flex flex-col items-center justify-center py-2.5 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white disabled:opacity-20"
                 >
                   <RotateCcw className="w-4 h-4" strokeWidth={2.5} />
-                  <span className="text-[9px] font-black uppercase tracking-widest mt-1">Restaurar</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest mt-1">Revertir</span>
                 </button>
 
                 <div className="w-px h-8 bg-white/5"></div>
@@ -232,11 +284,11 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 <div className="w-px h-8 bg-white/5"></div>
 
                 <button
-                  onClick={() => { setSelectedUserId(null); setConfiguringTier(null); }}
-                  className="flex-1 flex flex-col items-center justify-center py-2.5 rounded-2xl transition-all duration-300 text-gray-400 hover:text-white"
+                  onClick={() => {/* Maybe toggle something else or refresh */ }}
+                  className="flex-1 flex flex-col items-center justify-center py-2.5 rounded-2xl transition-all duration-300 text-gray-400 opacity-50 cursor-default"
                 >
                   <Layers className="w-4 h-4" strokeWidth={2.5} />
-                  <span className="text-[9px] font-black uppercase tracking-widest mt-1">Nivel Acceso</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest mt-1">Opciones</span>
                 </button>
               </>
             ) : (
@@ -263,7 +315,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                       </div>
                       <span className={`text-[8px] font-black uppercase tracking-tight mt-1 whitespace-nowrap overflow-hidden text-center`}>{v.label}</span>
                     </button>
-                    {v.id !== 'access' && <div className="w-px h-8 bg-white/5"></div>}
+                    {v.id !== 'access' && v.id !== 'duplicates' && <div className="w-px h-8 bg-white/5"></div>}
                   </React.Fragment>
                 ))}
               </>
