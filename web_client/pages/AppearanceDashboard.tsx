@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Palette, Sun, Moon, Contrast, Sliders, CheckCircle2, RotateCcw, Eye, Save, Loader2, XCircle, AlertCircle } from 'lucide-react';
 import { api } from '../src/services/api';
 
-const AppearanceDashboard = () => {
+export const AppearanceDashboard: React.FC = () => {
     const [tiers, setTiers] = useState<any[]>([]);
     const [selectedLevelId, setSelectedLevelId] = useState<string>('global');
     const [config, setConfig] = useState<any>(null);
@@ -537,4 +537,3 @@ const AppearanceDashboard = () => {
     );
 };
 
-export default AppearanceDashboard;
