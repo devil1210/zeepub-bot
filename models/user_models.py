@@ -1,3 +1,4 @@
+# sqlalchemy models for user management
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, JSON, BigInteger, ForeignKey, Text, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
