@@ -121,6 +121,22 @@ export const SystemDashboard: React.FC = () => {
                                 </td>
                             </tr>
                             <tr className="group hover:bg-white/[0.01]">
+                                <td className="py-4 px-2 font-bold text-gray-200">App Themes</td>
+                                <td className="py-4 px-2 text-gray-400">Postgres & Supabase</td>
+                                <td className="py-4 px-2"><span className="text-blue-500 font-black uppercase tracking-tighter text-[10px]">Daily + Manual</span></td>
+                                <td className="py-4 px-2 italic text-blue-500/80 font-mono">3:00 AM / On-demand</td>
+                                <td className="py-4 px-2 text-right">
+                                    <button
+                                        onClick={() => handleAction('Sync Temas', api.adminSyncThemes)}
+                                        disabled={loading}
+                                        className="p-2 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white transition-all border border-purple-500/20"
+                                        title="Sincronizar Temas"
+                                    >
+                                        <Palette className={`w-3.5 h-3.5 ${actionLoading === 'Sync Temas' ? 'animate-spin' : ''}`} />
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr className="group hover:bg-white/[0.01]">
                                 <td className="py-4 px-2 font-bold text-gray-200">System Logs</td>
                                 <td className="py-4 px-2 text-gray-400">Volatile (Memory)</td>
                                 <td className="py-4 px-2 text-gray-600 font-black uppercase text-[10px]">None</td>
