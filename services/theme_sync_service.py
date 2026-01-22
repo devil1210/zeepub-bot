@@ -110,7 +110,7 @@ class ThemeSyncService:
             'font_size': theme.font_size,
             'cover_width': theme.cover_width,
             'banner_content_offset': theme.banner_content_offset,
-            'updated_at': theme.updated_at
+            'updated_at': theme.updated_at.isoformat() if theme.updated_at else None
         }
     
     def normalize_theme_data(self, theme_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -130,7 +130,7 @@ class ThemeSyncService:
             'font_size': theme_data.get('font_size') or theme_data.get('fontSize'),
             'cover_width': theme_data.get('cover_width') or theme_data.get('coverWidth'),
             'banner_content_offset': theme_data.get('banner_content_offset') or theme_data.get('bannerContentOffset'),
-            'updated_at': datetime.utcnow()
+            'updated_at': datetime.utcnow().isoformat() if isinstance(theme_data.get('updated_at'), datetime) else theme_data.get('updated_at')
         }
     
     async def sync_supabase_to_local(self, session: AsyncSession) -> Tuple[int, int]:
