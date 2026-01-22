@@ -27,10 +27,10 @@ async def init_db():
     if "postgresql" in db_url and "+asyncpg" not in db_url:
         db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
     
-    # Handle SQLite
-    if "sqlite" in db_url and "+aiosqlite" not in db_url:
-         # Assuming path is correct in env or handling it like import_supabase.py
-         pass # If it's pure sqlite:// file path might need adjustment for local testing but target is VPS Postgres
+    # Validar que no sea SQLite
+    if "sqlite" in db_url:
+        logger.error("SQLite not supported in this environment. Use PostgreSQL.")
+        return
 
     logger.info(f"Connecting to database (driver): {db_url.split(':')[0]}")
 

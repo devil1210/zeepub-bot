@@ -299,7 +299,7 @@ async def handle_rate_book(data: Dict[str, Any], user_data: Dict[str, Any]):
             status_code=400, detail="ID de libro inválido para votación"
         )
 
-    return RatingService.rate_book(user_id, book_id, rating)
+    return await RatingService.rate_book(user_id, book_id, rating)
 
 
 async def handle_remove_rating(data: Dict[str, Any], user_data: Dict[str, Any]):
@@ -314,7 +314,7 @@ async def handle_remove_rating(data: Dict[str, Any], user_data: Dict[str, Any]):
     except ValueError:
         raise HTTPException(status_code=400, detail="ID de libro inválido")
 
-    return RatingService.remove_rating(user_id, book_id)
+    return await RatingService.remove_rating(user_id, book_id)
 
 
 async def handle_save_badge_config(data: Dict[str, Any], user_data: Dict[str, Any]):
@@ -373,34 +373,41 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
     # Try to find book by content_hash first (most reliable)
     if book_id and not book_id.startswith("http"):
         try:
-            from utils.library_db import get_session
+            from core.db_manager_pg import pg_manager
             from models.library_models import LocalBook
+            from sqlalchemy import select
 
-            session = get_session()
-            lb = None
+            async with pg_manager.get_session() as session:
+                lb = None
 
-            # Try by content_hash first
-            lb = session.query(LocalBook).filter_by(content_hash=book_id).first()
+                # Try by content_hash first
+                stmt_hash = select(LocalBook).where(LocalBook.book_hash == book_id)
+                res_hash = await session.execute(stmt_hash)
+                lb = res_hash.scalar_one_or_none()
 
-            # Fallback: try by ID if it's numeric
-            if not lb and (book_id.startswith("local_") or book_id.isdigit()):
-                local_id = int(str(book_id).replace("local_", ""))
-                lb = session.query(LocalBook).get(local_id)
+                # Fallback: try by ID if it's numeric
+                if not lb and (book_id.startswith("local_") or book_id.isdigit()):
+                    local_id = int(str(book_id).replace("local_", ""))
+                    stmt_id = select(LocalBook).where(LocalBook.id == local_id)
+                    res_id = await session.execute(stmt_id)
+                    lb = res_id.scalar_one_or_none()
 
-            # Fallback: try by filepath
-            if not lb and (
-                book_id.startswith("/library/") or book_id.startswith("library/")
-            ):
-                lb = session.query(LocalBook).filter_by(filepath=book_id).first()
+                # Fallback: try by filepath
+                if not lb and (
+                    book_id.startswith("/library/") or book_id.startswith("library/")
+                ):
+                    stmt_path = select(LocalBook).where(LocalBook.filepath == book_id)
+                    res_path = await session.execute(stmt_path)
+                    lb = res_path.scalar_one_or_none()
 
-            if lb:
-                metadata_override = lb.to_dict()
-                actual_download_url = lb.filepath
-                logger.debug(
-                    f"Local book found: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}"
-                )
-            else:
-                logger.warning(f"Book not found in library: {book_id}")
+                if lb:
+                    metadata_override = lb.to_dict()
+                    actual_download_url = lb.filepath
+                    logger.debug(
+                        f"Local book found: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}"
+                    )
+                else:
+                    logger.warning(f"Book not found in library: {book_id}")
         except Exception as e:
             logger.error(f"Error fetching metadata for handle_download: {e}")
 
@@ -588,7 +595,7 @@ async def handle_rating_breakdown(data: Dict[str, Any], user_data: Dict[str, Any
     except ValueError:
         raise HTTPException(status_code=400, detail="ID de libro inválido")
 
-    return {"breakdown": RatingService.get_rating_breakdown(book_id)}
+    return {"breakdown": await RatingService.get_rating_breakdown(book_id)}
 
 
 async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
@@ -659,12 +666,15 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
         except Exception as e:
             logger.error(f"Postgres metrics error in handle_admin_stats: {e}")
         
-        # Books (always from local session for now or repo)
-        from utils.library_db import get_session
+        # Books (always from PostgreSQL)
+        from core.db_manager_pg import pg_manager
+        from sqlalchemy import select, func
         from models.library_models import LocalBook
-        s = get_session()
-        total_books = s.query(LocalBook).count()
-        s.close()
+        try:
+            async with pg_manager.get_session() as session:
+                total_books = (await session.execute(select(func.count(LocalBook.id)))).scalar() or 0
+        except Exception as e:
+            logger.error(f"Postgres total_books error: {e}")
 
     # Calculate Uptime
     from api.main import app_state
@@ -680,12 +690,16 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
     active_sessions = len(state_manager.user_state)
 
     # 3. Storage usage
-    from utils.library_db import get_session
+    from core.db_manager_pg import pg_manager
+    from sqlalchemy import select, func
     from models.library_models import LocalBook
-    session = get_session()
-    storage_bytes = session.query(func.sum(LocalBook.file_size)).scalar() or 0
-    storage_gb = round(storage_bytes / (1024**3), 2)
-    session.close()
+    storage_gb = 0
+    try:
+        async with pg_manager.get_session() as session:
+            storage_bytes = (await session.execute(select(func.sum(LocalBook.file_size)))).scalar() or 0
+            storage_gb = round(storage_bytes / (1024**3), 2)
+    except Exception as e:
+        logger.error(f"Postgres storage_bytes error: {e}")
 
     # 3. Revenue Estimation
     total_revenue = 0.0
@@ -742,7 +756,8 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
             logger.error(f"Supabase popular book error: {e}")
     else:
         from core.db_manager_pg import pg_manager
-        from sqlalchemy import text
+        from sqlalchemy import text, select, or_
+        from models.library_models import LocalBook
         try:
             async with pg_manager.get_session() as session:
                 cursor = await session.execute(text("""
@@ -755,18 +770,18 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
                 """))
                 row = cursor.fetchone()
                 if row:
-                    title, clean_title, book_hash, dls = row
+                    p_title, p_clean_title, p_book_hash, p_dls = row
                     popular_book = {
-                        "title": clean_title or title,
-                        "downloads": dls,
+                        "title": p_clean_title or p_title,
+                        "downloads": p_dls,
                         "author": "N/A"
                     }
-                    session_lib = get_session()
-                    lb = session_lib.query(LocalBook).filter(or_(LocalBook.book_hash == book_hash, LocalBook.title == title)).first()
+                    stmt_lb = select(LocalBook).where(or_(LocalBook.book_hash == p_book_hash, LocalBook.title == p_title))
+                    lb_res = await session.execute(stmt_lb)
+                    lb = lb_res.scalar_one_or_none()
                     if lb:
                         popular_book["author"] = lb.author
                         popular_book["cover"] = lb.cover_low
-                    session_lib.close()
         except Exception as e:
             logger.error(f"Postgres popular book error: {e}")
 
@@ -1194,37 +1209,24 @@ async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, 
         }
     
     try:
-        from utils.library_db import DB_PATH, COVERS_DIR, engine
+        from utils.library_db import COVERS_DIR, engine
         import sqlalchemy as sa
         
         items_deleted = []
         cover_count = 0
         
-        # 0. If Postgres, clear tables instead of deleting file
-        if engine.url.drivername != "sqlite":
-            try:
-                with engine.begin() as conn:
-                    # Order of deletion matters due to FKs
-                    conn.execute(sa.text("DELETE FROM user_ratings"))
-                    conn.execute(sa.text("DELETE FROM user_downloads"))
-                    conn.execute(sa.text("DELETE FROM local_books"))
-                    conn.execute(sa.text("DELETE FROM library_sources"))
-                items_deleted.append("Tablas de PostgreSQL limpiadas (local_books, sources, ratings, downloads)")
-            except Exception as e:
-                logger.error(f"Error clearing Postgres tables: {e}")
-                return {"success": False, "message": f"Error limpiando tablas Postgres: {e}"}
-        else:
-            # 1. Delete SQLite database file
-            if os.path.exists(DB_PATH):
-                try:
-                    os.remove(DB_PATH)
-                    items_deleted.append("Archivo de base de datos SQLite eliminado")
-                except Exception as e:
-                    logger.error(f"Error deleting DB: {e}")
-                    return {"success": False, "message": f"Error eliminando base de datos: {e}"}
-            else:
-                items_deleted.append("Base de datos SQLite no existía")
-        
+        try:
+            with engine.begin() as conn:
+                # Order of deletion matters due to FKs
+                conn.execute(sa.text("DELETE FROM user_ratings"))
+                conn.execute(sa.text("DELETE FROM user_downloads"))
+                conn.execute(sa.text("DELETE FROM local_books"))
+                conn.execute(sa.text("DELETE FROM library_sources"))
+            items_deleted.append("Tablas de PostgreSQL limpiadas (local_books, sources, ratings, downloads)")
+        except Exception as e:
+            logger.error(f"Error clearing Postgres tables: {e}")
+            return {"success": False, "message": f"Error limpiando tablas Postgres: {e}"}
+
         # 2. Delete covers directory
         if os.path.exists(COVERS_DIR):
             try:
@@ -2402,3 +2404,35 @@ async def handle_admin_send_logs_telegram(data: Dict[str, Any], user_data: Dict[
     except Exception as e:
         logger.error(f"Error sending logs to Telegram: {e}")
         return {"success": False, "message": f"Error: {str(e)}"}
+
+async def handle_admin_bulk_upload_confirm(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Confirma y finaliza múltiples subidas de EPUB."""
+    upload_ids = data.get("upload_ids", [])
+    if not upload_ids:
+        raise HTTPException(status_code=400, detail="No upload IDs provided")
+    
+    from handlers.epub_upload_handler import epub_uploader, pending_uploads
+    from pathlib import Path
+    
+    results = []
+    for upload_id in upload_ids:
+        if upload_id not in pending_uploads:
+            results.append({"upload_id": upload_id, "success": False, "error": "No encontrado"})
+            continue
+            
+        upload_info = pending_uploads[upload_id]
+        file_path = Path(upload_info['file_path'])
+        metadata = upload_info['metadata']
+        suggested_path = metadata.get('suggested_path')
+        
+        try:
+            success = await epub_uploader.add_to_library(file_path, suggested_path, metadata)
+            if success:
+                epub_uploader.cleanup_upload(upload_id, file_path)
+                results.append({"upload_id": upload_id, "success": True})
+            else:
+                results.append({"upload_id": upload_id, "success": False, "error": "Error al mover a librería"})
+        except Exception as e:
+            results.append({"upload_id": upload_id, "success": False, "error": str(e)})
+            
+    return {"success": True, "results": results}

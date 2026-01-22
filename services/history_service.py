@@ -33,12 +33,16 @@ def _get_engine():
     if not _HAS_SQLALCHEMY:
         raise RuntimeError("SQLAlchemy not installed")
     if not config.DATABASE_URL:
-        # Fallback to local sqlite if no DATABASE_URL, similar to url_cache
-        db_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "data", "url_cache.db"
-        )
-        return create_engine(f"sqlite:///{db_path}", future=True)
-    return create_engine(config.DATABASE_URL, future=True, pool_pre_ping=True)
+        raise RuntimeError("DATABASE_URL not configured. PostgreSQL is mandatory for history service.")
+    
+    url = config.DATABASE_URL
+    # Ensure correct driver for sync engine
+    if "+asyncpg" in url:
+        url = url.replace("+asyncpg", "")
+    if "postgresql" in url and "+psycopg2" not in url:
+        url = url.replace("postgresql://", "postgresql+psycopg2://")
+        
+    return create_engine(url, future=True, pool_pre_ping=True)
 
 
 def _get_table(engine):

@@ -213,11 +213,27 @@ export const api = {
     getSystemLogs: (level: string = 'INFO', hours?: number) => rpc('admin_get_system_logs', { level, hours }),
     sendLogsToTelegram: (level: string = 'DEBUG', hours?: number) => rpc('admin_send_logs_telegram', { level, hours }),
 
-    // EPUB Upload
     uploadEpub: (file: File, onProgress?: (p: number) => void) =>
         uploadFile('/api/library/upload', file, onProgress),
+    uploadEpubBulk: (files: File[], onProgress?: (p: number) => void) => {
+        const formData = new FormData();
+        files.forEach(file => formData.append('files', file));
+        return apiClient.post('/api/library/upload/bulk', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            onUploadProgress: (progressEvent) => {
+                if (onProgress && progressEvent.total) {
+                    const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    onProgress(progress);
+                }
+            },
+        }).then(res => res.data);
+    },
     confirmEpubUpload: (data: { upload_id: string; path?: string }) =>
         apiClient.post('/api/library/upload/confirm', data),
+    confirmEpubUploadBulk: (data: { upload_ids: string[] }) =>
+        apiClient.post('/api/library/upload/bulk/confirm', data),
 
     // Raw RPC Access
     rpc: rpc

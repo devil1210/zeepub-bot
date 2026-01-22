@@ -32,59 +32,31 @@ def mock_staff_ids():
 def setup_test_db():
     """
     Ensures the database is initialized before any tests run.
-    Uses a temporary database path to avoid side effects on the actual data.
+    Uses PostgreSQL as configured in config.
     """
     from config.config_settings import config
-    from core.db_manager import db_manager
+    from core.db_manager_pg import pg_manager
 
-    # Use a temporary database for testing
-    test_db_path = os.path.join(project_root, "data/test_db.db")
-    config.URL_CACHE_DB_PATH = test_db_path
-    db_manager.db_path = test_db_path
-
-    # Ensure data directory exists
-    os.makedirs(os.path.dirname(test_db_path), exist_ok=True)
-
-    # Setup metrics database for testing
-    test_metrics_db_path = os.path.join(project_root, "data/test_metrics.db")
-    config.METRICS_DB_PATH = test_metrics_db_path
+    # Ensure we are in test mode if needed
+    # config.ENABLE_POSTGRES_PLUGIN = True
 
     # Run database initialization
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(db_manager.initialize())
-        # Initialize metrics database
-        from core.metrics_db import metrics_db
-        metrics_db.db_path = test_metrics_db_path
-        loop.run_until_complete(metrics_db.initialize())
+        loop.run_until_complete(pg_manager.initialize())
     finally:
         loop.close()
 
     yield
 
-    # Cleanup: Close all DB connections to avoid hangs
+    # Cleanup: Close all DB connections
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(db_manager.close_all())
+        loop.run_until_complete(pg_manager.close_all())
     finally:
         loop.close()
-
-    # Cleanup after all tests
-    if os.path.exists(test_db_path):
-        os.remove(test_db_path)
-        # Also cleanup WAL files if they exist
-        for suffix in ["-shm", "-wal"]:
-            if os.path.exists(test_db_path + suffix):
-                os.remove(test_db_path + suffix)
-
-    # Cleanup metrics database
-    if os.path.exists(test_metrics_db_path):
-        os.remove(test_metrics_db_path)
-        for suffix in ["-shm", "-wal"]:
-            if os.path.exists(test_metrics_db_path + suffix):
-                os.remove(test_metrics_db_path + suffix)
 
 
 @pytest.fixture(scope="session", autouse=True)

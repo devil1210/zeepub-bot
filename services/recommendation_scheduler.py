@@ -20,15 +20,18 @@ async def job_weekly_recommendations(context: ContextTypes.DEFAULT_TYPE):
     # pero JSON en texto es frágil. Mejor iterar en Python o añadir columna dedicada si escala.
     try:
         from repositories.user_repository import user_repo
-        # Recuperamos IDs raw desde repo o DB directa
-        async with user_repo.db.connection() as conn:
-            cursor = await conn.execute("SELECT telegram_id, settings FROM users")
-            rows = await cursor.fetchall()
+        
+        # Recuperamos IDs y settings desde repo
+        rows = await user_repo.get_all_user_ids_and_settings()
 
         count_sent = 0
-        for uid, settings_raw in rows:
+        for uid, settings in rows:
             try:
-                settings = json.loads(settings_raw) if settings_raw else {}
+                # settings is already a dict from PG JSON column or Repo mapping
+                if isinstance(settings, str):
+                    settings = json.loads(settings)
+                
+                settings = settings or {}
                 if settings.get("recommendations_enabled", False):
                     # Generar y enviar
                     await send_recommendation_to_user(context, uid)

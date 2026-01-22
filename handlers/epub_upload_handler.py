@@ -682,17 +682,15 @@ class EPUBUploader:
         return "\n".join(diffs)
     
     async def add_to_library(self, epub_path: Path, suggested_path: str, metadata: Dict[str, Any]) -> bool:
-        """Agrega el EPUB a la librería y escanea la serie específica."""
+        """Agrega el EPUB a la librería y lo escanea inmediatamente."""
         try:
             logger.info(f"Starting add_to_library: epub_path={epub_path}, suggested_path={suggested_path}")
             
             # Directorio base de la librería
             library_base = Path("/library")
-            logger.info(f"Library base path: {library_base}")
             
             # Crear ruta completa
             full_path = library_base / suggested_path
-            logger.info(f"Full target path: {full_path}")
             
             # Verificar que el archivo fuente existe
             if not epub_path.exists():
@@ -701,36 +699,40 @@ class EPUBUploader:
             
             # Crear directorio si no existe
             full_path.parent.mkdir(parents=True, exist_ok=True)
-            logger.info(f"Created directory: {full_path.parent}")
             
             # Mover archivo
             import shutil
-            logger.info(f"Moving file from {epub_path} to {full_path}")
+            logger.info(f"Moving file to: {full_path}")
             shutil.move(str(epub_path), str(full_path))
-            logger.info(f"File moved successfully")
             
-            # Extraer series_hash de los metadatos para escanear la serie específica
-            series_hash = metadata.get('series_hash')
-            if series_hash:
-                logger.info(f"Triggering series scan for series_hash: {series_hash}")
-                
-                # Importar y ejecutar escaneo específico de la serie
-                from services.scanner_service import ScannerService
-                
-                # Ejecutar escaneo específico de la serie después de un breve retraso
-                # para asegurar que el archivo esté completamente escrito
-                import asyncio
-                await asyncio.sleep(2)  # Esperar 2 segundos
-                
-                scan_result = ScannerService.sync_series(series_hash, force_scan=True)
-                if scan_result:
-                    logger.info(f"Series scan completed successfully for {series_hash}")
-                else:
-                    logger.error(f"Series scan failed for {series_hash}")
+            # ESCANEO INMEDIATO Y ESPECÍFICO
+            # Importar el servicio de escaneo
+            from services.scanner_service import ScannerService
+            from config.config_settings import config
+            
+            # Inicializar servicio con configuración (o usar singleton si existiera)
+            scanner = ScannerService(config.LIBRARIES_CONFIG)
+            
+            # Ejecutar escaneo específico del archivo recién movido
+            # Esto registrará el libro y la serie (si es nueva) inmediatamente.
+            import asyncio
+            await asyncio.sleep(0.5) # Breve respiro para el FS
+            
+            scan_result = scanner.sync_path(str(full_path), force_scan=True)
+            
+            if scan_result and (scan_result.get("added") or scan_result.get("updated")):
+                logger.info(f"✅ Libro indexado inmediatamente: {full_path}")
+                return True
+            elif scan_result and scan_result.get("duplicates"):
+                logger.warning(f"⚠️ Libro detectado como duplicado durante indexado: {full_path}")
+                return True
             else:
-                logger.warning("No series_hash found in metadata, skipping series scan")
-            
-            return True
+                logger.error(f"❌ Error indexando el libro después de moverlo: {scan_result}")
+                return True # Retornamos True porque el archivo ya se movió con éxito
+                
+        except Exception as e:
+            logger.error(f"Error adding to library: {e}")
+            return False
                 
         except Exception as e:
             logger.error(f"Error adding to library: {e}")

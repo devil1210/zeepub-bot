@@ -1,7 +1,6 @@
 import logging
 import os
 import asyncio
-import sqlite3
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler
 from plugins.base_plugin import BasePlugin
@@ -12,7 +11,7 @@ from utils.url_cache import (
     get_broken_links,
     validate_and_update_url,
     get_recent_links,
-    DB_PATH,
+    delete_url_mapping
 )
 
 logger = logging.getLogger(__name__)
@@ -25,11 +24,11 @@ class LinksManagerPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.0.0"
+        return "1.1.0"
 
     @property
     def description(self) -> str:
-        return "Gestión, validación y limpieza de links acortados."
+        return "Gestión, validación y limpieza de links acortados (PostgreSQL)."
 
     async def initialize(self, bot_instance) -> bool:
         self.enabled = os.getenv("ENABLE_LINKS_MANAGER", "True").lower() == "true"
@@ -109,23 +108,14 @@ class LinksManagerPlugin(BasePlugin):
 
             if broken:
                 report += "\n⚠️ <b>Links Rotos (máximo 5):</b>\n"
-                for hash_val, title, failed, last_checked in broken:
+                for hash_val, title, failed, last_checked, created_at in broken:
                     title_short = (
                         (title[:40] + "...")
                         if title and len(title) > 40
                         else (title or "Sin título")
                     )
 
-                    # Obtener fecha de creación
-                    conn = sqlite3.connect(DB_PATH)
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        "SELECT created_at FROM url_mappings WHERE hash = ?",
-                        (hash_val,),
-                    )
-                    created_row = cursor.fetchone()
-                    conn.close()
-                    created_date = created_row[0] if created_row else "Desconocida"
+                    created_date = created_at or "Desconocida"
 
                     report += f"  • {title_short}\n"
                     report += f"    Hash: <code>{hash_val}</code>\n"
@@ -250,75 +240,21 @@ class LinksManagerPlugin(BasePlugin):
         hash_to_purge = context.args[0]
 
         try:
-            # Use the same database-agnostic approach
-            if config.DATABASE_URL:
-                # PostgreSQL backend
-                try:
-                    import sqlalchemy as sa
-                    from sqlalchemy import Table, MetaData
-
-                    engine = sa.create_engine(
-                        config.DATABASE_URL, future=True, pool_pre_ping=True
-                    )
-                    metadata = MetaData()
-                    url_mappings = Table("url_mappings", metadata, autoload_with=engine)
-
-                    with engine.begin() as conn:
-                        # Check if exists
-                        sel = sa.select(url_mappings.c.hash).where(
-                            url_mappings.c.hash == hash_to_purge
-                        )
-                        result = conn.execute(sel).first()
-
-                        if result:
-                            # Delete it
-                            delete_stmt = url_mappings.delete().where(
-                                url_mappings.c.hash == hash_to_purge
-                            )
-                            conn.execute(delete_stmt)
-
-                            await update.message.reply_text(
-                                f"✅ Link con hash <code>{hash_to_purge}</code> eliminado de la caché.",
-                                parse_mode="HTML",
-                            )
-                            logger.info(
-                                f"Admin {uid} eliminó link {hash_to_purge} de la caché (PostgreSQL)."
-                            )
-                        else:
-                            await update.message.reply_text(
-                                f"ℹ️ No se encontró ningún link con hash <code>{hash_to_purge}</code> en la caché.",
-                                parse_mode="HTML",
-                            )
-                except Exception as e:
-                    logger.error(
-                        f"PostgreSQL error in purge_link, falling back to SQLite: {e}"
-                    )
-                    raise  # Re-raise to trigger the SQLite fallback below
-            else:
-                # SQLite backend
-                conn = sqlite3.connect(DB_PATH)
-                cursor = conn.cursor()
-
-                cursor.execute(
-                    "DELETE FROM url_mappings WHERE hash = ?", (hash_to_purge,)
+            success = delete_url_mapping(hash_to_purge)
+            
+            if success:
+                await update.message.reply_text(
+                    f"✅ Link con hash <code>{hash_to_purge}</code> eliminado de la caché.",
+                    parse_mode="HTML",
                 )
-                rows_deleted = cursor.rowcount
-                conn.commit()
-                conn.close()
-
-                if rows_deleted > 0:
-                    await update.message.reply_text(
-                        f"✅ Link con hash <code>{hash_to_purge}</code> eliminado de la caché.",
-                        parse_mode="HTML",
-                    )
-                    logger.info(
-                        f"Admin {uid} eliminó link {hash_to_purge} de la caché (SQLite)."
-                    )
-                else:
-                    await update.message.reply_text(
-                        f"ℹ️ No se encontró ningún link con hash <code>{hash_to_purge}</code> en la caché.",
-                        parse_mode="HTML",
-                    )
+                logger.info(
+                    f"Admin {uid} eliminó link {hash_to_purge} de la caché (PostgreSQL)."
+                )
+            else:
+                await update.message.reply_text(
+                    f"ℹ️ No se encontró ningún link con hash <code>{hash_to_purge}</code> en la caché.",
+                    parse_mode="HTML",
+                )
 
         except Exception as e:
             logger.error(

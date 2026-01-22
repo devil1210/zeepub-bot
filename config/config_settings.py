@@ -13,7 +13,7 @@ load_dotenv()
 @dataclass
 class BotConfig:
     TELEGRAM_TOKEN: str = field(default_factory=lambda: os.getenv("TELEGRAM_TOKEN", ""))
-    VERSION: str = "v8.4.2-STABLE"
+    VERSION: str = "v8.5.0-PG-STABLE"
 
     # Dominio público (ej: zp-dev.sp-core.xyz o zeepub-bot.sp-core.xyz)
     PUBLIC_DOMAIN: str = os.getenv("PUBLIC_DOMAIN", "")
@@ -102,10 +102,8 @@ class BotConfig:
     ENABLE_PLUGINS: bool = os.getenv("ENABLE_PLUGINS", "true").lower() == "true"
     PLUGIN_DIRECTORY: str = os.getenv("PLUGIN_DIRECTORY", "plugins")
 
-    # Plugin PostgreSQL
-    ENABLE_POSTGRES_PLUGIN: bool = (
-        os.getenv("ENABLE_POSTGRES_PLUGIN", "True").lower() == "true"
-    )
+    # Plugin PostgreSQL (Siempre ON ahora que es obligatorio)
+    ENABLE_POSTGRES_PLUGIN: bool = True
 
     # Plugin Group Manager
     ENABLE_GROUP_MANAGER: bool = (
@@ -130,9 +128,6 @@ class BotConfig:
     # Plugin Help
     ENABLE_HELP_PLUGIN: bool = os.getenv("ENABLE_HELP_PLUGIN", "True").lower() == "true"
 
-    # Ruta para la base de datos de URL acortadas (puede ser absoluta o relativa).
-    URL_CACHE_DB_PATH: str = os.getenv("URL_CACHE_DB_PATH", "data/url_cache.db")
-
     # Metrics Configuration
     METRICS_PORT: int = int(os.getenv("METRICS_PORT", "9090"))
     ENABLE_METRICS: bool = os.getenv("ENABLE_METRICS", "true").lower() == "true"
@@ -146,19 +141,13 @@ class BotConfig:
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")  # Anon key
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
-    # Optional SQLAlchemy URL.
-    # Solo se carga si el plugin está habilitado explícitamente.
-    # Esto asegura que SQLite sea el default incluso si DATABASE_URL existe en el entorno.
+    # SQLAlchemy URL
+    # PostgreSQL es obligatorio.
     DATABASE_URL: str = field(init=False)
 
     def __post_init__(self):
         # Lógica de inicialización post-construcción para campos dependientes
-        raw_db_url = os.getenv("DATABASE_URL", "")
-        if raw_db_url:
-            self.DATABASE_URL = raw_db_url
-        else:
-            # PostgreSQL es ahora la base obligatoria según requerimiento
-            self.DATABASE_URL = raw_db_url or ""
+        self.DATABASE_URL = os.getenv("DATABASE_URL", "")
 
     @property
     def OPDS_ROOT_START(self) -> str:
@@ -202,6 +191,11 @@ class BotConfig:
 
         if not self.BASE_URL:
             errors.append("BASE_URL (or PUBLIC_DOMAIN)")
+
+        if not self.DATABASE_URL:
+            errors.append("DATABASE_URL")
+        elif "sqlite" in self.DATABASE_URL:
+            errors.append("DATABASE_URL (Must be PostgreSQL, SQLite is removed)")
 
         # Validar que al menos tengamos los sufijos (usando los nombres del .env)
         if not self.OPDS_ROOT_START_SUFFIX:

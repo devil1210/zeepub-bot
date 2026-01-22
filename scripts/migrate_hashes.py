@@ -8,16 +8,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from utils.library_db import get_session, init_library_db
 from models.library_models import LocalBook
-from models.download_models import DownloadHistory
 from utils.helpers import generate_book_hash, generate_series_hash
-from core.db_manager import db_manager
+from core.db_manager_pg import pg_manager
+from sqlalchemy import text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("migrate_hashes_v2")
 
 
 async def migrate_local_books():
-    logger.info("Migrando LocalBook hashes (v2)...")
+    logger.info("Migrando LocalBook hashes (v2) en Postgres...")
     session = get_session()
     # Procesamos TODOS para asegurar que el hash incluye el traductor ahora
     books = session.query(LocalBook).all()
@@ -54,12 +54,12 @@ async def migrate_local_books():
 
 
 async def migrate_download_history():
-    logger.info("Migrando DownloadHistory hashes (v2)...")
-    async with db_manager.connection() as conn:
-        cursor = await conn.execute(
-            "SELECT id, title, author, series, volume, clean_title, translator FROM download_history"
+    logger.info("Migrando DownloadHistory hashes (v2) en Postgres...")
+    async with pg_manager.get_session() as session:
+        result = await session.execute(
+            text("SELECT id, title, author, series, volume, clean_title, translator FROM download_history")
         )
-        rows = await cursor.fetchall()
+        rows = result.fetchall()
         logger.info(f"Procesando {len(rows)} registros de descarga.")
 
         for row in rows:
@@ -73,19 +73,19 @@ async def migrate_download_history():
                 language="es",
                 translator=translator,
             )
-            await conn.execute(
-                "UPDATE download_history SET book_hash = ? WHERE id = ?", (bh, rid)
+            await session.execute(
+                text("UPDATE download_history SET book_hash = :hash WHERE id = :id"),
+                {"hash": bh, "id": rid}
             )
 
-        await conn.commit()
+        await session.commit()
     logger.info("DownloadHistory hashes migrados.")
 
 
 async def main():
     # 1. Asegurar esquema actualizado
     init_library_db()
-    if hasattr(db_manager, "initialize"):
-        await db_manager.initialize()
+    await pg_manager.initialize()
 
     # 2. Migrar
     await migrate_local_books()

@@ -2,10 +2,9 @@ import logging
 import random
 from datetime import date
 from typing import List, Dict, Any
-from sqlalchemy import desc, or_
-from utils.library_db import get_session
-from models.library_models import LocalBook
-from core.metrics_db import metrics_db
+from sqlalchemy import select, desc, or_, func
+from core.db_manager_pg import pg_manager
+from models.library_models import LocalBook, UserDownload, UserRating
 
 logger = logging.getLogger(__name__)
 
@@ -20,31 +19,31 @@ class RecommendationService:
             downloaded_hashes = set()
             liked_hashes = set()
 
-            # 1. Obtener historial de descargas y valoraciones desde metrics_db
-            async with metrics_db.connection() as conn:
-                # Descargas
-                cursor = await conn.execute(
-                    "SELECT content_hash FROM user_downloads WHERE user_id = ?", (user_id,)
+            async with pg_manager.get_session() as session:
+                # 1. Obtener historial de descargas
+                dl_stmt = select(UserDownload.book_hash).where(UserDownload.user_id == user_id)
+                dl_res = await session.execute(dl_stmt)
+                downloaded_hashes = {row[0] for row in dl_res.fetchall() if row[0]}
+
+                # 2. Obtener valoraciones positivas (>= 4 estrellas)
+                # We need to join with LocalBook to get content_hash from UserRating.book_id if book_hash not in UserRating
+                # UserRating has book_id (FK to LocalBook)
+                rate_stmt = select(LocalBook.book_hash).join(UserRating, LocalBook.id == UserRating.book_id).where(
+                    UserRating.user_id == user_id, 
+                    UserRating.rating >= 4
                 )
-                downloaded_hashes = {row[0] for row in await cursor.fetchall() if row[0]}
+                rate_res = await session.execute(rate_stmt)
+                liked_hashes = {row[0] for row in rate_res.fetchall() if row[0]}
 
-                # Valoraciones positivas (>= 4 estrellas)
-                cursor = await conn.execute(
-                    "SELECT content_hash FROM user_ratings WHERE user_id = ? AND rating >= 4", (user_id,)
-                )
-                liked_hashes = {row[0] for row in await cursor.fetchall() if row[0]}
+                combined_hashes = downloaded_hashes.union(liked_hashes)
 
-            combined_hashes = downloaded_hashes.union(liked_hashes)
+                if not combined_hashes:
+                    return await RecommendationService._get_popular_recommendations(user_id, session, limit, downloaded_hashes)
 
-            if not combined_hashes:
-                return await RecommendationService._get_popular_recommendations(user_id, limit, downloaded_hashes)
-
-            # 2. Analizar perfiles (Tags y Autores)
-            session = get_session()
-            try:
-                history_books = session.query(LocalBook).filter(
-                    LocalBook.content_hash.in_(combined_hashes)
-                ).all()
+                # 3. Analizar perfiles (Tags y Autores)
+                hist_stmt = select(LocalBook).where(LocalBook.book_hash.in_(combined_hashes))
+                hist_res = await session.execute(hist_stmt)
+                history_books = hist_res.scalars().all()
 
                 tags_freq = {}
                 authors_freq = {}
@@ -56,17 +55,15 @@ class RecommendationService:
                         for t in b.tags:
                             tags_freq[t] = tags_freq.get(t, 0) + 1
 
-                # Top 3 de cada uno
+                # Top de cada uno
                 top_authors = sorted(authors_freq.items(), key=lambda x: x[1], reverse=True)[:3]
                 top_tags = sorted(tags_freq.items(), key=lambda x: x[1], reverse=True)[:5]
 
                 target_authors = [a[0] for a in top_authors]
                 target_tags = [t[0] for t in top_tags]
 
-                # 3. Buscar similares
-                query = session.query(LocalBook).filter(
-                    LocalBook.content_hash.notin_(downloaded_hashes)
-                )
+                # 4. Buscar similares
+                cand_stmt = select(LocalBook).where(LocalBook.book_hash.notin_(downloaded_hashes))
 
                 # Construir filtros dinámicos (OR de autores o tags)
                 filters = []
@@ -74,57 +71,68 @@ class RecommendationService:
                     filters.append(LocalBook.author.in_(target_authors))
                 
                 if target_tags:
-                    tag_filters = [LocalBook.tags.like(f"%{tag}%") for tag in target_tags]
+                    # tags is JSONB in Postgres usually, or if it's text we use like
+                    # LocalBook.tags is JSON (Column(JSON))
+                    # In Postgres, we can use JSONB containment or just cast to string for simplicity if it varies
+                    tag_filters = [LocalBook.tags.astext.ilike(f"%{tag}%") for tag in target_tags]
                     filters.append(or_(*tag_filters))
 
                 if filters:
-                    query = query.filter(or_(*filters))
+                    cand_stmt = cand_stmt.where(or_(*filters))
 
                 # Ordenar por rating y luego variedad
-                candidates = query.order_by(
+                cand_stmt = cand_stmt.order_by(
                     desc(LocalBook.rating_average), 
                     desc(LocalBook.rating_count)
-                ).limit(limit * 6).all()
+                ).limit(limit * 6)
+
+                cand_res = await session.execute(cand_stmt)
+                candidates = cand_res.scalars().all()
 
                 if not candidates:
-                    return await RecommendationService._get_popular_recommendations(user_id, limit, downloaded_hashes)
+                    return await RecommendationService._get_popular_recommendations(user_id, session, limit, downloaded_hashes)
 
-                # Convert to dicts first to avoid session issues after shuffle
                 results = [book.to_dict() for book in candidates]
                 
-                # Semilla diaria por usuario para que no cambie en cada carga
+                # Semilla diaria por usuario
                 daily_seed = f"{user_id}_{date.today().isoformat()}"
                 r = random.Random(daily_seed)
                 r.shuffle(results)
                 
                 return results[:limit]
 
-            finally:
-                session.close()
-
         except Exception as e:
             logger.error(f"Error generating recommendations: {e}", exc_info=True)
-            return await RecommendationService._get_popular_recommendations(user_id, limit, set())
+            return await RecommendationService._get_popular_recommendations(user_id, None, limit, set())
 
     @staticmethod
-    async def _get_popular_recommendations(user_id: int, limit: int, exclude_hashes: set) -> List[Dict[str, Any]]:
+    async def _get_popular_recommendations(user_id: int, session, limit: int, exclude_hashes: set) -> List[Dict[str, Any]]:
         """Fallback: Libros populares del catálogo total si no hay historial."""
-        session = get_session()
-        try:
-            query = session.query(LocalBook)
+        
+        async def execute_query(sess):
+            query = select(LocalBook)
             if exclude_hashes:
-                query = query.filter(LocalBook.content_hash.notin_(exclude_hashes))
+                query = query.where(LocalBook.book_hash.notin_(exclude_hashes))
             
             # Priorizar libros con miniatura y buen rating
-            books = query.order_by(
+            query = query.order_by(
                 desc(LocalBook.cover_low != None),
                 desc(LocalBook.rating_average), 
                 desc(LocalBook.rating_count)
-            ).limit(limit * 3).all()
+            ).limit(limit * 3)
+
+            res = await sess.execute(query)
+            return res.scalars().all()
+
+        try:
+            if session:
+                books = await execute_query(session)
+            else:
+                async with pg_manager.get_session() as new_session:
+                    books = await execute_query(new_session)
 
             results = [book.to_dict() for book in books]
             
-            # Semilla diaria por usuario
             daily_seed = f"{user_id}_{date.today().isoformat()}"
             r = random.Random(daily_seed)
             r.shuffle(results)
@@ -132,8 +140,12 @@ class RecommendationService:
             return results[:limit]
         except Exception as e:
             logger.error(f"Error getting popular recommendations: {e}")
-            books = session.query(LocalBook).limit(limit).all()
-            return [book.to_dict() for book in books]
-        finally:
-            session.close()
-
+            # Super fallback
+            try:
+                 async with pg_manager.get_session() as last_resort:
+                    stmt = select(LocalBook).limit(limit)
+                    res = await last_resort.execute(stmt)
+                    books = res.scalars().all()
+                    return [book.to_dict() for book in books]
+            except:
+                return []

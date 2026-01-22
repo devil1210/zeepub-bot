@@ -80,6 +80,65 @@ class ScannerService:
             session.close()
             ScannerService._is_scanning = False
 
+    def sync_path(self, path: str, source_id: int = 1, force_scan: bool = True):
+        """
+        Sincroniza una ruta específica (archivo o directorio).
+        Útil para procesar inmediatamente archivos recién subidos.
+        """
+        if ScannerService._is_scanning:
+            logger.warning("Ya hay un escaneo en curso. Saltando sync_path.")
+            return False
+
+        ScannerService._is_scanning = True
+        session = get_session()
+        try:
+            results = {
+                "total_scanned": 0,
+                "added": 0,
+                "updated": 0,
+                "duplicates": 0,
+                "failed": 0,
+                "covers_created": 0
+            }
+
+            source = session.query(LibrarySource).get(source_id)
+            if not source:
+                source = session.query(LibrarySource).first()
+
+            if not source:
+                logger.error("No se encontró ninguna fuente de librería válida.")
+                return None
+
+            abs_path = os.path.abspath(path)
+            if not os.path.exists(abs_path):
+                logger.error(f"La ruta no existe: {abs_path}")
+                return None
+
+            if os.path.isfile(abs_path):
+                # Es un archivo individual
+                if abs_path.lower().endswith(".epub"):
+                    results["total_scanned"] = 1
+                    res = self._process_book(abs_path, source, session, force_scan)
+                    if res == "added": results["added"] = 1
+                    elif res == "updated": results["updated"] = 1
+                    elif res == "duplicate": results["duplicates"] = 1
+                    elif res is False: results["failed"] = 1
+            else:
+                # Es un directorio
+                source_results = self._scan_directory(source, session, force_scan)
+                results.update(source_results)
+
+            session.commit()
+            logger.info(f"Escaneo de ruta {path} completado: {results}")
+            return results
+        except Exception as e:
+            logger.error(f"Error en sync_path: {e}")
+            session.rollback()
+            return None
+        finally:
+            session.close()
+            ScannerService._is_scanning = False
+
     def sync_series(self, series_hash, force_scan=False):
         """
         Sincroniza una serie específica basada en su hash.

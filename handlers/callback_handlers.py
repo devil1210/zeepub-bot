@@ -263,20 +263,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Stateless lookup from DB (for recommendations/scheduler)
             try:
                 local_id = int(key.split("_")[1])
-                from utils.library_db import get_session
+                from core.db_manager_pg import pg_manager
                 from models.library_models import LocalBook
+                from sqlalchemy import select
 
-                session = get_session()
-                book_db = session.query(LocalBook).filter_by(id=local_id).first()
-                if book_db:
-                    # Construct pseudo 'libro' dict
-                    libro = {
-                        "titulo": book_db.title,
-                        "portada": book_db.cover_path,
-                        "descarga": book_db.filepath,
-                        "href": book_db.filepath,
-                    }
-                session.close()
+                async with pg_manager.get_session() as session:
+                    stmt = select(LocalBook).where(LocalBook.id == local_id)
+                    res = await session.execute(stmt)
+                    book_db = res.scalar_one_or_none()
+                    if book_db:
+                        # Construct pseudo 'libro' dict
+                        libro = {
+                            "titulo": book_db.title,
+                            "portada": book_db.cover_path,
+                            "descarga": book_db.filepath,
+                            "href": book_db.filepath,
+                        }
             except Exception as e:
                 logger.error(f"Error fetching local book {key}: {e}")
 
@@ -743,7 +745,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # If ID comes as "local_123", strip "local_"
                 clean_id = int(book_id_str.replace("local_", ""))
 
-                result = rs.RatingService.rate_book(uid, clean_id, rating_val)
+                result = await rs.RatingService.rate_book(uid, clean_id, rating_val)
 
                 # Feedback to user
                 await query.answer(f"⭐ ¡Gracias! Votaste {rating_val}/5.", show_alert=False)

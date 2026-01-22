@@ -96,11 +96,11 @@ class GroupManagerPlugin(BasePlugin):
             return False
 
     def _init_db(self):
-        # Determine DB URL (Shared Postgres or Local SQLite)
+        # Determine DB URL (Shared Postgres)
         db_url = config.DATABASE_URL
         if not db_url:
-            db_path = os.path.join("data", "group_manager.db")
-            db_url = f"sqlite:///{db_path}"
+            logger.error("DATABASE_URL no está configurada. Postgres es mandatorio para GroupManager.")
+            return
 
         self.engine = self._get_sync_engine(db_url)
         Base.metadata.create_all(self.engine)
@@ -110,9 +110,7 @@ class GroupManagerPlugin(BasePlugin):
         # Same logic as CustomMessagesPlugin to find the DB
         db_url = config.DATABASE_URL
         if not db_url:
-            # Assumes standard path used by CustomMessagesPlugin
-            db_path = os.path.join("data", "custom_messages.db")
-            db_url = f"sqlite:///{db_path}"
+            return
 
         try:
             self.custom_msg_engine = self._get_sync_engine(db_url)

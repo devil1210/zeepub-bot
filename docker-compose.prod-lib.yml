@@ -13,8 +13,7 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     environment:
-      - DATABASE_URL=sqlite:////app/data/url_cache.db
-      - URL_CACHE_DB_PATH=data/url_cache.db
+      - DATABASE_URL=postgresql+psycopg2://user:pass@host:5432/dbname
       - LOG_LEVEL=INFO
     ports:
       - "${DEV_PORT:-8001}:8000"

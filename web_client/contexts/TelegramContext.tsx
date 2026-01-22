@@ -22,6 +22,7 @@ export interface TelegramExtendedInfo {
   hasLibraryAccess?: boolean;
   canRequestBooks?: boolean;
   canUploadEpub?: boolean;
+  titlePreference?: 'romaji' | 'english' | 'original';
 }
 
 export interface UserStatus {
@@ -66,6 +67,7 @@ interface TelegramContextType {
   canUploadEpub: boolean;
   uiExportedSettings: string[];
   botInfo: { name: string; username: string; version: string; avatar: string } | null;
+  titlePreference: 'romaji' | 'english' | 'original';
 }
 
 const TelegramContext = createContext<TelegramContextType | undefined>(undefined);
@@ -85,6 +87,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [allowThemeTemplates, setAllowThemeTemplates] = useState(false);
   const [isAdminFromAccess, setIsAdminFromAccess] = useState(false);
   const [botInfo, setBotInfo] = useState<any>(null);
+  const [titlePreference, setTitlePreference] = useState<'romaji' | 'english' | 'original'>('romaji');
   const { updateSettings } = useTheme();
 
   // Load simulated level from storage on mount
@@ -147,6 +150,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setShowRecommendations(data.show_recommendations !== false);
         setAllowThemeTemplates(data.allow_theme_templates || data.allowThemeTemplates || false);
         setIsAdminFromAccess(data.isAdmin || false);
+        setTitlePreference(data.titlePreference || 'romaji');
 
         if (data.ui_exported_settings) {
           setUiExportedSettings(data.ui_exported_settings);
@@ -162,7 +166,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           customStatus: data.customStatus || data.status_label,
           hasLibraryAccess: data.hasLibraryAccess,
           canRequestBooks: data.canRequestBooks,
-          canUploadEpub: data.canUploadEpub
+          canUploadEpub: data.canUploadEpub,
+          titlePreference: data.titlePreference
         });
 
         // If the access endpoint says we're admin, update the status to reflect it
@@ -263,7 +268,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setSimulatedLevel: handleSetSimulatedLevel,
       canUploadEpub: isAdmin || extendedInfo?.canUploadEpub || status?.user?.can_upload_epub || false,
       uiExportedSettings,
-      botInfo
+      botInfo,
+      titlePreference
     }}>
 
       {children}

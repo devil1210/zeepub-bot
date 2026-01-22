@@ -1537,9 +1537,8 @@ class CustomMessagesPlugin(BasePlugin):
         # Initialize DB
         db_url = config.DATABASE_URL
         if not db_url:
-            # Fallback to local sqlite like other services
-            db_path = os.path.join("data", "custom_messages.db")
-            db_url = f"sqlite:///{db_path}"
+            logger.error("DATABASE_URL no está configurada. Postgres es mandatorio para CustomMessages.")
+            return False
 
         try:
             self.engine = self._get_sync_engine(db_url)
@@ -1548,27 +1547,9 @@ class CustomMessagesPlugin(BasePlugin):
             # Migration: Ensure text_content column exists
             with self.engine.connect() as conn:
                 try:
-                    # Check if column exists by selecting it? Or just try adding it and ignore error
-                    # SQLite doesn't support IF NOT EXISTS in ADD COLUMN effectively in all versions,
-                    # but easiest is to try query it, catch error, then add.
-                    # Or check pragma table_info.
-                    if "sqlite" in db_url:
-                        result = conn.execute(
-                            text("PRAGMA table_info(stored_messages)")
-                        )
-                        columns = [
-                            row[1] for row in result.fetchall()
-                        ]  # row[1] is name
-                        if "text_content" not in columns:
-                            logger.info("Migrating DB: Adding text_content column...")
-                            conn.execute(
-                                text(
-                                    "ALTER TABLE stored_messages ADD COLUMN text_content TEXT"
-                                )
-                            )
-                    else:
-                        # Postgres logic if using it (unlikely for this plugin default path but good practice)
-                        pass
+                    # In Postgres, we use ALTER TABLE IF NOT EXISTS or handle Exception
+                    conn.execute(text("ALTER TABLE stored_messages ADD COLUMN IF NOT EXISTS text_content TEXT"))
+                    conn.commit()
                 except Exception as ex:
                     logger.warning(
                         f"Migration check failed (might be already up to date): {ex}"

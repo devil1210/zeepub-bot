@@ -7,9 +7,8 @@ from config.config_settings import config
 # Direct connection string for Postgres (assuming it's available in env or config)
 # If config uses sqlite by default, we force the postgres URL if available
 DATABASE_URL = config.DATABASE_URL
-if "sqlite" in DATABASE_URL and config.ENABLE_POSTGRES_PLUGIN:
-    # Force postgres url, ignoring env since .env likely has the sqlite one
-    DATABASE_URL = "postgresql+asyncpg://zeepub:zeepub_password@db:5432/zeepub"
+if "sqlite" in DATABASE_URL:
+    logger.error("Error: DATABASE_URL points to SQLite. Check configuration.")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

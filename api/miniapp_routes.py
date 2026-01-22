@@ -206,6 +206,10 @@ async def handle_bot_request(
             "admin_send_logs_telegram": handle_admin_send_logs_telegram,
         }
 
+        if action == "admin_bulk_upload_confirm":
+            from api.miniapp_handlers import handle_admin_bulk_upload_confirm
+            return await handle_admin_bulk_upload_confirm(data, user_effective)
+
         handler = ACTION_HANDLERS.get(action)
         if not handler:
             logger.warning(f"Unknown action requested: {action} by user {user_id}")
@@ -290,7 +294,7 @@ async def check_user_access(
         hasAccess=has_access,
         isAdmin=is_admin,
         isBetaTester=is_beta_tester,
-        customThemes=access_info.get("customThemes", False) or is_admin,
+        customThemes=True, # Activar temas a todos
         showRecommendations=final_show_recommendations,
         nickname=access_info.get("nickname") or eff.get("nickname"),
         name=access_info.get("name") or eff.get("name"),
@@ -303,7 +307,8 @@ async def check_user_access(
         hasLibraryAccess=eff.get("has_library_access", True),
         canRequestBooks=eff.get("can_request_books", True),
         canUploadEpub=eff.get("can_upload_epub", access_info.get("canUploadEpub", False)),
-        ui_exported_settings=eff.get("ui_exported_settings", ["theme", "primaryColor", "fontSize"])
+        ui_exported_settings=eff.get("ui_exported_settings", ["theme", "primaryColor", "fontSize"]),
+        titlePreference=user_settings.get("title_preference") or "romaji"
     )
 
 
@@ -341,7 +346,8 @@ async def upload_epub_miniapp(
     user_data: Dict[str, Any] = Depends(require_mini_app_access),
 ):
     """Sube un archivo EPUB y retorna su metadata para validación."""
-    if not user_data.get("can_upload_epub"):
+    # Los admins y usuarios con permiso pueden subir
+    if not user_data.get("can_upload_epub") and user_data.get("level") != "admin":
         raise HTTPException(
             status_code=403, detail="No tienes permiso para subir archivos EPUB"
         )
@@ -439,3 +445,70 @@ async def confirm_epub_upload_miniapp(
     except Exception as e:
         logger.error(f"Error confirming upload: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/library/upload/bulk")
+async def upload_epub_bulk(
+    files: List[UploadFile] = File(...),
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+):
+    """Sube múltiples EPUBs de una vez."""
+    if not user_data.get("can_upload_epub") and user_data.get("level") != "admin":
+        raise HTTPException(
+            status_code=403, detail="No tienes permiso para subir archivos EPUB"
+        )
+
+    import tempfile
+    from pathlib import Path
+    from handlers.epub_upload_handler import epub_uploader, pending_uploads
+    from datetime import datetime
+
+    temp_dir = Path(tempfile.gettempdir()) / "zeepub_bulk_uploads"
+    temp_dir.mkdir(exist_ok=True)
+
+    results = []
+    for file in files:
+        if not file.filename.lower().endswith(".epub"):
+            results.append({"filename": file.filename, "success": False, "error": "No es un EPUB"})
+            continue
+
+        try:
+            temp_file = temp_dir / f"bulk_{user_data['user_id']}_{datetime.now().timestamp()}_{file.filename}"
+            with open(temp_file, "wb") as f:
+                f.write(await file.read())
+
+            metadata = await epub_uploader.analyze_epub(temp_file, file.filename)
+            if not metadata:
+                if temp_file.exists(): temp_file.unlink()
+                results.append({"filename": file.filename, "success": False, "error": "Error de análisis"})
+                continue
+
+            upload_id = f"bulk_{user_data['user_id']}_{datetime.now().timestamp()}_{len(results)}"
+            pending_uploads[upload_id] = {
+                'file_path': str(temp_file),
+                'metadata': metadata,
+                'user_id': user_data['user_id'],
+                'original_filename': file.filename,
+                'is_bulk': True
+            }
+
+            results.append({
+                "filename": file.filename,
+                "success": True,
+                "upload_id": upload_id,
+                "metadata": metadata
+            })
+        except Exception as e:
+            results.append({"filename": file.filename, "success": False, "error": str(e)})
+
+    return {"results": results}
+
+
+@router.post("/api/library/upload/bulk/confirm")
+async def confirm_epub_upload_bulk_miniapp(
+    data: Dict[str, Any],
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+):
+    """Confirma y finaliza múltiples subidas de EPUB."""
+    from api.miniapp_handlers import handle_admin_bulk_upload_confirm
+    return await handle_admin_bulk_upload_confirm(data, user_data)

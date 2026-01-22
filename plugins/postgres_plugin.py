@@ -12,14 +12,14 @@ class PostgresPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.0.0"
+        return "2.0.0"
 
     @property
     def description(self) -> str:
-        return "Soporte opcional para PostgreSQL (Actualmente el bot usa SQLite por defecto)."
+        return "Gestión de la base de datos PostgreSQL (Mandatorio)."
 
     async def initialize(self, bot_instance) -> bool:
-        # La lógica principal de activación ocurre en config_settings.py y url_cache.py
+        # La lógica principal de activación ocurre en DatabaseManager
         # Este plugin sirve para validar la conexión al inicio.
 
         # Verificar estado en config
@@ -27,15 +27,12 @@ class PostgresPlugin(BasePlugin):
 
         if is_postgres_active:
             logger.info("Plugin PostgreSQL: Base de datos configurada y activa.")
-            # Podríamos añadir verificaciones de salud aquí si fuera necesario
             return True
         else:
-            # Si el plugin está "cargado" pero la config no tiene URL (porque ENABLE_POSTGRES_PLUGIN es False),
-            # entonces operamos en modo pasivo o indicamos que estamos usando SQLite.
-            logger.info(
-                "Plugin PostgreSQL: Desactivado o sin configuración. Usando SQLite por defecto."
+            logger.error(
+                "Plugin PostgreSQL: ERROR. DATABASE_URL no configurada. Postgres es obligatorio."
             )
-            return True
+            return False
 
     async def cleanup(self) -> None:
         pass

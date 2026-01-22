@@ -22,18 +22,18 @@ async def get_local_session():
     # Use config.DATABASE_URL but ensure async driver if needed
     db_url = os.getenv("DATABASE_URL")
     
-    # Handle SQLite
-    if not db_url or "sqlite" in db_url:
-        db_path = os.getenv("URL_CACHE_DB_PATH", "data/url_cache.db")
-        # Ensure path exists
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        db_url = f"sqlite+aiosqlite:///{db_path}"
-        print(f"🔌 Using SQLite: {db_url}")
-    elif "postgresql" in db_url:
-        # Ensure async driver
-        if "+asyncpg" not in db_url:
-             db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
-        print(f"🔌 Using Postgres: {db_url}")
+    if not db_url:
+        print("❌ DATABASE_URL missing. Postgres is required.")
+        sys.exit(1)
+
+    # Ensure async driver
+    if "+asyncpg" not in db_url:
+        # Standardize prefix if needed
+        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
+        if "postgres://" in db_url:
+             db_url = db_url.replace("postgres://", "postgresql+asyncpg://")
+    
+    print(f"🔌 Using Postgres: {db_url}")
 
     engine = create_async_engine(db_url, echo=False)
     async with engine.begin() as conn:

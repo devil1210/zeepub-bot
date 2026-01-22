@@ -4,7 +4,7 @@ from typing import Optional
 import os
 from PIL import Image
 
-from utils.library_db import COVERS_DIR, THUMBNAILS_DIR, DB_PATH
+from utils.library_db import COVERS_DIR, THUMBNAILS_DIR
 from api.deps import require_mini_app_access, require_admin
 from services.library_service import LibraryService
 
@@ -80,28 +80,29 @@ async def get_catalog(
     )
 
 # ===== BACKUP ENDPOINTS =====
-from services.library_backup_service import LibraryBackupService
-backup_service = LibraryBackupService(db_path=DB_PATH)
+from services.backup_service import BackupService
 
 
 @router.post("/api/library/backup")
 async def create_backup(compress: bool = Query(True), user_data: dict = Depends(require_admin)):
-    return {"success": True, "backup_path": backup_service.create_backup(compress=compress)}
+    path = await BackupService.generate_backup_file(compress=compress)
+    return {"success": True, "backup_path": path}
 
 
 @router.get("/api/library/backups")
 async def list_backups(user_data: dict = Depends(require_admin)):
-    return {"backups": backup_service.list_backups(), "stats": backup_service.get_backup_stats()}
+    return {"backups": BackupService.list_backups(), "stats": BackupService.get_backup_stats()}
 
 
 @router.post("/api/library/restore")
 async def restore_backup(backup_filename: str = Query(...), user_data: dict = Depends(require_admin)):
-    return {"success": backup_service.restore_backup(backup_filename)}
+    # Restoration from PG SQL is complex via API, placeholder for now
+    raise HTTPException(status_code=501, detail="Restauración SQL no disponible vía API todavía.")
 
 
 @router.delete("/api/library/backups/{backup_filename}")
 async def delete_backup(backup_filename: str, user_data: dict = Depends(require_admin)):
-    return {"success": backup_service.delete_backup(backup_filename)}
+    return {"success": BackupService.delete_backup(backup_filename)}
 
 # ===== EXPORT/IMPORT ENDPOINTS =====
 from services.library_export_service import LibraryExportService

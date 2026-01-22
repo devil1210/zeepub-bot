@@ -57,10 +57,17 @@ class DonationsPlugin(BasePlugin):
     def _init_custom_msg_db(self):
         db_url = config.DATABASE_URL
         if not db_url:
-            db_path = os.path.join("data", "custom_messages.db")
-            db_url = f"sqlite:///{db_path}"
+            logger.warning("DATABASE_URL no configurada. DonationsPlugin no puede conectar a CustomMessages DB.")
+            return
 
         try:
+            # Reusing standard driver logic
+            if "postgresql" in db_url or "postgres" in db_url:
+                db_url = db_url.replace("postgres://", "postgresql://")
+                db_url = db_url.replace("+asyncpg", "")
+                if "+psycopg2" not in db_url:
+                    db_url = db_url.replace("postgresql://", "postgresql+psycopg2://")
+
             self.custom_msg_engine = create_engine(db_url, future=True)
             self.CustomMsgSession = sessionmaker(bind=self.custom_msg_engine)
         except Exception as e:

@@ -3,39 +3,26 @@ import logging
 import os
 from datetime import datetime, timedelta
 from config.config_settings import config
-from services.backup_service import generate_backup_file
-from services.library_backup_service import LibraryBackupService
-from utils.library_db import DB_PATH as LIB_DB_PATH
+from services.backup_service import BackupService
 from services.settings_service import get_setting
 
 logger = logging.getLogger(__name__)
 
 
 async def send_daily_backups(bot):
-    """Genera y envía los backups diarios a los administradores."""
-    cache_file = None
-    lib_file = None
+    """Genera y envía el backup diario unificado a los administradores."""
+    db_file = None
     try:
-        logger.info("Iniciando generación de backups diarios (Cache + Library)...")
+        logger.info("Iniciando generación de backup diario unificado (PostgreSQL)...")
 
-        # 1. Backup de URL Cache
+        # 1. Generar Backup
         try:
-            cache_file = await generate_backup_file()
+            db_file = await BackupService.generate_backup_file(compress=True)
         except Exception as e:
-            logger.error(f"Error generando backup de URL Cache: {e}")
+            logger.error(f"Error generando backup unificado: {e}")
+            return
 
-        # 2. Backup de Library
-        try:
-            # Importante: El path de la DB de la librería debe existir
-            if os.path.exists(LIB_DB_PATH):
-                lib_service = LibraryBackupService(db_path=LIB_DB_PATH)
-                lib_file = lib_service.create_backup(compress=True)
-            else:
-                logger.warning(f"No se encontró DB de librería en {LIB_DB_PATH}")
-        except Exception as e:
-            logger.error(f"Error generando backup de Library: {e}")
-
-        if not cache_file and not lib_file:
+        if not db_file or not os.path.exists(db_file):
             logger.error("No se generó ningún archivo de backup válido")
             return
 
@@ -43,45 +30,24 @@ async def send_daily_backups(bot):
         # Enviar a todos los admins
         for admin_id in config.ADMIN_USERS:
             try:
-                # Enviar Cache
-                if cache_file and os.path.exists(cache_file):
-                    with open(cache_file, "rb") as f:
-                        await bot.send_document(
-                            chat_id=admin_id,
-                            document=f,
-                            filename=os.path.basename(cache_file),
-                            caption=f"📦 <b>Backup Diario URL Cache</b>\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                            parse_mode="HTML"
-                        )
-
-                # Enviar Library
-                if lib_file and os.path.exists(lib_file):
-                    with open(lib_file, "rb") as f:
-                        await bot.send_document(
-                            chat_id=admin_id,
-                            document=f,
-                            filename=os.path.basename(lib_file),
-                            caption=f"📚 <b>Backup Diario Library</b>\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                            parse_mode="HTML"
-                        )
+                with open(db_file, "rb") as f:
+                    await bot.send_document(
+                        chat_id=admin_id,
+                        document=f,
+                        filename=os.path.basename(db_file),
+                        caption=f"📦 <b>Backup Diario Unificado (PG)</b>\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                        parse_mode="HTML"
+                    )
 
                 sent_count += 1
                 await asyncio.sleep(0.5)
             except Exception as e:
-                logger.error(f"Error enviando backups a admin {admin_id}: {e}")
+                logger.error(f"Error enviando backup a admin {admin_id}: {e}")
 
-        logger.info(f"Backups diarios enviados a {sent_count} administradores")
+        logger.info(f"Backup diario enviado a {sent_count} administradores")
 
     except Exception as e:
         logger.error(f"Error en send_daily_backups: {e}", exc_info=True)
-    finally:
-        # Limpiar cache_file temporal
-        if cache_file and os.path.exists(cache_file):
-            try:
-                os.remove(cache_file)
-            except Exception:
-                pass
-        # lib_file se mantiene en su carpeta de rotación configurada en LibraryBackupService
 
 
 async def daily_backup_scheduler(bot):

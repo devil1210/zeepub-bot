@@ -41,19 +41,17 @@ async def auto_scan_library():
 
 async def fix_schema_if_needed():
     """Fix missing database columns before starting bot"""
-    if not config.ENABLE_POSTGRES_PLUGIN:
-        return
-        
     try:
         from sqlalchemy.ext.asyncio import create_async_engine
         from sqlalchemy import text
         
         # Use the same DATABASE_URL as the bot
         DATABASE_URL = config.DATABASE_URL
-        if "sqlite" in DATABASE_URL:
+        if not DATABASE_URL:
+            logger.error("DATABASE_URL not configured. Skipping schema check.")
             return
             
-        logger.info("Checking database schema...")
+        logger.info("Checking database schema (PostgreSQL)...")
         engine = create_async_engine(DATABASE_URL, echo=False)
         
         async with engine.begin() as conn:
@@ -82,13 +80,12 @@ async def initialize_application():
     await fix_schema_if_needed()
     
     # Initial theme sync from Supabase to local
-    if config.ENABLE_POSTGRES_PLUGIN:
-        logger.info("Starting initial theme synchronization...")
-        sync_result = await theme_sync_service.initial_sync()
-        if sync_result.get('status') == 'success':
-            logger.info(f"Initial sync completed: {sync_result.get('added', 0)} themes added, {sync_result.get('updated', 0)} updated")
-        else:
-            logger.warning(f"Initial sync failed: {sync_result.get('error', 'Unknown error')}")
+    logger.info("Starting initial theme synchronization...")
+    sync_result = await theme_sync_service.initial_sync()
+    if sync_result.get('status') == 'success':
+        logger.info(f"Initial sync completed: {sync_result.get('added', 0)} themes added, {sync_result.get('updated', 0)} updated")
+    else:
+        logger.warning(f"Initial sync failed: {sync_result.get('error', 'Unknown error')}")
     
     # Schedule daily sync
     from apscheduler.schedulers.asyncio import AsyncIOScheduler

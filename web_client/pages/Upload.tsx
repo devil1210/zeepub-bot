@@ -51,19 +51,41 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
     const [error, setError] = useState<string | null>(null);
     const [editingPath, setEditingPath] = useState(false);
     const [customPath, setCustomPath] = useState('');
+    const [bulkResults, setBulkResults] = useState<{
+        filename: string;
+        success: boolean;
+        upload_id?: string;
+        metadata?: UploadMetadata;
+        error?: string;
+    }[]>([]);
+    const [isBulk, setIsBulk] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (selectedFile) {
+        const files = Array.from(e.target.files || []) as File[];
+        if (files.length === 0) return;
+
+        if (files.length === 1) {
+            const selectedFile = files[0];
             if (!selectedFile.name.toLowerCase().endsWith('.epub')) {
                 setError('Solo se admiten archivos EPUB (.epub)');
                 return;
             }
             setFile(selectedFile);
+            setIsBulk(false);
             setError(null);
             startUpload(selectedFile);
+        } else {
+            // Bulk mode
+            const validFiles = files.filter(f => f.name.toLowerCase().endsWith('.epub'));
+            if (validFiles.length === 0) {
+                setError('Ninguno de los archivos seleccionados es un EPUB válido');
+                return;
+            }
+            setIsBulk(true);
+            setError(null);
+            startBulkUpload(validFiles);
         }
     };
 
@@ -93,7 +115,36 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
         }
     };
 
+    const startBulkUpload = async (files: File[]) => {
+        setStatus('uploading');
+        setUploadProgress(0);
+
+        try {
+            const res = await api.uploadEpubBulk(files, (progress) => {
+                setUploadProgress(progress);
+                if (progress === 100) setStatus('analyzing');
+            });
+
+            if (res.results) {
+                setBulkResults(res.results);
+                setStatus('reviewing');
+            } else {
+                setError('Error al procesar la subida masiva');
+                setStatus('error');
+            }
+        } catch (err: any) {
+            console.error('Bulk upload error:', err);
+            setError(err.message || 'Error en la conexión con el servidor');
+            setStatus('error');
+        }
+    };
+
     const handleConfirm = async () => {
+        if (isBulk) {
+            handleBulkConfirm();
+            return;
+        }
+
         if (!uploadId) return;
 
         setStatus('confirming');
@@ -116,10 +167,35 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
         }
     };
 
+    const handleBulkConfirm = async () => {
+        const uploadIds = bulkResults
+            .filter(r => r.success && r.upload_id)
+            .map(r => r.upload_id as string);
+
+        if (uploadIds.length === 0) return;
+
+        setStatus('confirming');
+        try {
+            const res = await api.confirmEpubUploadBulk({ upload_ids: uploadIds });
+            if (res.data?.success) {
+                setStatus('success');
+            } else {
+                setError(res.data?.error || 'Error al confirmar la subida masiva');
+                setStatus('error');
+            }
+        } catch (err: any) {
+            console.error('Bulk confirm error:', err);
+            setError(err.message || 'Error al confirmar la subida masiva');
+            setStatus('error');
+        }
+    };
+
     const resetUpload = () => {
         setFile(null);
         setUploadId(null);
         setMetadata(null);
+        setBulkResults([]);
+        setIsBulk(false);
         setStatus('idle');
         setUploadProgress(0);
         setError(null);
@@ -170,14 +246,15 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                         </div>
 
                         <div className="text-center relative z-10">
-                            <h2 className="text-2xl font-black text-white mb-3">Selecciona un archivo EPUB</h2>
+                            <h2 className="text-2xl font-black text-white mb-3">Selecciona archivos EPUB</h2>
                             <p className="text-gray-400 max-w-sm mx-auto text-sm leading-relaxed">
-                                Arrastra tu archivo aquí o haz clic para explorar. Los metadatos se extraerán automáticamente.
+                                Arrastra tus archivos aquí o haz clic para explorar. Puedes seleccionar varios archivos a la vez.
                             </p>
                         </div>
 
                         <input
                             type="file"
+                            multiple
                             ref={fileInputRef}
                             onChange={handleFileSelect}
                             accept=".epub"
@@ -186,7 +263,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
 
                         <div className="flex gap-4 relative z-10">
                             <span className="px-4 py-2 rounded-full bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-400">EPUB 3.0+</span>
-                            <span className="px-4 py-2 rounded-full bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-400">Max 100MB</span>
+                            <span className="px-4 py-2 rounded-full bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-400">Soporte Masivo</span>
                         </div>
                     </div>
                 )}
@@ -227,137 +304,173 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
 
                         <div>
                             <h2 className="text-2xl font-black text-white mb-3">
-                                {status === 'uploading' ? 'Subiendo archivo...' : 'Analizando metadatos...'}
+                                {status === 'uploading' ? 'Subiendo archivos...' : 'Procesando metadatos...'}
                             </h2>
                             <p className="text-gray-400 text-sm italic">
-                                {file?.name}
+                                {isBulk ? `${bulkResults.length} archivos` : file?.name}
                             </p>
                         </div>
                     </div>
                 )}
 
-                {status === 'reviewing' && metadata && (
+                {status === 'reviewing' && (isBulk ? bulkResults : metadata) && (
                     <div className="space-y-6">
-                        {/* Conflict Warnings */}
-                        {(metadata.identity_match || metadata.file_exists) && (
-                            <div className={`p-4 rounded-2xl border flex items-start gap-4 ${metadata.identity_match
-                                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                                : 'bg-red-500/10 border-red-500/20 text-red-400'
-                                }`}>
-                                <AlertCircle className="w-6 h-6 flex-shrink-0" />
-                                <div>
-                                    <h4 className="font-bold text-sm uppercase tracking-tight">
-                                        {metadata.identity_match ? 'Duplicado Detectado' : 'Conflicto de Ruta'}
-                                    </h4>
-                                    <p className="text-xs opacity-80 mt-1 leading-relaxed">
-                                        {metadata.identity_match
-                                            ? 'Este libro ya existe en la biblioteca. Si continúas, se reemplazará la versión actual.'
-                                            : 'Ya existe un archivo diferente en esta ubicación. Si continúas, será sobrescrito.'}
-                                    </p>
+                        {isBulk ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Resumen de Subida Masiva</h3>
+                                    <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase">
+                                        {bulkResults.filter(r => r.success).length} Listos / {bulkResults.length} Total
+                                    </span>
                                 </div>
-                            </div>
-                        )}
 
-                        {/* Metadata Review Card */}
-                        <div className="glass-panel rounded-[2.5rem] overflow-hidden border border-white/5" style={glassStyle}>
-                            <div className="p-8 border-b border-white/5 bg-white/[0.02]">
-                                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Revisión de Metadatos</h3>
-                                <div className="flex flex-col md:flex-row gap-6 md:items-center">
-                                    <div className="w-20 h-28 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center text-gray-600 shadow-inner">
-                                        <BookOpen className="w-8 h-8" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h2 className="text-2xl font-black text-white leading-tight mb-1">{metadata.title}</h2>
-                                        <p className="text-primary font-bold text-sm tracking-tight">{metadata.author}</p>
-                                        <div className="flex flex-wrap gap-2 mt-4">
-                                            {metadata.series && (
-                                                <span className="px-2.5 py-1 rounded-lg bg-white/5 text-[10px] font-black uppercase text-gray-400 border border-white/10">
-                                                    Serie: {metadata.series} {metadata.volume ? `v${metadata.volume}` : ''}
-                                                </span>
-                                            )}
-                                            {metadata.language && (
-                                                <span className="px-2.5 py-1 rounded-lg bg-white/5 text-[10px] font-black uppercase text-gray-400 border border-white/10 flex items-center gap-1.5">
-                                                    <Globe className="w-3 h-3" /> {metadata.language.toUpperCase()}
-                                                </span>
+                                <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {bulkResults.map((res, i) => (
+                                        <div key={i} className={`p-4 rounded-2xl border flex items-center gap-4 ${res.success ? 'bg-white/5 border-white/5' : 'bg-red-500/10 border-red-500/20'}`}>
+                                            <div className={`p-2 rounded-xl ${res.success ? 'bg-primary/10 text-primary' : 'bg-red-500/10 text-red-400'}`}>
+                                                {res.success ? <FileText className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-bold text-white truncate">{res.filename}</p>
+                                                {res.success ? (
+                                                    <p className="text-[10px] text-primary mt-0.5">{res.metadata?.title || 'Metadatos extraídos'}</p>
+                                                ) : (
+                                                    <p className="text-[10px] text-red-400 mt-0.5">{res.error || 'Error desconocido'}</p>
+                                                )}
+                                            </div>
+                                            {res.success && res.metadata?.identity_match && (
+                                                <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500" title="Duplicado detectado">
+                                                    <AlertCircle className="w-4 h-4" />
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
+                        ) : (
+                            <>
+                                {/* Conflict Warnings */}
+                                {(metadata!.identity_match || metadata!.file_exists) && (
+                                    <div className={`p-4 rounded-2xl border flex items-start gap-4 ${metadata!.identity_match
+                                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                        : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                        }`}>
+                                        <AlertCircle className="w-6 h-6 flex-shrink-0" />
+                                        <div>
+                                            <h4 className="font-bold text-sm uppercase tracking-tight">
+                                                {metadata!.identity_match ? 'Duplicado Detectado' : 'Conflicto de Ruta'}
+                                            </h4>
+                                            <p className="text-xs opacity-80 mt-1 leading-relaxed">
+                                                {metadata!.identity_match
+                                                    ? 'Este libro ya existe en la biblioteca. Si continúas, se reemplazará la versión actual.'
+                                                    : 'Ya existe un archivo diferente en esta ubicación. Si continúas, será sobrescrito.'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
 
-                            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-6">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2 rounded-lg bg-white/5 text-gray-500">
-                                            <Building className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Editorial</p>
-                                            <p className="text-sm text-gray-300 font-bold">{metadata.publisher || 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2 rounded-lg bg-white/5 text-gray-500">
-                                            <Calendar className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Fecha de Publicación</p>
-                                            <p className="text-sm text-gray-300 font-bold">{metadata.publish_date || 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2 rounded-lg bg-white/5 text-gray-500">
-                                            <Hash className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">ISBN / ID</p>
-                                            <p className="text-xs text-gray-400 font-mono">{metadata.isbn || 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2 rounded-lg bg-white/5 text-gray-500">
-                                            <Tag className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Géneros / Tags</p>
-                                            <div className="flex flex-wrap gap-1.5 mt-1">
-                                                {metadata.tags?.split(',').map((tag, i) => (
-                                                    <span key={i} className="text-[10px] text-primary/70 font-bold">{tag.trim()}</span>
-                                                ))}
+                                {/* Metadata Review Card */}
+                                <div className="glass-panel rounded-[2.5rem] overflow-hidden border border-white/5" style={glassStyle}>
+                                    <div className="p-8 border-b border-white/5 bg-white/[0.02]">
+                                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Revisión de Metadatos</h3>
+                                        <div className="flex flex-col md:flex-row gap-6 md:items-center">
+                                            <div className="w-20 h-28 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center text-gray-600 shadow-inner">
+                                                <BookOpen className="w-8 h-8" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h2 className="text-2xl font-black text-white leading-tight mb-1">{metadata!.title}</h2>
+                                                <p className="text-primary font-bold text-sm tracking-tight">{metadata!.author}</p>
+                                                <div className="flex flex-wrap gap-2 mt-4">
+                                                    {metadata!.series && (
+                                                        <span className="px-2.5 py-1 rounded-lg bg-white/5 text-[10px] font-black uppercase text-gray-400 border border-white/10">
+                                                            Serie: {metadata!.series} {metadata!.volume ? `v${metadata!.volume}` : ''}
+                                                        </span>
+                                                    )}
+                                                    {metadata!.language && (
+                                                        <span className="px-2.5 py-1 rounded-lg bg-white/5 text-[10px] font-black uppercase text-gray-400 border border-white/10 flex items-center gap-1.5">
+                                                            <Globe className="w-3 h-3" /> {metadata!.language.toUpperCase()}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="pt-4 border-t border-white/5">
-                                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Ruta de Destino</p>
-                                        <div className="flex items-center gap-3 p-3 bg-black/40 border border-white/10 rounded-2xl group/path">
-                                            {editingPath ? (
-                                                <input
-                                                    autoFocus
-                                                    type="text"
-                                                    value={customPath}
-                                                    onChange={(e) => setCustomPath(e.target.value)}
-                                                    onBlur={() => setEditingPath(false)}
-                                                    className="flex-1 bg-transparent text-xs text-white outline-none font-mono"
-                                                />
-                                            ) : (
-                                                <p className="flex-1 text-[11px] text-primary font-mono truncate">{customPath}</p>
-                                            )}
-                                            <button
-                                                onClick={() => setEditingPath(!editingPath)}
-                                                className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all"
-                                            >
-                                                {editingPath ? <Check className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-                                            </button>
+                                    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-6">
+                                            <div className="flex items-start gap-4">
+                                                <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                                    <Building className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Editorial</p>
+                                                    <p className="text-sm text-gray-300 font-bold">{metadata!.publisher || 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-4">
+                                                <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                                    <Calendar className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Fecha de Publicación</p>
+                                                    <p className="text-sm text-gray-300 font-bold">{metadata!.publish_date || 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-4">
+                                                <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                                    <Hash className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">ISBN / ID</p>
+                                                    <p className="text-xs text-gray-400 font-mono">{metadata!.isbn || 'N/A'}</p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <p className="mt-2 text-[9px] text-gray-600 italic">Puedes editar la ruta si el formato no es correcto.</p>
+
+                                        <div className="space-y-6">
+                                            <div className="flex items-start gap-4">
+                                                <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                                    <Tag className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Géneros / Tags</p>
+                                                    <div className="flex flex-wrap gap-1.5 mt-1">
+                                                        {metadata!.tags?.split(',').map((tag, i) => (
+                                                            <span key={i} className="text-[10px] text-primary/70 font-bold">{tag.trim()}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-4 border-t border-white/5">
+                                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Ruta de Destino</p>
+                                                <div className="flex items-center gap-3 p-3 bg-black/40 border border-white/10 rounded-2xl group/path">
+                                                    {editingPath ? (
+                                                        <input
+                                                            autoFocus
+                                                            type="text"
+                                                            value={customPath}
+                                                            onChange={(e) => setCustomPath(e.target.value)}
+                                                            onBlur={() => setEditingPath(false)}
+                                                            className="flex-1 bg-transparent text-xs text-white outline-none font-mono"
+                                                        />
+                                                    ) : (
+                                                        <p className="flex-1 text-[11px] text-primary font-mono truncate">{customPath}</p>
+                                                    )}
+                                                    <button
+                                                        onClick={() => setEditingPath(!editingPath)}
+                                                        className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all"
+                                                    >
+                                                        {editingPath ? <Check className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                                                    </button>
+                                                </div>
+                                                <p className="mt-2 text-[9px] text-gray-600 italic">Puedes editar la ruta si el formato no es correcto.</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            </>
+                        )}
 
                         {/* Action Buttons */}
                         <div className="flex gap-4">
@@ -370,11 +483,11 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                             </button>
                             <button
                                 onClick={handleConfirm}
-                                disabled={status === 'confirming'}
+                                disabled={status === 'confirming' || (isBulk && bulkResults.filter(r => r.success).length === 0)}
                                 className="flex-[2] py-4 rounded-[1.5rem] bg-primary hover:bg-primary-dark text-white text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
                             >
                                 {status === 'confirming' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                Finalizar y Guardar
+                                {isBulk ? `Confirmar ${bulkResults.filter(r => r.success).length} libros` : 'Finalizar y Guardar'}
                             </button>
                         </div>
                     </div>
@@ -390,20 +503,19 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                         </div>
 
                         <div className="max-w-xs mx-auto">
-                            <h2 className="text-3xl font-black text-white mb-4">¡Subida Exitosa!</h2>
+                            <h2 className="text-3xl font-black text-white mb-4">¡Subida Completada!</h2>
                             <p className="text-gray-400 text-sm leading-relaxed mb-8">
-                                El libro ha sido agregado a la biblioteca. Aparecerá en el catálogo tras el próximo escaneo automático.
+                                {isBulk
+                                    ? `Se han procesado ${bulkResults.filter(r => r.success).length} libros exitosamente. Ya están disponibles en la biblioteca.`
+                                    : 'El libro ha sido agregado a la biblioteca. Ya está disponible en el catálogo.'}
                             </p>
-                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 text-[10px] font-mono text-primary text-center break-all">
-                                {customPath}
-                            </div>
                         </div>
 
                         <button
                             onClick={resetUpload}
                             className="px-10 py-4 bg-primary hover:bg-primary-dark text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20"
                         >
-                            Subir otro libro
+                            Subir más libros
                         </button>
                     </div>
                 )}
