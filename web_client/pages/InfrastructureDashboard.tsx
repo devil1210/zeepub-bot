@@ -38,6 +38,7 @@ export const InfrastructureDashboard: React.FC = () => {
     const [auditLoading, setAuditLoading] = useState(false);
     const [logLevel, setLogLevel] = useState('INFO');
     const [isExporting, setIsExporting] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     const fetchStats = async () => {
         try {
@@ -82,41 +83,47 @@ export const InfrastructureDashboard: React.FC = () => {
         try {
             const res = await api.getSystemLogs('DEBUG', hours);
             if (res.success && res.logs && res.logs.length > 0) {
-                const logText = res.logs.map((l: any) => `[${l.time}] ${l.level}: ${l.msg}`).join('\n');
+                const logEntries = res.logs.map((l: any) => `[${l.time}] ${l.level}: ${l.msg}`);
+                const logText = logEntries.join('\n');
 
-                // Calculate date range for filename
                 const timestamps = res.logs.map((l: any) => l.timestamp).filter(Boolean);
                 let dateSuffix = 'export';
                 if (timestamps.length > 0) {
                     const first = new Date(Math.min(...timestamps) * 1000);
                     const last = new Date(Math.max(...timestamps) * 1000);
-
                     const pad = (n: number) => n.toString().padStart(2, '0');
-                    const fmt = (d: Date) => {
-                        return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
-                    };
-                    dateSuffix = `${fmt(first)}__${fmt(last)}`;
+                    const fmt = (d: Date) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+                    dateSuffix = `${fmt(first)}_${fmt(last)}`;
                 }
 
-                const blob = new Blob([logText], { type: 'text/plain' });
+                const filename = `logs_${dateSuffix}.txt`;
+                const blob = new Blob([logText], { type: 'application/octet-stream' });
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `logs_${dateSuffix}.txt`;
-                document.body.appendChild(a);
-                a.click();
 
-                // Small delay for cleanup
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+
                 setTimeout(() => {
-                    document.body.removeChild(a);
+                    document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-                }, 100);
+                }, 1000);
             }
         } catch (error) {
             console.error('Error exporting logs:', error);
         } finally {
             setIsExporting(false);
         }
+    };
+
+    const handleCopyLogs = () => {
+        const text = logs.map(l => `[${l.time}] ${l.level}: ${l.msg}`).join('\n');
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const addLog = (level: string, msg: string) => {
@@ -575,13 +582,19 @@ export const InfrastructureDashboard: React.FC = () => {
                                         onClick={() => handleExportLogs(24)}
                                         className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                                     >
-                                        24H
+                                        TEXT
+                                    </button>
+                                    <button
+                                        onClick={handleCopyLogs}
+                                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                    >
+                                        {copied ? 'COPIED' : 'COPY'}
                                     </button>
                                     <button
                                         onClick={() => handleExportLogs()}
                                         className="px-2 py-1 bg-blue-500 text-white rounded text-[9px] font-bold hover:bg-blue-600 transition-colors"
                                     >
-                                        EXPORT
+                                        {isExporting ? '...' : 'EXPORT ALL'}
                                     </button>
                                 </div>
                             </div>
