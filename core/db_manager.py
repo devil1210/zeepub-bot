@@ -86,6 +86,7 @@ class DatabaseManager:
                 ("banner_content_offset", "INTEGER DEFAULT 0"),
                 ("has_library_access", "BOOLEAN DEFAULT 1"),
                 ("can_request_books", "BOOLEAN DEFAULT 1"),
+                ("can_upload_epub", "BOOLEAN DEFAULT 0"),
                 ("allow_theme_templates", "BOOLEAN DEFAULT 0"),
                 ("ui_exported_settings", "TEXT")
             ]
@@ -155,6 +156,7 @@ class DatabaseManager:
                 ('expires_at', "TIMESTAMP"),
                 ('has_library_access', "BOOLEAN DEFAULT 1"),
                 ('can_request_books', "BOOLEAN DEFAULT 1"),
+                ('can_upload_epub', "BOOLEAN DEFAULT 0"),
                 ('photo_url', "TEXT")
             ]
             

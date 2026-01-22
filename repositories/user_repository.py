@@ -290,6 +290,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     if insignias is not None: user.insignias = insignias
                     if has_library_access is not None: user.has_library_access = has_library_access
                     if can_request_books is not None: user.can_request_books = can_request_books
+                    if can_upload_epub is not None: user.can_upload_epub = can_upload_epub
                     if photo_url is not None: user.photo_url = photo_url
                     
                     await session.commit()
@@ -340,6 +341,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if can_request_books is not None:
                     fields.append("can_request_books = ?")
                     params.append(1 if can_request_books else 0)
+                if can_upload_epub is not None:
+                    fields.append("can_upload_epub = ?")
+                    params.append(1 if can_upload_epub else 0)
                 if photo_url is not None:
                     fields.append("photo_url = ?")
                     params.append(photo_url)
@@ -350,7 +354,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             else:
                 import json
                 await conn.execute(
-                    "INSERT INTO users (telegram_id, level, level_id, added_at, expires_at, role, created_by, nickname, name, username, roles, insignias, has_library_access, can_request_books, settings, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)",
+                    "INSERT INTO users (telegram_id, level, level_id, added_at, expires_at, role, created_by, nickname, name, username, roles, insignias, has_library_access, can_request_books, can_upload_epub, settings, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)",
                     (
                         telegram_id,
                         lvl_str,
@@ -366,6 +370,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         json.dumps(insignias) if insignias is not None else '[]',
                         int(has_library_access if has_library_access is not None else True),
                         int(can_request_books if can_request_books is not None else True),
+                        int(can_upload_epub if can_upload_epub is not None else False),
                         photo_url
                     ),
                 )
