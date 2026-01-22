@@ -522,7 +522,7 @@ class EPUBUploader:
                 logger.info("Adding to database...")
                 
                 # Verificar si ya existe
-                existing = session.query(LocalBook).filter_by(file_path=str(full_path)).first()
+                existing = session.query(LocalBook).filter_by(filepath=str(full_path)).first()
                 if existing:
                     logger.info(f"Updating existing book: {existing.id}")
                     # Actualizar metadata existente con datos enriquecidos
@@ -561,7 +561,7 @@ class EPUBUploader:
                         illustrator=metadata.get('illustrator', ''),
                         translator=metadata.get('translator', ''),
                         category=metadata.get('category', ''),
-                        file_path=str(full_path),
+                        filepath=str(full_path),
                         file_size=full_path.stat().st_size,
                         indexed_at=datetime.utcnow(),
                         extra_metadata=metadata.get('original_metadata', {})
