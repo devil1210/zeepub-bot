@@ -228,11 +228,11 @@ class EPUBUploader:
         # Obtener el nombre original del archivo subido desde los metadatos
         original_filename = metadata.get('original_filename', '')
         if original_filename:
-            # Extraer solo el nombre del archivo sin extensión y sin tags existentes
+            # Extraer solo el nombre del archivo sin extensión
             filename_without_ext = original_filename.rsplit('.', 1)[0]
             # Limpiar tags existentes como [NL], [NW], [ShinsengumiTL], etc.
             import re
-            filename_clean = re.sub(r'\s*\[[^\]]+\]\s*', '', filename_without_ext)
+            filename_clean = re.sub(r'\s*\[[^\]]+\]\s*$', '', filename_without_ext)
         else:
             # Si no hay filename original, usar el título limpio
             filename_clean = self.clean_filename(title)
@@ -240,7 +240,6 @@ class EPUBUploader:
         # Limpiar y normalizar nombres
         author_clean = self.clean_filename(author)
         series_clean = self.clean_filename(series) if series else None
-        filename_clean = self.clean_filename(filename_clean)
         
         # Determinar el tag basado en el tipo de novela
         tag = self.determine_novel_type_tag(metadata, original_filename)
