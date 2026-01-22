@@ -77,7 +77,20 @@ class EPUBUploader:
             metadata = await self.analyze_epub(file_path)
             
             if not metadata:
-                await update.message.reply_text("❌ No se pudo leer el content.opf del EPUB.")
+                await update.message.reply_text(
+                    "❌ **Error analizando el EPUB**\n\n"
+                    "No se pudo leer el metadata del archivo. Esto puede deberse a:\n\n"
+                    "🔍 **Posibles problemas:**\n"
+                    "• El archivo no es un EPUB válido\n"
+                    "• El EPUB está corrupto o dañado\n"
+                    "• No contiene el archivo content.opf\n"
+                    "• Formato EPUB no estándar\n\n"
+                    "📋 **Soluciones:**\n"
+                    "• Intenta con otro archivo EPUB\n"
+                    "• Verifica que el archivo se abra correctamente\n"
+                    "• Convierte el archivo a formato EPUB estándar\n\n"
+                    "📝 **Nota:** Revisa los logs del sistema para más detalles técnicos."
+                )
                 return
             
             # Guardar información para validación
@@ -111,12 +124,53 @@ class EPUBUploader:
         try:
             logger.info(f"Analyzing EPUB with existing service: {epub_path}")
             
+            # Verificar que el archivo existe y no esté vacío
+            if not epub_path.exists():
+                logger.error(f"EPUB file does not exist: {epub_path}")
+                return None
+            
+            file_size = epub_path.stat().st_size
+            if file_size == 0:
+                logger.error(f"EPUB file is empty: {epub_path}")
+                return None
+            
+            logger.info(f"EPUB file size: {file_size} bytes")
+            
+            # Intentar leer el archivo como ZIP para validar estructura
+            import zipfile
+            try:
+                with zipfile.ZipFile(epub_path, 'r') as test_zip:
+                    # Listar archivos para diagnóstico
+                    file_list = test_zip.namelist()
+                    logger.info(f"EPUB contains {len(file_list)} files")
+                    
+                    # Buscar archivos .opf
+                    opf_files = [f for f in file_list if f.lower().endswith('.opf')]
+                    logger.info(f"Found OPF files: {opf_files}")
+                    
+                    # Buscar container.xml
+                    container_files = [f for f in file_list if 'container.xml' in f.lower()]
+                    logger.info(f"Found container files: {container_files}")
+                    
+                    if not opf_files and not container_files:
+                        logger.error("No OPF or container files found in EPUB")
+                        return None
+                        
+            except zipfile.BadZipFile:
+                logger.error(f"EPUB file is not a valid ZIP: {epub_path}")
+                return None
+            except Exception as e:
+                logger.error(f"Error reading EPUB as ZIP: {e}")
+                return None
+            
             # Usar el servicio existente para extraer metadata del OPF
             opf_metadata = await parse_opf_from_epub(str(epub_path))
             
             if not opf_metadata:
                 logger.error("Could not extract OPF metadata from EPUB")
                 return None
+            
+            logger.info(f"OPF metadata extracted: {list(opf_metadata.keys())}")
             
             # Enriquecer metadata usando el servicio existente
             enriched_metadata = await enrich_metadata_from_epub(
@@ -128,6 +182,8 @@ class EPUBUploader:
             if not enriched_metadata:
                 logger.error("Could not enrich EPUB metadata")
                 return None
+            
+            logger.info(f"Enriched metadata keys: {list(enriched_metadata.keys())}")
             
             # Convertir al formato esperado por el handler
             metadata = {
@@ -157,6 +213,8 @@ class EPUBUploader:
             
         except Exception as e:
             logger.error(f"Error analyzing EPUB with existing service: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return None
     
     async def handle_approval_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
