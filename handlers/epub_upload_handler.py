@@ -239,7 +239,12 @@ class EPUBUploader:
         
         # Limpiar y normalizar nombres
         author_clean = self.clean_filename(author)
-        series_clean = self.clean_filename(series) if series else None
+        if series:
+            import re
+            series_ok = re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE)
+            series_clean = self.clean_filename(series_ok)
+        else:
+            series_clean = None
         
         # Determinar el tag basado en el tipo de novela
         tag = self.determine_novel_type_tag(metadata, original_filename)
