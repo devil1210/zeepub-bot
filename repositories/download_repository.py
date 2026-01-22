@@ -333,5 +333,4 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
 
 
 # Global instance
-from core.db_manager import db_manager
-download_repo = DownloadRepository(db_manager)
+download_repo = DownloadRepository(None)

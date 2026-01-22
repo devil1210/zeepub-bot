@@ -12,7 +12,6 @@ from fastapi import HTTPException
 from config.config_settings import config
 import os
 import shutil
-from core.db_manager import db_manager
 from core.supabase_manager import supabase_manager
 from utils.library_db import get_session
 from models.library_models import LocalBook, LibrarySource, DuplicateBook
@@ -637,26 +636,28 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
         except Exception as e:
             logger.error(f"Supabase metrics error: {e}")
     else:
-        async with user_repo.db.connection() as conn:
-            # Users
-            cur = await conn.execute("SELECT COUNT(*) FROM users")
-            total_users = (await cur.fetchone())[0]
-            
-            # Downloads 24h
-            cur = await conn.execute("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= datetime('now', '-1 day')")
-            dls_24h = (await cur.fetchone())[0]
+        # Use Postgres
+        from core.db_manager_pg import pg_manager
+        from sqlalchemy import text
+        try:
+            async with pg_manager.get_session() as session:
+                # Users
+                total_users = (await session.execute(text("SELECT COUNT(*) FROM users"))).scalar() or 0
+                
+                # Downloads 24h
+                dls_24h = (await session.execute(text("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= NOW() - INTERVAL '1 day'"))).scalar() or 0
 
-            # Downloads prev 24h
-            cur = await conn.execute("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= datetime('now', '-2 days') AND downloaded_at < datetime('now', '-1 day')")
-            dls_prev_24h = (await cur.fetchone())[0]
+                # Downloads prev 24h
+                dls_prev_24h = (await session.execute(text("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= NOW() - INTERVAL '2 days' AND downloaded_at < NOW() - INTERVAL '1 day'"))).scalar() or 0
 
-            # Users 7d (Check if created_at exists, fallback to heuristic)
-            try:
-                cur = await conn.execute("SELECT COUNT(*) FROM users WHERE created_at >= datetime('now', '-7 days')")
-                users_7d = (await cur.fetchone())[0]
-            except Exception as e:
-                logger.warning(f"Could not fetch users_7d from SQLite (missing created_at): {e}")
-                users_7d = max(1, int(total_users * 0.05)) if total_users > 0 else 0
+                # Users 7d
+                try:
+                    users_7d = (await session.execute(text("SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '7 days'"))).scalar() or 0
+                except Exception as e:
+                    logger.warning(f"Could not fetch users_7d from Postgres: {e}")
+                    users_7d = max(1, int(total_users * 0.05)) if total_users > 0 else 0
+        except Exception as e:
+            logger.error(f"Postgres metrics error in handle_admin_stats: {e}")
         
         # Books (always from local session for now or repo)
         from utils.library_db import get_session
@@ -697,15 +698,20 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
         except Exception as e:
             logger.error(f"Supabase revenue error: {e}")
     else:
-        async with user_repo.db.connection() as conn:
-            cursor = await conn.execute("""
-                SELECT ul.price, COUNT(u.telegram_id) 
-                FROM user_levels ul
-                LEFT JOIN users u ON u.level_id = ul.id
-                GROUP BY ul.id
-            """)
-            tier_revenue = await cursor.fetchall()
-            total_revenue = sum(price * count for price, count in tier_revenue)
+        from core.db_manager_pg import pg_manager
+        from sqlalchemy import text
+        try:
+            async with pg_manager.get_session() as session:
+                cursor = await session.execute(text("""
+                    SELECT ul.price, COUNT(u.telegram_id) 
+                    FROM user_levels ul
+                    LEFT JOIN users u ON u.level_id = ul.id
+                    GROUP BY ul.id, ul.price
+                """))
+                tier_revenue = cursor.fetchall()
+                total_revenue = sum(price * count for price, count in tier_revenue)
+        except Exception as e:
+            logger.error(f"Postgres revenue error: {e}")
 
     # 4. Popular Book (Last 30 days)
     popular_book = None
@@ -735,29 +741,34 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
         except Exception as e:
             logger.error(f"Supabase popular book error: {e}")
     else:
-        async with user_repo.db.connection() as conn:
-            cursor = await conn.execute("""
-                SELECT title, clean_title, book_hash, COUNT(*) as dls
-                FROM download_history 
-                WHERE downloaded_at >= datetime('now', '-30 days')
-                GROUP BY book_hash, clean_title
-                ORDER BY dls DESC
-                LIMIT 1
-            """)
-            row = await cursor.fetchone()
-            if row:
-                title, clean_title, book_hash, dls = row
-                popular_book = {
-                    "title": clean_title or title,
-                    "downloads": dls,
-                    "author": "N/A"
-                }
-                session = get_session()
-                lb = session.query(LocalBook).filter(or_(LocalBook.content_hash == book_hash, LocalBook.title == title)).first()
-                if lb:
-                    popular_book["author"] = lb.author
-                    popular_book["cover"] = lb.cover_low
-                session.close()
+        from core.db_manager_pg import pg_manager
+        from sqlalchemy import text
+        try:
+            async with pg_manager.get_session() as session:
+                cursor = await session.execute(text("""
+                    SELECT title, clean_title, book_hash, COUNT(*) as dls
+                    FROM download_history 
+                    WHERE downloaded_at >= NOW() - INTERVAL '30 days'
+                    GROUP BY book_hash, title, clean_title
+                    ORDER BY dls DESC
+                    LIMIT 1
+                """))
+                row = cursor.fetchone()
+                if row:
+                    title, clean_title, book_hash, dls = row
+                    popular_book = {
+                        "title": clean_title or title,
+                        "downloads": dls,
+                        "author": "N/A"
+                    }
+                    session_lib = get_session()
+                    lb = session_lib.query(LocalBook).filter(or_(LocalBook.book_hash == book_hash, LocalBook.title == title)).first()
+                    if lb:
+                        popular_book["author"] = lb.author
+                        popular_book["cover"] = lb.cover_low
+                    session_lib.close()
+        except Exception as e:
+            logger.error(f"Postgres popular book error: {e}")
 
     return {
         "revenue": round(total_revenue, 2),
