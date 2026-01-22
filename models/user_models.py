@@ -140,6 +140,7 @@ class UserUISettings(Base):
     accent_opacity = Column(Integer)
     card_glow_intensity = Column(Integer)
     show_recommendations = Column(Boolean)
+    title_language = Column(String(20), default='romaji')
     
     user = relationship("User", back_populates="ui_settings")
 

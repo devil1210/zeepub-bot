@@ -1,12 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Body
 from fastapi.responses import FileResponse
-from typing import Optional
+from typing import Optional, List, Dict, Any
 import os
+import shutil
+from starlette.concurrency import run_in_threadpool
 from PIL import Image
 
 from utils.library_db import COVERS_DIR, THUMBNAILS_DIR
 from api.deps import require_mini_app_access, require_admin
 from services.library_service import LibraryService
+from services.scanner_service import ScannerService
+from models.library_models import LibrarySource
+from core.db_manager_pg import pg_manager
+from sqlalchemy import select
 
 router = APIRouter(tags=["library"])
 
@@ -34,7 +40,75 @@ async def search_local_books(
         search_type=search_type,
         source_id=source_id
     )
+    )
 
+
+@router.post("/api/library/upload")
+async def upload_epubs(
+    files: List[UploadFile] = File(...),
+    source_id: Optional[int] = Query(None),
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Sube múltiples archivos EPUB y los escanea inmediatamente.
+    """
+    valid_files = [f for f in files if f.filename.lower().endswith(".epub")]
+    if not valid_files:
+        raise HTTPException(status_code=400, detail="No se recibieron archivos EPUB válidos")
+
+    saved_paths = []
+    
+    async with pg_manager.get_session() as session:
+        # 1. Determinar Source
+        stmt = select(LibrarySource)
+        if source_id:
+            stmt = stmt.where(LibrarySource.id == source_id)
+        else:
+            stmt = stmt.limit(1)
+        
+        result = await session.execute(stmt)
+        source = result.scalar_one_or_none()
+        
+        if not source:
+            raise HTTPException(status_code=404, detail="No hay fuentes de librería configuradas")
+
+        target_dir = source.path
+        if not os.path.exists(target_dir):
+            try:
+                os.makedirs(target_dir, exist_ok=True)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"No se pudo crear directorio destino: {e}")
+
+        # 2. Instanciar Scanner
+        # Pasamos config vacío ya que sync_path usa la sesión y source_id directo
+        scanner = ScannerService("{}")
+
+        for file in valid_files:
+            try:
+                # Sanitizar nombre de archivo si es necesario, por ahora confiamos en el filename original
+                # pero aseguramos que sea solo nombre base
+                safe_filename = os.path.basename(file.filename)
+                file_path = os.path.join(target_dir, safe_filename)
+                
+                # Guardar archivo
+                with open(file_path, "wb") as buffer:
+                    shutil.copyfileobj(file.file, buffer)
+                
+                # Escanear inmediatamente en thread separado para no bloquear loop
+                # sync_path(self, path: str, source_id: int = 1, force_scan: bool = True)
+                await run_in_threadpool(scanner.sync_path, file_path, source.id, True)
+                
+                saved_paths.append(safe_filename)
+            except Exception as e:
+                print(f"Error procesando {file.filename}: {e}")
+                # Continuamos con los demás
+
+    return {
+        "success": True, 
+        "count": len(saved_paths), 
+        "files": saved_paths,
+        "message": f"{len(saved_paths)} libros subidos y procesados correctamente"
+    }
 
 @router.get("/api/library/books/{book_id}")
 async def get_book_detail(
@@ -55,6 +129,23 @@ async def get_book_detail(
         book["title"], book.get("cleanTitle")
     )
     return book
+
+
+@router.patch("/api/library/books/{book_id}")
+async def update_book(
+    book_id: str,
+    updates: Dict[str, Any] = Body(...),
+    user_data: dict = Depends(require_admin)
+):
+    """Actualiza metadatos de un libro (Admin only)."""
+    try:
+        clean_id = int(book_id.replace("local_", ""))
+        success = await LibraryService.update_book_metadata(clean_id, updates)
+        if not success:
+             raise HTTPException(status_code=404, detail="Libro no encontrado o error al actualizar")
+        return {"success": True}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID inválido")
 
 
 @router.get("/api/library/catalog")

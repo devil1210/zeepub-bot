@@ -1,7 +1,7 @@
 import logging
 import re
 from typing import Dict, Any, Optional, List
-from sqlalchemy import select, func, or_, desc
+from sqlalchemy import select, func, or_, desc, cast, String
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, LibrarySource
 from repositories.download_repository import download_repo
@@ -35,7 +35,7 @@ class LibraryService:
                 
                 # Filtros adicionales basados en el tipo de búsqueda
                 if search_type in ("all", "todos", "genres", "géneros", "tags"):
-                     filters.append(LocalBook.tags.astext.ilike(pattern))
+                     filters.append(cast(LocalBook.tags, String).ilike(pattern))
                      
                 if search_type in ("all", "todos", "translator", "traductor"):
                      filters.append(LocalBook.translator.ilike(pattern))
@@ -125,7 +125,7 @@ class LibraryService:
                 ]
                 
                 if search_type in ("all", "todos", "genres", "géneros", "tags"):
-                     match_filters.append(LocalBook.tags.astext.ilike(pattern))
+                     match_filters.append(cast(LocalBook.tags, String).ilike(pattern))
 
                 # Subconsulta para encontrar series_hashes que coinciden
                 # Agrupamos por series_hash para tratarlos como entidad única
@@ -227,6 +227,48 @@ class LibraryService:
             except Exception as e:
                 logger.error(f"[LibraryService.get_book_by_id] Error: {e}")
                 return None
+
+    @staticmethod
+    async def update_book_metadata(book_id: int, updates: Dict[str, Any]) -> bool:
+        """Actualiza metadatos de un libro y recalcula el hash de serie."""
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = select(LocalBook).where(LocalBook.id == book_id)
+                result = await session.execute(stmt)
+                book = result.scalar_one_or_none()
+                
+                if not book:
+                    return False
+                    
+                # Update allowed fields
+                if "title" in updates: book.title = updates["title"]
+                if "author" in updates: book.author = updates["author"]
+                if "series" in updates: book.series = updates["series"]
+                if "volume" in updates: 
+                    try:
+                        book.volume = float(updates["volume"])
+                    except:
+                        pass
+                if "book_type" in updates: book.book_type = updates["book_type"]
+                if "romaji_title" in updates: book.romaji_title = updates["romaji_title"]
+                if "english_title" in updates: book.english_title = updates["english_title"]
+                if "tags" in updates: book.tags = updates["tags"]
+                if "demographics" in updates: book.demographics = updates["demographics"]
+                
+                # Recalculate Series Hash to regroup
+                from utils.helpers import generate_series_hash
+                series_name = book.series or book.english_title or book.title
+                book.series_hash = generate_series_hash(
+                    series=series_name,
+                    author=book.author,
+                    book_type=book.book_type
+                )
+                
+                await session.commit()
+                return True
+            except Exception as e:
+                logger.error(f"[LibraryService.update_book_metadata] Error: {e}")
+                return False
 
     @staticmethod
     async def get_catalog(

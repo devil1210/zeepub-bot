@@ -512,7 +512,7 @@ class ScannerService:
         # Usar english_title preferentemente si series está vacía
         series_name = book.series or book.english_title or book.title
         return generate_series_hash(
-                series=series_name,
+            series=series_name,
             author=book.author,
             book_type=book.book_type
         )

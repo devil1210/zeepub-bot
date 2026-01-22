@@ -61,7 +61,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 "card_color": "cardColor",
                 "font_size": "fontSize",
                 "cover_width": "coverWidth",
-                "theme_type": "theme"
+                "theme_type": "theme",
+                "title_language": "titleLanguage"
             }
             for col, key in mapping.items():
                 val = getattr(ui, col, None)
