@@ -171,6 +171,7 @@ export const api = {
     getAvailableThemes: () => rpc('admin_get_themes'),
     saveAsTheme: (themeData: any) => rpc('admin_save_theme', themeData),
     adminSyncThemes: () => rpc('admin_sync_themes'),
+    adminRenameThemes: () => rpc('admin_rename_themes'),
     adminGetDuplicates: () => rpc('admin_get_duplicates'),
     adminClearDuplicates: () => rpc('admin_clear_duplicates'),
     adminScanUser: (userId: string) => rpc('admin_scan_user', { userId }),

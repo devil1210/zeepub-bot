@@ -265,6 +265,27 @@ export const SystemDashboard: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Rename Themes */}
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="flex flex-col">
+                                <h4 className="font-black text-white text-[10px] uppercase tracking-widest mb-1">Renombrar Temas</h4>
+                                <p className="text-[11px] text-gray-500 leading-relaxed max-w-[180px]">Eliminar duplicados con "2" al final.</p>
+                            </div>
+                            <div className="p-3 bg-purple-500/20 rounded-2xl text-purple-500 border border-purple-500/20 shadow-lg shadow-purple-500/10">
+                                <Palette className="w-5 h-5" />
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => handleAction('Renombrar Temas', api.adminRenameThemes)}
+                            disabled={loading}
+                            className="mt-4 w-full py-3 text-[10px] font-black text-center bg-purple-500/10 hover:bg-purple-500 text-purple-400 hover:text-white border border-purple-500/20 rounded-2xl transition-all uppercase tracking-widest active:scale-95 disabled:opacity-50 relative z-10"
+                        >
+                            {actionLoading === 'Renombrar Temas' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Renombrar Temas"}
+                        </button>
+                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl group-hover:bg-purple-500/10 transition-all duration-700"></div>
+                    </div>
+
                     {/* Scan Library */}
                     <div className="glass-panel p-6 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
                         <div className="flex justify-between items-start mb-4 relative z-10">
