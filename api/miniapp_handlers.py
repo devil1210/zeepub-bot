@@ -1532,6 +1532,41 @@ async def handle_admin_sync_themes(data: Dict[str, Any], user_data: Dict[str, An
         logger.error(f"Error in manual theme sync: {e}")
         return {"success": False, "message": str(e)}
 
+async def handle_admin_get_sync_status(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Obtiene estado del motor de sincronización optimizado."""
+    if user_data.get("level") != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+    
+    from core.optimized_sync_engine import optimized_sync_engine
+    from services.cache_service import cache_manager
+    
+    try:
+        sync_status = await optimized_sync_engine.get_sync_status()
+        cache_stats = await cache_manager.get_stats()
+        
+        return {
+            "success": True, 
+            "sync_status": sync_status,
+            "cache_stats": cache_stats
+        }
+    except Exception as e:
+        logger.error(f"Error getting sync status: {e}")
+        return {"success": False, "message": str(e)}
+
+async def handle_admin_force_sync(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Fuerza sincronización completa de todas las tablas."""
+    if user_data.get("level") != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+    
+    from core.optimized_sync_engine import optimized_sync_engine
+    
+    try:
+        await optimized_sync_engine.force_sync_all()
+        return {"success": True, "message": "Sincronización forzada iniciada"}
+    except Exception as e:
+        logger.error(f"Error forcing sync: {e}")
+        return {"success": False, "message": str(e)}
+
 async def handle_admin_get_theme_sync_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene historial de sincronizaciones de temas."""
     if user_data.get("level") != "admin":

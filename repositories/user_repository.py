@@ -5,12 +5,9 @@ import logging
 from datetime import datetime
 from dateutil import parser
 
-from services.cache_service import AsyncTTLCache
+from services.cache_service import cache_manager
 
 logger = logging.getLogger(__name__)
-
-# Cache for level info (5 minutes)
-level_cache = AsyncTTLCache(ttl_seconds=300)
 
 from core.db_manager_pg import pg_manager
 from models.user_models import User, UserLevel, UserUISettings
@@ -30,7 +27,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         self.supabase = supabase_manager
 
     async def get_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
-        # 1. Postgres / Offline-First (ORM)
+        # 1. Cache-First (más rápido)
+        cached_user = await cache_manager.get_user(telegram_id)
+        if cached_user:
+            return cached_user
+        
+        # 2. Postgres / Offline-First (ORM)
         if config.ENABLE_POSTGRES_PLUGIN:
             try:
                 async with pg_manager.get_session() as session:

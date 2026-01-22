@@ -4,6 +4,7 @@ import asyncio
 from config.config_settings import config
 from core.bot import ZeePubBot
 from services.theme_sync_service import theme_sync_service
+from core.optimized_sync_engine import optimized_sync_engine
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -83,6 +84,10 @@ async def initialize_application():
     
     scheduler.start()
     logger.info("Daily theme sync scheduled for 3:00 AM")
+    
+    # Start optimized sync engine
+    await optimized_sync_engine.start()
+    logger.info("Optimized sync engine started")
 
 
 def main():
