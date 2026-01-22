@@ -202,7 +202,8 @@ class EPUBUploader:
                 'category': enriched_metadata.get('categoria', ''),
                 'demography': enriched_metadata.get('demografia', []),
                 'typesetters': enriched_metadata.get('maquetadores', []),
-                'original_metadata': enriched_metadata  # Guardar metadata original para referencia
+                'original_metadata': enriched_metadata,  # Guardar metadata original para referencia
+                'original_filename': original_filename  # Agregar el nombre original del archivo
             }
             
             # Generar ruta basada en el formato existente de la biblioteca
@@ -221,40 +222,51 @@ class EPUBUploader:
         """Genera ruta sugerida basada en metadata y formato existente de la biblioteca."""
         author = metadata.get('author', 'Autor desconocido')
         title = metadata.get('title', 'Sin título')
+        series = metadata.get('series', '')
         language = metadata.get('language', 'es')
+        
+        # Obtener el nombre original del archivo subido desde los metadatos
+        original_filename = metadata.get('original_filename', '')
+        if original_filename:
+            # Extraer solo el nombre del archivo sin extensión
+            filename_without_ext = original_filename.rsplit('.', 1)[0]
+        else:
+            # Si no hay filename original, usar el título limpio
+            filename_without_ext = self.clean_filename(title)
         
         # Limpiar y normalizar nombres
         author_clean = self.clean_filename(author)
-        title_clean = self.clean_filename(title)
+        series_clean = self.clean_filename(series) if series else None
+        filename_clean = self.clean_filename(filename_without_ext)
         
-        # Estrategias de ruta basadas en formatos comunes de bibliotecas
-        strategies = [
-            # Estrategia 1: Autor/Titulo (formato más común)
-            f"{author_clean}/{title_clean}.epub",
+        # Si hay serie, usar el formato: Serie - Autor [Tag]/Filename
+        if series_clean:
+            # Extraer tags del nombre original (como [NL], [NW], etc.)
+            import re
+            tags_match = re.search(r'\[([^\]]+)\]', original_filename)
+            tag = tags_match.group(1) if tags_match else ''
             
-            # Estrategia 2: Autor/Titulo (idioma) si no es español
-            f"{author_clean}/{title_clean} ({language}).epub" if language != 'es' else None,
-            
-            # Estrategia 3: Categoría por idioma/Autor/Titulo
-            f"books_{language}/{author_clean}/{title_clean}.epub",
-            
-            # Estrategia 4: Directo si el autor es muy largo
-            f"{title_clean}.epub" if len(author_clean) > 50 else None,
-            
-            # Estrategia 5: Autor (apellido)/Titulo
-            f"{author_clean.split()[-1]}/{title_clean}.epub" if ' ' in author_clean else None,
-            
-            # Estrategia 6: Iniciales del autor/Titulo
-            f"{''.join([word[0] for word in author_clean.split()[:2]])}/{title_clean}.epub" if len(author_clean.split()) > 1 else None,
-        ]
+            if tag:
+                # Formato: Serie - Autor [Tag]/Filename
+                suggested_path = f"{series_clean} - {author_clean} [{tag}]/{filename_clean}.epub"
+            else:
+                # Formato: Serie - Autor/Filename
+                suggested_path = f"{series_clean} - {author_clean}/{filename_clean}.epub"
+        else:
+            # Si no hay serie, usar formato simple: Autor/Filename
+            suggested_path = f"{author_clean}/{filename_clean}.epub"
         
-        # Filtrar estrategias válidas y devolver la primera
-        for strategy in strategies:
-            if strategy and len(strategy) < 200:  # Evitar rutas muy largas
-                return strategy
+        # Limitar longitud total de la ruta
+        if len(suggested_path) > 250:
+            # Si es muy larga, acortar el filename
+            max_filename_len = 250 - len(suggested_path.split('/')[-2]) - 10  # 10 para "/.epub"
+            filename_clean = filename_clean[:max_filename_len]
+            if series_clean:
+                suggested_path = f"{series_clean} - {author_clean}/{filename_clean}.epub"
+            else:
+                suggested_path = f"{author_clean}/{filename_clean}.epub"
         
-        # Fallback: formato simple
-        return f"{author_clean}/{title_clean}.epub"
+        return suggested_path
     
     def clean_filename(self, filename: str) -> str:
         """Limpia filename para uso en sistema de archivos."""
