@@ -1512,6 +1512,7 @@ async def handle_admin_get_themes(data: Dict[str, Any], user_data: Dict[str, Any
     from repositories.theme_repository import theme_repo
     try:
         themes = await theme_repo.get_all_themes()
+        logger.info(f"Returning {len(themes)} themes to frontend")
         return {"success": True, "themes": themes}
     except Exception as e:
         logger.error(f"Error fetching themes: {e}")

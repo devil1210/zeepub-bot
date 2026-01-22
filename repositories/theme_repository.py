@@ -117,7 +117,9 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
                     stmt = select(AppTheme).order_by(AppTheme.name)
                     result = await session.execute(stmt)
                     themes = result.scalars().all()
-                    return [self._to_dict(t) for t in themes]
+                    theme_list = [self._to_dict(t) for t in themes]
+                    logger.info(f"Retrieved {len(theme_list)} themes from PostgreSQL")
+                    return theme_list
              except Exception as e:
                 logger.error(f"Postgres get_all_themes error: {e}")
 
@@ -137,14 +139,9 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
                 
                 results = []
                 for row in rows:
-                    res = dict(zip(cols, row))
-                    # Map back to frontend expected keys (theme_type -> theme)
-                    res['theme'] = res.pop('theme_type', 'dark')
-                    # Normalize opacities if needed (assuming DB stores as int 0-100 or float 0-1)
-                    # Frontend expects 0.0-1.0 for opacities usually, but DB might have int.
-                    # Let's assume DB has what frontend sent (which is usually float or int).
-                    # Check imports/saves.
-                    results.append(res)
+                    theme_dict = dict(zip(cols, row))
+                    results.append(theme_dict)
+                logger.info(f"Retrieved {len(results)} themes from SQLite")
                 return results
         except Exception as e:
             logger.error(f"SQLite get_all_themes error: {e}")
