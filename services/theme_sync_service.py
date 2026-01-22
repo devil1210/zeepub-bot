@@ -130,8 +130,25 @@ class ThemeSyncService:
             'font_size': theme_data.get('font_size') or theme_data.get('fontSize'),
             'cover_width': theme_data.get('cover_width') or theme_data.get('coverWidth'),
             'banner_content_offset': theme_data.get('banner_content_offset') or theme_data.get('bannerContentOffset'),
-            'updated_at': datetime.utcnow().isoformat() if isinstance(theme_data.get('updated_at'), datetime) else theme_data.get('updated_at')
+            'banner_content_offset': theme_data.get('banner_content_offset') or theme_data.get('bannerContentOffset')
         }
+        
+        # Handle updated_at safely
+        updated_at = theme_data.get('updated_at')
+        if updated_at:
+            if isinstance(updated_at, str):
+                try:
+                    from dateutil import parser
+                    updated_at = parser.isoparse(updated_at)
+                except:
+                    updated_at = datetime.utcnow()
+            elif not isinstance(updated_at, datetime):
+                updated_at = datetime.utcnow()
+        else:
+            updated_at = datetime.utcnow()
+            
+        normalized['updated_at'] = updated_at
+        return normalized
     
     async def sync_supabase_to_local(self, session: AsyncSession) -> Tuple[int, int]:
         """Sincronizar temas de Supabase a la base de datos local."""

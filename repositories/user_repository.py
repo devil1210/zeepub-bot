@@ -223,11 +223,97 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             logger.error(f"Error updating user level: {e}")
             return False
 
+    async def get_level_by_id(self, level_id: int) -> Optional[Dict[str, Any]]:
+        """Obtiene un nivel de usuario por ID."""
+        try:
+            async with pg_manager.get_session() as session:
+                stmt = select(UserLevel).where(UserLevel.id == level_id)
+                result = await session.execute(stmt)
+                l = result.scalar_one_or_none()
+                
+                if l:
+                    return {
+                        "id": l.id,
+                        "name": l.name,
+                        "priority": l.priority,
+                        "color": l.color,
+                        "price": l.price,
+                        "dailyDownloads": l.daily_downloads,
+                        "canDownload": l.can_download,
+                        "canRead": l.can_read,
+                        "hasAccess": l.has_mini_app_access,
+                        "customThemes": l.custom_themes,
+                        "allowThemeTemplates": l.allow_theme_templates
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"Error fetching level by id: {e}")
+            return None
+
+    async def update_user_settings(self, telegram_id: int, settings: Dict[str, Any]) -> bool:
+        """Actualiza la configuración de UI del usuario."""
+        try:
+            # Map frontend keys to DB columns
+            mapping = {
+                "primaryColor": "primary_color",
+                "glassBlur": "glass_blur",
+                "glassOpacity": "glass_opacity",
+                "navOpacity": "nav_opacity",
+                "accentOpacity": "accent_opacity",
+                "cardGlowIntensity": "card_glow_intensity",
+                "theme": "theme_type",
+                "fontSize": "font_size",
+                "coverWidth": "cover_width",
+                "showRecommendations": "show_recommendations",
+                "titleLanguage": "title_language"
+            }
+            
+            db_settings = {}
+            for key, col in mapping.items():
+                if key in settings:
+                    db_settings[col] = settings[key]
+
+            # Upsert into UserUISettings
+            if db_settings:
+                async with pg_manager.get_session() as session:
+                    # Check if exists
+                    stmt = select(UserUISettings).where(UserUISettings.user_id == telegram_id)
+                    result = await session.execute(stmt)
+                    ui_settings = result.scalar_one_or_none()
+                    
+                    if not ui_settings:
+                        ui_settings = UserUISettings(user_id=telegram_id)
+                        session.add(ui_settings)
+                    
+                    for k, v in db_settings.items():
+                        setattr(ui_settings, k, v)
+                        
+                    await session.commit()
+            
+            # Also update JSON 'settings' column in User table for backward compatibility/other settings
+            async with pg_manager.get_session() as session:
+                stmt = select(User).where(User.telegram_id == telegram_id)
+                user = (await session.execute(stmt)).scalar_one_or_none()
+                if user:
+                    current_settings = user.settings or {}
+                    current_settings.update(settings)
+                    user.settings = current_settings
+                    await session.commit()
+
+            await cache_manager.delete_user(telegram_id)
+            return True
+        except Exception as e:
+            logger.error(f"Error updating user settings: {e}")
+            return False
+
     async def list_users(self, limit: int = 50, offset: int = 0, search: str = None) -> List[Dict[str, Any]]:
         """Listar usuarios para el panel de administración con paginación y búsqueda."""
         try:
             async with pg_manager.get_session() as session:
-                query = select(User).options(selectinload(User.level_info))
+                query = select(User).options(
+                    selectinload(User.level_info),
+                    selectinload(User.ui_settings)
+                )
                 
                 if search:
                     term = f"%{search}%"

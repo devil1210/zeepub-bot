@@ -79,7 +79,7 @@ async def get_stats_summary(period: str = "day") -> Dict[str, Any]:
             else:
                 interval = intervals.get(period, "1 day")
                 time_filter = f"downloaded_at >= NOW() - INTERVAL '{interval}'"
-                user_time_filter = f"added_at >= NOW() - INTERVAL '{interval}'"
+                user_time_filter = f"created_at >= NOW() - INTERVAL '{interval}'"
 
             # Total Downloads
             q_downloads = text(f"SELECT COUNT(*) FROM download_history WHERE {time_filter}")
