@@ -192,15 +192,42 @@ class EPUBUploader:
             return None
     
     def generate_path(self, metadata: Dict[str, Any]) -> str:
-        """Genera ruta sugerida basada en metadata."""
+        """Genera ruta sugerida basada en metadata y formato existente de la biblioteca."""
         author = metadata.get('author', 'Autor desconocido')
         title = metadata.get('title', 'Sin título')
+        language = metadata.get('language', 'es')
         
         # Limpiar y normalizar nombres
         author_clean = self.clean_filename(author)
         title_clean = self.clean_filename(title)
         
-        # Estructura: Autor/Titulo.epub
+        # Estrategias de ruta basadas en formatos comunes de bibliotecas
+        strategies = [
+            # Estrategia 1: Autor/Titulo (formato más común)
+            f"{author_clean}/{title_clean}.epub",
+            
+            # Estrategia 2: Autor/Titulo (idioma) si no es español
+            f"{author_clean}/{title_clean} ({language}).epub" if language != 'es' else None,
+            
+            # Estrategia 3: Categoría por idioma/Autor/Titulo
+            f"books_{language}/{author_clean}/{title_clean}.epub",
+            
+            # Estrategia 4: Directo si el autor es muy largo
+            f"{title_clean}.epub" if len(author_clean) > 50 else None,
+            
+            # Estrategia 5: Autor (apellido)/Titulo
+            f"{author_clean.split()[-1]}/{title_clean}.epub" if ' ' in author_clean else None,
+            
+            # Estrategia 6: Iniciales del autor/Titulo
+            f"{''.join([word[0] for word in author_clean.split()[:2]])}/{title_clean}.epub" if len(author_clean.split()) > 1 else None,
+        ]
+        
+        # Filtrar estrategias válidas y devolver la primera
+        for strategy in strategies:
+            if strategy and len(strategy) < 200:  # Evitar rutas muy largas
+                return strategy
+        
+        # Fallback: formato simple
         return f"{author_clean}/{title_clean}.epub"
     
     def clean_filename(self, filename: str) -> str:
