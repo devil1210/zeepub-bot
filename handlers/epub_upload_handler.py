@@ -247,20 +247,26 @@ class EPUBUploader:
         # Si hay serie, usar el formato: Serie - Autor [Tag]/Filename
         if series_clean:
             # Formato: Serie - Autor [Tag]/Filename
-            suggested_path = f"{series_clean} - {author_clean} [{tag}]/{filename_clean}.epub"
+            suggested_path = f"{series_clean} - {author_clean} [{tag}]{filename_clean}.epub"
         else:
             # Si no hay serie, usar formato: Autor [Tag]/Filename
-            suggested_path = f"{author_clean} [{tag}]/{filename_clean}.epub"
+            suggested_path = f"{author_clean} [{tag}]{filename_clean}.epub"
         
         # Limitar longitud total de la ruta
         if len(suggested_path) > 250:
             # Si es muy larga, acortar el filename
-            max_filename_len = 250 - len(suggested_path.split('/')[-2]) - 10  # 10 para "/.epub"
-            filename_clean = filename_clean[:max_filename_len]
             if series_clean:
-                suggested_path = f"{series_clean} - {author_clean} [{tag}]/{filename_clean}.epub"
+                prefix_len = len(f"{series_clean} - {author_clean} [{tag}]")
             else:
-                suggested_path = f"{author_clean} [{tag}]/{filename_clean}.epub"
+                prefix_len = len(f"{author_clean} [{tag}]")
+            
+            max_filename_len = 250 - prefix_len - 5  # 5 para ".epub"
+            filename_clean = filename_clean[:max_filename_len]
+            
+            if series_clean:
+                suggested_path = f"{series_clean} - {author_clean} [{tag}]{filename_clean}.epub"
+            else:
+                suggested_path = f"{author_clean} [{tag}]{filename_clean}.epub"
         
         return suggested_path
     
