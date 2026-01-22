@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from datetime import datetime
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, constants
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 
 from config.config_settings import config
@@ -36,7 +37,7 @@ class EPUBUploader:
         
         # Verificar si es admin
         if not await self.is_admin(user_id):
-            await update.message.reply_text("❌ Solo admins pueden usar este comando.")
+            await update.message.reply_text("❌ Solo admins pueden usar este comando.", parse_mode=ParseMode.MARKDOWN)
             return
         
         # Verificar si hay un archivo EPUB reciente en el contexto
@@ -47,7 +48,8 @@ class EPUBUploader:
                 "📋 **Flujo correcto:**\n"
                 "1. Sube un archivo EPUB\n"
                 "2. Responde a ese mensaje con `/upload_epub`\n"
-                "3. El bot procesará el archivo"
+                "3. El bot procesará el archivo",
+                parse_mode=ParseMode.MARKDOWN
             )
             return
         
@@ -57,7 +59,8 @@ class EPUBUploader:
             await update.message.reply_text(
                 "❌ **Archivo no válido**\n\n"
                 "El mensaje al que respondes debe contener un archivo EPUB (.epub).\n\n"
-                "Por favor, sube un archivo EPUB y responde a ese mensaje con `/upload_epub`."
+                "Por favor, sube un archivo EPUB y responde a ese mensaje con `/upload_epub`.",
+                parse_mode=ParseMode.MARKDOWN
             )
             return
         
@@ -90,7 +93,8 @@ class EPUBUploader:
                     "• Intenta con otro archivo EPUB\n"
                     "• Verifica que el archivo se abra correctamente\n"
                     "• Convierte el archivo a formato EPUB estándar\n\n"
-                    "📝 **Nota:** Revisa los logs del sistema para más detalles técnicos."
+                    "📝 **Nota:** Revisa los logs del sistema para más detalles técnicos.",
+                    parse_mode=ParseMode.MARKDOWN
                 )
                 return
             
@@ -108,7 +112,7 @@ class EPUBUploader:
             
         except Exception as e:
             logger.error(f"Error processing EPUB: {e}")
-            await update.message.reply_text(f"❌ Error procesando el EPUB: {str(e)}")
+            await update.message.reply_text(f"❌ Error procesando el EPUB: {str(e)}", parse_mode=ParseMode.MARKDOWN)
     
     async def download_epub(self, file, context: ContextTypes.DEFAULT_TYPE) -> Path:
         """Descarga el archivo EPUB."""
@@ -503,7 +507,7 @@ class EPUBUploader:
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(preview_text, reply_markup=reply_markup)
+        await update.message.reply_text(preview_text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
     
     async def handle_approval_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Maneja los callbacks de aprobación/rechazo."""
@@ -514,7 +518,7 @@ class EPUBUploader:
         
         # Verificar si es admin
         if not await self.is_admin(user_id):
-            await query.edit_message_text("❌ No tienes permisos para esta acción.")
+            await query.edit_message_text("❌ No tienes permisos para esta acción.", parse_mode=ParseMode.MARKDOWN)
             return
         
         callback_data = query.data
@@ -523,7 +527,7 @@ class EPUBUploader:
         upload_id = '_'.join(parts[2:])  # Tomar desde el tercer elemento en adelante
         
         if upload_id not in pending_uploads:
-            await query.edit_message_text("❌ Upload no encontrado o expirado.")
+            await query.edit_message_text("❌ Upload no encontrado o expirado.", parse_mode=ParseMode.MARKDOWN)
             return
         
         upload_info = pending_uploads[upload_id]
@@ -542,7 +546,8 @@ class EPUBUploader:
                     "⚠️ **Confirmación de Sobrescritura**\n\n"
                     "El archivo físico ya existe. Al continuar, el archivo anterior será eliminado y reemplazado por este.\n\n"
                     "¿Estás seguro?",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode=ParseMode.MARKDOWN
                 )
                 return
 
@@ -560,7 +565,7 @@ class EPUBUploader:
             suggested_path = metadata.get('suggested_path', '')
             
             status_msg = "🔄 Reemplazando libro..." if is_replacement else "✅ Procesando upload..."
-            await query.edit_message_text(status_msg)
+            await query.edit_message_text(status_msg, parse_mode=ParseMode.MARKDOWN)
             
             # Si es reemplazo por hash, eliminar el archivo físico antiguo primero
             identity_match = metadata.get('identity_match')
@@ -593,24 +598,25 @@ class EPUBUploader:
                     f"📁 **Ruta:** `{suggested_path}`\n"
                     f"📚 **Título:** {metadata.get('title')}\n"
                     f"✍️ **Autor:** {metadata.get('author')}\n\n"
-                    f"⌛ _El sistema lo indexará automáticamente en el próximo escaneo._"
+                    f"⌛ _El sistema lo indexará automáticamente en el próximo escaneo._",
+                    parse_mode=ParseMode.MARKDOWN
                 )
             else:
-                await query.edit_message_text("❌ Error agregando el EPUB a la librería.")
+                await query.edit_message_text("❌ Error agregando el EPUB a la librería.", parse_mode=ParseMode.MARKDOWN)
             
             # Limpiar
             self.cleanup_upload(upload_id, file_path)
             
         except Exception as e:
             logger.error(f"Error approving upload: {e}")
-            await query.edit_message_text(f"❌ Error procesando upload: {str(e)}")
+            await query.edit_message_text(f"❌ Error procesando upload: {str(e)}", parse_mode=ParseMode.MARKDOWN)
     
     async def reject_upload(self, query, upload_id: str, upload_info: Dict[str, Any]):
         """Rechaza el upload."""
         try:
             file_path = Path(upload_info['file_path'])
             
-            await query.edit_message_text("❌ **Upload rechazado**")
+            await query.edit_message_text("❌ **Upload rechazado**", parse_mode=ParseMode.MARKDOWN)
             
             # Limpiar archivo temporal
             self.cleanup_upload(upload_id, file_path)
@@ -626,7 +632,8 @@ class EPUBUploader:
             f"📝 **Editar Ruta**\n\n"
             f"Ruta actual: `{current_path}`\n\n"
             f"Envía la nueva ruta (formato: Autor/Titulo.epub)\n"
-            f"O responde 'cancel' para usar la ruta actual."
+            f"O responde 'cancel' para usar la ruta actual.",
+            parse_mode=ParseMode.MARKDOWN
         )
         
         # Marcar que estamos esperando edición de ruta
