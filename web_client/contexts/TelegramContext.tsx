@@ -62,6 +62,7 @@ interface TelegramContextType {
   simulatedLevel: number | null;
   setSimulatedLevel: (levelId: number | null) => void;
   uiExportedSettings: string[];
+  botInfo: { name: string; username: string; version: string; avatar: string } | null;
 }
 
 const TelegramContext = createContext<TelegramContextType | undefined>(undefined);
@@ -80,6 +81,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [uiExportedSettings, setUiExportedSettings] = useState<string[]>(['theme', 'primaryColor', 'fontSize']);
   const [allowThemeTemplates, setAllowThemeTemplates] = useState(false);
   const [isAdminFromAccess, setIsAdminFromAccess] = useState(false);
+  const [botInfo, setBotInfo] = useState<any>(null);
   const { updateSettings } = useTheme();
 
   // Load simulated level from storage on mount
@@ -102,7 +104,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
     // Refresh status to see the effects of simulation
     refreshStatus();
-    // Also trigger UI settings refresh if possible, or just let the app handle it on next render/refresh
   };
 
   const refreshStatus = async () => {
@@ -112,6 +113,16 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setStatus(res);
     } catch (e) {
       console.error("Failed to refresh user status", e);
+    }
+  };
+
+  const refreshBotInfo = async () => {
+    try {
+      const { api } = await import('../src/services/api');
+      const res = await api.rpc('bot_info');
+      setBotInfo(res);
+    } catch (e) {
+      console.error("Failed to fetch bot info", e);
     }
   };
 
@@ -199,8 +210,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // Initial status fetch
       refreshStatus();
-
-      // Sync Theme
+      refreshBotInfo();
 
     } else {
       // Fallback for browser testing
@@ -216,6 +226,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
       setIsBetaTester(true); // Dev mode = always beta tester for testing new UI
       refreshStatus();
+      refreshBotInfo();
     }
   }, []);
 
@@ -245,7 +256,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       extendedInfo,
       simulatedLevel,
       setSimulatedLevel: handleSetSimulatedLevel,
-      uiExportedSettings
+      uiExportedSettings,
+      botInfo
     }}>
 
       {children}

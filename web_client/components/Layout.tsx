@@ -24,7 +24,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, showMobileBottomNav = false }) => {
   const { settings } = useTheme();
-  const { user: tgUser, status, isAdmin } = useTelegram();
+  const { user: tgUser, status, isAdmin, botInfo } = useTelegram();
   const {
     state: searchNavState,
     handlePrevPage,
@@ -62,7 +62,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight leading-none text-white">Zeepub<span className="text-primary">Bot</span></h1>
-              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">v2.4.0 Stable</span>
+              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">{botInfo?.version || 'v8.4.2-STABLE'}</span>
             </div>
           </div>
 

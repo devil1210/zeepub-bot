@@ -27,8 +27,10 @@ import {
     Loader2
 } from 'lucide-react';
 import { api } from '../src/services/api';
+import { useTelegram } from '../contexts/TelegramContext';
 
 export const InfrastructureDashboard: React.FC = () => {
+    const { botInfo } = useTelegram();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -215,7 +217,7 @@ export const InfrastructureDashboard: React.FC = () => {
                         Bot Status: Online
                     </span>
                     <span className="h-4 w-px bg-slate-300 dark:bg-slate-700"></span>
-                    <span>Version: v7.1.1</span>
+                    <span>Version: {botInfo?.version || 'v8.4.2'}</span>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -270,11 +272,11 @@ export const InfrastructureDashboard: React.FC = () => {
                         <div className="relative z-10">
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Active Users</p>
                             <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-                                {loading ? '...' : stats?.totalUsers?.toLocaleString() || '0'}
+                                {loading ? '...' : (stats?.totalUsers || 0).toLocaleString()}
                             </h3>
-                            <div className="flex items-center mt-2 text-xs text-green-500 font-bold">
-                                <TrendingUp className="w-3 h-3 mr-1" />
-                                +4.5% this week
+                            <div className={`flex items-center mt-2 text-xs font-bold uppercase tracking-tight ${stats?.users7d > 0 ? 'text-green-500' : 'text-slate-400'}`}>
+                                {stats?.users7d > 0 ? <TrendingUp className="w-3 h-3 mr-1" /> : <Activity className="w-3 h-3 mr-1" />}
+                                {loading ? '...' : `+${stats?.users7d || 0} nuevos esta semana`}
                             </div>
                         </div>
                         <div className="p-3 bg-blue-100 dark:bg-blue-500/20 rounded-lg text-blue-600 dark:text-blue-400">
@@ -287,11 +289,11 @@ export const InfrastructureDashboard: React.FC = () => {
                         <div className="relative z-10">
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Library Index</p>
                             <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-                                {loading ? '...' : stats?.totalBooks?.toLocaleString() || '0'}
+                                {loading ? '...' : (stats?.totalBooks || 0).toLocaleString()}
                             </h3>
                             <div className="flex items-center mt-2 text-xs text-slate-500 dark:text-slate-400 font-bold">
                                 <Archive className="w-3 h-3 mr-1" />
-                                {stats?.storageUsedGB ? `${stats.storageUsedGB} GB storage` : 'Calculating...'}
+                                {loading ? '...' : `${stats?.storageUsedGB || 0} GB en uso`}
                             </div>
                         </div>
                         <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-lg text-purple-600 dark:text-purple-400">
@@ -304,11 +306,11 @@ export const InfrastructureDashboard: React.FC = () => {
                         <div className="relative z-10">
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Downloads (24h)</p>
                             <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-                                {loading ? '...' : stats?.downloads24h?.toLocaleString() || '0'}
+                                {loading ? '...' : (stats?.downloads24h || 0).toLocaleString()}
                             </h3>
-                            <div className="flex items-center mt-2 text-xs text-green-500 font-bold">
+                            <div className={`flex items-center mt-2 text-xs font-bold uppercase tracking-tight ${(stats?.downloads24h || 0) >= (stats?.downloadsPrev24h || 0) ? 'text-green-500' : 'text-red-500'}`}>
                                 <TrendingUp className="w-3 h-3 mr-1" />
-                                +12% vs yesterday
+                                {loading ? '...' : `${stats?.downloads24h || 0} vs ${stats?.downloadsPrev24h || 0} ayer`}
                             </div>
                         </div>
                         <div className="p-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg text-emerald-600 dark:text-emerald-400">
@@ -321,11 +323,11 @@ export const InfrastructureDashboard: React.FC = () => {
                         <div className="relative z-10">
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">System Uptime</p>
                             <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-                                {loading ? '...' : stats?.uptime || '99.9%'}
+                                {loading ? '...' : stats?.uptime || '0h 0m'}
                             </h3>
-                            <div className="flex items-center mt-2 text-xs text-slate-500 dark:text-slate-400 font-bold">
+                            <div className="flex items-center mt-2 text-xs text-green-500 font-bold">
                                 <Activity className="w-3 h-3 mr-1" />
-                                {stats?.activeSessions || '0'} active sessions
+                                Bot Online
                             </div>
                         </div>
                         <div className="p-3 bg-amber-100 dark:bg-amber-500/20 rounded-lg text-amber-600 dark:text-amber-400">

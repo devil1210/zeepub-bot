@@ -159,11 +159,11 @@ export const MonitorDashboard: React.FC = () => {
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Active Users</p>
                         <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
-                            {loading ? '...' : stats?.totalUsers || '12,482'}
+                            {loading ? '...' : (stats?.totalUsers || 0).toLocaleString()}
                         </h3>
-                        <div className="flex items-center mt-3 text-[10px] text-green-500 font-bold uppercase tracking-tight">
-                            <TrendingUp className="w-3.5 h-3.5 mr-1" />
-                            +4.5% this week
+                        <div className={`flex items-center mt-3 text-[10px] font-bold uppercase tracking-tight ${stats?.users7d > 0 ? 'text-green-500' : 'text-gray-400'}`}>
+                            {stats?.users7d > 0 ? <TrendingUp className="w-3.5 h-3.5 mr-1" /> : <Activity className="w-3.5 h-3.5 mr-1" />}
+                            {loading ? '...' : `+${stats?.users7d || 0} nuevos esta semana`}
                         </div>
                     </div>
                     <div className="p-4 bg-blue-500/20 rounded-2xl text-blue-400 border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)] relative z-10">
@@ -180,11 +180,11 @@ export const MonitorDashboard: React.FC = () => {
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Library Index</p>
                         <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
-                            {loading ? '...' : stats?.totalBooks || '843,209'}
+                            {loading ? '...' : (stats?.totalBooks || 0).toLocaleString()}
                         </h3>
                         <div className="flex items-center mt-3 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
                             <Library className="w-3.5 h-3.5 mr-1" />
-                            {stats?.storageUsedGB ? `${stats.storageUsedGB} GB storage` : '2.4 TB storage used'}
+                            {loading ? '...' : `${stats?.storageUsedGB || 0} GB en uso`}
                         </div>
                     </div>
                     <div className="p-4 bg-purple-500/20 rounded-2xl text-purple-400 border border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.1)] relative z-10">
@@ -201,11 +201,11 @@ export const MonitorDashboard: React.FC = () => {
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Downloads (24h)</p>
                         <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
-                            {loading ? '...' : stats?.downloads24h || '1,024'}
+                            {loading ? '...' : (stats?.downloads24h || 0).toLocaleString()}
                         </h3>
-                        <div className="flex items-center mt-3 text-[10px] text-green-500 font-bold uppercase tracking-tight">
-                            <TrendingUp className="w-3.5 h-3.5 mr-1" />
-                            +12% vs yesterday
+                        <div className={`flex items-center mt-3 text-[10px] font-bold uppercase tracking-tight ${(stats?.downloads24h || 0) >= (stats?.downloadsPrev24h || 0) ? 'text-green-500' : 'text-red-400'}`}>
+                            <TrendingUp className={`w-3.5 h-3.5 mr-1 ${(stats?.downloads24h || 0) < (stats?.downloadsPrev24h || 0) ? 'rotate-180' : ''}`} />
+                            {loading ? '...' : `${stats?.downloads24h || 0} vs ${stats?.downloadsPrev24h || 0} ayer`}
                         </div>
                     </div>
                     <div className="p-4 bg-emerald-500/20 rounded-2xl text-emerald-400 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)] relative z-10">
@@ -222,11 +222,11 @@ export const MonitorDashboard: React.FC = () => {
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">System Uptime</p>
                         <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
-                            {loading ? '...' : stats?.uptime || '99.9%'}
+                            {loading ? '...' : stats?.uptime || '0h 0m'}
                         </h3>
-                        <div className="flex items-center mt-3 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+                        <div className="flex items-center mt-3 text-[10px] text-green-500 font-bold uppercase tracking-tight">
                             <Activity className="w-3.5 h-3.5 mr-1" />
-                            14d 2h since reboot
+                            {loading ? '...' : `${stats?.activeSessions || 0} sesiones activas`}
                         </div>
                     </div>
                     <div className="p-4 bg-amber-500/20 rounded-2xl text-amber-400 border border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.1)] relative z-10">
