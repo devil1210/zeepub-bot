@@ -23,6 +23,7 @@ export const MonitorDashboard: React.FC = () => {
     const [logs, setLogs] = useState<{ time: string, level: string, msg: string, color: string, timestamp?: number }[]>([]);
     const [logLevel, setLogLevel] = useState('INFO');
     const [isExporting, setIsExporting] = useState(false);
+    const [sendingTelegram, setSendingTelegram] = useState(false);
     const [copied, setCopied] = useState(false);
 
     const fetchStats = async () => {
@@ -108,6 +109,23 @@ export const MonitorDashboard: React.FC = () => {
         navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleSendTelegram = async (hours?: number) => {
+        setSendingTelegram(true);
+        try {
+            const res = await api.sendLogsToTelegram('DEBUG', hours);
+            if (res.success) {
+                alert('Logs enviados a tu Telegram!');
+            } else {
+                alert('Error: ' + res.message);
+            }
+        } catch (error) {
+            console.error('Error sending logs to telegram:', error);
+            alert('Error al enviar logs.');
+        } finally {
+            setSendingTelegram(false);
+        }
     };
 
     const addLog = (level: string, msg: string) => {
@@ -332,6 +350,14 @@ export const MonitorDashboard: React.FC = () => {
                                 className="px-3 py-1 text-[9px] font-black text-gray-400 hover:text-white transition-colors flex items-center gap-1"
                             >
                                 {copied ? 'COPIED!' : 'COPY'}
+                            </button>
+                            <div className="w-px h-3 bg-white/10"></div>
+                            <button
+                                onClick={() => handleSendTelegram()}
+                                disabled={sendingTelegram}
+                                className="px-3 py-1 text-[9px] font-black text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+                            >
+                                {sendingTelegram ? 'SENDING...' : 'TG BOT'}
                             </button>
                             <div className="w-px h-3 bg-white/10"></div>
                             <button

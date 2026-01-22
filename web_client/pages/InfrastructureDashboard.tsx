@@ -38,6 +38,7 @@ export const InfrastructureDashboard: React.FC = () => {
     const [auditLoading, setAuditLoading] = useState(false);
     const [logLevel, setLogLevel] = useState('INFO');
     const [isExporting, setIsExporting] = useState(false);
+    const [sendingTelegram, setSendingTelegram] = useState(false);
     const [copied, setCopied] = useState(false);
 
     const fetchStats = async () => {
@@ -124,6 +125,23 @@ export const InfrastructureDashboard: React.FC = () => {
         navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleSendTelegram = async (hours?: number) => {
+        setSendingTelegram(true);
+        try {
+            const res = await api.sendLogsToTelegram('DEBUG', hours);
+            if (res.success) {
+                alert('Logs enviados a tu Telegram!');
+            } else {
+                alert('Error: ' + res.message);
+            }
+        } catch (error) {
+            console.error('Error sending logs to telegram:', error);
+            alert('Error al enviar logs.');
+        } finally {
+            setSendingTelegram(false);
+        }
     };
 
     const addLog = (level: string, msg: string) => {
@@ -589,6 +607,13 @@ export const InfrastructureDashboard: React.FC = () => {
                                         className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                                     >
                                         {copied ? 'COPIED' : 'COPY'}
+                                    </button>
+                                    <button
+                                        onClick={() => handleSendTelegram()}
+                                        disabled={sendingTelegram}
+                                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                    >
+                                        {sendingTelegram ? '...' : 'TG BOT'}
                                     </button>
                                     <button
                                         onClick={() => handleExportLogs()}

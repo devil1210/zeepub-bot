@@ -95,7 +95,8 @@ async def handle_bot_request(
             status_code=403, detail="Tu nivel de usuario no tiene acceso a la Mini App"
         )
 
-    logger.info(f"Miniapp action: {action} User: {user_id} Level: {user_level}")
+    if action not in ["admin_get_system_logs", "admin_send_logs_telegram"]:
+        logger.info(f"Miniapp action: {action} User: {user_id} Level: {user_level}")
 
     try:
         # Mapping of actions to their respective handlers
@@ -142,6 +143,7 @@ async def handle_bot_request(
             handle_admin_clear_duplicates,
             handle_admin_scan_user,
             handle_admin_get_system_logs,
+            handle_admin_send_logs_telegram,
         )
 
         ACTION_HANDLERS = {
@@ -187,6 +189,7 @@ async def handle_bot_request(
             "admin_clear_duplicates": handle_admin_clear_duplicates,
             "admin_scan_user": handle_admin_scan_user,
             "admin_get_system_logs": handle_admin_get_system_logs,
+            "admin_send_logs_telegram": handle_admin_send_logs_telegram,
         }
 
         handler = ACTION_HANDLERS.get(action)
@@ -194,7 +197,8 @@ async def handle_bot_request(
             logger.warning(f"Unknown action requested: {action} by user {user_id}")
             raise HTTPException(status_code=400, detail=f"Unknown action: {action}")
 
-        logger.info(f"Dispatching action '{action}' for user {user_id}")
+        if action not in ["admin_get_system_logs", "admin_send_logs_telegram"]:
+            logger.info(f"Dispatching action '{action}' for user {user_id}")
         
         # Check if handler accepts request argument
         import inspect

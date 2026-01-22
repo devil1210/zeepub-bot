@@ -173,7 +173,8 @@ export const api = {
     adminGetDuplicates: () => rpc('admin_get_duplicates'),
     adminClearDuplicates: () => rpc('admin_clear_duplicates'),
     adminScanUser: (userId: string) => rpc('admin_scan_user', { userId }),
-    getSystemLogs: () => rpc('admin_get_system_logs'),
+    getSystemLogs: (level: string = 'INFO', hours?: number) => rpc('admin_get_system_logs', { level, hours }),
+    sendLogsToTelegram: (level: string = 'DEBUG', hours?: number) => rpc('admin_send_logs_telegram', { level, hours }),
 
     // Raw RPC Access
     rpc: rpc

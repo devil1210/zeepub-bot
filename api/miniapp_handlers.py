@@ -2055,14 +2055,64 @@ async def handle_admin_clear_duplicates(data: Dict[str, Any], user_data: Dict[st
         session.close()
 
 async def handle_admin_get_system_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
-    """Retorna los últimos logs capturados en memoria."""
+    """Retorna los últimos logs capturados en memoria con opción de filtrado."""
     if user_data.get("level") != "admin" and not user_data.get("is_admin_db"):
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     try:
         from utils.log_manager import log_buffer_handler
-        logs = log_buffer_handler.get_logs()
+        
+        level = data.get("level", "INFO")
+        hours = data.get("hours") # None for all in buffer
+        
+        logs = log_buffer_handler.get_logs(level=level, last_hours=hours)
         return {"success": True, "logs": logs}
     except Exception as e:
         logger.error(f"Error fetching system logs: {e}")
         return {"success": False, "message": str(e)}
+
+async def handle_admin_send_logs_telegram(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Envía los logs capturados directamente al chat de Telegram del usuario."""
+    if user_data.get("level") != "admin" and not user_data.get("is_admin_db"):
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+    
+    try:
+        from utils.log_manager import log_buffer_handler
+        from api.main import bot as bot_instance
+        import io
+        from datetime import datetime
+
+        level = data.get("level", "DEBUG") 
+        hours = data.get("hours")
+        
+        logs = log_buffer_handler.get_logs(level=level, last_hours=hours)
+        if not logs:
+            return {"success": False, "message": "No hay logs disponibles para enviar."}
+            
+        # Format logs
+        log_text = "\n".join([f"[{l['time']}] {l['level']}: {l['msg']}" for l in logs])
+        
+        # Create file
+        file_obj = io.BytesIO(log_text.encode('utf-8'))
+        
+        # Filename with range
+        first_t = logs[0]['timestamp']
+        last_t = logs[-1]['timestamp']
+        fmt = lambda t: datetime.fromtimestamp(t).strftime('%Y%m%d_%H%M')
+        filename = f"logs_{fmt(first_t)}_{fmt(last_t)}.txt"
+        file_obj.name = filename
+        
+        user_id = user_data.get("user_id")
+        
+        # Send via Telegram
+        await bot_instance.app.bot.send_document(
+            chat_id=user_id,
+            document=file_obj,
+            caption=f"📄 <b>Logs del Sistema</b>\nFiltro: {level}\nPeriodo: {fmt(first_t)} a {fmt(last_t)}",
+            parse_mode="HTML"
+        )
+        
+        return {"success": True, "message": "Logs enviados a tu Telegram correctamente."}
+    except Exception as e:
+        logger.error(f"Error sending logs to Telegram: {e}")
+        return {"success": False, "message": f"Error: {str(e)}"}
