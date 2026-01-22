@@ -228,33 +228,30 @@ class EPUBUploader:
         # Obtener el nombre original del archivo subido desde los metadatos
         original_filename = metadata.get('original_filename', '')
         if original_filename:
-            # Extraer solo el nombre del archivo sin extensión
+            # Extraer solo el nombre del archivo sin extensión y sin tags existentes
             filename_without_ext = original_filename.rsplit('.', 1)[0]
+            # Limpiar tags existentes como [NL], [NW], [ShinsengumiTL], etc.
+            import re
+            filename_clean = re.sub(r'\s*\[[^\]]+\]\s*', '', filename_without_ext)
         else:
             # Si no hay filename original, usar el título limpio
-            filename_without_ext = self.clean_filename(title)
+            filename_clean = self.clean_filename(title)
         
         # Limpiar y normalizar nombres
         author_clean = self.clean_filename(author)
         series_clean = self.clean_filename(series) if series else None
-        filename_clean = self.clean_filename(filename_without_ext)
+        filename_clean = self.clean_filename(filename_clean)
+        
+        # Determinar el tag basado en el tipo de novela
+        tag = self.determine_novel_type_tag(metadata, original_filename)
         
         # Si hay serie, usar el formato: Serie - Autor [Tag]/Filename
         if series_clean:
-            # Extraer tags del nombre original (como [NL], [NW], etc.)
-            import re
-            tags_match = re.search(r'\[([^\]]+)\]', original_filename)
-            tag = tags_match.group(1) if tags_match else ''
-            
-            if tag:
-                # Formato: Serie - Autor [Tag]/Filename
-                suggested_path = f"{series_clean} - {author_clean} [{tag}]/{filename_clean}.epub"
-            else:
-                # Formato: Serie - Autor/Filename
-                suggested_path = f"{series_clean} - {author_clean}/{filename_clean}.epub"
+            # Formato: Serie - Autor [Tag]/Filename
+            suggested_path = f"{series_clean} - {author_clean} [{tag}]/{filename_clean}.epub"
         else:
-            # Si no hay serie, usar formato simple: Autor/Filename
-            suggested_path = f"{author_clean}/{filename_clean}.epub"
+            # Si no hay serie, usar formato: Autor [Tag]/Filename
+            suggested_path = f"{author_clean} [{tag}]/{filename_clean}.epub"
         
         # Limitar longitud total de la ruta
         if len(suggested_path) > 250:
@@ -262,11 +259,69 @@ class EPUBUploader:
             max_filename_len = 250 - len(suggested_path.split('/')[-2]) - 10  # 10 para "/.epub"
             filename_clean = filename_clean[:max_filename_len]
             if series_clean:
-                suggested_path = f"{series_clean} - {author_clean}/{filename_clean}.epub"
+                suggested_path = f"{series_clean} - {author_clean} [{tag}]/{filename_clean}.epub"
             else:
-                suggested_path = f"{author_clean}/{filename_clean}.epub"
+                suggested_path = f"{author_clean} [{tag}]/{filename_clean}.epub"
         
         return suggested_path
+    
+    def determine_novel_type_tag(self, metadata: Dict[str, Any], original_filename: str) -> str:
+        """Determina si es Novela Ligera [NL] o Novela Web [NW]."""
+        
+        # 1. Revisar si el filename original ya indica el tipo
+        filename_lower = original_filename.lower()
+        if '[nl]' in filename_lower:
+            return 'NL'
+        elif '[nw]' in filename_lower:
+            return 'NW'
+        
+        # 2. Revisar metadata para detectar el tipo
+        publisher = metadata.get('publisher', '').lower()
+        description = metadata.get('description', '').lower()
+        tags = metadata.get('tags', '').lower()
+        
+        # Indicadores de Novela Ligera
+        nl_indicators = [
+            'shinsengumi', 'mangaplus', 'mangadex', 'tumblr', 'light novel',
+            'ln', 'traducción light', 'light novel translation'
+        ]
+        
+        # Indicadores de Novela Web
+        nw_indicators = [
+            'novela web', 'web novel', 'wn', 'traducción web',
+            'webnovel', 'syosetu', 'kakuyomu', 'novela online'
+        ]
+        
+        # 3. Revisar publisher/distribuidor
+        for indicator in nl_indicators:
+            if indicator in publisher or indicator in tags:
+                return 'NL'
+        
+        for indicator in nw_indicators:
+            if indicator in publisher or indicator in tags:
+                return 'NW'
+        
+        # 4. Revisar descripción
+        for indicator in nl_indicators:
+            if indicator in description:
+                return 'NL'
+        
+        for indicator in nw_indicators:
+            if indicator in description:
+                return 'NW'
+        
+        # 5. Revisar categorías y demografía
+        category = metadata.get('category', '').lower()
+        demography = metadata.get('demography', [])
+        
+        # Las novelas ligeras suelen tener categorías específicas
+        nl_categories = ['light novel', 'ln', 'shōnen', 'shōjo', 'seinen']
+        for dem in demography:
+            if any(cat in dem.lower() for cat in nl_categories):
+                return 'NL'
+        
+        # 6. Por defecto, asumir Novela Ligera (es más común)
+        return 'NL'
     
     def clean_filename(self, filename: str) -> str:
         """Limpia filename para uso en sistema de archivos."""
