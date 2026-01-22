@@ -624,17 +624,15 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
             res_dp = user_repo.supabase.get_client().table('download_history').select("id", count='exact').gte('downloaded_at', two_days_ago).lt('downloaded_at', day_ago).execute()
             dls_prev_24h = res_dp.count or 0
 
-            # Users 7d
-            week_ago = (datetime.now() - timedelta(days=7)).isoformat()
-            # Note: We assume 'created_at' exists in Supabase. If not, this might fail or return 0.
+            # Users 7d - Handle missing created_at column gracefully
             try:
-                # We catch generic exceptions here because column might not exist or be named differently
+                week_ago = (datetime.now() - timedelta(days=7)).isoformat()
                 res_u7 = user_repo.supabase.get_client().table('users').select("telegram_id", count='exact').gte('created_at', week_ago).execute()
                 users_7d = res_u7.count or 0
             except Exception as e:
-                logger.warning(f"Could not fetch users_7d stats (likely missing created_at): {e}")
-                users_7d = int(total_users * 0.05) # Fallback heuristic
-                users_7d = int(total_users * 0.05) # Fallback heuristic if no created_at
+                logger.warning(f"Could not fetch users_7d stats (missing created_at column): {e}")
+                # Use fallback based on total users (5% heuristic for new users)
+                users_7d = max(1, int(total_users * 0.05)) if total_users > 0 else 0
         except Exception as e:
             logger.error(f"Supabase metrics error: {e}")
     else:
@@ -651,12 +649,13 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
             cur = await conn.execute("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= datetime('now', '-2 days') AND downloaded_at < datetime('now', '-1 day')")
             dls_prev_24h = (await cur.fetchone())[0]
 
-            # Users 7d (Check if created_at exists, fallback to total_users * 0.05)
+            # Users 7d (Check if created_at exists, fallback to heuristic)
             try:
                 cur = await conn.execute("SELECT COUNT(*) FROM users WHERE created_at >= datetime('now', '-7 days')")
                 users_7d = (await cur.fetchone())[0]
-            except:
-                 users_7d = int(total_users * 0.05)
+            except Exception as e:
+                logger.warning(f"Could not fetch users_7d from SQLite (missing created_at): {e}")
+                users_7d = max(1, int(total_users * 0.05)) if total_users > 0 else 0
         
         # Books (always from local session for now or repo)
         from utils.library_db import get_session

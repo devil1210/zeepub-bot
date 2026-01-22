@@ -11,7 +11,8 @@ import {
     Globe,
     HardDrive,
     RotateCcw,
-    TrendingUp
+    TrendingUp,
+    Palette
 } from 'lucide-react';
 import { api } from '../src/services/api';
 import { useTheme } from '../contexts/ThemeContext';
@@ -20,20 +21,43 @@ export const SystemDashboard: React.FC = () => {
     const { settings } = useTheme();
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleAction = async (name: string, fn: () => Promise<any>) => {
         setActionLoading(name);
+        setError(null);
         try {
             setLoading(true);
             const res = await fn();
             alert(res.message || `${name} completado`);
         } catch (error: any) {
-            alert(`Error: ${error.message}`);
+            const errorMsg = error?.message || `Error en ${name}`;
+            setError(errorMsg);
+            console.error(`Error in ${name}:`, error);
+            alert(`Error: ${errorMsg}`);
         } finally {
             setActionLoading(null);
             setLoading(false);
         }
     };
+
+    // Handle component errors
+    if (error && !loading) {
+        return (
+            <div className="flex flex-col items-center justify-center p-8">
+                <div className="text-red-500 text-center mb-4">
+                    <p className="text-lg font-bold">Error en el Sistema</p>
+                    <p className="text-sm mt-2">{error}</p>
+                </div>
+                <button 
+                    onClick={() => setError(null)}
+                    className="px-4 py-2 bg-red-500/10 text-red-500 rounded-lg border border-red-500/20 hover:bg-red-500/20 transition-all"
+                >
+                    Reintentar
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in duration-500 pt-4">
