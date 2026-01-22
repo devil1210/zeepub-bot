@@ -124,13 +124,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             {extendedInfo?.insignias && extendedInfo.insignias.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {extendedInfo.insignias.map((badge, idx) => (
-                  <span
+                  <button
                     key={idx}
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 animate-in zoom-in duration-300"
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 animate-in zoom-in duration-300 hover:bg-primary/20 hover:border-primary/40 hover:scale-105 transition-all cursor-pointer"
                     style={{ animationDelay: `${idx * 100}ms` }}
+                    onClick={() => {
+                      // Toggle edit mode or show badge options
+                      if (typeof (window as any).Telegram?.WebApp?.showAlert === 'function') {
+                        (window as any).Telegram.WebApp.showAlert(`Badge: ${badge}\n\nFunción de edición próximamente...`);
+                      } else {
+                        alert(`Badge: ${badge}\n\nFunción de edición próximamente...`);
+                      }
+                    }}
+                    title={`Click para editar: ${badge}`}
                   >
                     {badge}
-                  </span>
+                  </button>
                 ))}
               </div>
             )}

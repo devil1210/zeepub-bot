@@ -227,12 +227,11 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         {p}
       </p>
     ));
-  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-100">
 
-      <div className="relative w-full min-h-[480px] sm:min-h-[520px] shrink-0 overflow-hidden flex flex-col justify-end">
+      <div className="relative w-full min-h-[480px] sm:min-h-[520px] shrink-0 overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center blur-sm scale-110 opacity-50"
           style={{ backgroundImage: `url('${getCoverUrl(realSeries.coverUrl, realSeries.coverThumbUrl, settings.coverQuality)}')` }}
@@ -274,15 +273,15 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
         <div
           className="relative w-full px-4 sm:px-6 lg:px-8 pb-10 z-20"
-          style={{ paddingTop: '6rem' }}
+          style={{ paddingTop: '5rem' }}
         >
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
-            <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 -mb-4 shadow-2xl rounded-lg overflow-hidden">
+            <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 shadow-2xl rounded-lg overflow-hidden">
               <img alt={`${realSeries.title} Cover`} className="w-full h-full object-cover" src={getCoverUrl(realSeries.coverUrl, realSeries.coverThumbUrl, settings.coverQuality)} />
             </div>
 
             <div className="flex-1 pb-2 w-full">
-              <div className="flex flex-wrap items-center gap-3 mb-4">
+              <div className="flex flex-wrap items-center gap-3 mb-2">
                 <button
                   onClick={() => onSearch?.(realSeries.genre || '')}
                   className="px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-black bg-green-500/20 text-green-400 border border-green-500/30 uppercase tracking-widest leading-relaxed hover:bg-green-500/30 transition-all"
