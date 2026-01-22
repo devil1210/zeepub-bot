@@ -148,6 +148,32 @@ async def update_book(
         raise HTTPException(status_code=400, detail="ID inválido")
 
 
+
+@router.get("/api/library/regroup/suggestions")
+async def get_regroup_suggestions(
+    threshold: float = Query(0.8, ge=0.0, le=1.0),
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Lista grupos de libros sugeridos para unificar en series.
+    Busca similitudes en títulos y autor.
+    """
+    suggestions = await LibraryService.get_regroup_suggestions(threshold=threshold)
+    return {"suggestions": suggestions}
+
+
+@router.get("/api/library/orphans")
+async def get_orphaned_books(
+    limit: int = Query(100, ge=1, le=1000),
+    user_data: dict = Depends(require_admin)
+):
+    """
+    Lista libros que no tienen una serie asignada.
+    Útil para detectar libros sueltos que deberían agruparse.
+    """
+    books = await LibraryService.get_books_without_series(limit=limit)
+    return {"books": books}
+
 @router.get("/api/library/catalog")
 async def get_catalog(
     source_id: Optional[int] = Query(None),

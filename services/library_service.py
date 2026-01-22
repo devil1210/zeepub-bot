@@ -270,6 +270,87 @@ class LibraryService:
                 logger.error(f"[LibraryService.update_book_metadata] Error: {e}")
                 return False
 
+
+    @staticmethod
+    async def get_regroup_suggestions(threshold: float = 0.8) -> List[Dict[str, Any]]:
+        """
+        Analiza libros sin serie o con series diferentes y sugiere agrupaciones
+        basadas en similitud de títulos y autor.
+        """
+        async with pg_manager.get_session() as session:
+            try:
+                # 1. Obtener libros sospechosos (sin series o series con 1 solo volumen)
+                # Esta consulta simplificada obtiene libros sin serie asignda explícitamente
+                stmt = select(LocalBook).where(
+                    or_(LocalBook.series.is_(None), LocalBook.series == "")
+                ).order_by(LocalBook.author, LocalBook.title)
+                
+                result = await session.execute(stmt)
+                books = result.scalars().all()
+                
+                # 2. Agrupamiento lógico simple en memoria (Python)
+                # Postgres tiene extensiones como pg_trgm para similitud, pero para simplificar
+                # y no depender de extensiones, hacemos un chequeo básico aquí.
+                from difflib import SequenceMatcher
+                
+                groups = []
+                used_ids = set()
+
+                for i, book_a in enumerate(books):
+                    if book_a.id in used_ids:
+                        continue
+                        
+                    current_group = [book_a]
+                    used_ids.add(book_a.id)
+                    
+                    for j, book_b in enumerate(books[i+1:], start=i+1):
+                        if book_b.id in used_ids:
+                            continue
+                            
+                        # Mismo autor es un requisito fuerte
+                        if book_a.author and book_b.author and book_a.author.lower() != book_b.author.lower():
+                            continue
+
+                        # Similitud de título
+                        similarity = SequenceMatcher(None, book_a.title, book_b.title).ratio()
+                        if similarity >= threshold:
+                            current_group.append(book_b)
+                            used_ids.add(book_b.id)
+                    
+                    if len(current_group) > 1:
+                        # Sugerencia encontrada
+                        common_title = current_group[0].title
+                        # Intentar extraer parte común
+                        match = SequenceMatcher(None, current_group[0].title, current_group[1].title).find_longest_match(0, len(current_group[0].title), 0, len(current_group[1].title))
+                        suggested_name = current_group[0].title[match.a: match.a + match.size].strip(" -:volume")
+
+                        groups.append({
+                            "suggested_series": suggested_name or common_title,
+                            "confidence": "high",
+                            "books": [b.to_dict() for b in current_group]
+                        })
+
+                return groups
+            except Exception as e:
+                logger.error(f"[LibraryService.get_regroup_suggestions] Error: {e}")
+                return []
+
+    @staticmethod
+    async def get_books_without_series(limit: int = 100) -> List[Dict[str, Any]]:
+        """Retorna una lista simple de libros que no tienen serie asignada."""
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = select(LocalBook)\
+                    .where(or_(LocalBook.series.is_(None), LocalBook.series == ""))\
+                    .order_by(LocalBook.indexed_at.desc())\
+                    .limit(limit)
+                
+                result = await session.execute(stmt)
+                books = result.scalars().all()
+                return [b.to_dict() for b in books]
+            except Exception as e:
+                logger.error(f"Error fetching orphaned books: {e}")
+                return []
     @staticmethod
     async def get_catalog(
         source_id: Optional[int] = None,
