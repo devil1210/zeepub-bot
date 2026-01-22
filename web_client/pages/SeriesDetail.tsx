@@ -232,7 +232,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-100">
 
-      <div className="relative w-full min-h-[480px] sm:min-h-[520px] shrink-0 overflow-hidden">
+      <div className="relative w-full min-h-[480px] sm:min-h-[520px] shrink-0 overflow-hidden flex flex-col">
         <div
           className="absolute inset-0 bg-cover bg-center blur-sm scale-110 opacity-50"
           style={{ backgroundImage: `url('${getCoverUrl(realSeries.coverUrl, realSeries.coverThumbUrl, settings.coverQuality)}')` }}
@@ -243,8 +243,8 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
         {/* Action Buttons Overlay - Desktop/Tablet */}
         <div
-          className="absolute left-6 right-6 z-30 flex items-center justify-between"
-          style={{ top: '1.5rem' }}
+          className="relative z-30 flex items-center justify-between px-4 sm:px-6 lg:px-8"
+          style={{ paddingTop: '3rem' }}
         >
           <button
             onClick={onBack}
@@ -273,8 +273,8 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         </div>
 
         <div
-          className="relative w-full px-4 sm:px-6 lg:px-8 pb-6 z-20"
-          style={{ paddingTop: '3rem' }}
+          className="relative w-full px-4 sm:px-6 lg:px-8 pb-6 z-20 flex-1"
+          style={{ paddingTop: '2rem' }}
         >
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
             <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 shadow-2xl rounded-lg overflow-hidden">
