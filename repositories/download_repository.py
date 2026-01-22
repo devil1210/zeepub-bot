@@ -2,6 +2,8 @@ import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from repositories.base_repository import BaseRepository
+from config.config_settings import config
+from core.db_manager_pg import pg_manager
 
 logger = logging.getLogger(__name__)
 
@@ -89,17 +91,28 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             except Exception as e:
                 logger.error(f"Supabase add_download error: {e}")
 
-        async with self.db_manager.connection() as conn:
-            cursor = await conn.execute(
-                """
-                INSERT INTO download_history
-                (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash)
-            )
-            await conn.commit()
-            return cursor.lastrowid
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                from sqlalchemy import text
+                async with pg_manager.get_session() as session:
+                    query = text("""
+                        INSERT INTO download_history
+                        (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash)
+                        VALUES (:user_id, :title, :author, :download_url, :file_size, :romaji_title, :series, :volume, :translator, :clean_title, :book_hash)
+                        RETURNING id
+                    """)
+                    result = await session.execute(query, {
+                        "user_id": user_id, "title": title, "author": author, 
+                        "download_url": download_url, "file_size": file_size,
+                        "romaji_title": romaji_title, "series": series, "volume": volume,
+                        "translator": translator, "clean_title": clean_title, "book_hash": book_hash
+                    })
+                    new_id = result.scalar()
+                    await session.commit()
+                    return new_id
+            except Exception as e:
+                logger.error(f"Postgres add_download error: {e}")
+        return 0
 
     async def get_user_downloads(
         self,
@@ -109,36 +122,39 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         """
         Get recent downloads for a specific user.
         """
-        # 1. Try Local First
-        async with self.db_manager.connection() as conn:
-            cursor = await conn.execute(
-                """
-                SELECT id, title, author, file_size, downloaded_at, romaji_title, series, volume, translator, clean_title
-                FROM download_history
-                WHERE user_id = ?
-                ORDER BY downloaded_at DESC
-                LIMIT ?
-                """,
-                (user_id, limit)
-            )
-            rows = await cursor.fetchall()
-            
-            if rows:
-                return [
-                    {
-                        "id": row[0],
-                        "title": row[1],
-                        "author": row[2] or "Desconocido",
-                        "file_size": row[3],
-                        "downloaded_at": row[4],
-                        "romaji_title": row[5],
-                        "series": row[6],
-                        "volume": row[7],
-                        "translator": row[8],
-                        "clean_title": row[9]
-                    }
-                    for row in rows
-                ]
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                from sqlalchemy import text
+                async with pg_manager.get_session() as session:
+                    # Using raw SQL for legacy table compatibility if models aren't fully aligned
+                    query = text("""
+                        SELECT id, title, author, file_size, downloaded_at, romaji_title, series, volume, translator, clean_title
+                        FROM download_history
+                        WHERE user_id = :user_id
+                        ORDER BY downloaded_at DESC
+                        LIMIT :limit
+                    """)
+                    result = await session.execute(query, {"user_id": user_id, "limit": limit})
+                    rows = result.fetchall()
+                    
+                    if rows:
+                        return [
+                            {
+                                "id": row[0],
+                                "title": row[1],
+                                "author": row[2] or "Desconocido",
+                                "file_size": row[3],
+                                "downloaded_at": row[4],
+                                "romaji_title": row[5],
+                                "series": row[6],
+                                "volume": row[7],
+                                "translator": row[8],
+                                "clean_title": row[9]
+                            }
+                            for row in rows
+                        ]
+            except Exception as e:
+                logger.error(f"Postgres get_user_downloads error: {e}")
 
         # 2. Supabase Fallback
         if self.supabase.is_active:

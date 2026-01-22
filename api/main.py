@@ -14,7 +14,6 @@ logging.basicConfig(
     level=getattr(logging, config.LOG_LEVEL.upper(), logging.INFO),
 )
 # Silenciar bibliotecas ruidosas
-logging.getLogger("aiosqlite").setLevel(logging.INFO)
 logging.getLogger("httpcore").setLevel(logging.INFO)
 logging.getLogger("httpx").setLevel(logging.INFO)
 logging.getLogger("apscheduler").setLevel(logging.INFO)
@@ -49,9 +48,9 @@ async def lifespan(app: FastAPI):
         logger.error(f"Migration check failed: {e}")
 
     if config.DATABASE_URL:
-        logger.info("📦 Base de Datos: PostgreSQL (Configurada)")
+        logger.info("📦 Base de Datos: PostgreSQL (Activa)")
     else:
-        logger.info("📦 Base de Datos: SQLite (Activa por defecto)")
+        logger.error("📦 ERROR: DATABASE_URL no configurada. Postgres es mandatorio.")
     try:
         await bot.initialize()
 

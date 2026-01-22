@@ -131,21 +131,13 @@ class ZeePubBot:
 
     async def initialize(self):
         """Inicializa la aplicación (para uso con API)."""
-        # 0. Inicializar Base de Datos primero
-        from core.db_manager import db_manager
-        from core.metrics_db import metrics_db
-        from utils.library_db import init_library_db
+        # 0. Inicializar Base de Datos primero (PostgreSQL)
         from core.schema_orchestrator import schema_orchestrator
         try:
-            await db_manager.initialize()
-            await metrics_db.initialize()
-            # Asegurar que la DB de la librería (y audit logs) esté inicializada
-            init_library_db()
-            
             # Initialize Postgres Schema (Orchestrator)
             await schema_orchestrator.initialize_schema()
         except Exception as e:
-            logger.error(f"Error inicializando base de datos: {e}")
+            logger.error(f"Error inicializando base de datos Postgres: {e}")
             # Continuamos, pero es probable que fallen cosas después
 
         max_retries = 5

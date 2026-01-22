@@ -54,21 +54,57 @@ def record_activity(uid: int, activity_type: str = "download"):
 
 async def get_stats_summary(period: str = "day") -> Dict[str, Any]:
     """
-    Obtiene métricas del periodo solicitado consultando la BD real via db_manager.
+    Obtiene métricas del periodo solicitado consultando la BD Postgres.
     period: 'day', 'month', 'year', 'all'
     """
-    from core.db_manager import db_manager
+    from core.db_manager_pg import pg_manager
+    from sqlalchemy import text
+    from config.config_settings import config
 
-    # Obtener conteos crudos (Descargas, Usuarios Activos, Nuevos Usuarios)
-    counts = await db_manager.get_stats_counts(period)
+    if not config.ENABLE_POSTGRES_PLUGIN:
+        return {"unique_users": 0, "total_downloads": 0, "new_users": 0, "by_role": {}}
 
-    # Para consistencia con el plugin anterior, mapeamos las keys
-    return {
-        "unique_users": counts["active_users"],
-        "total_downloads": counts["downloads"],
-        "new_users": counts["new_users"],
-        "by_role": {}  # TODO: Implementar desglose por rol si es crítico, pero para rendimiento es mejor omitir en queries masivos
-    }
+    try:
+        # SQLite modifiers mapping to Postgres intervals
+        intervals = {
+            "day": "1 day",
+            "month": "1 month",
+            "year": "1 year"
+        }
+        
+        async with pg_manager.get_session() as session:
+            if period == "all":
+                time_filter = "TRUE"
+                user_time_filter = "TRUE"
+            else:
+                interval = intervals.get(period, "1 day")
+                time_filter = f"downloaded_at >= NOW() - INTERVAL '{interval}'"
+                user_time_filter = f"added_at >= NOW() - INTERVAL '{interval}'"
+
+            # Total Downloads
+            q_downloads = text(f"SELECT COUNT(*) FROM download_history WHERE {time_filter}")
+            res_downloads = await session.execute(q_downloads)
+            downloads = res_downloads.scalar() or 0
+
+            # Unique Users (Downloaders)
+            q_active = text(f"SELECT COUNT(DISTINCT user_id) FROM download_history WHERE {time_filter}")
+            res_active = await session.execute(q_active)
+            active_users = res_active.scalar() or 0
+
+            # New Users joined
+            q_new = text(f"SELECT COUNT(*) FROM users WHERE {user_time_filter}")
+            res_new = await session.execute(q_new)
+            new_users = res_new.scalar() or 0
+
+            return {
+                "unique_users": active_users,
+                "total_downloads": downloads,
+                "new_users": new_users,
+                "by_role": {}
+            }
+    except Exception as e:
+        logger.error(f"Error getting stats from Postgres: {e}")
+        return {"unique_users": 0, "total_downloads": 0, "new_users": 0, "by_role": {}}
 
 
 async def get_daily_stats() -> Dict[str, Any]:

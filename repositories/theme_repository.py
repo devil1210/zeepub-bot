@@ -23,28 +23,13 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
         """Si no hay temas en la DB, crea unos por defecto."""
         try:
             # Use PostgreSQL if enabled, otherwise SQLite
-            if config.ENABLE_POSTGRES_PLUGIN:
-                async with pg_manager.get_session() as session:
-                    from sqlalchemy import func, text
-                    
-                    # Check if empty using PostgreSQL
-                    result = await session.execute(text("SELECT count(*) FROM app_themes"))
-                    count = result.scalar()
-                    logger.info(f"PostgreSQL app_themes count: {count}")
-                    if count > 0:
-                        return
-                    else:
-                        logger.warning("No themes found in PostgreSQL, creating default themes")
-            else:
-                # Check if empty using SQLite as baseline
-                async with self.db.connection() as conn:
-                    cursor = await conn.execute("SELECT count(*) FROM app_themes")
-                    count = (await cursor.fetchone())[0]
-                    logger.info(f"SQLite app_themes count: {count}")
-                    if count > 0:
-                        return
-                    else:
-                        logger.warning("No themes found in SQLite, creating default themes")
+            # PostgreSQL is the base
+            async with pg_manager.get_session() as session:
+                from sqlalchemy import text
+                result = await session.execute(text("SELECT count(*) FROM app_themes"))
+                count = result.scalar()
+                if count > 0:
+                    return
 
             logger.info("Seeding default theme templates...")
             defaults = [
@@ -117,40 +102,17 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
         await self.ensure_default_themes()
 
         # Use local PostgreSQL
-        if config.ENABLE_POSTGRES_PLUGIN:
-             try:
-                async with pg_manager.get_session() as session:
-                    stmt = select(AppTheme).order_by(AppTheme.name)
-                    result = await session.execute(stmt)
-                    themes = result.scalars().all()
-                    theme_list = [self._to_dict(t) for t in themes]
-                    logger.info(f"Retrieved {len(theme_list)} themes from local PostgreSQL")
-                    return theme_list
-             except Exception as e:
-                logger.error(f"Postgres get_all_themes error: {e}")
-
-        # 2. SQLite
+        # Use PostgreSQL exclusively
         try:
-            async with self.db.connection() as conn:
-                # Need to list all columns manually or use * (careful with order)
-                # Using ORM-ish query with sqlite not easy without full ORM bind.
-                # Just use raw SQL.
-                cols = ["id", "name", "description", "theme_type", "primary_color", "background_color", 
-                        "card_color", "glass_opacity", "nav_opacity", "accent_opacity", 
-                        "glass_blur", "card_glow_intensity", "font_size", "cover_width", "banner_content_offset"]
-                
-                query = f"SELECT {', '.join(cols)} FROM app_themes ORDER BY name"
-                cursor = await conn.execute(query)
-                rows = await cursor.fetchall()
-                
-                results = []
-                for row in rows:
-                    theme_dict = dict(zip(cols, row))
-                    results.append(theme_dict)
-                logger.info(f"Retrieved {len(results)} themes from SQLite")
-                return results
+            async with pg_manager.get_session() as session:
+                stmt = select(AppTheme).order_by(AppTheme.name)
+                result = await session.execute(stmt)
+                themes = result.scalars().all()
+                theme_list = [self._to_dict(t) for t in themes]
+                logger.info(f"Retrieved {len(theme_list)} themes from PostgreSQL")
+                return theme_list
         except Exception as e:
-            logger.error(f"SQLite get_all_themes error: {e}")
+            logger.error(f"Postgres get_all_themes error: {e}")
             return []
 
     async def upsert(self, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -177,59 +139,25 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
         }
 
         # 1. Postgres
-        if config.ENABLE_POSTGRES_PLUGIN:
-             try:
-                async with pg_manager.get_session() as session:
-                    stmt = select(AppTheme).where(AppTheme.name == name)
-                    result = await session.execute(stmt)
-                    existing = result.scalar_one_or_none()
-                    
-                    if existing:
-                        for k, v in theme_data.items():
-                            if v is not None:
-                                setattr(existing, k, v)
-                    else:
-                        existing = AppTheme(**theme_data)
-                        session.add(existing)
-                    
-                    await session.commit()
-                    return self._to_dict(existing)
-             except Exception as e:
-                logger.error(f"Postgres upsert theme error: {e}")
-
-        # 2. SQLite
+        # Use PostgreSQL exclusively
         try:
-            async with self.db.connection() as conn:
-                # Check exist
-                cursor = await conn.execute("SELECT id FROM app_themes WHERE name = ?", (name,))
-                row = await cursor.fetchone()
+            async with pg_manager.get_session() as session:
+                stmt = select(AppTheme).where(AppTheme.name == name)
+                result = await session.execute(stmt)
+                existing = result.scalar_one_or_none()
                 
-                cols = [k for k in theme_data.keys() if k != "updated_at"]
-                vals = [theme_data[k] for k in cols]
-
-                if row:
-                    # Update
-                    set_clause = ", ".join([f"{c} = ?" for c in cols])
-                    # Add updated_at
-                    set_clause += ", updated_at = ?"
-                    vals.append(datetime.utcnow())
-                    vals.append(name) # WHERE name = ?
-                    
-                    await conn.execute(f"UPDATE app_themes SET {set_clause} WHERE name = ?", vals)
+                if existing:
+                    for k, v in theme_data.items():
+                        if v is not None:
+                            setattr(existing, k, v)
                 else:
-                    # Insert
-                    placeholders = ", ".join(["?"] * len(cols))
-                    # Add created_at/updated_at default
-                    
-                    await conn.execute(
-                        f"INSERT INTO app_themes ({', '.join(cols)}) VALUES ({placeholders})",
-                        vals
-                    )
+                    existing = AppTheme(**theme_data)
+                    session.add(existing)
                 
-                await conn.commit()
-                return theme_data # Approximation
+                await session.commit()
+                return self._to_dict(existing)
         except Exception as e:
-            logger.error(f"SQLite upsert theme error: {e}")
+            logger.error(f"Postgres upsert theme error: {e}")
             return None
 
     def _to_dict(self, theme: AppTheme) -> Dict[str, Any]:

@@ -1,6 +1,10 @@
 import logging
 from typing import Dict, Any, Optional, List
 
+from config.config_settings import config
+from core.db_manager_pg import pg_manager
+from sqlalchemy import text
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,25 +36,28 @@ class MetricsRepository:
             except Exception as e:
                 logger.error(f"Supabase metrics add_download error: {e}")
 
-        async with self.db_manager.connection() as conn:
-            await conn.execute(
-                "INSERT INTO user_downloads (user_id, content_hash, series_hash, title) VALUES (?, ?, ?, ?)",
-                (user_id, content_hash, series_hash, title),
-            )
-            await conn.commit()
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    query = text("INSERT INTO user_downloads (user_id, content_hash, series_hash, title) VALUES (:user_id, :content_hash, :series_hash, :title)")
+                    await session.execute(query, {"user_id": user_id, "content_hash": content_hash, "series_hash": series_hash, "title": title})
+                    await session.commit()
+            except Exception as e:
+                logger.error(f"Postgres metrics add_download error: {e}")
 
     async def has_downloaded(self, user_id: int, content_hash: str) -> bool:
         if not content_hash:
             return False
         
-        # 1. Try Local First (Faster)
-        async with self.db_manager.connection() as conn:
-            cursor = await conn.execute(
-                "SELECT 1 FROM user_downloads WHERE user_id = ? AND content_hash = ? LIMIT 1",
-                (user_id, content_hash),
-            )
-            if await cursor.fetchone() is not None:
-                return True
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    query = text("SELECT 1 FROM user_downloads WHERE user_id = :user_id AND content_hash = :content_hash LIMIT 1")
+                    result = await session.execute(query, {"user_id": user_id, "content_hash": content_hash})
+                    if result.fetchone() is not None:
+                        return True
+            except Exception as e:
+                logger.error(f"Postgres metrics has_downloaded error: {e}")
 
         # 2. Supabase Fallback (if enabled and not found locally)
         if self.supabase.is_active:
@@ -66,18 +73,15 @@ class MetricsRepository:
         if not content_hash:
             return 0
         
-        # 1. Try Local First
-        local_count = 0
-        async with self.db_manager.connection() as conn:
-            cursor = await conn.execute(
-                "SELECT COUNT(*) FROM user_downloads WHERE content_hash = ?",
-                (content_hash,),
-            )
-            row = await cursor.fetchone()
-            local_count = row[0] if row else 0
-            
-        if local_count > 0:
-            return local_count
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    query = text("SELECT COUNT(*) FROM user_downloads WHERE content_hash = :content_hash")
+                    result = await session.execute(query, {"content_hash": content_hash})
+                    count = result.scalar()
+                    if count: return count
+            except Exception as e:
+                logger.error(f"Postgres metrics get_total_downloads error: {e}")
 
         # 2. Supabase Fallback
         if self.supabase.is_active:
@@ -92,29 +96,34 @@ class MetricsRepository:
     async def get_series_downloads(self, series_hash: str) -> int:
         if not series_hash:
             return 0
-        async with self.db_manager.connection() as conn:
-            cursor = await conn.execute(
-                "SELECT COUNT(*) FROM user_downloads WHERE series_hash = ?",
-                (series_hash,),
-            )
-            row = await cursor.fetchone()
-            return row[0] if row else 0
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    query = text("SELECT COUNT(*) FROM user_downloads WHERE series_hash = :series_hash")
+                    result = await session.execute(query, {"series_hash": series_hash})
+                    return result.scalar() or 0
+            except Exception as e:
+                logger.error(f"Postgres metrics get_series_downloads error: {e}")
+        return 0
 
     async def get_total_downloads_by_hashes(self, hashes: List[str]) -> int:
         """Calcula el total de descargas para una lista de series_hash o content_hash."""
         if not hashes:
             return 0
 
-        # SQL con placeholders dinámicos
-        placeholders = ",".join(["?"] * len(hashes))
-        query = f"SELECT COUNT(*) FROM user_downloads WHERE series_hash IN ({placeholders}) OR content_hash IN ({placeholders})"
-        # Duplicamos la lista porque la usamos dos veces en el WHERE
-        params = hashes + hashes
-
-        async with self.db_manager.connection() as conn:
-            cursor = await conn.execute(query, params)
-            row = await cursor.fetchone()
-            return row[0] if row else 0
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                # SQL con placeholders dinámicos para Postgres (:hash1, :hash2, etc)
+                placeholders = ",".join([f":h{i}" for i in range(len(hashes))])
+                query = text(f"SELECT COUNT(*) FROM user_downloads WHERE series_hash IN ({placeholders}) OR content_hash IN ({placeholders})")
+                
+                params = {f"h{i}": h for i, h in enumerate(hashes)}
+                async with pg_manager.get_session() as session:
+                    result = await session.execute(query, params)
+                    return result.scalar() or 0
+            except Exception as e:
+                logger.error(f"Postgres metrics get_total_downloads_by_hashes error: {e}")
+        return 0
 
     async def get_source_downloads(self, source_id: int) -> int:
         """Calcula el total de descargas de todos los libros de una fuente específica."""
@@ -142,18 +151,20 @@ class MetricsRepository:
             except Exception as e:
                 logger.error(f"Supabase metrics add_rating error: {e}")
 
-        async with self.db_manager.connection() as conn:
-            await conn.execute(
-                """
-                INSERT INTO user_ratings (user_id, content_hash, rating, rated_at) 
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(user_id, content_hash) DO UPDATE SET 
-                    rating = excluded.rating,
-                    rated_at = CURRENT_TIMESTAMP
-                """,
-                (user_id, content_hash, rating),
-            )
-            await conn.commit()
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    query = text("""
+                        INSERT INTO user_ratings (user_id, content_hash, rating, rated_at) 
+                        VALUES (:user_id, :content_hash, :rating, CURRENT_TIMESTAMP)
+                        ON CONFLICT(user_id, content_hash) DO UPDATE SET 
+                            rating = EXCLUDED.rating,
+                            rated_at = CURRENT_TIMESTAMP
+                    """)
+                    await session.execute(query, {"user_id": user_id, "content_hash": content_hash, "rating": rating})
+                    await session.commit()
+            except Exception as e:
+                logger.error(f"Postgres metrics add_rating error: {e}")
 
     async def get_rating_stats(self, content_hash: str) -> Dict[str, Any]:
         if not content_hash:
@@ -176,16 +187,19 @@ class MetricsRepository:
             except Exception as e:
                 logger.error(f"Supabase metrics get_rating_stats error: {e}")
 
-        async with self.db_manager.connection() as conn:
-            cursor = await conn.execute(
-                "SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE content_hash = ?",
-                (content_hash,),
-            )
-            row = await cursor.fetchone()
-            return {
-                "average": round(row[0], 1) if row and row[0] else 0.0,
-                "count": row[1] if row else 0,
-            }
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    query = text("SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE content_hash = :content_hash")
+                    result = await session.execute(query, {"content_hash": content_hash})
+                    row = result.fetchone()
+                    return {
+                        "average": round(float(row[0]), 1) if row and row[0] is not None else 0.0,
+                        "count": row[1] if row else 0,
+                    }
+            except Exception as e:
+                logger.error(f"Postgres metrics get_rating_stats error: {e}")
+        return {"average": 0.0, "count": 0}
 
     async def get_series_rating_stats(self, series_hash: str) -> Dict[str, Any]:
         """Calcula el promedio y conteo de ratings de todos los libros de una serie."""
@@ -201,7 +215,5 @@ class MetricsRepository:
         }  # Placeholder until series link is established
 
 
-# Singleton
-from core.metrics_db import metrics_db
-
-metrics_repo = MetricsRepository(metrics_db)
+# Global Instance (Singleton) using pg_manager as engine
+metrics_repo = MetricsRepository(None) # db_manager unused after PG migration

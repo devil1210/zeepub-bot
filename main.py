@@ -11,7 +11,6 @@ logging.basicConfig(
     level=getattr(logging, config.LOG_LEVEL.upper(), logging.INFO),
 )
 # Silenciar bibliotecas ruidosas
-logging.getLogger("aiosqlite").setLevel(logging.INFO)
 logging.getLogger("httpcore").setLevel(logging.INFO)
 logging.getLogger("httpx").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,8 +33,7 @@ async def auto_scan_library():
         results = scanner.sync_all(force_scan=False)
         if results:
             logger.info(f"Auto scan completed: {results}")
-        else:
-            logger.warning("Auto scan skipped (already scanning)")
+# Auto scan is now standard, no extra logs here unless needed
             
     except Exception as e:
         logger.error(f"Error in auto scan library: {e}")
@@ -134,9 +132,11 @@ def main():
 
     # Informar sobre la base de datos activa
     if config.DATABASE_URL:
-        logger.info(" Base de Datos: PostgreSQL (Configurada)")
+        logger.info(" Base de Datos: PostgreSQL (Activa - Mandatorio)")
     else:
-        logger.info(" Base de Datos: SQLite (Activa por defecto)")
+        logger.error(" ERROR: DATABASE_URL no configurada. Postgres es requerido.")
+        # Opcionalmente salir si es mandatorio
+        # return
 
     # Initialize application
     asyncio.run(initialize_application())
