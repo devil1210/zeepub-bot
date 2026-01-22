@@ -88,6 +88,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "beta_tester": user.beta_tester,
                             "has_library_access": user.has_library_access,
                             "can_request_books": user.can_request_books,
+                            "can_upload_epub": user.can_upload_epub,
                             "photo_url": user.photo_url
                         }
             except Exception as e:
@@ -96,7 +97,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
         if self.supabase.is_active:
             try:
-                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books, photo_url"
+                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books, photo_url, can_upload_epub"
                 res = self.supabase.get_client().table('users').select(cols).eq('telegram_id', telegram_id).execute()
                 if res.data:
                     user = res.data[0]
@@ -141,6 +142,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "settings": settings,
                         "total_downloads": user['total_downloads'] or 0,
                         "level_id": user.get('level_id', 6),
+                        "can_upload_epub": user.get('can_upload_epub', False),
                         "photo_url": user.get('photo_url')
                     }
                 return None
@@ -150,12 +152,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
 
         async with self.db.connection() as conn:
             cursor = await conn.execute(
-                "SELECT level, expires_at, role, nickname, settings, total_downloads, name, username, level_id, insignias, photo_url FROM users WHERE telegram_id = ?",
+                "SELECT level, expires_at, role, nickname, settings, total_downloads, name, username, level_id, insignias, photo_url, can_upload_epub FROM users WHERE telegram_id = ?",
                 (telegram_id,),
             )
             row = await cursor.fetchone()
             if row:
-                level, expires_at_raw, role, nickname, settings_raw, total_downloads, name, username, level_id, insignias_raw, photo_url = row
+                level, expires_at_raw, role, nickname, settings_raw, total_downloads, name, username, level_id, insignias_raw, photo_url, can_upload_epub = row
                 expires_at = self._parse_datetime(expires_at_raw)
                 import json
                 try:
@@ -180,6 +182,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "total_downloads": total_downloads or 0,
                     "level_id": level_id,
                     "insignias": insignias,
+                    "can_upload_epub": bool(can_upload_epub),
                     "photo_url": photo_url
                 }
             return None
@@ -530,7 +533,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         if self.supabase.is_active:
             try:
                 # Use explicit column list instead of * to avoid error with defunct 'roles' column
-                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books, photo_url"
+                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books, photo_url, can_upload_epub"
                 res = self.supabase.get_client().table('users').select(f"{cols}, level:user_levels(*)").eq('telegram_id', telegram_id).execute()
                 if res.data:
                     user = res.data[0]
