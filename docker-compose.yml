@@ -28,7 +28,7 @@ services:
         condition: service_healthy
         
     ports:
-      - "${DEV_PORT:-8001}:8000"
+      - "${DEV_PORT:-8000}:8000"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     logging:

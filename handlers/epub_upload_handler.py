@@ -333,9 +333,8 @@ class EPUBUploader:
     async def is_admin(self, user_id: int) -> bool:
         """Verifica si el usuario es admin."""
         try:
-            from repositories.user_repository import user_repo
-            user_data = await user_repo.get_by_id(user_id)
-            return user_data and user_data.get('level') == 'admin'
+            from config.config_settings import config
+            return user_id in config.ADMIN_USERS
         except:
             return False
 
