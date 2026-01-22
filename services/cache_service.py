@@ -201,6 +201,10 @@ class CacheManager:
         """Invalida cache de un usuario."""
         await self.user_cache.invalidate(f"user:{telegram_id}")
         self.memory_cache.invalidate(f"user:{telegram_id}")
+
+    async def delete_user(self, telegram_id: int) -> None:
+        """Alias para invalidate_user (compatibilidad con user_repository)."""
+        await self.invalidate_user(telegram_id)
         
     async def get_user_effective(self, telegram_id: int) -> Optional[Dict[str, Any]]:
         """Obtiene usuario efectivo (con defaults)."""
