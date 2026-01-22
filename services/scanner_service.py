@@ -62,11 +62,31 @@ class ScannerService:
                     session.add(source)
                     session.commit()
 
-                source_results = self._scan_directory(source, session, force_scan)
+                source_results, found_files = self._scan_directory(source, session, force_scan)
                 
                 # Update global results
                 for k, v in source_results.items():
                     results[k] += v
+
+                # --- PRUNING: Delete books in DB not found on disk ---
+                try:
+                    # Get all DB filepaths for this source
+                    db_books = session.query(LocalBook.filepath).filter(LocalBook.source_id == source.id).all()
+                    db_paths = {b[0] for b in db_books}
+                    
+                    missing_paths = db_paths - found_files
+                    if missing_paths:
+                        logger.info(f"Detectados {len(missing_paths)} libros eliminados físicamente. Limpiando DB...")
+                        # Delete in chunks to avoid SQL limits if many
+                        missing_list = list(missing_paths)
+                        chunk_size = 500
+                        for i in range(0, len(missing_list), chunk_size):
+                            chunk = missing_list[i:i+chunk_size]
+                            session.query(LocalBook).filter(LocalBook.filepath.in_(chunk)).delete(synchronize_session=False)
+                        
+                        results["removed"] = results.get("removed", 0) + len(missing_paths)
+                except Exception as e:
+                    logger.error(f"Error durante pruning de {name}: {e}")
 
                 source.last_scanned = datetime.utcnow()
                 session.commit()
@@ -125,7 +145,7 @@ class ScannerService:
                     elif res is False: results["failed"] = 1
             else:
                 # Es un directorio
-                source_results = self._scan_directory(source, session, force_scan)
+                source_results, _ = self._scan_directory(source, session, force_scan)
                 results.update(source_results)
 
             session.commit()
@@ -231,11 +251,14 @@ class ScannerService:
             "covers_created": 0
         }
         
+        found_files = set()
         for root, dirs, files in os.walk(source.path):
             for file in files:
                 if file.lower().endswith(".epub"):
                     results["total_scanned"] += 1
                     full_path = os.path.join(root, file)
+                    found_files.add(full_path)
+                    
                     book_result = self._process_book(full_path, source, session, force_scan)
                     
                     if book_result == "added":
@@ -252,7 +275,7 @@ class ScannerService:
                         session.commit()
                         logger.info(f"Progreso de escaneo: {results['added'] + results['updated']} libros procesados en {source.name}")
         
-        return results
+        return results, found_files
 
     def _process_book(self, filepath, source, session, force_scan=False) -> bool:
         """
