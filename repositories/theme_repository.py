@@ -22,12 +22,23 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
     async def ensure_default_themes(self):
         """Si no hay temas en la DB, crea unos por defecto."""
         try:
-            # Check if empty (using SQLite as baseline is enough for sync check)
-            async with self.db.connection() as conn:
-                cursor = await conn.execute("SELECT count(*) FROM app_themes")
-                count = (await cursor.fetchone())[0]
-                if count > 0:
-                    return
+            # Use PostgreSQL if enabled, otherwise SQLite
+            if config.ENABLE_POSTGRES_PLUGIN:
+                async with pg_manager.get_session() as session:
+                    from sqlalchemy import func, text
+                    
+                    # Check if empty using PostgreSQL
+                    result = await session.execute(text("SELECT count(*) FROM app_themes"))
+                    count = result.scalar()
+                    if count > 0:
+                        return
+            else:
+                # Check if empty using SQLite as baseline
+                async with self.db.connection() as conn:
+                    cursor = await conn.execute("SELECT count(*) FROM app_themes")
+                    count = (await cursor.fetchone())[0]
+                    if count > 0:
+                        return
 
             logger.info("Seeding default theme templates...")
             defaults = [
