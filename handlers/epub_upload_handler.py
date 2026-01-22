@@ -219,51 +219,63 @@ class EPUBUploader:
             )
             metadata['book_hash'] = book_hash
             
-            # 1. Verificar si ya existe por HASH en la base de datos
-            metadata['existing_data'] = None
+            # 1. Detección de Conflictos (Identidad vs Ruta)
+            metadata['identity_match'] = None # Coincidencia por HASH
+            metadata['path_match'] = None     # Coincidencia por RUTA (Sobrescritura)
+            metadata['existing_data'] = None  # Metadata para comparar
             
             with get_session() as session:
-                existing = session.query(LocalBook).filter(LocalBook.book_hash == book_hash).first()
-                if existing:
-                    metadata['existing_book_id'] = existing.id
-                    metadata['existing_book_path'] = existing.filepath
+                # Buscar por identidad (Hash)
+                existing_hash = session.query(LocalBook).filter(LocalBook.book_hash == book_hash).first()
+                if existing_hash:
+                    metadata['identity_match'] = {
+                        'id': existing_hash.id,
+                        'path': existing_hash.filepath,
+                    }
                     metadata['existing_data'] = {
-                        'title': existing.title,
-                        'author': existing.author,
-                        'series': existing.series,
-                        'volume': str(existing.volume) if existing.volume else '',
-                        'translator': existing.translator,
-                        'publisher': existing.publisher,
-                        'language': existing.language,
-                        'isbn': existing.isbn,
-                        'tags': existing.tags
+                        'title': existing_hash.title,
+                        'author': existing_hash.author,
+                        'series': existing_hash.series,
+                        'volume': str(existing_hash.volume) if existing_hash.volume else '',
+                        'translator': existing_hash.translator,
+                        'publisher': existing_hash.publisher,
+                        'language': existing_hash.language,
+                        'isbn': existing_hash.isbn,
+                        'tags': existing_hash.tags
                     }
                 
-                # 2. Generar ruta basada en el formato existente de la biblioteca
+                # 2. Generar ruta sugerida
                 metadata['suggested_path'] = self.generate_path(metadata)
                 
-                # 3. Verificar si ya existe un ARCHIVO en esa ruta (aunque el hash sea distinto)
+                # 3. Verificar colisión física por ruta
                 library_base = Path("/library")
                 full_target_path = library_base / metadata['suggested_path']
                 metadata['file_exists'] = full_target_path.exists()
                 
-                if metadata['file_exists'] and not metadata['existing_data']:
-                    # Si el archivo existe pero no coincide el hash, buscar el libro por esa ruta para comparar
-                    existing_by_path = session.query(LocalBook).filter(LocalBook.filepath == metadata['suggested_path']).first()
-                    if existing_by_path:
-                        metadata['existing_data'] = {
-                            'title': existing_by_path.title,
-                            'author': existing_by_path.author,
-                            'series': existing_by_path.series,
-                            'volume': str(existing_by_path.volume) if existing_by_path.volume else '',
-                            'translator': existing_by_path.translator,
-                            'publisher': existing_by_path.publisher,
-                            'language': existing_by_path.language,
-                            'isbn': existing_by_path.isbn,
-                            'tags': existing_by_path.tags
+                # Si el archivo existe físicamente, buscar qué libro es en la BD
+                if metadata['file_exists']:
+                    existing_path = session.query(LocalBook).filter(LocalBook.filepath == metadata['suggested_path']).first()
+                    if existing_path:
+                        metadata['path_match'] = {
+                            'id': existing_path.id,
+                            'path': existing_path.filepath,
                         }
+                        # Si no teníamos metadata por hash (o si es otro libro el que estorba en la ruta),
+                        # priorizamos mostrar la comparación con el que está en la ruta para prevenir errores
+                        if not metadata['identity_match'] or metadata['identity_match']['id'] != metadata['path_match']['id']:
+                             metadata['existing_data'] = {
+                                'title': existing_path.title,
+                                'author': existing_path.author,
+                                'series': existing_path.series,
+                                'volume': str(existing_path.volume) if existing_path.volume else '',
+                                'translator': existing_path.translator,
+                                'publisher': existing_path.publisher,
+                                'language': existing_path.language,
+                                'isbn': existing_path.isbn,
+                                'tags': existing_path.tags
+                            }
             
-            logger.info(f"Successfully extracted metadata: title='{metadata.get('title')}', hash='{book_hash}', path_exists={metadata['file_exists']}")
+            logger.info(f"Successfully extracted metadata: title='{metadata.get('title')}', hash='{book_hash}', identity_match={metadata['identity_match'] is not None}, path_collision={metadata['path_match'] is not None}")
             return metadata
             
         except Exception as e:
@@ -440,32 +452,40 @@ class EPUBUploader:
         `{metadata.get('suggested_path', 'N/A')}`"""
 
         # Alertas de conflictos
-        if metadata.get('existing_book_id'):
-            preview_text += f"\n\n⚠️ **DUPLICADO DETECTADO**\nEste libro (identidad coincidente) ya existe en la biblioteca.\n📍 **Ruta actual:** `{metadata.get('existing_book_path')}`"
-            
-            # Comparar metadatos para ver qué ha cambiado
-            diffs = self.compare_metadata(metadata, metadata.get('existing_data'))
-            if diffs:
-                preview_text += f"\n\n🔍 **Diferencias detectadas:**\n{diffs}"
+        identity_match = metadata.get('identity_match')
+        path_match = metadata.get('path_match')
+        
+        if identity_match:
+            # Caso 1: El libro ya existe (ID idéntico)
+            preview_text += f"\n\n⚠️ **DUPLICADO DETECTADO**\nEsta misma edición ya existe en la biblioteca."
+            if path_match and identity_match['id'] == path_match['id']:
+                preview_text += f"\n📍 **Ubicación coincidente:** `{identity_match['path']}`"
             else:
-                preview_text += f"\n\n✨ La metadata coincide perfectamente con el libro existente."
+                preview_text += f"\n📍 **Se encuentra actualmente en:** `{identity_match['path']}`"
+                preview_text += f"\n📁 **Nueva ubicación sugerida:** `{metadata.get('suggested_path')}`"
             
-            approve_label = "🔄 Reemplazar Existente"
-            callback_prefix = "replace_epub"
-        elif metadata.get('file_exists'):
-            preview_text += f"\n\n⚠️ **CONFLICTO DE ARCHIVO**\nYa existe un archivo en la ruta sugerida, pero con distinta identidad."
-            
-            # Comparar con el libro que ocupa esa ruta
             diffs = self.compare_metadata(metadata, metadata.get('existing_data'))
             if diffs:
-                preview_text += f"\n\n🔍 **Cambios respecto al archivo actual:**\n{diffs}"
+                preview_text += f"\n\n🔍 **Cambios respecto a la versión actual:**\n{diffs}"
             
-            preview_text += f"\n\n¿Deseas sobrescribir el archivo físico?"
+            approve_label = "🔄 Actualizar / Reemplazar"
+            callback_prefix = "replace_epub"
+            
+        elif metadata.get('file_exists'):
+            # Caso 2: Colisión de archivo pero distinta identidad
+            preview_text += f"\n\n⚠️ **CONFLICTO DE FILENAME / RUTA**\nYa existe un archivo llamado `{os.path.basename(metadata['suggested_path'])}` en esa carpeta, pero es un libro distinto (distinto hash)."
+            
+            if path_match:
+                preview_text += f"\n👤 **Libro que estorba:** `{path_match['path']}`"
+                diffs = self.compare_metadata(metadata, metadata.get('existing_data'))
+                if diffs:
+                    preview_text += f"\n\n🔍 **Diferencias con el archivo a sobrescribir:**\n{diffs}"
+            
             approve_label = "⚠️ Sobrescribir Archivo"
             callback_prefix = "overwrite_epub"
         else:
-            preview_text += f"\n\n✅ Este es un libro nuevo para la biblioteca."
-            approve_label = "✅ Aprobar"
+            preview_text += f"\n\n✅ Este es un archivo nuevo para la biblioteca."
+            approve_label = "✅ Aprobar Subida"
             callback_prefix = "approve_epub"
 
         preview_text += "\n\n**¿Cómo deseas proceder?**"
@@ -543,14 +563,25 @@ class EPUBUploader:
             await query.edit_message_text(status_msg)
             
             # Si es reemplazo por hash, eliminar el archivo físico antiguo primero
-            if is_replacement and metadata.get('existing_book_path'):
-                old_path = Path("/library") / metadata['existing_book_path']
+            identity_match = metadata.get('identity_match')
+            if is_replacement and identity_match and identity_match.get('path'):
+                old_path = Path("/library") / identity_match['path']
                 if old_path.exists():
                     try:
                         old_path.unlink()
                         logger.info(f"Deleted old file for replacement: {old_path}")
                     except Exception as e:
                         logger.error(f"Error deleting old file: {e}")
+            
+            # Si es sobrescritura de archivo pero el hash es distinto, el archivo anterior se perderá
+            if not is_replacement and metadata.get('file_exists'):
+                target_path = Path("/library") / suggested_path
+                if target_path.exists():
+                    try:
+                        target_path.unlink()
+                        logger.info(f"Deleted existing file for overwrite collision: {target_path}")
+                    except Exception as e:
+                        logger.error(f"Error deleting existing file for overwrite: {e}")
 
             # Mover archivo a la librería
             success = await self.add_to_library(file_path, suggested_path, metadata)
