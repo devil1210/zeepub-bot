@@ -220,22 +220,48 @@ class EPUBUploader:
             metadata['book_hash'] = book_hash
             
             # 1. Verificar si ya existe por HASH en la base de datos
-            metadata['existing_book_id'] = None
-            metadata['existing_book_path'] = None
+            metadata['existing_data'] = None
             
             with get_session() as session:
                 existing = session.query(LocalBook).filter(LocalBook.book_hash == book_hash).first()
                 if existing:
                     metadata['existing_book_id'] = existing.id
                     metadata['existing_book_path'] = existing.filepath
-            
-            # 2. Generar ruta basada en el formato existente de la biblioteca
-            metadata['suggested_path'] = self.generate_path(metadata)
-            
-            # 3. Verificar si ya existe un ARCHIVO en esa ruta
-            library_base = Path("/library")
-            full_target_path = library_base / metadata['suggested_path']
-            metadata['file_exists'] = full_target_path.exists()
+                    metadata['existing_data'] = {
+                        'title': existing.title,
+                        'author': existing.author,
+                        'series': existing.series,
+                        'volume': str(existing.volume) if existing.volume else '',
+                        'translator': existing.translator,
+                        'publisher': existing.publisher,
+                        'language': existing.language,
+                        'isbn': existing.isbn,
+                        'tags': existing.tags
+                    }
+                
+                # 2. Generar ruta basada en el formato existente de la biblioteca
+                metadata['suggested_path'] = self.generate_path(metadata)
+                
+                # 3. Verificar si ya existe un ARCHIVO en esa ruta (aunque el hash sea distinto)
+                library_base = Path("/library")
+                full_target_path = library_base / metadata['suggested_path']
+                metadata['file_exists'] = full_target_path.exists()
+                
+                if metadata['file_exists'] and not metadata['existing_data']:
+                    # Si el archivo existe pero no coincide el hash, buscar el libro por esa ruta para comparar
+                    existing_by_path = session.query(LocalBook).filter(LocalBook.filepath == metadata['suggested_path']).first()
+                    if existing_by_path:
+                        metadata['existing_data'] = {
+                            'title': existing_by_path.title,
+                            'author': existing_by_path.author,
+                            'series': existing_by_path.series,
+                            'volume': str(existing_by_path.volume) if existing_by_path.volume else '',
+                            'translator': existing_by_path.translator,
+                            'publisher': existing_by_path.publisher,
+                            'language': existing_by_path.language,
+                            'isbn': existing_by_path.isbn,
+                            'tags': existing_by_path.tags
+                        }
             
             logger.info(f"Successfully extracted metadata: title='{metadata.get('title')}', hash='{book_hash}', path_exists={metadata['file_exists']}")
             return metadata
@@ -416,10 +442,25 @@ class EPUBUploader:
         # Alertas de conflictos
         if metadata.get('existing_book_id'):
             preview_text += f"\n\n⚠️ **DUPLICADO DETECTADO**\nEste libro (identidad coincidente) ya existe en la biblioteca.\n📍 **Ruta actual:** `{metadata.get('existing_book_path')}`"
+            
+            # Comparar metadatos para ver qué ha cambiado
+            diffs = self.compare_metadata(metadata, metadata.get('existing_data'))
+            if diffs:
+                preview_text += f"\n\n🔍 **Diferencias detectadas:**\n{diffs}"
+            else:
+                preview_text += f"\n\n✨ La metadata coincide perfectamente con el libro existente."
+            
             approve_label = "🔄 Reemplazar Existente"
             callback_prefix = "replace_epub"
         elif metadata.get('file_exists'):
-            preview_text += f"\n\n⚠️ **CONFLICTO DE ARCHIVO**\nYa existe un archivo en la ruta sugerida, pero con distinta identidad.\n¿Deseas sobrescribir el archivo físico?"
+            preview_text += f"\n\n⚠️ **CONFLICTO DE ARCHIVO**\nYa existe un archivo en la ruta sugerida, pero con distinta identidad."
+            
+            # Comparar con el libro que ocupa esa ruta
+            diffs = self.compare_metadata(metadata, metadata.get('existing_data'))
+            if diffs:
+                preview_text += f"\n\n🔍 **Cambios respecto al archivo actual:**\n{diffs}"
+            
+            preview_text += f"\n\n¿Deseas sobrescribir el archivo físico?"
             approve_label = "⚠️ Sobrescribir Archivo"
             callback_prefix = "overwrite_epub"
         else:
@@ -559,6 +600,48 @@ class EPUBUploader:
         
         # Marcar que estamos esperando edición de ruta
         query.message.chat_data[f'editing_path_{upload_id}'] = True
+
+    def compare_metadata(self, new_data: Dict[str, Any], old_data: Optional[Dict[str, Any]]) -> str:
+        """Compara metadatos y devuelve un string con las diferencias."""
+        if not old_data:
+            return ""
+        
+        diffs = []
+        fields = {
+            'title': 'Título',
+            'author': 'Autor',
+            'series': 'Serie',
+            'volume': 'Volumen',
+            'translator': 'Traductor',
+            'publisher': 'Editorial',
+            'language': 'Idioma',
+            'isbn': 'ISBN'
+        }
+        
+        from utils.helpers import norm_string
+        
+        for key, label in fields.items():
+            new_val = str(new_data.get(key) or '').strip()
+            old_val = str(old_data.get(key) or '').strip()
+            
+            # Usar normalización básica para comparar
+            if norm_string(new_val) != norm_string(old_val):
+                diffs.append(f"🔹 **{label}**: `{old_val or 'N/A'}` ➡️ `{new_val or 'N/A'}`")
+        
+        # Tags (Géneros) - Comparar listas
+        new_tags = set(t.strip().lower() for t in (new_data.get('tags') or '').split(',') if t.strip())
+        old_tags = set(t.strip().lower() for t in (old_data.get('tags') or '').split(',') if t.strip()) if isinstance(old_data.get('tags'), str) else set()
+        
+        if new_tags != old_tags:
+            added = new_tags - old_tags
+            removed = old_tags - new_tags
+            tag_diff = []
+            if added: tag_diff.append(f"🟢 +{', '.join(added)}")
+            if removed: tag_diff.append(f"🔴 -{', '.join(removed)}")
+            if tag_diff:
+                diffs.append(f"🔹 **Géneros**: {' | '.join(tag_diff)}")
+
+        return "\n".join(diffs)
     
     async def add_to_library(self, epub_path: Path, suggested_path: str, metadata: Dict[str, Any]) -> bool:
         """Agrega el EPUB a la librería (solo mueve el archivo, no agrega a BD)."""
