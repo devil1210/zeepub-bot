@@ -43,6 +43,51 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 except Exception:
                     return None
 
+    def _to_dict(self, user: User) -> Dict[str, Any]:
+        """Convierte modelo SQLAlchemy User a dict."""
+        settings = user.settings or {}
+        
+        # Merge structured UI settings
+        if user.ui_settings:
+            ui = user.ui_settings
+            mapping = {
+                "primary_color": "primaryColor",
+                "glass_blur": "glassBlur",
+                "glass_opacity": "glassOpacity",
+                "nav_opacity": "navOpacity",
+                "accent_opacity": "accentOpacity",
+                "card_glow_intensity": "cardGlowIntensity",
+                "background_color": "backgroundColor",
+                "card_color": "cardColor",
+                "font_size": "fontSize",
+                "cover_width": "coverWidth",
+                "theme_type": "theme"
+            }
+            for col, key in mapping.items():
+                val = getattr(ui, col, None)
+                if val is not None:
+                    settings[key] = val
+
+        return {
+            "telegram_id": user.telegram_id,
+            "level": user.level_info.name if user.level_info else "free",
+            "expires_at": user.expires_at,
+            "role": user.role,
+            "nickname": user.nickname,
+            "name": user.name or user.nickname,
+            "username": user.username,
+            "roles": [], 
+            "insignias": user.insignias or [],
+            "settings": settings,
+            "total_downloads": user.total_downloads or 0,
+            "level_id": user.level_id or 6,
+            "beta_tester": user.beta_tester,
+            "has_library_access": user.has_library_access,
+            "can_request_books": user.can_request_books,
+            "can_upload_epub": user.can_upload_epub,
+            "photo_url": user.photo_url
+        }
+
     async def get_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
         # 1. Cache-First
         cached_user = await cache_manager.get_user(telegram_id)
@@ -61,46 +106,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 user = result.scalar_one_or_none()
                 
                 if user:
-                    settings = user.settings or {}
-                    if user.ui_settings:
-                        ui = user.ui_settings
-                        mapping = {
-                            "primary_color": "primaryColor",
-                            "glass_blur": "glassBlur",
-                            "glass_opacity": "glassOpacity",
-                            "nav_opacity": "navOpacity",
-                            "accent_opacity": "accentOpacity",
-                            "card_glow_intensity": "cardGlowIntensity",
-                            "background_color": "backgroundColor",
-                            "card_color": "cardColor",
-                            "font_size": "fontSize",
-                            "cover_width": "coverWidth",
-                            "theme_type": "theme"
-                        }
-                        for col, key in mapping.items():
-                            val = getattr(ui, col, None)
-                            if val is not None:
-                                settings[key] = val
-
-                    return {
-                        "telegram_id": user.telegram_id,
-                        "level": user.level_id,
-                        "expires_at": user.expires_at,
-                        "role": user.role,
-                        "nickname": user.nickname,
-                        "name": user.name or user.nickname,
-                        "username": user.username,
-                        "roles": [], 
-                        "insignias": user.insignias or [],
-                        "settings": settings,
-                        "total_downloads": user.total_downloads or 0,
-                        "level_id": user.level_id,
-                        "beta_tester": user.beta_tester,
-                        "has_library_access": user.has_library_access,
-                        "can_request_books": user.can_request_books,
-                        "can_upload_epub": user.can_upload_epub,
-                        "photo_url": user.photo_url
-                    }
+                    return self._to_dict(user)
         except Exception as e:
             logger.error(f"Postgres ORM Error in get_by_id: {e}")
 
@@ -111,6 +117,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 res = self.supabase.get_client().table('users').select(cols).eq('telegram_id', telegram_id).execute()
                 if res.data:
                     user = res.data[0]
+                    # basic mapping for fallback
                     return {
                         "telegram_id": int(user['telegram_id']),
                         "level": user.get('level', 'free'),
@@ -131,6 +138,127 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 logger.error(f"Supabase error in get_by_id: {e}")
 
         return None
+
+    # ... CRUD methods ... (create, update, delete, upsert kept as is or simplified)
+
+    async def get_all_levels(self) -> List[Dict[str, Any]]:
+        """Devuelve todos los niveles de usuario disponibles."""
+        try:
+            async with pg_manager.get_session() as session:
+                stmt = select(UserLevel).order_by(UserLevel.priority.desc())
+                result = await session.execute(stmt)
+                levels = result.scalars().all()
+                
+                return [
+                    {
+                        "id": l.id,
+                        "name": l.name,
+                        "priority": l.priority,
+                        "color": l.color,
+                        "price": l.price,
+                        "dailyDownloads": l.daily_downloads,
+                        "canDownload": l.can_download,
+                        "canRead": l.can_read,
+                        "hasAccess": l.has_mini_app_access
+                    }
+                    for l in levels
+                ]
+        except Exception as e:
+            logger.error(f"Error fetching user levels: {e}")
+            return []
+
+    async def update_user_level(self, telegram_id: int, level_name: str, days: int = 30) -> bool:
+        """Actualiza el nivel de un usuario y su fecha de expiración."""
+        try:
+            from datetime import timedelta
+            
+            async with pg_manager.get_session() as session:
+                # 1. Obtener el nivel por nombre (case insensitive)
+                stmt_lvl = select(UserLevel).where(UserLevel.name.ilike(level_name))
+                res_lvl = await session.execute(stmt_lvl)
+                level_obj = res_lvl.scalar_one_or_none()
+                
+                if not level_obj:
+                    logger.error(f"Level '{level_name}' not found.")
+                    return False
+                
+                # 2. Obtener usuario
+                stmt_user = select(User).where(User.telegram_id == telegram_id)
+                res_user = await session.execute(stmt_user)
+                user = res_user.scalar_one_or_none()
+                
+                if not user:
+                    # Crear usuario on-the-fly si no existe (raro pero posible)
+                    user = User(telegram_id=telegram_id, nickname=f"User_{telegram_id}")
+                    session.add(user)
+                
+                # 3. Actualizar
+                user.level_id = level_obj.id
+                user.expires_at = datetime.utcnow() + timedelta(days=days)
+                
+                # Si el nivel es admin/staff, actualizar role también
+                if level_name in ('admin', 'staff'):
+                    user.role = level_name
+                
+                await session.commit()
+                
+                # Sincronizar con Supabase si está activo
+                if self.supabase.is_active:
+                    try:
+                        self.supabase.get_client().table('users').update({
+                            "level": level_name,
+                            "level_id": level_obj.id,
+                            "expires_at": user.expires_at.isoformat(),
+                            "role": user.role
+                        }).eq('telegram_id', telegram_id).execute()
+                    except Exception as s_err:
+                        logger.warning(f"Supabase tier sync failed: {s_err}")
+
+                # Invalidar caché
+                await cache_manager.delete_user(telegram_id)
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error updating user level: {e}")
+            return False
+
+    async def list_users(self, limit: int = 50, offset: int = 0, search: str = None) -> List[Dict[str, Any]]:
+        """Listar usuarios para el panel de administración con paginación y búsqueda."""
+        try:
+            async with pg_manager.get_session() as session:
+                query = select(User).options(selectinload(User.level_info))
+                
+                if search:
+                    term = f"%{search}%"
+                    query = query.filter(
+                        (User.name.ilike(term)) | 
+                        (User.username.ilike(term)) | 
+                        (User.nickname.ilike(term)) |
+                        (User.telegram_id.cast(String).like(term))
+                    )
+                
+                query = query.order_by(User.created_at.desc()).limit(limit).offset(offset)
+                
+                result = await session.execute(query)
+                users = result.scalars().all()
+                
+                return [self._to_dict(u) for u in users]
+        except Exception as e:
+            logger.error(f"Error listing users: {e}")
+            return []
+
+    async def get_all_user_ids_and_settings(self) -> List[tuple]:
+        """Returns a list of (telegram_id, settings_dict) for all users."""
+        try:
+            async with pg_manager.get_session() as session:
+                stmt = select(User.telegram_id, User.settings)
+                result = await session.execute(stmt)
+                return result.fetchall()
+        except Exception as e:
+            logger.error(f"Error getting all users for recommendations: {e}")
+            return []
+
+user_repo = UserRepository()
 
     async def create(self, entity: Dict[str, Any]) -> Dict[str, Any]:
         return await self.upsert(

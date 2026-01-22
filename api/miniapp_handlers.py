@@ -756,7 +756,7 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
             logger.error(f"Supabase popular book error: {e}")
     else:
         from core.db_manager_pg import pg_manager
-        from sqlalchemy import text, select, or_
+        from sqlalchemy import text, select
         from models.library_models import LocalBook
         try:
             async with pg_manager.get_session() as session:
