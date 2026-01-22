@@ -42,19 +42,55 @@ class ThemeSyncService:
             'updated_at': t.updated_at
         } for t in themes]
     
+    async def ensure_theme_sync_logs_table(self, session: AsyncSession):
+        """Asegurar que la tabla theme_sync_logs exista."""
+        try:
+            await session.execute(text("""
+                CREATE TABLE IF NOT EXISTS theme_sync_logs (
+                    id SERIAL PRIMARY KEY,
+                    sync_type VARCHAR(50) NOT NULL,
+                    direction VARCHAR(50) NOT NULL,
+                    status VARCHAR(50) NOT NULL,
+                    local_themes_before INTEGER DEFAULT 0,
+                    local_themes_after INTEGER DEFAULT 0,
+                    supabase_themes_before INTEGER DEFAULT 0,
+                    supabase_themes_after INTEGER DEFAULT 0,
+                    themes_added INTEGER DEFAULT 0,
+                    themes_updated INTEGER DEFAULT 0,
+                    themes_deleted INTEGER DEFAULT 0,
+                    errors TEXT,
+                    started_at TIMESTAMP NOT NULL,
+                    completed_at TIMESTAMP NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # Crear índices
+            await session.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_theme_sync_logs_status ON theme_sync_logs(status)
+            """))
+            
+            await session.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_theme_sync_logs_started_at ON theme_sync_logs(started_at)
+            """))
+            
+            await session.commit()
+            logger.info("theme_sync_logs table ensured")
+        except Exception as e:
+            logger.error(f"Error ensuring theme_sync_logs table: {e}")
+            raise
+    
     async def get_supabase_themes(self) -> List[Dict[str, Any]]:
         """Obtener todos los temas de Supabase."""
         if not supabase_manager.is_active:
             return []
         
         try:
-            result = supabase_manager.execute_query("app_themes", "select")
-            if result and result.data:
-                return result.data
+            result = supabase_manager.get_client().table('app_themes').select("*").execute()
+            return result.data if result and result.data else []
         except Exception as e:
             logger.error(f"Error getting Supabase themes: {e}")
-        
-        return []
+            return []
     
     def theme_to_dict(self, theme: AppTheme) -> Dict[str, Any]:
         """Convertir AppTheme a diccionario."""
@@ -148,21 +184,22 @@ class ThemeSyncService:
             
             if local_theme['name'] not in supabase_names:
                 # Agregar a Supabase
-                result = supabase_manager.execute_query("app_themes", "insert", data=theme_data)
-                if result:
-                    added_count += 1
-                    logger.info(f"Added theme to Supabase: {local_theme['name']}")
+                try:
+                    result = supabase_manager.get_client().table('app_themes').insert(theme_data).execute()
+                    if result:
+                        added_count += 1
+                        logger.info(f"Added theme to Supabase: {local_theme['name']}")
+                except Exception as e:
+                    logger.error(f"Error adding theme to Supabase: {e}")
             else:
                 # Actualizar en Supabase
-                result = supabase_manager.execute_query(
-                    "app_themes", "update",
-                    data=theme_data,
-                    match_col="name",
-                    match_val=local_theme['name']
-                )
-                if result:
-                    updated_count += 1
-                    logger.info(f"Updated theme in Supabase: {local_theme['name']}")
+                try:
+                    result = supabase_manager.get_client().table('app_themes').update(theme_data).eq('name', local_theme['name']).execute()
+                    if result:
+                        updated_count += 1
+                        logger.info(f"Updated theme in Supabase: {local_theme['name']}")
+                except Exception as e:
+                    logger.error(f"Error updating theme in Supabase: {e}")
         
         return added_count, updated_count
     
@@ -180,37 +217,8 @@ class ThemeSyncService:
         logger.info("Starting initial theme sync from Supabase to local")
         
         async with pg_manager.get_session() as session:
-            # Crear tabla de logs si no existe
-            await session.execute(text("""
-                CREATE TABLE IF NOT EXISTS theme_sync_logs (
-                    id SERIAL PRIMARY KEY,
-                    sync_type VARCHAR(50) NOT NULL,
-                    direction VARCHAR(50) NOT NULL,
-                    status VARCHAR(50) NOT NULL,
-                    local_themes_before INTEGER DEFAULT 0,
-                    local_themes_after INTEGER DEFAULT 0,
-                    supabase_themes_before INTEGER DEFAULT 0,
-                    supabase_themes_after INTEGER DEFAULT 0,
-                    themes_added INTEGER DEFAULT 0,
-                    themes_updated INTEGER DEFAULT 0,
-                    themes_deleted INTEGER DEFAULT 0,
-                    errors TEXT,
-                    started_at TIMESTAMP NOT NULL,
-                    completed_at TIMESTAMP NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
-            
-            # Crear índices para mejor rendimiento
-            await session.execute(text("""
-                CREATE INDEX IF NOT EXISTS idx_theme_sync_logs_status ON theme_sync_logs(status)
-            """))
-            
-            await session.execute(text("""
-                CREATE INDEX IF NOT EXISTS idx_theme_sync_logs_started_at ON theme_sync_logs(started_at)
-            """))
-            
-            await session.commit()
+            # Asegurar que la tabla de logs exista
+            await self.ensure_theme_sync_logs_table(session)
             
             # Contar temas antes
             local_before = len(await self.get_local_themes(session))
@@ -266,6 +274,9 @@ class ThemeSyncService:
         logger.info("Starting daily bidirectional theme sync")
         
         async with pg_manager.get_session() as session:
+            # Asegurar que la tabla de logs exista
+            await self.ensure_theme_sync_logs_table(session)
+            
             local_before = len(await self.get_local_themes(session))
             supabase_before = len(await self.get_supabase_themes())
             
@@ -319,6 +330,9 @@ class ThemeSyncService:
         logger.info("Starting manual bidirectional theme sync")
         
         async with pg_manager.get_session() as session:
+            # Asegurar que la tabla de logs exista
+            await self.ensure_theme_sync_logs_table(session)
+            
             local_before = len(await self.get_local_themes(session))
             supabase_before = len(await self.get_supabase_themes())
             
