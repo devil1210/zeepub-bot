@@ -1567,68 +1567,101 @@ async def handle_admin_force_sync(data: Dict[str, Any], user_data: Dict[str, Any
         return {"success": False, "message": str(e)}
 
 async def handle_admin_rename_themes(data: Dict[str, Any], user_data: Dict[str, Any]):
-    """Renombra temas duplicados con nombres únicos."""
+    """Renombra temas duplicados con nombres únicos usando detección mejorada."""
     if user_data.get("level") != "admin":
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     from sqlalchemy import text
     
-    # Mapeo de temas con "2" al final a nuevos nombres únicos
-    THEME_RENAMES = {
-        "Amoled Black 2": "Midnight Black",
-        "Emerald Night 2": "Forest Green", 
-        "Ocean Deep 2": "Deep Ocean",
-        "Sunset Orange 2": "Golden Hour",
-        "Purple Haze 2": "Lavender Dream",
-        "Dark Blue 2": "Navy Blue",
-        "Light Theme 2": "Pure White",
-        "Rose Gold 2": "Pink Champagne",
-        "Cyberpunk 2": "Neon Lights",
-        "Minimal Dark 2": "Clean Slate"
-    }
-    
     try:
         from core.db_manager_pg import pg_manager
         
         async with pg_manager.get_session() as session:
-            # Verificar temas existentes
+            # 1. Obtener TODOS los temas existentes
             result = await session.execute(text("SELECT id, name FROM app_themes ORDER BY name"))
-            existing_themes = result.fetchall()
+            all_themes = result.fetchall()
             
-            logger.info(f"Found {len(existing_themes)} themes")
+            logger.info(f"Found {len(all_themes)} total themes")
             
-            # Renombrar temas
+            # 2. Encontrar temas que terminan con " 2" o contienen "2"
+            themes_to_rename = []
+            for theme in all_themes:
+                name = theme[1]
+                if name and ('2' in name):
+                    # Priorizar temas que terminan exactamente con " 2"
+                    if name.strip().endswith('2'):
+                        themes_to_rename.append(theme)
+                        logger.info(f"Found theme ending with '2': ID {theme[0]}, Name: '{name}'")
+                    else:
+                        logger.info(f"Theme containing '2' (not ending): ID {theme[0]}, Name: '{name}'")
+            
+            if not themes_to_rename:
+                logger.info("No themes found ending with '2'")
+                return {
+                    "success": True, 
+                    "message": "No se encontraron temas que terminen en '2' para renombrar",
+                    "renamed_count": 0
+                }
+            
+            logger.info(f"Found {len(themes_to_rename)} themes to rename")
+            
+            # 3. Renombrar con nombres únicos generados automáticamente
             renamed_count = 0
-            for old_name, new_name in THEME_RENAMES.items():
-                # Verificar si el tema con "2" existe
-                result = await session.execute(text("SELECT id FROM app_themes WHERE name = :old_name"), {"old_name": old_name})
-                theme_to_rename = result.fetchone()
+            import time
+            
+            for theme_id, old_name in themes_to_rename:
+                # Extraer el nombre base
+                base_name = old_name.replace(' 2', '').replace('2', '').strip()
                 
-                if theme_to_rename:
-                    theme_id = theme_to_rename[0]
+                # Generar nombres únicos
+                name_variants = [
+                    f"{base_name} Pro",
+                    f"{base_name} Plus", 
+                    f"{base_name} Advanced",
+                    f"{base_name} Premium",
+                    f"{base_name} Elite",
+                    f"{base_name} Max",
+                    f"{base_name} Ultra",
+                    f"{base_name} Special",
+                    f"{base_name} Enhanced",
+                    f"{base_name} Professional",
+                    f"{base_name} Modern",
+                    f"{base_name} Classic",
+                    f"{base_name} Dark",
+                    f"{base_name} Light",
+                    f"Dark {base_name}",
+                    f"Light {base_name}",
+                    f"Deep {base_name}",
+                    f"Soft {base_name}",
+                    f"Neo {base_name}"
+                ]
+                
+                # Buscar nombre único
+                new_name = None
+                for candidate in name_variants:
+                    result = await session.execute(text("SELECT id FROM app_themes WHERE name = :candidate"), {"candidate": candidate})
+                    existing = result.fetchone()
                     
-                    # Verificar si el nuevo nombre ya existe
-                    result = await session.execute(text("SELECT id FROM app_themes WHERE name = :new_name"), {"new_name": new_name})
-                    existing_new = result.fetchone()
-                    
-                    if existing_new:
-                        logger.warning(f"Cannot rename '{old_name}' to '{new_name}' - '{new_name}' already exists")
-                        continue
-                    
-                    # Actualizar el nombre
-                    await session.execute(
-                        text("UPDATE app_themes SET name = :new_name, updated_at = CURRENT_TIMESTAMP WHERE id = :theme_id"),
-                        {"new_name": new_name, "theme_id": theme_id}
-                    )
-                    
-                    logger.info(f"Renamed theme ID {theme_id}: '{old_name}' → '{new_name}'")
-                    renamed_count += 1
-                else:
-                    logger.info(f"Theme '{old_name}' not found, skipping")
+                    if not existing:
+                        new_name = candidate
+                        break
+                
+                if not new_name:
+                    # Último recurso: timestamp
+                    new_name = f"{base_name} ({int(time.time())})"
+                
+                # Realizar renombrado
+                await session.execute(
+                    text("UPDATE app_themes SET name = :new_name, updated_at = CURRENT_TIMESTAMP WHERE id = :theme_id"),
+                    {"new_name": new_name, "theme_id": theme_id}
+                )
+                
+                logger.info(f"Renamed theme ID {theme_id}: '{old_name}' → '{new_name}'")
+                renamed_count += 1
             
             await session.commit()
             
-            logger.info(f"Theme renaming completed. {renamed_count} themes renamed.")
+            logger.info(f"Enhanced theme renaming completed. {renamed_count} themes renamed.")
             
             return {
                 "success": True, 
@@ -1637,7 +1670,7 @@ async def handle_admin_rename_themes(data: Dict[str, Any], user_data: Dict[str, 
             }
             
     except Exception as e:
-        logger.error(f"Error renaming themes: {e}")
+        logger.error(f"Error in enhanced theme renaming: {e}")
         return {"success": False, "message": str(e)}
 
 async def handle_admin_get_theme_sync_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
