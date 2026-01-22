@@ -273,8 +273,8 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         </div>
 
         <div
-          className="relative w-full px-4 sm:px-6 lg:px-8 pb-10 z-20"
-          style={{ paddingTop: '5rem' }}
+          className="relative w-full px-4 sm:px-6 lg:px-8 pb-6 z-20"
+          style={{ paddingTop: '3rem' }}
         >
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
             <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 shadow-2xl rounded-lg overflow-hidden">
