@@ -1399,39 +1399,47 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
     tier_id = data.get("id")
     
     try:
-        # Check if it's the global tier
-        if tier_id == "global" or (tier_name and "Global" in str(tier_name)):
+        # Check if it's the global tier (case-insensitive)
+        is_global = False
+        if tier_id and str(tier_id).lower() == "global":
+            is_global = True
+        elif tier_name and "global" in str(tier_name).lower():
+            is_global = True
+
+        if is_global:
             global_raw = get_setting("ui_defaults_global", "{}")
             g = json.loads(global_raw)
+            global_config = {
+                "id": "global",
+                "name": "Global",
+                "icon": "globe",
+                "color": "#ffffff",
+                "dailyDownloads": -1,
+                "maxConcurrent": 10,
+                "priorityRequests": True,
+                "earlyAccess": True,
+                "customThemes": True,
+                "primaryColor": g.get("primaryColor", "#2b6cee"),
+                "glassOpacity": g.get("glassOpacity", 0.6),
+                "theme": g.get("theme", "dark"),
+                "fontSize": g.get("fontSize", 14),
+                "glassBlur": g.get("glassBlur", 12),
+                "coverWidth": g.get("coverWidth", 120),
+                "navOpacity": g.get("navOpacity", 0.8),
+                "accentOpacity": g.get("accentOpacity", 0.2),
+                "showRecommendations": g.get("showRecommendations", True),
+                "canDownload": g.get("canDownload", True),
+                "canRead": g.get("canRead", True),
+                "forceSettings": g.get("forceSettings", False),
+                "cardGlowIntensity": g.get("cardGlowIntensity", 0.5),
+                "backgroundColor": g.get("backgroundColor", "#0f172a"),
+                "cardColor": g.get("cardColor", "#1e293b"),
+                "bannerContentOffset": g.get("bannerContentOffset", 0)
+            }
             return {
                 "success": True,
-                "tier": {
-                    "id": "global",
-                    "name": "Global",
-                    "icon": "globe",
-                    "color": "#ffffff",
-                    "dailyDownloads": -1,
-                    "maxConcurrent": 10,
-                    "priorityRequests": True,
-                    "earlyAccess": True,
-                    "customThemes": True,
-                    "primaryColor": g.get("primaryColor", "#2b6cee"),
-                    "glassOpacity": g.get("glassOpacity", 0.6),
-                    "theme": g.get("theme", "dark"),
-                    "fontSize": g.get("fontSize", 14),
-                    "glassBlur": g.get("glassBlur", 12),
-                    "coverWidth": g.get("coverWidth", 120),
-                    "navOpacity": g.get("navOpacity", 0.8),
-                    "accentOpacity": g.get("accentOpacity", 0.2),
-                    "showRecommendations": g.get("showRecommendations", True),
-                    "canDownload": g.get("canDownload", True),
-                    "canRead": g.get("canRead", True),
-                    "forceSettings": g.get("forceSettings", False),
-                    "cardGlowIntensity": g.get("cardGlowIntensity", 0.5),
-                    "backgroundColor": g.get("backgroundColor", "#0f172a"),
-                    "cardColor": g.get("cardColor", "#1e293b"),
-                    "bannerContentOffset": g.get("bannerContentOffset", 0)
-                }
+                "config": global_config,
+                "tier": global_config
             }
 
         # Use cached repo method instead of direct Supabase call
