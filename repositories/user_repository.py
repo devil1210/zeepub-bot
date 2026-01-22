@@ -226,6 +226,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         can_request_books: Optional[bool] = None,
         can_upload_epub: Optional[bool] = None,
         photo_url: Optional[str] = None,
+        settings: Optional[dict] = None,
+        allow_theme_templates: Optional[bool] = None,
     ):
         # Admin level mapping
         level_to_tier_id = {
@@ -257,6 +259,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if can_request_books is not None: data["can_request_books"] = can_request_books
                 if can_upload_epub is not None: data["can_upload_epub"] = can_upload_epub
                 if photo_url is not None: data["photo_url"] = photo_url
+                if settings is not None: data["settings"] = json.dumps(settings)
+                if allow_theme_templates is not None: data["allow_theme_templates"] = allow_theme_templates
                 
                 logger.debug(f"[SUPABASE UPSERT] Data: {data}")
                 self.supabase.get_client().table('users').upsert(data).execute()
@@ -292,6 +296,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     if can_request_books is not None: user.can_request_books = can_request_books
                     if can_upload_epub is not None: user.can_upload_epub = can_upload_epub
                     if photo_url is not None: user.photo_url = photo_url
+                    if settings is not None: user.settings = settings
+                    if allow_theme_templates is not None: user.allow_theme_templates = allow_theme_templates
                     
                     await session.commit()
                     logger.info(f"[POSTGRES UPSERT] Success for user {telegram_id}")
@@ -347,6 +353,12 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if photo_url is not None:
                     fields.append("photo_url = ?")
                     params.append(photo_url)
+                if settings is not None:
+                    fields.append("settings = ?")
+                    params.append(json.dumps(settings))
+                if allow_theme_templates is not None:
+                    fields.append("allow_theme_templates = ?")
+                    params.append(1 if allow_theme_templates else 0)
 
                 params.append(telegram_id)
                 sql = f"UPDATE users SET {', '.join(fields)} WHERE telegram_id = ?"
@@ -354,7 +366,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             else:
                 import json
                 await conn.execute(
-                    "INSERT INTO users (telegram_id, level, level_id, added_at, expires_at, role, created_by, nickname, name, username, roles, insignias, has_library_access, can_request_books, can_upload_epub, settings, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)",
+                    "INSERT INTO users (telegram_id, level, level_id, added_at, expires_at, role, created_by, nickname, name, username, roles, insignias, has_library_access, can_request_books, can_upload_epub, allow_theme_templates, settings, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)",
                     (
                         telegram_id,
                         lvl_str,
@@ -371,6 +383,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         int(has_library_access if has_library_access is not None else True),
                         int(can_request_books if can_request_books is not None else True),
                         int(can_upload_epub if can_upload_epub is not None else False),
+                        int(allow_theme_templates if allow_theme_templates is not None else False),
+                        json.dumps(settings) if settings is not None else '{}',
                         photo_url
                     ),
                 )

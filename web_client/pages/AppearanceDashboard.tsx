@@ -300,6 +300,17 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                 <div className="flex flex-col gap-3">
                     <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">Selecciona el Nivel para editar:</label>
                     <div className="flex flex-wrap items-center gap-2">
+                        {/* Global Selector */}
+                        <button
+                            onClick={() => loadLevelConfig('global')}
+                            className={`px-5 py-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all ${selectedLevelId === 'global'
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-600/20 scale-105 z-10'
+                                : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/20'
+                                }`}
+                        >
+                            Global
+                        </button>
+
                         {tiers.map((t) => {
                             const isSelected = String(selectedLevelId) === String(t.id);
                             return (

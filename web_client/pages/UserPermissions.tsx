@@ -16,7 +16,8 @@ import {
   Home,
   Library,
   BookOpen,
-  Upload
+  Upload,
+  Palette
 } from 'lucide-react';
 import { api } from '../src/services/api';
 import { useTheme } from '../contexts/ThemeContext';
@@ -56,7 +57,9 @@ interface PermissionsState {
   hasLibraryAccess: boolean;
   canRequestBooks: boolean;
   canUploadEpub: boolean;
+  allowThemeTemplates: boolean;
   photoUrl?: string;
+  settings?: any;
 }
 
 interface Level {
@@ -90,6 +93,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
 
   // Available levels from database
   const [allLevels, setAllLevels] = useState<Level[]>([]);
+  const [allThemes, setAllThemes] = useState<any[]>([]);
   const [initialPermissions, setInitialPermissions] = useState<PermissionsState | null>(null);
 
   const [permissions, setPermissions] = useState<PermissionsState>({
@@ -109,7 +113,9 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
     hasLibraryAccess: true,
     canRequestBooks: true,
     canUploadEpub: false,
+    allowThemeTemplates: false,
     photoUrl: userData?.avatar || '',
+    settings: {},
   });
 
   // Audit history state
@@ -146,6 +152,16 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           ]);
         }
 
+        // Fetch all available themes
+        try {
+          const themesRes = await api.getAvailableThemes();
+          if (themesRes.success && Array.isArray(themesRes.themes)) {
+            setAllThemes(themesRes.themes);
+          }
+        } catch (e) {
+          console.error('Error loading themes:', e);
+        }
+
         // Fetch user permissions if userId is available
         const userIdToFetch = userId || userData?.id;
         if (userIdToFetch) {
@@ -176,7 +192,9 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 hasLibraryAccess: res.user.hasLibraryAccess ?? true,
                 canRequestBooks: res.user.canRequestBooks ?? true,
                 canUploadEpub: res.user.canUploadEpub ?? false,
+                allowThemeTemplates: res.user.allowThemeTemplates ?? false,
                 photoUrl: res.user.photo_url || '',
+                settings: res.user.settings || {},
               };
               console.log('[UserPermissions] Setting permissions to:', newPerms);
               setPermissions(newPerms);
@@ -271,7 +289,8 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           betaTester: tier.earlyAccess || false,
           hasLibraryAccess: tier.name.toLowerCase() !== 'lector', // For example
           canRequestBooks: true,
-          canUploadEpub: tier.canUploadEpub || false
+          canUploadEpub: tier.canUploadEpub || false,
+          allowThemeTemplates: tier.allowThemeTemplates || false
         }));
       }
     } catch (err) {
@@ -309,6 +328,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           level: tier.name.toLowerCase() === 'administrador' ? 'admin' : 'free',
           role: '',
           canUploadEpub: tier.canUploadEpub || false,
+          allowThemeTemplates: tier.allowThemeTemplates || false,
         });
       }
     } catch (err) {
@@ -341,6 +361,8 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
         insignias: permissions.insignias,
         expiresAt: permissions.expiresAt,
         canUploadEpub: permissions.canUploadEpub,
+        allowThemeTemplates: permissions.allowThemeTemplates,
+        settings: permissions.settings,
       });
 
       if (res.success) {
@@ -659,6 +681,26 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                   </label>
                 </div>
 
+                {/* Allow Theme Templates Toggle */}
+                <div className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-white/5 transition-colors">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-white">Permitir Selección de Temas</span>
+                      <Palette className="w-4 h-4 text-pink-400" />
+                    </div>
+                    <p className="text-sm text-gray-400">Permite al usuario ver la lista de temas y cambiar su estilo visual.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={permissions.allowThemeTemplates}
+                      onChange={(e) => setPermissions({ ...permissions, allowThemeTemplates: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+
                 {/* Admin Access - Red Zone */}
                 <div className="px-6 py-4 flex items-center justify-between gap-4 bg-red-900/10 border-l-4 border-l-red-500">
                   <div>
@@ -764,6 +806,56 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       ))}
                     </div>
                   </div>
+                </div>
+
+                {/* Theme Selector Section */}
+                <div className="mt-8 border-t border-white/5 pt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Palette className="w-4 h-4 text-primary" />
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plantilla Visual (Personalizada)</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="relative">
+                      <select
+                        onChange={(e) => {
+                          const theme = allThemes.find(t => String(t.id) === e.target.value);
+                          if (theme) {
+                            setPermissions(prev => ({
+                              ...prev,
+                              settings: {
+                                ...prev.settings,
+                                theme: theme.theme_type,
+                                primaryColor: theme.primaryColor || theme.primary_color,
+                                backgroundColor: theme.backgroundColor || theme.background_color,
+                                cardColor: theme.cardColor || theme.card_color,
+                                glassBlur: theme.glassBlur || theme.glass_blur,
+                                glassOpacity: theme.glassOpacity || theme.glass_opacity,
+                                navOpacity: theme.navOpacity || theme.nav_opacity,
+                                accentOpacity: theme.accentOpacity || theme.accent_opacity,
+                                cardGlowIntensity: theme.cardGlowIntensity || theme.card_glow_intensity || 0.5,
+                              }
+                            }));
+                          }
+                        }}
+                        className="appearance-none w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:ring-primary focus:border-primary pr-10"
+                        defaultValue=""
+                      >
+                        <option value="" disabled>Aplicar tema guardado...</option>
+                        {allThemes.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-xl">
+                      <div className="w-8 h-8 rounded-lg" style={{ backgroundColor: permissions.settings?.primaryColor || '#3b82f6' }}></div>
+                      <div>
+                        <p className="text-[9px] font-black text-primary uppercase tracking-widest">Color Activo</p>
+                        <p className="text-[10px] text-gray-400 font-mono">{permissions.settings?.primaryColor || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[9px] text-gray-500 italic">Aplicar una plantilla sobreescribirá los ajustes visuales actuales de este usuario.</p>
                 </div>
               </div>
 

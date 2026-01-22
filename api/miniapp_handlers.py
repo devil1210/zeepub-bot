@@ -1327,8 +1327,11 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     tier_name = data.get("name")
+    level_id = data.get("level_id") or data.get("id")
+    
     try:
-        if tier_name == "Global" or (tier_name and "Global" in str(tier_name)) or data.get("id") == "global":
+        is_global = (level_id == "global" or tier_name == "Global" or (tier_name and "Global" in str(tier_name)))
+        if is_global:
             # Global settings are stored in bot_settings table
             # Filter out non-UI fields for global UI defaults
             ui_settings = {}
@@ -1374,16 +1377,17 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             logger.info(f"ADMIN: Saved GLOBAL tier config locally and to Supabase (if active)")
             return {"success": True, "tierId": "global"}
 
-        # from core.supabase_client import get_supabase_client
+        # Determine tier_id
         client = supabase_manager.get_client()
-        
-        # Find tier by name
-        result = client.table('user_levels').select('id').ilike('name', tier_name).execute()
-        
-        if not result.data:
-            raise HTTPException(status_code=404, detail=f"Tier '{tier_name}' no encontrado")
-        
-        tier_id = result.data[0]['id']
+        tier_id = None
+        if level_id and str(level_id).isdigit():
+            tier_id = int(level_id)
+        else:
+            # Find tier by name
+            result = client.table('user_levels').select('id').ilike('name', tier_name).execute()
+            if not result.data:
+                raise HTTPException(status_code=404, detail=f"Tier '{tier_name}' no encontrado")
+            tier_id = result.data[0]['id']
         
         # Build update data
         update_data = {
@@ -1527,13 +1531,16 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
         tier = None
         if tier_id:
             tier = await user_repo.get_level_by_id(int(tier_id))
-        else:
+        elif tier_name and str(tier_name).isdigit():
+            # If name is numeric, treat as ID
+            tier = await user_repo.get_level_by_id(int(tier_name))
+        elif tier_name:
             # Fallback to fetching all and finding by name if no ID
             all_lvls = await user_repo.get_all_levels()
             tier = next((l for l in all_lvls if l['name'].lower() == tier_name.lower()), None)
         
         if not tier:
-            raise HTTPException(status_code=404, detail="Tier no encontrado")
+            raise HTTPException(status_code=404, detail=f"Tier '{tier_name or tier_id}' no encontrado")
         
         # Maps keys (note: user_repo.get_level_by_id already does most of this mapping)
         return {
@@ -1869,7 +1876,9 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             "expiresAt": "expires_at",
             "canRequestBooks": "can_request_books",
             "hasLibraryAccess": "has_library_access",
-            "canUploadEpub": "can_upload_epub"
+            "canUploadEpub": "can_upload_epub",
+            "settings": "settings",
+            "allowThemeTemplates": "allow_theme_templates"
         }
         
         for frontend_key, db_key in fields_to_track.items():
@@ -1904,7 +1913,9 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             has_library_access=data.get("hasLibraryAccess"),
             can_request_books=data.get("canRequestBooks"),
             can_upload_epub=data.get("canUploadEpub"),
-            level_id=level_id
+            level_id=level_id,
+            settings=data.get("settings"),
+            allow_theme_templates=data.get("allowThemeTemplates")
         )
         
         # betaTester is handled separately if needed, or we could add it to upsert too
@@ -1976,7 +1987,9 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
                 "hasLibraryAccess": raw_user.get("has_library_access", True),
                 "canRequestBooks": raw_user.get("can_request_books", True),
                 "canUploadEpub": raw_user.get("can_upload_epub", access_info["level"].get("canUploadEpub", False)),
+                "allowThemeTemplates": raw_user.get("allow_theme_templates", access_info["level"].get("allowThemeTemplates", False)),
                 "insignias": raw_user.get("insignias") or [],
+                "settings": raw_user.get("settings") or {},
                 "photo_url": access_info.get("photo_url") or raw_user.get("photo_url")
             }
         }

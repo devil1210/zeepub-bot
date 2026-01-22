@@ -191,6 +191,8 @@ export const api = {
         hasLibraryAccess?: boolean;
         canRequestBooks?: boolean;
         canUploadEpub?: boolean;
+        allowThemeTemplates?: boolean;
+        settings?: any;
     }) => rpc('admin_save_user_permissions', permissions),
 
     // User Audit History
