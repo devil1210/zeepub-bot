@@ -17,6 +17,30 @@ logging.getLogger("httpx").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+async def auto_scan_library():
+    """Función de escaneo automático de la biblioteca."""
+    try:
+        from services.scanner_service import ScannerService
+        import os
+        
+        libs_json = os.getenv("LOCAL_LIBRARIES")
+        if not libs_json:
+            logger.warning("LOCAL_LIBRARIES not configured for auto scan")
+            return
+        
+        scanner = ScannerService(libs_json)
+        logger.info("Starting automatic library scan...")
+        
+        results = scanner.sync_all(force_scan=False)
+        if results:
+            logger.info(f"Auto scan completed: {results}")
+        else:
+            logger.warning("Auto scan skipped (already scanning)")
+            
+    except Exception as e:
+        logger.error(f"Error in auto scan library: {e}")
+
+
 async def fix_schema_if_needed():
     """Fix missing database columns before starting bot"""
     if not config.ENABLE_POSTGRES_PLUGIN:
@@ -82,8 +106,19 @@ async def initialize_application():
         replace_existing=True
     )
     
+    # Schedule automatic library scan every 2 hours
+    scheduler.add_job(
+        lambda: asyncio.create_task(auto_scan_library()),
+        'cron',
+        hour='*/2',  # Every 2 hours
+        minute=0,
+        id='auto_library_scan',
+        replace_existing=True
+    )
+    
     scheduler.start()
     logger.info("Daily theme sync scheduled for 3:00 AM")
+    logger.info("Automatic library scan scheduled every 2 hours")
     
     # Start optimized sync engine
     await optimized_sync_engine.start()
