@@ -493,9 +493,8 @@ class EPUBUploader:
         try:
             logger.info(f"Starting add_to_library: epub_path={epub_path}, suggested_path={suggested_path}")
             
-            # Directorio base de la librería desde variable de entorno
-            import os
-            library_base = Path(os.getenv("HOST_LIB_PATH", "/mnt/books/library"))
+            # Directorio base de la librería
+            library_base = Path("/library")
             logger.info(f"Library base path: {library_base}")
             
             # Crear ruta completa
