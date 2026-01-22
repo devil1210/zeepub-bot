@@ -761,6 +761,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "backgroundColor": lvl.get('background_color', '#0f172a'),
                         "cardColor": lvl.get('card_color', '#1e293b'),
                         "forceSettings": bool(lvl.get('force_settings', False)),
+                        "defaultThemeId": lvl.get('default_theme_id')
                     }
                     await level_cache.set(cache_key, result)
                     return result
@@ -777,7 +778,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, 
                     "ui_primary_color", "can_download", "can_read", "has_library_access", "can_request_books", 
                     "banner_content_offset", "background_color", "card_color", "force_settings", "ui_glow_intensity",
-                    "allow_theme_templates"
+                    "allow_theme_templates", "default_theme_id"
                 FROM user_levels WHERE id = ?
             """
             cursor = await conn.execute(query, (level_id,))
@@ -795,6 +796,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "price": r[8],
                     "showRecommendations": bool(r[9]),
                     "allowThemeTemplates": bool(r[27]) if len(r) > 27 else False,
+                    "defaultThemeId": r[28] if len(r) > 28 else None,
                     "theme": r[10] or 'dark',
                     "fontSize": r[11] or 14,
                     "glassBlur": r[12] or 12,
@@ -862,6 +864,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "backgroundColor": row.get('background_color', '#0f172a'),
                             "cardColor": row.get('card_color', '#1e293b'),
                             "forceSettings": bool(row.get('force_settings', False)),
+                            "defaultThemeId": row.get('default_theme_id')
                         }
                         for row in res.data
                     ]
@@ -871,7 +874,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 logger.error(f"Supabase get_all_levels error: {e}")
 
         # SQLite/Postgres Fallback
-        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, ui_primary_color, has_library_access, can_request_books, ui_glow_intensity, can_download, can_read, banner_content_offset, background_color, card_color, force_settings FROM user_levels ORDER BY priority DESC"
+        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, ui_primary_color, has_library_access, can_request_books, ui_glow_intensity, can_download, can_read, banner_content_offset, background_color, card_color, force_settings, allow_theme_templates, default_theme_id FROM user_levels ORDER BY priority DESC"
         async with self.db.connection() as conn:
             cursor = await conn.execute(query)
             rows = await cursor.fetchall()
@@ -902,6 +905,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "backgroundColor": row[24] if len(row) > 23 else '#0f172a',
                     "cardColor": row[25] if len(row) > 24 else '#1e293b',
                     "forceSettings": bool(row[26]) if len(row) > 25 else False,
+                    "allowThemeTemplates": bool(row[27]) if len(row) > 27 else False,
+                    "defaultThemeId": row[28] if len(row) > 28 else None,
                 }
                 for row in rows
             ]

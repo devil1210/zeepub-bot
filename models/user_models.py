@@ -114,6 +114,10 @@ class UserLevel(Base):
     allow_theme_templates = Column(Boolean, default=False)
     show_recommendations = Column(Boolean, default=True)
     
+    # Default Theme Association
+    default_theme_id = Column(Integer, ForeignKey('app_themes.id'), nullable=True)
+    default_theme = relationship("AppTheme")
+    
     users = relationship("User", back_populates="level_info")
 
 class UserUISettings(Base):

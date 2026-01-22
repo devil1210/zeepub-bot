@@ -1372,7 +1372,8 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             "forceSettings": "force_settings",
             "cardGlowIntensity": "ui_glow_intensity",
             "ui_exported_settings": "ui_exported_settings",
-            "allowThemeTemplates": "allow_theme_templates"
+            "allowThemeTemplates": "allow_theme_templates",
+            "defaultThemeId": "default_theme_id"
         }
         
         for frontend_key, db_key in field_mapping.items():

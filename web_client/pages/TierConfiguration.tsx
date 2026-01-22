@@ -60,9 +60,9 @@ interface TierConfig {
     hasLibraryAccess: boolean;
     canRequestBooks: boolean;
     backgroundColor: string;
-    cardColor: string;
     bannerContentOffset: number;
     forceSettings: boolean;
+    defaultThemeId?: number;
 }
 
 interface LevelOption {
@@ -121,15 +121,21 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
 
     const [originalConfig, setOriginalConfig] = useState<TierConfig | null>(null);
 
-    // Initial load: Fetch all levels for the selector
+    const [themes, setThemes] = useState<any[]>([]);
+
+    // Initial load: Fetch all levels and themes
     useEffect(() => {
-        const fetchLevels = async () => {
+        const fetchData = async () => {
             try {
-                const res = await api.getAdminTiers();
-                if (res.levels && Array.isArray(res.levels)) {
+                const [levelsRes, themesRes] = await Promise.all([
+                    api.getAdminTiers(),
+                    api.getAvailableThemes()
+                ]);
+
+                if (levelsRes.levels && Array.isArray(levelsRes.levels)) {
                     setAllLevels([
                         { id: 'global', name: 'Global', color: '#ffffff' },
-                        ...res.levels.map((l: any) => ({
+                        ...levelsRes.levels.map((l: any) => ({
                             id: String(l.id),
                             name: l.name,
                             color: l.color || '#6b7280'
@@ -138,11 +144,15 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                 } else {
                     setAllLevels([{ id: 'global', name: 'Global', color: '#ffffff' }]);
                 }
+
+                if (themesRes.success && Array.isArray(themesRes.themes)) {
+                    setThemes(themesRes.themes);
+                }
             } catch (err) {
-                console.error('Error fetching levels:', err);
+                console.error('Error fetching data:', err);
             }
         };
-        fetchLevels();
+        fetchData();
     }, []);
 
     // Load tier config whenever selectedTierName changes
@@ -177,7 +187,8 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         backgroundColor: res.tier.backgroundColor || settings.backgroundColor,
                         cardColor: res.tier.cardColor || settings.cardColor,
                         bannerContentOffset: res.tier.bannerContentOffset ?? settings.bannerContentOffset,
-                        forceSettings: res.tier.forceSettings ?? false
+                        forceSettings: res.tier.forceSettings ?? false,
+                        defaultThemeId: res.tier.defaultThemeId
                     };
                     setConfig(newConfig);
                     setOriginalConfig(newConfig);
