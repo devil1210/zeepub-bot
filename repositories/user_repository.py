@@ -258,7 +258,6 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             logger.error(f"Error getting all users for recommendations: {e}")
             return []
 
-user_repo = UserRepository()
 
     async def create(self, entity: Dict[str, Any]) -> Dict[str, Any]:
         return await self.upsert(
@@ -427,15 +426,6 @@ user_repo = UserRepository()
             logger.error(f"Get access info error: {e}")
         return None
 
-    async def get_all_user_ids_and_settings(self) -> List[tuple]:
-        """Returns a list of (telegram_id, settings_dict) for all users."""
-        try:
-            async with pg_manager.get_session() as session:
-                stmt = select(User.telegram_id, User.settings)
-                result = await session.execute(stmt)
-                return result.fetchall()
-        except Exception as e:
-            logger.error(f"Error getting all users for recommendations: {e}")
-            return []
+
 
 user_repo = UserRepository()
