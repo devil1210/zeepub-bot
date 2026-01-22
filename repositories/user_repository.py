@@ -716,16 +716,16 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         """Busca la configuración de un nivel por su ID."""
         # 0. Check Cache First
         cache_key = f"level_info:{level_id}"
-        cached = await level_cache.get(cache_key)
+        cached = await cache_manager.get_user_level(cache_key)
         if cached:
             return cached
             
         # Also check if it's already in the all_levels cache
-        all_lvls = await level_cache.get("all_levels")
+        all_lvls = await cache_manager.get_user_level("all_levels")
         if all_lvls:
             match = next((l for l in all_lvls if l['id'] == str(level_id)), None)
             if match:
-                await level_cache.set(cache_key, match)
+                await cache_manager.set_user_level(cache_key, match)
                 return match
 
         if self.supabase.is_active:
@@ -765,7 +765,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "forceSettings": bool(lvl.get('force_settings', False)),
                         "defaultThemeId": lvl.get('default_theme_id')
                     }
-                    await level_cache.set(cache_key, result)
+                    await cache_manager.set_user_level(cache_key, result)
                     return result
                 return None
             except Exception as e:
@@ -817,7 +817,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "forceSettings": bool(r[25]) if r[25] is not None else False,
                     "cardGlowIntensity": r[26] if len(r) > 26 else 0.5,
                 }
-                await level_cache.set(cache_key, result)
+                await cache_manager.set_user_level(cache_key, result)
                 return result
 
         return None
@@ -827,7 +827,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         Retorna todos los niveles configurados con sus límites y características.
         """
         # Check Cache
-        cached = await level_cache.get("all_levels")
+        cache_key = "all_levels"
+        # Check Cache
+        cached = await cache_manager.get_user_level(cache_key)
         if cached:
             return cached
 
@@ -870,7 +872,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         }
                         for row in res.data
                     ]
-                    await level_cache.set("all_levels", results)
+                    await cache_manager.set_user_level("all_levels", results)
                     return results
             except Exception as e:
                 logger.error(f"Supabase get_all_levels error: {e}")
@@ -912,7 +914,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 }
                 for row in rows
             ]
-            await level_cache.set("all_levels", results)
+            await cache_manager.set_user_level("all_levels", results)
             return results
 
     async def list_users(self, limit: int = 50, offset: int = 0, search: str = None) -> list[Dict[str, Any]]:
