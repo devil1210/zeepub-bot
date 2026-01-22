@@ -682,7 +682,7 @@ class EPUBUploader:
         return "\n".join(diffs)
     
     async def add_to_library(self, epub_path: Path, suggested_path: str, metadata: Dict[str, Any]) -> bool:
-        """Agrega el EPUB a la librería (solo mueve el archivo, no agrega a BD)."""
+        """Agrega el EPUB a la librería y escanea la serie específica."""
         try:
             logger.info(f"Starting add_to_library: epub_path={epub_path}, suggested_path={suggested_path}")
             
@@ -694,7 +694,7 @@ class EPUBUploader:
             full_path = library_base / suggested_path
             logger.info(f"Full target path: {full_path}")
             
-            # Verificar que el archivo fuente exista
+            # Verificar que el archivo fuente existe
             if not epub_path.exists():
                 logger.error(f"Source EPUB file does not exist: {epub_path}")
                 return False
@@ -709,8 +709,27 @@ class EPUBUploader:
             shutil.move(str(epub_path), str(full_path))
             logger.info(f"File moved successfully")
             
-            # NO agregar a base de datos local, solo mover archivo
-            logger.info("File moved to library, skipping database operations")
+            # Extraer series_hash de los metadatos para escanear la serie específica
+            series_hash = metadata.get('series_hash')
+            if series_hash:
+                logger.info(f"Triggering series scan for series_hash: {series_hash}")
+                
+                # Importar y ejecutar escaneo específico de la serie
+                from services.scanner_service import ScannerService
+                
+                # Ejecutar escaneo específico de la serie después de un breve retraso
+                # para asegurar que el archivo esté completamente escrito
+                import asyncio
+                await asyncio.sleep(2)  # Esperar 2 segundos
+                
+                scan_result = ScannerService.sync_series(series_hash, force_scan=True)
+                if scan_result:
+                    logger.info(f"Series scan completed successfully for {series_hash}")
+                else:
+                    logger.error(f"Series scan failed for {series_hash}")
+            else:
+                logger.warning("No series_hash found in metadata, skipping series scan")
+            
             return True
                 
         except Exception as e:
