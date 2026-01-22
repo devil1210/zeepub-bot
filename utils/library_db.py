@@ -87,6 +87,24 @@ def check_migrations():
                     _log.warning(f"Error checking allow_theme_templates: {e}")
                     conn.rollback()
 
+                # 3. user_levels.can_upload_epub
+                try:
+                   conn.execute(text("ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS can_upload_epub BOOLEAN DEFAULT FALSE;"))
+                   conn.commit()
+                   _log.info("Checked/Added can_upload_epub to user_levels")
+                except Exception as e:
+                    _log.warning(f"Error checking can_upload_epub on user_levels: {e}")
+                    conn.rollback()
+
+                # 4. users.can_upload_epub
+                try:
+                   conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS can_upload_epub BOOLEAN DEFAULT FALSE;"))
+                   conn.commit()
+                   _log.info("Checked/Added can_upload_epub to users")
+                except Exception as e:
+                    _log.warning(f"Error checking can_upload_epub on users: {e}")
+                    conn.rollback()
+
                 _log.debug("Migrations checked.")
 
         except Exception as e:
@@ -204,6 +222,20 @@ def check_migrations():
             if "can_request_books" not in user_cols:
                 _log.info("Migración: Añadiendo columna 'can_request_books' a la tabla users...")
                 cursor.execute("ALTER TABLE users ADD COLUMN can_request_books INTEGER DEFAULT 1")
+
+            if "can_upload_epub" not in user_cols:
+                _log.info("Migración: Añadiendo columna 'can_upload_epub' a la tabla users...")
+                cursor.execute("ALTER TABLE users ADD COLUMN can_upload_epub INTEGER DEFAULT 0")
+
+        # 5. Migración: user_levels
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_levels'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(user_levels)")
+            level_cols = [row[1] for row in cursor.fetchall()]
+
+            if "can_upload_epub" not in level_cols:
+                _log.info("Migración: Añadiendo columna 'can_upload_epub' a la tabla user_levels...")
+                cursor.execute("ALTER TABLE user_levels ADD COLUMN can_upload_epub INTEGER DEFAULT 0")
 
         conn.commit()
         conn.close()
