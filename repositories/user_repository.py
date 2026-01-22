@@ -228,14 +228,18 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         level_to_tier_id = {
             'admin': 1, 'staff': 2, 'premium': 3, 'vip': 4, 'white': 5, 'free': 6, 'user': 6
         }
-        level_id = level_id if level_id is not None else level_to_tier_id.get(level.lower(), 6)
+        
+        # Ensure level is string for .lower() check if needed
+        lvl_str = str(level).lower() if level is not None else "free"
+        
+        level_id = level_id if level_id is not None else level_to_tier_id.get(lvl_str, 6)
 
         if self.supabase.is_active:
             try:
                 import json
                 data = {
                     "telegram_id": telegram_id,
-                    "level": level.lower(),
+                    "level": lvl_str,
                     "level_id": level_id
                 }
                 if expires_at: data["expires_at"] = expires_at.isoformat()
