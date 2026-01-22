@@ -242,7 +242,10 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent"></div>
 
         {/* Action Buttons Overlay - Desktop/Tablet */}
-        <div className="absolute top-6 left-6 right-6 z-30 flex items-center justify-between">
+        <div
+          className="absolute left-6 right-6 z-30 flex items-center justify-between"
+          style={{ top: `calc(1.5rem + var(--banner-content-offset, 0px))` }}
+        >
           <button
             onClick={onBack}
             className="p-3 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group"
@@ -250,22 +253,28 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           </button>
 
-          {isAdmin && realSeries.series_hash && (
-            <button
-              onClick={handleSyncSeries}
-              disabled={isSyncing}
-              className={`p-3 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
-              title="Sincronizar esta serie"
-            >
-              <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
-              <span className="text-[10px] font-black uppercase tracking-widest pr-1 hidden sm:inline">Sincronizar</span>
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {isAdmin && realSeries.series_hash && (
+              <button
+                onClick={handleSyncSeries}
+                disabled={isSyncing}
+                className={`px-4 py-2.5 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title="Sincronizar esta serie"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                <span className="text-[10px] font-black uppercase tracking-widest sm:inline hidden">Sincronizar</span>
+              </button>
+            )}
+
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20 pointer-events-auto">
+              <BookOpen className="text-white w-5 h-5" />
+            </div>
+          </div>
         </div>
 
         <div
           className="relative w-full px-4 sm:px-6 lg:px-8 pb-10 z-20"
-          style={{ paddingTop: `calc(8.5rem + var(--banner-content-offset, 0px))` }}
+          style={{ paddingTop: `calc(10rem + var(--banner-content-offset, 0px))` }}
         >
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
             <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 -mb-4 shadow-2xl rounded-lg overflow-hidden">
@@ -424,7 +433,13 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <button
                         className="flex items-center gap-2 px-5 py-2 rounded-lg bg-transparent border border-primary/40 text-primary text-[10px] font-black tracking-widest hover:bg-primary hover:text-white transition-all uppercase"
-                        onClick={(e) => { e.stopPropagation(); onSelectVolume(vol, realSeries); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          api.requestDownload(vol.id, 'private');
+                          if (typeof (window as any).Telegram?.WebApp?.showAlert === 'function') {
+                            (window as any).Telegram.WebApp.showAlert("Petición de descarga enviada al bot.");
+                          }
+                        }}
                       >
                         <Download className="w-3.5 h-3.5" />
                         DESCARGAR

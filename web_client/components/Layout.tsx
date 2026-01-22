@@ -43,8 +43,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
     ...(isAdmin ? [{ id: 'admin', icon: ShieldCheck, label: 'Admin' }] : []),
   ];
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+
   return (
-    <div className="flex h-screen w-full text-white overflow-hidden selection:bg-primary selection:text-white relative transition-colors duration-300" style={{ backgroundColor: 'var(--app-bg)' }}>
+    <div
+      className="flex h-screen w-full text-white overflow-hidden selection:bg-primary selection:text-white relative transition-colors duration-300"
+      style={{
+        backgroundColor: 'var(--app-bg)',
+        paddingTop: 'env(safe-area-inset-top)',
+        '--banner-content-offset': `${settings.bannerContentOffset || 0}px`
+      } as React.CSSProperties}
+    >
       {/* Background Glows (Global) */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]"></div>
@@ -132,13 +141,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       {/* ================= MAIN CONTENT AREA ================= */}
       <div className="flex-1 flex flex-col h-full w-full relative z-10 min-w-0">
 
-        {/* Mobile Header (Hidden on Desktop) */}
         <header
           className="md:hidden flex items-center justify-between px-4 py-4 z-40 sticky top-0 border-b border-white/5 shrink-0"
           style={{
             background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
-            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`,
+            marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
+            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)'
           }}
         >
           <div className="flex items-center gap-2">
@@ -153,7 +163,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         </header>
 
         {/* Scrollable Content */}
-        <main className={`flex-1 overflow-y-auto relative scroll-smooth custom-scrollbar pb-24 md:pb-0 ${activeTab === 'search' ? '' : 'md:pt-8'}`}>
+        <main
+          className={`flex-1 overflow-y-auto relative scroll-smooth custom-scrollbar pb-24 md:pb-0 ${activeTab === 'search' ? '' : 'pt-4 md:pt-8'}`}
+          style={{
+            paddingTop: (isMobile && activeTab !== 'search') ? `calc(1.5rem + var(--banner-content-offset, 0px))` : undefined
+          }}
+        >
           {/* Search Header - Sticky inside scroll area */}
           {activeTab === 'search' && searchNavState.isVisible && (
             <div className="sticky top-0 z-30 transition-all duration-300">

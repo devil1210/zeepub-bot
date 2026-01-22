@@ -38,23 +38,23 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                 WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
             }}
         >
-            <div className="w-full">
-                <div className="flex flex-row gap-2 sm:gap-4 items-center justify-between">
-                    <div className="relative w-full max-w-xl group flex-1">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className="w-full max-w-7xl mx-auto">
+                <div className="flex flex-row gap-4 items-center justify-between">
+                    <div className="relative group flex-1">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <SearchIcon className="text-gray-400 w-5 h-5 group-focus-within:text-[var(--color-primary)] transition-colors" />
                         </div>
                         <input
-                            className="block w-full pl-10 pr-24 py-3 rounded-xl border border-white/5 bg-white/5 text-white placeholder-gray-500 focus:ring-1 focus:ring-primary focus:border-primary focus:bg-white/10 text-sm transition-all"
-                            placeholder="Buscar..."
+                            className="block w-full pl-12 pr-28 py-3.5 rounded-2xl border border-white/10 bg-white/5 text-white placeholder-gray-500 focus:ring-2 focus:ring-primary/50 focus:border-primary focus:bg-white/10 text-sm transition-all shadow-inner"
+                            placeholder="Busca por título, autor, género o ISBN..."
                             type="text"
                             value={searchTerm}
                             onChange={(e) => onSearchChange(e.target.value)}
                         />
-                        <div className="absolute inset-y-0 right-1 flex items-center">
+                        <div className="absolute inset-y-0 right-1.5 flex items-center">
                             <button
                                 onClick={onScopeClick}
-                                className="px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]"
+                                className="px-4 py-2 rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
                             >
                                 {selectedScope}
                             </button>

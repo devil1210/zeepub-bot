@@ -106,12 +106,12 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
         try {
             console.log("Loading config for level:", levelId);
             setLoading(true);
-            const res = await api.getTierConfig(levelId);
+            const res = await api.getTierConfig(String(levelId));
             if (res.success) {
                 console.log("Config loaded:", res.config);
                 setConfig(res.config);
                 setInitialConfig(res.config);
-                setSelectedLevelId(levelId);
+                setSelectedLevelId(String(levelId));
             } else {
                 console.warn("Failed to load config:", res.message);
                 if (levelId === 'global') {
@@ -238,73 +238,84 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
     return (
         <div className="flex flex-col gap-8 pb-32 animate-in fade-in duration-500">
             {/* Header: Selector de Nivel */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-panel p-6 rounded-[2rem] border-white/5 shadow-2xl">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary/20 rounded-2xl border border-primary/20">
-                        <Palette className="w-8 h-8 text-primary" />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Personalización <span className="text-primary italic">Visual</span></h2>
-                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-0.5">Define colores, efectos y qué puede ver el usuario</p>
-                    </div>
+            {/* Header: Selector de Nivel */}
+            <div className="flex flex-col gap-6 glass-panel p-6 rounded-[2rem] border-white/5 shadow-2xl overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+                    <Palette className="w-32 h-32" />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-6">
-                    <div className="flex items-center gap-3">
-                        <label className="text-[9px] font-black text-primary uppercase tracking-[0.2em] hidden lg:block">CARGAR TEMA:</label>
-                        <select
-                            onChange={(e) => {
-                                const theme = availableThemes.find(t => String(t.id) === e.target.value);
-                                if (theme) handleApplyTheme(theme);
-                            }}
-                            className="bg-primary/10 border border-primary/20 rounded-2xl px-4 py-2.5 text-[10px] font-black uppercase text-primary tracking-widest focus:ring-1 focus:ring-primary transition-all cursor-pointer appearance-none min-w-[160px] hover:bg-primary/20"
-                            style={{ outline: 'none' }}
-                            defaultValue=""
-                        >
-                            <option value="" disabled>Seleccionar Plantilla...</option>
-                            {availableThemes.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/20 rounded-2xl border border-primary/20 shrink-0">
+                            <Palette className="w-8 h-8 text-primary" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Panel <span className="text-primary italic">Visual</span></h2>
+                            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-0.5">Define colores, efectos y temas para cada nivel</p>
+                        </div>
                     </div>
 
-                    <div className="h-10 w-px bg-white/10 mx-2 hidden md:block" />
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-3 bg-primary/5 p-1.5 rounded-2xl border border-primary/10">
+                            <label className="text-[9px] font-black text-primary/60 uppercase tracking-[0.2em] pl-3 hidden sm:block">PLANTILLAS:</label>
+                            <select
+                                onChange={(e) => {
+                                    const theme = availableThemes.find(t => String(t.id) === e.target.value);
+                                    if (theme) handleApplyTheme(theme);
+                                }}
+                                className="bg-primary/10 border-none rounded-xl px-4 py-2 text-[10px] font-black uppercase text-primary tracking-widest focus:ring-0 transition-all cursor-pointer min-w-[160px] hover:bg-primary/20"
+                                style={{ outline: 'none' }}
+                                defaultValue=""
+                            >
+                                <option value="" disabled>Cargar Tema...</option>
+                                {availableThemes.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div className="flex items-center gap-3">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest hidden xl:block">NIVEL ACTIVO:</label>
-                        <div className="flex items-center gap-2 overflow-x-auto max-w-[400px] no-scrollbar py-2">
-                            {tiers.map((t) => (
-                                <button
-                                    key={t.id}
-                                    onClick={() => loadLevelConfig(t.id)}
-                                    className={`px-4 py-2.5 rounded-2xl border-2 text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${selectedLevelId === t.id
-                                        ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
-                                        : 'bg-white/5 border-white/5 text-gray-500 hover:border-white/10 hover:text-gray-300'
-                                        }`}
-                                >
-                                    {t.name}
-                                </button>
-                            ))}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setLivePreview(!livePreview)}
+                                className={`flex items-center gap-2 px-5 py-3 rounded-xl border text-[10px] font-black uppercase transition-all ${livePreview ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
+                            >
+                                <Eye className="w-4 h-4" />
+                                {livePreview ? 'Live: ON' : 'Vista Previa'}
+                            </button>
+
+                            <button
+                                onClick={() => setShowSaveThemeModal(true)}
+                                className="flex items-center gap-2 px-5 py-3 bg-purple-600/20 border border-purple-500/30 text-purple-400 rounded-xl text-[10px] font-black uppercase hover:bg-purple-600/30 transition-all"
+                            >
+                                <Save className="w-4 h-4" />
+                                <span className="hidden sm:inline">Guardar Tema</span>
+                                <span className="sm:hidden">Tema</span>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 border-t border-white/5 pt-4 md:border-t-0 md:pt-0">
-                    <button
-                        onClick={() => setLivePreview(!livePreview)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-black uppercase transition-all ${livePreview ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
-                    >
-                        <Eye className="w-4 h-4" />
-                        {livePreview ? 'Preview: ON' : 'Vista Previa'}
-                    </button>
+                <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                    <button
-                        onClick={() => setShowSaveThemeModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 border border-purple-500/30 text-purple-400 rounded-xl text-[10px] font-black uppercase hover:bg-purple-600/30 transition-all"
-                    >
-                        <Save className="w-4 h-4" />
-                        Guardar Tema
-                    </button>
+                <div className="flex flex-col gap-3">
+                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">Selecciona el Nivel para editar:</label>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {tiers.map((t) => {
+                            const isSelected = String(selectedLevelId) === String(t.id);
+                            return (
+                                <button
+                                    key={t.id}
+                                    onClick={() => loadLevelConfig(String(t.id))}
+                                    className={`px-5 py-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all ${isSelected
+                                        ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-105 z-10'
+                                        : 'bg-white/5 border-white/5 text-gray-500 hover:border-white/20 hover:text-gray-300'
+                                        }`}
+                                >
+                                    {t.name}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
