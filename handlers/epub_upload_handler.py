@@ -232,7 +232,7 @@ class EPUBUploader:
             filename_without_ext = original_filename.rsplit('.', 1)[0]
             # Limpiar tags existentes como [NL], [NW], [ShinsengumiTL], etc.
             import re
-            filename_clean = re.sub(r'\s*\[[^\]]+\]\s*$', '', filename_without_ext)
+            filename_clean = re.sub(r'\s*\[(?:NL|NW|M\.?\s*Nigthkrelin\s*Subs|ShinsengumiTL)\]\s*$', '', filename_without_ext)
         else:
             # Si no hay filename original, usar el título limpio
             filename_clean = self.clean_filename(title)
