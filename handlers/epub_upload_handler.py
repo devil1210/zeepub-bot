@@ -5,8 +5,6 @@ Comando para subir EPUBs a la librería con validación admin
 import logging
 import os
 import tempfile
-import zipfile
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -17,6 +15,7 @@ from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters, 
 from config.config_settings import config
 from utils.library_db import get_session
 from models.library_models import LocalBook
+from services.epub_service import parse_opf_from_epub, enrich_metadata_from_epub
 
 logger = logging.getLogger(__name__)
 
@@ -111,84 +110,56 @@ class EPUBUploader:
         return temp_file
     
     async def analyze_epub(self, epub_path: Path) -> Optional[Dict[str, Any]]:
-        """Analiza el EPUB y extrae metadata del content.opf."""
+        """Analiza el EPUB usando el servicio existente del bot."""
         try:
-            with zipfile.ZipFile(epub_path, 'r') as epub_zip:
-                # Buscar content.opf
-                content_opf_path = None
-                for file_info in epub_zip.filelist:
-                    if file_info.filename.lower().endswith('content.opf'):
-                        content_opf_path = file_info.filename
-                        break
-                
-                if not content_opf_path:
-                    # Buscar en META-INF/container.xml
-                    try:
-                        container_xml = epub_zip.read('META-INF/container.xml')
-                        root = ET.fromstring(container_xml)
-                        ns = {'container': 'urn:oasis:names:tc:opendocument:xmlns:container'}
-                        rootfile = root.find('.//container:rootfile', ns)
-                        if rootfile is not None:
-                            content_opf_path = rootfile.get('full-path')
-                    except:
-                        pass
-                
-                if not content_opf_path:
-                    return None
-                
-                # Leer content.opf
-                content_opf_xml = epub_zip.read(content_opf_path)
-                root = ET.fromstring(content_opf_xml)
-                
-                # Namespace para OPF
-                ns = {'opf': 'http://www.idpf.org/2007/opf',
-                      'dc': 'http://purl.org/dc/elements/1.1/'}
-                
-                # Extraer metadata
-                metadata = {}
-                
-                # Título
-                title_elem = root.find('.//dc:title', ns)
-                metadata['title'] = title_elem.text.strip() if title_elem is not None else "Sin título"
-                
-                # Autor
-                creator_elem = root.find('.//dc:creator', ns)
-                metadata['author'] = creator_elem.text.strip() if creator_elem is not None else "Autor desconocido"
-                
-                # Descripción
-                description_elem = root.find('.//dc:description', ns)
-                metadata['description'] = description_elem.text.strip() if description_elem is not None else ""
-                
-                # Idioma
-                language_elem = root.find('.//dc:language', ns)
-                metadata['language'] = language_elem.text.strip() if language_elem is not None else "es"
-                
-                # ISBN/Identifier
-                identifier_elem = root.find('.//dc:identifier', ns)
-                metadata['isbn'] = identifier_elem.text.strip() if identifier_elem is not None else ""
-                
-                # Editorial
-                publisher_elem = root.find('.//dc:publisher', ns)
-                metadata['publisher'] = publisher_elem.text.strip() if publisher_elem is not None else ""
-                
-                # Fecha de publicación
-                date_elem = root.find('.//dc:date', ns)
-                metadata['publish_date'] = date_elem.text.strip() if date_elem is not None else ""
-                
-                # Tags/Subject
-                subjects = []
-                for subject_elem in root.findall('.//dc:subject', ns):
-                    if subject_elem.text:
-                        subjects.append(subject_elem.text.strip())
-                metadata['tags'] = ', '.join(subjects)
-                
-                # Generar ruta basada en autor y título
-                metadata['suggested_path'] = self.generate_path(metadata)
-                
-                return metadata
-                
+            logger.info(f"Analyzing EPUB with existing service: {epub_path}")
+            
+            # Usar el servicio existente para extraer metadata del OPF
+            opf_metadata = await parse_opf_from_epub(str(epub_path))
+            
+            if not opf_metadata:
+                logger.error("Could not extract OPF metadata from EPUB")
+                return None
+            
+            # Enriquecer metadata usando el servicio existente
+            enriched_metadata = await enrich_metadata_from_epub(
+                epub_bytes=str(epub_path),
+                epub_url=f"file://{epub_path}",
+                existing_meta={}
+            )
+            
+            if not enriched_metadata:
+                logger.error("Could not enrich EPUB metadata")
+                return None
+            
+            # Convertir al formato esperado por el handler
+            metadata = {
+                'title': enriched_metadata.get('titulo_volumen') or enriched_metadata.get('titulo_serie') or 'Sin título',
+                'author': enriched_metadata.get('autor') or enriched_metadata.get('autores', ['Autor desconocido'])[0] if enriched_metadata.get('autores') else 'Autor desconocido',
+                'description': enriched_metadata.get('sinopsis', ''),
+                'language': enriched_metadata.get('idioma', 'es'),
+                'isbn': enriched_metadata.get('isbn', ''),
+                'publisher': enriched_metadata.get('publisher', ''),
+                'publish_date': enriched_metadata.get('fecha_publicacion', ''),
+                'tags': ', '.join(enriched_metadata.get('generos', [])),
+                'series': enriched_metadata.get('titulo_serie', ''),
+                'volume': enriched_metadata.get('volumen', ''),
+                'illustrator': enriched_metadata.get('ilustrador', ''),
+                'translator': enriched_metadata.get('traductor', ''),
+                'category': enriched_metadata.get('categoria', ''),
+                'demography': enriched_metadata.get('demografia', []),
+                'typesetters': enriched_metadata.get('maquetadores', []),
+                'original_metadata': enriched_metadata  # Guardar metadata original para referencia
+            }
+            
+            # Generar ruta basada en el formato existente de la biblioteca
+            metadata['suggested_path'] = self.generate_path(metadata)
+            
+            logger.info(f"Successfully extracted metadata: title='{metadata.get('title')}', author='{metadata.get('author')}'")
+            return metadata
+            
         except Exception as e:
-            logger.error(f"Error analyzing EPUB: {e}")
+            logger.error(f"Error analyzing EPUB with existing service: {e}")
             return None
     
     def generate_path(self, metadata: Dict[str, Any]) -> str:
@@ -246,21 +217,38 @@ class EPUBUploader:
     async def send_preview_for_approval(self, update: Update, upload_id: str, metadata: Dict[str, Any], original_filename: str):
         """Envía vista previa para aprobación del admin."""
         
+        # Construir vista previa enriquecida
         preview_text = f"""📚 **Vista Previa de EPUB**
 
 📄 **Archivo:** {original_filename}
 
-📋 **Metadata Extraída:**
+📋 **Metadata Extraída (Servicio Enriquecido):**
 📖 **Título:** {metadata.get('title', 'N/A')}
 ✍️ **Autor:** {metadata.get('author', 'N/A')}
 🏢 **Editorial:** {metadata.get('publisher', 'N/A')}
 📅 **Publicado:** {metadata.get('publish_date', 'N/A')}
 🌐 **Idioma:** {metadata.get('language', 'N/A')}
 🔢 **ISBN:** {metadata.get('isbn', 'N/A')}
-🏷️ **Tags:** {metadata.get('tags', 'N/A')}
+🏷️ **Géneros:** {metadata.get('tags', 'N/A')}"""
+        
+        # Agregar información adicional si está disponible
+        if metadata.get('series'):
+            preview_text += f"\n📚 **Serie:** {metadata.get('series', 'N/A')}"
+        if metadata.get('volume'):
+            preview_text += f"\n📖 **Volumen:** {metadata.get('volume', 'N/A')}"
+        if metadata.get('illustrator'):
+            preview_text += f"\n🎨 **Ilustrador:** {metadata.get('illustrator', 'N/A')}"
+        if metadata.get('translator'):
+            preview_text += f"\n🔄 **Traductor:** {metadata.get('translator', 'N/A')}"
+        if metadata.get('category'):
+            preview_text += f"\n📂 **Categoría:** {metadata.get('category', 'N/A')}"
+        if metadata.get('demography'):
+            preview_text += f"\n👥 **Demografía:** {', '.join(metadata.get('demography', []))}"
+        
+        preview_text += f"""
 
 📝 **Descripción:**
-{metadata.get('description', 'Sin descripción')[:300]}{'...' if len(metadata.get('description', '')) > 300 else ''}
+{metadata.get('description', 'Sin descripción')[:400]}{'...' if len(metadata.get('description', '')) > 400 else ''}
 
 📁 **Ruta Sugerida:**
 `{metadata.get('suggested_path', 'N/A')}`
@@ -367,7 +355,7 @@ class EPUBUploader:
         query.message.chat_data[f'editing_path_{upload_id}'] = True
     
     async def add_to_library(self, epub_path: Path, suggested_path: str, metadata: Dict[str, Any]) -> bool:
-        """Agrega el EPUB a la librería."""
+        """Agrega el EPUB a la librería usando metadata enriquecida."""
         try:
             # Directorio base de la librería
             library_base = Path("/mnt/books/library")
@@ -382,13 +370,13 @@ class EPUBUploader:
             import shutil
             shutil.move(str(epub_path), str(full_path))
             
-            # Agregar a base de datos
+            # Agregar a base de datos con metadata enriquecida
             session = get_session()
             try:
                 # Verificar si ya existe
                 existing = session.query(LocalBook).filter_by(file_path=str(full_path)).first()
                 if existing:
-                    # Actualizar metadata
+                    # Actualizar metadata existente con datos enriquecidos
                     existing.title = metadata.get('title', existing.title)
                     existing.author = metadata.get('author', existing.author)
                     existing.description = metadata.get('description', existing.description)
@@ -397,9 +385,18 @@ class EPUBUploader:
                     existing.publish_date = metadata.get('publish_date', existing.publish_date)
                     existing.language = metadata.get('language', existing.language)
                     existing.tags = metadata.get('tags', existing.tags)
+                    existing.series = metadata.get('series', existing.series)
+                    existing.volume = metadata.get('volume', existing.volume)
+                    existing.illustrator = metadata.get('illustrator', existing.illustrator)
+                    existing.translator = metadata.get('translator', existing.translator)
+                    existing.category = metadata.get('category', existing.category)
                     existing.indexed_at = datetime.utcnow()
+                    
+                    # Guardar metadata adicional en JSON si existe
+                    if metadata.get('original_metadata'):
+                        existing.extra_metadata = metadata.get('original_metadata')
                 else:
-                    # Crear nuevo registro
+                    # Crear nuevo registro con metadata enriquecida
                     new_book = LocalBook(
                         title=metadata.get('title', ''),
                         author=metadata.get('author', ''),
@@ -409,9 +406,15 @@ class EPUBUploader:
                         publish_date=metadata.get('publish_date', ''),
                         language=metadata.get('language', ''),
                         tags=metadata.get('tags', ''),
+                        series=metadata.get('series', ''),
+                        volume=metadata.get('volume', ''),
+                        illustrator=metadata.get('illustrator', ''),
+                        translator=metadata.get('translator', ''),
+                        category=metadata.get('category', ''),
                         file_path=str(full_path),
                         file_size=full_path.stat().st_size,
-                        indexed_at=datetime.utcnow()
+                        indexed_at=datetime.utcnow(),
+                        extra_metadata=metadata.get('original_metadata', {})
                     )
                     session.add(new_book)
                 
