@@ -415,7 +415,9 @@ class EPUBUploader:
             return
         
         callback_data = query.data
-        upload_id = callback_data.split('_')[-1]
+        # Extraer upload_id del callback_data (format: approve_epub_upload_123456789_1234567890)
+        parts = callback_data.split('_')
+        upload_id = '_'.join(parts[2:])  # Tomar desde el tercer elemento en adelante
         
         if upload_id not in pending_uploads:
             await query.edit_message_text("❌ Upload no encontrado o expirado.")
