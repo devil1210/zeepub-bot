@@ -91,19 +91,18 @@ export const InfrastructureDashboard: React.FC = () => {
                     const first = new Date(Math.min(...timestamps) * 1000);
                     const last = new Date(Math.max(...timestamps) * 1000);
 
+                    const pad = (n: number) => n.toString().padStart(2, '0');
                     const fmt = (d: Date) => {
-                        const date = d.toISOString().split('T')[0];
-                        const time = d.toTimeString().split(' ')[0].replace(/:/g, '-');
-                        return `${date}_${time}`;
+                        return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
                     };
-                    dateSuffix = `${fmt(first)}_to_${fmt(last)}`;
+                    dateSuffix = `${fmt(first)}__${fmt(last)}`;
                 }
 
-                const blob = new Blob([logText], { type: 'text/plain;charset=utf-8' });
+                const blob = new Blob([logText], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `zeepub_logs_${dateSuffix}.txt`;
+                a.download = `logs_${dateSuffix}.txt`;
                 document.body.appendChild(a);
                 a.click();
 
