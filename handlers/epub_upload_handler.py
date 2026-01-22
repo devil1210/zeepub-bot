@@ -38,34 +38,34 @@ class EPUBUploader:
             await update.message.reply_text("❌ Solo admins pueden usar este comando.")
             return
         
-        await update.message.reply_text(
-            "📚 **Upload de EPUB**\n\n"
-            "Por favor, envíame el archivo EPUB que quieres subir a la librería.\n\n"
-            "📋 **Proceso:**\n"
-            "1. Envías el EPUB\n"
-            "2. Analizo el content.opf\n"
-            "3. Muestro vista previa para validación\n"
-            "4. Admin aprueba/rechaza\n"
-            "5. Se agrega a la librería\n\n"
-            "📎 **Envía el archivo EPUB ahora:**"
-        )
+        # Verificar si hay un archivo EPUB reciente en el contexto
+        if not update.message.reply_to_message:
+            await update.message.reply_text(
+                "❌ **Uso incorrecto**\n\n"
+                "Este comando debe usarse como respuesta a un mensaje con un archivo EPUB.\n\n"
+                "📋 **Flujo correcto:**\n"
+                "1. Sube un archivo EPUB\n"
+                "2. Responde a ese mensaje con `/upload_epub`\n"
+                "3. El bot procesará el archivo"
+            )
+            return
         
-        # Marcar que estamos esperando un archivo
-        context.user_data['awaiting_epub'] = True
+        # Verificar si el mensaje replied tiene un documento EPUB
+        replied_message = update.message.reply_to_message
+        if not (replied_message.document and replied_message.document.file_name.lower().endswith('.epub')):
+            await update.message.reply_text(
+                "❌ **Archivo no válido**\n\n"
+                "El mensaje al que respondes debe contener un archivo EPUB (.epub).\n\n"
+                "Por favor, sube un archivo EPUB y responde a ese mensaje con `/upload_epub`."
+            )
+            return
+        
+        # Procesar el archivo EPUB directamente
+        await self.process_epub_from_reply(update, context, replied_message.document)
     
-    async def handle_epub_file(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Procesa el archivo EPUB recibido."""
+    async def process_epub_from_reply(self, update: Update, context: ContextTypes.DEFAULT_TYPE, file):
+        """Procesa el EPUB desde un mensaje reply."""
         user_id = update.effective_user.id
-        
-        # Verificar si es admin y está esperando archivo
-        if not await self.is_admin(user_id) or not context.user_data.get('awaiting_epub'):
-            return
-        
-        # Obtener el archivo
-        file = update.message.document
-        if not file or not file.file_name.lower().endswith('.epub'):
-            await update.message.reply_text("❌ Por favor, envía un archivo EPUB válido.")
-            return
         
         await update.message.reply_text("📥 Descargando y analizando EPUB...")
         
@@ -91,9 +91,6 @@ class EPUBUploader:
             
             # Enviar vista previa para validación
             await self.send_preview_for_approval(update, upload_id, metadata, file.file_name)
-            
-            # Limpiar estado
-            context.user_data['awaiting_epub'] = False
             
         except Exception as e:
             logger.error(f"Error processing EPUB: {e}")
@@ -161,114 +158,6 @@ class EPUBUploader:
         except Exception as e:
             logger.error(f"Error analyzing EPUB with existing service: {e}")
             return None
-    
-    def generate_path(self, metadata: Dict[str, Any]) -> str:
-        """Genera ruta sugerida basada en metadata y formato existente de la biblioteca."""
-        author = metadata.get('author', 'Autor desconocido')
-        title = metadata.get('title', 'Sin título')
-        language = metadata.get('language', 'es')
-        
-        # Limpiar y normalizar nombres
-        author_clean = self.clean_filename(author)
-        title_clean = self.clean_filename(title)
-        
-        # Estrategias de ruta basadas en formatos comunes de bibliotecas
-        strategies = [
-            # Estrategia 1: Autor/Titulo (formato más común)
-            f"{author_clean}/{title_clean}.epub",
-            
-            # Estrategia 2: Autor/Titulo (idioma) si no es español
-            f"{author_clean}/{title_clean} ({language}).epub" if language != 'es' else None,
-            
-            # Estrategia 3: Categoría por idioma/Autor/Titulo
-            f"books_{language}/{author_clean}/{title_clean}.epub",
-            
-            # Estrategia 4: Directo si el autor es muy largo
-            f"{title_clean}.epub" if len(author_clean) > 50 else None,
-            
-            # Estrategia 5: Autor (apellido)/Titulo
-            f"{author_clean.split()[-1]}/{title_clean}.epub" if ' ' in author_clean else None,
-            
-            # Estrategia 6: Iniciales del autor/Titulo
-            f"{''.join([word[0] for word in author_clean.split()[:2]])}/{title_clean}.epub" if len(author_clean.split()) > 1 else None,
-        ]
-        
-        # Filtrar estrategias válidas y devolver la primera
-        for strategy in strategies:
-            if strategy and len(strategy) < 200:  # Evitar rutas muy largas
-                return strategy
-        
-        # Fallback: formato simple
-        return f"{author_clean}/{title_clean}.epub"
-    
-    def clean_filename(self, filename: str) -> str:
-        """Limpia filename para uso en sistema de archivos."""
-        # Caracteres no permitidos
-        invalid_chars = '<>:"/\\|?*'
-        for char in invalid_chars:
-            filename = filename.replace(char, '_')
-        
-        # Limitar longitud
-        if len(filename) > 100:
-            filename = filename[:100]
-        
-        return filename.strip()
-    
-    async def send_preview_for_approval(self, update: Update, upload_id: str, metadata: Dict[str, Any], original_filename: str):
-        """Envía vista previa para aprobación del admin."""
-        
-        # Construir vista previa enriquecida
-        preview_text = f"""📚 **Vista Previa de EPUB**
-
-📄 **Archivo:** {original_filename}
-
-📋 **Metadata Extraída (Servicio Enriquecido):**
-📖 **Título:** {metadata.get('title', 'N/A')}
-✍️ **Autor:** {metadata.get('author', 'N/A')}
-🏢 **Editorial:** {metadata.get('publisher', 'N/A')}
-📅 **Publicado:** {metadata.get('publish_date', 'N/A')}
-🌐 **Idioma:** {metadata.get('language', 'N/A')}
-🔢 **ISBN:** {metadata.get('isbn', 'N/A')}
-🏷️ **Géneros:** {metadata.get('tags', 'N/A')}"""
-        
-        # Agregar información adicional si está disponible
-        if metadata.get('series'):
-            preview_text += f"\n📚 **Serie:** {metadata.get('series', 'N/A')}"
-        if metadata.get('volume'):
-            preview_text += f"\n📖 **Volumen:** {metadata.get('volume', 'N/A')}"
-        if metadata.get('illustrator'):
-            preview_text += f"\n🎨 **Ilustrador:** {metadata.get('illustrator', 'N/A')}"
-        if metadata.get('translator'):
-            preview_text += f"\n🔄 **Traductor:** {metadata.get('translator', 'N/A')}"
-        if metadata.get('category'):
-            preview_text += f"\n📂 **Categoría:** {metadata.get('category', 'N/A')}"
-        if metadata.get('demography'):
-            preview_text += f"\n👥 **Demografía:** {', '.join(metadata.get('demography', []))}"
-        
-        preview_text += f"""
-
-📝 **Descripción:**
-{metadata.get('description', 'Sin descripción')[:400]}{'...' if len(metadata.get('description', '')) > 400 else ''}
-
-📁 **Ruta Sugerida:**
-`{metadata.get('suggested_path', 'N/A')}`
-
-⚠️ **¿Aprobar este EPUB para agregar a la librería?**"""
-        
-        # Botones de acción
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ Aprobar", callback_data=f"approve_epub_{upload_id}"),
-                InlineKeyboardButton("❌ Rechazar", callback_data=f"reject_epub_{upload_id}")
-            ],
-            [
-                InlineKeyboardButton("📝 Editar Ruta", callback_data=f"edit_path_{upload_id}")
-            ]
-        ]
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(preview_text, reply_markup=reply_markup)
     
     async def handle_approval_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Maneja los callbacks de aprobación/rechazo."""
@@ -458,10 +347,6 @@ async def upload_epub_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     """Comando /upload_epub"""
     await epub_uploader.start_upload(update, context)
 
-async def handle_epub_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Maneja archivos EPUB recibidos."""
-    await epub_uploader.handle_epub_file(update, context)
-
 async def handle_upload_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Maneja callbacks de upload."""
     await epub_uploader.handle_approval_callback(update, context)
@@ -469,5 +354,4 @@ async def handle_upload_callback(update: Update, context: ContextTypes.DEFAULT_T
 def setup_upload_handlers(application):
     """Configura los handlers para upload de EPUBs."""
     application.add_handler(CommandHandler("upload_epub", upload_epub_command))
-    application.add_handler(MessageHandler(filters.Document & filters.FileExtension("epub"), handle_epub_file))
     application.add_handler(CallbackQueryHandler(handle_upload_callback, pattern=r"^(approve|reject|edit_path)_epub_"))
