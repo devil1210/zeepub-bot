@@ -105,6 +105,14 @@ class ZeePubBot:
                 filters.PHOTO | filters.Document.ALL, handle_donation_proof
             )
         )
+        
+        # EPUB Upload Handler
+        try:
+            from handlers.epub_upload_handler import setup_upload_handlers
+            setup_upload_handlers(self.app)
+            logger.info("EPUB upload handler registered successfully")
+        except Exception as e:
+            logger.error(f"Error registering EPUB upload handler: {e}")
 
     def start(self):
         """Arranca el bot en polling (bloqueante, modo legacy)."""
