@@ -21,6 +21,7 @@ export interface TelegramExtendedInfo {
   customStatus?: string;
   hasLibraryAccess?: boolean;
   canRequestBooks?: boolean;
+  canUploadEpub?: boolean;
 }
 
 export interface UserStatus {
@@ -32,6 +33,7 @@ export interface UserStatus {
     status_label: string;
     has_library_access: boolean;
     can_request_books: boolean;
+    can_upload_epub: boolean;
     can_download: boolean;
     can_read: boolean;
     downloads: {
@@ -61,6 +63,7 @@ interface TelegramContextType {
   // Level simulation for admins
   simulatedLevel: number | null;
   setSimulatedLevel: (levelId: number | null) => void;
+  canUploadEpub: boolean;
   uiExportedSettings: string[];
   botInfo: { name: string; username: string; version: string; avatar: string } | null;
 }
@@ -158,7 +161,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           insignias: data.insignias || [],
           customStatus: data.customStatus || data.status_label,
           hasLibraryAccess: data.hasLibraryAccess,
-          canRequestBooks: data.canRequestBooks
+          canRequestBooks: data.canRequestBooks,
+          canUploadEpub: data.canUploadEpub
         });
 
         // If the access endpoint says we're admin, update the status to reflect it
@@ -172,6 +176,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               status_label: data.status_label || 'Admin',
               has_library_access: data.hasLibraryAccess !== false,
               can_request_books: data.canRequestBooks !== false,
+              can_upload_epub: data.canUploadEpub !== false,
               can_download: true,
               can_read: true,
               downloads: { used: 0, limit: null }
@@ -256,6 +261,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       extendedInfo,
       simulatedLevel,
       setSimulatedLevel: handleSetSimulatedLevel,
+      canUploadEpub: isAdmin || extendedInfo?.canUploadEpub || status?.user?.can_upload_epub || false,
       uiExportedSettings,
       botInfo
     }}>

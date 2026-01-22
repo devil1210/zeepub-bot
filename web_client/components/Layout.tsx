@@ -7,7 +7,8 @@ import {
   ShieldCheck,
   BookOpen,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Upload
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTelegram } from '../contexts/TelegramContext';
@@ -24,7 +25,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, showMobileBottomNav = false }) => {
   const { settings } = useTheme();
-  const { user: tgUser, status, isAdmin, botInfo } = useTelegram();
+  const { user: tgUser, status, isAdmin, botInfo, canUploadEpub } = useTelegram();
   const {
     state: searchNavState,
     handlePrevPage,
@@ -40,6 +41,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
     { id: 'search', icon: Search, label: 'Búsqueda y Catálogos' },
     { id: 'library', icon: Library, label: 'Mi Biblioteca' },
     { id: 'settings', icon: Settings, label: 'Ajustes' },
+    ...(canUploadEpub ? [{ id: 'upload', icon: Upload, label: 'Subir' }] : []),
     ...(isAdmin ? [{ id: 'admin', icon: ShieldCheck, label: 'Admin' }] : []),
   ];
 

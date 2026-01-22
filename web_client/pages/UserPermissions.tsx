@@ -15,7 +15,8 @@ import {
   CheckCircle,
   Home,
   Library,
-  BookOpen
+  BookOpen,
+  Upload
 } from 'lucide-react';
 import { api } from '../src/services/api';
 import { useTheme } from '../contexts/ThemeContext';
@@ -52,6 +53,9 @@ interface PermissionsState {
   username: string;
   insignias: string[];
   expiresAt: string | null;
+  hasLibraryAccess: boolean;
+  canRequestBooks: boolean;
+  canUploadEpub: boolean;
   photoUrl?: string;
 }
 
@@ -102,6 +106,9 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
     insignias: [],
     expiresAt: null,
     role: '',
+    hasLibraryAccess: true,
+    canRequestBooks: true,
+    canUploadEpub: false,
     photoUrl: userData?.avatar || '',
   });
 
@@ -168,6 +175,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 role: res.user.role || '',
                 hasLibraryAccess: res.user.hasLibraryAccess ?? true,
                 canRequestBooks: res.user.canRequestBooks ?? true,
+                canUploadEpub: res.user.canUploadEpub ?? false,
                 photoUrl: res.user.photo_url || '',
               };
               console.log('[UserPermissions] Setting permissions to:', newPerms);
@@ -262,7 +270,8 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           bypassLimits: tier.dailyDownloads === -1,
           betaTester: tier.earlyAccess || false,
           hasLibraryAccess: tier.name.toLowerCase() !== 'lector', // For example
-          canRequestBooks: true
+          canRequestBooks: true,
+          canUploadEpub: tier.canUploadEpub || false
         }));
       }
     } catch (err) {
@@ -299,6 +308,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           isAdmin: tier.name.toLowerCase() === 'administrador',
           level: tier.name.toLowerCase() === 'administrador' ? 'admin' : 'free',
           role: '',
+          canUploadEpub: tier.canUploadEpub || false,
         });
       }
     } catch (err) {
@@ -330,6 +340,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
         username: permissions.username,
         insignias: permissions.insignias,
         expiresAt: permissions.expiresAt,
+        canUploadEpub: permissions.canUploadEpub,
       });
 
       if (res.success) {
@@ -622,6 +633,26 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       type="checkbox"
                       checked={permissions.canRequestBooks}
                       onChange={(e) => setPermissions({ ...permissions, canRequestBooks: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+
+                {/* Upload EPUB Toggle */}
+                <div className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-white/5 transition-colors">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-white">Subir EPUBs</span>
+                      <Upload className="w-4 h-4 text-orange-400" />
+                    </div>
+                    <p className="text-sm text-gray-400">Permite al usuario subir archivos EPUB a la biblioteca.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={permissions.canUploadEpub}
+                      onChange={(e) => setPermissions({ ...permissions, canUploadEpub: e.target.checked })}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 dark:after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>

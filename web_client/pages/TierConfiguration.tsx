@@ -18,7 +18,8 @@ import {
     Download,
     BookOpen,
     Shield,
-    Library
+    Library,
+    Upload
 } from 'lucide-react';
 import { useTheme, adjustBrightness } from '../contexts/ThemeContext';
 import { api } from '../src/services/api';
@@ -62,6 +63,7 @@ interface TierConfig {
     backgroundColor: string;
     bannerContentOffset: number;
     forceSettings: boolean;
+    canUploadEpub: boolean;
     defaultThemeId?: number;
 }
 
@@ -113,6 +115,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         canRead: true,
         hasLibraryAccess: true,
         canRequestBooks: true,
+        canUploadEpub: false,
         backgroundColor: settings.backgroundColor,
         cardColor: settings.cardColor,
         bannerContentOffset: settings.bannerContentOffset,
@@ -188,6 +191,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         cardColor: res.tier.cardColor || settings.cardColor,
                         bannerContentOffset: res.tier.bannerContentOffset ?? settings.bannerContentOffset,
                         forceSettings: res.tier.forceSettings ?? false,
+                        canUploadEpub: res.tier.canUploadEpub ?? false,
                         defaultThemeId: res.tier.defaultThemeId
                     };
                     setConfig(newConfig);
@@ -518,8 +522,14 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                         label: 'Forzar Configuración',
                                         sub: 'Ignora ajustes del usuario',
                                         val: config.forceSettings,
-                                        key: 'forceSettings',
                                         icon: Shield
+                                    },
+                                    {
+                                        label: 'Subir EPUBs',
+                                        sub: 'Permitir subir archivos a la biblioteca',
+                                        val: config.canUploadEpub,
+                                        key: 'canUploadEpub',
+                                        icon: Upload
                                     }
                                 ].map((p) => (
                                     <div key={p.key} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">

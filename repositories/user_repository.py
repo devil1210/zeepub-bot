@@ -221,6 +221,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         level_id: Optional[int] = None,
         has_library_access: Optional[bool] = None,
         can_request_books: Optional[bool] = None,
+        can_upload_epub: Optional[bool] = None,
         photo_url: Optional[str] = None,
     ):
         # Admin level mapping
@@ -247,6 +248,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 if insignias is not None: data["insignias"] = json.dumps(insignias)
                 if has_library_access is not None: data["has_library_access"] = has_library_access
                 if can_request_books is not None: data["can_request_books"] = can_request_books
+                if can_upload_epub is not None: data["can_upload_epub"] = can_upload_epub
                 if photo_url is not None: data["photo_url"] = photo_url
                 
                 logger.debug(f"[SUPABASE UPSERT] Data: {data}")
@@ -471,7 +473,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "forceSettings": lvl.force_settings if lvl else False,
                             "bannerContentOffset": lvl.banner_content_offset if lvl else 0,
                             "hasLibraryAccess": lvl.has_library_access if lvl else True,
-                            "canRequestBooks": lvl.can_request_books if lvl else True
+                            "canRequestBooks": lvl.can_request_books if lvl else True,
+                            "canUploadEpub": lvl.can_upload_epub if lvl else False
                         }
                         
                         # Apply User UI Settings Overrides
@@ -513,6 +516,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "insignias": user.insignias or [],
                             "hasLibraryAccess": user.has_library_access,
                             "canRequestBooks": user.can_request_books,
+                            "canUploadEpub": user.can_upload_epub,
                             "photo_url": user.photo_url
                         }
             except Exception as e:
@@ -563,6 +567,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "backgroundColor": lvl.get('background_color', '#0f172a'),
                             "cardColor": lvl.get('card_color', '#1e293b'),
                             "forceSettings": bool(lvl.get('force_settings', False)),
+                            "canUploadEpub": bool(lvl.get('can_upload_epub', False)),
                         },
                         "hasAccess": bool(lvl.get('has_mini_app_access')) or is_admin,
                         "isAdmin": is_admin,
@@ -573,6 +578,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "insignias": user.get('insignias') or [],
                         "hasLibraryAccess": bool(user.get('has_library_access', True)),
                         "canRequestBooks": bool(user.get('can_request_books', True)),
+                        "canUploadEpub": bool(user.get('can_upload_epub', False)),
                         "photo_url": user.get('photo_url')
                     }
             except Exception as e:
@@ -616,7 +622,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 ul.card_color,
                 ul.force_settings,
                 u.photo_url,
-                ul.allow_theme_templates
+                ul.allow_theme_templates,
+                ul.can_upload_epub,
+                u.can_upload_epub as u_can_upload_epub
             FROM users u
             INNER JOIN user_levels ul ON u.level_id = ul.id
             WHERE u.telegram_id = ?
@@ -671,6 +679,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "backgroundColor": row[32] if len(row) > 32 else '#0f172a',
                         "cardColor": row[33] if len(row) > 33 else '#1e293b',
                         "forceSettings": bool(row[34]) if len(row) > 34 else False,
+                        "canUploadEpub": bool(row[37]) if len(row) > 37 else False,
                     },
                     "hasAccess": bool(row[4]) or is_admin,  # Access if level allowed OR if admin
                     "isAdmin": is_admin,
@@ -682,6 +691,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "insignias": json.loads(row[24]) if len(row) > 24 and row[24] else [],
                     "hasLibraryAccess": bool(row[25]) if len(row) > 25 else True,
                     "canRequestBooks": bool(row[26]) if len(row) > 26 else True,
+                    "canUploadEpub": bool(row[38]) if len(row) > 38 else False,
                     "photo_url": row[35] if len(row) > 35 else None
                 }
             return None
@@ -763,6 +773,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "backgroundColor": lvl.get('background_color', '#0f172a'),
                         "cardColor": lvl.get('card_color', '#1e293b'),
                         "forceSettings": bool(lvl.get('force_settings', False)),
+                        "canUploadEpub": bool(lvl.get('can_upload_epub', False)),
                         "defaultThemeId": lvl.get('default_theme_id')
                     }
                     await cache_manager.set_user_level(cache_key, result)
@@ -780,7 +791,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, 
                     "ui_primary_color", "can_download", "can_read", "has_library_access", "can_request_books", 
                     "banner_content_offset", "background_color", "card_color", "force_settings", "ui_glow_intensity",
-                    "allow_theme_templates", "default_theme_id"
+                    "allow_theme_templates", "default_theme_id", "can_upload_epub"
                 FROM user_levels WHERE id = ?
             """
             cursor = await conn.execute(query, (level_id,))
@@ -816,6 +827,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "cardColor": r[24] or '#1e293b',
                     "forceSettings": bool(r[25]) if r[25] is not None else False,
                     "cardGlowIntensity": r[26] if len(r) > 26 else 0.5,
+                    "canUploadEpub": bool(r[29]) if len(r) > 29 else False,
                 }
                 await cache_manager.set_user_level(cache_key, result)
                 return result
@@ -868,6 +880,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                             "backgroundColor": row.get('background_color', '#0f172a'),
                             "cardColor": row.get('card_color', '#1e293b'),
                             "forceSettings": bool(row.get('force_settings', False)),
+                            "canUploadEpub": bool(row.get('can_upload_epub', False)),
                             "defaultThemeId": row.get('default_theme_id')
                         }
                         for row in res.data
@@ -878,7 +891,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 logger.error(f"Supabase get_all_levels error: {e}")
 
         # SQLite/Postgres Fallback
-        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, ui_primary_color, has_library_access, can_request_books, ui_glow_intensity, can_download, can_read, banner_content_offset, background_color, card_color, force_settings, allow_theme_templates, default_theme_id FROM user_levels ORDER BY priority DESC"
+        query = "SELECT id, name, priority, color, has_mini_app_access, daily_downloads, early_access, custom_themes, price, show_recommendations, ui_theme, ui_font_size, ui_glass_blur, ui_cover_width, ui_nav_opacity, ui_accent_opacity, panel_transparency, ui_primary_color, has_library_access, can_request_books, ui_glow_intensity, can_download, can_read, banner_content_offset, background_color, card_color, force_settings, allow_theme_templates, default_theme_id, can_upload_epub FROM user_levels ORDER BY priority DESC"
         async with self.db.connection() as conn:
             cursor = await conn.execute(query)
             rows = await cursor.fetchall()
@@ -911,6 +924,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "forceSettings": bool(row[26]) if len(row) > 25 else False,
                     "allowThemeTemplates": bool(row[27]) if len(row) > 27 else False,
                     "defaultThemeId": row[28] if len(row) > 28 else None,
+                    "canUploadEpub": bool(row[29]) if len(row) > 29 else False,
                 }
                 for row in rows
             ]
@@ -1153,6 +1167,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             "bannerContentOffset": "banner_content_offset",
             "hasLibraryAccess": "has_library_access",
             "canRequestBooks": "can_request_books",
+            "canUploadEpub": "can_upload_epub",
         }
 
         

@@ -1411,6 +1411,7 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             "showRecommendations": "show_recommendations",
             "canDownload": "can_download",
             "canRead": "can_read",
+            "canUploadEpub": "can_upload_epub",
             "hasLibraryAccess": "has_library_access",
             "canRequestBooks": "can_request_books",
             "bannerContentOffset": "banner_content_offset",
@@ -1508,6 +1509,7 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                 "showRecommendations": g.get("showRecommendations", True),
                 "canDownload": g.get("canDownload", True),
                 "canRead": g.get("canRead", True),
+                "canUploadEpub": g.get("canUploadEpub", False),
                 "forceSettings": g.get("forceSettings", False),
                 "cardGlowIntensity": g.get("cardGlowIntensity", 0.5),
                 "backgroundColor": g.get("backgroundColor", "#0f172a"),
@@ -1866,7 +1868,8 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             "betaTester": "beta_tester",
             "expiresAt": "expires_at",
             "canRequestBooks": "can_request_books",
-            "hasLibraryAccess": "has_library_access"
+            "hasLibraryAccess": "has_library_access",
+            "canUploadEpub": "can_upload_epub"
         }
         
         for frontend_key, db_key in fields_to_track.items():
@@ -1900,6 +1903,7 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
             created_by=int(user_data.get("telegram_id", 0)),
             has_library_access=data.get("hasLibraryAccess"),
             can_request_books=data.get("canRequestBooks"),
+            can_upload_epub=data.get("canUploadEpub"),
             level_id=level_id
         )
         
@@ -1971,6 +1975,7 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
                 "betaTester": raw_user.get("beta_tester", access_info["isBetaTester"]),
                 "hasLibraryAccess": raw_user.get("has_library_access", True),
                 "canRequestBooks": raw_user.get("can_request_books", True),
+                "canUploadEpub": raw_user.get("can_upload_epub", access_info["level"].get("canUploadEpub", False)),
                 "insignias": raw_user.get("insignias") or [],
                 "photo_url": access_info.get("photo_url") or raw_user.get("photo_url")
             }

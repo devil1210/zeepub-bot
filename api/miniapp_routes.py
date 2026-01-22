@@ -1,7 +1,7 @@
 import logging
 from typing import List, Dict, Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from pydantic import BaseModel
 
 from api.deps import (
@@ -31,6 +31,7 @@ class UserLevelModel(BaseModel):
     showRecommendations: bool = True
     canDownload: bool = True
     canRead: bool = True
+    canUploadEpub: bool = False
 
 
 class AccessResponse(BaseModel):
@@ -50,6 +51,7 @@ class AccessResponse(BaseModel):
     status_label: Optional[str] = None  # Display label for user status
     hasLibraryAccess: bool = True
     canRequestBooks: bool = True
+    canUploadEpub: bool = False
     ui_exported_settings: List[str] = []
 
 
@@ -300,6 +302,7 @@ async def check_user_access(
         status_label=eff.get("status_label"),
         hasLibraryAccess=eff.get("has_library_access", True),
         canRequestBooks=eff.get("can_request_books", True),
+        canUploadEpub=eff.get("can_upload_epub", access_info.get("canUploadEpub", False)),
         ui_exported_settings=eff.get("ui_exported_settings", ["theme", "primaryColor", "fontSize"])
     )
 
@@ -330,3 +333,109 @@ async def update_levels(
         await user_repo.update_level_access(int(level.id), level.hasAccess)
 
     return {"success": True, "message": "Niveles actualizados correctamente"}
+    
+    
+@router.post("/api/library/upload")
+async def upload_epub_miniapp(
+    file: UploadFile = File(...),
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+):
+    """Sube un archivo EPUB y retorna su metadata para validación."""
+    if not user_data.get("can_upload_epub"):
+        raise HTTPException(
+            status_code=403, detail="No tienes permiso para subir archivos EPUB"
+        )
+    
+    if not file.filename.lower().endswith(".epub"):
+        raise HTTPException(
+            status_code=400, detail="Solo se admiten archivos EPUB (.epub)"
+        )
+    
+    import tempfile
+    from pathlib import Path
+    from handlers.epub_upload_handler import epub_uploader, pending_uploads
+    from datetime import datetime
+    
+    # Crear directorio temporal si no existe
+    temp_dir = Path(tempfile.gettempdir()) / "zeepub_uploads"
+    temp_dir.mkdir(exist_ok=True)
+    
+    try:
+        # Guardar archivo temporal
+        temp_file = temp_dir / f"app_{user_data['user_id']}_{datetime.now().timestamp()}.epub"
+        with open(temp_file, "wb") as f:
+            f.write(await file.read())
+        
+        # Analizar EPUB
+        metadata = await epub_uploader.analyze_epub(temp_file, file.filename)
+        
+        if not metadata:
+            if temp_file.exists():
+                temp_file.unlink()
+            raise HTTPException(
+                status_code=400, detail="No se pudo procesar el archivo EPUB. Puede que esté corrupto o no sea válido."
+            )
+        
+        # Guardar en pendientes
+        upload_id = f"app_upload_{user_data['user_id']}_{datetime.now().timestamp()}"
+        pending_uploads[upload_id] = {
+            'file_path': str(temp_file),
+            'metadata': metadata,
+            'user_id': user_data['user_id'],
+            'original_filename': file.filename
+        }
+        
+        return {
+            "success": True,
+            "upload_id": upload_id,
+            "metadata": metadata
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in miniapp upload: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/library/upload/confirm")
+async def confirm_epub_upload_miniapp(
+    data: Dict[str, Any],
+    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+):
+    """Confirma y finaliza la subida de un EPUB."""
+    upload_id = data.get("upload_id")
+    custom_path = data.get("path")
+    
+    from handlers.epub_upload_handler import epub_uploader, pending_uploads
+    
+    if upload_id not in pending_uploads:
+        raise HTTPException(status_code=404, detail="Upload no encontrado o expirado")
+    
+    upload_info = pending_uploads[upload_id]
+    
+    # Verificar que el usuario sea el mismo o admin
+    if upload_info['user_id'] != user_data['user_id'] and user_data.get("level") != "admin":
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    try:
+        from pathlib import Path
+        file_path = Path(upload_info['file_path'])
+        metadata = upload_info['metadata']
+        
+        # Usar ruta personalizada si se proporcionó
+        suggested_path = custom_path or metadata.get('suggested_path')
+        
+        # Mover a la librería
+        success = await epub_uploader.add_to_library(file_path, suggested_path, metadata)
+        
+        if success:
+            # Limpiar
+            epub_uploader.cleanup_upload(upload_id, file_path)
+            return {"success": True, "path": suggested_path}
+        else:
+            raise HTTPException(status_code=500, detail="Error al mover el archivo a la librería")
+            
+    except Exception as e:
+        logger.error(f"Error confirming upload: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

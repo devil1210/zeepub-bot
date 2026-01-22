@@ -28,6 +28,7 @@ class User(Base):
     beta_tester = Column(Boolean, default=False)
     has_library_access = Column(Boolean, default=True)
     can_request_books = Column(Boolean, default=True)
+    can_upload_epub = Column(Boolean, default=False)
     
     # Métricas
     total_downloads = Column(Integer, default=0)
@@ -68,7 +69,8 @@ class User(Base):
             "total_downloads": self.total_downloads,
             "settings": self.settings,
             "has_library_access": self.has_library_access,
-            "can_request_books": self.can_request_books
+            "can_request_books": self.can_request_books,
+            "can_upload_epub": self.can_upload_epub
         }
 
 class UserLevel(Base):
@@ -109,6 +111,7 @@ class UserLevel(Base):
     has_mini_app_access = Column(Boolean, default=True)
     has_library_access = Column(Boolean, default=True)
     can_request_books = Column(Boolean, default=True)
+    can_upload_epub = Column(Boolean, default=False)
     early_access = Column(Boolean, default=False)
     custom_themes = Column(Boolean, default=False)
     allow_theme_templates = Column(Boolean, default=False)

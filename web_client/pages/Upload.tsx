@@ -1,0 +1,453 @@
+import React, { useState, useRef } from 'react';
+import {
+    ArrowLeft,
+    Upload,
+    FileText,
+    CheckCircle2,
+    AlertCircle,
+    Loader2,
+    X,
+    Info,
+    BookOpen,
+    Tag,
+    Globe,
+    Hash,
+    Calendar,
+    Building,
+    Edit3,
+    Check
+} from 'lucide-react';
+import { api } from '../src/services/api';
+import { useTheme } from '../contexts/ThemeContext';
+
+interface UploadProps {
+    onNavigate?: (tab: string) => void;
+}
+
+interface UploadMetadata {
+    title: string;
+    author: string;
+    series?: string;
+    volume?: string;
+    publisher?: string;
+    publish_date?: string;
+    language?: string;
+    isbn?: string;
+    tags?: string;
+    suggested_path: string;
+    book_hash?: string;
+    file_exists?: boolean;
+    identity_match?: any;
+    path_match?: any;
+}
+
+export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
+    const { settings } = useTheme();
+    const [file, setFile] = useState<File | null>(null);
+    const [uploadId, setUploadId] = useState<string | null>(null);
+    const [metadata, setMetadata] = useState<UploadMetadata | null>(null);
+    const [status, setStatus] = useState<'idle' | 'uploading' | 'analyzing' | 'reviewing' | 'confirming' | 'success' | 'error'>('idle');
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [error, setError] = useState<string | null>(null);
+    const [editingPath, setEditingPath] = useState(false);
+    const [customPath, setCustomPath] = useState('');
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0];
+        if (selectedFile) {
+            if (!selectedFile.name.toLowerCase().endsWith('.epub')) {
+                setError('Solo se admiten archivos EPUB (.epub)');
+                return;
+            }
+            setFile(selectedFile);
+            setError(null);
+            startUpload(selectedFile);
+        }
+    };
+
+    const startUpload = async (fileToUpload: File) => {
+        setStatus('uploading');
+        setUploadProgress(0);
+
+        try {
+            const res = await api.uploadEpub(fileToUpload, (progress) => {
+                setUploadProgress(progress);
+                if (progress === 100) setStatus('analyzing');
+            });
+
+            if (res.success) {
+                setUploadId(res.upload_id);
+                setMetadata(res.metadata);
+                setCustomPath(res.metadata.suggested_path);
+                setStatus('reviewing');
+            } else {
+                setError(res.error || 'Error al procesar el archivo');
+                setStatus('error');
+            }
+        } catch (err: any) {
+            console.error('Upload error:', err);
+            setError(err.message || 'Error en la conexión con el servidor');
+            setStatus('error');
+        }
+    };
+
+    const handleConfirm = async () => {
+        if (!uploadId) return;
+
+        setStatus('confirming');
+        try {
+            const res = await api.confirmEpubUpload({
+                upload_id: uploadId,
+                path: customPath
+            });
+
+            if (res.data?.success) {
+                setStatus('success');
+            } else {
+                setError(res.data?.error || 'Error al confirmar la subida');
+                setStatus('error');
+            }
+        } catch (err: any) {
+            console.error('Confirm error:', err);
+            setError(err.message || 'Error al confirmar la subida');
+            setStatus('error');
+        }
+    };
+
+    const resetUpload = () => {
+        setFile(null);
+        setUploadId(null);
+        setMetadata(null);
+        setStatus('idle');
+        setUploadProgress(0);
+        setError(null);
+        setEditingPath(false);
+        setCustomPath('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const glassStyle = {
+        background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+        backdropFilter: `blur(${settings.glassBlur}px)`,
+        WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+    };
+
+    return (
+        <div className="max-w-4xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans text-gray-100 pb-32">
+            <header className="flex items-center gap-4 mb-8">
+                <button
+                    onClick={() => onNavigate && onNavigate('dashboard')}
+                    className="p-2 -ml-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                >
+                    <ArrowLeft className="w-6 h-6" />
+                </button>
+                <div>
+                    <h1 className="text-3xl font-black text-white tracking-tight uppercase">Subir EPUB</h1>
+                    <p className="text-gray-500 text-[11px] font-bold uppercase tracking-[0.2em] mt-1">
+                        Contribuye a la biblioteca con nuevo contenido
+                    </p>
+                </div>
+            </header>
+
+            <div className="space-y-6">
+                {status === 'idle' && (
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="glass-panel group rounded-[2.5rem] p-12 border-2 border-dashed border-white/10 hover:border-primary/50 transition-all duration-500 cursor-pointer flex flex-col items-center justify-center gap-8 relative overflow-hidden"
+                        style={glassStyle}
+                    >
+                        {/* Decorative Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+                        <div className="relative">
+                            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-500 relative z-10">
+                                <Upload className="w-10 h-10" />
+                            </div>
+                            {/* Animated Pulse Ring */}
+                            <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping opacity-20"></div>
+                        </div>
+
+                        <div className="text-center relative z-10">
+                            <h2 className="text-2xl font-black text-white mb-3">Selecciona un archivo EPUB</h2>
+                            <p className="text-gray-400 max-w-sm mx-auto text-sm leading-relaxed">
+                                Arrastra tu archivo aquí o haz clic para explorar. Los metadatos se extraerán automáticamente.
+                            </p>
+                        </div>
+
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            accept=".epub"
+                            className="hidden"
+                        />
+
+                        <div className="flex gap-4 relative z-10">
+                            <span className="px-4 py-2 rounded-full bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-400">EPUB 3.0+</span>
+                            <span className="px-4 py-2 rounded-full bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-400">Max 100MB</span>
+                        </div>
+                    </div>
+                )}
+
+                {(status === 'uploading' || status === 'analyzing') && (
+                    <div className="glass-panel rounded-[2.5rem] p-12 text-center border border-white/5 flex flex-col items-center justify-center gap-10" style={glassStyle}>
+                        <div className="relative">
+                            <svg className="w-32 h-32 transform -rotate-90">
+                                <circle
+                                    cx="64"
+                                    cy="64"
+                                    r="58"
+                                    stroke="currentColor"
+                                    strokeWidth="8"
+                                    fill="transparent"
+                                    className="text-white/5"
+                                />
+                                <circle
+                                    cx="64"
+                                    cy="64"
+                                    r="58"
+                                    stroke="currentColor"
+                                    strokeWidth="8"
+                                    fill="transparent"
+                                    strokeDasharray={364.4}
+                                    strokeDashoffset={364.4 - (364.4 * (status === 'uploading' ? uploadProgress : 100)) / 100}
+                                    className="text-primary transition-all duration-300"
+                                />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                {status === 'uploading' ? (
+                                    <span className="text-xl font-black text-white">{uploadProgress}%</span>
+                                ) : (
+                                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                                )}
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 className="text-2xl font-black text-white mb-3">
+                                {status === 'uploading' ? 'Subiendo archivo...' : 'Analizando metadatos...'}
+                            </h2>
+                            <p className="text-gray-400 text-sm italic">
+                                {file?.name}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {status === 'reviewing' && metadata && (
+                    <div className="space-y-6">
+                        {/* Conflict Warnings */}
+                        {(metadata.identity_match || metadata.file_exists) && (
+                            <div className={`p-4 rounded-2xl border flex items-start gap-4 ${metadata.identity_match
+                                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                }`}>
+                                <AlertCircle className="w-6 h-6 flex-shrink-0" />
+                                <div>
+                                    <h4 className="font-bold text-sm uppercase tracking-tight">
+                                        {metadata.identity_match ? 'Duplicado Detectado' : 'Conflicto de Ruta'}
+                                    </h4>
+                                    <p className="text-xs opacity-80 mt-1 leading-relaxed">
+                                        {metadata.identity_match
+                                            ? 'Este libro ya existe en la biblioteca. Si continúas, se reemplazará la versión actual.'
+                                            : 'Ya existe un archivo diferente en esta ubicación. Si continúas, será sobrescrito.'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Metadata Review Card */}
+                        <div className="glass-panel rounded-[2.5rem] overflow-hidden border border-white/5" style={glassStyle}>
+                            <div className="p-8 border-b border-white/5 bg-white/[0.02]">
+                                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Revisión de Metadatos</h3>
+                                <div className="flex flex-col md:flex-row gap-6 md:items-center">
+                                    <div className="w-20 h-28 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center text-gray-600 shadow-inner">
+                                        <BookOpen className="w-8 h-8" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="text-2xl font-black text-white leading-tight mb-1">{metadata.title}</h2>
+                                        <p className="text-primary font-bold text-sm tracking-tight">{metadata.author}</p>
+                                        <div className="flex flex-wrap gap-2 mt-4">
+                                            {metadata.series && (
+                                                <span className="px-2.5 py-1 rounded-lg bg-white/5 text-[10px] font-black uppercase text-gray-400 border border-white/10">
+                                                    Serie: {metadata.series} {metadata.volume ? `v${metadata.volume}` : ''}
+                                                </span>
+                                            )}
+                                            {metadata.language && (
+                                                <span className="px-2.5 py-1 rounded-lg bg-white/5 text-[10px] font-black uppercase text-gray-400 border border-white/10 flex items-center gap-1.5">
+                                                    <Globe className="w-3 h-3" /> {metadata.language.toUpperCase()}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-6">
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                            <Building className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Editorial</p>
+                                            <p className="text-sm text-gray-300 font-bold">{metadata.publisher || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                            <Calendar className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Fecha de Publicación</p>
+                                            <p className="text-sm text-gray-300 font-bold">{metadata.publish_date || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                            <Hash className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">ISBN / ID</p>
+                                            <p className="text-xs text-gray-400 font-mono">{metadata.isbn || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                            <Tag className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Géneros / Tags</p>
+                                            <div className="flex flex-wrap gap-1.5 mt-1">
+                                                {metadata.tags?.split(',').map((tag, i) => (
+                                                    <span key={i} className="text-[10px] text-primary/70 font-bold">{tag.trim()}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-white/5">
+                                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Ruta de Destino</p>
+                                        <div className="flex items-center gap-3 p-3 bg-black/40 border border-white/10 rounded-2xl group/path">
+                                            {editingPath ? (
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    value={customPath}
+                                                    onChange={(e) => setCustomPath(e.target.value)}
+                                                    onBlur={() => setEditingPath(false)}
+                                                    className="flex-1 bg-transparent text-xs text-white outline-none font-mono"
+                                                />
+                                            ) : (
+                                                <p className="flex-1 text-[11px] text-primary font-mono truncate">{customPath}</p>
+                                            )}
+                                            <button
+                                                onClick={() => setEditingPath(!editingPath)}
+                                                className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all"
+                                            >
+                                                {editingPath ? <Check className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                        <p className="mt-2 text-[9px] text-gray-600 italic">Puedes editar la ruta si el formato no es correcto.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-4">
+                            <button
+                                onClick={resetUpload}
+                                className="flex-1 py-4 rounded-[1.5rem] bg-white/5 hover:bg-white/10 text-white text-xs font-black uppercase tracking-widest transition-all border border-white/5 flex items-center justify-center gap-2"
+                            >
+                                <X className="w-4 h-4" />
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirm}
+                                disabled={status === 'confirming'}
+                                className="flex-[2] py-4 rounded-[1.5rem] bg-primary hover:bg-primary-dark text-white text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
+                            >
+                                {status === 'confirming' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                Finalizar y Guardar
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {status === 'success' && (
+                    <div className="glass-panel rounded-[2.5rem] p-16 text-center border border-green-500/20 bg-green-500/5 flex flex-col items-center justify-center gap-10" style={glassStyle}>
+                        <div className="relative">
+                            <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 relative z-10">
+                                <CheckCircle2 className="w-12 h-12" />
+                            </div>
+                            <div className="absolute inset-0 bg-green-500/20 rounded-full animate-ping opacity-20"></div>
+                        </div>
+
+                        <div className="max-w-xs mx-auto">
+                            <h2 className="text-3xl font-black text-white mb-4">¡Subida Exitosa!</h2>
+                            <p className="text-gray-400 text-sm leading-relaxed mb-8">
+                                El libro ha sido agregado a la biblioteca. Aparecerá en el catálogo tras el próximo escaneo automático.
+                            </p>
+                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 text-[10px] font-mono text-primary text-center break-all">
+                                {customPath}
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={resetUpload}
+                            className="px-10 py-4 bg-primary hover:bg-primary-dark text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20"
+                        >
+                            Subir otro libro
+                        </button>
+                    </div>
+                )}
+
+                {status === 'error' && (
+                    <div className="glass-panel rounded-[2.5rem] p-16 text-center border border-red-500/20 bg-red-500/5 flex flex-col items-center justify-center gap-10" style={glassStyle}>
+                        <div className="w-24 h-24 rounded-full bg-red-500/20 flex items-center justify-center text-red-500">
+                            <AlertCircle className="w-12 h-12" />
+                        </div>
+
+                        <div className="max-w-sm mx-auto">
+                            <h2 className="text-3xl font-black text-white mb-4">Oops, algo salió mal</h2>
+                            <p className="text-red-400/80 text-sm font-medium leading-relaxed">
+                                {error || 'Ocurrió un error inesperado al procesar el archivo.'}
+                            </p>
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={resetUpload}
+                                className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                Reintentar
+                            </button>
+                            <button
+                                onClick={() => onNavigate && onNavigate('dashboard')}
+                                className="px-8 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                Volver
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Hint Footer */}
+            <footer className="mt-12 p-6 glass-panel rounded-[2rem] border border-white/5 flex gap-4 items-center" style={glassStyle}>
+                <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                    <Info className="w-5 h-5" />
+                </div>
+                <p className="text-[11px] text-gray-500 leading-relaxed font-bold uppercase tracking-tight">
+                    Tip: Los archivos subidos se verifican automáticamente contra la base de datos para evitar duplicados. Si detectamos un conflicto, te pediremos confirmación antes de sobrescribir.
+                </p>
+            </footer>
+        </div>
+    );
+};

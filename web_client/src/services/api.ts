@@ -67,6 +67,32 @@ export const rpc = async <T = any>(action: string, data: any = {}): Promise<T> =
     }
 };
 
+export const uploadFile = async <T = any>(url: string, file: File, onProgress?: (progress: number) => void): Promise<T> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await apiClient.post(url, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            onUploadProgress: (progressEvent) => {
+                if (onProgress && progressEvent.total) {
+                    const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    onProgress(progress);
+                }
+            },
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error(`Upload Error [${url}]:`, error);
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail);
+        }
+        throw error;
+    }
+};
+
 export const api = {
     // Status & User
     getUserStatus: () => rpc('user_status'),
@@ -139,7 +165,10 @@ export const api = {
         cardColor?: string;
         hasLibraryAccess?: boolean;
         canRequestBooks?: boolean;
+        canUploadEpub?: boolean;
         allowThemeTemplates?: boolean;
+        forceSettings?: boolean;
+        cardGlowIntensity?: number;
     }) => rpc('admin_save_tier_config', config),
 
     // User Permissions
@@ -159,6 +188,9 @@ export const api = {
         roles?: string[];
         insignias?: string[];
         expiresAt?: string | null;
+        hasLibraryAccess?: boolean;
+        canRequestBooks?: boolean;
+        canUploadEpub?: boolean;
     }) => rpc('admin_save_user_permissions', permissions),
 
     // User Audit History
@@ -178,6 +210,12 @@ export const api = {
     adminScanUser: (userId: string) => rpc('admin_scan_user', { userId }),
     getSystemLogs: (level: string = 'INFO', hours?: number) => rpc('admin_get_system_logs', { level, hours }),
     sendLogsToTelegram: (level: string = 'DEBUG', hours?: number) => rpc('admin_send_logs_telegram', { level, hours }),
+
+    // EPUB Upload
+    uploadEpub: (file: File, onProgress?: (p: number) => void) =>
+        uploadFile('/api/library/upload', file, onProgress),
+    confirmEpubUpload: (data: { upload_id: string; path?: string }) =>
+        apiClient.post('/api/library/upload/confirm', data),
 
     // Raw RPC Access
     rpc: rpc

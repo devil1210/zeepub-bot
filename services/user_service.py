@@ -176,6 +176,7 @@ async def get_effective_user(
             "has_mini_app_access": True,
             "can_request_books": info.get("can_request_books", True) if info else True,
             "has_library_access": info.get("has_library_access", True) if info else True,
+            "can_upload_epub": info.get("can_upload_epub", False) if info else False,
             "settings": base_settings
         })
         # Note: We DON'T return early here anymore to allow enrichment and simulation
@@ -213,6 +214,7 @@ async def get_effective_user(
                 "roles": info.get("roles") or [],
                 "can_request_books": info.get("can_request_books", True),
                 "has_library_access": info.get("has_library_access", True),
+                "can_upload_epub": info.get("can_upload_epub", False),
                 "settings": final_settings,
                 "personal_settings_raw": info.get("settings", {}) # Store for simulation comparison
             })

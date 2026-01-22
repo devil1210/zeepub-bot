@@ -89,6 +89,7 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
                             "beta_tester": user.beta_tester,
                             "has_library_access": user.has_library_access,
                             "can_request_books": user.can_request_books,
+                            "can_upload_epub": user.can_upload_epub,
                             "photo_url": user.photo_url
                         }
                         
@@ -148,6 +149,7 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
                         "beta_tester": user.get('beta_tester', False),
                         "has_library_access": user.get('has_library_access', True),
                         "can_request_books": user.get('can_request_books', True),
+                        "can_upload_epub": user.get('can_upload_epub', False),
                         "photo_url": user.get('photo_url')
                     }
                     
@@ -207,6 +209,7 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
                         "beta_tester": row['beta_tester'] or False,
                         "has_library_access": row['has_library_access'] if row['has_library_access'] is not None else True,
                         "can_request_books": row['can_request_books'] if row['can_request_books'] is not None else True,
+                        "can_upload_epub": row['can_upload_epub'] if row['can_upload_epub'] is not None else False,
                         "photo_url": row['photo_url']
                     }
                     
@@ -349,6 +352,7 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
                         "beta_tester": user.beta_tester,
                         "has_library_access": user.has_library_access,
                         "can_request_books": user.can_request_books,
+                        "can_upload_epub": user.can_upload_epub,
                         "photo_url": user.photo_url
                     }
                     
