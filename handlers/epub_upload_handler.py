@@ -269,6 +269,62 @@ class EPUBUploader:
         
         return filename.strip()
     
+    async def send_preview_for_approval(self, update: Update, upload_id: str, metadata: Dict[str, Any], original_filename: str):
+        """Envía vista previa para aprobación del admin."""
+        
+        # Construir vista previa enriquecida
+        preview_text = f"""📚 **Vista Previa de EPUB**
+
+📄 **Archivo:** {original_filename}
+
+📋 **Metadata Extraída (Servicio Enriquecido):**
+📖 **Título:** {metadata.get('title', 'N/A')}
+✍️ **Autor:** {metadata.get('author', 'N/A')}
+🏢 **Editorial:** {metadata.get('publisher', 'N/A')}
+📅 **Publicado:** {metadata.get('publish_date', 'N/A')}
+🌐 **Idioma:** {metadata.get('language', 'N/A')}
+🔢 **ISBN:** {metadata.get('isbn', 'N/A')}
+🏷️ **Géneros:** {metadata.get('tags', 'N/A')}"""
+        
+        # Agregar información adicional si está disponible
+        if metadata.get('series'):
+            preview_text += f"\n📚 **Serie:** {metadata.get('series', 'N/A')}"
+        if metadata.get('volume'):
+            preview_text += f"\n📖 **Volumen:** {metadata.get('volume', 'N/A')}"
+        if metadata.get('illustrator'):
+            preview_text += f"\n🎨 **Ilustrador:** {metadata.get('illustrator', 'N/A')}"
+        if metadata.get('translator'):
+            preview_text += f"\n🔄 **Traductor:** {metadata.get('translator', 'N/A')}"
+        if metadata.get('category'):
+            preview_text += f"\n📂 **Categoría:** {metadata.get('category', 'N/A')}"
+        if metadata.get('demography'):
+            preview_text += f"\n👥 **Demografía:** {', '.join(metadata.get('demography', []))}"
+        
+        preview_text += f"""
+
+📝 **Descripción:**
+{metadata.get('description', 'Sin descripción')[:400]}{'...' if len(metadata.get('description', '')) > 400 else ''}
+
+📁 **Ruta Sugerida:**
+`{metadata.get('suggested_path', 'N/A')}`
+
+⚠️ **¿Aprobar este EPUB para agregar a la librería?**"""
+        
+        # Botones de acción
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Aprobar", callback_data=f"approve_epub_{upload_id}"),
+                InlineKeyboardButton("❌ Rechazar", callback_data=f"reject_epub_{upload_id}")
+            ],
+            [
+                InlineKeyboardButton("📝 Editar Ruta", callback_data=f"edit_path_{upload_id}")
+            ]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.message.reply_text(preview_text, reply_markup=reply_markup)
+    
     async def handle_approval_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Maneja los callbacks de aprobación/rechazo."""
         query = update.callback_query
