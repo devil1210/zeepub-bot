@@ -15,6 +15,7 @@ from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters, 
 from config.config_settings import config
 from utils.library_db import get_session
 from models.library_models import LocalBook
+from utils.helpers import generate_book_hash
 from services.epub_service import parse_opf_from_epub, enrich_metadata_from_epub
 
 logger = logging.getLogger(__name__)
@@ -206,10 +207,37 @@ class EPUBUploader:
                 'original_filename': original_filename  # Agregar el nombre original del archivo
             }
             
-            # Generar ruta basada en el formato existente de la biblioteca
+            # Generar hash del libro para detección de duplicados
+            book_hash = generate_book_hash(
+                title=metadata['title'],
+                author=metadata['author'],
+                series=metadata['series'],
+                volume=metadata['volume'],
+                book_type=metadata.get('category') or metadata.get('book_type'),
+                language=metadata['language'],
+                translator=metadata['translator']
+            )
+            metadata['book_hash'] = book_hash
+            
+            # 1. Verificar si ya existe por HASH en la base de datos
+            metadata['existing_book_id'] = None
+            metadata['existing_book_path'] = None
+            
+            with get_session() as session:
+                existing = session.query(LocalBook).filter(LocalBook.book_hash == book_hash).first()
+                if existing:
+                    metadata['existing_book_id'] = existing.id
+                    metadata['existing_book_path'] = existing.filepath
+            
+            # 2. Generar ruta basada en el formato existente de la biblioteca
             metadata['suggested_path'] = self.generate_path(metadata)
             
-            logger.info(f"Successfully extracted metadata: title='{metadata.get('title')}', author='{metadata.get('author')}'")
+            # 3. Verificar si ya existe un ARCHIVO en esa ruta
+            library_base = Path("/library")
+            full_target_path = library_base / metadata['suggested_path']
+            metadata['file_exists'] = full_target_path.exists()
+            
+            logger.info(f"Successfully extracted metadata: title='{metadata.get('title')}', hash='{book_hash}', path_exists={metadata['file_exists']}")
             return metadata
             
         except Exception as e:
@@ -378,19 +406,33 @@ class EPUBUploader:
             preview_text += f"\n👥 **Demografía:** {', '.join(metadata.get('demography', []))}"
         
         preview_text += f"""
+        
+        📝 **Descripción:**
+        {metadata.get('description', 'Sin descripción')[:400]}{'...' if len(metadata.get('description', '')) > 400 else ''}
+        
+        📁 **Ruta Sugerida:**
+        `{metadata.get('suggested_path', 'N/A')}`"""
 
-📝 **Descripción:**
-{metadata.get('description', 'Sin descripción')[:400]}{'...' if len(metadata.get('description', '')) > 400 else ''}
+        # Alertas de conflictos
+        if metadata.get('existing_book_id'):
+            preview_text += f"\n\n⚠️ **DUPLICADO DETECTADO**\nEste libro (identidad coincidente) ya existe en la biblioteca.\n📍 **Ruta actual:** `{metadata.get('existing_book_path')}`"
+            approve_label = "🔄 Reemplazar Existente"
+            callback_prefix = "replace_epub"
+        elif metadata.get('file_exists'):
+            preview_text += f"\n\n⚠️ **CONFLICTO DE ARCHIVO**\nYa existe un archivo en la ruta sugerida, pero con distinta identidad.\n¿Deseas sobrescribir el archivo físico?"
+            approve_label = "⚠️ Sobrescribir Archivo"
+            callback_prefix = "overwrite_epub"
+        else:
+            preview_text += f"\n\n✅ Este es un libro nuevo para la biblioteca."
+            approve_label = "✅ Aprobar"
+            callback_prefix = "approve_epub"
 
-📁 **Ruta Sugerida:**
-`{metadata.get('suggested_path', 'N/A')}`
-
-⚠️ **¿Aprobar este EPUB para agregar a la librería?**"""
+        preview_text += "\n\n**¿Cómo deseas proceder?**"
         
         # Botones de acción
         keyboard = [
             [
-                InlineKeyboardButton("✅ Aprobar", callback_data=f"approve_epub_{upload_id}"),
+                InlineKeyboardButton(approve_label, callback_data=f"{callback_prefix}_{upload_id}"),
                 InlineKeyboardButton("❌ Rechazar", callback_data=f"reject_epub_{upload_id}")
             ],
             [
@@ -425,31 +467,61 @@ class EPUBUploader:
         
         upload_info = pending_uploads[upload_id]
         
-        if callback_data.startswith('approve_epub'):
-            await self.approve_upload(query, upload_id, upload_info)
+        if callback_data.startswith('approve_epub') or callback_data.startswith('replace_epub') or callback_data.startswith('overwrite_epub'):
+            # Si es overwrite de archivo pero no de hash, pedir confirmación extra si no se ha pedido
+            if callback_data.startswith('overwrite_epub') and not upload_info.get('overwrite_confirmed'):
+                upload_info['overwrite_confirmed'] = True
+                keyboard = [
+                    [
+                        InlineKeyboardButton("✅ Sí, sobrescribir archivo", callback_data=f"approve_epub_{upload_id}"),
+                        InlineKeyboardButton("🔙 Cancelar", callback_data=f"reject_epub_{upload_id}")
+                    ]
+                ]
+                await query.edit_message_text(
+                    "⚠️ **Confirmación de Sobrescritura**\n\n"
+                    "El archivo físico ya existe. Al continuar, el archivo anterior será eliminado y reemplazado por este.\n\n"
+                    "¿Estás seguro?",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
+
+            await self.approve_upload(query, upload_id, upload_info, is_replacement=callback_data.startswith('replace_epub'))
         elif callback_data.startswith('reject_epub'):
             await self.reject_upload(query, upload_id, upload_info)
         elif callback_data.startswith('edit_path'):
             await self.request_path_edit(query, upload_id, upload_info)
     
-    async def approve_upload(self, query, upload_id: str, upload_info: Dict[str, Any]):
+    async def approve_upload(self, query, upload_id: str, upload_info: Dict[str, Any], is_replacement: bool = False):
         """Aprueba y procesa el upload."""
         try:
             file_path = Path(upload_info['file_path'])
             metadata = upload_info['metadata']
             suggested_path = metadata.get('suggested_path', '')
             
-            await query.edit_message_text("✅ **Aprobado**. Procesando upload...")
+            status_msg = "🔄 Reemplazando libro..." if is_replacement else "✅ Procesando upload..."
+            await query.edit_message_text(status_msg)
             
+            # Si es reemplazo por hash, eliminar el archivo físico antiguo primero
+            if is_replacement and metadata.get('existing_book_path'):
+                old_path = Path("/library") / metadata['existing_book_path']
+                if old_path.exists():
+                    try:
+                        old_path.unlink()
+                        logger.info(f"Deleted old file for replacement: {old_path}")
+                    except Exception as e:
+                        logger.error(f"Error deleting old file: {e}")
+
             # Mover archivo a la librería
             success = await self.add_to_library(file_path, suggested_path, metadata)
             
             if success:
+                result_text = "✅ **Libro reemplazado con éxito**" if is_replacement else "✅ **EPUB agregado exitosamente**"
                 await query.edit_message_text(
-                    f"✅ **EPUB agregado exitosamente**\n\n"
+                    f"{result_text}\n\n"
                     f"📁 **Ruta:** `{suggested_path}`\n"
                     f"📚 **Título:** {metadata.get('title')}\n"
-                    f"✍️ **Autor:** {metadata.get('author')}"
+                    f"✍️ **Autor:** {metadata.get('author')}\n\n"
+                    f"⌛ _El sistema lo indexará automáticamente en el próximo escaneo._"
                 )
             else:
                 await query.edit_message_text("❌ Error agregando el EPUB a la librería.")
@@ -562,4 +634,4 @@ async def handle_upload_callback(update: Update, context: ContextTypes.DEFAULT_T
 def setup_upload_handlers(application):
     """Configura los handlers para upload de EPUBs."""
     application.add_handler(CommandHandler("upload_epub", upload_epub_command))
-    application.add_handler(CallbackQueryHandler(handle_upload_callback, pattern=r"^(approve|reject|edit_path)_epub_"))
+    application.add_handler(CallbackQueryHandler(handle_upload_callback, pattern=r"^(approve|reject|edit_path|replace|overwrite)_epub_"))
