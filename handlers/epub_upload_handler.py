@@ -491,25 +491,40 @@ class EPUBUploader:
     async def add_to_library(self, epub_path: Path, suggested_path: str, metadata: Dict[str, Any]) -> bool:
         """Agrega el EPUB a la librería usando metadata enriquecida."""
         try:
+            logger.info(f"Starting add_to_library: epub_path={epub_path}, suggested_path={suggested_path}")
+            
             # Directorio base de la librería
             library_base = Path("/mnt/books/library")
+            logger.info(f"Library base path: {library_base}")
             
             # Crear ruta completa
             full_path = library_base / suggested_path
+            logger.info(f"Full target path: {full_path}")
+            
+            # Verificar que el archivo fuente exista
+            if not epub_path.exists():
+                logger.error(f"Source EPUB file does not exist: {epub_path}")
+                return False
             
             # Crear directorio si no existe
             full_path.parent.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Created directory: {full_path.parent}")
             
             # Mover archivo
             import shutil
+            logger.info(f"Moving file from {epub_path} to {full_path}")
             shutil.move(str(epub_path), str(full_path))
+            logger.info(f"File moved successfully")
             
             # Agregar a base de datos con metadata enriquecida
             session = get_session()
             try:
+                logger.info("Adding to database...")
+                
                 # Verificar si ya existe
                 existing = session.query(LocalBook).filter_by(file_path=str(full_path)).first()
                 if existing:
+                    logger.info(f"Updating existing book: {existing.id}")
                     # Actualizar metadata existente con datos enriquecidos
                     existing.title = metadata.get('title', existing.title)
                     existing.author = metadata.get('author', existing.author)
@@ -530,6 +545,7 @@ class EPUBUploader:
                     if metadata.get('original_metadata'):
                         existing.extra_metadata = metadata.get('original_metadata')
                 else:
+                    logger.info("Creating new book record")
                     # Crear nuevo registro con metadata enriquecida
                     new_book = LocalBook(
                         title=metadata.get('title', ''),
@@ -553,13 +569,20 @@ class EPUBUploader:
                     session.add(new_book)
                 
                 session.commit()
+                logger.info("Database operation completed successfully")
                 return True
                 
+            except Exception as e:
+                logger.error(f"Database error: {e}")
+                session.rollback()
+                return False
             finally:
                 session.close()
                 
         except Exception as e:
             logger.error(f"Error adding to library: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return False
     
     def cleanup_upload(self, upload_id: str, epub_path: Path):
