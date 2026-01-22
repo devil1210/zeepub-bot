@@ -261,7 +261,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 logger.debug(f"[SUPABASE UPSERT] Data: {data}")
                 self.supabase.get_client().table('users').upsert(data).execute()
                 
-                if level.lower() == 'admin':
+                if lvl_str == 'admin':
                     self.supabase.get_client().table('admins').upsert({"user_id": telegram_id, "granted_by": created_by}).execute()
                 else:
                     self.supabase.get_client().table('admins').delete().eq('user_id', telegram_id).execute()
@@ -309,7 +309,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             if exists:
                 import json
                 fields = ["level = ?", "level_id = ?"]
-                params = [level, level_id]
+                params = [lvl_str, level_id]
                 if expires_at is not None:
                     fields.append("expires_at = ?")
                     params.append(expires_at)
@@ -353,7 +353,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     "INSERT INTO users (telegram_id, level, level_id, added_at, expires_at, role, created_by, nickname, name, username, roles, insignias, has_library_access, can_request_books, settings, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)",
                     (
                         telegram_id,
-                        level,
+                        lvl_str,
                         level_id,
                         datetime.utcnow(),
                         expires_at,
@@ -371,7 +371,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 )
 
             # Sync with admins table
-            if level.lower() == 'admin':
+            if lvl_str == 'admin':
                 await conn.execute(
                     "INSERT OR IGNORE INTO admins (user_id, granted_by) VALUES (?, ?)",
                     (telegram_id, created_by)
