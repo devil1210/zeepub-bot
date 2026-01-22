@@ -276,9 +276,9 @@ class EPUBUploader:
         # 1. Revisar si el filename original ya indica el tipo
         filename_lower = original_filename.lower()
         if '[nl]' in filename_lower:
-            return 'NL'
+            return 'NL'  # Ya tiene el tag, no agregar
         elif '[nw]' in filename_lower:
-            return 'NW'
+            return 'NW'  # Ya tiene el tag, no agregar
         
         # 2. Revisar metadata para detectar el tipo
         publisher = metadata.get('publisher', '').lower()
