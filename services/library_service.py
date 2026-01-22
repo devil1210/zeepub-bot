@@ -1,7 +1,7 @@
 import logging
 import re
 from typing import Dict, Any, Optional
-from sqlalchemy import text, func
+from sqlalchemy import text, func, String
 from utils.library_db import get_session
 from models.library_models import LocalBook, LibrarySource
 
