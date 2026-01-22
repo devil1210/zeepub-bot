@@ -227,6 +227,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         {p}
       </p>
     ));
+  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-100">
