@@ -665,7 +665,5 @@ class ScannerService:
         target_book.content_hash = source_book.content_hash
         target_book.book_hash = source_book.book_hash
         target_book.file_size = source_book.file_size
-            return False
-        except Exception as e:
-            logger.error(f"Error enriqueciendo desde ISBN {book.isbn}: {e}")
-            return False
+
+
