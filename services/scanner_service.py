@@ -438,7 +438,7 @@ class ScannerService:
             book.uri_id = meta.get("uri")
             book.published_at = meta.get("published_at")
             book.modified_at_opf = meta.get("modified_at_opf")
-            book.book_type = meta.get("book_type")
+            # book_type already set above
             book.epub_version = meta.get("version")
             book.word_count = meta.get("word_count")
             book.page_count = meta.get("page_count")
@@ -457,8 +457,10 @@ class ScannerService:
             
             outcome = "updated"
             if existing_same_file:
-                # Same file, just update metadata
-                book = existing_same_file
+                # Same file, just update metadata on the EXISTING instance
+                # DO NOT overwrite 'book' with 'existing_same_file', INSTEAD copy fields logic required
+                self._copy_metadata_to_existing(book, existing_same_file)
+                book = existing_same_file # Point to the managed instance
                 logger.debug(f"Actualizando archivo existente: {filepath}")
             else:
                 # Check if there's another file with same content (real duplicate)
@@ -473,15 +475,18 @@ class ScannerService:
                     logger.warning(f"📕 Duplicado detectado: {book.title}")
                     
                     try:
-                        dup = DuplicateBook(
-                            book_hash=book.book_hash,
-                            original_filepath=existing_with_same_hash.filepath,
-                            duplicate_filepath=filepath,
-                            title=book.title,
-                            author=book.author
-                        )
-                        session.add(dup)
-                        session.commit() # Save duplicate immediately to be safe
+                        # Check duplicate record existence
+                        dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
+                        if not dup_exists:
+                            dup = DuplicateBook(
+                                book_hash=book.book_hash,
+                                original_filepath=existing_with_same_hash.filepath,
+                                duplicate_filepath=filepath,
+                                title=book.title,
+                                author=book.author
+                            )
+                            session.add(dup)
+                            session.commit() # Save duplicate immediately to be safe
                     except Exception as de:
                         logger.error(f"Error guardando registro de duplicado: {de}")
                         session.rollback()
@@ -625,6 +630,30 @@ class ScannerService:
                     if found_something:
                         logger.info(f"Metadatos extraídos para ISBN {isbn}: {api_title}")
                         return True
+        except Exception:
+            pass
+
+        return False
+
+    def _copy_metadata_to_existing(self, source_book: LocalBook, target_book: LocalBook):
+        """Helper to copy updated fields from a fresh scan to an existing DB record."""
+        target_book.title = source_book.title
+        target_book.romaji_title = source_book.romaji_title
+        target_book.english_title = source_book.english_title
+        target_book.series = source_book.series
+        target_book.volume = source_book.volume
+        target_book.author = source_book.author
+        target_book.publisher = source_book.publisher
+        target_book.description = source_book.description
+        target_book.description_clean = source_book.description_clean
+        target_book.book_type = source_book.book_type
+        target_book.tags = source_book.tags
+        target_book.demographics = source_book.demographics
+        target_book.series_hash = source_book.series_hash
+        # Hashes should NOT change ideally unless content changed, but we update them just in case
+        target_book.content_hash = source_book.content_hash
+        target_book.book_hash = source_book.book_hash
+        target_book.file_size = source_book.file_size
             return False
         except Exception as e:
             logger.error(f"Error enriqueciendo desde ISBN {book.isbn}: {e}")
