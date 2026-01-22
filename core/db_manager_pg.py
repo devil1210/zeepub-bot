@@ -70,6 +70,8 @@ class PostgresManager:
         """Dependency for getting a DB session."""
         if not self.session_maker:
             await self.initialize()
+            if not self.session_maker:
+                raise RuntimeError("Database (PostgreSQL) is not initialized. Check DATABASE_URL.")
             
         async with self.session_maker() as session:
             try:
