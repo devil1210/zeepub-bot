@@ -52,10 +52,21 @@ class ScannerService:
                 "sources_scanned": len(self.libraries)
             }
 
-            for name, path in self.libraries.items():
+            # Si self.libraries está vacío (caso común al iniciar sin config env),
+            # cargamos TODAS las fuentes desde la base de datos para escanear todo.
+            if not self.libraries:
+                all_sources = session.query(LibrarySource).all()
+                local_libs_map = {s.name: s.path for s in all_sources}
+            else:
+                # Si se pasaron librerías específicas, usamos esas
+                local_libs_map = self.libraries
+
+            results["sources_scanned"] = len(local_libs_map)
+
+            for name, path in local_libs_map.items():
                 logger.info(f"Iniciando escaneo de fuente: {name} ({path})")
 
-                # 1. Asegurar que la fuente existe en DB
+                # 1. Asegurar que la fuente existe en DB (si viene del JSON)
                 source = session.query(LibrarySource).filter_by(path=path).first()
                 if not source:
                     source = LibrarySource(name=name, path=path)

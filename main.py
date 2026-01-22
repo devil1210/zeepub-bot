@@ -22,13 +22,13 @@ async def auto_scan_library():
         from services.scanner_service import ScannerService
         import os
         
-        libs_json = os.getenv("LOCAL_LIBRARIES")
-        if not libs_json:
-            logger.warning("LOCAL_LIBRARIES not configured for auto scan")
-            return
+        # No usar os.getenv("LOCAL_LIBRARIES") ya que scanner toma config_json en __init__
+        # pero es mejor pasarlo vacío si no lo usamos para este auto_scan
+        # Dependiendo del diseño deseado.
+        # Si queremos escanear TODAS las fuentes de DB:
         
-        scanner = ScannerService(libs_json)
-        logger.info("Starting automatic library scan...")
+        scanner = ScannerService("{}")
+        logger.info("Starting automatic library scan (All DB Sources)...")
         
         results = scanner.sync_all(force_scan=False)
         if results:
