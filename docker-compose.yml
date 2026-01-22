@@ -9,7 +9,7 @@ services:
     volumes:
       - ./data:/app/data
       # La ruta del host se define en el .env como HOST_LIB_PATH
-      - ${HOST_LIB_PATH}:/library:ro
+      - ${HOST_LIB_PATH}:/library:rw
     dns:
       - 1.1.1.1
       - 8.8.8.8
