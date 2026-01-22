@@ -155,7 +155,15 @@ def abs_url(base: str, href: str) -> str:
 
 
 def norm_string(s: Any) -> str:
-    return " ".join((str(s) if s is not None else "").split()).casefold()
+    if s is None:
+        return ""
+    text = str(s)
+    # Remove content in square brackets [Tags]
+    text = re.sub(r'\[.*?\]', '', text)
+    # Remove content in parentheses (Jap Name / Extra Info)
+    text = re.sub(r'\(.*?\)', '', text)
+    # Normalize spaces and casefold
+    return " ".join(text.split()).casefold()
 
 
 def generate_book_hash(
