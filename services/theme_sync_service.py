@@ -184,9 +184,9 @@ class ThemeSyncService:
             await session.execute(text("""
                 CREATE TABLE IF NOT EXISTS theme_sync_logs (
                     id SERIAL PRIMARY KEY,
-                    sync_type VARCHAR(20) NOT NULL,
-                    direction VARCHAR(20) NOT NULL,
-                    status VARCHAR(20) NOT NULL,
+                    sync_type VARCHAR(50) NOT NULL,
+                    direction VARCHAR(50) NOT NULL,
+                    status VARCHAR(50) NOT NULL,
                     local_themes_before INTEGER DEFAULT 0,
                     local_themes_after INTEGER DEFAULT 0,
                     supabase_themes_before INTEGER DEFAULT 0,
@@ -195,10 +195,21 @@ class ThemeSyncService:
                     themes_updated INTEGER DEFAULT 0,
                     themes_deleted INTEGER DEFAULT 0,
                     errors TEXT,
-                    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    completed_at TIMESTAMP
+                    started_at TIMESTAMP NOT NULL,
+                    completed_at TIMESTAMP NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
+            
+            # Crear índices para mejor rendimiento
+            await session.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_theme_sync_logs_status ON theme_sync_logs(status)
+            """))
+            
+            await session.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_theme_sync_logs_started_at ON theme_sync_logs(started_at)
+            """))
+            
             await session.commit()
             
             # Contar temas antes
