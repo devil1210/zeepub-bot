@@ -1464,7 +1464,8 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
                 "cardGlowIntensity": g.get("cardGlowIntensity", 0.5),
                 "backgroundColor": g.get("backgroundColor", "#0f172a"),
                 "cardColor": g.get("cardColor", "#1e293b"),
-                "bannerContentOffset": g.get("bannerContentOffset", 0)
+                "bannerContentOffset": g.get("bannerContentOffset", 0),
+                "allowThemeTemplates": g.get("allowThemeTemplates", False)
             }
             return {
                 "success": True,

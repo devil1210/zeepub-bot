@@ -19,7 +19,86 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
     def __init__(self, db: DatabaseManager = db_manager):
         self.db = db
 
+    async def ensure_default_themes(self):
+        """Si no hay temas en la DB, crea unos por defecto."""
+        try:
+            # Check if empty (using SQLite as baseline is enough for sync check)
+            async with self.db.connection() as conn:
+                cursor = await conn.execute("SELECT count(*) FROM app_themes")
+                count = (await cursor.fetchone())[0]
+                if count > 0:
+                    return
+
+            logger.info("Seeding default theme templates...")
+            defaults = [
+                {
+                    "name": "Ocean Deep (Default)",
+                    "description": "El balance perfecto entre legibilidad y estética profesional.",
+                    "theme": "dark",
+                    "primaryColor": "#2b6cee",
+                    "backgroundColor": "#0f172a",
+                    "cardColor": "#1e293b",
+                    "glassOpacity": 0.6,
+                    "glassBlur": 12,
+                    "cardGlowIntensity": 0.5,
+                    "fontSize": 14,
+                    "coverWidth": 120,
+                    "bannerContentOffset": 0
+                },
+                {
+                    "name": "Midnight Purple",
+                    "description": "Elegancia nocturna con tonos violetas y burdeos.",
+                    "theme": "dark",
+                    "primaryColor": "#a855f7",
+                    "backgroundColor": "#1a1a2e",
+                    "cardColor": "#16213e",
+                    "glassOpacity": 0.7,
+                    "glassBlur": 16,
+                    "cardGlowIntensity": 0.6,
+                    "fontSize": 14,
+                    "coverWidth": 120,
+                    "bannerContentOffset": 0
+                },
+                {
+                    "name": "Emerald Night",
+                    "description": "Inspirado en bosques profundos y terminales antiguas.",
+                    "theme": "dark",
+                    "primaryColor": "#10b981",
+                    "backgroundColor": "#064e3b",
+                    "cardColor": "#065f46",
+                    "glassOpacity": 0.5,
+                    "glassBlur": 10,
+                    "cardGlowIntensity": 0.4,
+                    "fontSize": 14,
+                    "coverWidth": 120,
+                    "bannerContentOffset": 0
+                },
+                {
+                    "name": "Amoled Black",
+                    "description": "Contraste máximo para pantallas OLED. Ahorro de batería y pureza visual.",
+                    "theme": "dark",
+                    "primaryColor": "#3b82f6",
+                    "backgroundColor": "#000000",
+                    "cardColor": "#111111",
+                    "glassOpacity": 0.4,
+                    "glassBlur": 8,
+                    "cardGlowIntensity": 0.3,
+                    "fontSize": 14,
+                    "coverWidth": 120,
+                    "bannerContentOffset": 0
+                }
+            ]
+            
+            for theme in defaults:
+                await self.upsert(theme)
+            
+        except Exception as e:
+            logger.error(f"Error seeding default themes: {e}")
+
     async def get_all_themes(self) -> List[Dict[str, Any]]:
+        # Asegurar que existan temas por defecto antes de listar
+        await self.ensure_default_themes()
+
         # 1. Postgres
         if config.ENABLE_POSTGRES_PLUGIN:
              try:

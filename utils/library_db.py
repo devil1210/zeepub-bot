@@ -393,6 +393,7 @@ def init_library_db():
         
         # Importar modelos para asegurar que se registren en metadata
         import models.user_audit_models  # noqa
+        import models.user_models        # noqa
         import models.library_models     # noqa
 
         # Verificar que los modelos estén registrados
