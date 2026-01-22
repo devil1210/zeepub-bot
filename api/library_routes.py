@@ -40,7 +40,7 @@ async def search_local_books(
         search_type=search_type,
         source_id=source_id
     )
-    )
+
 
 
 @router.post("/api/library/upload")
