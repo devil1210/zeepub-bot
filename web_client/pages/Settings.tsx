@@ -22,7 +22,8 @@ import {
   Terminal,
   Eraser,
   Eye,
-  CheckCircle2
+  CheckCircle2,
+  Upload
 } from 'lucide-react';
 import { ReportIssueModal } from '../components/ReportIssueModal';
 import { RequestBookModal } from '../components/RequestBookModal';
@@ -44,7 +45,8 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
     showRecommendations,
     setShowRecommendations,
     uiExportedSettings,
-    extendedInfo
+    extendedInfo,
+    canUploadEpub
   } = useTelegram();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
@@ -290,6 +292,23 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     <div>
                       <p className="text-sm font-bold text-white">Mis Descargas</p>
                       <p className="text-xs text-gray-400">Ver contenido recién descargado</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
+                </button>
+              )}
+              {canUploadEpub && (
+                <button
+                  onClick={() => onNavigate && onNavigate('upload')}
+                  className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/10">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">Subir EPUB</p>
+                      <p className="text-xs text-gray-400">Añadir nuevos libros a la biblioteca</p>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
