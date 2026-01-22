@@ -244,7 +244,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         {/* Action Buttons Overlay - Desktop/Tablet */}
         <div
           className="absolute left-6 right-6 z-30 flex items-center justify-between"
-          style={{ top: `calc(1.5rem + var(--banner-content-offset, 0px))` }}
+          style={{ top: '1.5rem' }}
         >
           <button
             onClick={onBack}
@@ -274,7 +274,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
         <div
           className="relative w-full px-4 sm:px-6 lg:px-8 pb-10 z-20"
-          style={{ paddingTop: `calc(10rem + var(--banner-content-offset, 0px))` }}
+          style={{ paddingTop: '10rem' }}
         >
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
             <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 -mb-4 shadow-2xl rounded-lg overflow-hidden">
@@ -435,10 +435,13 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                         className="flex items-center gap-2 px-5 py-2 rounded-lg bg-transparent border border-primary/40 text-primary text-[10px] font-black tracking-widest hover:bg-primary hover:text-white transition-all uppercase"
                         onClick={(e) => {
                           e.stopPropagation();
-                          api.requestDownload(vol.id, 'private');
-                          if (typeof (window as any).Telegram?.WebApp?.showAlert === 'function') {
-                            (window as any).Telegram.WebApp.showAlert("Petición de descarga enviada al bot.");
-                          }
+                          const downloadUrl = `/api/books/${vol.id}/download`;
+                          const link = document.createElement('a');
+                          link.href = downloadUrl;
+                          link.download = vol.cleanTitle || vol.title;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
                         }}
                       >
                         <Download className="w-3.5 h-3.5" />

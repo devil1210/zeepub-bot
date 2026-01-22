@@ -110,7 +110,9 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
     setLoading(true);
     try {
       // Pass the activeSort to the backend for global sorting
-      const res = await api.searchBooks(query, page, selectedScope.toLowerCase(), activeSort);
+      // When scope is "TODOS", search in all categories
+      const searchScope = selectedScope === 'TODOS' ? '' : selectedScope.toLowerCase();
+      const res = await api.searchBooks(query, page, searchScope, activeSort);
 
       if (res && res.results) {
         // Map backend results to Series type
@@ -153,7 +155,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
         // Preload next page in background if available
         if (page < (res.totalPages || 1)) {
-          api.searchBooks(query, page + 1, selectedScope.toLowerCase(), activeSort).then(nextRes => {
+          api.searchBooks(query, page + 1, searchScope, activeSort).then(nextRes => {
             if (nextRes && nextRes.results) {
               const nextCovers = nextRes.results
                 .map((item: any) => {
