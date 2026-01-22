@@ -30,15 +30,21 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
                     # Check if empty using PostgreSQL
                     result = await session.execute(text("SELECT count(*) FROM app_themes"))
                     count = result.scalar()
+                    logger.info(f"PostgreSQL app_themes count: {count}")
                     if count > 0:
                         return
+                    else:
+                        logger.warning("No themes found in PostgreSQL, creating default themes")
             else:
                 # Check if empty using SQLite as baseline
                 async with self.db.connection() as conn:
                     cursor = await conn.execute("SELECT count(*) FROM app_themes")
                     count = (await cursor.fetchone())[0]
+                    logger.info(f"SQLite app_themes count: {count}")
                     if count > 0:
                         return
+                    else:
+                        logger.warning("No themes found in SQLite, creating default themes")
 
             logger.info("Seeding default theme templates...")
             defaults = [
@@ -115,10 +121,14 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
              try:
                 async with pg_manager.get_session() as session:
                     stmt = select(AppTheme).order_by(AppTheme.name)
+                    logger.info(f"Executing SQL query: {stmt}")
                     result = await session.execute(stmt)
                     themes = result.scalars().all()
                     theme_list = [self._to_dict(t) for t in themes]
                     logger.info(f"Retrieved {len(theme_list)} themes from PostgreSQL")
+                    # Log first few theme names for debugging
+                    if theme_list:
+                        logger.info(f"First few themes: {[t['name'] for t in theme_list[:5]]}")
                     return theme_list
              except Exception as e:
                 logger.error(f"Postgres get_all_themes error: {e}")
