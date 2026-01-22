@@ -628,9 +628,12 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
             week_ago = (datetime.now() - timedelta(days=7)).isoformat()
             # Note: We assume 'created_at' exists in Supabase. If not, this might fail or return 0.
             try:
+                # We catch generic exceptions here because column might not exist or be named differently
                 res_u7 = user_repo.supabase.get_client().table('users').select("telegram_id", count='exact').gte('created_at', week_ago).execute()
                 users_7d = res_u7.count or 0
-            except:
+            except Exception as e:
+                logger.warning(f"Could not fetch users_7d stats (likely missing created_at): {e}")
+                users_7d = int(total_users * 0.05) # Fallback heuristic
                 users_7d = int(total_users * 0.05) # Fallback heuristic if no created_at
         except Exception as e:
             logger.error(f"Supabase metrics error: {e}")

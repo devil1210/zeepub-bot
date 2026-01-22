@@ -244,7 +244,7 @@ class LibraryService:
                 group_query = group_query.order_by(func.avg(func.nullif(LocalBook.rating_average, 0.0)).desc())
             elif sort_by in ('added', 'updated'):
                 # Priorizar fecha de modificación OPF para ordenamiento cronológico de serie
-                group_query = group_query.order_by(func.max(func.coalesce(LocalBook.modified_at_opf, LocalBook.file_created_at)).desc())
+                group_query = group_query.order_by(func.max(func.coalesce(LocalBook.modified_at_opf, func.cast(LocalBook.file_created_at, String))).desc())
             else:
                 group_query = group_query.order_by(func.min(title_expr).asc())
             
