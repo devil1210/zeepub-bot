@@ -82,6 +82,10 @@ export interface Series {
   englishTitle?: string;
   spanishTitle?: string;
   romajiTitle?: string;
+  illustrator?: string;
+  translator?: string;
+  typesetter?: string;
+  group?: string;
   volumes: Volume[];
 }
 

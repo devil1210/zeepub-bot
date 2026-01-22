@@ -210,6 +210,8 @@ class LibraryService:
                     group_query = group_query.filter(LocalBook.translator.ilike(f"%{query}%"))
                 elif s_type in ("maquetador", "layout"):
                     group_query = group_query.filter(LocalBook.layout_by.ilike(f"%{query}%"))
+                elif s_type in ("grupo", "publisher", "editorial"):
+                    group_query = group_query.filter(LocalBook.publisher.ilike(f"%{query}%"))
                 elif s_type in ("géneros", "genres", "categoria"):
                     # tags es una columna JSON, ilike sobre su representación string en SQLite funciona para búsqueda básica
                     group_query = group_query.filter(
@@ -222,10 +224,15 @@ class LibraryService:
                         (LocalBook.series.ilike(f"%{query}%")) |
                         (LocalBook.english_title.ilike(f"%{query}%")) |
                         (LocalBook.spanish_title.ilike(f"%{query}%")) |
+                        (LocalBook.romaji_title.ilike(f"%{query}%")) |
+                        (LocalBook.jap_title.ilike(f"%{query}%")) |
                         (LocalBook.author.ilike(f"%{query}%")) |
                         (LocalBook.illustrator.ilike(f"%{query}%")) |
                         (LocalBook.translator.ilike(f"%{query}%")) |
                         (LocalBook.layout_by.ilike(f"%{query}%")) |
+                        (LocalBook.publisher.ilike(f"%{query}%")) |
+                        (LocalBook.isbn.ilike(f"%{query}%")) |
+                        (LocalBook.asin.ilike(f"%{query}%")) |
                         (LocalBook.tags.ilike(f"%{query}%")) |
                         (LocalBook.book_type.ilike(f"%{query}%"))
                     )
@@ -267,6 +274,10 @@ class LibraryService:
                     "englishTitle": rep.english_title,
                     "spanishTitle": rep.spanish_title,
                     "author": rep.author,
+                    "illustrator": rep.illustrator,
+                    "translator": rep.translator,
+                    "typesetter": rep.layout_by,
+                    "group": rep.publisher,
                     "cover": rep.cover_low or rep.cover_medium or rep.cover_high or rep.cover_original,
                     "cover_thumb": rep.cover_low,
                     "cover_low": rep.cover_low,

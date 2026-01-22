@@ -33,6 +33,7 @@ export const SearchScopeModal: React.FC<SearchScopeModalProps> = ({
     { id: 'ILUSTRADOR', label: 'ILUSTRADOR', icon: PenTool },
     { id: 'TRADUCTOR', label: 'TRADUCTOR', icon: Languages },
     { id: 'MAQUETADOR', label: 'MAQUETADOR', icon: FileBox },
+    { id: 'GRUPO', label: 'GRUPO', icon: User },
     { id: 'GÉNEROS', label: 'GÉNEROS', icon: Folder },
   ];
 

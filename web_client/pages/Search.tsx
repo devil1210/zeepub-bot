@@ -46,17 +46,17 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   } = useSearchNav();
 
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
-  const [activeSort, setActiveSort] = useState('a-z');
-  const [selectedScope, setSelectedScope] = useState('TODOS');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [activeSort, setActiveSort] = useState(navState.activeSort || 'a-z');
+  const [selectedScope, setSelectedScope] = useState(navState.selectedScope || 'TODOS');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>(navState.viewMode || 'list');
   const [searchTerm, setSearchTerm] = useState(navState.searchTerm);
 
   // Data State
   const [series, setSeries] = useState<Series[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
+  // Pagination State - Initialize from context
+  const [currentPage, setCurrentPage] = useState(navState.currentPage || 1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
 
@@ -130,6 +130,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           volumesCount: item.numBooks || 1,
           status: 'Completed',
           lastUpdated: item.updatedDate || 'Reciente',
+          illustrator: item.illustrator,
+          translator: item.translator,
+          typesetter: item.typesetter,
+          group: item.group,
           volumes: []
         }));
 
@@ -216,7 +220,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   };
 
   useEffect(() => {
-    scrollToTop('instant');
+    scrollToTop('smooth');
   }, [currentPage]);
 
   const handleNextPage = () => {
@@ -301,10 +305,19 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   </p>
 
                   {/* Genres */}
-                  <p className="text-xs text-gray-500 mb-auto line-clamp-1">
-                    <span className="font-bold text-gray-600 uppercase tracking-wide mr-1">GÉNEROS:</span>
-                    {series.genre}
-                  </p>
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-[10px] text-gray-500 line-clamp-1">
+                      <span className="font-bold text-gray-600 uppercase tracking-wide mr-1">GÉNEROS:</span>
+                      {series.genre}
+                    </p>
+                    <p className="text-[9px] text-gray-400 line-clamp-1 italic">
+                      {[
+                        series.illustrator && `Ilustr: ${series.illustrator}`,
+                        series.translator && `Traductor: ${series.translator}`,
+                        series.group && `Grupo: ${series.group}`,
+                      ].filter(Boolean).join(' • ')}
+                    </p>
+                  </div>
 
                   {/* Meta Info Row */}
                   <div className="flex flex-wrap items-center gap-3 mt-3 mb-2">
