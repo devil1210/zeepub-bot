@@ -126,29 +126,41 @@ class EpubMetadataExtractor:
                     self.metadata['tags'] = tags
 
                     # 3.4 Series y Volumen (Calibre / EPUB3 metadata)
+                    collection_ids = {} # id -> title
+                    # First pass: collect IDs
+                    for meta in meta_tags:
+                        prop = meta.get('property')
+                        meta_id = meta.get('id')
+                        if prop == 'belongs-to-collection':
+                            self.metadata['series'] = clean_metadata_tags(meta.text)
+                            if meta_id:
+                                collection_ids[meta_id] = self.metadata['series']
+
+                    # Second pass: process remaining properties
                     for meta in meta_tags:
                         name = meta.get('name')
                         prop = meta.get('property')
 
-                        if name == 'calibre:series':
-                            # Clean series name from tags
+                        if name == 'calibre:series' and not self.metadata.get('series'):
                             self.metadata['series'] = clean_metadata_tags(meta.get('content'))
                         elif name == "calibre:series_index":
                             try:
                                 self.metadata["volume"] = float(meta.get("content"))
                             except Exception:
                                 pass
-                        elif prop == 'belongs-to-collection':
-                            val = meta.text or metadata_node.find(f'.//opf:meta[@id="{meta.get("id")}"]', self.NAMESPACE).text
-                            # Clean series name from tags like [NL], [NW]
-                            self.metadata['series'] = clean_metadata_tags(val)
-                        elif prop == "group-position" and meta.get("refines") == "#serie":
-                            try:
-                                self.metadata["volume"] = float(meta.text)
-                            except Exception:
-                                pass
+                        elif prop == "group-position":
+                            ref = meta.get("refines", "").replace("#", "")
+                            if ref == "serie" or ref in collection_ids:
+                                try:
+                                    self.metadata["volume"] = float(meta.text)
+                                except Exception:
+                                    pass
                         elif prop == 'dcterms:modified':
                             self.metadata['modified_at_opf'] = meta.text
+
+                    # 3.5 Content Check (Final fallback for title)
+                    if not self.metadata.get('title'):
+                        self.metadata['title'] = clean_metadata_tags(raw_title)
 
                 # 4. Calcular métricas técnicas (palabras, páginas)
                 self._calculate_technical_metrics(z, opf_root, os.path.dirname(opf_path))
@@ -187,9 +199,13 @@ class EpubMetadataExtractor:
                 idref = itemref.get('idref')
                 href = item_map.get(idref)
 
-                if href and any(href.lower().endswith(ext) for ext in ['.xhtml', '.html', '.htm', '.xml']):
+                if href and any(href.lower().endswith(ext) for ext in ['.xhtml', '.html', '.htm', '.xml', '.txt']):
                     try:
-                        full_href = os.path.join(base_dir, href).replace('\\', '/')
+                        raw_path = os.path.join(base_dir, href)
+                        full_href = os.path.normpath(raw_path).replace('\\', '/')
+                        if full_href.startswith('/'):
+                            full_href = full_href[1:]
+                            
                         content = z.read(full_href).decode('utf-8', errors='ignore')
 
                         # Limpiar HTML básico y contar palabras
@@ -214,10 +230,16 @@ class EpubMetadataExtractor:
         Intenta encontrar la imagen de portada y guardarla en memoria.
         """
         try:
-            # Buscar en <meta name="cover" content="id_imagen">
             metadata_node = opf_root.find('opf:metadata', self.NAMESPACE)
             cover_id = None
-            for meta in metadata_node.findall('opf:meta', self.NAMESPACE):
+            
+            # 1. Buscar en <meta name="cover" content="id_imagen">
+            # Intentamos buscar con y sin prefijo opf: por compatibilidad
+            meta_tags = metadata_node.findall('opf:meta', self.NAMESPACE)
+            if not meta_tags:
+                meta_tags = metadata_node.findall('meta')
+            
+            for meta in meta_tags:
                 if meta.get('name') == 'cover':
                     cover_id = meta.get('content')
                     break
@@ -225,22 +247,24 @@ class EpubMetadataExtractor:
             manifest_node = opf_root.find('opf:manifest', self.NAMESPACE)
             cover_href = None
 
+            # 2. Buscar por ID (EPUB2)
             if cover_id:
-                # Buscar por ID
                 for item in manifest_node.findall('opf:item', self.NAMESPACE):
                     if item.get('id') == cover_id:
                         cover_href = item.get('href')
                         break
 
+            # 3. EPUB3 Fallback: Buscar en el manifest un item con properties="cover-image"
             if not cover_href:
-                # 3. EPUB3 Fallback: Buscar en el manifest un item con properties="cover-image"
                 for item in manifest_node.findall('opf:item', self.NAMESPACE):
-                    if item.get('properties') == 'cover-image':
+                    # properties puede contener múltiples valores separados por espacio
+                    properties = item.get('properties', '').split()
+                    if 'cover-image' in properties:
                         cover_href = item.get('href')
                         break
 
+            # 4. Fallback extremo: buscar archivos que tengan "cover" en el nombre o id
             if not cover_href:
-                # 4. Fallback: buscar archivos que tengan "cover" en el nombre o id
                 for item in manifest_node.findall('opf:item', self.NAMESPACE):
                     item_id = item.get('id', '').lower()
                     href = item.get('href', '').lower()
@@ -250,10 +274,19 @@ class EpubMetadataExtractor:
                             break
 
             if cover_href:
-                full_href = os.path.join(base_dir, cover_href).replace('\\', '/')
+                # IMPORTANTE: Normalizar ruta para resolver '..' y usar separadores correctos
+                # ZipFile no resuelve '..' automáticamente.
+                raw_path = os.path.join(base_dir, cover_href)
+                full_href = os.path.normpath(raw_path).replace('\\', '/')
+                
+                # Asegurarse de que no empiece por '/' (algunas veces normpath lo hace si base_dir es vacío)
+                if full_href.startswith('/'):
+                    full_href = full_href[1:]
+                
                 self.cover_data = z.read(full_href)
                 self.cover_extension = os.path.splitext(cover_href)[1]
-        except Exception:
+        except Exception as e:
+            # Silencioso pero útil para debug manual si es necesario
             pass
 
     def save_cover(self, output_path):
