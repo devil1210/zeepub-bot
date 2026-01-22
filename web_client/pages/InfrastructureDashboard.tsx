@@ -589,37 +589,57 @@ export const InfrastructureDashboard: React.FC = () => {
                                     <option value="ERROR">ERROR ONLY</option>
                                 </select>
 
-                                <div className="flex gap-1">
-                                    <button
-                                        onClick={() => handleExportLogs(1)}
-                                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                    >
-                                        1H
-                                    </button>
-                                    <button
-                                        onClick={() => handleExportLogs(24)}
-                                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                    >
-                                        TEXT
-                                    </button>
+                                <div className="flex gap-1.5 items-center">
+                                    {/* Local Download Group */}
+                                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded overflow-hidden">
+                                        <button
+                                            onClick={() => handleExportLogs(1)}
+                                            className="px-2 py-1 text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border-r border-slate-200 dark:border-slate-700"
+                                            title="Download last hour"
+                                        >
+                                            1H
+                                        </button>
+                                        <button
+                                            onClick={() => handleExportLogs(24)}
+                                            className="px-2 py-1 text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border-r border-slate-200 dark:border-slate-700"
+                                            title="Download last 24h"
+                                        >
+                                            24H
+                                        </button>
+                                        <button
+                                            onClick={() => handleExportLogs()}
+                                            className="px-3 py-1 bg-blue-500 text-white text-[9px] font-bold hover:bg-blue-600 transition-colors"
+                                            title="Download all"
+                                        >
+                                            ALL
+                                        </button>
+                                    </div>
+
+                                    {/* Telegram Send Group */}
+                                    <div className="flex bg-blue-50 dark:bg-blue-900/20 rounded overflow-hidden border border-blue-200 dark:border-blue-800">
+                                        <button
+                                            onClick={() => handleSendTelegram(1)}
+                                            disabled={sendingTelegram}
+                                            className="px-2 py-1 text-[9px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors border-r border-blue-200 dark:border-blue-800"
+                                            title="Send 1h to Telegram"
+                                        >
+                                            🤖 1H
+                                        </button>
+                                        <button
+                                            onClick={() => handleSendTelegram()}
+                                            disabled={sendingTelegram}
+                                            className="px-2 py-1 text-[9px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors"
+                                            title="Send all to Telegram"
+                                        >
+                                            🤖 ALL
+                                        </button>
+                                    </div>
+
                                     <button
                                         onClick={handleCopyLogs}
-                                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
                                     >
                                         {copied ? 'COPIED' : 'COPY'}
-                                    </button>
-                                    <button
-                                        onClick={() => handleSendTelegram()}
-                                        disabled={sendingTelegram}
-                                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                    >
-                                        {sendingTelegram ? '...' : 'TG BOT'}
-                                    </button>
-                                    <button
-                                        onClick={() => handleExportLogs()}
-                                        className="px-2 py-1 bg-blue-500 text-white rounded text-[9px] font-bold hover:bg-blue-600 transition-colors"
-                                    >
-                                        {isExporting ? '...' : 'EXPORT ALL'}
                                     </button>
                                 </div>
                             </div>

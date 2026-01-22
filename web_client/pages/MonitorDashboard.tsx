@@ -327,52 +327,68 @@ export const MonitorDashboard: React.FC = () => {
                         </select>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <div className="flex items-center bg-black/40 border border-white/10 rounded-lg p-1">
+                    <div className="flex items-center gap-3">
+                        {/* Download presets */}
+                        <div className="flex items-center bg-black/40 border border-white/10 rounded-lg p-0.5">
                             <button
                                 onClick={() => handleExportLogs(1)}
                                 disabled={isExporting}
-                                className="px-3 py-1 text-[9px] font-black text-gray-400 hover:text-white transition-colors"
+                                className="px-2 py-1 text-[9px] font-bold text-gray-400 hover:text-white transition-colors border-r border-white/5"
+                                title="Download last hour"
                             >
                                 1H
                             </button>
-                            <div className="w-px h-3 bg-white/10"></div>
                             <button
                                 onClick={() => handleExportLogs(24)}
                                 disabled={isExporting}
-                                className="px-3 py-1 text-[9px] font-black text-gray-400 hover:text-white transition-colors"
+                                className="px-2 py-1 text-[9px] font-bold text-gray-400 hover:text-white transition-colors border-r border-white/5"
+                                title="Download last 24h"
                             >
                                 24H
                             </button>
-                            <div className="w-px h-3 bg-white/10"></div>
-                            <button
-                                onClick={handleCopyLogs}
-                                className="px-3 py-1 text-[9px] font-black text-gray-400 hover:text-white transition-colors flex items-center gap-1"
-                            >
-                                {copied ? 'COPIED!' : 'COPY'}
-                            </button>
-                            <div className="w-px h-3 bg-white/10"></div>
-                            <button
-                                onClick={() => handleSendTelegram()}
-                                disabled={sendingTelegram}
-                                className="px-3 py-1 text-[9px] font-black text-gray-400 hover:text-white transition-colors flex items-center gap-1"
-                            >
-                                {sendingTelegram ? 'SENDING...' : 'TG BOT'}
-                            </button>
-                            <div className="w-px h-3 bg-white/10"></div>
                             <button
                                 onClick={() => handleExportLogs()}
                                 disabled={isExporting}
-                                className="px-3 py-1 text-[9px] font-black text-white bg-primary/20 rounded-md hover:bg-primary/40 transition-colors"
+                                className="px-2 py-1 text-[9px] font-bold text-gray-400 hover:text-white transition-colors"
+                                title="Download all buffered logs"
                             >
-                                {isExporting ? '...' : 'EXPORT ALL'}
+                                ALL
                             </button>
                         </div>
-                        <div className="flex gap-1.5 px-2 hidden sm:flex">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-500/20"></span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/20"></span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-green-500/20"></span>
+
+                        {/* Telegram presets */}
+                        <div className="flex items-center bg-blue-500/10 border border-blue-500/20 rounded-lg p-0.5">
+                            <button
+                                onClick={() => handleSendTelegram(1)}
+                                disabled={sendingTelegram}
+                                className="px-2 py-1 text-[9px] font-black text-blue-400 hover:text-blue-300 transition-colors border-r border-blue-500/10 flex items-center gap-1"
+                                title="Send last hour to Telegram"
+                            >
+                                🤖 1H
+                            </button>
+                            <button
+                                onClick={() => handleSendTelegram()}
+                                disabled={sendingTelegram}
+                                className="px-2 py-1 text-[9px] font-black text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                                title="Send all to Telegram"
+                            >
+                                🤖 ALL
+                            </button>
                         </div>
+
+                        <div className="h-4 w-px bg-white/10"></div>
+
+                        <button
+                            onClick={handleCopyLogs}
+                            className="px-3 py-1 text-[9px] font-black text-gray-400 hover:text-white transition-colors border border-white/10 rounded-lg bg-black/40"
+                        >
+                            {copied ? 'COPIED!' : 'COPY'}
+                        </button>
+                    </div>
+                    <div className="flex gap-1.5 px-2 hidden sm:flex">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500/20"></span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/20"></span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500/20"></span>
                     </div>
                 </div>
                 <div className="flex-1 p-6 font-mono text-[11px] overflow-y-auto leading-relaxed scrollbar-hide">
