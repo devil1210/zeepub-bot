@@ -1,0 +1,384 @@
+import logging
+from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, text, and_
+from models.user_models import AppTheme
+from models.theme_sync_models import ThemeSyncLog
+from core.db_manager_pg import pg_manager
+from core.supabase_manager import supabase_manager
+from config.config_settings import config
+
+logger = logging.getLogger(__name__)
+
+class ThemeSyncService:
+    """Servicio de sincronización de temas entre PostgreSQL local y Supabase."""
+    
+    def __init__(self):
+        self.last_sync_key = "last_theme_sync"
+    
+    async def get_local_themes(self, session: AsyncSession) -> List[Dict[str, Any]]:
+        """Obtener todos los temas de la base de datos local."""
+        stmt = select(AppTheme).order_by(AppTheme.name)
+        result = await session.execute(stmt)
+        themes = result.scalars().all()
+        
+        return [{
+            'id': t.id,
+            'name': t.name,
+            'description': t.description,
+            'theme_type': t.theme_type,
+            'primary_color': t.primary_color,
+            'background_color': t.background_color,
+            'card_color': t.card_color,
+            'glass_opacity': t.glass_opacity,
+            'nav_opacity': t.nav_opacity,
+            'accent_opacity': t.accent_opacity,
+            'glass_blur': t.glass_blur,
+            'card_glow_intensity': t.card_glow_intensity,
+            'font_size': t.font_size,
+            'cover_width': t.cover_width,
+            'banner_content_offset': t.banner_content_offset,
+            'updated_at': t.updated_at
+        } for t in themes]
+    
+    async def get_supabase_themes(self) -> List[Dict[str, Any]]:
+        """Obtener todos los temas de Supabase."""
+        if not supabase_manager.is_active:
+            return []
+        
+        try:
+            result = supabase_manager.execute_query("app_themes", "select")
+            if result and result.data:
+                return result.data
+        except Exception as e:
+            logger.error(f"Error getting Supabase themes: {e}")
+        
+        return []
+    
+    def theme_to_dict(self, theme: AppTheme) -> Dict[str, Any]:
+        """Convertir AppTheme a diccionario."""
+        return {
+            'id': theme.id,
+            'name': theme.name,
+            'description': theme.description,
+            'theme_type': theme.theme_type,
+            'primary_color': theme.primary_color,
+            'background_color': theme.background_color,
+            'card_color': theme.card_color,
+            'glass_opacity': theme.glass_opacity,
+            'nav_opacity': theme.nav_opacity,
+            'accent_opacity': theme.accent_opacity,
+            'glass_blur': theme.glass_blur,
+            'card_glow_intensity': theme.card_glow_intensity,
+            'font_size': theme.font_size,
+            'cover_width': theme.cover_width,
+            'banner_content_offset': theme.banner_content_offset,
+            'updated_at': theme.updated_at
+        }
+    
+    def normalize_theme_data(self, theme_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalizar datos de tema para compatibilidad."""
+        return {
+            'name': theme_data.get('name'),
+            'description': theme_data.get('description'),
+            'theme_type': theme_data.get('theme_type') or theme_data.get('theme'),
+            'primary_color': theme_data.get('primary_color') or theme_data.get('primaryColor'),
+            'background_color': theme_data.get('background_color') or theme_data.get('backgroundColor'),
+            'card_color': theme_data.get('card_color') or theme_data.get('cardColor'),
+            'glass_opacity': theme_data.get('glass_opacity') or theme_data.get('glassOpacity'),
+            'nav_opacity': theme_data.get('nav_opacity') or theme_data.get('navOpacity'),
+            'accent_opacity': theme_data.get('accent_opacity') or theme_data.get('accentOpacity'),
+            'glass_blur': theme_data.get('glass_blur') or theme_data.get('glassBlur'),
+            'card_glow_intensity': theme_data.get('card_glow_intensity') or theme_data.get('cardGlowIntensity'),
+            'font_size': theme_data.get('font_size') or theme_data.get('fontSize'),
+            'cover_width': theme_data.get('cover_width') or theme_data.get('coverWidth'),
+            'banner_content_offset': theme_data.get('banner_content_offset') or theme_data.get('bannerContentOffset'),
+            'updated_at': datetime.utcnow()
+        }
+    
+    async def sync_supabase_to_local(self, session: AsyncSession) -> Tuple[int, int]:
+        """Sincronizar temas de Supabase a la base de datos local."""
+        supabase_themes = await self.get_supabase_themes()
+        local_themes = await self.get_local_themes(session)
+        
+        local_names = {t['name'] for t in local_themes}
+        added_count = 0
+        updated_count = 0
+        
+        for supabase_theme in supabase_themes:
+            theme_data = self.normalize_theme_data(supabase_theme)
+            
+            if supabase_theme['name'] not in local_names:
+                # Agregar nuevo tema
+                new_theme = AppTheme(**theme_data)
+                session.add(new_theme)
+                added_count += 1
+                logger.info(f"Added theme: {supabase_theme['name']}")
+            else:
+                # Actualizar tema existente
+                existing = await session.execute(
+                    select(AppTheme).where(AppTheme.name == supabase_theme['name'])
+                )
+                existing_theme = existing.scalar_one_or_none()
+                if existing_theme:
+                    for key, value in theme_data.items():
+                        if value is not None:
+                            setattr(existing_theme, key, value)
+                    updated_count += 1
+                    logger.info(f"Updated theme: {supabase_theme['name']}")
+        
+        await session.commit()
+        return added_count, updated_count
+    
+    async def sync_local_to_supabase(self, session: AsyncSession) -> Tuple[int, int]:
+        """Sincronizar temas de la base de datos local a Supabase."""
+        if not supabase_manager.is_active:
+            return 0, 0
+        
+        local_themes = await self.get_local_themes(session)
+        supabase_themes = await self.get_supabase_themes()
+        
+        supabase_names = {t['name'] for t in supabase_themes}
+        added_count = 0
+        updated_count = 0
+        
+        for local_theme in local_themes:
+            theme_data = self.normalize_theme_data(local_theme)
+            
+            if local_theme['name'] not in supabase_names:
+                # Agregar a Supabase
+                result = supabase_manager.execute_query("app_themes", "insert", data=theme_data)
+                if result:
+                    added_count += 1
+                    logger.info(f"Added theme to Supabase: {local_theme['name']}")
+            else:
+                # Actualizar en Supabase
+                result = supabase_manager.execute_query(
+                    "app_themes", "update",
+                    data=theme_data,
+                    match_col="name",
+                    match_val=local_theme['name']
+                )
+                if result:
+                    updated_count += 1
+                    logger.info(f"Updated theme in Supabase: {local_theme['name']}")
+        
+        return added_count, updated_count
+    
+    async def log_sync(self, session: AsyncSession, sync_log: ThemeSyncLog):
+        """Guardar registro de sincronización."""
+        session.add(sync_log)
+        await session.commit()
+    
+    async def initial_sync(self) -> Dict[str, Any]:
+        """Sincronización inicial al iniciar el bot."""
+        if not supabase_manager.is_active:
+            logger.warning("Supabase not active, skipping initial sync")
+            return {'status': 'skipped', 'reason': 'Supabase not active'}
+        
+        logger.info("Starting initial theme sync from Supabase to local")
+        
+        async with pg_manager.get_session() as session:
+            # Crear tabla de logs si no existe
+            await session.execute(text("""
+                CREATE TABLE IF NOT EXISTS theme_sync_logs (
+                    id SERIAL PRIMARY KEY,
+                    sync_type VARCHAR(20) NOT NULL,
+                    direction VARCHAR(20) NOT NULL,
+                    status VARCHAR(20) NOT NULL,
+                    local_themes_before INTEGER DEFAULT 0,
+                    local_themes_after INTEGER DEFAULT 0,
+                    supabase_themes_before INTEGER DEFAULT 0,
+                    supabase_themes_after INTEGER DEFAULT 0,
+                    themes_added INTEGER DEFAULT 0,
+                    themes_updated INTEGER DEFAULT 0,
+                    themes_deleted INTEGER DEFAULT 0,
+                    errors TEXT,
+                    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    completed_at TIMESTAMP
+                )
+            """))
+            await session.commit()
+            
+            # Contar temas antes
+            local_before = len(await self.get_local_themes(session))
+            supabase_before = len(await self.get_supabase_themes())
+            
+            # Crear log de sincronización
+            sync_log = ThemeSyncLog(
+                sync_type='initial',
+                direction='supabase_to_local',
+                status='running',
+                local_themes_before=local_before,
+                supabase_themes_before=supabase_before,
+                started_at=datetime.utcnow()
+            )
+            
+            try:
+                # Sincronizar de Supabase a local
+                added, updated = await self.sync_supabase_to_local(session)
+                
+                # Contar temas después
+                local_after = len(await self.get_local_themes(session))
+                
+                # Actualizar log
+                sync_log.status = 'success'
+                sync_log.local_themes_after = local_after
+                sync_log.themes_added = added
+                sync_log.themes_updated = updated
+                sync_log.completed_at = datetime.utcnow()
+                
+                await self.log_sync(session, sync_log)
+                
+                logger.info(f"Initial sync completed: {added} added, {updated} updated")
+                
+                return {
+                    'status': 'success',
+                    'added': added,
+                    'updated': updated,
+                    'local_before': local_before,
+                    'local_after': local_after
+                }
+                
+            except Exception as e:
+                sync_log.status = 'error'
+                sync_log.errors = str(e)
+                sync_log.completed_at = datetime.utcnow()
+                await self.log_sync(session, sync_log)
+                
+                logger.error(f"Initial sync failed: {e}")
+                return {'status': 'error', 'error': str(e)}
+    
+    async def daily_sync(self) -> Dict[str, Any]:
+        """Sincronización diaria bidireccional."""
+        logger.info("Starting daily bidirectional theme sync")
+        
+        async with pg_manager.get_session() as session:
+            local_before = len(await self.get_local_themes(session))
+            supabase_before = len(await self.get_supabase_themes())
+            
+            sync_log = ThemeSyncLog(
+                sync_type='daily',
+                direction='bidirectional',
+                status='running',
+                local_themes_before=local_before,
+                supabase_themes_before=supabase_before,
+                started_at=datetime.utcnow()
+            )
+            
+            try:
+                # Sincronizar en ambas direcciones
+                local_added, local_updated = await self.sync_supabase_to_local(session)
+                supabase_added, supabase_updated = await self.sync_local_to_supabase(session)
+                
+                local_after = len(await self.get_local_themes(session))
+                supabase_after = len(await self.get_supabase_themes())
+                
+                sync_log.status = 'success'
+                sync_log.local_themes_after = local_after
+                sync_log.supabase_themes_after = supabase_after
+                sync_log.themes_added = local_added + supabase_added
+                sync_log.themes_updated = local_updated + supabase_updated
+                sync_log.completed_at = datetime.utcnow()
+                
+                await self.log_sync(session, sync_log)
+                
+                logger.info(f"Daily sync completed: Local: {local_added} added, {local_updated} updated; Supabase: {supabase_added} added, {supabase_updated} updated")
+                
+                return {
+                    'status': 'success',
+                    'local_added': local_added,
+                    'local_updated': local_updated,
+                    'supabase_added': supabase_added,
+                    'supabase_updated': supabase_updated
+                }
+                
+            except Exception as e:
+                sync_log.status = 'error'
+                sync_log.errors = str(e)
+                sync_log.completed_at = datetime.utcnow()
+                await self.log_sync(session, sync_log)
+                
+                logger.error(f"Daily sync failed: {e}")
+                return {'status': 'error', 'error': str(e)}
+    
+    async def manual_sync(self) -> Dict[str, Any]:
+        """Sincronización manual iniciada por el admin."""
+        logger.info("Starting manual bidirectional theme sync")
+        
+        async with pg_manager.get_session() as session:
+            local_before = len(await self.get_local_themes(session))
+            supabase_before = len(await self.get_supabase_themes())
+            
+            sync_log = ThemeSyncLog(
+                sync_type='manual',
+                direction='bidirectional',
+                status='running',
+                local_themes_before=local_before,
+                supabase_themes_before=supabase_before,
+                started_at=datetime.utcnow()
+            )
+            
+            try:
+                # Sincronizar en ambas direcciones
+                local_added, local_updated = await self.sync_supabase_to_local(session)
+                supabase_added, supabase_updated = await self.sync_local_to_supabase(session)
+                
+                local_after = len(await self.get_local_themes(session))
+                supabase_after = len(await self.get_supabase_themes())
+                
+                sync_log.status = 'success'
+                sync_log.local_themes_after = local_after
+                sync_log.supabase_themes_after = supabase_after
+                sync_log.themes_added = local_added + supabase_added
+                sync_log.themes_updated = local_updated + supabase_updated
+                sync_log.completed_at = datetime.utcnow()
+                
+                await self.log_sync(session, sync_log)
+                
+                logger.info(f"Manual sync completed: Local: {local_added} added, {local_updated} updated; Supabase: {supabase_added} added, {supabase_updated} updated")
+                
+                return {
+                    'status': 'success',
+                    'local_added': local_added,
+                    'local_updated': local_updated,
+                    'supabase_added': supabase_added,
+                    'supabase_updated': supabase_updated
+                }
+                
+            except Exception as e:
+                sync_log.status = 'error'
+                sync_log.errors = str(e)
+                sync_log.completed_at = datetime.utcnow()
+                await self.log_sync(session, sync_log)
+                
+                logger.error(f"Manual sync failed: {e}")
+                return {'status': 'error', 'error': str(e)}
+    
+    async def get_sync_logs(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Obtener historial de sincronizaciones."""
+        async with pg_manager.get_session() as session:
+            result = await session.execute(
+                text("""
+                    SELECT * FROM theme_sync_logs 
+                    ORDER BY started_at DESC 
+                    LIMIT :limit
+                """),
+                {'limit': limit}
+            )
+            rows = result.fetchall()
+            
+            logs = []
+            for row in rows:
+                log_dict = dict(row)
+                if log_dict.get('started_at'):
+                    log_dict['started_at'] = log_dict['started_at'].isoformat()
+                if log_dict.get('completed_at'):
+                    log_dict['completed_at'] = log_dict['completed_at'].isoformat()
+                logs.append(log_dict)
+            
+            return logs
+
+# Instancia global
+theme_sync_service = ThemeSyncService()

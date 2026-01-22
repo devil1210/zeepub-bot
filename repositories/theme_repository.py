@@ -116,19 +116,15 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
         # Asegurar que existan temas por defecto antes de listar
         await self.ensure_default_themes()
 
-        # 1. Postgres
+        # Use local PostgreSQL
         if config.ENABLE_POSTGRES_PLUGIN:
              try:
                 async with pg_manager.get_session() as session:
                     stmt = select(AppTheme).order_by(AppTheme.name)
-                    logger.info(f"Executing SQL query: {stmt}")
                     result = await session.execute(stmt)
                     themes = result.scalars().all()
                     theme_list = [self._to_dict(t) for t in themes]
-                    logger.info(f"Retrieved {len(theme_list)} themes from PostgreSQL")
-                    # Log first few theme names for debugging
-                    if theme_list:
-                        logger.info(f"First few themes: {[t['name'] for t in theme_list[:5]]}")
+                    logger.info(f"Retrieved {len(theme_list)} themes from local PostgreSQL")
                     return theme_list
              except Exception as e:
                 logger.error(f"Postgres get_all_themes error: {e}")

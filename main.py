@@ -3,6 +3,7 @@ import logging
 import asyncio
 from config.config_settings import config
 from core.bot import ZeePubBot
+from services.theme_sync_service import theme_sync_service
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -52,6 +53,38 @@ async def fix_schema_if_needed():
         logger.warning(f"Schema check failed: {e}")
 
 
+async def initialize_application():
+    """Initialize application components before starting bot."""
+    # Fix schema before starting bot
+    await fix_schema_if_needed()
+    
+    # Initial theme sync from Supabase to local
+    if config.ENABLE_POSTGRES_PLUGIN:
+        logger.info("Starting initial theme synchronization...")
+        sync_result = await theme_sync_service.initial_sync()
+        if sync_result.get('status') == 'success':
+            logger.info(f"Initial sync completed: {sync_result.get('added', 0)} themes added, {sync_result.get('updated', 0)} updated")
+        else:
+            logger.warning(f"Initial sync failed: {sync_result.get('error', 'Unknown error')}")
+    
+    # Schedule daily sync
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+    scheduler = AsyncIOScheduler()
+    
+    # Schedule daily sync at 3:00 AM
+    scheduler.add_job(
+        theme_sync_service.daily_sync,
+        'cron',
+        hour=3,
+        minute=0,
+        id='daily_theme_sync',
+        replace_existing=True
+    )
+    
+    scheduler.start()
+    logger.info("Daily theme sync scheduled for 3:00 AM")
+
+
 def main():
     logger.info("Iniciando ZeePub Bot...")
     is_valid, missing = config.validate()
@@ -61,12 +94,12 @@ def main():
 
     # Informar sobre la base de datos activa
     if config.DATABASE_URL:
-        logger.info("📦 Base de Datos: PostgreSQL (Configurada)")
+        logger.info(" Base de Datos: PostgreSQL (Configurada)")
     else:
-        logger.info("📦 Base de Datos: SQLite (Activa por defecto)")
+        logger.info(" Base de Datos: SQLite (Activa por defecto)")
 
-    # Fix schema before starting bot
-    asyncio.run(fix_schema_if_needed())
+    # Initialize application
+    asyncio.run(initialize_application())
 
     bot = ZeePubBot()
     bot.start()

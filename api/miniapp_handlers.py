@@ -1518,8 +1518,35 @@ async def handle_admin_get_themes(data: Dict[str, Any], user_data: Dict[str, Any
         logger.error(f"Error fetching themes: {e}")
         return {"success": False, "message": str(e)}
 
+async def handle_admin_sync_themes(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Ejecuta sincronización manual de temas."""
+    if user_data.get("level") != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+    
+    from services.theme_sync_service import theme_sync_service
+    
+    try:
+        result = await theme_sync_service.manual_sync()
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Error in manual theme sync: {e}")
+        return {"success": False, "message": str(e)}
+
+async def handle_admin_get_theme_sync_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Obtiene historial de sincronizaciones de temas."""
+    if user_data.get("level") != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+    
+    from services.theme_sync_service import theme_sync_service
+    
+    try:
+        logs = await theme_sync_service.get_sync_logs(limit=50)
+        return {"success": True, "logs": logs}
+    except Exception as e:
+        logger.error(f"Error getting theme sync logs: {e}")
+        return {"success": False, "message": str(e)}
+
 async def handle_admin_save_theme(data: Dict[str, Any], user_data: Dict[str, Any]):
-    """Guarda una configuración actual como una plantilla de tema."""
     if user_data.get("level") != "admin":
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
