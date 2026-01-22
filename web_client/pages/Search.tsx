@@ -116,6 +116,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         // Map backend results to Series type
         const mapped: Series[] = res.results.map((item: any) => ({
           id: item.id || item.link,
+          series_hash: item.series_hash,
           title: item.title,
           author: item.author,
           coverUrl: item.cover || '',

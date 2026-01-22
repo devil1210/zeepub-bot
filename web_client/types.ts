@@ -64,6 +64,7 @@ export interface Volume {
 
 export interface Series {
   id: string;
+  series_hash?: string;
   title: string;
   author: string;
   coverUrl: string | CoverPaths;

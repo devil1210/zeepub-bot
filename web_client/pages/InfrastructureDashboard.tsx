@@ -42,6 +42,7 @@ export const InfrastructureDashboard: React.FC = () => {
     const [isExporting, setIsExporting] = useState(false);
     const [sendingTelegram, setSendingTelegram] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [forceScan, setForceScan] = useState(false);
 
     const fetchStats = async () => {
         try {
@@ -414,9 +415,21 @@ export const InfrastructureDashboard: React.FC = () => {
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
                                     Trigger <code className="bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded text-[#0d93f2] font-mono">/scan_library</code> to index new content.
                                 </p>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <input
+                                        type="checkbox"
+                                        id="forceScan"
+                                        checked={forceScan}
+                                        onChange={(e) => setForceScan(e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-300 text-[#0d93f2] focus:ring-[#0d93f2]"
+                                    />
+                                    <label htmlFor="forceScan" className="text-xs text-slate-600 dark:text-slate-400 font-medium cursor-pointer">
+                                        Escaneo forzado (revalidar todo)
+                                    </label>
+                                </div>
                                 <button
                                     disabled={!!actionLoading}
-                                    onClick={() => handleAction('Scan Library', () => api.adminScanLibrary(true))}
+                                    onClick={() => handleAction('Scan Library', () => api.adminScanLibrary(forceScan))}
                                     className="w-full py-2 text-xs font-black text-center bg-[#0d93f2] hover:bg-blue-600 disabled:bg-slate-500 text-white rounded-lg transition-colors shadow-sm uppercase tracking-widest flex items-center justify-center gap-2"
                                 >
                                     {actionLoading === 'Scan Library' ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}

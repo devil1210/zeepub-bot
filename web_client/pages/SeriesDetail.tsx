@@ -22,8 +22,10 @@ import {
   BookmarkPlus,
   Bookmark,
   LayoutGrid,
-  List
+  List,
+  RefreshCw
 } from 'lucide-react';
+import { useTelegram } from '../contexts/TelegramContext';
 import { Series, Volume } from '../types';
 import { preloadImages } from '../src/utils/imagePreloader';
 
@@ -45,6 +47,30 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   const [activeSort, setActiveSort] = useState('num-asc');
   const [isSynopsisModalOpen, setIsSynopsisModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { isAdmin } = useTelegram();
+
+  const handleSyncSeries = async () => {
+    if (isSyncing || !realSeries.series_hash) return;
+    setIsSyncing(true);
+    try {
+      const res = await api.adminScanSeries(realSeries.series_hash, true);
+      if (res.success) {
+        // Show success message (using native alert for now if no toast system)
+        if (typeof (window as any).Telegram?.WebApp?.showAlert === 'function') {
+          (window as any).Telegram.WebApp.showAlert(res.message || "Sincronización iniciada.");
+        } else {
+          alert(res.message || "Sincronización iniciada.");
+        }
+      } else {
+        alert(res.error || "Error al iniciar sincronización.");
+      }
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -223,6 +249,18 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           </button>
+
+          {isAdmin && realSeries.series_hash && (
+            <button
+              onClick={handleSyncSeries}
+              disabled={isSyncing}
+              className={`p-3 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title="Sincronizar esta serie"
+            >
+              <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+              <span className="text-[10px] font-black uppercase tracking-widest pr-1 hidden sm:inline">Sincronizar</span>
+            </button>
+          )}
         </div>
 
         <div

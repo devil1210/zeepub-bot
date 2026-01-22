@@ -80,6 +80,85 @@ class ScannerService:
             session.close()
             ScannerService._is_scanning = False
 
+    def sync_series(self, series_hash, force_scan=False):
+        """
+        Sincroniza una serie específica basada en su hash.
+        Busca los libros que pertenecen a esa serie y los re-procesa.
+        También escanea las carpetas donde se encuentran esos libros por si hay nuevos.
+        """
+        if ScannerService._is_scanning:
+            logger.warning("Ya hay un escaneo en curso. Saltando.")
+            return False
+
+        ScannerService._is_scanning = True
+        session = get_session()
+        try:
+            results = {
+                "total_scanned": 0,
+                "added": 0,
+                "updated": 0,
+                "duplicates": 0,
+                "failed": 0,
+                "covers_created": 0
+            }
+
+            # 1. Obtener libros existentes de esta serie para saber en qué carpetas buscar
+            books = session.query(LocalBook).filter_by(series_hash=series_hash).all()
+            if not books:
+                logger.warning(f"No se encontraron libros para la serie con hash: {series_hash}")
+                return {"success": False, "message": "Serie no encontrada en la base de datos local."}
+
+            # 2. Identificar las carpetas (directorios) a escanear
+            # Generalmente una serie está en una única carpeta, pero podría estar dispersa.
+            directories_to_scan = set()
+            source_map = {} # path -> source_id
+            
+            for b in books:
+                dir_path = os.path.dirname(b.filepath)
+                if os.path.exists(dir_path):
+                    directories_to_scan.add(dir_path)
+                    source_map[dir_path] = b.source_id
+
+            logger.info(f"Sincronizando serie {series_hash}. Directorios a escanear: {len(directories_to_scan)}")
+
+            # 3. Escanear cada directorio encontrado
+            for dir_path in directories_to_scan:
+                source_id = source_map[dir_path]
+                source = session.query(LibrarySource).get(source_id)
+                if not source: continue
+
+                # Escaneamos solo el directorio específico (no recursivo hacia arriba, pero os.walk es recursivo hacia abajo)
+                # En muchos casos el directorio de la serie es el final, pero si hay subcarpetas las procesará.
+                for root, dirs, files in os.walk(dir_path):
+                    for file in files:
+                        if file.lower().endswith(".epub"):
+                            results["total_scanned"] += 1
+                            full_path = os.path.join(root, file)
+                            
+                            # Procesar el libro
+                            book_result = self._process_book(full_path, source, session, force_scan)
+                            
+                            if book_result == "added":
+                                results["added"] += 1
+                            elif book_result == "updated":
+                                results["updated"] += 1
+                            elif book_result == "duplicate":
+                                results["duplicates"] += 1
+                            elif book_result is False:
+                                results["failed"] += 1
+
+                session.commit()
+
+            logger.info(f"Sincronización de serie {series_hash} completada: {results}")
+            return results
+        except Exception as e:
+            logger.error(f"Error en sync_series: {e}")
+            session.rollback()
+            return None
+        finally:
+            session.close()
+            ScannerService._is_scanning = False
+
     def _scan_directory(self, source, session, force_scan=False):
         """
         Recorre el directorio y procesa archivos nuevos o modificados.
@@ -133,6 +212,19 @@ class ScannerService:
             # forzamos el procesamiento de metadata técnica
             force_metadata = False
             filename = os.path.basename(filepath)
+            
+            # Verificar si las portadas existen físicamente en el disco
+            missing_covers = False
+            if book and book.cover_low:
+                from utils.library_db import DB_DIR
+                # La ruta guardada es /api/library/covers/filename.jpg
+                # Debemos convertirla a ruta local data/library/covers/filename.jpg
+                relative_path = book.cover_low.replace("/api/library/covers/", "")
+                local_cover_path = os.path.join(DB_DIR, "covers", relative_path)
+                if not os.path.exists(local_cover_path):
+                    missing_covers = True
+                    logger.warning(f"Portada no encontrada en disco para {filename}: {local_cover_path}")
+
             if book and (not book.word_count or book.word_count == 0):
                 logger.info(f"Forzando extracción de metadata para {filename} (metadata faltante)")
                 force_metadata = True
@@ -140,6 +232,7 @@ class ScannerService:
             if (
                 not force_scan
                 and not force_metadata
+                and not missing_covers
                 and book
                 and book.file_modified_at == mtime
                 and book.file_size == size
@@ -148,7 +241,13 @@ class ScannerService:
             ):
                 return False
 
-            logger.info(f"Procesando: {book.filename if book else os.path.basename(filepath)}")
+            action_type = "Re-procesando" if book else "Procesando"
+            if missing_covers:
+                action_type = "Recuperando portadas de"
+            elif force_scan:
+                action_type = "Forzando escaneo de"
+                
+            logger.info(f"{action_type}: {filename}")
 
             # Primero extraer metadatos para obtener el hash
             extractor = EpubMetadataExtractor(filepath)

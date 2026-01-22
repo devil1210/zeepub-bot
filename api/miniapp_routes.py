@@ -147,6 +147,7 @@ async def handle_bot_request(
             handle_admin_get_duplicates,
             handle_admin_clear_duplicates,
             handle_admin_scan_user,
+            handle_admin_scan_series,
             handle_admin_get_system_logs,
             handle_admin_send_logs_telegram,
         )
@@ -198,6 +199,7 @@ async def handle_bot_request(
             "admin_get_duplicates": handle_admin_get_duplicates,
             "admin_clear_duplicates": handle_admin_clear_duplicates,
             "admin_scan_user": handle_admin_scan_user,
+            "admin_scan_series": handle_admin_scan_series,
             "admin_get_system_logs": handle_admin_get_system_logs,
             "admin_send_logs_telegram": handle_admin_send_logs_telegram,
         }

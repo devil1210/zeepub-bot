@@ -233,7 +233,14 @@ class EpubMetadataExtractor:
                         break
 
             if not cover_href:
-                # Fallback: buscar archivos que tengan "cover" en el nombre o id
+                # 3. EPUB3 Fallback: Buscar en el manifest un item con properties="cover-image"
+                for item in manifest_node.findall('opf:item', self.NAMESPACE):
+                    if item.get('properties') == 'cover-image':
+                        cover_href = item.get('href')
+                        break
+
+            if not cover_href:
+                # 4. Fallback: buscar archivos que tengan "cover" en el nombre o id
                 for item in manifest_node.findall('opf:item', self.NAMESPACE):
                     item_id = item.get('id', '').lower()
                     href = item.get('href', '').lower()

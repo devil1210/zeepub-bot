@@ -105,6 +105,7 @@ export const api = {
     adminBackupLibrary: () => rpc('admin_backup_library'),
     adminSyncUsersCloud: () => rpc('admin_sync_users_cloud'),
     adminScanLibrary: (force: boolean = false) => rpc('admin_scan_library', { force }),
+    adminScanSeries: (seriesHash: string, force: boolean = true) => rpc('admin_scan_series', { series_hash: seriesHash, force }),
     adminEnrichMetadata: () => rpc('admin_enrich_metadata'),
     adminResetLibrary: (confirmed: boolean) => rpc('admin_reset_library', { confirmed }),
     adminRestartDocker: () => rpc('admin_restart_docker'),

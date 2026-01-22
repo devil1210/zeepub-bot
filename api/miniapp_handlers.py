@@ -79,6 +79,7 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
         rep = volumes[0]
         return {
             "id": book_id_raw,
+            "series_hash": s_hash,
             "title": rep.get("series_clean") or rep.get("series") or rep.get("title"),
             "author": rep.get("author"),
             "summary": rep.get("description"),
@@ -1089,6 +1090,50 @@ async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, A
         }
     except Exception as e:
         logger.error(f"Error starting background scan: {e}")
+        return {"success": False, "message": str(e)}
+
+
+async def handle_admin_scan_series(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Activates forced scan for a specific series."""
+    user_level = user_data.get("level", "free")
+    if user_level != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    series_hash = data.get("series_hash")
+    force = data.get("force", True) # Default to True for series sync
+    
+    if not series_hash:
+        return {"success": False, "message": "series_hash es requerido."}
+    
+    async def run_sync_in_background(scanner_obj, s_hash, force_val):
+        try:
+            logger.info(f"Background series scan started (Hash: {s_hash}, Force: {force_val})")
+            await asyncio.to_thread(scanner_obj.sync_series, s_hash, force_scan=force_val)
+            logger.info(f"Background series scan for {s_hash} completed successfully.")
+        except Exception as e:
+            logger.error(f"Background series scan error for {s_hash}: {e}")
+
+    try:
+        from services.scanner_service import ScannerService
+        
+        if ScannerService._is_scanning:
+            return {"success": False, "message": "⚠️ Ya hay un escaneo de librería en progreso."}
+
+        libs_json = os.getenv("LOCAL_LIBRARIES")
+        if not libs_json:
+            return {"success": False, "message": "LOCAL_LIBRARIES no configurada."}
+            
+        scanner = ScannerService(libs_json)
+        
+        # Start the intensive task in background
+        asyncio.create_task(run_sync_in_background(scanner, series_hash, force))
+        
+        return {
+            "success": True, 
+            "message": "Sincronización de serie iniciada en segundo plano."
+        }
+    except Exception as e:
+        logger.error(f"Error starting background series scan: {e}")
         return {"success": False, "message": str(e)}
 
 
