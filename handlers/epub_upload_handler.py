@@ -489,7 +489,7 @@ class EPUBUploader:
         query.message.chat_data[f'editing_path_{upload_id}'] = True
     
     async def add_to_library(self, epub_path: Path, suggested_path: str, metadata: Dict[str, Any]) -> bool:
-        """Agrega el EPUB a la librería usando metadata enriquecida."""
+        """Agrega el EPUB a la librería (solo mueve el archivo, no agrega a BD)."""
         try:
             logger.info(f"Starting add_to_library: epub_path={epub_path}, suggested_path={suggested_path}")
             
@@ -516,68 +516,9 @@ class EPUBUploader:
             shutil.move(str(epub_path), str(full_path))
             logger.info(f"File moved successfully")
             
-            # Agregar a base de datos con metadata enriquecida
-            session = get_session()
-            try:
-                logger.info("Adding to database...")
-                
-                # Verificar si ya existe
-                existing = session.query(LocalBook).filter_by(filepath=str(full_path)).first()
-                if existing:
-                    logger.info(f"Updating existing book: {existing.id}")
-                    # Actualizar metadata existente con datos enriquecidos
-                    existing.title = metadata.get('title', existing.title)
-                    existing.author = metadata.get('author', existing.author)
-                    existing.description = metadata.get('description', existing.description)
-                    existing.isbn = metadata.get('isbn', existing.isbn)
-                    existing.publisher = metadata.get('publisher', existing.publisher)
-                    existing.publish_date = metadata.get('publish_date', existing.publish_date)
-                    existing.language = metadata.get('language', existing.language)
-                    existing.tags = metadata.get('tags', existing.tags)
-                    existing.series = metadata.get('series', existing.series)
-                    existing.volume = metadata.get('volume', existing.volume)
-                    existing.illustrator = metadata.get('illustrator', existing.illustrator)
-                    existing.translator = metadata.get('translator', existing.translator)
-                    existing.category = metadata.get('category', existing.category)
-                    existing.indexed_at = datetime.utcnow()
-                    
-                    # Guardar metadata adicional en JSON si existe
-                    if metadata.get('original_metadata'):
-                        existing.extra_metadata = metadata.get('original_metadata')
-                else:
-                    logger.info("Creating new book record")
-                    # Crear nuevo registro con metadata enriquecida
-                    new_book = LocalBook(
-                        title=metadata.get('title', ''),
-                        author=metadata.get('author', ''),
-                        description=metadata.get('description', ''),
-                        isbn=metadata.get('isbn', ''),
-                        publisher=metadata.get('publisher', ''),
-                        publish_date=metadata.get('publish_date', ''),
-                        language=metadata.get('language', ''),
-                        tags=metadata.get('tags', ''),
-                        series=metadata.get('series', ''),
-                        volume=metadata.get('volume', ''),
-                        illustrator=metadata.get('illustrator', ''),
-                        translator=metadata.get('translator', ''),
-                        category=metadata.get('category', ''),
-                        filepath=str(full_path),
-                        file_size=full_path.stat().st_size,
-                        indexed_at=datetime.utcnow(),
-                        extra_metadata=metadata.get('original_metadata', {})
-                    )
-                    session.add(new_book)
-                
-                session.commit()
-                logger.info("Database operation completed successfully")
-                return True
-                
-            except Exception as e:
-                logger.error(f"Database error: {e}")
-                session.rollback()
-                return False
-            finally:
-                session.close()
+            # NO agregar a base de datos local, solo mover archivo
+            logger.info("File moved to library, skipping database operations")
+            return True
                 
         except Exception as e:
             logger.error(f"Error adding to library: {e}")
