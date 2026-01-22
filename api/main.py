@@ -13,6 +13,13 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     level=getattr(logging, config.LOG_LEVEL.upper(), logging.INFO),
 )
+# Silenciar bibliotecas ruidosas
+logging.getLogger("aiosqlite").setLevel(logging.INFO)
+logging.getLogger("httpcore").setLevel(logging.INFO)
+logging.getLogger("httpx").setLevel(logging.INFO)
+logging.getLogger("apscheduler").setLevel(logging.INFO)
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 # Configurar captura de logs para la interfaz

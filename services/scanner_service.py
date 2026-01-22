@@ -28,7 +28,7 @@ class ScannerService:
         try:
             self.libraries = json.loads(libraries_config_json)
         except Exception as e:
-            print(f"Error parseando configuración de librerías: {e}")
+            logger.error(f"Error parseando configuración de librerías: {e}")
             self.libraries = {}
 
     def sync_all(self, force_scan=False):
@@ -148,7 +148,7 @@ class ScannerService:
             ):
                 return False
 
-            print(f"Procesando: {filepath}")
+            logger.info(f"Procesando: {book.filename if book else os.path.basename(filepath)}")
 
             # Primero extraer metadatos para obtener el hash
             extractor = EpubMetadataExtractor(filepath)
