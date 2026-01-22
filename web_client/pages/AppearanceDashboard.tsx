@@ -270,19 +270,22 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
 
                     <div className="h-10 w-px bg-white/10 mx-2 hidden md:block" />
 
-                    <div className="flex items-center gap-2">
-                        {tiers.map((t) => (
-                            <button
-                                key={t.id}
-                                onClick={() => loadLevelConfig(t.id)}
-                                className={`px-4 py-2.5 rounded-2xl border-2 text-[10px] font-bold uppercase tracking-widest transition-all ${selectedLevelId === t.id
-                                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
-                                    : 'bg-white/5 border-white/5 text-gray-500 hover:border-white/10 hover:text-gray-300'
-                                    }`}
-                            >
-                                {t.name}
-                            </button>
-                        ))}
+                    <div className="flex items-center gap-3">
+                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest hidden xl:block">NIVEL ACTIVO:</label>
+                        <div className="flex items-center gap-2 overflow-x-auto max-w-[400px] no-scrollbar py-2">
+                            {tiers.map((t) => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => loadLevelConfig(t.id)}
+                                    className={`px-4 py-2.5 rounded-2xl border-2 text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${selectedLevelId === t.id
+                                        ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
+                                        : 'bg-white/5 border-white/5 text-gray-500 hover:border-white/10 hover:text-gray-300'
+                                        }`}
+                                >
+                                    {t.name}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -319,7 +322,9 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                     <div className="glass-panel p-8 rounded-[2.5rem] border-white/5 space-y-10 shadow-xl">
                         <div className="flex items-center gap-3 border-b border-white/5 pb-6">
                             <Palette className="w-5 h-5 text-primary" />
-                            <h3 className="text-lg font-black text-white uppercase tracking-tight">Personalización Visual del Nivel</h3>
+                            <h3 className="text-lg font-black text-white uppercase tracking-tight">
+                                Personalización Visual: <span className="text-primary">{selectedLevelId === 'global' ? 'Global' : config.name}</span>
+                            </h3>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12">
@@ -640,7 +645,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                            <span>{saving ? 'Guardando...' : 'Guardar Cambios'}</span>
+                            <span>{saving ? 'Guardando...' : `Guardar Cambios (${selectedLevelId === 'global' ? 'Global' : config.name})`}</span>
                         </button>
                     </div>
 
