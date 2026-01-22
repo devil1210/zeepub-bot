@@ -104,7 +104,7 @@ class BotConfig:
 
     # Plugin PostgreSQL
     ENABLE_POSTGRES_PLUGIN: bool = (
-        os.getenv("ENABLE_POSTGRES_PLUGIN", "False").lower() == "true"
+        os.getenv("ENABLE_POSTGRES_PLUGIN", "True").lower() == "true"
     )
 
     # Plugin Group Manager
@@ -154,13 +154,11 @@ class BotConfig:
     def __post_init__(self):
         # Lógica de inicialización post-construcción para campos dependientes
         raw_db_url = os.getenv("DATABASE_URL", "")
-        if self.ENABLE_POSTGRES_PLUGIN and raw_db_url:
+        if raw_db_url:
             self.DATABASE_URL = raw_db_url
-            # No imprimimos aquí porque config se carga al importar,
-            # el log se hará en el logger oficial si es posible.
         else:
-            self.DATABASE_URL = ""
-            # SQLite es el default por diseño si no se activa Postgres
+            # PostgreSQL es ahora la base obligatoria según requerimiento
+            self.DATABASE_URL = raw_db_url or ""
 
     @property
     def OPDS_ROOT_START(self) -> str:

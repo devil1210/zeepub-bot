@@ -301,105 +301,11 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     
                     await session.commit()
                     logger.info(f"[POSTGRES UPSERT] Success for user {telegram_id}")
+                    return {"telegram_id": telegram_id, "level": lvl_str}
             except Exception as e:
                 logger.error(f"Postgres ORM error in upsert: {e}")
-
-        # 3. SQLite Fallback (Optional, but kept for legacy)
-
-        async with self.db.connection() as conn:
-            # Check existence
-            cursor = await conn.execute(
-                "SELECT telegram_id FROM users WHERE telegram_id = ?", (telegram_id,)
-            )
-            exists = await cursor.fetchone()
-
-            if exists:
-                import json
-                fields = ["level = ?", "level_id = ?"]
-                params = [lvl_str, level_id]
-                if expires_at is not None:
-                    fields.append("expires_at = ?")
-                    params.append(expires_at)
-                if role is not None:
-                    fields.append("role = ?")
-                    params.append(role)
-                if created_by is not None:
-                    fields.append("created_by = ?")
-                    params.append(created_by)
-                if nickname is not None:
-                    fields.append("nickname = ?")
-                    params.append(nickname)
-                if name is not None:
-                    fields.append("name = ?")
-                    params.append(name)
-                if username is not None:
-                    fields.append("username = ?")
-                    params.append(username)
-                if roles is not None:
-                    fields.append("roles = ?")
-                    params.append(json.dumps(roles))
-                if insignias is not None:
-                    fields.append("insignias = ?")
-                    params.append(json.dumps(insignias))
-                if has_library_access is not None:
-                    fields.append("has_library_access = ?")
-                    params.append(1 if has_library_access else 0)
-                if can_request_books is not None:
-                    fields.append("can_request_books = ?")
-                    params.append(1 if can_request_books else 0)
-                if can_upload_epub is not None:
-                    fields.append("can_upload_epub = ?")
-                    params.append(1 if can_upload_epub else 0)
-                if photo_url is not None:
-                    fields.append("photo_url = ?")
-                    params.append(photo_url)
-                if settings is not None:
-                    fields.append("settings = ?")
-                    params.append(json.dumps(settings))
-                if allow_theme_templates is not None:
-                    fields.append("allow_theme_templates = ?")
-                    params.append(1 if allow_theme_templates else 0)
-
-                params.append(telegram_id)
-                sql = f"UPDATE users SET {', '.join(fields)} WHERE telegram_id = ?"
-                await conn.execute(sql, tuple(params))
-            else:
-                import json
-                await conn.execute(
-                    "INSERT INTO users (telegram_id, level, level_id, added_at, expires_at, role, created_by, nickname, name, username, roles, insignias, has_library_access, can_request_books, can_upload_epub, allow_theme_templates, settings, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)",
-                    (
-                        telegram_id,
-                        lvl_str,
-                        level_id,
-                        datetime.utcnow(),
-                        expires_at,
-                        role,
-                        created_by,
-                        nickname,
-                        name,
-                        username,
-                        json.dumps(roles) if roles is not None else '[]',
-                        json.dumps(insignias) if insignias is not None else '[]',
-                        int(has_library_access if has_library_access is not None else True),
-                        int(can_request_books if can_request_books is not None else True),
-                        int(can_upload_epub if can_upload_epub is not None else False),
-                        int(allow_theme_templates if allow_theme_templates is not None else False),
-                        json.dumps(settings) if settings is not None else '{}',
-                        photo_url
-                    ),
-                )
-
-            # Sync with admins table
-            if lvl_str == 'admin':
-                await conn.execute(
-                    "INSERT OR IGNORE INTO admins (user_id, granted_by) VALUES (?, ?)",
-                    (telegram_id, created_by)
-                )
-            elif exists:
-                await conn.execute("DELETE FROM admins WHERE user_id = ?", (telegram_id,))
-
-            await conn.commit()
-            return {"telegram_id": telegram_id, "level": level}
+                return {"success": False, "error": str(e)}
+        return {"telegram_id": telegram_id, "level": lvl_str}
 
     async def update_status(self, telegram_id: int, role: Optional[str]):
         if self.supabase.is_active:
@@ -408,30 +314,32 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             except Exception as e:
                 logger.error(f"Supabase status error: {e}")
 
-        async with self.db.connection() as conn:
-            await conn.execute(
-                "UPDATE users SET role = ? WHERE telegram_id = ?",
-                (role, telegram_id),
-            )
-            await conn.commit()
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    stmt = select(User).where(User.telegram_id == telegram_id)
+                    result = await session.execute(stmt)
+                    user = result.scalar_one_or_none()
+                    if user:
+                        user.role = role
+                        await session.commit()
+            except Exception as e:
+                logger.error(f"Postgres status error: {e}")
 
-    async def get_by_level(self, level: str) -> list[Dict[str, Any]]:
-        results = []
-        async with self.db.connection() as conn:
-            cursor = await conn.execute(
-                "SELECT telegram_id, level, expires_at FROM users WHERE level = ?",
-                (level,),
-            )
-            rows = await cursor.fetchall()
-            for row in rows:
-                telegram_id, lvl, expires_raw = row
-                results.append(
-                    {
-                        "telegram_id": telegram_id,
-                        "level": lvl,
-                        "expires_at": self._parse_datetime(expires_raw),
-                    }
-                )
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    stmt = select(User).where(User.role == level)
+                    result = await session.execute(stmt)
+                    users = result.scalars().all()
+                    for u in users:
+                        results.append({
+                            "telegram_id": u.telegram_id,
+                            "level": u.role,
+                            "expires_at": u.expires_at
+                        })
+            except Exception as e:
+                logger.error(f"Postgres get_by_level error: {e}")
         return results
 
     async def update_nickname(self, telegram_id: int, nickname: Optional[str]):
@@ -441,12 +349,17 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             except Exception as e:
                 logger.error(f"Supabase update_nickname error: {e}")
 
-        async with self.db.connection() as conn:
-            await conn.execute(
-                "UPDATE users SET nickname = ? WHERE telegram_id = ?",
-                (nickname, telegram_id),
-            )
-            await conn.commit()
+        if config.ENABLE_POSTGRES_PLUGIN:
+            try:
+                async with pg_manager.get_session() as session:
+                    stmt = select(User).where(User.telegram_id == telegram_id)
+                    result = await session.execute(stmt)
+                    user = result.scalar_one_or_none()
+                    if user:
+                        user.nickname = nickname
+                        await session.commit()
+            except Exception as e:
+                logger.error(f"Postgres update_nickname error: {e}")
 
     async def get_access_info(self, telegram_id: int) -> Optional[Dict[str, Any]]:
         # 0. Check Cache for user access info
