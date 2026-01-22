@@ -213,9 +213,9 @@ class LibraryService:
                 elif s_type in ("grupo", "publisher", "editorial"):
                     group_query = group_query.filter(LocalBook.publisher.ilike(f"%{query}%"))
                 elif s_type in ("géneros", "genres", "categoria"):
-                    # tags es una columna JSON, ilike sobre su representación string en SQLite funciona para búsqueda básica
+                    # tags es una columna JSON en PostgreSQL, usar operadores JSON
                     group_query = group_query.filter(
-                        (LocalBook.tags.ilike(f"%{query}%")) |
+                        (LocalBook.tags.astext.ilike(f"%{query}%")) |
                         (LocalBook.book_type.ilike(f"%{query}%"))
                     )
                 else: # todos o fallback
@@ -233,7 +233,7 @@ class LibraryService:
                         (LocalBook.publisher.ilike(f"%{query}%")) |
                         (LocalBook.isbn.ilike(f"%{query}%")) |
                         (LocalBook.asin.ilike(f"%{query}%")) |
-                        (LocalBook.tags.ilike(f"%{query}%")) |
+                        (LocalBook.tags.astext.ilike(f"%{query}%")) |
                         (LocalBook.book_type.ilike(f"%{query}%"))
                     )
 
