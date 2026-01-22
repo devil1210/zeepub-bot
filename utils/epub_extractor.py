@@ -70,6 +70,7 @@ class EpubMetadataExtractor:
                     # 3.1 Mapear Roles de Creadores y Contribuidores
                     # Guardamos IDs de creadores para asociar roles refinados
                     creators = {}  # id -> text
+                    creators_jap = {} # id -> jap_text
                     for node in metadata_node.findall('dc:creator', self.NAMESPACE):
                         creators[node.get('{http://www.w3.org/XML/1998/namespace}id') or node.get('id')] = node.text
 
@@ -77,24 +78,31 @@ class EpubMetadataExtractor:
                     for node in metadata_node.findall('dc:contributor', self.NAMESPACE):
                         contributors[node.get('{http://www.w3.org/XML/1998/namespace}id') or node.get('id')] = node.text
 
-                    # Roles
+                    # Roles y Scripts Alternativos
                     meta_tags = metadata_node.findall('opf:meta', self.NAMESPACE)
                     role_map = {}  # id -> role (aut, ill, trl, mrk)
-
+                    
                     for meta in meta_tags:
                         refines = meta.get('refines')
                         prop = meta.get('property')
-                        if refines and prop == 'role':
-                            role_map[refines.replace('#', '')] = meta.text
+                        if refines:
+                            cid = refines.replace('#', '')
+                            if prop == 'role':
+                                role_map[cid] = meta.text
+                            elif prop == 'alternate-script' and meta.get('{http://www.w3.org/XML/1998/namespace}lang') == 'ja' or meta.get('xml:lang') == 'ja':
+                                creators_jap[cid] = meta.text
 
                     # Asignar personas
                     self.metadata['author'] = self._get_dc_value(metadata_node, 'creator')  # Fallback
                     for cid, text in creators.items():
                         role = role_map.get(cid, "aut")
+                        jap_name = creators_jap.get(cid)
+                        full_name = f"{text} ({jap_name})" if jap_name else text
+                        
                         if role == "aut":
-                            self.metadata["author"] = text
+                            self.metadata["author"] = full_name
                         elif role == "ill":
-                            self.metadata["illustrator"] = text
+                            self.metadata["illustrator"] = full_name
 
                     for cid, text in contributors.items():
                         role = role_map.get(cid)
@@ -108,15 +116,21 @@ class EpubMetadataExtractor:
                     # 3.2 Identificadores (ISBN, ASIN, URI)
                     for ident in metadata_node.findall('dc:identifier', self.NAMESPACE):
                         id_text = ident.text or ""
+                        # Limpiar prefijos comunes como urn:isbn:, urn:amazon:, urn:uri:
+                        clean_id = re.sub(r'^urn:(isbn|amazon|uri|uuid|asin):', '', id_text, flags=re.IGNORECASE).strip()
+                        
                         lower_id = id_text.lower()
-                        if 'isbn:978' in lower_id:  # Prioritize ISBN13
-                            self.metadata['isbn'] = id_text.split(':')[-1]
-                        elif 'isbn' in lower_id and not self.metadata.get('isbn'):
-                            self.metadata['isbn'] = id_text.split(':')[-1]
+                        if 'isbn:978' in lower_id or 'isbn' in lower_id:
+                            # Preferir ISBN13 si es posible
+                            if '978' in clean_id and not self.metadata.get('isbn'):
+                                self.metadata['isbn'] = clean_id
+                            elif not self.metadata.get('isbn'):
+                                self.metadata['isbn'] = clean_id
                         elif 'amazon' in lower_id or 'asin' in lower_id:
-                            self.metadata['asin'] = id_text.split(':')[-1]
+                            self.metadata['asin'] = clean_id
                         elif 'uri' in lower_id:
-                            self.metadata['uri'] = id_text.split('urn:uri:')[-1]
+                            # Limpiar también urn:uri: de blogspot, etc.
+                            self.metadata['uri'] = clean_id
 
                     # 3.3 Etiquetas (Géneros)
                     tags = []
