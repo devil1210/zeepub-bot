@@ -135,6 +135,14 @@ async def get_effective_user(
     global_raw = get_setting("ui_defaults_global", "{}")
     global_ui = json.loads(global_raw)
 
+    def normalize_ui(s: Dict[str, Any]):
+        """Normaliza valores de opacidad y otros parámetros visuales."""
+        opacity_keys = ["navOpacity", "accentOpacity", "glassOpacity"]
+        for k in opacity_keys:
+            if k in s and isinstance(s[k], (int, float)) and s[k] > 1.1:
+                s[k] = s[k] / 100.0
+        return s
+
     result = {
         "level": "free",
         "role": "", # Functional role (e.g. Publicador)
@@ -143,7 +151,7 @@ async def get_effective_user(
         "nickname": nickname_from_tg or f"User_{uid}",
         "name": nickname_from_tg or f"User_{uid}",
         "username": username_from_tg or "",
-        "settings": global_ui.copy()
+        "settings": normalize_ui(global_ui.copy())
     }
 
     # 1. Config Admins always have top precedence
@@ -178,10 +186,12 @@ async def get_effective_user(
             "can_request_books": info.get("can_request_books", True) if info else True,
             "has_library_access": info.get("has_library_access", True) if info else True,
             "can_upload_epub": info.get("can_upload_epub", False) if info else False,
-            "settings": base_settings,
+            "settings": normalize_ui(base_settings),
             "level_info": { # Default level info for config admins if DB is missing it
                 "id": "1", "name": "Administrador", "priority": 100, "color": "#FF6B6B", "hasAccess": True,
-                "canDownload": True, "canRead": True, "customThemes": True, "forceSettings": False
+                "canDownload": True, "canRead": True, "customThemes": True, "forceSettings": False,
+                "theme": "dark", "primaryColor": "#3b82f6", "fontSize": 14, "navOpacity": 0.8,
+                "accentOpacity": 0.2, "glassOpacity": 0.6, "glassBlur": 12
             }
         })
         # Note: We DON'T return early here anymore to allow enrichment and simulation
@@ -220,7 +230,7 @@ async def get_effective_user(
                 "can_request_books": info.get("can_request_books", True),
                 "has_library_access": info.get("has_library_access", True),
                 "can_upload_epub": info.get("can_upload_epub", False),
-                "settings": final_settings,
+                "settings": normalize_ui(final_settings),
                 "personal_settings_raw": info.get("settings", {}) # Store for simulation comparison
             })
 
@@ -268,7 +278,7 @@ async def get_effective_user(
         level_settings = access_info["level"]
         
         # 1. Start with Global UI as base
-        final_ui = global_ui.copy()
+        final_ui = normalize_ui(global_ui.copy())
         
         # 2. Overlay Level Defaults (if defined)
         override_keys = [
@@ -280,8 +290,9 @@ async def get_effective_user(
         for k in override_keys:
             if k in level_settings and level_settings[k] is not None:
                 final_ui[k] = level_settings[k]
-                
-        # 3. Overlay Personal Settings (Respecting forceSettings and ui_exported_settings)
+        
+        # Normalize after level overlay
+        final_ui = normalize_ui(final_ui)
         # SKIP PERSONAL OVERRIDES IF SIMULATING
         if simulated_level_id is None:
             personal_settings = info.get("settings", {}) if info else {}
@@ -308,6 +319,8 @@ async def get_effective_user(
         else:
             logger.debug(f"Simulation Mode: Skipping personal settings for user {uid}")
         
+        # Final normalization
+        final_ui = normalize_ui(final_ui)
         result["settings"] = final_ui
 
         # Overwrite identities if present

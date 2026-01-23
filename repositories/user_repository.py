@@ -76,6 +76,9 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             for col, key in mapping.items():
                 val = getattr(ui, col, None)
                 if val is not None:
+                    # Normalize opacities if they are integers > 1
+                    if key in ["glassOpacity", "navOpacity", "accentOpacity"] and isinstance(val, (int, float)) and val > 1:
+                        val = val / 100.0
                     settings[key] = val
 
         return {
@@ -679,14 +682,15 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "level": level_dict,
                         "hasAccess": level_dict["hasAccess"] or is_admin,
                         "isAdmin": is_admin,
-                        "isBetaTester": user.beta_tester or is_admin,
-                        "name": user.name or user.nickname,
-                        "username": user.username,
+                        "isRealAdmin": is_admin,
+                        "isBetaTester": (user.beta_tester or is_admin) is not False,
+                        "name": user.name or user.nickname or f"User_{user.telegram_id}",
+                        "username": user.username or "",
                         "roles": [],
                         "insignias": user.insignias or [],
-                        "hasLibraryAccess": user.has_library_access,
-                        "canRequestBooks": user.can_request_books,
-                        "canUploadEpub": user.can_upload_epub,
+                        "hasLibraryAccess": user.has_library_access is not False,
+                        "canRequestBooks": user.can_request_books is not False,
+                        "canUploadEpub": user.can_upload_epub is True,
                         "photo_url": user.photo_url
                     }
         except Exception as e:

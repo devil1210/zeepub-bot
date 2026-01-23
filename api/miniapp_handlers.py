@@ -187,8 +187,8 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
             "id": user_id,
             "username": user_data.get("nickname") or f"User_{user_id}",
             "level": level_key,
-            "role": user_data.get("role"), # Now returns the functional role label
-            "status_label": system_role_text,
+            "role": user_data.get("role") or "", # Now returns the functional role label
+            "status_label": system_role_text or "Lector",
             "has_library_access": (user_data.get("has_library_access", True) is not False) and (user_data.get("level_info", {}).get("hasLibraryAccess", True) is not False),
             "can_request_books": (user_data.get("can_request_books", True) is not False) and (user_data.get("level_info", {}).get("canRequestBooks", True) is not False),
             "can_download": user_data.get("level_info", {}).get("canDownload", True),
