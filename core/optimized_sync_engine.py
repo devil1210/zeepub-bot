@@ -37,9 +37,9 @@ class OptimizedSyncEngine:
             'admins': set()
         }
         self.sync_intervals = {
-            'users': 300,  # 5 minutos (solo si hay cambios)
-            'user_levels': 3600,  # 1 hora (poco frecuente)
-            'admins': 60  # 1 minuto (crítico pero bajo volumen)
+            'users': 86400,  # 24 horas (el admin prefiere sync manual o diario)
+            'user_levels': 86400,  # 24 horas
+            'admins': 86400  # 24 horas
         }
         
     async def start(self):
@@ -48,7 +48,7 @@ class OptimizedSyncEngine:
             return
             
         self.running = True
-        logger.info("Optimized Sync Engine started")
+        logger.info("Optimized Sync Engine started (Long-interval Polling mode)")
         
         # Iniciar tareas en segundo plano
         asyncio.create_task(self._sync_loop())
@@ -72,8 +72,8 @@ class OptimizedSyncEngine:
             except Exception as e:
                 logger.error(f"Error in optimized sync loop: {e}")
                 
-            # Esperar adaptativa basada en actividad
-            await asyncio.sleep(30)  # Check every 30 seconds
+            # Esperar adaptativa (1 hora entre verificadores de sync)
+            await asyncio.sleep(3600) 
             
     async def _change_detector_loop(self):
         """Bucle de detección de cambios."""
@@ -83,7 +83,7 @@ class OptimizedSyncEngine:
             except Exception as e:
                 logger.error(f"Error in change detector: {e}")
                 
-            await asyncio.sleep(60)  # Check for changes every minute
+            await asyncio.sleep(3600)  # Revisar cambios remotos cada hora
             
     async def _detect_changes(self):
         """Detecta cambios en Supabase sin hacer polling constante."""

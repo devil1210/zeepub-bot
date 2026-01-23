@@ -49,7 +49,7 @@ export const SystemDashboard: React.FC = () => {
                     <p className="text-lg font-bold">Error en el Sistema</p>
                     <p className="text-sm mt-2">{error}</p>
                 </div>
-                <button 
+                <button
                     onClick={() => setError(null)}
                     className="px-4 py-2 bg-red-500/10 text-red-500 rounded-lg border border-red-500/20 hover:bg-red-500/20 transition-all"
                 >
@@ -82,9 +82,9 @@ export const SystemDashboard: React.FC = () => {
                         <tbody className="divide-y divide-white/5">
                             <tr className="group hover:bg-white/[0.01]">
                                 <td className="py-4 px-2 font-bold text-gray-200">Books & Metadata</td>
-                                <td className="py-4 px-2 text-gray-400">SQLite (Local)</td>
-                                <td className="py-4 px-2"><span className="text-amber-500 font-black uppercase tracking-tighter text-[10px]">Manual Only</span></td>
-                                <td className="py-4 px-2 italic text-gray-500 font-mono">Cloud Sync → Library</td>
+                                <td className="py-4 px-2 text-gray-400">Postgres & Supabase</td>
+                                <td className="py-4 px-2"><span className="text-blue-500 font-black uppercase tracking-tighter text-[10px]">Cloud Push Sync</span></td>
+                                <td className="py-4 px-2 italic text-gray-500 font-mono">Manual Trigger</td>
                                 <td className="py-4 px-2 text-right">
                                     <button
                                         onClick={() => handleAction('Backup Biblioteca', api.adminBackupLibrary)}
@@ -98,9 +98,9 @@ export const SystemDashboard: React.FC = () => {
                             </tr>
                             <tr className="group hover:bg-white/[0.01]">
                                 <td className="py-4 px-2 font-bold text-gray-200">Library Sources</td>
-                                <td className="py-4 px-2 text-gray-400">SQLite (Local)</td>
-                                <td className="py-4 px-2"><span className="text-amber-500 font-black uppercase tracking-tighter text-[10px]">Manual Only</span></td>
-                                <td className="py-4 px-2 italic text-gray-500 font-mono">Cloud Sync → Library</td>
+                                <td className="py-4 px-2 text-gray-400">Postgres & Supabase</td>
+                                <td className="py-4 px-2"><span className="text-amber-500 font-black uppercase tracking-tighter text-[10px]">Local Indexed</span></td>
+                                <td className="py-4 px-2 italic text-gray-500 font-mono">Manual Scan</td>
                                 <td className="py-4 px-2 text-right">
                                     <button
                                         onClick={() => handleAction('Escaneo', () => api.adminScanLibrary(true))}
@@ -115,8 +115,8 @@ export const SystemDashboard: React.FC = () => {
                             <tr className="group hover:bg-white/[0.01]">
                                 <td className="py-4 px-2 font-bold text-gray-200">Users & Roles</td>
                                 <td className="py-4 px-2 text-gray-400">Postgres & Supabase</td>
-                                <td className="py-4 px-2"><span className="text-green-500 font-black uppercase tracking-tighter text-[10px]">Event-Driven</span></td>
-                                <td className="py-4 px-2 italic text-green-500/80 font-mono">96% Less Requests</td>
+                                <td className="py-4 px-2"><span className="text-green-500 font-black uppercase tracking-tighter text-[10px]">Event-Driven Sync</span></td>
+                                <td className="py-4 px-2 italic text-green-500/80 font-mono">Real-time Push</td>
                                 <td className="py-4 px-2 text-right">
                                     <button
                                         onClick={() => handleAction('Sync Usuarios', api.adminSyncUsersCloud)}
@@ -131,8 +131,8 @@ export const SystemDashboard: React.FC = () => {
                             <tr className="group hover:bg-white/[0.01]">
                                 <td className="py-4 px-2 font-bold text-gray-200">User Levels (Tiers)</td>
                                 <td className="py-4 px-2 text-gray-400">Postgres & Supabase</td>
-                                <td className="py-4 px-2"><span className="text-green-500 font-black uppercase tracking-tighter text-[10px]">On-Demand</span></td>
-                                <td className="py-4 px-2 italic text-green-500/80 font-mono">Hourly Check</td>
+                                <td className="py-4 px-2"><span className="text-green-500 font-black uppercase tracking-tighter text-[10px]">On-Demand Sync</span></td>
+                                <td className="py-4 px-2 italic text-green-500/80 font-mono">Dynamic Fetch</td>
                                 <td className="py-4 px-2 text-right">
                                     <button
                                         onClick={() => handleAction('Sync Usuarios', api.adminSyncUsersCloud)}

@@ -978,7 +978,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
 
 
 async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[str, Any]):
-    """Sincroniza usuarios y niveles locales a Supabase."""
+    """Sincroniza usuarios y niveles locales (Postgres) a Supabase."""
     user_level = user_data.get("level", "free")
     if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
@@ -987,82 +987,78 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
         return {"success": False, "message": "Supabase no está habilitado."}
 
     try:
-        from core.db_manager import db_manager
+        from core.db_manager_pg import pg_manager
         from core.supabase_manager import supabase_manager
+        from models.user_models import User, UserLevel
+        from sqlalchemy import select
         import json
         
         client = supabase_manager.get_client()
         
-        async with db_manager.connection() as conn:
+        async with pg_manager.get_session() as session:
             # 1. Sync User Levels
-            cursor = await conn.execute("SELECT * FROM user_levels")
-            levels = await cursor.fetchall()
-            
-            # Get columns from user_levels
-            cursor = await conn.execute("PRAGMA table_info(user_levels)")
-            lvl_cols = [c[1] for c in await cursor.fetchall()]
+            res_levels = await session.execute(select(UserLevel))
+            levels = res_levels.scalars().all()
             
             for lvl in levels:
-                lvl_data = {}
-                for idx, col in enumerate(lvl_cols):
-                    val = lvl[idx]
-                    # Map SQLite names to Supabase if needed, or keep same
-                    lvl_data[col] = val
-                
-                # Special handling for Supabase bools if SQLite stored 0/1
-                bool_cols = ["has_mini_app_access", "early_access", "custom_themes", "show_recommendations", "can_download", "can_read"]
-                for bc in bool_cols:
-                    if bc in lvl_data:
-                        lvl_data[bc] = bool(lvl_data[bc])
-
+                lvl_data = {
+                    "id": lvl.id,
+                    "name": lvl.name,
+                    "priority": lvl.priority,
+                    "color": lvl.color,
+                    "ui_theme": lvl.ui_theme,
+                    "ui_primary_color": lvl.ui_primary_color,
+                    "ui_font_size": lvl.ui_font_size,
+                    "ui_nav_opacity": lvl.ui_nav_opacity,
+                    "ui_glass_blur": lvl.ui_glass_blur,
+                    "ui_cover_width": lvl.ui_cover_width,
+                    "ui_accent_opacity": lvl.ui_accent_opacity,
+                    "panel_transparency": lvl.panel_transparency,
+                    "background_color": lvl.background_color,
+                    "card_color": lvl.card_color,
+                    "banner_content_offset": lvl.banner_content_offset,
+                    "force_settings": lvl.force_settings,
+                    "price": lvl.price,
+                    "can_download": lvl.can_download,
+                    "can_read": lvl.can_read,
+                    "daily_downloads": lvl.daily_downloads,
+                    "has_mini_app_access": lvl.has_mini_app_access,
+                    "has_library_access": lvl.has_library_access,
+                    "can_request_books": lvl.can_request_books,
+                    "can_upload_epub": lvl.can_upload_epub,
+                    "early_access": lvl.early_access,
+                    "custom_themes": lvl.custom_themes,
+                    "allow_theme_templates": lvl.allow_theme_templates,
+                    "show_recommendations": lvl.show_recommendations,
+                    "default_theme_id": lvl.default_theme_id
+                }
                 client.table('user_levels').upsert(lvl_data).execute()
 
             # 2. Sync Users
-            cursor = await conn.execute("SELECT * FROM users")
-            users = await cursor.fetchall()
-            
-            cursor = await conn.execute("PRAGMA table_info(users)")
-            usr_cols = [c[1] for c in await cursor.fetchall()]
+            res_users = await session.execute(select(User))
+            users = res_users.scalars().all()
             
             user_batch = []
             for u in users:
-                u_data = {}
-                for idx, col in enumerate(usr_cols):
-                    val = u[idx]
-                    u_data[col] = val
-                
-                # Handle dates and JSON
-                if u_data.get("added_at"):
-                    if isinstance(u_data["added_at"], str):
-                        pass # SQLite stores as string
-                
-                if u_data.get("expires_at") and not isinstance(u_data["expires_at"], str):
-                    u_data["expires_at"] = u_data["expires_at"].isoformat()
-
-                # Boolean fix
-                for bc in ["has_library_access", "can_request_books"]:
-                    if bc in u_data:
-                        u_data[bc] = bool(u_data[bc])
-
-                # JSON parse/re-encode to ensure validity
-                for jc in ["insignias", "settings"]:
-                    if u_data.get(jc):
-                        try:
-                            if isinstance(u_data[jc], str):
-                                u_data[jc] = json.loads(u_data[jc])
-                        except:
-                            pass
-                
-                # Remove columns that don't exist in Supabase
-                # custom_status was renamed to 'role'
-                if "custom_status" in u_data:
-                    if not u_data.get("role"):
-                        u_data["role"] = u_data["custom_status"]
-                    del u_data["custom_status"]
-                
-                # Remove 'roles' column (consolidated into 'insignias')
-                if "roles" in u_data:
-                    del u_data["roles"]
+                u_data = {
+                    "telegram_id": u.telegram_id,
+                    "username": u.username,
+                    "name": u.name,
+                    "nickname": u.nickname,
+                    "photo_url": u.photo_url,
+                    "level_id": u.level_id,
+                    "role": u.role,
+                    "beta_tester": u.beta_tester,
+                    "has_library_access": u.has_library_access,
+                    "can_request_books": u.can_request_books,
+                    "can_upload_epub": u.can_upload_epub,
+                    "total_downloads": u.total_downloads,
+                    "insignias": u.insignias,
+                    "settings": u.settings,
+                    "expires_at": u.expires_at.isoformat() if u.expires_at else None,
+                    "created_at": u.created_at.isoformat() if u.created_at else None,
+                    "updated_at": u.updated_at.isoformat() if u.updated_at else None
+                }
                 
                 user_batch.append(u_data)
                 
@@ -1073,7 +1069,7 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
             if user_batch:
                 client.table('users').upsert(user_batch).execute()
 
-        return {"success": True, "message": f"Sincronizados {len(levels)} niveles y {len(users)} usuarios a la nube."}
+        return {"success": True, "message": f"Sincronizados {len(levels)} niveles y {len(users)} usuarios a Supabase (desde Postgres)."}
     except Exception as e:
         logger.error(f"Error syncing users to Supabase: {e}")
         return {"success": False, "message": str(e)}

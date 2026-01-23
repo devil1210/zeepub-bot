@@ -275,7 +275,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 user = res_user.scalar_one_or_none()
                 
                 if not user:
-                    # Crear usuario on-the-fly si no existe (raro pero posible)
+                    # Crear usuario on-the-fly si no existe
                     user = User(telegram_id=telegram_id, nickname=f"User_{telegram_id}")
                     session.add(user)
                 
@@ -284,8 +284,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 user.expires_at = datetime.utcnow() + timedelta(days=days)
                 
                 # Si el nivel es admin/staff, actualizar role también
-                if level_name in ('admin', 'staff'):
-                    user.role = level_name
+                if level_name.lower() in ('admin', 'staff'):
+                    user.role = level_name.lower()
                 
                 await session.commit()
                 
@@ -308,6 +308,69 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         except Exception as e:
             logger.error(f"Error updating user level: {e}")
             return False
+
+    async def update_level(self, level_id: int, data: Dict[str, Any]) -> bool:
+        """Actualiza la configuración de un nivel (UserLevel) en Postgres."""
+        try:
+            async with pg_manager.get_session() as session:
+                stmt = select(UserLevel).where(UserLevel.id == level_id)
+                result = await session.execute(stmt)
+                level = result.scalar_one_or_none()
+                
+                if not level:
+                    logger.warning(f"Level ID {level_id} not found in Postgres.")
+                    return False
+                
+                # Map fields
+                mapping = {
+                    "name": "name",
+                    "priority": "priority",
+                    "color": "color",
+                    "price": "price",
+                    "dailyDownloads": "daily_downloads",
+                    "canDownload": "can_download",
+                    "canRead": "can_read",
+                    "hasAccess": "has_mini_app_access",
+                    "allowThemeTemplates": "allow_theme_templates",
+                    "earlyAccess": "early_access",
+                    "customThemes": "custom_themes",
+                    "showRecommendations": "show_recommendations",
+                    "defaultThemeId": "default_theme_id",
+                    "theme": "ui_theme",
+                    "primaryColor": "ui_primary_color",
+                    "fontSize": "ui_font_size",
+                    "glassBlur": "ui_glass_blur",
+                    "navOpacity": "ui_nav_opacity",
+                    "accentOpacity": "ui_accent_opacity",
+                    "backgroundColor": "background_color",
+                    "cardColor": "card_color",
+                    "forceSettings": "force_settings"
+                }
+                
+                for key, col in mapping.items():
+                    if key in data:
+                        setattr(level, col, data[key])
+                
+                # Special transparency fix (0-1 to 0-100)
+                if "glassOpacity" in data:
+                    val = data["glassOpacity"]
+                    if isinstance(val, (int, float)) and val <= 1.0:
+                        level.panel_transparency = int(val * 100)
+                    else:
+                        level.panel_transparency = int(val)
+
+                if "bannerContentOffset" in data:
+                    level.banner_content_offset = int(data["bannerContentOffset"])
+                
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error updating level {level_id} in Postgres: {e}")
+            return False
+
+    async def update_level_access(self, level_id: int, has_access: bool) -> bool:
+        """Helper para actualizar solo el flag de acceso de un nivel."""
+        return await self.update_level(level_id, {"hasAccess": has_access})
 
     async def get_level_by_id(self, level_id: int) -> Optional[Dict[str, Any]]:
         """Obtiene un nivel de usuario por ID."""
