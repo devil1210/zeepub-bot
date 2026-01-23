@@ -14,13 +14,10 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     environment:
-      # Configuración de Base de Datos (PostgreSQL)
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-zeepub}:${POSTGRES_PASSWORD:-zeepub}@db:5432/${POSTGRES_DB:-zeepub}
+      # Construcción dinámica de la URL de DB usando las variables del .env
       - ENABLE_POSTGRES_PLUGIN=true
-      
-      # Legacy / Fallbacks
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - URL_CACHE_DB_PATH=data/url_cache.db
-      - LOG_LEVEL=INFO
     
     # Dependencia de la DB
     depends_on:
