@@ -201,12 +201,14 @@ class EPUBUploader:
                 'publish_date': enriched_metadata.get('fecha_publicacion', ''),
                 'tags': ', '.join(enriched_metadata.get('generos', [])),
                 'series': enriched_metadata.get('titulo_serie', ''),
-                'volume': enriched_metadata.get('volumen', ''),
+                'volume': enriched_metadata.get('titulo_volumen', ''),
                 'illustrator': enriched_metadata.get('ilustrador', ''),
                 'translator': enriched_metadata.get('traductor', ''),
                 'category': enriched_metadata.get('categoria', ''),
                 'demography': enriched_metadata.get('demografia', []),
                 'typesetters': enriched_metadata.get('maquetadores', []),
+                'layout_by': enriched_metadata.get('maquetadores', [''])[0] if enriched_metadata.get('maquetadores') else '',  # For hash generation
+                'book_type': enriched_metadata.get('categoria', ''),
                 'original_metadata': enriched_metadata,  # Guardar metadata original para referencia
                 'original_filename': original_filename  # Agregar el nombre original del archivo
             }
