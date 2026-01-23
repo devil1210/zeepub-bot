@@ -325,8 +325,7 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
                 out["publisher"] = el.text.strip()
                 break
 
-                    out["publisher_url"] = txt
-                    break
+
         
         # Identificadores: ISBN, ASIN (dc:identifier)
         for el in root.iter():
