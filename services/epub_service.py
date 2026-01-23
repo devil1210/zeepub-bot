@@ -134,20 +134,27 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
     def local_name_attr(attr_name: str) -> str:
         return attr_name.split("}", 1)[-1] if "}" in attr_name else attr_name
 
-    def parse_date(raw_date: str) -> str:
+    def parse_date(raw_date: str) -> Optional[str]:
+        if not raw_date:
+            return None
         try:
-            if "T" in raw_date:
-                dt_str = raw_date.split("T")[0]
-                parts = dt_str.split("-")
-                if len(parts) == 3:
-                    return f"{parts[2]}-{parts[1]}-{parts[0]}"
-            else:
-                parts = raw_date.split("-")
-                if len(parts) == 3:
-                    return f"{parts[2]}-{parts[1]}-{parts[0]}"
+            # Basic cleanup
+            clean = raw_date.strip().split("T")[0]
+            # Verify structure YYYY-MM-DD
+            parts = clean.split("-")
+            if len(parts) == 3:
+                # Already YYYY-MM-DD? Good.
+                if len(parts[0]) == 4: 
+                    return clean
+                # Is it DD-MM-YYYY? Convert to YYYY-MM-DD
+                elif len(parts[2]) == 4:
+                     return f"{parts[2]}-{parts[1]}-{parts[0]}"
+            # If standard YYYY only
+            elif len(parts) == 1 and len(parts[0]) == 4:
+                return f"{parts[0]}-01-01"
         except Exception:
             pass
-        return raw_date
+        return raw_date # Fallback
 
     def _parse_opf(data: bytes) -> Dict[str, Any]:
         import logging
