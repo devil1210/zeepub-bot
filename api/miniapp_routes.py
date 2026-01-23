@@ -32,15 +32,28 @@ class UserLevelModel(BaseModel):
     canDownload: bool = True
     canRead: bool = True
     canUploadEpub: bool = False
+    # Extra UI fields for new interface
+    theme: Optional[str] = "dark"
+    primaryColor: Optional[str] = "#3b82f6"
+    fontSize: Optional[int] = 14
+    glassBlur: Optional[int] = 12
+    navOpacity: Optional[float] = 0.8
+    accentOpacity: Optional[float] = 0.2
+    glassOpacity: Optional[float] = 0.6
+    backgroundColor: Optional[str] = "#0f172a"
+    cardColor: Optional[str] = "#1e293b"
+    forceSettings: bool = False
 
 
 class AccessResponse(BaseModel):
     level: UserLevelModel
     hasAccess: bool
     isAdmin: bool
+    isRealAdmin: bool = False
     isBetaTester: bool = False  # Controls new vs old UI
     customThemes: bool = False
     showRecommendations: bool = True
+    allowThemeTemplates: bool = False
     nickname: Optional[str] = None
     name: Optional[str] = None
     username: Optional[str] = None
@@ -53,6 +66,7 @@ class AccessResponse(BaseModel):
     canRequestBooks: bool = True
     canUploadEpub: bool = False
     ui_exported_settings: List[str] = []
+    titlePreference: str = "romaji"
 
 
 class LevelUpdate(BaseModel):
@@ -299,9 +313,11 @@ async def check_user_access(
         level=UserLevelModel(**access_info),
         hasAccess=has_access,
         isAdmin=is_admin,
+        isRealAdmin=is_admin, # Hardcoded for now to avoid complexity in this check
         isBetaTester=is_beta_tester,
         customThemes=True, # Activar temas a todos
         showRecommendations=final_show_recommendations,
+        allowThemeTemplates=access_info.get("allowThemeTemplates", False),
         nickname=access_info.get("nickname") or eff.get("nickname"),
         name=access_info.get("name") or eff.get("name"),
         username=access_info.get("username") or eff.get("username"),
