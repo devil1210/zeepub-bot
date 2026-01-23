@@ -160,7 +160,8 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "dailyDownloads": l.daily_downloads,
                         "canDownload": l.can_download,
                         "canRead": l.can_read,
-                        "hasAccess": l.has_mini_app_access
+                        "hasAccess": l.has_mini_app_access,
+                        "allowThemeTemplates": l.allow_theme_templates
                     }
                     for l in levels
                 ]
