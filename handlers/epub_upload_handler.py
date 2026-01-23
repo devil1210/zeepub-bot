@@ -708,10 +708,13 @@ class EPUBUploader:
             # ESCANEO INMEDIATO Y ESPECÍFICO
             # Importar el servicio de escaneo
             from services.scanner_service import ScannerService
-            from config.config_settings import config
+            import os
             
-            # Inicializar servicio con configuración (o usar singleton si existiera)
-            scanner = ScannerService(config.LIBRARIES_CONFIG)
+            # Obtener configuración de librerías desde variable de entorno
+            libs_json = os.getenv("LOCAL_LIBRARIES", "{}")
+            
+            # Inicializar servicio con configuración
+            scanner = ScannerService(libs_json)
             
             # Ejecutar escaneo específico del archivo recién movido
             # Esto registrará el libro y la serie (si es nueva) inmediatamente.
