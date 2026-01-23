@@ -319,11 +319,10 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
                 out["categoria"] = el.text.strip()
                 break
 
-        # Publisher
+        # Publisher: dc:publisher
         for el in root.iter():
             if local_name(el).lower() in ("publisher", "dc:publisher") and el.text:
                 out["publisher"] = el.text.strip()
-                break
 
 
         
