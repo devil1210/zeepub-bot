@@ -177,6 +177,7 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
         out: Dict[str, Any] = {
             "titulo_volumen": None,
             "titulo_serie": None,
+            "volume_index": None,
             "autores": [],
             "ilustrador": None,
             "generos": [],
@@ -189,8 +190,6 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
             "sinopsis": None,
             "epub_version": None,
             "fecha_modificacion": None,
-            "fecha_publicacion": None,
-            "is_uncensored": 0,
             "fecha_publicacion": None,
             "is_uncensored": 0,
             "color_mode": "bw",
@@ -253,15 +252,49 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
                 out["titulo_volumen"] = el.text.strip()
                 break
 
-        # Título serie: <meta property="belongs-to-collection">
+        # Metadata extendida: Series y Volumen Index
+        collection_ids = {} # id -> title (para refines)
+        
+        # Primera pasada: Recolectar Series ID si existen
         for el in root.iter():
-            if local_name(el).lower() == "meta":
-                prop = el.attrib.get("property", "") or el.attrib.get(
-                    "{http://www.idpf.org/2007/opf}property", ""
-                )
+             if local_name(el).lower() == "meta":
+                prop = el.attrib.get("property", "") or el.attrib.get("{http://www.idpf.org/2007/opf}property", "")
                 if prop == "belongs-to-collection" and el.text:
                     out["titulo_serie"] = el.text.strip()
-                    break
+                    if el.attrib.get("id"):
+                        collection_ids[el.attrib.get("id")] = out["titulo_serie"]
+
+        # Segunda pasada: Otras propiedades
+        for el in root.iter():
+            if local_name(el).lower() == "meta":
+                attribs = {local_name_attr(k).lower(): v for k, v in el.attrib.items()}
+                prop = attribs.get("property", "")
+                name = attribs.get("name", "")
+                content = attribs.get("content", "")
+                text_val = el.text.strip() if el.text else ""
+
+                # Fallback Series (Calibre)
+                if name == "calibre:series" and not out["titulo_serie"]:
+                    out["titulo_serie"] = content
+
+                # Volume Index
+                # 1. group-position (Standard EPUB3)
+                if prop == "group-position":
+                    # Check refines match if strictly needed, or just take it if simple
+                    refines = attribs.get("refines", "").replace("#", "")
+                    if not refines or refines in collection_ids or not collection_ids: 
+                        # Si no hay refines, o coincide con la serie detectada
+                        try:
+                            out["volume_index"] = float(text_val)
+                        except:
+                            pass
+                
+                # 2. calibre:series_index
+                elif name == "calibre:series_index":
+                    try:
+                        out["volume_index"] = float(content)
+                    except:
+                        pass
 
         # Creators & contributors
         contributors = []
@@ -607,6 +640,7 @@ async def enrich_metadata_from_epub(
                 "fecha_publicacion",
                 "is_uncensored",
                 "color_mode",
+                "volume_index",
             ):
                 if opf_meta.get(key):
                     meta[key] = opf_meta[key]

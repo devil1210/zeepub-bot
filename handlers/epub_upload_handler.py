@@ -201,7 +201,7 @@ class EPUBUploader:
                 'publish_date': enriched_metadata.get('fecha_publicacion', ''),
                 'tags': ', '.join(enriched_metadata.get('generos', [])),
                 'series': enriched_metadata.get('titulo_serie', ''),
-                'volume': enriched_metadata.get('titulo_volumen', ''),
+                'volume': enriched_metadata.get('volume_index') or enriched_metadata.get('titulo_volumen', ''),
                 'illustrator': enriched_metadata.get('ilustrador', ''),
                 'translator': enriched_metadata.get('traductor', ''),
                 'category': enriched_metadata.get('categoria', ''),
