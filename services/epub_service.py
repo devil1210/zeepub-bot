@@ -138,25 +138,35 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
         if not raw_date:
             return None
         try:
-            # Basic cleanup
-            clean = raw_date.strip().split("T")[0]
-            # Normalize separators
-            clean = clean.replace('/', '-')
-            
+            # Basic cleanup and separator normalization
+            clean = raw_date.strip().replace('/', '-').split("T")[0]
             parts = clean.split("-")
+            
+            y, m, d = 0, 0, 0
+            
             if len(parts) == 3:
-                # Already YYYY-MM-DD? Good.
-                if len(parts[0]) == 4: 
-                    return clean
-                # Is it DD-MM-YYYY? Convert to YYYY-MM-DD
-                elif len(parts[2]) == 4:
-                     return f"{parts[2]}-{parts[1]}-{parts[0]}"
-            # If standard YYYY only
-            elif len(parts) == 1 and len(parts[0]) == 4:
-                return f"{parts[0]}-01-01"
+                p0, p1, p2 = parts[0], parts[1], parts[2]
+                
+                # Case 1: YYYY-MM-DD (e.g. 2022-07-01 or 2022-007-01)
+                if len(p0) == 4 and p0.isdigit():
+                    y, m, d = int(p0), int(p1), int(p2)
+                # Case 2: DD-MM-YYYY (e.g. 01-07-2022)
+                elif len(p2) == 4 and p2.isdigit():
+                    y, m, d = int(p2), int(p1), int(p0)
+            
+            # Case 3: YYYY Only
+            elif len(parts) == 1 and len(parts[0]) == 4 and parts[0].isdigit():
+                y = int(parts[0])
+                m, d = 1, 1
+
+            # Validate and Format
+            if 1900 <= y <= 2100 and 1 <= m <= 12 and 1 <= d <= 31:
+                return f"{y:04d}-{m:02d}-{d:02d}"
+                
         except Exception:
             pass
-        return raw_date # Fallback
+            
+        return None # Return None on failure to avoid DB TypeErrors
 
     def _parse_opf(data: bytes) -> Dict[str, Any]:
         import logging
