@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from sqlalchemy import text
 from core.db_manager_pg import pg_manager
 from models.base import Base
