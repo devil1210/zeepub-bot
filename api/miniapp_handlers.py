@@ -634,7 +634,7 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
             # Users 7d - Handle missing created_at column gracefully
             try:
                 week_ago = (datetime.now() - timedelta(days=7)).isoformat()
-                res_u7 = user_repo.supabase.get_client().table('users').select("telegram_id", count='exact').gte('created_at', week_ago).execute()
+                res_u7 = user_repo.supabase.get_client().table('users').select("telegram_id", count='exact').gte('added_at', week_ago).execute()
                 users_7d = res_u7.count or 0
             except Exception as e:
                 logger.warning(f"Could not fetch users_7d stats (missing created_at column): {e}")

@@ -210,6 +210,14 @@ class EPUBUploader:
                 'original_metadata': enriched_metadata,  # Guardar metadata original para referencia
                 'original_filename': original_filename  # Agregar el nombre original del archivo
             }
+
+            # Fallback a parseo inteligente del título si falta serie o volumen
+            if not metadata['series'] or metadata['volume'] == '':
+                parsed_title = parse_metadata_from_title(metadata['title'])
+                if not metadata['series'] and parsed_title.get('series'):
+                    metadata['series'] = parsed_title['series']
+                if metadata['volume'] == '' and parsed_title.get('volume'):
+                    metadata['volume'] = parsed_title['volume']
             
             # Generar hash del libro para detección de duplicados
             book_hash = generate_book_hash(

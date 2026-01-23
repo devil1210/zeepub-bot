@@ -8,9 +8,10 @@ import json
 from services.cache_service import cache_manager
 from core.db_manager_pg import pg_manager
 from models.user_models import User, UserLevel, UserUISettings
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, cast, String
 from sqlalchemy.orm import selectinload
 from config.config_settings import config
+from core.state_manager import state_manager
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,14 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                     return datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
                 except Exception:
                     return None
+
+    def _get_downloads_used(self, telegram_id: int) -> int:
+        """Obtiene las descargas usadas hoy desde el state_manager."""
+        try:
+            st = state_manager.get_user_state(telegram_id)
+            return st.get("downloads_used", 0)
+        except Exception:
+            return 0
 
     def _to_dict(self, user: User) -> Dict[str, Any]:
         """Convierte modelo SQLAlchemy User a dict para el panel de administración."""
@@ -80,7 +89,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 "color": user.level_info.color if user.level_info else "#3b82f6"
             },
             "downloads": {
-                "used": user.daily_downloads_used or 0,
+                "used": self._get_downloads_used(user.telegram_id),
                 "limit": user.level_info.daily_downloads if user.level_info else 5,
                 "total": user.total_downloads or 0
             },
@@ -470,10 +479,14 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         (User.name.ilike(term)) | 
                         (User.username.ilike(term)) | 
                         (User.nickname.ilike(term)) |
-                        (User.telegram_id.cast(String).like(term))
+                        (cast(User.telegram_id, String).like(term))
                     )
                 
-                query = query.order_by(User.created_at.desc()).limit(limit).offset(offset)
+                # Order by updated_at or telegram_id if created_at has issues in some environments
+                try:
+                    query = query.order_by(User.created_at.desc()).limit(limit).offset(offset)
+                except Exception:
+                    query = query.order_by(User.telegram_id.desc()).limit(limit).offset(offset)
                 
                 result = await session.execute(query)
                 users = result.scalars().all()

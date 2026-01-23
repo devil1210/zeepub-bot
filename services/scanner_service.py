@@ -8,7 +8,7 @@ from datetime import datetime
 from utils.library_db import get_session, init_library_db, COVERS_DIR
 from models.library_models import LibrarySource, LocalBook, DuplicateBook
 from utils.epub_extractor import EpubMetadataExtractor
-from utils.helpers import generate_book_hash, generate_series_hash, extract_author
+from utils.helpers import generate_book_hash, generate_series_hash, extract_author, parse_metadata_from_title
 
 logger = logging.getLogger(__name__)
 
@@ -438,6 +438,17 @@ class ScannerService:
 
             book.series = meta.get("series")
             book.volume = meta.get("volume")
+
+            # Fallback a parseo inteligente del título si falta serie o volumen
+            if not book.series or book.volume is None:
+                parsed = parse_metadata_from_title(book.title)
+                if not book.series and parsed.get("series"):
+                    book.series = parsed["series"]
+                if book.volume is None and parsed.get("volume"):
+                    try:
+                        book.volume = float(parsed["volume"])
+                    except Exception:
+                        pass
 
             # Enriched identifiers and dates
             book.isbn = meta.get("isbn")

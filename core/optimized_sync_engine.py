@@ -230,15 +230,18 @@ class OptimizedSyncEngine:
                         "username": user_data.get('username'),
                         "name": user_data.get('name'),
                         "nickname": user_data.get('nickname'),
+                        "photo_url": user_data.get('photo_url'),
                         "level_id": user_data.get('level_id', 6),
                         "role": user_data.get('role', 'user'),
                         "beta_tester": user_data.get('beta_tester', False),
                         "has_library_access": user_data.get('has_library_access', True),
                         "can_request_books": user_data.get('can_request_books', True),
+                        "can_upload_epub": user_data.get('can_upload_epub', False),
                         "total_downloads": user_data.get('total_downloads', 0),
-                        "insignias": user_data.get('insignias', []),
-                        "settings": user_data.get('settings', {}),
+                        "insignias": json.dumps(user_data.get('insignias', [])),
+                        "settings": json.dumps(user_data.get('settings', {})),
                         "expires_at": self._parse_datetime(user_data.get('expires_at')),
+                        "created_at": self._parse_datetime(user_data.get('added_at') or user_data.get('created_at')),
                         "updated_at": datetime.utcnow()
                     }
                     
@@ -246,27 +249,30 @@ class OptimizedSyncEngine:
                     await session.execute(
                         text("""
                             INSERT INTO users (
-                                telegram_id, username, name, nickname, level_id, role,
-                                beta_tester, has_library_access, can_request_books,
-                                total_downloads, insignias, settings, expires_at, updated_at
+                                telegram_id, username, name, nickname, photo_url, level_id, role,
+                                beta_tester, has_library_access, can_request_books, can_upload_epub,
+                                total_downloads, insignias, settings, expires_at, created_at, updated_at
                             ) VALUES (
-                                :telegram_id, :username, :name, :nickname, :level_id, :role,
-                                :beta_tester, :has_library_access, :can_request_books,
-                                :total_downloads, :insignias, :settings, :expires_at, :updated_at
+                                :telegram_id, :username, :name, :nickname, :photo_url, :level_id, :role,
+                                :beta_tester, :has_library_access, :can_request_books, :can_upload_epub,
+                                :total_downloads, :insignias, :settings, :expires_at, :created_at, :updated_at
                             )
                             ON CONFLICT (telegram_id) DO UPDATE SET
                                 username = EXCLUDED.username,
                                 name = EXCLUDED.name,
                                 nickname = EXCLUDED.nickname,
+                                photo_url = EXCLUDED.photo_url,
                                 level_id = EXCLUDED.level_id,
                                 role = EXCLUDED.role,
                                 beta_tester = EXCLUDED.beta_tester,
                                 has_library_access = EXCLUDED.has_library_access,
                                 can_request_books = EXCLUDED.can_request_books,
+                                can_upload_epub = EXCLUDED.can_upload_epub,
                                 total_downloads = EXCLUDED.total_downloads,
                                 insignias = EXCLUDED.insignias,
                                 settings = EXCLUDED.settings,
                                 expires_at = EXCLUDED.expires_at,
+                                created_at = EXCLUDED.created_at,
                                 updated_at = EXCLUDED.updated_at
                         """),
                         mapped_data

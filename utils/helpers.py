@@ -179,15 +179,17 @@ def generate_book_hash(
     Genera un hash estable de 64 caracteres basado en los metadatos clave.
     Incluye el grupo traductor para distinguir ediciones.
     """
-    base_title = norm_string(series or title)
+    title_norm = norm_string(title)
     author_norm = norm_string(author)
+    series_norm = norm_string(series)
     vol_norm = norm_string(volume)
     type_norm = norm_string(book_type)
     lang_norm = norm_string(language or "es")
     trans_norm = norm_string(translator)
 
     # Cadena de identidad determinista para el EPUB específico
-    identity = f"title:{base_title}|author:{author_norm}|vol:{vol_norm}|type:{type_norm}|lang:{lang_norm}|trans:{trans_norm}"
+    # Incluimos título, serie y autor para máxima unicidad
+    identity = f"title:{title_norm}|series:{series_norm}|author:{author_norm}|vol:{vol_norm}|type:{type_norm}|lang:{lang_norm}|trans:{trans_norm}"
 
     return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
