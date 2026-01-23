@@ -16,7 +16,7 @@ from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters, 
 from config.config_settings import config
 from utils.library_db import get_session
 from models.library_models import LocalBook
-from utils.helpers import generate_book_hash
+from utils.helpers import generate_book_hash, parse_metadata_from_title
 from services.epub_service import parse_opf_from_epub, enrich_metadata_from_epub
 
 logger = logging.getLogger(__name__)
