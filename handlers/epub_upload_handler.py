@@ -221,11 +221,14 @@ class EPUBUploader:
                 if metadata['volume'] == '' and parsed_title.get('volume'):
                     metadata['volume'] = parsed_title['volume']
             
+            # Normalizar volumen a float para que el hash coincida con el scanner
+            parsed_vol = self._parse_volume(metadata['volume'])
+            
             # Generar hash del libro para detección de duplicados
             book_hash = generate_book_hash(
                 series=metadata['series'],
                 author=metadata['author'],
-                volume=metadata['volume'],
+                volume=parsed_vol,
                 book_type=metadata.get('category') or metadata.get('book_type'),
                 language=metadata['language'],
                 translator=metadata['translator'],

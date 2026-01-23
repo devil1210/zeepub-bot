@@ -121,6 +121,10 @@ async def initialize_application():
 
 
 def main():
+    # Setup global logging to capture logs in memory for the admin panel
+    from utils.log_manager import setup_global_logging
+    setup_global_logging()
+    
     logger.info("Iniciando ZeePub Bot...")
     is_valid, missing = config.validate()
     if not is_valid:
