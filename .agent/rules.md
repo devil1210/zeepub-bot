@@ -10,3 +10,4 @@ Como asistente de este proyecto, debes seguir estas reglas en cada interacción:
     *   **Lo que hice**: Lista detallada de cambios realizados.
     *   **Lo que está pendiente**: Tareas que faltan para completar el objetivo o que surgieron durante el proceso.
     *   **Mejoras recomendadas / Próximos pasos**: Sugerencias proactivas enfocadas específicamente en el contexto de la tarea actual.
+6.  **Uso de Skills**: Prioriza siempre el uso de las skills definidas en `.agent/skills.md` para mantener la consistencia técnica. Si una tarea requiere capacidades adicionales, busca en las **skills globales**, utilízalas y agrégalas a la configuración del proyecto si consideras que serán útiles en el futuro.
