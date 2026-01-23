@@ -470,7 +470,7 @@ class ScannerService:
             book.series_hash = self._generate_series_hash(book)
             book.book_hash = self._generate_book_hash(book)
 
-            # Check for duplicates by content_hash AFTER generating it
+            # Check for duplicates by book_hash AFTER generating it
             # First check if this exact file already exists
             existing_same_file = session.query(LocalBook).filter(
                 LocalBook.filepath == filepath

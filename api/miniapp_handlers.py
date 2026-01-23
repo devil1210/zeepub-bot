@@ -747,7 +747,7 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
                     }
                     # Get author from library
                     session = get_session()
-                    lb = session.query(LocalBook).filter(or_(LocalBook.content_hash == b_hash, LocalBook.title == b_title)).first()
+                    lb = session.query(LocalBook).filter(or_(LocalBook.book_hash == b_hash, LocalBook.title == b_title)).first()
                     if lb:
                         popular_book["author"] = lb.author
                         popular_book["cover"] = lb.cover_low
