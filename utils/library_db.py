@@ -117,6 +117,26 @@ def check_migrations():
                _log.warning(f"Error checking edition columns on download_history: {e}")
                conn.rollback()
 
+            # 8. user_ratings book_hash
+            try:
+               conn.execute(text("ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS book_hash VARCHAR(64);"))
+               conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_ratings_book_hash ON user_ratings(book_hash);"))
+               conn.commit()
+               _log.info("Checked/Added book_hash to user_ratings")
+            except Exception as e:
+                _log.warning(f"Error checking book_hash on user_ratings: {e}")
+                conn.rollback()
+
+            # 9. user_downloads book_hash
+            try:
+               conn.execute(text("ALTER TABLE user_downloads ADD COLUMN IF NOT EXISTS book_hash VARCHAR(64);"))
+               conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_downloads_book_hash ON user_downloads(book_hash);"))
+               conn.commit()
+               _log.info("Checked/Added book_hash to user_downloads")
+            except Exception as e:
+                _log.warning(f"Error checking book_hash on user_downloads: {e}")
+                conn.rollback()
+
             _log.debug("Migrations checked.")
 
     except Exception as e:
