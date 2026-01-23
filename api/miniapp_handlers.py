@@ -896,7 +896,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                 "path": s.path,
                 "last_scanned": s.last_scanned.isoformat() if s.last_scanned else None
             }
-            client.table('library_sources').upsert(source_data).execute()
+            client.table('library_sources').upsert(source_data, on_conflict='path').execute()
             
         # 2. Sync Books in batches
         batch_size = 100

@@ -362,7 +362,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   {/* Format Badge (Top Right) */}
                   <div className="absolute top-3 right-3 z-10">
                     <span className="bg-black/60 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
-                      {series.book_type === 'NL' ? 'Novela Ligera' : series.book_type === 'NW' ? 'Novela Web' : series.book_type || 'EPUB'}
+                      {series.book_type || 'EPUB'}
                     </span>
                   </div>
 
