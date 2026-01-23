@@ -467,76 +467,104 @@ class ScannerService:
             book.reading_time = meta.get("reading_time")
 
             # Check for duplicates by filepath BEFORE generating hashes
-            existing_same_file = session.query(LocalBook).filter(
-                LocalBook.filepath == filepath
-            ).first()
-            
-            outcome = "updated"
-            if existing_same_file:
-                # Same file, just update metadata on the EXISTING instance
-                # Generate hashes for the existing book to check if metadata changed
-                temp_book = LocalBook(filepath=filepath, source_id=source.id)
-                temp_book.title = meta.get("title") or temp_book.filename
-                temp_book.series = meta.get("series")
-                temp_book.volume = meta.get("volume")
-                temp_book.author = meta.get("author")
-                temp_book.book_type = classified_type
-                temp_book.translator = meta.get("translator")
-                temp_book.layout_by = meta.get("layout_by")
-                temp_book.language = meta.get("language") or "es"
-                
-                new_series_hash = self._generate_series_hash(temp_book)
-                new_book_hash = self._generate_book_hash(temp_book)
-                
-                # Only update if hashes actually changed
-                if existing_same_file.book_hash != new_book_hash:
-                    self._copy_metadata_to_existing(temp_book, existing_same_file)
-                    existing_same_file.series_hash = new_series_hash
-                    existing_same_file.book_hash = new_book_hash
-                
-                book = existing_same_file # Point to the managed instance
-                logger.debug(f"Actualizando archivo existente: {filepath}")
-            else:
-                # New file, generate hashes and check for real duplicates
-                book.series_hash = self._generate_series_hash(book)
-                book.book_hash = self._generate_book_hash(book)
-                
-                # Check if there's another file with same content (real duplicate)
-                existing_with_same_hash = session.query(LocalBook).filter(
-                    LocalBook.book_hash == book.book_hash
+            # Use no_autoflush to prevent premature updates
+            with session.no_autoflush:
+                existing_same_file = session.query(LocalBook).filter(
+                    LocalBook.filepath == filepath
                 ).first()
                 
-                if existing_with_same_hash:
-                    # This is a REAL duplicate (different file, same content)
-                    # We SKIP it to avoid UNIQUE constraint violation on book_hash
-                    # But we RECORD it for the user to review
-                    logger.warning(f"📕 Duplicado detectado: {book.title}")
+                outcome = "updated"
+                if existing_same_file:
+                    # Same file, just update metadata on the EXISTING instance
+                    # Generate hashes for the existing book to check if metadata changed
+                    temp_book = LocalBook(filepath=filepath, source_id=source.id)
+                    temp_book.title = meta.get("title") or temp_book.filename
+                    temp_book.series = meta.get("series")
+                    temp_book.volume = meta.get("volume")
+                    temp_book.author = meta.get("author")
+                    temp_book.book_type = classified_type
+                    temp_book.translator = meta.get("translator")
+                    temp_book.layout_by = meta.get("layout_by")
+                    temp_book.language = meta.get("language") or "es"
                     
-                    try:
-                        # Check duplicate record existence
-                        dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
-                        if not dup_exists:
-                            dup = DuplicateBook(
-                                book_hash=book.book_hash,
-                                original_filepath=existing_with_same_hash.filepath,
-                                duplicate_filepath=filepath,
-                                title=book.title,
-                                author=book.author
-                            )
-                            session.add(dup)
-                            session.commit() # Save duplicate immediately to be safe
-                    except Exception as de:
-                        logger.error(f"Error guardando registro de duplicado: {de}")
-                        session.rollback()
-
-                    return "duplicate"
+                    new_series_hash = self._generate_series_hash(temp_book)
+                    new_book_hash = self._generate_book_hash(temp_book)
+                    
+                    # Only update if hashes actually changed AND the new hash doesn't conflict
+                    if existing_same_file.book_hash != new_book_hash:
+                        # Check if the new hash would conflict with another book
+                        hash_conflict = session.query(LocalBook).filter(
+                            LocalBook.book_hash == new_book_hash,
+                            LocalBook.id != existing_same_file.id
+                        ).first()
+                        
+                        if not hash_conflict:
+                            # Safe to update hashes
+                            self._copy_metadata_to_existing(temp_book, existing_same_file)
+                            existing_same_file.series_hash = new_series_hash
+                            existing_same_file.book_hash = new_book_hash
+                        else:
+                            # Hash conflict detected - this is actually a duplicate
+                            logger.warning(f"📕 Duplicado detectado por hash conflict: {temp_book.title}")
+                            try:
+                                dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
+                                if not dup_exists:
+                                    dup = DuplicateBook(
+                                        book_hash=new_book_hash,
+                                        original_filepath=hash_conflict.filepath,
+                                        duplicate_filepath=filepath,
+                                        title=temp_book.title,
+                                        author=temp_book.author
+                                    )
+                                    session.add(dup)
+                                    session.commit()
+                            except Exception as de:
+                                logger.error(f"Error guardando registro de duplicado: {de}")
+                                session.rollback()
+                            return "duplicate"
+                    
+                    book = existing_same_file # Point to the managed instance
+                    logger.debug(f"Actualizando archivo existente: {filepath}")
                 else:
-                    # New unique file, add to session
-                    session.add(book)
-                    outcome = "added"
+                    # New file, generate hashes and check for real duplicates
+                    book.series_hash = self._generate_series_hash(book)
+                    book.book_hash = self._generate_book_hash(book)
+                    
+                    # Check if there's another file with same content (real duplicate)
+                    existing_with_same_hash = session.query(LocalBook).filter(
+                        LocalBook.book_hash == book.book_hash
+                    ).first()
+                    
+                    if existing_with_same_hash:
+                        # This is a REAL duplicate (different file, same content)
+                        # We SKIP it to avoid UNIQUE constraint violation on book_hash
+                        # But we RECORD it for the user to review
+                        logger.warning(f"📕 Duplicado detectado: {book.title}")
+                        
+                        try:
+                            # Check duplicate record existence
+                            dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
+                            if not dup_exists:
+                                dup = DuplicateBook(
+                                    book_hash=book.book_hash,
+                                    original_filepath=existing_with_same_hash.filepath,
+                                    duplicate_filepath=filepath,
+                                    title=book.title,
+                                    author=book.author
+                                )
+                                session.add(dup)
+                                session.commit() # Save duplicate immediately to be safe
+                        except Exception as de:
+                            logger.error(f"Error guardando registro de duplicado: {de}")
+                            session.rollback()
 
+                        return "duplicate"
+                    else:
+                        # New unique file, add to session
+                        session.add(book)
+                        outcome = "added"
 
-            # Guardar Portada en 4 calidades
+            # Guardar Portada en 4 calidades (outside no_autoflush block)
             if extractor.cover_data:
                 cover_filename = f"{hashlib.md5(filepath.encode()).hexdigest()}.jpg"
                 cover_dest = os.path.join(COVERS_DIR, cover_filename)
