@@ -41,6 +41,23 @@ class UploadBook(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class UploadHistory(Base):
+    """
+    Historial permanente de uploads (éxitos, fallos, duplicados).
+    """
+    __tablename__ = "upload_history"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(BigInteger, nullable=False)
+    filename = Column(String(512), nullable=False)
+    book_hash = Column(String(64))
+    status = Column(String(50), nullable=False)  # success, error, duplicate_rejected
+    final_path = Column(String(1024))
+    error_message = Column(String(1024))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+
 class LibrarySource(Base):
     """
     Representa una carpeta raíz de libros configurable por el usuario.

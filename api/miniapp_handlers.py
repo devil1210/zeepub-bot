@@ -2442,9 +2442,23 @@ async def handle_admin_bulk_upload_confirm(data: Dict[str, Any], user_data: Dict
         try:
             success = await epub_uploader.add_to_library(file_path, suggested_path, metadata)
             if success:
+                epub_uploader._log_history(
+                    user_id=upload_info['user_id'],
+                    filename=upload_info['original_filename'],
+                    book_hash=metadata.get('book_hash'),
+                    status='success',
+                    final_path=suggested_path
+                )
                 epub_uploader.cleanup_upload(upload_id, file_path)
                 results.append({"upload_id": upload_id, "success": True})
             else:
+                epub_uploader._log_history(
+                    user_id=upload_info['user_id'],
+                    filename=upload_info['original_filename'],
+                    book_hash=metadata.get('book_hash'),
+                    status='error',
+                    error_message="Failed to move file to library"
+                )
                 results.append({"upload_id": upload_id, "success": False, "error": "Error al mover a librería"})
         except Exception as e:
             results.append({"upload_id": upload_id, "success": False, "error": str(e)})

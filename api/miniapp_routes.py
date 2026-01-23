@@ -374,11 +374,21 @@ async def upload_epub_miniapp(
             f.write(await file.read())
         
         # Analizar EPUB
-        metadata = await epub_uploader.analyze_epub(temp_file, file.filename)
+        metadata = await epub_uploader.analyze_epub(temp_file, file.filename, user_data['user_id'])
         
         if not metadata:
             if temp_file.exists():
                 temp_file.unlink()
+            
+            # Log failure
+            epub_uploader._log_history(
+                user_id=user_data['user_id'],
+                filename=file.filename,
+                book_hash=None,
+                status='error',
+                error_message="Analysis failed (corrupt or invalid EPUB)"
+            )
+            
             raise HTTPException(
                 status_code=400, detail="No se pudo procesar el archivo EPUB. Puede que esté corrupto o no sea válido."
             )
@@ -437,10 +447,27 @@ async def confirm_epub_upload_miniapp(
         success = await epub_uploader.add_to_library(file_path, suggested_path, metadata)
         
         if success:
+            # Log success
+            epub_uploader._log_history(
+                user_id=upload_info['user_id'],
+                filename=upload_info['original_filename'],
+                book_hash=metadata.get('book_hash'),
+                status='success',
+                final_path=suggested_path
+            )
+            
             # Limpiar
             epub_uploader.cleanup_upload(upload_id, file_path)
             return {"success": True, "path": suggested_path}
         else:
+            # Log error
+            epub_uploader._log_history(
+                user_id=upload_info['user_id'],
+                filename=upload_info['original_filename'],
+                book_hash=metadata.get('book_hash'),
+                status='error',
+                error_message="Failed to move file to library"
+            )
             raise HTTPException(status_code=500, detail="Error al mover el archivo a la librería")
             
     except Exception as e:
@@ -478,7 +505,7 @@ async def upload_epub_bulk(
             with open(temp_file, "wb") as f:
                 f.write(await file.read())
 
-            metadata = await epub_uploader.analyze_epub(temp_file, file.filename)
+            metadata = await epub_uploader.analyze_epub(temp_file, file.filename, user_data['user_id'])
             if not metadata:
                 if temp_file.exists(): temp_file.unlink()
                 results.append({"filename": file.filename, "success": False, "error": "Error de análisis"})

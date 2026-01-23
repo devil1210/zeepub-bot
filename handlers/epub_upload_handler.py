@@ -628,8 +628,23 @@ class EPUBUploader:
                     f"⌛ _El sistema lo indexará automáticamente en el próximo escaneo._",
                     parse_mode=ParseMode.MARKDOWN
                 )
+                # Log historial
+                self._log_history(
+                    user_id=upload_info['user_id'],
+                    filename=upload_info['original_filename'],
+                    book_hash=metadata.get('book_hash'),
+                    status='replaced' if is_replacement else 'success',
+                    final_path=suggested_path
+                )
             else:
                 await query.edit_message_text("❌ Error agregando el EPUB a la librería.", parse_mode=ParseMode.MARKDOWN)
+                self._log_history(
+                    user_id=upload_info['user_id'],
+                    filename=upload_info['original_filename'],
+                    book_hash=metadata.get('book_hash'),
+                    status='error',
+                    error_message="Error adding to library (fs/db)"
+                )
             
             # Limpiar
             self.cleanup_upload(upload_id, file_path)
@@ -637,6 +652,13 @@ class EPUBUploader:
         except Exception as e:
             logger.error(f"Error approving upload: {e}")
             await query.edit_message_text(f"❌ Error procesando upload: {str(e)}", parse_mode=ParseMode.MARKDOWN)
+            self._log_history(
+                user_id=upload_info['user_id'],
+                filename=upload_info['original_filename'],
+                book_hash=upload_info.get('metadata', {}).get('book_hash'),
+                status='error',
+                error_message=str(e)
+            )
     
     async def reject_upload(self, query, upload_id: str, upload_info: Dict[str, Any]):
         """Rechaza el upload."""
@@ -650,6 +672,17 @@ class EPUBUploader:
             
         except Exception as e:
             logger.error(f"Error rejecting upload: {e}")
+
+        # Log rejection
+        try:
+            self._log_history(
+                user_id=upload_info['user_id'],
+                filename=upload_info['original_filename'],
+                book_hash=upload_info.get('metadata', {}).get('book_hash'),
+                status='rejected'
+            )
+        except Exception as log_err:
+            logger.error(f"Error logging rejection: {log_err}")
     
     async def request_path_edit(self, query, upload_id: str, upload_info: Dict[str, Any]):
         """Solicita edición de ruta."""
@@ -790,6 +823,27 @@ class EPUBUploader:
             return user_id in config.ADMIN_USERS
         except:
             return False
+
+    def _log_history(self, user_id, filename, book_hash, status, final_path=None, error_message=None):
+        """Helper para guardar log en UploadHistory."""
+        try:
+            from models.library_models import UploadHistory
+            from utils.library_db import get_session
+            
+            with get_session() as session:
+                entry = UploadHistory(
+                    user_id=user_id,
+                    filename=filename,
+                    book_hash=book_hash,
+                    status=status,
+                    final_path=final_path,
+                    error_message=error_message
+                )
+                session.add(entry)
+                session.commit()
+                logger.info(f"Upload history logged: {filename} -> {status}")
+        except Exception as e:
+            logger.error(f"Error logging upload history: {e}")
 
 # Instancia global
 epub_uploader = EPUBUploader()
