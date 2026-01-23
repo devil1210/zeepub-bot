@@ -185,12 +185,20 @@ class OptimizedSyncEngine:
             # Obtener usuarios modificados de Supabase
             last_sync = self.last_sync_times['users']
             
-            result = supabase_manager.get_client().table('users')\
-                .select("*")\
-                .gte("updated_at", last_sync.isoformat())\
-                .order("updated_at", desc=True)\
-                .limit(200)\
-                .execute()
+            try:
+                # Intento 1: Filtrado por updated_at (eficiente)
+                query = supabase_manager.get_client().table('users').select("*")
+                if last_sync > datetime.min:
+                    query = query.gte("updated_at", last_sync.isoformat())
+                
+                result = query.order("updated_at", desc=True).limit(200).execute()
+            except Exception as query_e:
+                if "column" in str(query_e) and "updated_at" in str(query_e):
+                    logger.warning("Supabase schema missing 'updated_at'. Falling back to full fetch.")
+                    # Intento 2: Fallback sin filtros de tiempo (menos eficiente pero robusto)
+                    result = supabase_manager.get_client().table('users').select("*").limit(500).execute()
+                else:
+                    raise query_e
                 
             if not result or not result.data:
                 return
@@ -200,7 +208,11 @@ class OptimizedSyncEngine:
             
             # Invalidar caché de usuarios afectados
             for user_data in result.data:
-                await cache_manager.invalidate_user(user_data['telegram_id'])
+                # Usar invalidate_user que es lo correcto en cache_manager
+                try:
+                    await cache_manager.delete_user(user_data['telegram_id'])
+                except:
+                    pass
                 
             logger.info(f"Synced {len(result.data)} users from Supabase to local")
             

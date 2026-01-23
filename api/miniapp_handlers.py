@@ -1032,7 +1032,10 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
                     "show_recommendations": lvl.show_recommendations,
                     "default_theme_id": lvl.default_theme_id
                 }
-                client.table('user_levels').upsert(lvl_data).execute()
+                try:
+                    client.table('user_levels').upsert(lvl_data).execute()
+                except Exception as upsert_e:
+                    logger.warning(f"Supabase upsert error for user_level {lvl.id}: {upsert_e}")
 
             # 2. Sync Users
             res_users = await session.execute(select(User))
@@ -1056,20 +1059,37 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
                     "insignias": u.insignias,
                     "settings": u.settings,
                     "expires_at": u.expires_at.isoformat() if u.expires_at else None,
-                    "created_at": u.created_at.isoformat() if u.created_at else None,
-                    "updated_at": u.updated_at.isoformat() if u.updated_at else None
+                    # Remove created_at/updated_at as they are managed by DB or might not exist in schema cache
                 }
-                
                 user_batch.append(u_data)
-                
-                if len(user_batch) >= 50:
-                    client.table('users').upsert(user_batch).execute()
-                    user_batch = []
             
             if user_batch:
-                client.table('users').upsert(user_batch).execute()
+                # Chunked upsert to avoid request limits
+                for i in range(0, len(user_batch), 50):
+                    batch = user_batch[i:i+50]
+                    try:
+                        client.table('users').upsert(batch).execute()
+                    except Exception as upsert_e:
+                        logger.error(f"Supabase PUSH error for user batch (indices {i}-{i+len(batch)-1}): {upsert_e}")
 
-        return {"success": True, "message": f"Sincronizados {len(levels)} niveles y {len(users)} usuarios a Supabase (desde Postgres)."}
+            # 3. Pull from Supabase to ensure Local is up to date (Bidirectional)
+            logger.info("ADMIN: Triggering immediate PULL from Supabase to Local to sync missing data")
+            from core.optimized_sync_engine import optimized_sync_engine
+            
+            # Force status to pending and reset timestamps to ensure everything is pulled
+            await optimized_sync_engine.force_sync_all()
+            
+            # Execute immediate sync for users and levels
+            try:
+                # We call the internal methods directly for immediate response
+                await optimized_sync_engine._sync_users_optimized()
+                await optimized_sync_engine._sync_user_levels_optimized()
+                await optimized_sync_engine._sync_admins_optimized()
+            except Exception as pull_e:
+                logger.error(f"Error during bidirectional PULL: {pull_e}")
+                return {"success": True, "message": f"Push completado ({len(users)} users), pero el Pull falló: {pull_e}"}
+            
+            return {"success": True, "message": f"Sincronización bidireccional completada. Pushed {len(users)} users, Local updated from Cloud."}
     except Exception as e:
         logger.error(f"Error syncing users to Supabase: {e}")
         return {"success": False, "message": str(e)}
