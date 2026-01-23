@@ -270,24 +270,18 @@ async def check_user_access(
     is_admin = (eff.get("level") == "admin") or eff.get("is_admin_db", False)
     is_staff = eff.get("level") == "staff"
     has_access = eff.get("has_mini_app_access", False)
-    is_beta_tester = is_admin or eff.get("isBetaTester", False)
-
-    logger.debug(
-        f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}"
-    )
 
     access_info = eff.get("level_info", {})
     if not access_info:
-        # Fallback if somehow not populated
         access_info = {
             "id": "6", "name": "Lector", "priority": 1, "color": "#9E9E9E", "hasAccess": False
         }
 
-    # Beta tester flag - admins are always beta testers
-    is_beta_tester = is_admin or access_info.get("isBetaTester", False)
+    # FORCED: New interface for everyone
+    is_beta_tester = True 
 
     logger.info(
-        f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}, isBetaTester={is_beta_tester}"
+        f"Access response for UID {uid}: hasAccess={has_access}, isAdmin={is_admin}, isBetaTester={is_beta_tester} (FORCED VERSION)"
     )
     # Personal settings (showRecommendations) override level defaults
     user_settings = eff.get("settings", {})
