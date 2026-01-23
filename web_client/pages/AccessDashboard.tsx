@@ -78,10 +78,17 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                 api.getAdminTiers(),
                 api.getAdminUsers(20, 0, searchQuery)
             ]);
+            
+            console.log('Levels data:', levelsData);
+            console.log('Users data:', usersData);
+            
             setLevels(levelsData.levels as UserLevel[] || []);
             setUsers(usersData.users as AdminUser[] || []);
         } catch (error) {
             console.error("Error fetching access data:", error);
+            // Set empty arrays to prevent black screen
+            setLevels([]);
+            setUsers([]);
         } finally {
             setLoading(false);
         }
@@ -161,6 +168,17 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                 </p>
             </div>
 
+            {/* Loading State */}
+            {loading && (
+                <div className="flex flex-col items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+                    <p className="text-gray-400 text-sm">Cargando datos de acceso...</p>
+                </div>
+            )}
+
+            {/* Content */}
+            {!loading && (
+                <>
             {/* Tier Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {levels.sort((a, b) => a.priority - b.priority).map((level) => {
@@ -345,6 +363,8 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                     )}
                 </div>
             </div>
+                </>
+            )}
         </div>
     );
 };
