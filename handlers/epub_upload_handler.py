@@ -78,7 +78,7 @@ class EPUBUploader:
             file_path = await self.download_epub(file, context)
             
             # Analizar EPUB y extraer metadata
-            metadata = await self.analyze_epub(file_path, file.file_name)
+            metadata = await self.analyze_epub(file_path, file.file_name, user_id)
             
             if not metadata:
                 await update.message.reply_text(
@@ -124,7 +124,7 @@ class EPUBUploader:
         
         return temp_file
     
-    async def analyze_epub(self, epub_path: Path, original_filename: str) -> Optional[Dict[str, Any]]:
+    async def analyze_epub(self, epub_path: Path, original_filename: str, user_id: int) -> Optional[Dict[str, Any]]:
         """Analiza el EPUB usando el servicio existente del bot."""
         try:
             logger.info(f"Analyzing EPUB with existing service: {epub_path}")
