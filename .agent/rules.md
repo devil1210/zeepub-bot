@@ -14,3 +14,4 @@ Como asistente de este proyecto, debes seguir estas reglas en cada interacción:
 7.  **Uso de Skills**: Prioriza las skills de `.agent/skills.md` y expande con globales si es necesario, siguiendo el nuevo formato de "Lecciones Aprendidas".
 8.  **Normalización de Datos**: Al procesar libros o autores, utiliza siempre las funciones de `utils.helpers` (`normalize_author_name`, `process_book_identity_comprehensive`) para garantizar la integridad de los hashes.
 9.  **PostgreSQL First**: Toda consulta SQL o definición de modelo debe optimizarse para PostgreSQL (uso de JSONB, ILIKE, funciones de agregación específicas, etc.).
+10. **Logs del VPS**: Asume SIEMPRE que los logs recibidos provienen del **VPS de pruebas** a menos que se indique explícitamente lo contrario. Actúa de forma proactiva para corregir errores de entorno (como falta de columnas en DB o permisos de archivo) mediante scripts de migración o correcciones en el código de inicialización.
