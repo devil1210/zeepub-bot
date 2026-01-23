@@ -137,6 +137,15 @@ def check_migrations():
                 _log.warning(f"Error checking book_hash on user_downloads: {e}")
                 conn.rollback()
 
+            # 10. user_levels default_theme_id
+            try:
+               conn.execute(text("ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS default_theme_id INTEGER;"))
+               conn.commit()
+               _log.info("Checked/Added default_theme_id to user_levels")
+            except Exception as e:
+                _log.warning(f"Error checking default_theme_id on user_levels: {e}")
+                conn.rollback()
+
             _log.debug("Migrations checked.")
 
     except Exception as e:
@@ -155,6 +164,8 @@ def init_library_db():
         import models.library_models     # noqa
         import models.download_models    # noqa
 
+        # Asegurar que app_themes se cree si no existe (importado en user_models)
+        
         # Crear tablas
         Base.metadata.create_all(engine)
         
