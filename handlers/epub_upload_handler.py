@@ -412,6 +412,7 @@ class EPUBUploader:
                         if match:
                             base_title = match.group(1)
                             pattern_found = True
+                            # Usamos el título base del patrón, pero mantenemos el grupo de NUESTRO archivo
                             return f"{base_title} - V{vol_str} [{group}].epub"
 
         # 5. Fallback si no hay patrón o carpeta
