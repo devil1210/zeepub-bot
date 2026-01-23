@@ -4,14 +4,14 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 from config.config_settings import config
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Direct connection string for Postgres (assuming it's available in env or config)
 # If config uses sqlite by default, we force the postgres URL if available
 DATABASE_URL = config.DATABASE_URL
 if "sqlite" in DATABASE_URL:
     logger.error("Error: DATABASE_URL points to SQLite. Check configuration.")
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 async def fix_postgres_schema():
     if not config.ENABLE_POSTGRES_PLUGIN:

@@ -24,21 +24,21 @@ async def migrate_local_books():
     logger.info(f"Procesando {len(books)} libros.")
 
     for book in books:
-        # Refined Book Hash
+        # Refined Book Hash - NO usar title según nueva especificación
         bh = generate_book_hash(
-            title=book.title,
+            series=book.series,
             author=book.author,
-            series=book.series_clean,
-            volume=book.volume,
             book_type=book.book_type,
-            language=book.language,
-            translator=book.translator or book.publisher or book.layout_by,
+            volume=book.volume,
+            translator=book.translator,
+            layout_by=book.layout_by,
+            language=book.language
         )
-        book.content_hash = bh
+        book.book_hash = bh
 
         # New Series Hash
         sh = generate_series_hash(
-            series=book.series_clean or book.series or book.title,
+            series=book.series,
             author=book.author,
             book_type=book.book_type,
         )
@@ -64,14 +64,13 @@ async def migrate_download_history():
 
         for row in rows:
             rid, title, author, series, volume, clean_title, translator = row
-            # Refined Book Hash for history
+            # Refined Book Hash for history - Excluyendo título
             bh = generate_book_hash(
-                title=title,
-                author=author,
                 series=series or clean_title,
+                author=author,
                 volume=volume,
-                language="es",
                 translator=translator,
+                language="es"
             )
             await session.execute(
                 text("UPDATE download_history SET book_hash = :hash WHERE id = :id"),

@@ -68,13 +68,13 @@ async def analyze_library_paths():
                         # Verificar si el folder parece ser un autor
                         if author and folder.lower() in author.lower() or author.lower() in folder.lower():
                             structure_analysis['with_author_folder'] += 1
-                            pattern = f"Author/{Title}"
+                            pattern = f"Author/{title}"
                         elif folder.lower() in ['library', 'books', 'epub', 'libros']:
                             structure_analysis['direct_in_library'] += 1
-                            pattern = f"Category/{Title}"
+                            pattern = f"Category/{title}"
                         else:
                             structure_analysis['category_folders'] += 1
-                            pattern = f"Category/{Title}"
+                            pattern = f"Category/{title}"
                     else:
                         structure_analysis['direct_in_library'] += 1
                         pattern = "Direct"

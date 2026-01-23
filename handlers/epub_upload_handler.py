@@ -213,63 +213,31 @@ class EPUBUploader:
                 'original_filename': original_filename  # Agregar el nombre original del archivo
             }
 
-            # --- PARIDAD CON SCANNER SERVICE PARA GENERACIÓN DE HASH ---
-            # Para la detección de duplicados, DEBEMOS usar la misma fuente que el scanner
-            from utils.epub_extractor import EpubMetadataExtractor
-            from utils.helpers import generate_book_hash, generate_series_hash, parse_metadata_from_title
+            # --- LÓGICA UNIFICADA DE IDENTIDAD ---
+            from utils.helpers import process_book_identity_comprehensive, generate_book_hash
             
-            extractor = EpubMetadataExtractor(str(epub_path))
-            scan_meta = extractor.extract()
+            identity = process_book_identity_comprehensive(str(epub_path), original_filename)
             
-            # Replicar lógica de ScannerService._process_book
-            scan_title = scan_meta.get("title") or original_filename
-            scan_author = scan_meta.get("author")
-            scan_series = scan_meta.get("series")
-            scan_volume = scan_meta.get("volume")
-            scan_translator = scan_meta.get("translator")
-            scan_layout_by = scan_meta.get("layout_by")
-            scan_language = scan_meta.get("language") or "es"
-            
-            # Smart Tag Categorization (reducida para lo necesario en el hash)
-            raw_tags = scan_meta.get("tags", [])
-            scan_book_type = scan_meta.get("book_type")
-            if not scan_book_type:
-                for tag in raw_tags:
-                    t_lower = tag.lower().strip()
-                    if t_lower in ["nl", "nw", "wn"]:
-                        scan_book_type = {"nl": "Novela Ligera", "nw": "Novela Web", "wn": "Web Novel"}[t_lower]
-                        break
-                    elif "novela" in t_lower:
-                        scan_book_type = tag
-                        break
-
-            # Fallback a parseo inteligente del título si falta serie o volumen (IGUAL QUE SCANNER)
-            if not scan_series or scan_volume is None:
-                parsed = parse_metadata_from_title(scan_title)
-                if not scan_series and parsed.get("series"):
-                    scan_series = parsed["series"]
-                if scan_volume is None and parsed.get("volume"):
-                    try:
-                        scan_volume = float(parsed["volume"])
-                    except Exception:
-                        pass
-            
+            if not identity:
+                logger.error("Could not process book identity")
+                return None
+                
             # Generar hash final usando utils.helpers (idéntico a ScannerService)
             book_hash = generate_book_hash(
-                series=scan_series,
-                author=scan_author,
-                book_type=scan_book_type,
-                volume=scan_volume,
-                translator=scan_translator,
-                layout_by=scan_layout_by,
-                language=scan_language
+                series=identity['series'],
+                author=identity['author'],
+                book_type=identity['book_type'],
+                volume=identity['volume'],
+                translator=identity['translator'],
+                layout_by=identity['layout_by'],
+                language=identity['language']
             )
             
-            # Actualizar campos en el metadata para el frontend (pero el backend usará book_hash para match)
+            # Actualizar campos en el metadata para el frontend y persistencia
             metadata['book_hash'] = book_hash
-            metadata['series'] = scan_series
-            metadata['volume'] = scan_volume
-            metadata['author'] = scan_author
+            metadata['series'] = identity['series']
+            metadata['volume'] = identity['volume']
+            metadata['author'] = identity['author']
             
             # Guardar en tabla temporal UploadBook con la misma lógica que scanner
             from models.library_models import UploadBook, LocalBook

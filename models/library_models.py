@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, JSON, ForeignKey, Float, BigInteger
 from sqlalchemy.orm import relationship
 from datetime import datetime
+import re
 from .base import Base
 
 
@@ -208,17 +209,26 @@ class LocalBook(Base):
 
             "readingTime": self.reading_time,
 
-            # Key mappings for telegram_service / search consistency
+            # Key mappings for consistency across services (Search, Telegram, Admin)
             "titulo": self.title,
             "autor": self.author,
             "categoria": self.book_type,
             "book_type": self.book_type,
-            "clean_title": self.series or self.english_title or self.title,
+            "book_hash": self.book_hash,
+            "hash": self.book_hash,
             "series_hash": self.series_hash,
             "titulo_serie": self.series,
             "rating_average": self.rating_average,
             "rating_count": self.rating_count,
             "votes": self.rating_count,  # Alias
+            
+            # Frontend compatibility (CamelCase)
+            "cleanTitle": self.series or self.english_title or (
+                re.sub(r'\[.*?\]', '', self.title).strip() if self.title else ""
+            ),
+            "clean_title": self.series or self.english_title or (
+                re.sub(r'\[.*?\]', '', self.title).strip() if self.title else ""
+            )
         }
 
 

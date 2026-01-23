@@ -166,6 +166,97 @@ def norm_string(s: Any) -> str:
     return " ".join(text.split()).casefold()
 
 
+def normalize_author_name(name: str) -> str:
+    """
+    Normaliza nombres de autores eliminando tags, limpiando espacios y estandarizando formato.
+    Maneja (Apellido, Nombre -> Nombre Apellido) y elimina roles comunes.
+    """
+    if not name:
+        return ""
+
+    # 1. Limpieza inicial (norm_string ya quita [] y ())
+    clean_name = norm_string(name)
+    
+    # 2. Eliminar roles que a veces vienen sin paréntesis
+    roles_to_remove = ["autor", "writer", "escritor", "story", "ilustrador", "illustrator", "art", "dibujo"]
+    for role in roles_to_remove:
+        clean_name = re.sub(rf'\b{role}\b', '', clean_name, flags=re.IGNORECASE)
+
+    # 3. Si detecta formato "Apellido, Nombre", invertir
+    if "," in clean_name:
+        parts = [p.strip() for p in clean_name.split(",")]
+        if len(parts) == 2:
+            clean_name = f"{parts[1]} {parts[0]}"
+    
+    # 4. Limpieza final de espacios múltiples
+    clean_name = " ".join(clean_name.split()).strip()
+    
+    return clean_name
+
+
+def process_book_identity_comprehensive(
+    epub_path: str, original_filename: Optional[str] = None
+) -> dict:
+    """
+    Lógica UNIFICADA para extraer componentes de identidad de un EPUB.
+    Usada tanto por el Scanner como por el Uploader para garantizar paridad de hashes.
+    """
+    from utils.epub_extractor import EpubMetadataExtractor
+
+    extractor = EpubMetadataExtractor(epub_path)
+    meta = extractor.extract()
+
+    if not meta:
+        return {}
+
+    title = meta.get("title") or original_filename or "Sin título"
+    author = normalize_author_name(meta.get("author"))
+    series = meta.get("series")
+    volume = meta.get("volume")
+    translator = meta.get("translator")
+    layout_by = meta.get("layout_by")
+    language = meta.get("language") or "es"
+
+    # Categorización inteligente de tipos
+    raw_tags = meta.get("tags", [])
+    book_type = meta.get("book_type")
+    if not book_type:
+        for tag in raw_tags:
+            t_lower = tag.lower().strip()
+            if t_lower in ["nl", "nw", "wn"]:
+                book_type = {
+                    "nl": "Novela Ligera",
+                    "nw": "Novela Web",
+                    "wn": "Web Novel",
+                }[t_lower]
+                break
+            elif "novela" in t_lower:
+                book_type = tag
+                break
+
+    # Fallback a parseo inteligente del título si falta serie o volumen
+    if not series or volume is None:
+        parsed = parse_metadata_from_title(title)
+        if not series and parsed.get("series"):
+            series = parsed["series"]
+        if volume is None and parsed.get("volume"):
+            try:
+                volume = float(parsed["volume"])
+            except Exception:
+                volume = None
+
+    return {
+        "series": series,
+        "author": author,
+        "book_type": book_type,
+        "volume": volume,
+        "translator": translator,
+        "layout_by": layout_by,
+        "language": language,
+        "title": title,
+    }
+
+
 def generate_book_hash(
     series: Optional[str] = None,
     author: Optional[str] = None,

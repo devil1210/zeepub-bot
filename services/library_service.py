@@ -71,8 +71,10 @@ class LibraryService:
                     # Cleaning for legacy compatibility
                     d["cleanTitle"] = (
                         b.english_title
-                        or re.sub(r"\s*\[.*?\]\s*", " ", b.series or b.title).strip()
+                        or b.series
+                        or re.sub(r"\s*\[.*?\]\s*", " ", b.title).strip()
                     )
+                    d["book_hash"] = b.book_hash
                     results.append(d)
 
                 total_pages = (total_items + items_per_page - 1) // items_per_page
@@ -221,8 +223,15 @@ class LibraryService:
                 d = book.to_dict()
 
                 d["download_count"] = await download_repo.get_total_download_count(
-                    book.title, book_hash=book.content_hash
+                    book.title, book_hash=book.book_hash
                 )
+                # Ensure cleanTitle and book_hash are present for frontend/hashing consistency
+                d["cleanTitle"] = (
+                    book.english_title
+                    or book.series
+                    or re.sub(r"\s*\[.*?\]\s*", " ", book.title).strip()
+                )
+                d["book_hash"] = book.book_hash
                 return d
             except Exception as e:
                 logger.error(f"[LibraryService.get_book_by_id] Error: {e}")

@@ -116,21 +116,6 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
     # OPDS fallback removed
     raise HTTPException(status_code=404, detail="Book not found in local library")
 
-    # Get metrics from centralized DB
-    from repositories.metrics_repository import metrics_repo
-
-    book_hash = entry.get("book_hash") or entry.get("hash")
-    if book_hash:
-        result["is_downloaded"] = await metrics_repo.has_downloaded(
-            user_id, book_hash
-        )
-        result["download_count"] = await metrics_repo.get_total_downloads(book_hash)
-        rating_stats = await metrics_repo.get_rating_stats(book_hash)
-        result["rating_average"] = rating_stats["average"]
-        result["rating_count"] = rating_stats["count"]
-
-    return result
-
 
 async def handle_bot_info(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Devuelve información básica del bot y configuración de UI global."""
@@ -547,7 +532,7 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
         if local_book:
             title_for_query = local_book["title"]
             clean_title_for_query = local_book.get("cleanTitle")
-            book_hash_for_query = local_book.get("content_hash")
+            book_hash_for_query = local_book.get("book_hash")
     else:
         # It's a URL (OPDS)
         try:
@@ -965,8 +950,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "file_modified_at": b.file_modified_at.isoformat() if b.file_modified_at else None,
                     "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
                     "series_hash": b.series_hash,
-                    "content_hash": b.content_hash,
-                    "book_hash": b.book_hash or b.content_hash  # Use book_hash, fallback to content_hash
+                    "book_hash": b.book_hash
                 })
             client.table('local_books').upsert(books_data).execute()
             
@@ -2045,12 +2029,12 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
         
         # Query to find duplicates
         duplicate_hashes = session.query(
-            LocalBook.content_hash,
+            LocalBook.book_hash,
             func.count().label('count')
         ).filter(
-            LocalBook.content_hash.isnot(None)
+            LocalBook.book_hash.isnot(None)
         ).group_by(
-            LocalBook.content_hash
+            LocalBook.book_hash
         ).having(
             func.count() > 1
         ).all()
@@ -2064,7 +2048,7 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
             
             # Get all books with this hash
             books = session.query(LocalBook).filter(
-                LocalBook.content_hash == content_hash
+                LocalBook.book_hash == content_hash
             ).order_by(
                 LocalBook.indexed_at.asc()
             ).all()
@@ -2082,7 +2066,7 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
             total_duplicates += len(books) - 1
             
             group = {
-                "content_hash": content_hash,
+                "book_hash": content_hash,
                 "title": books[0].title,
                 "author": books[0].author,
                 "series": books[0].series,
@@ -2151,10 +2135,10 @@ async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[st
         if not books_to_delete:
             return {"success": False, "message": "No se encontraron libros"}
         
-        # Group by content_hash
+        # Group by book_hash
         by_hash = defaultdict(list)
         for book in books_to_delete:
-            by_hash[book.content_hash].append(book)
+            by_hash[book.book_hash].append(book)
         
         deleted_count = 0
         deleted_size = 0
@@ -2163,7 +2147,7 @@ async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[st
         for content_hash, books in by_hash.items():
             # Count total books with this hash
             total_with_hash = session.query(func.count(LocalBook.id)).filter(
-                LocalBook.content_hash == content_hash
+                LocalBook.book_hash == content_hash
             ).scalar()
             
             # Can't delete all copies

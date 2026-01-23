@@ -329,7 +329,7 @@ class ScannerService:
                 and book
                 and book.file_modified_at == mtime
                 and book.file_size == size
-                and book.content_hash
+                and book.book_hash
                 and book.cover_low
             ):
                 return False
@@ -342,132 +342,81 @@ class ScannerService:
                 
             logger.info(f"{action_type}: {filename}")
 
-            # Primero extraer metadatos para obtener el hash
+            # Primero extraer metadatos crudos para campos extendidos (descripción, ISBN, etc)
             extractor = EpubMetadataExtractor(filepath)
             meta = extractor.extract()
-
             if not meta:
+                return
+
+            # --- LÓGICA UNIFICADA DE IDENTIDAD ---
+            from utils.helpers import process_book_identity_comprehensive, normalize_author_name
+            
+            identity = process_book_identity_comprehensive(filepath)
+            if not identity:
                 return
 
             if not book:
                 book = LocalBook(filepath=filepath, source_id=source.id)
-                # Don't add yet, will check for duplicates after generating hash
 
-            # Actualizar campos
+            # Actualizar campos técnicos
             book.filename = os.path.basename(filepath)
             book.file_size = size
             book.file_modified_at = mtime
             book.file_created_at = datetime.fromtimestamp(stat.st_ctime)
 
-            book.title = meta.get("title") or book.filename
-
-            # Extract Romaji Title from main Title
-            # Title format: "86 ―Eitishikkusu― - Volumen 01" or "Byōsoku Go Senchimētoru + Hoshi wo Ou Kodomo - Volumen 01"
-            # We want only the romaji part before " - Volumen"
-            romaji = meta.get("romaji_title")
-            if not romaji and book.title:
-                # Remove volume part first
-                title_without_vol = re.sub(r'\s*-\s*Volumen\s+\d+.*$', '', book.title, flags=re.IGNORECASE).strip()
-                # If there's still a " - " separator, take the first part as romaji
-                if " - " in title_without_vol:
-                    romaji = title_without_vol.split(" - ")[0].strip()
-                else:
-                    # Otherwise use the whole cleaned title
-                    romaji = title_without_vol
-
-            book.romaji_title = romaji
-            book.author = meta.get("author")
-            book.illustrator = meta.get("illustrator")
-            book.translator = meta.get("translator")
-            book.layout_by = meta.get("layout_by")
-
-            # Publisher / Translation Group - use full name from OPF
-            book.publisher = meta.get("publisher")
-            book.description = meta.get("description")
+            # Poblar desde identidad unificada (Garantiza paridad con Uploader)
+            book.title = identity["title"]
+            book.author = identity["author"]
+            book.series = identity["series"]
+            book.volume = identity["volume"]
+            book.book_type = identity["book_type"]
+            book.language = identity["language"]
+            book.translator = identity["translator"]
+            book.layout_by = identity["layout_by"]
             
-            # Clean description from HTML
+            # Campos específicos de metadatos profundos
+            book.description = meta.get("description")
             from utils.helpers import limpiar_html_basico
             book.description_clean = limpiar_html_basico(book.description)
             
-            book.language = meta.get("language") or "es"
-            book.english_title = meta.get("english_title") # Probablemente vacío de OPF
-            book.spanish_title = meta.get("spanish_title")
-
-            # Smart Tag Categorization
+            book.illustrator = meta.get("illustrator")
+            book.publisher = meta.get("publisher")
+            
+            # Tags y Demografía (Lógica adicional del scanner)
             raw_tags = meta.get("tags", [])
-            classified_type = meta.get("book_type")
             classified_demographics = []
             final_genres = []
-
-            type_mapping = {
-                "nl": "Novela Ligera",
-                "nw": "Novela Web",
-                "wn": "Web Novel",
-            }
-            known_demographics = [
-                "shounen",
-                "seinen",
-                "shoujo",
-                "josei",
-                "kodomo",
-                "seijin",
-                "adultos",
-                "mature",
-                "maduro",
-            ]
-
+            
+            known_demographics = ["shounen", "seinen", "shoujo", "josei", "kodomo", "seijin", "adultos", "mature", "maduro"]
             for tag in raw_tags:
                 t_lower = tag.lower().strip()
-                # 1. Book Type?
-                if t_lower in type_mapping:
-                    if not classified_type:
-                        classified_type = type_mapping[t_lower]
-                elif "novela" in t_lower:
-                    if not classified_type:
-                        classified_type = tag
-                # 2. Demographic?
-                elif any(d in t_lower for d in known_demographics):
+                if any(d in t_lower for d in known_demographics):
                     classified_demographics.append(tag)
-                # 3. Otherwise a Genre
                 else:
                     final_genres.append(tag)
-
-            book.book_type = classified_type
+            
             book.demographics = classified_demographics
             book.tags = final_genres
-
-            book.series = meta.get("series")
-            book.volume = meta.get("volume")
-
-            # Fallback a parseo inteligente del título si falta serie o volumen
-            if not book.series or book.volume is None:
-                parsed = parse_metadata_from_title(book.title)
-                if not book.series and parsed.get("series"):
-                    book.series = parsed["series"]
-                if book.volume is None and parsed.get("volume"):
-                    try:
-                        book.volume = float(parsed["volume"])
-                    except Exception:
-                        pass
+            
+            # Romaji extraction
+            romaji = meta.get("romaji_title")
+            if not romaji and book.title:
+                title_without_vol = re.sub(r'\s*-\s*Volumen\s+\d+.*$', '', book.title, flags=re.IGNORECASE).strip()
+                romaji = title_without_vol.split(" - ")[0].strip() if " - " in title_without_vol else title_without_vol
+            book.romaji_title = romaji
 
             # Enriched identifiers and dates
             book.isbn = meta.get("isbn")
-            
-            # Enriquecimientos adicionales se hacen manualmente via admin panel 
-            # para evitar 429 Too Many Requests y bloqueos de DB innecesarios
-
             book.asin = meta.get("asin")
             book.uri_id = meta.get("uri")
             book.published_at = meta.get("published_at")
             book.modified_at_opf = meta.get("modified_at_opf")
-            # book_type already set above
             book.epub_version = meta.get("version")
             book.word_count = meta.get("word_count")
             book.page_count = meta.get("page_count")
             book.reading_time = meta.get("reading_time")
 
-            # Check for duplicates by filepath BEFORE generating hashes
-            # Use no_autoflush to prevent premature updates
+            # Check for duplicates by filepath
             with session.no_autoflush:
                 existing_same_file = session.query(LocalBook).filter(
                     LocalBook.filepath == filepath
@@ -475,17 +424,16 @@ class ScannerService:
                 
                 outcome = "updated"
                 if existing_same_file:
-                    # Same file, just update metadata on the EXISTING instance
-                    # Generate hashes for the existing book to check if metadata changed
+                    # Usar la identidad unificada para el libro temp también
                     temp_book = LocalBook(filepath=filepath, source_id=source.id)
-                    temp_book.title = meta.get("title") or temp_book.filename
-                    temp_book.series = meta.get("series")
-                    temp_book.volume = meta.get("volume")
-                    temp_book.author = meta.get("author")
-                    temp_book.book_type = classified_type
-                    temp_book.translator = meta.get("translator")
-                    temp_book.layout_by = meta.get("layout_by")
-                    temp_book.language = meta.get("language") or "es"
+                    temp_book.title = identity["title"]
+                    temp_book.series = identity["series"]
+                    temp_book.volume = identity["volume"]
+                    temp_book.author = identity["author"]
+                    temp_book.book_type = identity["book_type"]
+                    temp_book.translator = identity["translator"]
+                    temp_book.layout_by = identity["layout_by"]
+                    temp_book.language = identity["language"]
                     
                     new_series_hash = self._generate_series_hash(temp_book)
                     new_book_hash = self._generate_book_hash(temp_book)
