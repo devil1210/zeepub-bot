@@ -29,3 +29,5 @@ class DownloadHistory(Base):
     translator = Column(String(255))
     clean_title = Column(String(512))
     book_hash = Column(String(64), index=True)
+    is_uncensored = Column(Integer, default=0)
+    color_mode = Column(String(50))

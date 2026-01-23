@@ -172,6 +172,44 @@ class EpubMetadataExtractor:
                         elif prop == 'dcterms:modified':
                             self.metadata['modified_at_opf'] = meta.text
 
+                    # 3.4.1 Detección automática de características de edición
+                    all_tags_text = " ".join(tags).lower()
+                    
+                    # Defaults
+                    self.metadata['is_uncensored'] = 0
+                    self.metadata['color_mode'] = "bw"
+
+                    # Option 1: Detection via tags/subjects
+                    if any(x in all_tags_text for x in ["sin censura", "uncensored", "no censura"]):
+                        self.metadata['is_uncensored'] = 1
+                    
+                    if any(x in all_tags_text for x in ["ilustraciones a color", "color", "full color"]):
+                        self.metadata['color_mode'] = "color"
+                    elif any(x in all_tags_text for x in ["blanco y negro", "b&w", "grayscale", "b/n"]):
+                        self.metadata['color_mode'] = "bw"
+
+                    # Option 3: Detection via custom meta properties (Zeepub extensions)
+                    for meta in meta_tags:
+                        name = meta.get('name')
+                        prop = meta.get('property')
+                        content = meta.get('content')
+                        
+                        # Uncensored check
+                        if (name == 'zeepub:uncensored' or prop == 'zeepub:uncensored'):
+                            val = (content or meta.text or "").lower().strip()
+                            if val in ['true', '1', 'yes']:
+                                self.metadata['is_uncensored'] = 1
+                            elif val in ['false', '0', 'no']:
+                                self.metadata['is_uncensored'] = 0
+                                
+                        # Color mode check
+                        if (name == 'zeepub:color_mode' or prop == 'zeepub:color_mode'):
+                            val = (content or meta.text or "").lower().strip()
+                            if val in ['color', 'full-color', 'c']:
+                                self.metadata['color_mode'] = "color"
+                            elif val in ['bw', 'b/n', 'bn', 'grayscale', 'gray']:
+                                self.metadata['color_mode'] = "bw"
+
                     # 3.5 Content Check (Final fallback for title)
                     if not self.metadata.get('title'):
                         self.metadata['title'] = clean_metadata_tags(raw_title)

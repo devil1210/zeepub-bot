@@ -58,21 +58,24 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         volume: Optional[str] = None,
         translator: Optional[str] = None,
         clean_title: Optional[str] = None,
-        book_hash: Optional[str] = None
+        book_hash: Optional[str] = None,
+        is_uncensored: int = 0,
+        color_mode: Optional[str] = None
     ) -> int:
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
                     INSERT INTO download_history
-                    (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash)
-                    VALUES (:user_id, :title, :author, :download_url, :file_size, :romaji_title, :series, :volume, :translator, :clean_title, :book_hash)
+                    (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash, is_uncensored, color_mode)
+                    VALUES (:user_id, :title, :author, :download_url, :file_size, :romaji_title, :series, :volume, :translator, :clean_title, :book_hash, :iu, :cm)
                     RETURNING id
                 """)
                 result = await session.execute(query, {
                     "user_id": user_id, "title": title, "author": author, 
                     "download_url": download_url, "file_size": file_size,
                     "romaji_title": romaji_title, "series": series, "volume": volume,
-                    "translator": translator, "clean_title": clean_title, "book_hash": book_hash
+                    "translator": translator, "clean_title": clean_title, "book_hash": book_hash,
+                    "iu": is_uncensored, "cm": color_mode
                 })
                 new_id = result.scalar()
                 await session.commit()
@@ -82,7 +85,8 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
                      try:
                          data = {
                              "user_id": user_id, "title": title, "author": author, 
-                             "download_url": download_url, "file_size": file_size, "book_hash": book_hash
+                             "download_url": download_url, "file_size": file_size, "book_hash": book_hash,
+                             "is_uncensored": is_uncensored, "color_mode": color_mode
                          }
                          self.supabase.get_client().table('download_history').insert(data).execute()
                      except: pass

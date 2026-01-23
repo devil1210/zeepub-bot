@@ -26,6 +26,8 @@ class UploadBook(Base):
     translator = Column(String(255))
     layout_by = Column(String(255))
     language = Column(String(10), default='es')
+    is_uncensored = Column(Integer, default=0)
+    color_mode = Column(String(50))
     
     # Hashes para comparación
     book_hash = Column(String(64), nullable=False)
@@ -136,6 +138,10 @@ class LocalBook(Base):
     demographics = Column(JSON)  # Ej: ["Seinen", "Adultos"]
     tags = Column(JSON)  # Lista de géneros/etiquetas
     language = Column(String(10), default="es")
+    
+    # Edition Characteristics
+    is_uncensored = Column(Integer, default=0) # 0 = No / Desconocido, 1 = Sí
+    color_mode = Column(String(50)) # color, bw, mixed
 
 
     # UI - Cover Images (Progressive Quality Levels)
@@ -208,6 +214,8 @@ class LocalBook(Base):
             "romaji_title": self.romaji_title,
 
             "readingTime": self.reading_time,
+            "is_uncensored": bool(self.is_uncensored),
+            "color_mode": self.color_mode,
 
             # Key mappings for consistency across services (Search, Telegram, Admin)
             "titulo": self.title,

@@ -796,6 +796,9 @@ async def descargar_epub_pendiente(
                 volume=volume,
                 translator=translator,
                 clean_title=clean_title,
+                book_hash=meta.get("book_hash"),
+                is_uncensored=meta.get("is_uncensored", 0),
+                color_mode=meta.get("color_mode", "bw")
             )
         except Exception as e:
             logger.error(f"Error saving download history: {e}")

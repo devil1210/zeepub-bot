@@ -415,6 +415,16 @@ class ScannerService:
             book.word_count = meta.get("word_count")
             book.page_count = meta.get("page_count")
             book.reading_time = meta.get("reading_time")
+            book.is_uncensored = meta.get("is_uncensored", 0)
+            book.color_mode = meta.get("color_mode")
+            
+            # Advertencia de tags legacy para unificación
+            legacy_tags = ["[BN]", "[COLOR]", "[SC]", "[SIN CENSURA]", "[B&W]"]
+            raw_title_full = meta.get("title", "") + " " + " ".join(meta.get("tags", []))
+            for lt in legacy_tags:
+                if lt in raw_title_full.upper():
+                    logger.warning(f"⚠️ Metadata Legacy Detectada: El libro '{book.title}' contiene el tag '{lt}'. Se recomienda mover esta información a los metadatos oficiales (dc:subject) o meta-propiedades zeepub para una unificación completa.")
+                    break
 
             # Check for duplicates by filepath
             with session.no_autoflush:
@@ -544,7 +554,9 @@ class ScannerService:
             volume=book.volume,
             translator=book.translator,
             layout_by=book.layout_by,
-            language=book.language
+            language=book.language,
+            is_uncensored=book.is_uncensored or 0,
+            color_mode=book.color_mode or "bw"
         )
 
     def _generate_series_hash(self, book: LocalBook) -> str:
@@ -662,6 +674,8 @@ class ScannerService:
         target_book.tags = source_book.tags
         target_book.demographics = source_book.demographics
         target_book.series_hash = source_book.series_hash
+        target_book.is_uncensored = source_book.is_uncensored
+        target_book.color_mode = source_book.color_mode
         # Note: book_hash is handled separately to avoid constraint violations
         target_book.file_size = source_book.file_size
 

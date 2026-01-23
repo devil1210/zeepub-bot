@@ -37,6 +37,12 @@ Cada skill en este proyecto debe seguir esta estructura:
   reason: Structure schema changes safely (SQLAlchemy/Supabase).
 - skill: supabase-retry-logic
   reason: Handle transient 500/502 errors from cloud provider.
+- **skill: epub-metadata-mastery**
+  **reason**: Gestión precisa de la identidad del libro para evitar duplicados y enriquecer la experiencia.
+  **lecciones**: Títulos con tags como [Ravelon] generaban hashes diferentes.
+  **Reglas de Oro**:
+    1. Usar siempre `process_book_identity_comprehensive` para cualquier operación que involucre hashes de libros.
+    2. Al extraer metadatos crudos, limpiar siempre los campos de texto con `norm_string`.
 
 ## Frontend & Telegram Integration
 - skill: telegram-mini-app

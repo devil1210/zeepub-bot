@@ -230,7 +230,9 @@ class EPUBUploader:
                 volume=identity['volume'],
                 translator=identity['translator'],
                 layout_by=identity['layout_by'],
-                language=identity['language']
+                language=identity['language'],
+                is_uncensored=identity.get('is_uncensored', 0),
+                color_mode=identity.get('color_mode', 'bw')
             )
             
             # Actualizar campos en el metadata para el frontend y persistencia
@@ -259,6 +261,8 @@ class EPUBUploader:
                     translator=metadata['translator'],
                     layout_by=metadata.get('layout_by'),
                     language=metadata.get('language', 'es'),
+                    is_uncensored=identity.get('is_uncensored', 0),
+                    color_mode=identity.get('color_mode'),
                     
                     # Hashes generados como scanner
                     book_hash=book_hash,

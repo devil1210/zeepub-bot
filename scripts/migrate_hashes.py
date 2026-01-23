@@ -32,7 +32,9 @@ async def migrate_local_books():
             volume=book.volume,
             translator=book.translator,
             layout_by=book.layout_by,
-            language=book.language
+            language=book.language,
+            is_uncensored=book.is_uncensored or 0,
+            color_mode=book.color_mode or "bw"
         )
         book.book_hash = bh
 

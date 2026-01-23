@@ -171,6 +171,8 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
             "epub_version": None,
             "fecha_modificacion": None,
             "fecha_publicacion": None,
+            "is_uncensored": 0,
+            "color_mode": "bw",
         }
 
         # Version EPUB: <package version="...">
@@ -271,6 +273,35 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
                 out["demografia"].append(s)
             else:
                 out["generos"].append(s)
+
+        # Edition characteristics (Options 1 & 3)
+        all_subjects = " ".join(subjects).lower()
+        if any(x in all_subjects for x in ["sin censura", "uncensored", "no censura"]):
+            out["is_uncensored"] = 1
+        
+        if any(x in all_subjects for x in ["ilustraciones a color", "color", "full color"]):
+            out["color_mode"] = "color"
+        elif any(x in all_subjects for x in ["blanco y negro", "b&w", "grayscale", "b/n"]):
+            out["color_mode"] = "bw"
+
+        # Meta properties Zeepub
+        for el in root.iter():
+            if local_name(el).lower() == "meta":
+                attribs = {local_name_attr(k).lower(): v for k, v in el.attrib.items()}
+                prop = attribs.get("property", "").lower()
+                name = attribs.get("name", "").lower()
+                content = attribs.get("content", "")
+                
+                if "zeepub:uncensored" in prop or "zeepub:uncensored" in name:
+                    val = (content or el.text or "").lower().strip()
+                    if val in ["true", "1", "yes"]:
+                        out["is_uncensored"] = 1
+                if "zeepub:color_mode" in prop or "zeepub:color_mode" in name:
+                    val = (content or el.text or "").lower().strip()
+                    if val in ["color", "full-color", "c"]:
+                        out["color_mode"] = "color"
+                    elif val in ["bw", "b/n", "bn", "grayscale", "gray"]:
+                        out["color_mode"] = "bw"
 
         # Sinopsis: dc:description, description o summary
         for el in root.iter():
@@ -496,6 +527,8 @@ async def enrich_metadata_from_epub(
                 "epub_version",
                 "fecha_modificacion",
                 "fecha_publicacion",
+                "is_uncensored",
+                "color_mode",
             ):
                 if opf_meta.get(key):
                     meta[key] = opf_meta[key]
