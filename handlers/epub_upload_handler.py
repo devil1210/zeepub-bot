@@ -270,17 +270,18 @@ class EPUBUploader:
                 
                 if existing_book:
                     upload_book.identity_match = 'True'
+                    metadata['identity_match'] = True
                     logger.info(f"📕 Duplicado detectado: {metadata['title']} (hash: {book_hash[:16]}...)")
                     logger.info(f"   Original: {existing_book.filepath}")
                     logger.info(f"   Upload:   {original_filename}")
                 else:
                     upload_book.identity_match = 'False'
+                    metadata['identity_match'] = False
                     logger.info(f"✅ Libro único: {metadata['title']} (hash: {book_hash[:16]}...)")
                 
                 session.commit()
             
-            # Agregar resultados al metadata para el frontend
-            metadata['identity_match'] = upload_book.identity_match == 'True'
+            # Agregar resultados al metadata para el frontend (ya asignado arriba)
             metadata['book_hash'] = book_hash
             
             logger.info(f"Successfully extracted metadata: title='{metadata.get('title')}', hash='{book_hash}', identity_match={metadata['identity_match']}")
