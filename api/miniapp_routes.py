@@ -83,7 +83,8 @@ async def handle_bot_request(
 
     try:
         body = await request.json()
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error parsing JSON: {e}")
         body = {}
 
     action = body.get("action")

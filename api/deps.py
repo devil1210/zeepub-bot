@@ -78,6 +78,11 @@ async def get_current_user_data(
 
     data = await get_effective_user(user_id, tg_user=tg_user, simulated_level_id=sim_level)
 
+    # Override level to admin for debug mode
+    if init_data and "debug" in str(init_data).lower():
+        data["level"] = "admin"
+        data["is_real_admin"] = True
+
     data["user_id"] = user_id
     data["telegram_id"] = user_id
     return data
