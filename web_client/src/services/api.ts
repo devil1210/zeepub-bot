@@ -235,6 +235,9 @@ export const api = {
     confirmEpubUploadBulk: (data: { upload_ids: string[] }) =>
         apiClient.post('/api/library/upload/bulk/confirm', data),
 
+    getUploadHistory: (limit: number = 100, offset: number = 0) =>
+        apiClient.get(`/api/admin/upload-history?limit=${limit}&offset=${offset}`).then(res => res.data),
+
     // Raw RPC Access
     rpc: rpc
 };

@@ -64,6 +64,17 @@ class UpdateLevelsRequest(BaseModel):
     levels: List[LevelUpdate]
 
 
+class UploadHistoryResponse(BaseModel):
+    id: int
+    user_id: int
+    filename: str
+    book_hash: Optional[str] = None
+    status: str
+    final_path: Optional[str] = None
+    error_message: Optional[str] = None
+    created_at: str  # Send as ISO string
+
+
 # --- Routes ---
 
 
@@ -540,3 +551,16 @@ async def confirm_epub_upload_bulk_miniapp(
     """Confirma y finaliza múltiples subidas de EPUB."""
     from api.miniapp_handlers import handle_admin_bulk_upload_confirm
     return await handle_admin_bulk_upload_confirm(data, user_data)
+
+
+@router.get("/api/admin/upload-history", response_model=List[UploadHistoryResponse])
+async def get_upload_history(
+    limit: int = 100,
+    offset: int = 0,
+    user_data: Dict[str, Any] = Depends(require_admin)
+):
+    """
+    Obtiene el historial de subidas desde UploadHistory.
+    """
+    from api.miniapp_handlers import handle_get_upload_history
+    return await handle_get_upload_history(limit, offset)

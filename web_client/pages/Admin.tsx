@@ -12,7 +12,8 @@ import {
   Save,
   Palette,
   FileWarning,
-  LayoutGrid
+  LayoutGrid,
+  UploadCloud
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { MonitorDashboard } from './MonitorDashboard';
@@ -20,6 +21,7 @@ import { SystemDashboard } from './SystemDashboard';
 import { AccessDashboard } from './AccessDashboard';
 import { AppearanceDashboard } from './AppearanceDashboard';
 import { DuplicatesDashboard } from './DuplicatesDashboard';
+import { UploadHistoryDashboard } from './UploadHistoryDashboard';
 
 interface AdminProps {
   onNavigate?: (tab: string) => void;
@@ -31,7 +33,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const [isViewSelectorOpen, setIsViewSelectorOpen] = useState(false);
 
   // Derived state from URL
-  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates') || 'monitor';
+  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads') || 'monitor';
   const selectedUserId = searchParams.get('userId');
   const tierName = searchParams.get('tierName');
   const tierColor = searchParams.get('tierColor');
@@ -51,6 +53,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     { id: 'interface', label: 'Interfaz', icon: Palette },
     { id: 'access', label: 'Niveles y Acceso', icon: ShieldCheck },
     { id: 'duplicates', label: 'Duplicados', icon: FileWarning },
+    { id: 'uploads', label: 'Subidas', icon: UploadCloud },
   ] as const, []);
 
   const currentViewLabel = viewOptions.find(v => v.id === currentView)?.label || 'Panel';
@@ -117,6 +120,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
           />
         );
       case 'duplicates': return <DuplicatesDashboard />;
+      case 'uploads': return <UploadHistoryDashboard />;
       default: return <MonitorDashboard />;
     }
   };

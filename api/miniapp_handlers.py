@@ -2464,3 +2464,33 @@ async def handle_admin_bulk_upload_confirm(data: Dict[str, Any], user_data: Dict
             results.append({"upload_id": upload_id, "success": False, "error": str(e)})
             
     return {"success": True, "results": results}
+
+
+async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+    """Obtiene el historial de subidas paginado."""
+    from models.library_models import UploadHistory
+    from utils.library_db import get_session
+    from sqlalchemy import desc
+
+    try:
+        with get_session() as session:
+            query = session.query(UploadHistory).order_by(desc(UploadHistory.created_at))
+            query = query.limit(limit).offset(offset)
+            results = query.all()
+
+            history_list = []
+            for item in results:
+                history_list.append({
+                    "id": item.id,
+                    "user_id": item.user_id,
+                    "filename": item.filename,
+                    "book_hash": item.book_hash,
+                    "status": item.status,
+                    "final_path": item.final_path,
+                    "error_message": item.error_message,
+                    "created_at": item.created_at.isoformat() if item.created_at else None
+                })
+            return history_list
+    except Exception as e:
+        logger.error(f"Error fetching upload history: {e}")
+        return []
