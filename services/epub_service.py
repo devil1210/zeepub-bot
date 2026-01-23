@@ -150,6 +150,15 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
                 # Case 1: YYYY-MM-DD (e.g. 2022-07-01 or 2022-007-01)
                 if len(p0) == 4 and p0.isdigit():
                     y, m, d = int(p0), int(p1), int(p2)
+                    
+                    # Fix: Handle YYYY-DD-MM (e.g. 2019-28-12)
+                    # If month is obviously wrong (>12) and day looks like a month (<=12), swap them
+                    if m > 12 >= d:
+                        m, d = d, m
+                    # Or if month is just > 12, assume it's the day (heuristic)
+                    elif m > 12:
+                        m, d = d, m
+
                 # Case 2: DD-MM-YYYY (e.g. 01-07-2022)
                 elif len(p2) == 4 and p2.isdigit():
                     y, m, d = int(p2), int(p1), int(p0)
