@@ -24,26 +24,25 @@ def migrate():
         for book in books:
             old_hash = book.book_hash
             
-            # Recalcular usando la nueva lógica
+            # Recalcular usando la nueva lógica (series + author + type + vol + trans + layout)
             new_book_hash = generate_book_hash(
-                title=book.title,
+                series=book.series,
                 author=book.author,
-                series=book.series or book.english_title,
-                volume=book.volume,
                 book_type=book.book_type,
-                language=book.language,
-                translator=book.translator or book.publisher or book.layout_by
+                volume=book.volume,
+                translator=book.translator,
+                layout_by=book.layout_by,
+                language=book.language
             )
             
             new_series_hash = generate_series_hash(
-                series=book.series or book.english_title or book.title,
+                series=book.series,
                 author=book.author,
                 book_type=book.book_type
             )
             
             if old_hash != new_book_hash:
                 book.book_hash = new_book_hash
-                book.content_hash = new_book_hash
                 book.series_hash = new_series_hash
                 updated_count += 1
                 if updated_count % 50 == 0:

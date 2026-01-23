@@ -167,29 +167,28 @@ def norm_string(s: Any) -> str:
 
 
 def generate_book_hash(
-    title: str,
-    author: Optional[str] = None,
     series: Optional[str] = None,
-    volume: Optional[Any] = None,
+    author: Optional[str] = None,
     book_type: Optional[str] = None,
-    language: Optional[str] = None,
-    translator: Optional[str] = None
+    volume: Optional[Any] = None,
+    translator: Optional[str] = None,
+    layout_by: Optional[str] = None,
+    language: Optional[str] = "es"
 ) -> str:
     """
-    Genera un hash estable de 64 caracteres basado en los metadatos clave.
-    Incluye el grupo traductor para distinguir ediciones.
+    Genera un hash estable basado exclusivamente en: series + author + book_type + volume + translator + layout_by.
+    NO usar title.
     """
-    title_norm = norm_string(title)
-    author_norm = norm_string(author)
-    series_norm = norm_string(series)
-    vol_norm = norm_string(volume)
-    type_norm = norm_string(book_type)
+    s_norm = norm_string(series)
+    a_norm = norm_string(author)
+    t_norm = norm_string(book_type)
+    v_norm = norm_string(volume)
+    tr_norm = norm_string(translator)
+    l_norm = norm_string(layout_by)
     lang_norm = norm_string(language or "es")
-    trans_norm = norm_string(translator)
 
-    # Cadena de identidad determinista para el EPUB específico
-    # Incluimos título, serie y autor para máxima unicidad
-    identity = f"title:{title_norm}|series:{series_norm}|author:{author_norm}|vol:{vol_norm}|type:{type_norm}|lang:{lang_norm}|trans:{trans_norm}"
+    # Cadena de identidad determinista según especificación estricta del usuario
+    identity = f"series:{s_norm}|author:{a_norm}|type:{t_norm}|vol:{v_norm}|trans:{tr_norm}|layout:{l_norm}|lang:{lang_norm}"
 
     return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
@@ -200,15 +199,14 @@ def generate_series_hash(
     book_type: Optional[str] = None
 ) -> str:
     """
-    Genera un hash estable para agrupar volúmenes en una misma serie.
-    Solo depende del nombre de la serie, el autor y el tipo (NL vs NW).
+    Genera un hash estable para la serie basado exclusivamente en: series + author + book_type.
+    NO usar title.
     """
-    series_norm = norm_string(series)
-    author_norm = norm_string(author)
-    type_norm = norm_string(book_type)
+    s_norm = norm_string(series)
+    a_norm = norm_string(author)
+    t_norm = norm_string(book_type)
 
-    # Cadena de identidad determinista para la SERIE
-    identity = f"series:{series_norm}|author:{author_norm}|type:{type_norm}"
+    identity = f"series:{s_norm}|author:{a_norm}|type:{t_norm}"
 
     return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 

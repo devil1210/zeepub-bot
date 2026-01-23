@@ -66,7 +66,7 @@ class LibraryService:
                     d = b.to_dict()
                     d["is_folder"] = False
                     d["download_count"] = await download_repo.get_total_download_count(
-                        b.title, book_hash=b.content_hash
+                        b.title, book_hash=b.book_hash
                     )
                     # Cleaning for legacy compatibility
                     d["cleanTitle"] = (

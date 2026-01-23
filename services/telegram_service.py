@@ -961,7 +961,7 @@ async def enviar_libro_directo(
         # 4. Parsear metadatos del EPUB
         if metadata_override:
             logger.info(f"Usando metadatos proporcionados para: {title}")
-            logger.debug(f"metadata_override content_hash: {metadata_override.get('content_hash')}")
+            logger.debug(f"metadata_override book_hash: {metadata_override.get('hash')}")
             meta = metadata_override
         else:
             meta = {
@@ -1274,18 +1274,18 @@ async def enviar_libro_directo(
                 from utils.helpers import generate_book_hash, generate_series_hash
 
                 # CRITICAL: Prioritize hash from library (metadata_override)
-                book_hash = meta.get("content_hash") or meta.get("hash")
+                book_hash = meta.get("book_hash") or meta.get("hash")
                 logger.debug(f"Hash from meta: {book_hash}")
 
                 if not book_hash:
                     book_hash = generate_book_hash(
-                        title=titulo_vol,
-                        author=author,
                         series=series,
-                        volume=volume,
+                        author=author,
                         book_type=meta.get("book_type") or meta.get("categoria"),
-                        language=meta.get("language"),
-                        translator=translator
+                        volume=volume,
+                        translator=translator,
+                        layout_by=meta.get("maquetadores"),
+                        language=meta.get("language")
                     )
                     logger.warning(f"Generated new hash (should use library hash): {book_hash}")
 
@@ -1306,12 +1306,16 @@ async def enviar_libro_directo(
                 # Also record in centralized metrics DB
                 from repositories.metrics_repository import metrics_repo
                 series_hash = meta.get("series_hash") or (
-                    generate_series_hash(series, meta.get("book_type") or meta.get("categoria"))
+                    generate_series_hash(
+                        series=series, 
+                        author=author, 
+                        book_type=meta.get("book_type") or meta.get("categoria")
+                    )
                     if series else None
                 )
                 await metrics_repo.add_download(
                     user_id=user_id,
-                    content_hash=book_hash,
+                    book_hash=book_hash,
                     series_hash=series_hash,
                     title=titulo_vol
                 )

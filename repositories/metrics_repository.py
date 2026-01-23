@@ -16,43 +16,43 @@ class MetricsRepository:
     async def add_download(
         self,
         user_id: int,
-        content_hash: str,
+        book_hash: str,
         series_hash: Optional[str] = None,
         title: Optional[str] = None,
     ):
         try:
             async with pg_manager.get_session() as session:
-                query = text("INSERT INTO user_downloads (user_id, content_hash, series_hash, title) VALUES (:user_id, :content_hash, :series_hash, :title)")
-                await session.execute(query, {"user_id": user_id, "content_hash": content_hash, "series_hash": series_hash, "title": title})
+                query = text("INSERT INTO user_downloads (user_id, book_hash, series_hash, title) VALUES (:user_id, :book_hash, :series_hash, :title)")
+                await session.execute(query, {"user_id": user_id, "book_hash": book_hash, "series_hash": series_hash, "title": title})
                 await session.commit()
             
             if self.supabase.is_active:
                 try:
-                    data = {"user_id": user_id, "content_hash": content_hash, "series_hash": series_hash, "title": title}
+                    data = {"user_id": user_id, "book_hash": book_hash, "series_hash": series_hash, "title": title}
                     self.supabase.get_client().table('user_downloads').insert(data).execute()
                 except: pass
         except Exception as e:
             logger.error(f"Postgres metrics add_download error: {e}")
 
-    async def has_downloaded(self, user_id: int, content_hash: str) -> bool:
-        if not content_hash:
+    async def has_downloaded(self, user_id: int, book_hash: str) -> bool:
+        if not book_hash:
             return False
         try:
             async with pg_manager.get_session() as session:
-                query = text("SELECT 1 FROM user_downloads WHERE user_id = :user_id AND content_hash = :content_hash LIMIT 1")
-                result = await session.execute(query, {"user_id": user_id, "content_hash": content_hash})
+                query = text("SELECT 1 FROM user_downloads WHERE user_id = :user_id AND book_hash = :book_hash LIMIT 1")
+                result = await session.execute(query, {"user_id": user_id, "book_hash": book_hash})
                 return result.fetchone() is not None
         except Exception as e:
             logger.error(f"Postgres metrics has_downloaded error: {e}")
         return False
 
-    async def get_total_downloads(self, content_hash: str) -> int:
-        if not content_hash:
+    async def get_total_downloads(self, book_hash: str) -> int:
+        if not book_hash:
             return 0
         try:
             async with pg_manager.get_session() as session:
-                query = text("SELECT COUNT(*) FROM user_downloads WHERE content_hash = :content_hash")
-                result = await session.execute(query, {"content_hash": content_hash})
+                query = text("SELECT COUNT(*) FROM user_downloads WHERE book_hash = :book_hash")
+                result = await session.execute(query, {"book_hash": book_hash})
                 return result.scalar() or 0
         except Exception as e:
             logger.error(f"Postgres metrics get_total_downloads error: {e}")
@@ -75,7 +75,7 @@ class MetricsRepository:
             return 0
         try:
             placeholders = ",".join([f":h{i}" for i in range(len(hashes))])
-            query = text(f"SELECT COUNT(*) FROM user_downloads WHERE series_hash IN ({placeholders}) OR content_hash IN ({placeholders})")
+            query = text(f"SELECT COUNT(*) FROM user_downloads WHERE series_hash IN ({placeholders}) OR book_hash IN ({placeholders})")
             params = {f"h{i}": h for i, h in enumerate(hashes)}
             async with pg_manager.get_session() as session:
                 result = await session.execute(query, params)
@@ -84,34 +84,34 @@ class MetricsRepository:
             logger.error(f"Postgres metrics get_total_downloads_by_hashes error: {e}")
             return 0
 
-    async def add_rating(self, user_id: int, content_hash: str, rating: int):
+    async def add_rating(self, user_id: int, book_hash: str, rating: int):
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
-                    INSERT INTO user_ratings (user_id, content_hash, rating, rated_at) 
-                    VALUES (:user_id, :content_hash, :rating, CURRENT_TIMESTAMP)
-                    ON CONFLICT(user_id, content_hash) DO UPDATE SET 
+                    INSERT INTO user_ratings (user_id, book_hash, rating, rated_at) 
+                    VALUES (:user_id, :book_hash, :rating, CURRENT_TIMESTAMP)
+                    ON CONFLICT(user_id, book_hash) DO UPDATE SET 
                         rating = EXCLUDED.rating,
                         rated_at = CURRENT_TIMESTAMP
                 """)
-                await session.execute(query, {"user_id": user_id, "content_hash": content_hash, "rating": rating})
+                await session.execute(query, {"user_id": user_id, "book_hash": book_hash, "rating": rating})
                 await session.commit()
             
             if self.supabase.is_active:
                 try:
-                    data = {"user_id": user_id, "content_hash": content_hash, "rating": rating}
+                    data = {"user_id": user_id, "book_hash": book_hash, "rating": rating}
                     self.supabase.get_client().table('user_ratings').upsert(data).execute()
                 except: pass
         except Exception as e:
             logger.error(f"Postgres metrics add_rating error: {e}")
 
-    async def get_rating_stats(self, content_hash: str) -> Dict[str, Any]:
-        if not content_hash:
+    async def get_rating_stats(self, book_hash: str) -> Dict[str, Any]:
+        if not book_hash:
             return {"average": 0.0, "count": 0}
         try:
             async with pg_manager.get_session() as session:
-                query = text("SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE content_hash = :content_hash")
-                result = await session.execute(query, {"content_hash": content_hash})
+                query = text("SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE book_hash = :book_hash")
+                result = await session.execute(query, {"book_hash": book_hash})
                 row = result.fetchone()
                 return {
                     "average": round(float(row[0]), 1) if row and row[0] is not None else 0.0,

@@ -204,10 +204,10 @@ class MaintenancePlugin(BasePlugin):
         try:
             async with pg_manager.get_session() as session:
                 res = await session.execute(text("""
-                    SELECT content_hash, COUNT(*) as c 
+                    SELECT book_hash, COUNT(*) as c 
                     FROM local_books 
-                    WHERE content_hash IS NOT NULL 
-                    GROUP BY content_hash 
+                    WHERE book_hash IS NOT NULL 
+                    GROUP BY book_hash 
                     HAVING COUNT(*) > 1
                 """))
                 rows = res.fetchall()

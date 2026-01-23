@@ -99,22 +99,12 @@ class LocalBook(Base):
     series_hash = Column(String(64), index=True)  # Agrupa volúmenes de la misma serie/tipo
     book_hash = Column(String(64), index=True, unique=True)  # Identificador único del libro (antes content_hash)
     
-    # Property for backward compatibility
-    @property
-    def content_hash(self):
-        return self.book_hash
-
-    @content_hash.setter
-    def content_hash(self, value):
-        self.book_hash = value
-
     source = relationship("LibrarySource", back_populates="books")
 
     def to_dict(self):
         return {
             "id": f"local_{self.id}",  # Prefijo para distinguir de Kavita IDs
             "hash": self.book_hash,
-            "content_hash": self.book_hash,
             "title": self.title,
             "author": self.author,
             "romajiTitle": self.romaji_title,
@@ -185,8 +175,9 @@ class UserRating(Base):
     __tablename__ = "user_ratings"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False)
-    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=False, index=True)
+    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
+    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=True) # Opcional si el libro existe
+    book_hash = Column(String(64), index=True, nullable=False)
     rating = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 

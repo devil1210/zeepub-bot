@@ -26,9 +26,8 @@ class RecommendationService:
                 downloaded_hashes = {row[0] for row in dl_res.fetchall() if row[0]}
 
                 # 2. Obtener valoraciones positivas (>= 4 estrellas)
-                # We need to join with LocalBook to get content_hash from UserRating.book_id if book_hash not in UserRating
-                # UserRating has book_id (FK to LocalBook)
-                rate_stmt = select(LocalBook.book_hash).join(UserRating, LocalBook.id == UserRating.book_id).where(
+                # UserRating has book_hash
+                rate_stmt = select(UserRating.book_hash).where(
                     UserRating.user_id == user_id, 
                     UserRating.rating >= 4
                 )

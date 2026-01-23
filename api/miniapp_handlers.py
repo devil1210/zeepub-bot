@@ -104,12 +104,12 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
                 user_id,
                 local_book["title"],
                 local_book.get("cleanTitle"),
-                local_book.get("content_hash"),
+                local_book.get("book_hash"),
             )
             local_book["download_count"] = await download_repo.get_total_download_count(
                 local_book["title"],
                 local_book.get("cleanTitle"),
-                local_book.get("content_hash"),
+                local_book.get("book_hash"),
             )
             return local_book
     
@@ -119,13 +119,13 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
     # Get metrics from centralized DB
     from repositories.metrics_repository import metrics_repo
 
-    content_hash = entry.get("content_hash") or entry.get("hash")
-    if content_hash:
+    book_hash = entry.get("book_hash") or entry.get("hash")
+    if book_hash:
         result["is_downloaded"] = await metrics_repo.has_downloaded(
-            user_id, content_hash
+            user_id, book_hash
         )
-        result["download_count"] = await metrics_repo.get_total_downloads(content_hash)
-        rating_stats = await metrics_repo.get_rating_stats(content_hash)
+        result["download_count"] = await metrics_repo.get_total_downloads(book_hash)
+        rating_stats = await metrics_repo.get_rating_stats(book_hash)
         result["rating_average"] = rating_stats["average"]
         result["rating_count"] = rating_stats["count"]
 
@@ -404,7 +404,7 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
                     metadata_override = lb.to_dict()
                     actual_download_url = lb.filepath
                     logger.debug(
-                        f"Local book found: content_hash={metadata_override.get('content_hash')}, filepath={actual_download_url}"
+                        f"Local book found: book_hash={metadata_override.get('hash')}, filepath={actual_download_url}"
                     )
                 else:
                     logger.warning(f"Book not found in library: {book_id}")

@@ -30,7 +30,7 @@ interface BookDetail {
     publisher?: string
     language?: string
     downloadUrl?: string
-    content_hash?: string
+    hash?: string
     series?: string
     seriesIndex?: string
     categories?: string[]
@@ -158,11 +158,11 @@ function BookDetailContent() {
     }, [showRatingPopup, bookId])
 
     const handleDownload = async () => {
-        if (!book?.downloadUrl && !book?.content_hash || isDownloading) return
+        if (!book?.downloadUrl && !book?.hash || isDownloading) return
         setIsDownloading(true)
         try {
             await callBotAPI("download", {
-                bookId: book.content_hash || book.downloadUrl,
+                bookId: book.hash || book.downloadUrl,
                 title: book.title,
                 target: publishTarget || "private",
                 targetId: targetId,

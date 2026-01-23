@@ -468,8 +468,7 @@ class ScannerService:
 
             # Generar hashes estables
             book.series_hash = self._generate_series_hash(book)
-            book.content_hash = self._generate_book_hash(book)
-            book.book_hash = book.content_hash  # book_hash is same as content_hash for local books
+            book.book_hash = self._generate_book_hash(book)
 
             # Check for duplicates by content_hash AFTER generating it
             # First check if this exact file already exists
@@ -542,27 +541,25 @@ class ScannerService:
 
     def _generate_book_hash(self, book: LocalBook) -> str:
         """
-        Genera un hash estable basado en los metadatos clave del libro.
-        Detecta cambios en título, autor, volumen, tipo y traductor.
+        Genera un hash estable basado en: series + author + book_type + volume + translator + layout_by.
         """
+        # NO usar book.title aquí
         return generate_book_hash(
-            title=book.title,
+            series=book.series,
             author=book.author,
-            series=book.series or book.english_title,
-            volume=book.volume,
             book_type=book.book_type,
-            language=book.language,
-            translator=book.translator or book.publisher or book.layout_by
+            volume=book.volume,
+            translator=book.translator,
+            layout_by=book.layout_by,
+            language=book.language
         )
 
     def _generate_series_hash(self, book: LocalBook) -> str:
         """
-        Genera un hash estable para agrupar volúmenes de la misma serie.
+        Genera un hash estable para la serie basado en: series + author + book_type.
         """
-        # Usar english_title preferentemente si series está vacía
-        series_name = book.series or book.english_title or book.title
         return generate_series_hash(
-            series=series_name,
+            series=book.series,
             author=book.author,
             book_type=book.book_type
         )
@@ -672,8 +669,7 @@ class ScannerService:
         target_book.tags = source_book.tags
         target_book.demographics = source_book.demographics
         target_book.series_hash = source_book.series_hash
-        # Hashes should NOT change ideally unless content changed, but we update them just in case
-        target_book.content_hash = source_book.content_hash
+        # Hashes should NOT change ideally unless metadata changed
         target_book.book_hash = source_book.book_hash
         target_book.file_size = source_book.file_size
 
