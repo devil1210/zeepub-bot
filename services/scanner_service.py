@@ -466,12 +466,7 @@ class ScannerService:
             book.page_count = meta.get("page_count")
             book.reading_time = meta.get("reading_time")
 
-            # Generar hashes estables
-            book.series_hash = self._generate_series_hash(book)
-            book.book_hash = self._generate_book_hash(book)
-
-            # Check for duplicates by book_hash AFTER generating it
-            # First check if this exact file already exists
+            # Check for duplicates by filepath BEFORE generating hashes
             existing_same_file = session.query(LocalBook).filter(
                 LocalBook.filepath == filepath
             ).first()
@@ -479,11 +474,33 @@ class ScannerService:
             outcome = "updated"
             if existing_same_file:
                 # Same file, just update metadata on the EXISTING instance
-                # DO NOT overwrite 'book' with 'existing_same_file', INSTEAD copy fields logic required
-                self._copy_metadata_to_existing(book, existing_same_file)
+                # Generate hashes for the existing book to check if metadata changed
+                temp_book = LocalBook(filepath=filepath, source_id=source.id)
+                temp_book.title = meta.get("title") or temp_book.filename
+                temp_book.series = meta.get("series")
+                temp_book.volume = meta.get("volume")
+                temp_book.author = meta.get("author")
+                temp_book.book_type = classified_type
+                temp_book.translator = meta.get("translator")
+                temp_book.layout_by = meta.get("layout_by")
+                temp_book.language = meta.get("language") or "es"
+                
+                new_series_hash = self._generate_series_hash(temp_book)
+                new_book_hash = self._generate_book_hash(temp_book)
+                
+                # Only update if hashes actually changed
+                if existing_same_file.book_hash != new_book_hash:
+                    self._copy_metadata_to_existing(temp_book, existing_same_file)
+                    existing_same_file.series_hash = new_series_hash
+                    existing_same_file.book_hash = new_book_hash
+                
                 book = existing_same_file # Point to the managed instance
                 logger.debug(f"Actualizando archivo existente: {filepath}")
             else:
+                # New file, generate hashes and check for real duplicates
+                book.series_hash = self._generate_series_hash(book)
+                book.book_hash = self._generate_book_hash(book)
+                
                 # Check if there's another file with same content (real duplicate)
                 existing_with_same_hash = session.query(LocalBook).filter(
                     LocalBook.book_hash == book.book_hash
@@ -669,8 +686,7 @@ class ScannerService:
         target_book.tags = source_book.tags
         target_book.demographics = source_book.demographics
         target_book.series_hash = source_book.series_hash
-        # Hashes should NOT change ideally unless metadata changed
-        target_book.book_hash = source_book.book_hash
+        # Note: book_hash is handled separately to avoid constraint violations
         target_book.file_size = source_book.file_size
 
 
