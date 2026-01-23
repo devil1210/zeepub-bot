@@ -36,7 +36,7 @@ def upgrade():
         sa.Column('identity_match', sa.String(10), server_default='False'),
         sa.Column('path_collision', sa.String(10), server_default='False'),
         sa.Column('processed', sa.String(10), server_default='False'),
-        sa.Column('metadata', sa.JSON()),
+        sa.Column('upload_metadata', sa.JSON()),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.PrimaryKeyConstraint('id')
     )

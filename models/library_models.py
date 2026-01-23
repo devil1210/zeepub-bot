@@ -36,7 +36,7 @@ class UploadBook(Base):
     processed = Column(String(10), default='False')  # Si ya fue procesado
     
     # Metadata adicional en JSON
-    metadata = Column(JSON)
+    upload_metadata = Column(JSON)
     
     created_at = Column(DateTime, default=datetime.utcnow)
 

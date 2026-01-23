@@ -258,7 +258,7 @@ class EPUBUploader:
                     book_hash=book_hash,
                     series_hash=self._generate_series_hash_like_scanner(metadata),
                     
-                    metadata=metadata
+                    upload_metadata=metadata
                 )
                 session.add(upload_book)
                 session.commit()
