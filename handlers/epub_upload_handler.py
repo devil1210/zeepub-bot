@@ -236,7 +236,9 @@ class EPUBUploader:
             )
             
             # Actualizar campos en el metadata para el frontend y persistencia
+            series_hash = self._generate_series_hash_like_scanner(metadata)
             metadata['book_hash'] = book_hash
+            metadata['series_hash'] = series_hash
             metadata['series'] = identity['series']
             metadata['volume'] = identity['volume']
             metadata['author'] = identity['author']
@@ -266,7 +268,7 @@ class EPUBUploader:
                     
                     # Hashes generados como scanner
                     book_hash=book_hash,
-                    series_hash=self._generate_series_hash_like_scanner(metadata),
+                    series_hash=series_hash,
                     
                     upload_metadata=metadata
                 )
@@ -282,17 +284,18 @@ class EPUBUploader:
                     upload_book.identity_match = 'True'
                     metadata['identity_match'] = True
                     logger.info(f"📕 Duplicado detectado: {metadata['title']} (hash: {book_hash[:16]}...)")
-                    logger.info(f"   Original: {existing_book.filepath}")
-                    logger.info(f"   Upload:   {original_filename}")
                 else:
                     upload_book.identity_match = 'False'
                     metadata['identity_match'] = False
-                    logger.info(f"✅ Libro único: {metadata['title']} (hash: {book_hash[:16]}...)")
                 
                 session.commit()
             
             # Agregar resultados al metadata para el frontend (ya asignado arriba)
             metadata['book_hash'] = book_hash
+            metadata['series_hash'] = series_hash
+            
+            # Generar ruta sugerida inteligente
+            metadata['suggested_path'] = self._get_smart_destination(metadata, original_filename)
             
             logger.info(f"Successfully extracted metadata: title='{metadata.get('title')}', hash='{book_hash}', identity_match={metadata['identity_match']}")
             return metadata
@@ -303,6 +306,124 @@ class EPUBUploader:
             logger.error(f"Full traceback: {traceback.format_exc()}")
             return None
     
+    def _get_smart_destination(self, metadata: Dict[str, Any], original_filename: str) -> str:
+        """
+        Determina la mejor ruta y nombre de archivo para el libro.
+        1. Busca si ya existe la serie (por series_hash).
+        2. Si existe, usa esa carpeta.
+        3. Revisa el patrón de nombres de los archivos en esa carpeta.
+        4. Renombra el nuevo archivo siguiendo el patrón (incluyendo Vol y Grupo).
+        """
+        from utils.library_db import get_session
+        from models.library_models import LocalBook
+        import os
+        import re
+        from pathlib import Path
+
+        series_hash = metadata.get('series_hash')
+        library_base = Path("/library")
+        
+        target_dir = None
+        series_folder_name = None
+        
+        # 1. Intentar encontrar carpeta de serie existente
+        if series_hash:
+            with get_session() as session:
+                existing_book = session.query(LocalBook).filter_by(series_hash=series_hash).first()
+                if existing_book:
+                    # Usar la misma carpeta que el libro existente
+                    full_book_path = Path(existing_book.filepath)
+                    # Si el filepath es absoluto y empieza por /library, quitarlo para tener relativa
+                    rel_path = existing_book.filepath
+                    if rel_path.startswith("/library"):
+                        rel_path = rel_path.replace("/library", "").lstrip("/")
+                    
+                    target_dir_rel = os.path.dirname(rel_path)
+                    target_dir_full = library_base / target_dir_rel
+                    
+                    if target_dir_full.exists():
+                        target_dir = target_dir_full
+                        series_folder_name = target_dir_rel
+
+        # 2. Si no hay carpeta existente, generar una nueva
+        if not target_dir:
+            author = self.clean_filename(metadata.get('author', 'Autor desconocido'))
+            series = metadata.get('series', '')
+            tag = self.determine_novel_type_tag(metadata, original_filename)
+            
+            if series:
+                series_ok = re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE)
+                series_clean = self.clean_filename(series_ok)
+                series_folder_name = f"{series_clean} - {author} [{tag}]"
+            else:
+                series_folder_name = f"{author} [{tag}]"
+            
+            target_dir = library_base / series_folder_name
+
+        # 3. Determinar nombre de archivo basado en patrón
+        filename = self._generate_pattern_filename(target_dir, metadata, original_filename)
+        
+        return f"{series_folder_name}/{filename}"
+
+    def _generate_pattern_filename(self, target_dir: Path, metadata: Dict[str, Any], original_filename: str) -> str:
+        import os
+        import re
+
+        # Valores de metadata para el nombre
+        series = metadata.get('series', '')
+        if series:
+            series = re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE)
+        
+        volume = metadata.get('volume')
+        # Formatear volumen a 2 dígitos si es posible
+        vol_str = ""
+        if volume is not None:
+            try:
+                v_float = float(volume)
+                vol_str = f"{int(v_float):02d}" if v_float == int(v_float) else f"{v_float:02.1f}"
+            except:
+                vol_str = str(volume)
+
+        # Detectar grupo (maquetador o traductor)
+        group = "Unknown"
+        if metadata.get('typesetters'):
+            group = metadata['typesetters'][0]
+        elif metadata.get('translator'):
+            group = metadata['translator']
+        elif metadata.get('publisher'):
+            group = metadata['publisher']
+            
+        # Limpiar grupo (quitar URLs, etc)
+        group = re.sub(r'https?://\S+', '', group).strip()
+        group = self.clean_filename(group)
+
+        # 4. Intentar detectar patrón en la carpeta
+        pattern_found = False
+        if target_dir.exists():
+            files = [f for f in os.listdir(target_dir) if f.lower().endswith('.epub')]
+            if files:
+                # Ejemplo: "Serie - V01 [Grupo].epub"
+                # Buscamos patrones comunes
+                for f in files:
+                    if " - V" in f and "[" in f and "].epub" in f:
+                        # Parece que sigue el patrón deseado: Título - VXX [Grupo]
+                        # Extraer la parte del título del primer archivo que machee
+                        match = re.match(r"^(.*?) - V\d+", f)
+                        if match:
+                            base_title = match.group(1)
+                            pattern_found = True
+                            return f"{base_title} - V{vol_str} [{group}].epub"
+
+        # 5. Fallback si no hay patrón o carpeta
+        # Usar el formato estándar: Serie - VXX [Grupo]
+        if series:
+            return f"{series} - V{vol_str} [{group}].epub"
+        else:
+            # Si no hay serie, usar el original limpiado
+            filename_without_ext = original_filename.rsplit('.', 1)[0]
+            filename_clean = re.sub(r'\s*\[(?:NL|NW|M\.?\s*Nigthkrelin\s*Subs|ShinsengumiTL)\]\s*', '', filename_without_ext)
+            return f"{filename_clean}.epub"
+
     def _parse_volume(self, volume_str):
         """Parse volume string like scanner service does."""
         if not volume_str:
@@ -327,61 +448,8 @@ class EPUBUploader:
         )
     
     def generate_path(self, metadata: Dict[str, Any]) -> str:
-        """Genera ruta sugerida basada en metadata y formato existente de la biblioteca."""
-        author = metadata.get('author', 'Autor desconocido')
-        title = metadata.get('title', 'Sin título')
-        series = metadata.get('series', '')
-        language = metadata.get('language', 'es')
-        
-        # Obtener el nombre original del archivo subido desde los metadatos
-        original_filename = metadata.get('original_filename', '')
-        if original_filename:
-            # Extraer solo el nombre del archivo sin extensión
-            filename_without_ext = original_filename.rsplit('.', 1)[0]
-            # Limpiar tags existentes como [NL], [NW], [ShinsengumiTL], etc.
-            import re
-            filename_clean = re.sub(r'\s*\[(?:NL|NW|M\.?\s*Nigthkrelin\s*Subs|ShinsengumiTL)\]\s*', '', filename_without_ext)
-        else:
-            # Si no hay filename original, usar el título limpio
-            filename_clean = self.clean_filename(title)
-        
-        # Limpiar y normalizar nombres
-        author_clean = self.clean_filename(author)
-        if series:
-            import re
-            series_ok = re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE)
-            series_clean = self.clean_filename(series_ok)
-        else:
-            series_clean = None
-        
-        # Determinar el tag basado en el tipo de novela
-        tag = self.determine_novel_type_tag(metadata, original_filename)
-        
-        # Si hay serie, usar el formato: Serie - Autor [Tag]/Filename
-        if series_clean:
-            # Formato: Serie - Autor [Tag]/Filename
-            suggested_path = f"{series_clean} - {author_clean} [{tag}]/{filename_clean}.epub"
-        else:
-            # Si no hay serie, usar formato: Autor [Tag]/Filename
-            suggested_path = f"{author_clean} [{tag}]/{filename_clean}.epub"
-        
-        # Limitar longitud total de la ruta
-        if len(suggested_path) > 250:
-            # Si es muy larga, acortar el filename
-            if series_clean:
-                prefix_len = len(f"{series_clean} - {author_clean} [{tag}]")
-            else:
-                prefix_len = len(f"{author_clean} [{tag}]")
-            
-            max_filename_len = 250 - prefix_len - 5  # 5 para ".epub"
-            filename_clean = filename_clean[:max_filename_len]
-            
-            if series_clean:
-                suggested_path = f"{series_clean} - {author_clean} [{tag}]/{filename_clean}.epub"
-            else:
-                suggested_path = f"{author_clean} [{tag}]/{filename_clean}.epub"
-        
-        return suggested_path
+        """DEPRECATED: Use _get_smart_destination instead."""
+        return self._get_smart_destination(metadata, metadata.get('original_filename', ''))
     
     def determine_novel_type_tag(self, metadata: Dict[str, Any], original_filename: str) -> str:
         """Determina si es Novela Ligera [NL] o Novela Web [NW]."""

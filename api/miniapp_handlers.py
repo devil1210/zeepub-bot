@@ -2406,15 +2406,28 @@ async def handle_admin_send_logs_telegram(data: Dict[str, Any], user_data: Dict[
 
 async def handle_admin_bulk_upload_confirm(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Confirma y finaliza múltiples subidas de EPUB."""
-    upload_ids = data.get("upload_ids", [])
-    if not upload_ids:
-        raise HTTPException(status_code=400, detail="No upload IDs provided")
+    selected_ids = data.get("selected_ids", [])
+    discarded_ids = data.get("discarded_ids", [])
+    
+    # Si no vienen selected_ids, probamos con upload_ids (compatibilidad)
+    if not selected_ids:
+        selected_ids = data.get("upload_ids", [])
+        
+    if not selected_ids and not discarded_ids:
+        raise HTTPException(status_code=400, detail="No selected or discarded IDs provided")
     
     from handlers.epub_upload_handler import epub_uploader, pending_uploads
     from pathlib import Path
     
+    # 1. Manejar descartados (limpieza)
+    for disc_id in discarded_ids:
+        if disc_id in pending_uploads:
+            info = pending_uploads[disc_id]
+            epub_uploader.cleanup_upload(disc_id, Path(info['file_path']))
+            
+    # 2. Manejar seleccionados (procesamiento)
     results = []
-    for upload_id in upload_ids:
+    for upload_id in selected_ids:
         if upload_id not in pending_uploads:
             results.append({"upload_id": upload_id, "success": False, "error": "No encontrado"})
             continue

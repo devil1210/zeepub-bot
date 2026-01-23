@@ -232,7 +232,7 @@ export const api = {
     },
     confirmEpubUpload: (data: { upload_id: string; path?: string }) =>
         apiClient.post('/api/library/upload/confirm', data),
-    confirmEpubUploadBulk: (data: { upload_ids: string[] }) =>
+    confirmEpubUploadBulk: (data: { upload_ids?: string[], selected_ids?: string[], discarded_ids?: string[] }) =>
         apiClient.post('/api/library/upload/bulk/confirm', data),
 
     getUploadHistory: (limit: number = 100, offset: number = 0) =>

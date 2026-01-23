@@ -58,9 +58,30 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
         metadata?: UploadMetadata;
         error?: string;
     }[]>([]);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isBulk, setIsBulk] = useState(false);
+    const [discardedCount, setDiscardedCount] = useState(0);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const toggleSelection = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const toggleAll = () => {
+        const allSuccessIds = bulkResults.filter(r => r.success && r.upload_id).map(r => r.upload_id as string);
+        if (selectedIds.size === allSuccessIds.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(allSuccessIds));
+        }
+    };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []) as File[];
@@ -127,6 +148,14 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
 
             if (res.results) {
                 setBulkResults(res.results);
+                // Pre-seleccionar solo los que NO son duplicados exactos
+                const preSelected = new Set<string>();
+                res.results.forEach(r => {
+                    if (r.success && r.upload_id && !r.metadata?.identity_match) {
+                        preSelected.add(r.upload_id);
+                    }
+                });
+                setSelectedIds(preSelected);
                 setStatus('reviewing');
             } else {
                 setError('Error al procesar la subida masiva');
@@ -146,6 +175,13 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
         }
 
         if (!uploadId) return;
+
+        // Si hay conflicto de archivo y NO es match de identidad, es sobrescritura
+        if (metadata?.file_exists && !metadata?.identity_match) {
+            if (!window.confirm("Ya existe un archivo con este nombre pero diferente contenido. ¿Deseas sobrescribirlo?")) {
+                return;
+            }
+        }
 
         setStatus('confirming');
         try {
@@ -168,16 +204,26 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
     };
 
     const handleBulkConfirm = async () => {
-        const uploadIds = bulkResults
+        const allIds = bulkResults
             .filter(r => r.success && r.upload_id)
             .map(r => r.upload_id as string);
 
-        if (uploadIds.length === 0) return;
+        const selectedList = Array.from(selectedIds);
+        const discardedList = allIds.filter(id => !selectedIds.has(id));
+
+        if (selectedList.length === 0 && discardedList.length === 0) return;
 
         setStatus('confirming');
         try {
-            const res = await api.confirmEpubUploadBulk({ upload_ids: uploadIds });
+            const res = await api.confirmEpubUploadBulk({
+                selected_ids: selectedList,
+                discarded_ids: discardedList
+            });
+
             if (res.data?.success) {
+                // Actualizar resultados para mostrar solo los procesados exitosamente en la pantalla final
+                // Opcional: filtrar bulkResults para mostrar lo que pasó
+                setDiscardedCount(discardedList.length);
                 setStatus('success');
             } else {
                 setError(res.data?.error || 'Error al confirmar la subida masiva');
@@ -288,9 +334,10 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                     stroke="currentColor"
                                     strokeWidth="8"
                                     fill="transparent"
+                                    strokeLinecap="round"
                                     strokeDasharray={364.4}
                                     strokeDashoffset={364.4 - (364.4 * (status === 'uploading' ? uploadProgress : 100)) / 100}
-                                    className="text-primary transition-all duration-300"
+                                    className="text-primary transition-all duration-300 ease-out"
                                 />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -317,35 +364,101 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                     <div className="space-y-6">
                         {isBulk ? (
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Resumen de Subida Masiva</h3>
+                                <div className="flex items-center justify-between mb-4 bg-white/5 p-3 rounded-xl border border-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={bulkResults.filter(r => r.success).length > 0 && selectedIds.size === bulkResults.filter(r => r.success).length}
+                                            onChange={toggleAll}
+                                            className="w-4 h-4 rounded border-gray-500 bg-black/50 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                                        />
+                                        <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
+                                            {selectedIds.size} Seleccionados
+                                        </span>
+                                    </div>
                                     <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase">
                                         {bulkResults.filter(r => r.success).length} Listos / {bulkResults.length} Total
                                     </span>
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {bulkResults.map((res, i) => (
-                                        <div key={i} className={`p-4 rounded-2xl border flex items-center gap-4 ${res.success ? 'bg-white/5 border-white/5' : 'bg-red-500/10 border-red-500/20'}`}>
-                                            <div className={`p-2 rounded-xl ${res.success ? 'bg-primary/10 text-primary' : 'bg-red-500/10 text-red-400'}`}>
-                                                {res.success ? <FileText className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-bold text-white truncate">{res.filename}</p>
-                                                {res.success ? (
-                                                    <p className="text-[10px] text-primary mt-0.5">{res.metadata?.title || 'Metadatos extraídos'}</p>
-                                                ) : (
-                                                    <p className="text-[10px] text-red-400 mt-0.5">{res.error || 'Error desconocido'}</p>
+                                    {bulkResults.map((res, i) => {
+                                        const isDuplicate = res.metadata?.identity_match;
+                                        const isSuccess = res.success;
+                                        const isSelected = res.upload_id ? selectedIds.has(res.upload_id) : false;
+
+                                        return (
+                                            <div
+                                                key={i}
+                                                onClick={() => isSuccess && res.upload_id && toggleSelection(res.upload_id)}
+                                                className={`p-4 rounded-2xl border flex items-center gap-4 transition-all cursor-pointer relative overflow-hidden group
+                                                    ${!isSuccess ? 'bg-red-500/5 border-red-500/20 opacity-80' :
+                                                        isDuplicate ? (isSelected ? 'bg-amber-500/10 border-amber-500/40' : 'bg-amber-500/5 border-amber-500/20') :
+                                                            (isSelected ? 'bg-primary/10 border-primary/40' : 'bg-white/5 border-white/5 hover:border-white/10')
+                                                    }
+                                                `}
+                                            >
+                                                {/* Selection Checkbox */}
+                                                {isSuccess && (
+                                                    <div className={`
+                                                        w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0
+                                                        ${isSelected
+                                                            ? (isDuplicate ? 'bg-amber-500 border-amber-500 text-black' : 'bg-primary border-primary text-white')
+                                                            : 'border-gray-600 bg-black/20 group-hover:border-gray-400'}
+                                                    `}>
+                                                        {isSelected && <Check className="w-3 h-3 stroke-[4]" />}
+                                                    </div>
                                                 )}
-                                            </div>
-                                            {res.success && res.metadata?.identity_match && (
-                                                <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500" title="Duplicado detectado">
-                                                    <AlertCircle className="w-4 h-4" />
+
+                                                <div className={`p-2.5 rounded-xl flex-shrink-0 ${!isSuccess ? 'bg-red-500/10 text-red-400' :
+                                                    isDuplicate ? 'bg-amber-500/20 text-amber-500' :
+                                                        'bg-blue-500/10 text-blue-400'
+                                                    }`}>
+                                                    {!isSuccess ? <AlertCircle className="w-5 h-5" /> :
+                                                        isDuplicate ? <AlertCircle className="w-5 h-5" /> :
+                                                            <FileText className="w-5 h-5" />}
                                                 </div>
-                                            )}
-                                        </div>
-                                    ))}
+
+                                                <div className="flex-1 min-w-0 z-10">
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        <p className={`text-xs font-bold truncate ${isDuplicate ? 'text-amber-200' : 'text-gray-200'}`}>
+                                                            {res.filename}
+                                                        </p>
+                                                        {isDuplicate && (
+                                                            <span className="px-2 py-0.5 rounded bg-amber-500 text-black text-[9px] font-black uppercase tracking-wider animate-pulse">
+                                                                Duplicado Exac
+                                                            </span>
+                                                        )}
+                                                        {res.metadata?.file_exists && !isDuplicate && (
+                                                            <span className="px-2 py-0.5 rounded bg-purple-500 text-white text-[9px] font-black uppercase tracking-wider">
+                                                                Sobrescribir
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {isSuccess ? (
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <p className="text-[11px] text-gray-400 font-medium truncate">{res.metadata?.title || 'Metadatos extraídos'}</p>
+                                                            <p className="text-[9px] text-gray-600 font-mono truncate">
+                                                                {res.metadata?.suggested_path}
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-[10px] text-red-400 mt-0.5 font-medium">{res.error || 'Error desconocido'}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
+
+                                {selectedIds.size < bulkResults.filter(r => r.success).length && (
+                                    <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-center">
+                                        <p className="text-[11px] text-gray-400">
+                                            Se descartarán <strong className="text-white">{bulkResults.filter(r => r.success).length - selectedIds.size}</strong> libros no seleccionados.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <>
@@ -483,11 +596,11 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                             </button>
                             <button
                                 onClick={handleConfirm}
-                                disabled={status === 'confirming' || (isBulk && bulkResults.filter(r => r.success).length === 0)}
-                                className="flex-[2] py-4 rounded-[1.5rem] bg-primary hover:bg-primary-dark text-white text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
+                                disabled={status === 'confirming' || (isBulk && selectedIds.size === 0)}
+                                className="flex-[2] py-4 rounded-[1.5rem] bg-primary hover:bg-primary-dark text-white text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {status === 'confirming' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                {isBulk ? `Confirmar ${bulkResults.filter(r => r.success).length} libros` : 'Finalizar y Guardar'}
+                                {isBulk ? `Confirmar ${selectedIds.size} libros` : 'Finalizar y Guardar'}
                             </button>
                         </div>
                     </div>
