@@ -26,11 +26,15 @@ class SchemaOrchestrator:
         await pg_manager.initialize()
         
         try:
+            # Debug: Log tables in metadata
+            table_names = list(Base.metadata.tables.keys())
+            logger.info(f"Metadata contains {len(table_names)} tables: {', '.join(table_names)}")
+
             async with pg_manager.engine.begin() as conn:
                 # Create all tables defined in SQLAlchemy models
                 # This only creates tables that don't exist; it won't update existing frames
                 await conn.run_sync(Base.metadata.create_all)
-                logger.info("Schema verification completed.")
+                logger.info("Base tables creation/verification completed.")
                 
                 # Auto-Migration for UserLevel (Add missing columns to existing table)
                 await SchemaOrchestrator._check_and_add_column('user_levels', 'color', 'VARCHAR(20) DEFAULT \'#607D8B\'')
@@ -61,6 +65,9 @@ class SchemaOrchestrator:
                 # Auto-Migration for Users (Ensure created_at exists)
                 await SchemaOrchestrator._check_and_add_column('users', 'created_at', 'TIMESTAMP DEFAULT NOW()')
                 
+                # IMPORTANT: Wait a bit for Postgres to stabilize metadata
+                await asyncio.sleep(1)
+
                 # Seed Initial Data
                 await SchemaOrchestrator._seed_initial_data()
                 
@@ -75,46 +82,68 @@ class SchemaOrchestrator:
         from models.library_models import LibrarySource
         from sqlalchemy import select
         
-        
-        async with pg_manager.get_session() as session:
-            try:
-                # Upsert default User Levels to ensure they exist
-                logger.info("Verifying/Seeding User Levels...")
-                
-                # We use merge to upsert based on Primary Key (id)
-                levels = [
-                    UserLevel(id=1, name='Administrador', priority=100, color='#FF5252', price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
-                    UserLevel(id=2, name='Staff', priority=90, color='#7C4DFF', price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
-                    UserLevel(id=3, name='Premium', priority=50, color='#FFD740', price=499, daily_downloads=50, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
-                    UserLevel(id=4, name='VIP', priority=40, color='#69F0AE', price=999, daily_downloads=20, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
-                    UserLevel(id=5, name='Patrocinador', priority=20, color='#E0E0E0', price=0, daily_downloads=10, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
-                    UserLevel(id=6, name='Lector', priority=10, color='#607D8B', price=0, daily_downloads=5, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
-                ]
-                
-                for lvl in levels:
-                    await session.merge(lvl)
-                
-                await session.commit()
-                logger.info("User Levels verified/seeded successfully.")
+        # Max retries for seeding if table not visible yet
+        for attempt in range(3):
+            async with pg_manager.get_session() as session:
+                try:
+                    # 0. Check if table exists (asyncpg level)
+                    table_check = text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'user_levels')")
+                    exists = (await session.execute(table_check)).scalar()
+                    if not exists:
+                        logger.warning(f"Attempt {attempt+1}: user_levels table not visible. Retrying...")
+                        await asyncio.sleep(2)
+                        continue
 
-                # Seed Default Library Source
-                stmt_source = select(LibrarySource).limit(1)
-                existing_source = (await session.execute(stmt_source)).scalar_one_or_none()
-                if not existing_source:
-                    logger.info("Seeding default Library Source (/library)...")
-                    default_source = LibrarySource(name="Principal", path="/library")
-                    session.add(default_source)
+                    # 1. Upsert default User Levels
+                    logger.info("Seeding/Merging User Levels...")
+                    
+                    levels = [
+                        UserLevel(id=1, name='Administrador', priority=100, color='#FF5252', price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                        UserLevel(id=2, name='Staff', priority=90, color='#7C4DFF', price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                        UserLevel(id=3, name='Premium', priority=50, color='#FFD740', price=499, daily_downloads=50, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                        UserLevel(id=4, name='VIP', priority=40, color='#69F0AE', price=999, daily_downloads=20, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                        UserLevel(id=5, name='Patrocinador', priority=20, color='#E0E0E0', price=0, daily_downloads=10, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                        UserLevel(id=6, name='Lector', priority=10, color='#607D8B', price=0, daily_downloads=5, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme='dark', can_read=True, has_library_access=True, can_request_books=True, show_recommendations=True),
+                    ]
+                    
+                    for lvl in levels:
+                        await session.merge(lvl)
+                    
                     await session.commit()
+                    logger.info("User Levels seeded successfully.")
 
-            except Exception as e:
-                logger.error(f"Error seeding initial data: {e}")
+                    # 2. Seed Default Library Source
+                    if not (await session.execute(text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'library_sources')"))).scalar():
+                        return # Should exist if metadata worked
+
+                    stmt_source = select(LibrarySource).limit(1)
+                    existing_source = (await session.execute(stmt_source)).scalar_one_or_none()
+                    if not existing_source:
+                        logger.info("Seeding default Library Source (/library)...")
+                        default_source = LibrarySource(name="Principal", path="/library")
+                        session.add(default_source)
+                        await session.commit()
+                    
+                    return # Success!
+
+                except Exception as e:
+                    logger.error(f"Attempt {attempt+1} - Error seeding initial data: {e}")
+                    await asyncio.sleep(2)
 
     @staticmethod
     async def _check_and_add_column(table_name: str, column_name: str, column_type: str):
         """Helper to add missing columns safely."""
         async with pg_manager.get_session() as session:
             try:
-                # Check if column exists
+                # 1. Check if table exists first
+                table_check = text(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{table_name}')")
+                table_exists = (await session.execute(table_check)).scalar()
+                
+                if not table_exists:
+                    logger.debug(f"Table '{table_name}' does not exist yet. Skipping column check for '{column_name}'.")
+                    return
+
+                # 2. Check if column exists
                 check_sql = text(f"SELECT column_name FROM information_schema.columns WHERE table_name='{table_name}' AND column_name='{column_name}'")
                 result = await session.execute(check_sql)
                 if not result.scalar():
