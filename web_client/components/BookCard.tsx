@@ -19,7 +19,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
     <div className="group relative glass-panel rounded-xl overflow-hidden border border-white/5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full">
       <div className="absolute top-3 right-3 z-10">
         <span className="bg-black/70 dark:bg-black/70 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider border border-white/10 shadow-sm">
-          {book.format}
+          {book.bookType === 'NL' ? 'Novela Ligera' : book.bookType === 'NW' ? 'Novela Web' : book.bookType || book.format}
         </span>
       </div>
 

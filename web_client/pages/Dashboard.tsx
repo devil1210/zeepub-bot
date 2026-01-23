@@ -246,6 +246,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           alt={book.title}
                           className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                         />
+                        {/* Type Badge */}
+                        <div className="absolute top-2 right-2 z-10">
+                          <span className="bg-black/60 backdrop-blur text-white text-[8px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider border border-white/10 shadow-sm">
+                            {book.book_type === 'NL' ? 'Novela Ligera' : book.book_type === 'NW' ? 'Novela Web' : book.book_type || 'EPUB'}
+                          </span>
+                        </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
                           <div className="flex items-center gap-1 text-yellow-400 mb-1">
                             <Star className="w-2.5 h-2.5 fill-current" />

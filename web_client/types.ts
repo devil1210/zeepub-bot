@@ -16,10 +16,10 @@ export interface Book {
   format: 'EPUB' | 'PDF' | 'MOBI';
   rating: number;
   size: string;
-  added: string;
   tags: string[];
   series?: string;
   cleanTitle?: string;
+  bookType?: string;
 }
 
 export interface Volume {
@@ -84,8 +84,8 @@ export interface Series {
   romajiTitle?: string;
   illustrator?: string;
   translator?: string;
-  typesetter?: string;
   group?: string;
+  book_type?: string;
   volumes: Volume[];
 }
 
