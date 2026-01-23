@@ -132,13 +132,20 @@ async def handle_bot_info(data: Dict[str, Any], user_data: Dict[str, Any]):
     except Exception as e:
         logger.error(f"Could not fetch bot profile photo: {e}")
 
+    ui_defaults = {}
+    try:
+        ui_defaults_raw = get_setting("ui_defaults_global", "{}")
+        ui_defaults = json.loads(ui_defaults_raw)
+    except:
+        ui_defaults = {}
+
     return {
         "name": bot_user.first_name or "ZeePubBot",
         "username": f"@{bot_user.username}" if bot_user.username else "@ZeePubBot",
         "description": "Asistente de EPUB del grupo. Preciso, limpio y siempre listo para ayudarte. 📚",
         "avatar": avatar_url,
         "version": config.VERSION,
-        "ui_defaults": json.loads(get_setting("ui_defaults_global", "{}")),
+        "ui_defaults": ui_defaults,
     }
 
 
@@ -182,19 +189,22 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
     hours, remainder = divmod(int(time_left.total_seconds()), 3600)
     minutes, _ = divmod(remainder, 60)
 
+    level_info = user_data.get("level_info") or {}
+    
     return {
         "user": {
             "id": user_id,
-            "username": user_data.get("nickname") or f"User_{user_id}",
-            "level": level_key,
-            "role": user_data.get("role") or "", # Now returns the functional role label
+            "username": user_data.get("nickname") or user_data.get("name") or f"User_{user_id}",
+            "level": level_key or "free",
+            "role": user_data.get("role") or "", 
             "status_label": system_role_text or "Lector",
-            "has_library_access": (user_data.get("has_library_access", True) is not False) and (user_data.get("level_info", {}).get("hasLibraryAccess", True) is not False),
-            "can_request_books": (user_data.get("can_request_books", True) is not False) and (user_data.get("level_info", {}).get("canRequestBooks", True) is not False),
-            "can_download": user_data.get("level_info", {}).get("canDownload", True),
-            "can_read": user_data.get("level_info", {}).get("canRead", True),
+            "has_library_access": bool((user_data.get("has_library_access", True) is not False) and (level_info.get("hasLibraryAccess", True) is not False)),
+            "can_request_books": bool((user_data.get("can_request_books", True) is not False) and (level_info.get("canRequestBooks", True) is not False)),
+            "can_download": bool(level_info.get("canDownload", True) is not False),
+            "can_read": bool(level_info.get("canRead", True) is not False),
+            "can_upload_epub": bool(user_data.get("can_upload_epub", False) or level_info.get("canUploadEpub", False)),
             "downloads": {
-                "used": used,
+                "used": int(used or 0),
                 "limit": max_dl
             }
         },
