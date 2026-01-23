@@ -393,6 +393,24 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
                          elif len(re.sub(r"[^0-9X]", "", current)) == 10 and len(candidate) == 13:
                              out["isbn"] = clean_val
 
+        # Fallback: Buscar ISBN en dc:source o dc:relation si aun no tenemos
+        if not out["isbn"]:
+            for el in root.iter():
+                if local_name(el).lower() in ("source", "dc:source", "relation", "dc:relation") and el.text:
+                    txt = el.text.strip()
+                    lower_txt = txt.lower()
+                    if "isbn" in lower_txt:
+                        # Extract potential ISBN part
+                        # Simple regex for cleaner extraction from strings like "ISBN: 978..."
+                        import re
+                        match = re.search(r'(?:ISBN(?:\-1[03])?:?\s*)?([0-9X\-]{10,17})', txt, re.IGNORECASE)
+                        if match:
+                            candidate_raw = match.group(1)
+                            clean_cand = re.sub(r"[^0-9X]", "", candidate_raw.upper())
+                            if len(clean_cand) in (10, 13):
+                                out["isbn"] = candidate_raw
+                                break
+
         # Roles meta: map id->role
         roles: Dict[str, str] = {}
         for el in root.iter():
