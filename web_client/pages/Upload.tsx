@@ -204,12 +204,12 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
     };
 
     const handleBulkConfirm = async () => {
-        const allIds = bulkResults
+        const allIds: string[] = bulkResults
             .filter(r => r.success && r.upload_id)
             .map(r => r.upload_id as string);
 
-        const selectedList = Array.from(selectedIds);
-        const discardedList = allIds.filter(id => !selectedIds.has(id));
+        const selectedList: string[] = Array.from(selectedIds);
+        const discardedList: string[] = allIds.filter(id => !selectedIds.has(id));
 
         if (selectedList.length === 0 && discardedList.length === 0) return;
 
@@ -426,7 +426,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                                         </p>
                                                         {isDuplicate && (
                                                             <span className="px-2 py-0.5 rounded bg-amber-500 text-black text-[9px] font-black uppercase tracking-wider animate-pulse">
-                                                                Duplicado Exac
+                                                                Duplicado Exacto
                                                             </span>
                                                         )}
                                                         {res.metadata?.file_exists && !isDuplicate && (
