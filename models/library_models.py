@@ -4,6 +4,43 @@ from datetime import datetime
 from .base import Base
 
 
+class UploadBook(Base):
+    """
+    Tabla temporal para procesar uploads antes de comparar con libros existentes.
+    Usa la misma estructura que LocalBook para facilitar comparación.
+    """
+    __tablename__ = "upload_books"
+
+    id = Column(Integer, primary_key=True)
+    telegram_id = Column(BigInteger, nullable=False)  # Usuario que subió el archivo
+    original_filename = Column(String(512), nullable=False)
+    temp_filepath = Column(String(1024), nullable=False)  # Ruta temporal del archivo
+    
+    # Metadata extraída (similar a LocalBook)
+    title = Column(String(512), nullable=False)
+    series = Column(String(255))
+    volume = Column(Float)
+    author = Column(String(255))
+    book_type = Column(String(100))
+    translator = Column(String(255))
+    layout_by = Column(String(255))
+    language = Column(String(10), default='es')
+    
+    # Hashes para comparación
+    book_hash = Column(String(64), nullable=False)
+    series_hash = Column(String(64))
+    
+    # Estado del procesamiento
+    identity_match = Column(String(10), default='False')  # Si coincide con libro existente
+    path_collision = Column(String(10), default='False')  # Si hay colisión de ruta
+    processed = Column(String(10), default='False')  # Si ya fue procesado
+    
+    # Metadata adicional en JSON
+    metadata = Column(JSON)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class LibrarySource(Base):
     """
     Representa una carpeta raíz de libros configurable por el usuario.

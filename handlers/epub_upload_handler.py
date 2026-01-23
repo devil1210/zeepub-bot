@@ -233,63 +233,57 @@ class EPUBUploader:
             )
             metadata['book_hash'] = book_hash
             
-            # 1. Detección de Conflictos (Identidad vs Ruta)
-            metadata['identity_match'] = None # Coincidencia por HASH
-            metadata['path_match'] = None     # Coincidencia por RUTA (Sobrescritura)
-            metadata['existing_data'] = None  # Metadata para comparar
+            # Guardar en tabla temporal UploadBook con la misma lógica que scanner
+            from models.library_models import UploadBook, LocalBook
+            from utils.library_db import get_session
             
             with get_session() as session:
-                # Buscar por identidad (Hash)
-                existing_hash = session.query(LocalBook).filter(LocalBook.book_hash == book_hash).first()
-                if existing_hash:
-                    metadata['identity_match'] = {
-                        'id': existing_hash.id,
-                        'path': existing_hash.filepath,
-                    }
-                    metadata['existing_data'] = {
-                        'title': existing_hash.title,
-                        'author': existing_hash.author,
-                        'series': existing_hash.series,
-                        'volume': str(existing_hash.volume) if existing_hash.volume else '',
-                        'translator': existing_hash.translator,
-                        'publisher': existing_hash.publisher,
-                        'language': existing_hash.language,
-                        'isbn': existing_hash.isbn,
-                        'tags': existing_hash.tags
-                    }
+                # Crear registro temporal con metadata procesada como scanner
+                upload_book = UploadBook(
+                    telegram_id=user_id,
+                    original_filename=original_filename,
+                    temp_filepath=str(epub_path),
+                    
+                    # Metadata procesada
+                    title=metadata['title'],
+                    series=metadata['series'],
+                    volume=self._parse_volume(metadata['volume']),
+                    author=metadata['author'],
+                    book_type=metadata.get('book_type') or metadata.get('category'),
+                    translator=metadata['translator'],
+                    layout_by=metadata.get('layout_by'),
+                    language=metadata.get('language', 'es'),
+                    
+                    # Hashes generados como scanner
+                    book_hash=book_hash,
+                    series_hash=self._generate_series_hash_like_scanner(metadata),
+                    
+                    metadata=metadata
+                )
+                session.add(upload_book)
+                session.commit()
                 
-                # 2. Generar ruta sugerida
-                metadata['suggested_path'] = self.generate_path(metadata)
+                # Comparar con libros existentes usando misma lógica que scanner
+                existing_book = session.query(LocalBook).filter(
+                    LocalBook.book_hash == book_hash
+                ).first()
                 
-                # 3. Verificar colisión física por ruta
-                library_base = Path("/library")
-                full_target_path = library_base / metadata['suggested_path']
-                metadata['file_exists'] = full_target_path.exists()
+                if existing_book:
+                    upload_book.identity_match = 'True'
+                    logger.info(f"📕 Duplicado detectado: {metadata['title']} (hash: {book_hash[:16]}...)")
+                    logger.info(f"   Original: {existing_book.filepath}")
+                    logger.info(f"   Upload:   {original_filename}")
+                else:
+                    upload_book.identity_match = 'False'
+                    logger.info(f"✅ Libro único: {metadata['title']} (hash: {book_hash[:16]}...)")
                 
-                # Si el archivo existe físicamente, buscar qué libro es en la BD
-                if metadata['file_exists']:
-                    existing_path = session.query(LocalBook).filter(LocalBook.filepath == metadata['suggested_path']).first()
-                    if existing_path:
-                        metadata['path_match'] = {
-                            'id': existing_path.id,
-                            'path': existing_path.filepath,
-                        }
-                        # Si no teníamos metadata por hash (o si es otro libro el que estorba en la ruta),
-                        # priorizamos mostrar la comparación con el que está en la ruta para prevenir errores
-                        if not metadata['identity_match'] or metadata['identity_match']['id'] != metadata['path_match']['id']:
-                             metadata['existing_data'] = {
-                                'title': existing_path.title,
-                                'author': existing_path.author,
-                                'series': existing_path.series,
-                                'volume': str(existing_path.volume) if existing_path.volume else '',
-                                'translator': existing_path.translator,
-                                'publisher': existing_path.publisher,
-                                'language': existing_path.language,
-                                'isbn': existing_path.isbn,
-                                'tags': existing_path.tags
-                            }
+                session.commit()
             
-            logger.info(f"Successfully extracted metadata: title='{metadata.get('title')}', hash='{book_hash}', identity_match={metadata['identity_match'] is not None}, path_collision={metadata['path_match'] is not None}")
+            # Agregar resultados al metadata para el frontend
+            metadata['identity_match'] = upload_book.identity_match == 'True'
+            metadata['book_hash'] = book_hash
+            
+            logger.info(f"Successfully extracted metadata: title='{metadata.get('title')}', hash='{book_hash}', identity_match={metadata['identity_match']}")
             return metadata
             
         except Exception as e:
@@ -297,6 +291,29 @@ class EPUBUploader:
             import traceback
             logger.error(f"Full traceback: {traceback.format_exc()}")
             return None
+    
+    def _parse_volume(self, volume_str):
+        """Parse volume string like scanner service does."""
+        if not volume_str:
+            return None
+        try:
+            # Try to extract number from volume string
+            import re
+            match = re.search(r'(\d+(?:\.\d+)?)', str(volume_str))
+            if match:
+                return float(match.group(1))
+        except Exception:
+            pass
+        return None
+    
+    def _generate_series_hash_like_scanner(self, metadata):
+        """Generate series hash like scanner service does."""
+        from utils.helpers import generate_series_hash
+        return generate_series_hash(
+            series=metadata.get('series'),
+            author=metadata.get('author'),
+            book_type=metadata.get('book_type') or metadata.get('category')
+        )
     
     def generate_path(self, metadata: Dict[str, Any]) -> str:
         """Genera ruta sugerida basada en metadata y formato existente de la biblioteca."""
