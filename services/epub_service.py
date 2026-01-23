@@ -172,7 +172,10 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
             "fecha_modificacion": None,
             "fecha_publicacion": None,
             "is_uncensored": 0,
+            "fecha_publicacion": None,
+            "is_uncensored": 0,
             "color_mode": "bw",
+            "isbn": None,
         }
 
         # Version EPUB: <package version="...">
@@ -322,16 +325,56 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
                 out["publisher"] = el.text.strip()
                 break
 
-        # Publisher URL: dc:identifier con http o urn:uri
+                    out["publisher_url"] = txt
+                    break
+        
+        # Identificadores: ISBN, ASIN (dc:identifier)
         for el in root.iter():
             if local_name(el).lower() in ("identifier", "dc:identifier") and el.text:
                 txt = el.text.strip()
-                if txt.startswith("http") or txt.startswith("urn:uri:"):
-                    if txt.startswith("urn:uri:"):
-                        parts = txt.split(":", 2)
-                        txt = parts[-1] if len(parts) == 3 else txt
-                    out["publisher_url"] = txt
-                    break
+                lower_txt = txt.lower()
+                
+                # Limpieza básica
+                clean_val = txt
+                if lower_txt.startswith("urn:isbn:"):
+                    clean_val = txt[9:]
+                elif lower_txt.startswith("isbn:"):
+                    clean_val = txt[5:]
+                elif lower_txt.startswith("urn:uuid:"):
+                    # UUID no es ISBN
+                    continue
+                
+                # Detectar explícitamente si es ISBN
+                is_isbn = False
+                if "isbn" in lower_txt:
+                    is_isbn = True
+                else:
+                    # Check atributos (scheme, id)
+                    for k, v in el.attrib.items():
+                        attr_val = v.lower()
+                        attr_name = local_name_attr(k).lower()
+                        if ("scheme" in attr_name and "isbn" in attr_val) or \
+                           ("id" in attr_name and "isbn" in attr_val):
+                            is_isbn = True
+                            break
+                            
+                # Fallback: si es puramente numérico (o X) de 10/13 dígitos y no tenemos nada
+                import re
+                candidate = re.sub(r"[^0-9X]", "", clean_val.upper())
+                
+                if not is_isbn and len(candidate) in (10, 13) and not out["isbn"]:
+                    # Asumimos que podría ser ISBN si no hay otro identifier mejor
+                    # Pero es arriesgado sin etiqueta explícita.
+                    pass
+
+                if is_isbn:
+                    if len(candidate) in (10, 13):
+                         # Prioridad: Prefiere ISBN-13
+                         current = out.get("isbn")
+                         if not current:
+                             out["isbn"] = clean_val
+                         elif len(re.sub(r"[^0-9X]", "", current)) == 10 and len(candidate) == 13:
+                             out["isbn"] = clean_val
 
         # Roles meta: map id->role
         roles: Dict[str, str] = {}
