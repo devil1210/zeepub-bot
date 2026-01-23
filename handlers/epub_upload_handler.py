@@ -221,13 +221,13 @@ class EPUBUploader:
             
             # Generar hash del libro para detección de duplicados
             book_hash = generate_book_hash(
-                title=metadata['title'],
-                author=metadata['author'],
                 series=metadata['series'],
+                author=metadata['author'],
                 volume=metadata['volume'],
                 book_type=metadata.get('category') or metadata.get('book_type'),
                 language=metadata['language'],
-                translator=metadata['translator']
+                translator=metadata['translator'],
+                layout_by=metadata.get('layout_by')
             )
             metadata['book_hash'] = book_hash
             
