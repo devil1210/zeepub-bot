@@ -115,7 +115,7 @@ class ThemeSyncService:
     
     def normalize_theme_data(self, theme_data: Dict[str, Any]) -> Dict[str, Any]:
         """Normalizar datos de tema para compatibilidad."""
-        return {
+        normalized = {
             'name': theme_data.get('name'),
             'description': theme_data.get('description'),
             'theme_type': theme_data.get('theme_type') or theme_data.get('theme'),
@@ -129,11 +129,10 @@ class ThemeSyncService:
             'card_glow_intensity': theme_data.get('card_glow_intensity') or theme_data.get('cardGlowIntensity'),
             'font_size': theme_data.get('font_size') or theme_data.get('fontSize'),
             'cover_width': theme_data.get('cover_width') or theme_data.get('coverWidth'),
-            'banner_content_offset': theme_data.get('banner_content_offset') or theme_data.get('bannerContentOffset'),
             'banner_content_offset': theme_data.get('banner_content_offset') or theme_data.get('bannerContentOffset')
         }
         
-        # Handle updated_at safely
+        # Handle updated_at safely for local DB
         updated_at = theme_data.get('updated_at')
         if updated_at:
             if isinstance(updated_at, str):
@@ -197,12 +196,17 @@ class ThemeSyncService:
         updated_count = 0
         
         for local_theme in local_themes:
-            theme_data = self.normalize_theme_data(local_theme)
+            # Create payload for Supabase - exclude internal/managed columns
+            theme_payload = self.normalize_theme_data(local_theme)
+            if 'updated_at' in theme_payload:
+                del theme_payload['updated_at']
+            if 'id' in theme_payload:
+                del theme_payload['id']
             
             if local_theme['name'] not in supabase_names:
                 # Agregar a Supabase
                 try:
-                    result = supabase_manager.get_client().table('app_themes').insert(theme_data).execute()
+                    result = supabase_manager.get_client().table('app_themes').insert(theme_payload).execute()
                     if result:
                         added_count += 1
                         logger.info(f"Added theme to Supabase: {local_theme['name']}")
@@ -211,7 +215,7 @@ class ThemeSyncService:
             else:
                 # Actualizar en Supabase
                 try:
-                    result = supabase_manager.get_client().table('app_themes').update(theme_data).eq('name', local_theme['name']).execute()
+                    result = supabase_manager.get_client().table('app_themes').update(theme_payload).eq('name', local_theme['name']).execute()
                     if result:
                         updated_count += 1
                         logger.info(f"Updated theme in Supabase: {local_theme['name']}")

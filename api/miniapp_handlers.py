@@ -1419,9 +1419,7 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             tier_id = result.data[0]['id']
         
         # Build update data
-        update_data = {
-            "updated_at": "now()"
-        }
+        update_data = {}
         
         # Map frontend fields to database columns
         field_mapping = {
@@ -1478,7 +1476,7 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
                 logger.warning(f"Supabase schema missing columns. Retrying with basic fields only. Error: {msg}")
                 # Retry with only core fields that surely exist
                 core_fields = ["name", "icon", "color", "daily_downloads", "priority_requests"]
-                safe_data = {k: v for k, v in update_data.items() if k in core_fields or k == "updated_at"}
+                safe_data = {k: v for k, v in update_data.items() if k in core_fields}
                 if safe_data:
                     client.table('user_levels').update(safe_data).eq('id', tier_id).execute()
                     return {"success": True, "tierId": tier_id, "warning": "Partial save: Schema update required"}
