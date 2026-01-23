@@ -134,6 +134,21 @@ async def get_effective_user(
     # 0. Load Global UI Defaults
     global_raw = get_setting("ui_defaults_global", "{}")
     global_ui = json.loads(global_raw)
+    
+    # Robust Defaults if DB is empty
+    if not global_ui:
+        global_ui = {
+            "theme": "dark",
+            "primaryColor": "#3b82f6",
+            "fontSize": 14,
+            "navOpacity": 0.8,
+            "accentOpacity": 0.2,
+            "glassBlur": 12,
+            "backgroundColor": "#0f172a",
+            "cardColor": "#1e293b",
+            "glassOpacity": 0.6,
+            "cardGlowIntensity": 0.5
+        }
 
     def normalize_ui(s: Dict[str, Any]):
         """Normaliza valores de opacidad y otros parámetros visuales."""
@@ -246,8 +261,9 @@ async def get_effective_user(
         result["is_admin_db"] = access_info["isAdmin"]
         result["level_info"] = access_info["level"]
 
-        # Check if this is a hard admin FIRST (before any level overwriting)
+        # Check if this is a hard admin FIRST
         is_hard_admin = access_info["isAdmin"] or uid in config.ADMIN_USERS
+        result["is_real_admin"] = is_hard_admin
         
         if is_hard_admin:
             # For hard admins: ALWAYS force admin status, regardless of DB level_id

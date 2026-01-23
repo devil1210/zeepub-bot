@@ -313,7 +313,7 @@ async def check_user_access(
         level=UserLevelModel(**access_info),
         hasAccess=has_access,
         isAdmin=is_admin,
-        isRealAdmin=is_admin, # Hardcoded for now to avoid complexity in this check
+        isRealAdmin=eff.get("is_real_admin", is_admin), # Use real admin status
         isBetaTester=is_beta_tester,
         customThemes=True, # Activar temas a todos
         showRecommendations=final_show_recommendations,

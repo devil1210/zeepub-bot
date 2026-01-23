@@ -138,6 +138,20 @@ async def handle_bot_info(data: Dict[str, Any], user_data: Dict[str, Any]):
         ui_defaults = json.loads(ui_defaults_raw)
     except:
         ui_defaults = {}
+        
+    # Robust Defaults if DB is empty
+    if not ui_defaults:
+        ui_defaults = {
+            "theme": "dark",
+            "primaryColor": "#3b82f6",
+            "fontSize": 14,
+            "navOpacity": 0.8,
+            "accentOpacity": 0.2,
+            "glassBlur": 12,
+            "backgroundColor": "#0f172a",
+            "cardColor": "#1e293b",
+            "glassOpacity": 0.6
+        }
 
     return {
         "name": bot_user.first_name or "ZeePubBot",
