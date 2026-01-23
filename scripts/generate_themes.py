@@ -75,12 +75,12 @@ def generate_themes() -> List[Dict]:
         # Add variation index to name if duplicated
         v_name = f"{name} { (i // len(palettes)) + 1 }" if i >= len(palettes) else name
         
-        # Randomize UI details slightly for variety
+        # Randomize UI details slightly for variety (Store as 0-100 integers)
         glass_blur = random.choice([8, 12, 16, 20])
-        glass_opacity = random.uniform(0.4, 0.8)
-        nav_opacity = random.uniform(0.7, 0.95)
-        accent_opacity = random.uniform(0.1, 0.3)
-        glow = random.uniform(0.3, 0.7)
+        glass_opacity = int(random.uniform(0.4, 0.8) * 100)
+        nav_opacity = int(random.uniform(0.7, 0.95) * 100)
+        accent_opacity = int(random.uniform(0.1, 0.3) * 100)
+        glow = int(random.uniform(0.3, 0.7) * 100)
         
         themes.append({
             "name": v_name,
@@ -90,10 +90,13 @@ def generate_themes() -> List[Dict]:
             "background_color": bg,
             "card_color": card,
             "glass_blur": glass_blur,
-            "glass_opacity": round(glass_opacity, 2),
-            "nav_opacity": round(nav_opacity, 2),
-            "accent_opacity": round(accent_opacity, 2),
-            "card_glow_intensity": round(glow, 2)
+            "glass_opacity": glass_opacity,
+            "nav_opacity": nav_opacity,
+            "accent_opacity": accent_opacity,
+            "card_glow_intensity": glow,
+            "font_size": 14,
+            "cover_width": 120,
+            "banner_content_offset": 0
         })
         
     return themes
