@@ -82,10 +82,40 @@ def check_migrations():
             try:
                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS can_upload_epub BOOLEAN DEFAULT FALSE;"))
                conn.commit()
-               _log.info("Checked/Added can_upload_epub to users")
+               _log.info("Checked/Added can_upload_epub on users")
             except Exception as e:
                 _log.warning(f"Error checking can_upload_epub on users: {e}")
                 conn.rollback()
+
+            # 5. local_books edition characteristics
+            try:
+               conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;"))
+               conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);"))
+               conn.commit()
+               _log.info("Checked/Added edition columns to local_books")
+            except Exception as e:
+               _log.warning(f"Error checking edition columns on local_books: {e}")
+               conn.rollback()
+
+            # 6. upload_books edition characteristics
+            try:
+               conn.execute(text("ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;"))
+               conn.execute(text("ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);"))
+               conn.commit()
+               _log.info("Checked/Added edition columns to upload_books")
+            except Exception as e:
+               _log.warning(f"Error checking edition columns on upload_books: {e}")
+               conn.rollback()
+
+            # 7. download_history edition characteristics
+            try:
+               conn.execute(text("ALTER TABLE download_history ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;"))
+               conn.execute(text("ALTER TABLE download_history ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);"))
+               conn.commit()
+               _log.info("Checked/Added edition columns to download_history")
+            except Exception as e:
+               _log.warning(f"Error checking edition columns on download_history: {e}")
+               conn.rollback()
 
             _log.debug("Migrations checked.")
 
@@ -103,6 +133,7 @@ def init_library_db():
         import models.user_audit_models  # noqa
         import models.user_models        # noqa
         import models.library_models     # noqa
+        import models.download_models    # noqa
 
         # Crear tablas
         Base.metadata.create_all(engine)
