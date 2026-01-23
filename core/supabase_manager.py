@@ -31,24 +31,41 @@ class SupabaseManager:
         return self.client
 
     async def execute_query(self, table: str, query_type: str = "select", **kwargs):
-        """Helper para ejecutar queries comunes de forma asíncrona (vía supabase-py)."""
+        """Helper para ejecutar queries con reintento automático para errores 5xx."""
         if not self.is_active:
             return None
         
-        # Nota: supabase-py es mayormente síncrono en su implementación actual bajo el capó,
-        # pero para el bot lo manejaremos con cuidado.
-        try:
-            query = self.client.table(table)
-            if query_type == "select":
-                return query.select("*").execute()
-            elif query_type == "insert":
-                return query.insert(kwargs.get("data")).execute()
-            elif query_type == "update":
-                return query.update(kwargs.get("data")).eq(kwargs.get("match_col"), kwargs.get("match_val")).execute()
-            elif query_type == "delete":
-                return query.delete().eq(kwargs.get("match_col"), kwargs.get("match_val")).execute()
-        except Exception as e:
-            logger.error(f"Supabase RPC Error [{table}.{query_type}]: {e}")
-            return None
+        max_retries = 3
+        retry_delay = 1.0 # segundos
+        
+        for attempt in range(max_retries):
+            try:
+                query = self.client.table(table)
+                if query_type == "select":
+                    res = query.select("*").execute()
+                elif query_type == "insert":
+                    res = query.insert(kwargs.get("data")).execute()
+                elif query_type == "update":
+                    res = query.update(kwargs.get("data")).eq(kwargs.get("match_col"), kwargs.get("match_val")).execute()
+                elif query_type == "delete":
+                    res = query.delete().eq(kwargs.get("match_col"), kwargs.get("match_val")).execute()
+                else:
+                    logger.error(f"Unsupported query type: {query_type}")
+                    return None
+                return res
+            except Exception as e:
+                # Si es un error 502/503/504 o similar de red
+                error_str = str(e)
+                if any(err in error_str for err in ["500", "502", "503", "504", "Bad Gateway", "Service Unavailable"]):
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Supabase transient error ({error_str}). Retrying {attempt + 1}/{max_retries} in {retry_delay}s...")
+                        import asyncio
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 2 # Backoff exponencial
+                        continue
+                
+                logger.error(f"Supabase RPC Error [{table}.{query_type}]: {e}")
+                return None
+        return None
 
 supabase_manager = SupabaseManager()
