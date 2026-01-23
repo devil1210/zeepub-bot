@@ -137,12 +137,12 @@ async def get_effective_user(
 
     result = {
         "level": "free",
-        "role": None, # Functional role (e.g. Publicador)
+        "role": "", # Functional role (e.g. Publicador)
         "status_label": "Lector",
         "expires_at": None,
-        "nickname": nickname_from_tg,
-        "name": None,
-        "username": None,
+        "nickname": nickname_from_tg or f"User_{uid}",
+        "name": nickname_from_tg or f"User_{uid}",
+        "username": username_from_tg or "",
         "settings": global_ui.copy()
     }
 
@@ -167,18 +167,22 @@ async def get_effective_user(
         
         result.update({
             "level": "admin",
-            "role": info.get("role") if info else None,
+            "role": info.get("role") if info else "",
             "status_label": "Admin",
             "expires_at": None,
-            "nickname": info.get("nickname") if info else None,
-            "name": info.get("name") if info else name_from_tg,
-            "username": info.get("username") if info else username_from_tg,
-            "roles": info.get("roles") if info else ["Administrador"],
+            "nickname": info.get("nickname") if (info and info.get("nickname")) else (nickname_from_tg or f"Admin_{uid}"),
+            "name": info.get("name") if (info and info.get("name")) else (nickname_from_tg or f"Admin_{uid}"),
+            "username": info.get("username") if (info and info.get("username")) else (username_from_tg or ""),
+            "roles": info.get("roles") if (info and info.get("roles")) else ["Administrador"],
             "has_mini_app_access": True,
             "can_request_books": info.get("can_request_books", True) if info else True,
             "has_library_access": info.get("has_library_access", True) if info else True,
             "can_upload_epub": info.get("can_upload_epub", False) if info else False,
-            "settings": base_settings
+            "settings": base_settings,
+            "level_info": { # Default level info for config admins if DB is missing it
+                "id": "1", "name": "Administrador", "priority": 100, "color": "#FF6B6B", "hasAccess": True,
+                "canDownload": True, "canRead": True, "customThemes": True, "forceSettings": False
+            }
         })
         # Note: We DON'T return early here anymore to allow enrichment and simulation
     
@@ -209,9 +213,9 @@ async def get_effective_user(
                 "role": info.get("role"),
                 "status_label": info.get("role") or level_str.capitalize(),
                 "expires_at": expires_at,
-                "nickname": info.get("nickname") or result.get("nickname"),
-                "name": info.get("name") or result.get("name"),
-                "username": info.get("username") or result.get("username"),
+                "nickname": info.get("nickname") or result.get("nickname") or f"User_{uid}",
+                "name": info.get("name") or result.get("name") or f"User_{uid}",
+                "username": info.get("username") or result.get("username") or "",
                 "roles": info.get("roles") or [],
                 "can_request_books": info.get("can_request_books", True),
                 "has_library_access": info.get("has_library_access", True),
