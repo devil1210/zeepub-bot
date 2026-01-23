@@ -385,13 +385,14 @@ class EPUBUploader:
                 vol_str = str(volume)
 
         # Detectar grupo (maquetador o traductor)
+        # Prioridad: Publisher > Typesetters > Translator
         group = "Unknown"
-        if metadata.get('typesetters'):
+        if metadata.get('publisher'):
+            group = metadata['publisher']
+        elif metadata.get('typesetters'):
             group = metadata['typesetters'][0]
         elif metadata.get('translator'):
             group = metadata['translator']
-        elif metadata.get('publisher'):
-            group = metadata['publisher']
             
         # Limpiar grupo (quitar URLs, etc)
         group = re.sub(r'https?://\S+', '', group).strip()

@@ -140,7 +140,9 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
         try:
             # Basic cleanup
             clean = raw_date.strip().split("T")[0]
-            # Verify structure YYYY-MM-DD
+            # Normalize separators
+            clean = clean.replace('/', '-')
+            
             parts = clean.split("-")
             if len(parts) == 3:
                 # Already YYYY-MM-DD? Good.
