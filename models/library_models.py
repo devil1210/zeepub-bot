@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import re
 from .base import Base
+from utils.helpers import limpiar_html_basico
 
 
 class UploadBook(Base):
@@ -134,7 +135,6 @@ class LocalBook(Base):
 
     # Contenido
     description = Column(String(5000))
-    description_clean = Column(String(5000)) # Sin etiquetas HTML
     demographics = Column(JSON)  # Ej: ["Seinen", "Adultos"]
     tags = Column(JSON)  # Lista de géneros/etiquetas
     language = Column(String(10), default="es")
@@ -177,9 +177,9 @@ class LocalBook(Base):
             "seriesIndex": self.volume,
             "tags": self.tags,
             "demographics": self.demographics,
-            "description": self.description,
-            "description_clean": self.description_clean or self.description,
-            "summary": self.description_clean or self.description,  # Prefer cleaner version
+            "description": limpiar_html_basico(self.description),
+            "description_clean": limpiar_html_basico(self.description), # Alias for backward compatibility
+            "summary": limpiar_html_basico(self.description),  # Prefer cleaner version
             "fileSize": self.file_size,
             "modifiedAt": (
                 self.file_modified_at.isoformat() if self.file_modified_at else None

@@ -376,8 +376,6 @@ class ScannerService:
             
             # Campos específicos de metadatos profundos
             book.description = meta.get("description")
-            from utils.helpers import limpiar_html_basico
-            book.description_clean = limpiar_html_basico(book.description)
             
             book.illustrator = meta.get("illustrator")
             book.publisher = meta.get("publisher")
@@ -647,8 +645,6 @@ class ScannerService:
                     
                     if not book.description and item.get("description"):
                         book.description = item.get("description")
-                        from utils.helpers import limpiar_html_basico
-                        book.description_clean = limpiar_html_basico(book.description)
                         found_something = True
                     
                     if found_something:
@@ -669,7 +665,6 @@ class ScannerService:
         target_book.author = source_book.author
         target_book.publisher = source_book.publisher
         target_book.description = source_book.description
-        target_book.description_clean = source_book.description_clean
         target_book.book_type = source_book.book_type
         target_book.tags = source_book.tags
         target_book.demographics = source_book.demographics

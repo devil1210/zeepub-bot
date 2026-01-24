@@ -154,7 +154,7 @@ def abs_url(base: str, href: str) -> str:
     return href if href.startswith("http") else urljoin(base, href)
 
 
-def norm_string(s: Any) -> str:
+def norm_string(s: Any, lowercase: bool = True) -> str:
     if s is None:
         return ""
     text = str(s)
@@ -162,20 +162,22 @@ def norm_string(s: Any) -> str:
     text = re.sub(r'\[.*?\]', '', text)
     # Remove content in parentheses (Jap Name / Extra Info)
     text = re.sub(r'\(.*?\)', '', text)
-    # Normalize spaces and casefold
-    return " ".join(text.split()).casefold()
+    # Normalize spaces
+    res = " ".join(text.split()).strip()
+    return res.casefold() if lowercase else res
 
 
 def normalize_author_name(name: str) -> str:
     """
     Normaliza nombres de autores eliminando tags, limpiando espacios y estandarizando formato.
     Maneja (Apellido, Nombre -> Nombre Apellido) y elimina roles comunes.
+    Preserva mayúsculas si existen, o aplica .title() si viene todo en minúsculas.
     """
     if not name:
         return ""
 
-    # 1. Limpieza inicial (norm_string ya quita [] y ())
-    clean_name = norm_string(name)
+    # 1. Limpieza inicial SIN forzar minúsculas
+    clean_name = norm_string(name, lowercase=False)
     
     # 2. Eliminar roles que a veces vienen sin paréntesis
     roles_to_remove = ["autor", "writer", "escritor", "story", "ilustrador", "illustrator", "art", "dibujo"]
@@ -191,6 +193,10 @@ def normalize_author_name(name: str) -> str:
     # 4. Limpieza final de espacios múltiples
     clean_name = " ".join(clean_name.split()).strip()
     
+    # 5. Si el nombre viene totalmente en minúsculas, aplicar Title Case
+    if clean_name and clean_name.islower():
+        clean_name = clean_name.title()
+        
     return clean_name
 
 
@@ -274,13 +280,13 @@ def generate_book_hash(
     Genera un hash estable basado exclusivamente en: series + author + book_type + volume + translator + layout_by.
     NO usar title.
     """
-    s_norm = norm_string(series)
-    a_norm = norm_string(author)
-    t_norm = norm_string(book_type)
-    v_norm = norm_string(volume)
-    tr_norm = norm_string(translator)
-    l_norm = norm_string(layout_by)
-    lang_norm = norm_string(language or "es")
+    s_norm = norm_string(series, lowercase=True)
+    a_norm = norm_string(author, lowercase=True)
+    t_norm = norm_string(book_type, lowercase=True)
+    v_norm = norm_string(volume, lowercase=True)
+    tr_norm = norm_string(translator, lowercase=True)
+    l_norm = norm_string(layout_by, lowercase=True)
+    lang_norm = norm_string(language or "es", lowercase=True)
 
     # Cadena de identidad determinista según especificación estricta del usuario
     identity = f"series:{s_norm}|author:{a_norm}|type:{t_norm}|vol:{v_norm}|trans:{tr_norm}|layout:{l_norm}|lang:{lang_norm}|uncensored:{is_uncensored}|color:{color_mode}"
@@ -297,9 +303,9 @@ def generate_series_hash(
     Genera un hash estable para la serie basado exclusivamente en: series + author + book_type.
     NO usar title.
     """
-    s_norm = norm_string(series)
-    a_norm = norm_string(author)
-    t_norm = norm_string(book_type)
+    s_norm = norm_string(series, lowercase=True)
+    a_norm = norm_string(author, lowercase=True)
+    t_norm = norm_string(book_type, lowercase=True)
 
     identity = f"series:{s_norm}|author:{a_norm}|type:{t_norm}"
 

@@ -30,6 +30,7 @@ from utils.helpers import (
     extract_author,
     extract_creators_by_role,
     parse_metadata_from_title,
+    limpiar_html_basico,
 )
 
 logger = logging.getLogger(__name__)
@@ -965,8 +966,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "reading_time": b.reading_time,
                     "rating_average": b.rating_average,
                     "rating_count": b.rating_count,
-                    "description": b.description,
-                    "description_clean": b.description_clean,
+                    "description": limpiar_html_basico(b.description),
                     "demographics": b.demographics,
                     "tags": b.tags,
                     "language": b.language,
