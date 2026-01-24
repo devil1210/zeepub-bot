@@ -274,7 +274,6 @@ class SystemManagerPlugin(BasePlugin):
         Configura el tiempo de auto-borrado para descargas de admins en grupos.
         """
         uid = update.effective_user.id
-        msg = update.effective_message
         thread_id = get_thread_id(update)
 
         if not self._is_admin(uid):
@@ -312,7 +311,6 @@ class SystemManagerPlugin(BasePlugin):
         Verifica si hay cambios en git antes de invocar a Watchtower.
         """
         uid = update.effective_user.id
-        msg = update.effective_message
         thread_id = get_thread_id(update)
 
         if not self._is_admin(uid):

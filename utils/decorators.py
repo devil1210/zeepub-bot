@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 def _get_update_context(args):
     """Auxiliary to find Update and Context in args."""
     update = None
-    context = None
     for arg in args:
         if isinstance(arg, Update):
             update = arg

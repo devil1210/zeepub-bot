@@ -110,7 +110,7 @@ class LinksManagerPlugin(BasePlugin):
 
             if broken:
                 report += "\n⚠️ <b>Links Rotos (máximo 5):</b>\n"
-                for hash_val, title, failed, last_checked, created_at in broken:
+                for hash_val, title, failed, _last_checked, created_at in broken:
                     title_short = (
                         (title[:40] + "...")
                         if title and len(title) > 40
@@ -182,7 +182,7 @@ class LinksManagerPlugin(BasePlugin):
                 f"📋 <b>Links Acortados Recientes</b> (últimos {len(recent_links)})\n\n"
             )
 
-            for i, (hash_val, url, book_title, created_at) in enumerate(
+            for i, (hash_val, _url, book_title, created_at) in enumerate(
                 recent_links, 1
             ):
                 title_display = (

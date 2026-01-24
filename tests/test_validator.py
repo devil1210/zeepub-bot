@@ -32,7 +32,7 @@ def mock_url_cache(tmp_path, monkeypatch):
 @pytest.mark.asyncio
 async def test_get_candidates_and_validator(mock_url_cache, monkeypatch):
     url_cache = mock_url_cache
-    h1 = url_cache.create_short_url("https://example.com/one.epub", book_title="one")
+    url_cache.create_short_url("https://example.com/one.epub", book_title="one")
     h2 = url_cache.create_short_url("https://example.com/two.epub", book_title="two")
 
     conn = url_cache._get_conn()

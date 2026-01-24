@@ -63,7 +63,7 @@ async def analyze_library_paths():
                     parts = file_path.split('/')
                     if len(parts) >= 2:
                         folder = parts[0]
-                        filename = parts[1]
+                        parts[1]
                         
                         # Verificar si el folder parece ser un autor
                         if author and folder.lower() in author.lower() or author.lower() in folder.lower():

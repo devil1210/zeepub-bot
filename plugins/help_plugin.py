@@ -655,7 +655,6 @@ class HelpPlugin(BasePlugin):
     ):
         """Muestra el menú principal de ayuda (Interactivo)."""
         uid = update.effective_user.id
-        first_name = update.effective_user.first_name
         thread_id = get_thread_id(update)
 
         cms = context.application.plugin_manager.get_plugin("custom_messages")
@@ -686,7 +685,6 @@ class HelpPlugin(BasePlugin):
     ):
         query = update.callback_query
         uid = update.effective_user.id
-        first_name = update.effective_user.first_name
         data = query.data.split("|")
 
         # Format: help | action | arg
@@ -824,7 +822,7 @@ class HelpPlugin(BasePlugin):
         buttons = []
         row = []
         for cmd in cmds:
-            desc = COMMANDS_REGISTRY[cmd]["desc"]
+            COMMANDS_REGISTRY[cmd]["desc"]
             # To save space, button label is just the command or command + short desc?
             # "search" vs "/search - Buscar"
             # Let's try "/search" to keep it clean, user already sees context.

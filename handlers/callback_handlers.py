@@ -752,14 +752,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # If ID comes as "local_123", strip "local_"
                 clean_id = int(book_id_str.replace("local_", ""))
 
-                result = await rs.RatingService.rate_book(uid, clean_id, rating_val)
+                await rs.RatingService.rate_book(uid, clean_id, rating_val)
 
                 # Feedback to user
                 await query.answer(f"⭐ ¡Gracias! Votaste {rating_val}/5.", show_alert=False)
 
                 # Update message to show current status (remove keyboard or show static stars)
                 # We can replace keyboard with a "Thanks" button or remove it
-                new_kb = []  # Remove buttons
                 msg_text = query.message.text_html
                 # Append user rating info if not present
                 if "Tu voto:" not in msg_text:

@@ -39,7 +39,7 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
             # If valid, we can proceed (and maybe rely on user_data from initData instead of effective_user if needed)
 
         uid = update.effective_user.id
-        st = state_manager.get_user_state(uid)
+        state_manager.get_user_state(uid)
 
         logger.info(f"Received Mini App data from user {uid}: {data}")
 

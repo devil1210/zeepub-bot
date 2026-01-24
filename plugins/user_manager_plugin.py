@@ -496,7 +496,7 @@ class UserManagerPlugin(BasePlugin):
                 duration_days = int(val_str) * 30  # meses -> días
 
         # Update user
-        result = await upsert_user(target_id, level=role, duration_days=duration_days)
+        await upsert_user(target_id, level=role, duration_days=duration_days)
 
         # Send notification to user
         cms = context.application.plugin_manager.get_plugin("custom_messages")

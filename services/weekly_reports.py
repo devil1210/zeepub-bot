@@ -33,7 +33,7 @@ async def generate_weekly_report():
 
         if broken:
             report += "⚠️ <b>Links Rotos (máximo 10):</b>\n"
-            for hash_val, title, failed, last_checked in broken:
+            for hash_val, title, failed, _last_checked in broken:
                 title_short = (
                     (title[:35] + "...")
                     if title and len(title) > 35

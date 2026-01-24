@@ -10,7 +10,7 @@ class LogBufferHandler(logging.Handler):
 
     def emit(self, record):
         try:
-            msg = self.format(record)
+            self.format(record)
             # Store unix timestamp for filtering
             timestamp = record.created 
             time_str = datetime.fromtimestamp(timestamp).strftime('%H:%M:%S')

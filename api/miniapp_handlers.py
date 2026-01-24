@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 
 async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Busca libros en la base de datos local o en el servidor OPDS."""
-    user_id = user_data.get("user_id", 0)
-    user_level = user_data.get("level", "free")
+    user_data.get("user_id", 0)
+    user_data.get("level", "free")
     query = data.get("query")
     page = data.get("page", 1)
     search_type = data.get("type", "todos")
@@ -65,24 +65,29 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
     # 1. Series/Group Handling
     if isinstance(book_id_raw, str) and book_id_raw.startswith("series_"):
         s_hash = book_id_raw.replace("series_", "")
-        volumes = await LibraryService.get_series_volumes(s_hash)
-        if not volumes:
+        v_limit = data.get("limit", 100)
+        v_offset = data.get("offset", 0)
+        
+        volumes = await LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
+        if not volumes and v_offset == 0:
             raise HTTPException(status_code=404, detail="Serie no encontrada")
         
-        # Usar el primero como representante para la info general
-        rep = volumes[0]
+        # Usar el primero como representante para la info general (solo si estamos en la primera página)
+        # O pedir info básica de la serie por separado si fuera necesario.
+        # Por ahora, asumimos que si hay volúmenes, el primero sirve de representante.
+        rep = volumes[0] if volumes else {}
         return {
             "id": book_id_raw,
             "series_hash": s_hash,
-            "title": rep.get("series_clean") or rep.get("series") or rep.get("title"),
-            "author": rep.get("author"),
-            "summary": rep.get("description"),
-            "cover": rep.get("cover"),
-            "rating_average": rep.get("rating_average", 0),
-            "rating_count": rep.get("rating_count", 0),
-            "numBooks": len(volumes),
+            "title": rep.get("series_clean") or rep.get("series") or rep.get("title") if rep else "Serie",
+            "author": rep.get("author") if rep else "",
+            "summary": rep.get("description") if rep else "",
+            "cover": rep.get("cover") if rep else "",
+            "rating_average": rep.get("rating_average", 0) if rep else 0,
+            "rating_count": rep.get("rating_count", 0) if rep else 0,
+            "numBooks": len(volumes) if v_limit is None else None, # numBooks es ambiguo con paginación
             "is_series": True,
-            "volumes": volumes # Retornamos los volúmenes reales
+            "volumes": volumes 
         }
 
     # 2. Local Book Handling
@@ -113,7 +118,9 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
             # If part of a series, ALWAYS include volumes to avoid "empty volumes list" in frontend
             s_hash = local_book.get("series_hash")
             if s_hash:
-                volumes = await LibraryService.get_series_volumes(s_hash)
+                v_limit = data.get("limit", 100)
+                v_offset = data.get("offset", 0)
+                volumes = await LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
                 local_book["volumes"] = volumes
                 local_book["is_series"] = True # Treat as series for UI consistency if requested from series detail
                 local_book["series_hash"] = s_hash
@@ -565,7 +572,6 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
 
     book_id = str(book_id_raw)
     title_for_query = None
-    clean_title_for_query = None
     book_hash_for_query = None
 
     if book_id.startswith("local_") or book_id.isdigit():
@@ -573,7 +579,7 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
         local_book = await LibraryService.get_book_by_id(clean_id_int)
         if local_book:
             title_for_query = local_book["title"]
-            clean_title_for_query = local_book.get("cleanTitle")
+            local_book.get("cleanTitle")
             book_hash_for_query = local_book.get("book_hash")
     else:
         # It's a URL (OPDS)
@@ -589,7 +595,7 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
                 if entry:
                     title_for_query = entry.get("title")
                     meta = parse_metadata_from_title(title_for_query)
-                    clean_title_for_query = meta.get("clean_title")
+                    meta.get("clean_title")
                     # For OPDS books we don't have a stable binary hash,
                     # but we can simulate one if we want consistency across scanners.
                     # For now, title-based fallback in repository will handle it.
@@ -2387,7 +2393,8 @@ async def handle_admin_send_logs_telegram(data: Dict[str, Any], user_data: Dict[
         # Filename with range
         first_t = logs[0]['timestamp']
         last_t = logs[-1]['timestamp']
-        fmt = lambda t: datetime.fromtimestamp(t).strftime('%Y%m%d_%H%M')
+        def fmt(t):
+            return datetime.fromtimestamp(t).strftime('%Y%m%d_%H%M')
         filename = f"logs_{fmt(first_t)}_{fmt(last_t)}.txt"
         file_obj.name = filename
         

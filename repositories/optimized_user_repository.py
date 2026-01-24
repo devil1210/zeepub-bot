@@ -159,7 +159,7 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
                     index_elements=['telegram_id'],
                     set_=data
                 ).returning(User)
-                result = await session.execute(stmt)
+                await session.execute(stmt)
                 await session.commit()
                 # ... same mapping as get_by_id ...
                 return data

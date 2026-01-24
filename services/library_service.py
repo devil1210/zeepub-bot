@@ -202,11 +202,13 @@ class LibraryService:
                 return {"results": [], "totalItems": 0}
 
     @staticmethod
-    async def get_series_volumes(series_hash: str) -> List[Dict[str, Any]]:
-        """Retorna todos los volúmenes de una serie agrupada (Async)."""
+    async def get_series_volumes(series_hash: str, limit: Optional[int] = None, offset: int = 0) -> List[Dict[str, Any]]:
+        """Retorna los volúmenes de una serie agrupada con soporte para paginación (Async)."""
         async with pg_manager.get_session() as session:
             try:
                 stmt = select(LocalBook).where(LocalBook.series_hash == series_hash).order_by(LocalBook.volume.asc())
+                if limit:
+                    stmt = stmt.offset(offset).limit(limit)
                 res = await session.execute(stmt)
                 books = res.scalars().all()
                 return [b.to_dict() for b in books]
@@ -316,7 +318,7 @@ class LibraryService:
                     current_group = [book_a]
                     used_ids.add(book_a.id)
                     
-                    for j, book_b in enumerate(books[i+1:], start=i+1):
+                    for _j, book_b in enumerate(books[i+1:], start=i+1):
                         if book_b.id in used_ids:
                             continue
                             

@@ -81,7 +81,7 @@ def reset_all_downloads() -> None:
     # Iteramos sobre todos los usuarios cargados en memoria
     from core.state_manager import state_manager
 
-    for uid, state in state_manager.user_state.items():
+    for _uid, state in state_manager.user_state.items():
         if "downloads_used" in state:
             state["downloads_used"] = 0
 

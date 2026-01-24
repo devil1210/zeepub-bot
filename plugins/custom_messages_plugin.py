@@ -1721,7 +1721,6 @@ class CustomMessagesPlugin(BasePlugin):
         rol_funcional = user_data.get("custom_status")
 
         # Fallback legacy logic for user_level variable (if used elsewhere, but here we focus on vars)
-        user_level = rol_funcional if rol_funcional else nivel_display
 
         # Max Download Logic
         if role_key in ("admin", "staff", "premium", "banned"):
@@ -1771,7 +1770,6 @@ class CustomMessagesPlugin(BasePlugin):
 
         system_role_display = nivel_display  # [Nivel] uses strict system role map
 
-        custom_status = user_level  # This variable 'user_level' holds status_label from get_effective_user which is custom_status or role.capitalize()
         # Wait, get_effective_user returns:
         # role: raw role
         # status_label: custom_status IF present, ELSE role.capitalize()

@@ -3,7 +3,6 @@ from typing import Dict, List
 
 
 def generate_themes() -> List[Dict]:
-    modes = ['light', 'dark', 'amoled']
     
     # Predefined color palettes (Primary, Background, Card)
     palettes = [

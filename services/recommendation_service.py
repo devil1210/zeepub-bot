@@ -117,7 +117,7 @@ class RecommendationService:
             
             # Priorizar libros con miniatura y buen rating
             query = query.order_by(
-                desc(LocalBook.cover_low != None),
+                desc(LocalBook.cover_low is not None),
                 desc(LocalBook.rating_average), 
                 desc(LocalBook.rating_count)
             ).limit(limit * 3)

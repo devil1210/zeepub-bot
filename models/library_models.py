@@ -277,7 +277,6 @@ class LocalBook(Base):
             "categoria": self.book_type,
             "book_type": self.book_type,
             "book_hash": self.book_hash,
-            "hash": self.book_hash,
             "series_hash": self.series_hash,
             "titulo_serie": self.series,
             "rating_average": self.rating_average,

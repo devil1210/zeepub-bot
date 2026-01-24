@@ -232,8 +232,8 @@ def get_stats() -> dict:
         url_mappings = Table("url_mappings", metadata, autoload_with=engine)
         with engine.connect() as conn:
             total = conn.execute(sa.select(sa.func.count()).select_from(url_mappings)).scalar() or 0
-            valid = conn.execute(sa.select(sa.func.count()).select_from(url_mappings).where(url_mappings.c.is_valid == True)).scalar() or 0
-            broken = conn.execute(sa.select(sa.func.count()).select_from(url_mappings).where(url_mappings.c.is_valid == False)).scalar() or 0
+            valid = conn.execute(sa.select(sa.func.count()).select_from(url_mappings).where(url_mappings.c.is_valid is True)).scalar() or 0
+            broken = conn.execute(sa.select(sa.func.count()).select_from(url_mappings).where(url_mappings.c.is_valid is False)).scalar() or 0
             at_risk = conn.execute(sa.select(sa.func.count()).select_from(url_mappings).where(url_mappings.c.failed_checks >= 2)).scalar() or 0
             return {
                 "total": int(total),
@@ -258,7 +258,7 @@ def get_broken_links(limit: int = 10):
                     url_mappings.c.last_checked,
                     url_mappings.c.created_at,
                 )
-                .where(url_mappings.c.is_valid == False)
+                .where(url_mappings.c.is_valid is False)
                 .order_by(
                     sa.desc(url_mappings.c.failed_checks),
                     sa.desc(url_mappings.c.last_checked),
@@ -302,9 +302,9 @@ def get_candidates_for_validation(limit: int = 100, older_than_seconds: int = 36
                 sa.select(url_mappings.c.hash, url_mappings.c.url)
                 .where(
                     sa.or_(
-                        url_mappings.c.last_checked == None,
+                        url_mappings.c.last_checked is None,
                         url_mappings.c.last_checked < cutoff,
-                        url_mappings.c.is_valid == False,
+                        url_mappings.c.is_valid is False,
                     )
                 )
                 .limit(limit)

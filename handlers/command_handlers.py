@@ -253,7 +253,7 @@ class CommandHandlers:
         }
 
         level_key = user_data.get("level", "free")
-        role_label = user_data.get("role")
+        user_data.get("role")
         status_label = user_data.get("status_label")
         expires_at = user_data.get("expires_at")
 
@@ -297,7 +297,7 @@ class CommandHandlers:
         hours, remainder = divmod(int(time_left.total_seconds()), 3600)
         minutes, _ = divmod(remainder, 60)
 
-        user_name = update.effective_user.first_name.replace("<", "&lt;").replace(
+        update.effective_user.first_name.replace("<", "&lt;").replace(
             ">", "&gt;"
         )
 
@@ -307,7 +307,6 @@ class CommandHandlers:
 
         if expires_at:
             fmt = "%d/%m/%Y %H:%M" if level_key == "banned" else "%d/%m/%Y"
-            label = "Castigo hasta" if level_key == "banned" else "Vence"
             expires_str = expires_at.strftime(fmt)
         else:
             expires_str = None  # Ensure it is None so {{if}} sees it as False

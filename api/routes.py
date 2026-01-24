@@ -762,7 +762,6 @@ async def prepare_facebook_post(
         public_link = f"{dl_domain}/api/dl/{url_hash}"
 
         # Intentar obtener metadatos completos del EPUB para el título
-        header_title = f"📚 <b>{title}</b>"  # Fallback
 
         try:
             # Descargar primeros bytes o todo para parsear

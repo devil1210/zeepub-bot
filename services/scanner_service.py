@@ -223,7 +223,7 @@ class ScannerService:
 
                 # Escaneamos solo el directorio específico (no recursivo hacia arriba, pero os.walk es recursivo hacia abajo)
                 # En muchos casos el directorio de la serie es el final, pero si hay subcarpetas las procesará.
-                for root, dirs, files in os.walk(dir_path):
+                for root, _dirs, files in os.walk(dir_path):
                     for file in files:
                         if file.lower().endswith(".epub"):
                             results["total_scanned"] += 1
@@ -267,7 +267,7 @@ class ScannerService:
         }
         
         found_files = set()
-        for root, dirs, files in os.walk(source.path):
+        for root, _dirs, files in os.walk(source.path):
             for file in files:
                 if file.lower().endswith(".epub"):
                     results["total_scanned"] += 1
@@ -591,9 +591,9 @@ class ScannerService:
         try:
             # Buscar libros con ISBN pero sin spanish_title o descripción
             books = session.query(LocalBook).filter(
-                LocalBook.isbn != None,
+                LocalBook.isbn is not None,
                 LocalBook.isbn != '',
-                (LocalBook.spanish_title == None) | (LocalBook.description == None)
+                (LocalBook.spanish_title is None) | (LocalBook.description is None)
             ).all()
 
             logger.info(f"Iniciando enriquecimiento manual para {len(books)} libros.")

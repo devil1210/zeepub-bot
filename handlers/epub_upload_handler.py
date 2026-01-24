@@ -334,7 +334,7 @@ class EPUBUploader:
                 existing_book = session.query(LocalBook).filter_by(series_hash=series_hash).first()
                 if existing_book:
                     # Usar la misma carpeta que el libro existente
-                    full_book_path = Path(existing_book.filepath)
+                    Path(existing_book.filepath)
                     # Si el filepath es absoluto y empieza por /library, quitarlo para tener relativa
                     rel_path = existing_book.filepath
                     if rel_path.startswith("/library"):
@@ -405,7 +405,6 @@ class EPUBUploader:
         group = self.clean_filename(group)
 
         # 4. Intentar detectar patrón en la carpeta
-        pattern_found = False
         if target_dir.exists():
             files = [f for f in os.listdir(target_dir) if f.lower().endswith('.epub')]
             if files:
@@ -418,7 +417,6 @@ class EPUBUploader:
                         match = re.match(r"^(.*?) - V\d+", f)
                         if match:
                             base_title = match.group(1)
-                            pattern_found = True
                             # Usamos el título base del patrón, pero mantenemos el grupo de NUESTRO archivo
                             return f"{base_title} - V{vol_str} [{group}].epub"
 
@@ -505,7 +503,7 @@ class EPUBUploader:
                 return 'NW'
         
         # 5. Revisar categorías y demografía
-        category = metadata.get('category', '').lower()
+        metadata.get('category', '').lower()
         demography = metadata.get('demography', [])
         
         # Las novelas ligeras suelen tener categorías específicas

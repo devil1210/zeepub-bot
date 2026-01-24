@@ -283,7 +283,7 @@ async def check_user_access(
     # Everything we need is already in 'eff'
     # Everyone in config.ADMIN_USERS or with admin role is an admin
     is_admin = (eff.get("level") == "admin") or eff.get("is_admin_db", False) or (uid in config.ADMIN_USERS)
-    is_staff = eff.get("level") == "staff"
+    eff.get("level") == "staff"
     
     # Force access for all admins
     has_access = eff.get("has_mini_app_access", False)
@@ -310,7 +310,6 @@ async def check_user_access(
         
         # ALSO SANITIZE LEVEL INFO
         if "level_info" in eff:
-            fields = ["theme", "primaryColor", "backgroundColor", "cardColor"]
             defaults = {"theme": "dark", "primaryColor": "#3b82f6", "backgroundColor": "#0f172a", "cardColor": "#1e293b"}
             for f, d in defaults.items():
                 if not eff["level_info"].get(f):

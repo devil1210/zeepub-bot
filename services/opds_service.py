@@ -65,7 +65,7 @@ async def mostrar_colecciones(
             await update.callback_query.edit_message_text(msg)
         return
 
-    root_url = st.get("opds_root")
+    st.get("opds_root")
 
     # Actualizar estado (sin tocar historial, lo gestiona el handler)
     # ... (rest of logic unchanged, just ensuring we cache successful feeds)
