@@ -103,12 +103,27 @@ def check_migrations():
             # 5. upload_books
             if table_exists("upload_books"):
                 try:
-                   conn.execute(text("ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;"))
-                   conn.execute(text("ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);"))
-                   conn.execute(text("ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);"))
-                   conn.execute(text("ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"))
+                   # Ensure ALL potential columns exist for upload_books
+                   cols = [
+                       ("illustrator", "VARCHAR(255)"),
+                       ("translator", "VARCHAR(255)"),
+                       ("layout_by", "VARCHAR(255)"),
+                       ("author_jap", "VARCHAR(255)"),
+                       ("illustrator_jap", "VARCHAR(255)"),
+                       ("is_uncensored", "INTEGER DEFAULT 0"),
+                       ("color_mode", "VARCHAR(50)"),
+                       ("book_hash", "VARCHAR(64)"),
+                       ("series_hash", "VARCHAR(64)"),
+                       ("identity_match", "VARCHAR(10) DEFAULT 'False'"),
+                       ("path_collision", "VARCHAR(10) DEFAULT 'False'"),
+                       ("processed", "VARCHAR(10) DEFAULT 'False'"),
+                       ("upload_metadata", "JSONB")
+                   ]
+                   for col_name, col_type in cols:
+                       conn.execute(text(f"ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS {col_name} {col_type};"))
+                   
                    conn.commit()
-                   _log.info("Checked/Added edition and Japanese columns to upload_books")
+                   _log.info("Checked/Added all required columns to upload_books")
                 except Exception as e:
                    _log.warning(f"Error checking upload_books migrations: {e}")
                    conn.rollback()
