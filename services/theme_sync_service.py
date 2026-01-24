@@ -116,10 +116,13 @@ class ThemeSyncService:
     
     def normalize_theme_data(self, theme_data: Dict[str, Any]) -> Dict[str, Any]:
         """Normalizar datos de tema para compatibilidad."""
+        # Trim name to avoid duplicates with trailing spaces
+        name = theme_data.get('name', '').strip() if theme_data.get('name') else ''
+        
         normalized = {
-            'name': theme_data.get('name'),
+            'name': name,
             'description': theme_data.get('description'),
-            'theme_type': theme_data.get('theme_type') or theme_data.get('theme'),
+            'theme_type': theme_data.get('theme_type') or theme_data.get('theme') or 'dark',
             'primary_color': theme_data.get('primary_color') or theme_data.get('primaryColor'),
             'background_color': theme_data.get('background_color') or theme_data.get('backgroundColor'),
             'card_color': theme_data.get('card_color') or theme_data.get('cardColor'),
@@ -147,39 +150,64 @@ class ThemeSyncService:
         else:
             updated_at = datetime.utcnow()
             
+        # Ensure naive datetime for local PostgreSQL (naive columns)
+        if updated_at and updated_at.tzinfo:
+            updated_at = updated_at.replace(tzinfo=None)
+            
         normalized['updated_at'] = updated_at
         return normalized
     
     async def sync_supabase_to_local(self, session: AsyncSession) -> Tuple[int, int]:
-        """Sincronizar temas de Supabase a la base de datos local."""
+        """Sincronizar temas de Supabase a la base de datos local de forma robusta."""
         supabase_themes = await self.get_supabase_themes()
-        local_themes = await self.get_local_themes(session)
         
-        local_names = {t['name'] for t in local_themes}
+        # Obtener todos los temas locales para mapeo y limpieza
+        local_result = await session.execute(select(AppTheme))
+        local_themes_objs = local_result.scalars().all()
+        
+        local_map = {}
+        duplicates = []
+        
+        for t in local_themes_objs:
+            norm_name = t.name.strip().lower()
+            if norm_name in local_map:
+                duplicates.append(t)
+            else:
+                local_map[norm_name] = t
+                
+        # 1. Limpiar duplicados locales si existen
+        if duplicates:
+            logger.warning(f"Se encontraron {len(duplicates)} temas duplicados localmente. Eliminando...")
+            for dup in duplicates:
+                await session.delete(dup)
+            await session.flush()
+            
         added_count = 0
         updated_count = 0
         
+        # 2. Procesar temas de Supabase
         for supabase_theme in supabase_themes:
+            if not supabase_theme.get('name'):
+                continue
+                
             theme_data = self.normalize_theme_data(supabase_theme)
+            norm_name = supabase_theme['name'].strip().lower()
             
-            if supabase_theme['name'] not in local_names:
+            if norm_name not in local_map:
                 # Agregar nuevo tema
                 new_theme = AppTheme(**theme_data)
                 session.add(new_theme)
+                local_map[norm_name] = new_theme # Evitar duplicados en el mismo loop
                 added_count += 1
-                logger.info(f"Added theme: {supabase_theme['name']}")
+                logger.debug(f"Sincronización: Agregado tema '{supabase_theme['name']}'")
             else:
                 # Actualizar tema existente
-                existing = await session.execute(
-                    select(AppTheme).where(AppTheme.name == supabase_theme['name'])
-                )
-                existing_theme = existing.scalar_one_or_none()
-                if existing_theme:
-                    for key, value in theme_data.items():
-                        if value is not None:
-                            setattr(existing_theme, key, value)
-                    updated_count += 1
-                    logger.info(f"Updated theme: {supabase_theme['name']}")
+                existing_theme = local_map[norm_name]
+                for key, value in theme_data.items():
+                    if value is not None:
+                        setattr(existing_theme, key, value)
+                updated_count += 1
+                logger.debug(f"Sincronización: Actualizado tema '{supabase_theme['name']}'")
         
         await session.commit()
         return added_count, updated_count
