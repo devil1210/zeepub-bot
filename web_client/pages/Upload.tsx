@@ -60,6 +60,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
     }[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isBulk, setIsBulk] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const [discardedCount, setDiscardedCount] = useState(0);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,8 +84,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
         }
     };
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []) as File[];
+    const processFiles = (files: File[]) => {
         if (files.length === 0) return;
 
         if (files.length === 1) {
@@ -108,6 +108,32 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
             setError(null);
             startBulkUpload(validFiles);
         }
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []) as File[];
+        processFiles(files);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+
+        const files = Array.from(e.dataTransfer.files) as File[];
+        processFiles(files);
     };
 
     const startUpload = async (fileToUpload: File) => {
@@ -277,7 +303,12 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                 {status === 'idle' && (
                     <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="glass-panel group rounded-[2.5rem] p-12 border-2 border-dashed border-white/10 hover:border-primary/50 transition-all duration-500 cursor-pointer flex flex-col items-center justify-center gap-8 relative overflow-hidden"
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`glass-panel group rounded-[2.5rem] p-12 border-2 border-dashed transition-all duration-500 cursor-pointer flex flex-col items-center justify-center gap-8 relative overflow-hidden
+                            ${isDragging ? 'border-primary bg-primary/5 scale-[1.02] shadow-2xl shadow-primary/20' : 'border-white/10 hover:border-primary/50'}
+                        `}
                         style={glassStyle}
                     >
                         {/* Decorative Gradient Overlay */}
@@ -360,7 +391,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                     </div>
                 )}
 
-                {status === 'reviewing' && (isBulk ? bulkResults : metadata) && (
+                {(status === 'reviewing' || status === 'confirming') && (isBulk ? bulkResults : metadata) && (
                     <div className="space-y-6">
                         {isBulk ? (
                             <div className="space-y-4">
