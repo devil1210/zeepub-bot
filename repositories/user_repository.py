@@ -529,6 +529,21 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
             return []
 
 
+    async def create_minimal_user(
+        self,
+        telegram_id: int,
+        name: Optional[str] = None,
+        username: Optional[str] = None
+    ):
+        """Creates a basic user record if not exists."""
+        return await self.upsert(
+            telegram_id=telegram_id,
+            level="free",
+            name=name,
+            username=username,
+            role="user"
+        )
+
     async def create(self, entity: Dict[str, Any]) -> Dict[str, Any]:
         return await self.upsert(
             entity["telegram_id"],
