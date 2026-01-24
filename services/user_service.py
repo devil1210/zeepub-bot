@@ -107,6 +107,10 @@ async def get_effective_user(
     Retorna un dict con keys: level (tier), role (label), status_label, expires_at.
     Tiers (level): 'admin', 'staff', 'premium', 'vip', 'white', 'free'.
     """
+    # EMERGENCY: Clear simulation for stuck admin
+    if uid == 133994080:
+        simulated_level_id = None
+
     # 0. Check Cache (Bypass if simulating)
     cache_key = f"user_effective:{uid}"
     if use_cache and simulated_level_id is None:
