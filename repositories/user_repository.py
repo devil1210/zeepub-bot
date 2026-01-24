@@ -18,31 +18,8 @@ logger = logging.getLogger(__name__)
 class UserRepository(BaseRepository[Dict[str, Any]]):
     # ... (existing init) ...
 
-    async def create_minimal_user(
-        self,
-        telegram_id: int,
-        name: Optional[str] = None,
-        username: Optional[str] = None
-    ):
-        """Creates a basic user record if not exists. Handles race conditions."""
-        try:
-            res = await self.upsert(
-                telegram_id=telegram_id,
-                level="free",
-                name=name,
-                username=username,
-                role="user"
-            )
-            if res: return res
-            
-            # If None, might be race condition in upsert or other error.
-            # Try fetching existing user.
-            return await self.get_access_info(telegram_id)
-            
-        except Exception:
-            # Fallback for any other race condition
-            return await self.get_access_info(telegram_id)
     """
+    REPOS_DIR = "users"
     Repositorio para gestión de usuarios (roles, expiración, status).
     Migrado totalmente a PostgreSQL (ORM) con fallback a Supabase REST.
     SQLite eliminado.
@@ -659,6 +636,21 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 await cache_manager.delete_user(telegram_id)
                 
             # 2. Supabase Fallback
+                data = {
+                    "telegram_id": telegram_id,
+                    "level": lvl_str,
+                    "level_id": level_id
+                }
+                if expires_at is not None: data["expires_at"] = expires_at.isoformat() if hasattr(expires_at, 'isoformat') else expires_at
+                if role is not None: data["role"] = role
+                if nickname is not None: data["nickname"] = nickname
+                if name is not None: data["name"] = name
+                if username is not None: data["username"] = username
+                if insignias is not None: data["insignias"] = insignias
+                if has_library_access is not None: data["has_library_access"] = has_library_access
+                if can_request_books is not None: data["can_request_books"] = can_request_books
+                if can_upload_epub is not None: data["can_upload_epub"] = can_upload_epub
+                if photo_url is not None: data["photo_url"] = photo_url
                 if settings is not None: data["settings"] = settings
                 
                 if sync_to_supabase:

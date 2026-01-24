@@ -119,95 +119,92 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="lg:col-span-8 space-y-8">
 
           {/* Hero / Greeting */}
-          <div className="pt-4 md:pt-2">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white tracking-tight mb-3">
-              Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400 dark:to-blue-400">{userName}</span> 👋
-            </h1>
-            <p className="text-gray-400 text-lg mb-2">
-              {extendedInfo?.customStatus || "Tu biblioteca personal está lista."}
-            </p>
-            {extendedInfo?.insignias && extendedInfo.insignias.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {extendedInfo.insignias.map((badge, idx) => (
-                  <button
-                    key={idx}
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 animate-in zoom-in duration-300 hover:bg-primary/20 hover:border-primary/40 hover:scale-105 transition-all cursor-pointer"
-                    style={{ animationDelay: `${idx * 100}ms` }}
-                    onClick={() => {
-                      // Toggle edit mode or show badge options
-                      if (typeof (window as any).Telegram?.WebApp?.showAlert === 'function') {
-                        (window as any).Telegram.WebApp.showAlert(`Badge: ${badge}\n\nFunción de edición próximamente...`);
-                      } else {
-                        alert(`Badge: ${badge}\n\nFunción de edición próximamente...`);
-                      }
-                    }}
-                    title={`Click para editar: ${badge}`}
-                  >
-                    {badge}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="pt-4 md:pt-2 relative group">
+            <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 to-transparent rounded-[3rem] blur-3xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
+            <div className="relative">
+              <h1 className="text-4xl md:text-5xl lg:text-7xl font-black text-gray-900 dark:text-white tracking-tighter mb-4 leading-[1.1]">
+                Hola, <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary via-blue-400 to-indigo-500 animate-gradient-x">{userName}</span> 👋
+              </h1>
+              <p className="text-gray-400 text-xl mb-4 font-medium opacity-80 max-w-xl">
+                {extendedInfo?.customStatus || "Hoy es un gran día para descubrir mundos nuevos a través de la lectura."}
+              </p>
+              {extendedInfo?.insignias && extendedInfo.insignias.length > 0 && (
+                <div className="flex flex-wrap gap-2.5 mt-4">
+                  {extendedInfo.insignias.map((badge, idx) => (
+                    <div
+                      key={idx}
+                      className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/5 text-gray-300 border border-white/10 hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all duration-300 cursor-default flex items-center gap-2"
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                      {badge}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Main Search Bar */}
+          {/* Main Search Bar (Floating Glass) */}
           <div className="relative group w-full">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative glass-panel rounded-2xl p-2 flex items-center border border-white/10 shadow-2xl">
-              <div className="pl-4 text-gray-400">
-                <Search className="w-6 h-6" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-purple-600/20 to-blue-500/20 rounded-[2.5rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-500"></div>
+            <div className="relative glass-panel rounded-[2rem] p-3 flex items-center border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl">
+              <div className="pl-6 text-primary">
+                <Search className="w-7 h-7" strokeWidth={2.5} />
               </div>
               <input
                 type="text"
-                placeholder="Busca por título, autor, género o ISBN..."
-                className="w-full bg-transparent text-white p-4 text-base md:text-lg placeholder-gray-500 focus:outline-none"
+                placeholder="Busca mundos, autores, historias..."
+                className="w-full bg-transparent text-white p-5 text-lg md:text-xl placeholder-gray-500 focus:outline-none font-medium"
                 onClick={() => onNavigate && onNavigate('search')}
               />
               <button
                 onClick={() => onNavigate && onNavigate('search')}
-                className="hidden sm:flex bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all border border-white/5 mr-2"
+                className="hidden sm:flex bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20 active:scale-95 mr-2"
               >
                 Buscar
               </button>
             </div>
           </div>
 
-          <div>
-            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 px-1">Acciones Rápidas</h3>
+          <div className="animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
+            <h3 className="text-[11px] font-black text-primary/60 uppercase tracking-[0.3em] mb-6 px-1 drop-shadow-sm">Acceso Directo</h3>
             {(() => {
               const actions = [
-                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar', color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/20', glow: 'bg-blue-500/10', visible: true },
-                { id: 'library', icon: Library, label: 'Mi Biblioteca', desc: 'Mis Libros', color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/20', glow: 'bg-purple-500/10', visible: status?.user?.has_library_access !== false },
-                { id: 'requests', icon: BookOpen, label: 'Solicitar', desc: 'Pedir Libro', color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/20', glow: 'bg-emerald-500/10', visible: status?.user?.can_request_books !== false },
-                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Configuración', color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/20', glow: 'bg-amber-500/10', visible: true },
+                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar Todo', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', glow: 'bg-blue-500/10', visible: true },
+                { id: 'library', icon: Library, label: 'Biblioteca', desc: 'Mis Adquisiciones', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', glow: 'bg-purple-500/10', visible: status?.user?.has_library_access !== false },
+                { id: 'requests', icon: BookOpen, label: 'Pedidos', desc: 'Solicitar Libros', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', glow: 'bg-emerald-500/10', visible: status?.user?.can_request_books !== false },
+                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Personalización', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', glow: 'bg-amber-500/10', visible: true },
               ].filter(a => a.visible);
 
               const gridCols = actions.length === 2 ? 'grid-cols-2' :
-                actions.length === 3 ? 'grid-cols-2 sm:grid-cols-3' :
+                actions.length === 3 ? 'grid-cols-3' :
                   'grid-cols-2 sm:grid-cols-4';
 
               return (
-                <div className={`grid gap-6 ${gridCols}`}>
+                <div className={`grid gap-5 ${gridCols}`}>
                   {actions.map((item, i) => {
                     return (
                       <button
                         key={item.id}
                         onClick={() => onNavigate && onNavigate(item.id)}
-                        className={`glass-panel relative p-6 rounded-[2rem] flex flex-col items-center justify-center text-center gap-4 hover:scale-[1.03] active:scale-95 transition-all duration-300 group shadow-xl overflow-hidden`}
+                        className="group relative h-40 flex flex-col items-center justify-center text-center gap-3 active:scale-95 transition-all duration-500"
                       >
-                        <div className={`relative z-10 p-5 rounded-3xl ${item.bg} ${item.color} border border-white/5 shadow-inner group-hover:scale-110 transition-transform duration-500`}>
-                          <item.icon className="w-8 h-8" strokeWidth={2} />
-                        </div>
-                        <div className="relative z-10">
-                          <span className="block text-white font-black text-sm uppercase tracking-wider mb-1 mt-1">{item.label}</span>
-                          <span className="block text-gray-500 text-[10px] font-black uppercase tracking-widest opacity-60">{item.desc}</span>
+                        {/* Glow and Background */}
+                        <div className={`absolute inset-0 rounded-[2.5rem] bg-white/[0.02] border border-white/5 group-hover:bg-white/[0.05] group-hover:border-white/10 group-hover:shadow-2xl transition-all duration-500`}></div>
+                        <div className={`absolute -inset-0.5 bg-gradient-to-br from-white/10 to-transparent rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition duration-500`}></div>
+
+                        {/* Icon Circle */}
+                        <div className={`relative z-10 p-4 rounded-2xl ${item.bg} ${item.color} border border-white/5 shadow-inner group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-500`}>
+                          <item.icon className="w-7 h-7" strokeWidth={2.5} />
                         </div>
 
-                        {/* Background Glow */}
-                        <div
-                          className={`absolute -right-8 -bottom-8 w-24 h-24 ${item.glow} rounded-full blur-2xl group-hover:scale-150 transition-all duration-700`}
-                          style={{ opacity: settings.cardGlowIntensity }}
-                        />
+                        <div className="relative z-10">
+                          <span className="block text-white font-black text-xs uppercase tracking-[0.1em] mb-1">{item.label}</span>
+                          <span className="block text-gray-500 text-[9px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{item.desc}</span>
+                        </div>
+
+                        {/* Hover Decorative Element */}
+                        <div className={`absolute bottom-6 w-1 h-1 rounded-full ${item.bg.replace('bg-', 'bg-').split('/')[0]} opacity-0 group-hover:opacity-100 group-hover:scale-[3] transition-all duration-500`}></div>
                       </button>
                     );
                   })}
@@ -219,24 +216,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
           {/* Recommendations Section */}
           {showRecommendations && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  Recomendados para ti
-                </h3>
+            <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col">
+                  <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.25em] flex items-center gap-2 mb-1">
+                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                    Selección Especial
+                  </h3>
+                  <span className="text-white text-xl font-black">Lecturas Recomendadas</span>
+                </div>
                 <button
                   onClick={() => onNavigate && onNavigate('search')}
-                  className="text-[10px] font-black text-primary hover:text-white uppercase tracking-widest bg-primary/5 hover:bg-primary px-3 py-1.5 rounded-lg border border-primary/20 transition-all flex items-center gap-1"
+                  className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-white/5 hover:bg-white/10 text-gray-300 transition-all border border-white/10 flex items-center gap-2 group"
                 >
-                  Ver Catálogo <ArrowRight className="w-3 h-3" />
+                  Explorar Todo <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8">
                 {loading ? (
                   Array(4).fill(0).map((_, i) => (
-                    <div key={i} className="aspect-[2/3] rounded-2xl bg-white/5 animate-pulse border border-white/5 shadow-inner"></div>
+                    <div key={i} className="aspect-[2/3] rounded-[1.5rem] bg-white/5 animate-shimmer border border-white/5 bg-gradient-to-r from-transparent via-white/5 to-transparent bg-[length:200%_100%] shadow-inner"></div>
                   ))
                 ) : (
                   recommendations.map((book, i) => (
@@ -245,27 +245,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       className="group cursor-pointer flex flex-col"
                       onClick={() => onNavigate && onNavigate(`book:${book.id}`)}
                     >
-                      <div className="relative aspect-[2/3] rounded-2xl overflow-hidden mb-3 border border-white/10 shadow-2xl group-hover:scale-[1.05] group-hover:shadow-primary/20 transition-all duration-500 ring-1 ring-white/5">
+                      <div className="relative aspect-[2/3] rounded-[1.5rem] overflow-hidden mb-4 border border-white/10 shadow-2xl group-hover:scale-[1.04] group-hover:shadow-primary/30 transition-all duration-700 ring-1 ring-white/5">
                         <img
                           src={book.cover_thumb || book.cover || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200"}
                           alt={book.title}
-                          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                          className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
                         />
                         {/* Type Badge */}
-                        <div className="absolute top-2 right-2 z-10">
-                          <span className="bg-black/60 backdrop-blur text-white text-[8px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider border border-white/10 shadow-sm">
+                        <div className="absolute top-3 right-3 z-10">
+                          <span className="bg-black/80 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest border border-white/10">
                             {book.book_type || 'EPUB'}
                           </span>
                         </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                          <div className="flex items-center gap-1 text-yellow-400 mb-1">
-                            <Star className="w-2.5 h-2.5 fill-current" />
-                            <span className="text-[10px] font-bold">{book.rating_average || 'N/A'}</span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-5">
+                          <div className="flex items-center gap-1.5 text-yellow-400 mb-2">
+                            <Star className="w-3 h-3 fill-current" />
+                            <span className="text-xs font-black">{book.rating_average || '4.8'}</span>
                           </div>
-                          <span className="text-[10px] font-black text-white line-clamp-2 leading-tight">{book.cleanTitle || book.title}</span>
+                          <span className="text-sm font-black text-white leading-tight drop-shadow-lg">{book.cleanTitle || book.title}</span>
+                          <span className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-widest truncate">{book.author || 'Zeepub Author'}</span>
                         </div>
                       </div>
-                      <p className="text-[11px] font-bold text-gray-400 truncate px-1 group-hover:text-primary transition-colors text-center">{book.cleanTitle || book.title}</p>
+                      <div className="text-center px-2">
+                        <p className="text-sm font-black text-white truncate mb-0.5 group-hover:text-primary transition-colors">{book.cleanTitle || book.title}</p>
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest opacity-60">Volumen {book.seriesIndex || (i + 1)}</p>
+                      </div>
                     </div>
                   ))
                 )}
@@ -279,71 +283,116 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="lg:col-span-4 space-y-6">
 
           {/* Profile / Stats Widget */}
-          <div className="glass-panel rounded-[2.5rem] p-8 relative overflow-hidden group hover:scale-[1.01] transition-all duration-500 shadow-2xl">
+          <div className="glass-panel rounded-[2.5rem] p-8 relative overflow-hidden group hover:scale-[1.01] transition-all duration-700 shadow-premium bg-white/[0.02]">
             <div
-              className="absolute -top-12 -right-12 w-48 h-48 bg-primary/10 rounded-full blur-[80px] group-hover:bg-primary/20 transition-all duration-700 pointer-events-none"
+              className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] group-hover:bg-primary/20 transition-all duration-1000 pointer-events-none"
               style={{ opacity: settings.cardGlowIntensity }}
             ></div>
 
-            <div className="flex items-center justify-between mb-8 relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-3xl p-1 bg-gradient-to-tr from-yellow-400 via-amber-500 to-yellow-600 shadow-[0_10px_30px_-5px_rgba(245,158,11,0.3)] flex items-center justify-center relative group-hover:scale-105 transition-transform duration-500">
-                  <div className="w-full h-full rounded-[1.25rem] bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
-                    <span className="text-3xl">👤</span>
+            <div className="flex items-center gap-5 mb-10 relative z-10">
+              <div className="relative group/avatar">
+                <div className="absolute -inset-1.5 bg-gradient-to-tr from-primary via-purple-500 to-blue-400 rounded-[2rem] blur opacity-40 group-hover/avatar:opacity-100 transition duration-700 animate-pulse"></div>
+                <div className="relative w-20 h-20 rounded-[1.75rem] p-[2px] bg-white/10 overflow-hidden shadow-2xl">
+                  <div className="w-full h-full rounded-[1.6rem] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
+                    <img
+                      src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"}
+                      alt="Profile"
+                      className="w-full h-full object-cover group-hover/avatar:scale-110 transition duration-1000"
+                    />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-[#0a0a0a] rounded-full shadow-lg"></div>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-[3px] border-[#0a0a0c] rounded-full shadow-lg z-20"></div>
                 </div>
-                <div>
-                  <h3 className="text-white font-black text-xl tracking-tight leading-none">{userLevel}</h3>
-                  <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em] mt-2 opacity-80">{status?.user?.role || "Free"}</p>
+              </div>
+              <div>
+                <h3 className="text-white font-black text-2xl tracking-tighter leading-none mb-1">{userLevel}</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-primary font-black uppercase tracking-[0.2em]">{status?.user?.role || "Free Member"}</span>
+                  <div className="w-1 h-1 rounded-full bg-white/20"></div>
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{tgUser?.username ? `@${tgUser.username}` : `ID: ${tgUser?.id}`}</span>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-6 relative z-10">
-              <div className="bg-white/[0.03] rounded-3xl p-6 border border-white/5 shadow-inner">
-                <div className="flex justify-between items-end mb-3">
-                  <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                    <Zap className="w-3.5 h-3.5 text-primary" />
-                    Cuota Diaria
+            <div className="space-y-8 relative z-10">
+              <div className="bg-white/5 rounded-[2rem] p-6 border border-white/5 shadow-inner backdrop-blur-md relative overflow-hidden group/quota">
+                <div className="absolute top-0 right-0 p-2 opacity-5">
+                  <Zap className="w-20 h-20 text-primary" />
+                </div>
+                <div className="flex justify-between items-end mb-4 relative z-10">
+                  <span className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary animate-pulse" />
+                    Consumo Diario
                   </span>
-                  <span className="text-white font-black text-base">{downloadsUsed} <span className="text-gray-600 font-bold ml-1">/ {limitDisplay}</span></span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-white font-black text-2xl tracking-tighter">{downloadsUsed}</span>
+                    <span className="text-gray-600 font-bold text-sm uppercase">/ {limitDisplay}</span>
+                  </div>
                 </div>
                 {!isUnlimited && (
-                  <div className="w-full h-3 bg-white/[0.05] rounded-full overflow-hidden p-[2px] border border-white/5">
-                    <div className="h-full bg-gradient-to-r from-primary via-blue-400 to-primary rounded-full shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)] transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
+                  <div className="relative w-full h-2.5 bg-black/40 rounded-full overflow-hidden p-[1px] border border-white/5">
+                    <div className="absolute inset-0 bg-primary/20 blur-[2px]"></div>
+                    <div className="relative h-full bg-gradient-to-r from-primary via-blue-400 to-indigo-500 rounded-full shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)] transition-all duration-1000 ease-out" style={{ width: `${progressPercent}%` }}></div>
                   </div>
                 )}
                 {isUnlimited && (
-                  <div className="w-full h-3 bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-200 rounded-full opacity-30 blur-[1px]"></div>
+                  <div className="w-full h-2 bg-gradient-to-r from-yellow-500/20 via-amber-400/40 to-yellow-200/20 rounded-full animate-shimmer bg-[length:200%_100%]"></div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="glass-panel rounded-3xl p-5 border border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] transition-all">
-                  <div className="p-3 bg-green-500/20 rounded-2xl text-green-400 mb-3 border border-green-500/20 shadow-lg shadow-green-500/5 group-hover/stat:scale-110 transition-transform">
+              <div className="grid grid-cols-2 gap-5">
+                <div className="glass-panel rounded-[1.75rem] p-5 border border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-white/10 transition-all duration-500">
+                  <div className="p-3 bg-green-500/10 rounded-2xl text-green-400 mb-3 border border-green-500/10 shadow-lg group-hover/stat:scale-110 group-hover/stat:rotate-3 transition-all duration-500">
                     <TrendingUp className="w-5 h-5" />
                   </div>
-                  <span className="text-white font-black text-2xl tracking-tight">Top 5%</span>
-                  <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-1">Ranking</span>
+                  <span className="text-white font-black text-2xl tracking-tighter">Top 5%</span>
+                  <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-1 opacity-60">Status Ranking</span>
                 </div>
-                <div className="glass-panel rounded-3xl p-5 border border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] transition-all">
-                  <div className="p-3 bg-primary/20 rounded-2xl text-primary mb-3 border border-primary/20 shadow-lg shadow-primary/5 group-hover/stat:scale-110 transition-transform">
+                <div className="glass-panel rounded-[1.75rem] p-5 border border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-white/10 transition-all duration-500">
+                  <div className="p-3 bg-primary/10 rounded-2xl text-primary mb-3 border border-primary/10 shadow-lg group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-500">
                     <Download className="w-5 h-5" />
                   </div>
-                  <span className="text-white font-black text-2xl tracking-tight">{totalDownloads}</span>
-                  <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-1">Total DLS</span>
+                  <span className="text-white font-black text-2xl tracking-tighter">{totalDownloads}</span>
+                  <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-1 opacity-60">Libros Leídos</span>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Recent Activity Feed */}
+          <div className="glass-panel p-8 rounded-[2.5rem] border border-white/5 bg-white/[0.01] relative overflow-hidden group">
+            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-6 flex items-center justify-between">
+              Actividad Reciente
+              <Clock className="w-3.5 h-3.5 opacity-40" />
+            </h4>
+            <div className="space-y-5">
+              {[
+                { action: 'Descargado', title: 'Oregairu Vol. 14', time: 'Hace 2h', icon: Download, color: 'text-primary' },
+                { action: 'Agregado', title: 'Mushoku Tensei Especial', time: 'Ayer', icon: Star, color: 'text-yellow-500' },
+              ].map((act, i) => (
+                <div key={i} className="flex items-center gap-4 group/item">
+                  <div className={`p-2 rounded-xl bg-white/5 ${act.color} group-hover/item:scale-110 transition-transform`}>
+                    <act.icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-white truncate">{act.title}</p>
+                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mt-0.5">{act.action} • {act.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Daily Quote / Tip */}
-          <div className="glass-panel p-8 rounded-[2rem] border border-white/5 bg-gradient-to-br from-white/5 to-transparent relative overflow-hidden group">
-            <p className="text-gray-300 text-sm italic font-medium leading-relaxed relative z-10">"Un lector vive mil vidas antes de morir. Aquel que nunca lee vive solo una."</p>
-            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-4 text-right relative z-10 opacity-60">— George R.R. Martin</p>
+          <div className="glass-panel p-10 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-primary/10 via-transparent to-transparent relative overflow-hidden group shadow-2xl">
+            <div className="absolute -top-10 -left-10 text-white opacity-[0.03] font-black text-9xl">“</div>
+            <p className="text-gray-300 text-base italic font-medium leading-relaxed relative z-10 text-center px-4">"Un lector vive mil vidas antes de morir. Aquel que nunca lee vive solo una."</p>
+            <div className="flex items-center justify-center gap-4 mt-6 relative z-10">
+              <div className="w-8 h-px bg-white/10"></div>
+              <p className="text-primary text-[10px] font-black uppercase tracking-[0.2em] opacity-80">George R.R. Martin</p>
+              <div className="w-8 h-px bg-white/10"></div>
+            </div>
             <div
-              className="absolute -right-4 -bottom-4 w-16 h-16 bg-white/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-700"
+              className="absolute -right-8 -bottom-8 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:scale-150 transition-all duration-1000"
               style={{ opacity: settings.cardGlowIntensity }}
             ></div>
           </div>

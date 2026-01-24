@@ -39,7 +39,8 @@ export interface UserStatus {
     can_read: boolean;
     downloads: {
       used: number;
-      limit: number;
+      limit: number | null;
+      total: number;
     };
   };
   hasUnlimitedDownloads: boolean;
@@ -185,7 +186,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               can_upload_epub: data.canUploadEpub !== false,
               can_download: true,
               can_read: true,
-              downloads: { used: 0, limit: null }
+              downloads: { used: 0, limit: null, total: 0 }
             },
             hasUnlimitedDownloads: true
           });

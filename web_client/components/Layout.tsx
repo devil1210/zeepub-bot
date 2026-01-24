@@ -56,11 +56,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         '--banner-content-offset': `${settings.bannerContentOffset || 0}px`
       } as React.CSSProperties}
     >
-      {/* Background Glows (Global) */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
+      {/* Background Mesh Gradients (Immersive) */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40">
+        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/20 rounded-full blur-[150px] animate-pulse-slow"></div>
+        <div className="absolute bottom-[-10%] left-[-20%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px] animate-float"></div>
+        <div className="absolute top-[30%] left-[20%] w-[400px] h-[400px] bg-blue-400/5 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
       </div>
+
+      <div className="fixed inset-0 bg-[#0a0a0c]/60 backdrop-blur-[2px] z-[1] pointer-events-none"></div>
 
       {/* ================= DESKTOP SIDEBAR ================= */}
       <aside className="hidden md:flex flex-col w-72 h-full z-20 glass-panel border-r-0 border-r border-white/5 relative">

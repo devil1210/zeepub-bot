@@ -196,181 +196,79 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Profile & Quick Actions */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Profile Card */}
-          <div className="glass-panel p-6 rounded-2xl relative overflow-hidden border border-white/5 shadow-xl">
-            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-primary/20 to-purple-600/20"></div>
-            <div className="relative flex flex-col items-center text-center mt-8">
-              <div className="relative group cursor-pointer">
+        {/* Left Column: Profile & Navigation */}
+        <div className="lg:col-span-4 space-y-8">
+          {/* Profile Card (Premium) */}
+          <div className="glass-panel p-8 rounded-[2.5rem] relative overflow-hidden border border-white/5 shadow-premium group">
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-primary/30 via-purple-600/20 to-transparent"></div>
+            <div className="relative flex flex-col items-center text-center mt-4">
+              <div className="relative group/avatar cursor-pointer mb-6">
+                <div className="absolute -inset-2 bg-gradient-to-tr from-primary via-purple-500 to-blue-400 rounded-full blur opacity-20 group-hover/avatar:opacity-100 transition duration-700"></div>
                 <img
-                  alt="Avatar de Usuario"
-                  className="h-24 w-24 rounded-full ring-4 ring-[#121212] shadow-2xl object-cover"
-                  src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuB4k5u3hJ-stj856Bvv__7CQz0Oynqfc4SX4g2PgE825IwIx0nNowP9TzRSjkIDDcA7GwSCgn-oZ_2NTFtopYKSXGpfH4AIHKu57ENJCuaJ4MPydF7uAB_dGFJFsnhhczBJX4I1T2igBXRb8HnhCjflxVCan3rSeljiKNXrDK-tU83AANxLXst6PrRelgTnArgn3vvH88AyJrMPrKjxhPGHyxvLqe-Xz4Po9X6G90nxaYRmNkUbVj9l6r7CP8J3rxfdySsH17xgfBs"}
+                  alt="Avatar"
+                  className="h-28 w-28 rounded-full ring-4 ring-[#0a0a0c] shadow-2xl object-cover relative z-10 transition duration-700 group-hover/avatar:scale-105"
+                  src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"}
                 />
-                <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <PenTool className="text-white w-5 h-5" />
-                </div>
+                <button className="absolute bottom-1 right-1 z-20 p-2 bg-primary rounded-full text-white shadow-xl border-2 border-[#0a0a0c] hover:scale-110 active:scale-95 transition-all">
+                  <PenTool className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <h2 className="text-xl font-bold text-white mt-4">{tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Usuario'}</h2>
-              <p className="text-sm text-gray-400">@{tgUser?.username || 'usuario'}</p>
-              {tgUser?.id && (
-                <div className="mt-1 flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity">
-                  <Terminal className="w-3 h-3" />
-                  <span className="text-[10px] font-mono text-gray-500">{tgUser.id}</span>
-                </div>
-              )}
-              <div className="mt-3 flex gap-2">
-                {isAdmin ? (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
-                    Administrador
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                    {status?.user?.status_label || extendedInfo?.customStatus || 'Usuario'}
+
+              <h2 className="text-2xl font-black text-white tracking-tighter mb-1">{tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Lectores'}</h2>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-4 opacity-70">
+                {tgUser?.username ? `@${tgUser.username}` : `UID: ${tgUser?.id}`}
+              </p>
+
+              <div className="flex flex-wrap justify-center gap-2 mb-8">
+                <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] bg-primary/10 text-primary border border-primary/20">
+                  {status?.user?.status_label || 'MIEMBRO'}
+                </span>
+                {isAdmin && (
+                  <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] bg-red-500/10 text-red-400 border border-red-500/20">
+                    ADMIN
                   </span>
                 )}
               </div>
-              <button className="mt-6 w-full py-2.5 px-4 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest text-gray-300 hover:bg-white/5 transition-colors flex items-center justify-center gap-2">
+
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mb-8"></div>
+
+              <button className="w-full py-4 px-6 bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 hover:text-white transition-all flex items-center justify-center gap-3">
                 <LogOut className="w-4 h-4" />
                 Cerrar Sesión
               </button>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="glass-panel rounded-2xl overflow-hidden border border-white/5 shadow-lg">
-            <div className="p-4 border-b border-white/5 bg-white/5">
-              <h3 className="text-xs font-black text-white uppercase tracking-wider">Acciones Rápidas</h3>
+          {/* Navigation / Links (Premium List) */}
+          <div className="glass-panel rounded-[2rem] overflow-hidden border border-white/5 shadow-xl bg-white/[0.01]">
+            <div className="p-6 border-b border-white/5">
+              <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em]">Navegación</h3>
             </div>
-            <div className="divide-y divide-white/5">
-
-              {/* Admin Panel Button (Visible if Admin) */}
-              {isAdmin && (
+            <div className="p-2 space-y-1">
+              {[
+                { id: 'admin', icon: ShieldCheck, label: 'Admin Panel', desc: 'Gestionar Sistema', visible: isAdmin, color: 'text-red-400', bg: 'bg-red-500/5' },
+                { id: 'requests', icon: BookOpen, label: 'Pedidos', desc: 'Solicitar Libros', visible: status?.user?.can_request_books !== false, color: 'text-blue-400', bg: 'bg-blue-500/5', action: () => setIsRequestModalOpen(true) },
+                { id: 'downloads', icon: Download, label: 'Descargas', desc: 'Ver Recientes', visible: status?.user?.has_library_access !== false, color: 'text-emerald-400', bg: 'bg-emerald-500/5' },
+                { id: 'upload', icon: Upload, label: 'Subir EPUB', desc: 'Añadir Contenido', visible: canUploadEpub, color: 'text-indigo-400', bg: 'bg-indigo-500/5' },
+                { id: 'report', icon: Bug, label: 'Reportar Bug', desc: 'Soporte Técnico', visible: true, color: 'text-amber-400', bg: 'bg-amber-500/5', action: () => setIsReportModalOpen(true) }
+              ].filter(i => i.visible).map((item) => (
                 <button
-                  onClick={() => onNavigate && onNavigate('admin')}
-                  className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left bg-red-500/5 hover:bg-red-500/10"
+                  key={item.id}
+                  onClick={() => item.action ? item.action() : onNavigate && onNavigate(item.id)}
+                  className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/[0.05] transition-all group"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/10">
-                      <ShieldCheck className="w-5 h-5" />
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2.5 rounded-xl ${item.bg} ${item.color} border border-white/5 shadow-inner group-hover:scale-110 transition-transform`}>
+                      <item.icon className="w-5 h-5 font-black" />
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">Panel de Administración</p>
-                      <p className="text-xs text-gray-400">Gestionar sistema y usuarios</p>
+                    <div className="text-left">
+                      <p className="text-sm font-black text-white uppercase tracking-tight">{item.label}</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">{item.desc}</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-primary transition-colors" />
                 </button>
-              )}
-
-              {status?.user?.can_request_books !== false && (
-                <button
-                  onClick={() => setIsRequestModalOpen(true)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/10">
-                      <BookOpen className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">Solicitudes de Libros</p>
-                      <p className="text-xs text-gray-400">Enviar peticiones de nuevo contenido</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
-                </button>
-              )}
-              {status?.user?.has_library_access !== false && (
-                <button
-                  onClick={() => onNavigate && onNavigate('downloads')}
-                  className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-green-500/10 text-green-400 border border-green-500/10">
-                      <Download className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">Mis Descargas</p>
-                      <p className="text-xs text-gray-400">Ver contenido recién descargado</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
-                </button>
-              )}
-              {canUploadEpub && (
-                <button
-                  onClick={() => onNavigate && onNavigate('upload')}
-                  className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/10">
-                      <Upload className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">Subir EPUB</p>
-                      <p className="text-xs text-gray-400">Añadir nuevos libros a la biblioteca</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
-                </button>
-              )}
-              {isAdmin && (
-                <>
-                  <button
-                    onClick={() => {
-                      if (confirm('¿Estás seguro de que quieres restablecer tus estadísticas? Esta acción no se puede deshacer.')) {
-                        // api.rpc('reset_user_stats', {})
-                      }
-                    }}
-                    className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/10">
-                        <RotateCcw className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-white">Restablecer Estadísticas</p>
-                        <p className="text-xs text-gray-400">Reiniciar contador de descargas y actividad</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm('¿Quieres reiniciar tu contador de descargas diarias?')) {
-                        // api.rpc('reset_download_counter', {})
-                      }
-                    }}
-                    className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/10">
-                        <Eraser className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-white">Reiniciar Contador Diario</p>
-                        <p className="text-xs text-gray-400">Pone a cero el límite de descargas del día</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
-                  </button>
-                </>
-              )}
-              <button
-                onClick={() => setIsReportModalOpen(true)}
-                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group cursor-pointer text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/10">
-                    <Bug className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-white">Reportar un Problema</p>
-                    <p className="text-xs text-gray-400">Enviar registros a desarrolladores</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
-              </button>
+              ))}
             </div>
           </div>
         </div>
