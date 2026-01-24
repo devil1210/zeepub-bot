@@ -150,6 +150,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setShowRecommendations(data.show_recommendations !== false);
         setAllowThemeTemplates(data.allow_theme_templates || data.allowThemeTemplates || false);
         setIsAdminFromAccess(data.isAdmin || false);
+        console.log("Access response data:", data);
         setTitlePreference(data.titlePreference || 'romaji');
 
         if (data.ui_exported_settings) {
@@ -228,10 +229,10 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setReady(true);
       // Mock user for dev - dev users are beta testers
       setUser({
-        id: 123456,
-        first_name: "Dev",
-        last_name: "User",
-        username: "dev_user",
+        id: 133994080,
+        first_name: "Charly",
+        last_name: "Silva",
+        username: "Devil_1210",
         photo_url: "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"
       });
       setIsBetaTester(true); // Dev mode = always beta tester for testing new UI

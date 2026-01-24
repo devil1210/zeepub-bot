@@ -119,8 +119,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setIsLoading(false); // Show UI immediately with cached data
         }
 
+        console.log("🎨 Loading UI settings...");
         // 2. Check backend version
         const backendSettings = await api.getUiSettings();
+        console.log("🎨 Backend UI settings received:", backendSettings);
 
         if (backendSettings) {
           const backendVersion = backendSettings.ui_version || backendSettings.last_updated || 0;
@@ -129,6 +131,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (!cached || backendVersion > (cached.version || 0)) {
             console.log(`🔄 Updating theme from backend (v${backendVersion})`);
             const merged = { ...defaultSettings, ...backendSettings };
+            console.log("🎨 Merged settings:", merged);
             setSettings(merged);
             setSettingsVersion(backendVersion);
 
@@ -139,8 +142,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
       } catch (e) {
-        console.error("Failed to load theme", e);
+        console.error("❌ Failed to load theme:", e);
       } finally {
+        console.log("🎨 Theme loading finished.");
         setIsLoading(false);
       }
     };

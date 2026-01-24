@@ -31,6 +31,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     const fetchData = async () => {
+      console.log("📊 Dashboard: Starting data fetch...");
       try {
         const historyPromise = api.getDownloadHistory();
 
@@ -59,6 +60,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           recommendationsRes instanceof Promise ? recommendationsRes : Promise.resolve(recommendationsRes)
         ]);
 
+        console.log("📊 Dashboard: Data received", { historyRes, recRes });
+
         if (historyRes && historyRes.downloads) {
           setHistory(historyRes.downloads);
         }
@@ -72,14 +75,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           preloadImages(covers);
         }
       } catch (error) {
-        console.error("Dashboard data fetch failed", error);
+        console.error("❌ Dashboard data fetch failed", error);
       } finally {
+        console.log("📊 Dashboard: Fetch finished.");
         setLoading(false);
       }
     };
     fetchData();
   }, [showRecommendations]);
 
+  console.log("📊 Dashboard Rendering", { tgUser, status, extendedInfo });
   const userName = extendedInfo?.nickname || extendedInfo?.name || (tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : (status?.user?.username || "Lector"));
   const userLevel = status?.user?.status_label || "Lector";
   const downloadsUsed = status?.user?.downloads?.used || 0;
