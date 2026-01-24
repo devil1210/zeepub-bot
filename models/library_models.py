@@ -26,6 +26,7 @@ class SeriesMetadata(Base):
 
     id = Column(Integer, primary_key=True)
     series_name = Column(String(255), nullable=False)
+    series_spanish = Column(String(255))
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
     
     author = Column(String(255))
@@ -63,6 +64,7 @@ class UploadBook(Base):
     # Metadata extraída (similar a LocalBook)
     title = Column(String(512), nullable=False)
     series = Column(String(255))
+    series_spanish = Column(String(255))
     volume = Column(Float)
     author = Column(String(255))
     author_jap = Column(String(255))
@@ -149,6 +151,7 @@ class LocalBook(Base):
     english_title = Column(String(512))
     jap_title = Column(String(512))
     series = Column(String(255))
+    series_spanish = Column(String(255)) # New column for Spanish series name from filename
     volume = Column(Float)  # Soporta 1, 1.5, etc
 
     # Personas
@@ -279,6 +282,7 @@ class LocalBook(Base):
             "book_hash": self.book_hash,
             "series_hash": self.series_hash,
             "titulo_serie": self.series,
+            "series_spanish": self.series_spanish,
             "rating_average": self.rating_average,
             "rating_count": self.rating_count,
             "votes": self.rating_count,  # Alias

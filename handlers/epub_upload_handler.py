@@ -244,6 +244,7 @@ class EPUBUploader:
             metadata['book_hash'] = book_hash
             metadata['series_hash'] = series_hash
             metadata['series'] = identity['series']
+            metadata['series_spanish'] = identity['series_spanish']
             metadata['volume'] = identity['volume']
             metadata['author'] = identity['author']
             
@@ -261,6 +262,7 @@ class EPUBUploader:
                     # Metadata procesada
                     title=metadata['title'],
                     series=metadata['series'],
+                    series_spanish=identity['series_spanish'],
                     volume=self._parse_volume(metadata['volume']),
                     author=metadata['author'],
                     book_type=metadata.get('book_type') or metadata.get('category'),
@@ -404,7 +406,21 @@ class EPUBUploader:
         group = re.sub(r'https?://\S+', '', group).strip()
         group = self.clean_filename(group)
 
-        # 4. Intentar detectar patrón en la carpeta
+        # 4. Intentar detectar patrón en la carpeta o usar nombre de serie consolidado
+        library_series_spanish = None
+        if metadata.get('series_hash'):
+            with get_session() as session:
+                existing_series_book = session.query(LocalBook).filter(
+                    LocalBook.series_hash == metadata['series_hash'],
+                    LocalBook.series_spanish != None,
+                    LocalBook.series_spanish != ""
+                ).first()
+                if existing_series_book:
+                    library_series_spanish = existing_series_book.series_spanish
+
+        # Usar el nombre de la librería si existe, sino el de este archivo
+        base_series_name = library_series_spanish or metadata.get('series_spanish') or series
+
         if target_dir.exists():
             files = [f for f in os.listdir(target_dir) if f.lower().endswith('.epub')]
             if files:
@@ -416,14 +432,13 @@ class EPUBUploader:
                         # Extraer la parte del título del primer archivo que machee
                         match = re.match(r"^(.*?) - V\d+", f)
                         if match:
-                            base_title = match.group(1)
-                            # Usamos el título base del patrón, pero mantenemos el grupo de NUESTRO archivo
-                            return f"{base_title} - V{vol_str} [{group}].epub"
+                            # Preferimos usar el nombre consolidado que ya calculamos
+                            return f"{base_series_name} - V{vol_str} [{group}].epub"
 
         # 5. Fallback si no hay patrón o carpeta
         # Usar el formato estándar: Serie - VXX [Grupo]
-        if series:
-            return f"{series} - V{vol_str} [{group}].epub"
+        if base_series_name:
+            return f"{base_series_name} - V{vol_str} [{group}].epub"
         else:
             # Si no hay serie, usar el original limpiado
             filename_without_ext = original_filename.rsplit('.', 1)[0]

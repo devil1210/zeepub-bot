@@ -31,6 +31,7 @@ class LibraryService:
                     LocalBook.title.ilike(pattern),
                     LocalBook.author.ilike(pattern),
                     LocalBook.series.ilike(pattern),
+                    LocalBook.series_spanish.ilike(pattern),
                     LocalBook.romaji_title.ilike(pattern),
                     LocalBook.english_title.ilike(pattern)
                 ]

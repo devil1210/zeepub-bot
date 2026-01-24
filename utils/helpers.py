@@ -201,6 +201,33 @@ def normalize_author_name(name: str) -> str:
     return clean_name
 
 
+def extract_spanish_series_from_filename(filename: str) -> str:
+    """
+    Extrae el nombre de la serie en español desde un nombre de archivo.
+    Elimina - VXX, [Tags], extensiones y caracteres especiales.
+    """
+    if not filename:
+        return ""
+    
+    # 1. Quitar extensión
+    name = filename.rsplit('.', 1)[0]
+    
+    # 2. Quitar tags entre corchetes [TAG]
+    name = re.sub(r"\[.*?\]", "", name)
+    
+    # 3. Quitar patrón de volumen - VXX, VXX, etc.
+    vol_pattern = r"(?:\s*[\-\–\—\−]?\s*(?:Volumen|Vol\.?|Tomo|v\.?|V)\s*\d+(?:\.\d+)?.*)"
+    name = re.sub(vol_pattern, "", name, flags=re.IGNORECASE).strip()
+    
+    # 4. Quitar guiones y símbolos al final que puedan haber quedado
+    name = re.sub(r"[\-\–\—\−\―\:\.\s]+$", "", name).strip()
+    
+    # 5. Limpiar espacios múltiples
+    name = re.sub(r"\s+", " ", name).strip()
+    
+    return name
+
+
 def process_book_identity_comprehensive(
     epub_path: str, original_filename: Optional[str] = None
 ) -> dict:
@@ -223,6 +250,13 @@ def process_book_identity_comprehensive(
     translator = meta.get("translator")
     layout_by = meta.get("layout_by")
     language = meta.get("language") or "es"
+    
+    # Extraer nombre de serie en español desde el nombre de archivo (Uploader o Scanner)
+    series_spanish = ""
+    if original_filename:
+        series_spanish = extract_spanish_series_from_filename(original_filename)
+    elif epub_path:
+        series_spanish = extract_spanish_series_from_filename(os.path.basename(epub_path))
 
     # Categorización inteligente de tipos
     raw_tags = meta.get("tags", [])
@@ -260,6 +294,7 @@ def process_book_identity_comprehensive(
         "translator": translator,
         "layout_by": layout_by,
         "language": language,
+        "series_spanish": series_spanish,
         "title": title,
         "is_uncensored": meta.get("is_uncensored", 0),
         "color_mode": meta.get("color_mode", "bw")

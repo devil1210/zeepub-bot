@@ -379,6 +379,7 @@ class ScannerService:
             book.language = identity["language"]
             book.translator = identity["translator"]
             book.layout_by = identity["layout_by"]
+            book.series_spanish = identity["series_spanish"]
             
             # Japanese Names
             book.author_jap = meta.get("author_jap")
@@ -684,6 +685,7 @@ class ScannerService:
         target_book.series_hash = source_book.series_hash
         target_book.is_uncensored = source_book.is_uncensored
         target_book.color_mode = source_book.color_mode
+        target_book.series_spanish = source_book.series_spanish
         # Note: book_hash is handled separately to avoid constraint violations
         target_book.file_size = source_book.file_size
 
