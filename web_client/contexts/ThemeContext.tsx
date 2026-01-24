@@ -149,7 +149,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
 
-    loadWithCache();
+    // Safety timeout: don't let the loading screen hang forever
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn("⚠️ Theme loading timed out, starting with defaults.");
+        setIsLoading(false);
+      }
+    }, 3500);
+
+    loadWithCache().finally(() => clearTimeout(timeout));
   }, []);
 
   useEffect(() => {
@@ -266,20 +274,33 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Don't render children until settings are loaded from backend
-  // This prevents the flash of default theme
+  // Don't render children until settings are loaded or timeout reached
+  // This prevents the flash of default theme but avoids black screen if stuck
+  // We keep the spinner minimal so it doesn't look like a "black screen"
   if (isLoading) {
     return (
       <div style={{
         width: '100vw',
         height: '100vh',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0f172a'
+        backgroundColor: '#0f172a',
+        color: '#2b6cee',
+        gap: '12px'
       }}>
-        <div style={{ color: '#2b6cee', fontSize: '14px', fontWeight: 'bold' }}>
-          Cargando...
+        <div style={{
+          width: '32px',
+          height: '32px',
+          border: '3px solid rgba(43, 108, 238, 0.1)',
+          borderTopColor: '#2b6cee',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ fontSize: '12px', fontWeight: 'bold', opacity: 0.8 }}>
+          Inicializando interfaz...
         </div>
       </div>
     );

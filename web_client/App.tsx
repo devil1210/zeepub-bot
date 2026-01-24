@@ -4,6 +4,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
 import { SearchNavProvider, useSearchNav } from './contexts/SearchNavContext';
 import { Layout } from './components/Layout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Dashboard } from './pages/Dashboard';
 import { Search } from './pages/Search';
 import { Admin } from './pages/Admin';
@@ -238,15 +239,17 @@ const BookDetailWrapper = () => {
 const App: React.FC = () => {
 
   return (
-    <ThemeProvider>
-      <TelegramProvider>
-        <SearchNavProvider>
-          <MemoryRouter>
-            <AppContent />
-          </MemoryRouter>
-        </SearchNavProvider>
-      </TelegramProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <TelegramProvider>
+          <SearchNavProvider>
+            <MemoryRouter>
+              <AppContent />
+            </MemoryRouter>
+          </SearchNavProvider>
+        </TelegramProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 
