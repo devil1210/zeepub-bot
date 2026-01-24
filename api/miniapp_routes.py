@@ -304,6 +304,17 @@ async def check_user_access(
         }
         eff["nickname"] = "Admin"
         eff["username"] = "admin"
+        
+        # ALSO SANITIZE LEVEL INFO
+        if "level_info" in eff:
+            fields = ["theme", "primaryColor", "backgroundColor", "cardColor"]
+            defaults = {"theme": "dark", "primaryColor": "#3b82f6", "backgroundColor": "#0f172a", "cardColor": "#1e293b"}
+            for f, d in defaults.items():
+                if not eff["level_info"].get(f):
+                    eff["level_info"][f] = d
+            # Ensure transparencies are valid
+            eff["level_info"]["glassBlur"] = 12
+            eff["level_info"]["glassOpacity"] = 0.6
 
     access_info = eff.get("level_info", {})
     if not access_info:
