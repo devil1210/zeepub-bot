@@ -288,7 +288,7 @@ async def check_user_access(
     access_info = eff.get("level_info", {})
     if not access_info:
         access_info = {
-            "id": "6", "name": "Lector", "priority": 1, "color": "#9E9E9E", "hasAccess": False
+            "id": "6", "name": "Lector", "priority": 1, "color": "#9E9E9E", "hasAccess": True
         }
 
     # FORCED: New interface for everyone
