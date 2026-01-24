@@ -199,7 +199,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         {/* Left Column: Profile & Navigation */}
         <div className="lg:col-span-4 space-y-8">
           {/* Profile Card (Premium) */}
-          <div className="glass-panel p-8 rounded-[2.5rem] relative overflow-hidden border border-white/5 shadow-premium group">
+          <div className="glass-panel p-8 rounded-[2.5rem] relative overflow-hidden shadow-premium group">
             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-primary/30 via-purple-600/20 to-transparent"></div>
             <div className="relative flex flex-col items-center text-center mt-4">
               <div className="relative group/avatar cursor-pointer mb-6">
@@ -230,9 +230,9 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 )}
               </div>
 
-              <div className="w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mb-8"></div>
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-[var(--panel-border)] to-transparent mb-8"></div>
 
-              <button className="w-full py-4 px-6 bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 hover:text-white transition-all flex items-center justify-center gap-3">
+              <button className="w-full py-4 px-6 bg-[var(--panel-bg-subtle)] hover:bg-[var(--panel-bg-lighter)] border border-[var(--panel-border)] rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 hover:text-white transition-all flex items-center justify-center gap-3">
                 <LogOut className="w-4 h-4" />
                 Cerrar Sesión
               </button>
@@ -240,8 +240,8 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
           </div>
 
           {/* Navigation / Links (Premium List) */}
-          <div className="glass-panel rounded-[2rem] overflow-hidden border border-white/5 shadow-xl bg-white/[0.01]">
-            <div className="p-6 border-b border-white/5">
+          <div className="glass-panel rounded-[2rem] overflow-hidden shadow-xl">
+            <div className="p-6 border-b border-[var(--panel-border)]">
               <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em]">Navegación</h3>
             </div>
             <div className="p-2 space-y-1">
@@ -258,7 +258,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                   className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/[0.05] transition-all group"
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`p-2.5 rounded-xl ${item.bg} ${item.color} border border-white/5 shadow-inner group-hover:scale-110 transition-transform`}>
+                    <div className={`p-2.5 rounded-xl ${item.bg} ${item.color} border border-[var(--panel-border)] shadow-inner group-hover:scale-110 transition-transform`}>
                       <item.icon className="w-5 h-5 font-black" />
                     </div>
                     <div className="text-left">
@@ -277,7 +277,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         <div className="lg:col-span-8 space-y-6">
 
           {/* Standard Settings Section */}
-          <div className="glass-panel p-8 rounded-2xl border border-white/5 shadow-xl">
+          <div className="glass-panel p-8 rounded-2xl shadow-xl">
             <h3 className="text-lg font-black text-white flex items-center gap-2 mb-6 uppercase tracking-tight">
               <Palette className="text-primary w-5 h-5" />
               Ajustes de Lectura y Sistema
@@ -290,7 +290,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Tamaño de Fuente</label>
                     <span className="text-xs font-mono text-primary">{settings.fontSize}px</span>
                   </div>
-                  <div className="flex items-center gap-3 bg-black/20 p-3 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-3 bg-[var(--panel-bg-subtle)] p-3 rounded-xl border border-[var(--panel-border)]">
                     <span className="text-xs text-gray-500 font-bold">A</span>
                     <input
                       type="range"
@@ -306,7 +306,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 <div>
                   <label className="block text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Idioma</label>
                   <div className="relative">
-                    <select className="block w-full pl-4 pr-10 py-2.5 text-sm font-medium border border-white/10 bg-black/20 text-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-xl appearance-none">
+                    <select className="block w-full pl-4 pr-10 py-2.5 text-sm font-medium border border-[var(--panel-border)] bg-[var(--panel-bg-subtle)] text-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-xl appearance-none">
                       <option>English (US)</option>
                       <option selected>Español</option>
                       <option>Français</option>
@@ -321,7 +321,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
               </div>
 
               {/* Cover Quality Preference */}
-              <div className="pt-4 border-t border-white/5">
+              <div className="pt-4 border-t border-[var(--panel-border)]">
                 <label className="block text-xs font-black text-gray-400 mb-3 uppercase tracking-widest">Calidad de Imágenes de Portada</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
@@ -338,7 +338,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                         checked={(settings as any).coverQuality === q.id}
                         onChange={() => updateSettings({ coverQuality: q.id as any } as any)}
                       />
-                      <div className="p-3 rounded-xl border-2 border-white/10 bg-black/20 flex flex-col items-center justify-center text-center peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary transition-all hover:bg-black/30">
+                      <div className="p-3 rounded-xl border-2 border-[var(--panel-border)] bg-[var(--panel-bg-subtle)] flex flex-col items-center justify-center text-center peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary transition-all hover:bg-[var(--panel-bg-lighter)]">
                         <span className="text-[10px] font-black text-white uppercase tracking-wider">{q.label}</span>
                         <span className="text-[9px] text-gray-500 font-bold mt-0.5">{q.desc}</span>
                       </div>
@@ -392,7 +392,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                               cardGlowIntensity: theme.cardGlowIntensity || theme.card_glow_intensity || 0.5,
                             });
                           }}
-                          className={`flex-shrink-0 w-40 p-4 rounded-2xl border-2 transition-all flex flex-col gap-3 group relative overflow-hidden ${isCurrent ? 'border-primary bg-primary/10' : 'border-white/5 bg-black/40 hover:border-white/10'}`}
+                          className={`flex-shrink-0 w-40 p-4 rounded-2xl border-2 transition-all flex flex-col gap-3 group relative overflow-hidden ${isCurrent ? 'border-primary bg-primary/10' : 'border-[var(--panel-border)] bg-[var(--panel-bg-subtle)] hover:border-[var(--panel-border-hover)]'}`}
                         >
                           <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none">
                             <Palette className="w-8 h-8" />
@@ -437,7 +437,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                           onClick={() => updateSettings({ theme: t.id as any })}
                           className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all group ${settings.theme === t.id
                             ? 'bg-primary/10 border-primary text-primary shadow-lg shadow-primary/10 scale-105'
-                            : 'bg-black/20 border-white/5 text-gray-400 hover:border-white/10'
+                            : 'bg-[var(--panel-bg-subtle)] border-[var(--panel-border)] text-gray-400 hover:border-[var(--panel-border-hover)]'
                             }`}
                         >
                           <t.icon className={`w-6 h-6 transition-transform ${settings.theme === t.id ? 'scale-110' : 'group-hover:scale-110'}`} />
@@ -452,7 +452,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 {isVisible('primaryColor') && (
                   <div className="space-y-4">
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Color de Énfasis (Primario)</label>
-                    <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-2xl">
+                    <div className="flex flex-wrap gap-4 p-4 bg-[var(--panel-bg-subtle)] border border-[var(--panel-border)] rounded-2xl">
                       {['#FB7185', '#38BDF8', '#4ADE80', '#FBBF24', '#818CF8', '#F472B6', '#A78BFA'].map((color) => (
                         <button
                           key={color}
@@ -481,7 +481,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 {isVisible('backgroundColor') && (
                   <div className="space-y-4">
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Color de Fondo</label>
-                    <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-2xl">
+                    <div className="flex flex-wrap gap-4 p-4 bg-[var(--panel-bg-subtle)] border border-[var(--panel-border)] rounded-2xl">
                       {['#0f172a', '#1e293b', '#111827', '#18181b', '#0c0a09'].map((color) => (
                         <button
                           key={color}
@@ -510,7 +510,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 {isVisible('cardColor') && (
                   <div className="space-y-4">
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Color de Tarjetas</label>
-                    <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-2xl">
+                    <div className="flex flex-wrap gap-4 p-4 bg-[var(--panel-bg-subtle)] border border-[var(--panel-border)] rounded-2xl">
                       {['#1e293b', '#334155', '#1f2937', '#27272a', '#292524'].map((color) => (
                         <button
                           key={color}
@@ -541,7 +541,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 inline-block">Efectos de Transparencia</label>
                     {isVisible('glassBlur') && (
                       <div className="space-y-4">
-                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                        <div className="flex justify-between items-center bg-[var(--panel-bg-subtle)] p-3 rounded-xl border border-[var(--panel-border)]">
                           <span className="text-xs font-bold text-gray-300">Intensidad del Desenfoque (Blur)</span>
                           <span className="text-sm font-black text-primary font-mono">{settings.glassBlur}px</span>
                         </div>
@@ -557,7 +557,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     )}
                     {isVisible('glassOpacity') && (
                       <div className="space-y-4">
-                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                        <div className="flex justify-between items-center bg-[var(--panel-bg-subtle)] p-3 rounded-xl border border-[var(--panel-border)]">
                           <span className="text-xs font-bold text-gray-300">Opacidad de Paneles</span>
                           <span className="text-sm font-black text-primary font-mono">{Math.round(settings.glassOpacity * 100)}%</span>
                         </div>

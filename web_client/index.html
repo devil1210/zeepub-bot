@@ -106,7 +106,12 @@
       --glass-rgb: 30, 35, 45;
       --bg-color: #101622;
       --card-color: rgba(30, 35, 45, 0.6);
-      /* Dark glass base */
+
+      /* Thematic Panel Variables (Defaults) */
+      --panel-bg: var(--card-color);
+      --panel-bg-subtle: rgba(var(--glass-rgb), 0.4);
+      --panel-border: rgba(255, 255, 255, var(--glass-border-opacity));
+      --panel-border-hover: rgba(var(--color-primary-rgb), 0.3);
     }
 
     /* Light Theme Overrides */
@@ -160,21 +165,32 @@
     */
     .glass-panel,
     .glass-card {
-      /* Base background using RGB variable and Opacity variable */
-      background: var(--card-color);
+      /* Base background using thematic panel variable */
+      background: var(--panel-bg);
 
       /* Blur effect */
       backdrop-filter: blur(var(--glass-blur));
       -webkit-backdrop-filter: blur(var(--glass-blur));
 
-      /* Border handling */
-      border: 1px solid rgba(255, 255, 255, var(--glass-border-opacity));
+      /* Border handling using thematic border variable */
+      border: 1px solid var(--panel-border);
 
       /* Shadows */
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 
       /* Transition for smooth settings updates */
-      transition: all 0.2s ease-in-out;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-panel:hover {
+      border-color: var(--panel-border-hover);
+    }
+
+    /* Sub-panels or nested cards */
+    .glass-panel-sub {
+      background: var(--panel-bg-subtle);
+      border: 1px solid var(--panel-border);
+      border-radius: 1.5rem;
     }
 
     /* Custom scrollbar for horizontal lists */

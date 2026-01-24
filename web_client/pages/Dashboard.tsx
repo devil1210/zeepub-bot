@@ -133,7 +133,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   {extendedInfo.insignias.map((badge, idx) => (
                     <div
                       key={idx}
-                      className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/5 text-gray-300 border border-white/10 hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all duration-300 cursor-default flex items-center gap-2"
+                      className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[var(--panel-bg-subtle)] text-gray-300 border border-[var(--panel-border)] hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all duration-300 cursor-default flex items-center gap-2"
                     >
                       <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
                       {badge}
@@ -147,7 +147,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {/* Main Search Bar (Floating Glass) */}
           <div className="relative group w-full">
             <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-purple-600/20 to-blue-500/20 rounded-[2.5rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-500"></div>
-            <div className="relative glass-panel rounded-[2rem] p-3 flex items-center border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl">
+            <div className="relative glass-panel rounded-[2rem] p-3 flex items-center shadow-2xl backdrop-blur-2xl">
               <div className="pl-6 text-primary">
                 <Search className="w-7 h-7" strokeWidth={2.5} />
               </div>
@@ -190,11 +190,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         className="group relative h-40 flex flex-col items-center justify-center text-center gap-3 active:scale-95 transition-all duration-500"
                       >
                         {/* Glow and Background */}
-                        <div className={`absolute inset-0 rounded-[2.5rem] bg-white/[0.02] border border-white/5 group-hover:bg-white/[0.05] group-hover:border-white/10 group-hover:shadow-2xl transition-all duration-500`}></div>
-                        <div className={`absolute -inset-0.5 bg-gradient-to-br from-white/10 to-transparent rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition duration-500`}></div>
+                        <div className={`absolute inset-0 rounded-[2.5rem] bg-[var(--panel-bg)] border border-[var(--panel-border)] group-hover:bg-[var(--panel-bg-lighter)] group-hover:border-[var(--panel-border-hover)] group-hover:shadow-2xl transition-all duration-500`}></div>
+                        <div className={`absolute -inset-0.5 bg-gradient-to-br from-white/10 to-transparent rounded-[2.5rem] opacity-0 group-hover:opacity-10 transition duration-500`}></div>
 
                         {/* Icon Circle */}
-                        <div className={`relative z-10 p-4 rounded-2xl ${item.bg} ${item.color} border border-white/5 shadow-inner group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-500`}>
+                        <div className={`relative z-10 p-4 rounded-2xl ${item.bg} ${item.color} border border-[var(--panel-border)] shadow-inner group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-500`}>
                           <item.icon className="w-7 h-7" strokeWidth={2.5} />
                         </div>
 
@@ -227,7 +227,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
                 <button
                   onClick={() => onNavigate && onNavigate('search')}
-                  className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-white/5 hover:bg-white/10 text-gray-300 transition-all border border-white/10 flex items-center gap-2 group"
+                  className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-[var(--panel-bg-subtle)] hover:bg-[var(--panel-bg)] text-gray-300 transition-all border border-[var(--panel-border)] flex items-center gap-2 group"
                 >
                   Explorar Todo <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -236,7 +236,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8">
                 {loading ? (
                   Array(4).fill(0).map((_, i) => (
-                    <div key={i} className="aspect-[2/3] rounded-[1.5rem] bg-white/5 animate-shimmer border border-white/5 bg-gradient-to-r from-transparent via-white/5 to-transparent bg-[length:200%_100%] shadow-inner"></div>
+                    <div key={i} className="aspect-[2/3] rounded-[1.5rem] bg-[var(--panel-bg-subtle)] animate-shimmer border border-[var(--panel-border)] bg-gradient-to-r from-transparent via-white/5 to-transparent bg-[length:200%_100%] shadow-inner"></div>
                   ))
                 ) : (
                   recommendations.map((book, i) => (
@@ -245,7 +245,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       className="group cursor-pointer flex flex-col"
                       onClick={() => onNavigate && onNavigate(`book:${book.id}`)}
                     >
-                      <div className="relative aspect-[2/3] rounded-[1.5rem] overflow-hidden mb-4 border border-white/10 shadow-2xl group-hover:scale-[1.04] group-hover:shadow-primary/30 transition-all duration-700 ring-1 ring-white/5">
+                      <div className="relative aspect-[2/3] rounded-[1.5rem] overflow-hidden mb-4 border border-[var(--panel-border)] shadow-2xl group-hover:scale-[1.04] group-hover:shadow-primary/30 transition-all duration-700 ring-1 ring-[var(--panel-border)]">
                         <img
                           src={book.cover_thumb || book.cover || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200"}
                           alt={book.title}
@@ -283,7 +283,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="lg:col-span-4 space-y-6">
 
           {/* Profile / Stats Widget */}
-          <div className="glass-panel rounded-[2.5rem] p-8 relative overflow-hidden group hover:scale-[1.01] transition-all duration-700 shadow-premium bg-white/[0.02]">
+          <div className="glass-panel rounded-[2.5rem] p-8 relative overflow-hidden group hover:scale-[1.01] transition-all duration-700 shadow-premium">
             <div
               className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] group-hover:bg-primary/20 transition-all duration-1000 pointer-events-none"
               style={{ opacity: settings.cardGlowIntensity }}
@@ -314,7 +314,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
 
             <div className="space-y-8 relative z-10">
-              <div className="bg-white/5 rounded-[2rem] p-6 border border-white/5 shadow-inner backdrop-blur-md relative overflow-hidden group/quota">
+              <div className="bg-[var(--panel-bg-subtle)] rounded-[2rem] p-6 border border-[var(--panel-border)] shadow-inner backdrop-blur-md relative overflow-hidden group/quota">
                 <div className="absolute top-0 right-0 p-2 opacity-5">
                   <Zap className="w-20 h-20 text-primary" />
                 </div>
@@ -329,7 +329,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   </div>
                 </div>
                 {!isUnlimited && (
-                  <div className="relative w-full h-2.5 bg-black/40 rounded-full overflow-hidden p-[1px] border border-white/5">
+                  <div className="relative w-full h-2.5 bg-black/40 rounded-full overflow-hidden p-[1px] border border-[var(--panel-border)]">
                     <div className="absolute inset-0 bg-primary/20 blur-[2px]"></div>
                     <div className="relative h-full bg-gradient-to-r from-primary via-blue-400 to-indigo-500 rounded-full shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)] transition-all duration-1000 ease-out" style={{ width: `${progressPercent}%` }}></div>
                   </div>
@@ -340,14 +340,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </div>
 
               <div className="grid grid-cols-2 gap-5">
-                <div className="glass-panel rounded-[1.75rem] p-5 border border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-white/10 transition-all duration-500">
+                <div className="glass-panel rounded-[1.75rem] p-5 border-[var(--panel-border)] flex flex-col items-center justify-center text-center group/stat hover:bg-[var(--panel-bg-lighter)] hover:border-[var(--panel-border-hover)] transition-all duration-500">
                   <div className="p-3 bg-green-500/10 rounded-2xl text-green-400 mb-3 border border-green-500/10 shadow-lg group-hover/stat:scale-110 group-hover/stat:rotate-3 transition-all duration-500">
                     <TrendingUp className="w-5 h-5" />
                   </div>
                   <span className="text-white font-black text-2xl tracking-tighter">Top 5%</span>
                   <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-1 opacity-60">Status Ranking</span>
                 </div>
-                <div className="glass-panel rounded-[1.75rem] p-5 border border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-white/10 transition-all duration-500">
+                <div className="glass-panel rounded-[1.75rem] p-5 border-[var(--panel-border)] flex flex-col items-center justify-center text-center group/stat hover:bg-[var(--panel-bg-lighter)] hover:border-[var(--panel-border-hover)] transition-all duration-500">
                   <div className="p-3 bg-primary/10 rounded-2xl text-primary mb-3 border border-primary/10 shadow-lg group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-500">
                     <Download className="w-5 h-5" />
                   </div>
@@ -359,7 +359,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
 
           {/* Recent Activity Feed */}
-          <div className="glass-panel p-8 rounded-[2.5rem] border border-white/5 bg-white/[0.01] relative overflow-hidden group">
+          <div className="glass-panel p-8 rounded-[2.5rem] relative overflow-hidden group">
             <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-6 flex items-center justify-between">
               Actividad Reciente
               <Clock className="w-3.5 h-3.5 opacity-40" />
@@ -370,7 +370,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 { action: 'Agregado', title: 'Mushoku Tensei Especial', time: 'Ayer', icon: Star, color: 'text-yellow-500' },
               ].map((act, i) => (
                 <div key={i} className="flex items-center gap-4 group/item">
-                  <div className={`p-2 rounded-xl bg-white/5 ${act.color} group-hover/item:scale-110 transition-transform`}>
+                  <div className={`p-2 rounded-xl bg-[var(--panel-bg-subtle)] ${act.color} group-hover/item:scale-110 transition-transform`}>
                     <act.icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">

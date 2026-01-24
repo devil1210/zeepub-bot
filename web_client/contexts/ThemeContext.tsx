@@ -212,7 +212,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         cardAlpha = getHexPart(settings.cardColor, 7, 9) / 255;
       }
 
-      root.style.setProperty('--card-color', settings.theme === 'amoled' ? '#000000' : `rgba(${cR}, ${cG}, ${cB}, ${cardAlpha})`);
+      const cardBase = settings.theme === 'amoled' ? '#000000' : `rgba(${cR}, ${cG}, ${cB}, ${cardAlpha})`;
+      root.style.setProperty('--card-color', cardBase);
+
+      // New thematic panel variables
+      root.style.setProperty('--panel-bg', cardBase);
+      root.style.setProperty('--panel-bg-lighter', `rgba(${cR}, ${cG}, ${cB}, ${Math.min(1, cardAlpha + 0.05)})`);
+      root.style.setProperty('--panel-bg-subtle', `rgba(${cR}, ${cG}, ${cB}, ${Math.max(0, cardAlpha - 0.2)})`);
+      root.style.setProperty('--panel-border', `rgba(${r}, ${g}, ${b}, 0.1)`);
+      root.style.setProperty('--panel-border-hover', `rgba(${r}, ${g}, ${b}, 0.25)`);
     }
 
     // Handle background color RGB for variations
