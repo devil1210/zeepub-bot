@@ -108,7 +108,14 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
                 """)
                 result = await session.execute(query, {"user_id": user_id, "limit": limit})
                 rows = result.fetchall()
-                return [dict(row._mapping) for row in rows]
+                results = []
+                for row in rows:
+                    item = dict(row._mapping)
+                    if item.get("downloaded_at"):
+                        # Ensure it's serializable
+                        item["downloaded_at"] = item["downloaded_at"].isoformat()
+                    results.append(item)
+                return results
         except Exception as e:
             logger.error(f"Postgres get_user_downloads error: {e}")
             return []
