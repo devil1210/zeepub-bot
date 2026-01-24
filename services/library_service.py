@@ -256,19 +256,27 @@ class LibraryService:
                     return False
                     
                 # Update allowed fields
-                if "title" in updates: book.title = updates["title"]
-                if "author" in updates: book.author = updates["author"]
-                if "series" in updates: book.series = updates["series"]
-                if "volume" in updates: 
+                if "title" in updates:
+                    book.title = updates["title"]
+                if "author" in updates:
+                    book.author = updates["author"]
+                if "series" in updates:
+                    book.series = updates["series"]
+                if "volume" in updates:
                     try:
                         book.volume = float(updates["volume"])
-                    except:
+                    except (ValueError, TypeError):
                         pass
-                if "book_type" in updates: book.book_type = updates["book_type"]
-                if "romaji_title" in updates: book.romaji_title = updates["romaji_title"]
-                if "english_title" in updates: book.english_title = updates["english_title"]
-                if "tags" in updates: book.tags = updates["tags"]
-                if "demographics" in updates: book.demographics = updates["demographics"]
+                if "book_type" in updates:
+                    book.book_type = updates["book_type"]
+                if "romaji_title" in updates:
+                    book.romaji_title = updates["romaji_title"]
+                if "english_title" in updates:
+                    book.english_title = updates["english_title"]
+                if "tags" in updates:
+                    book.tags = updates["tags"]
+                if "demographics" in updates:
+                    book.demographics = updates["demographics"]
                 
                 # Recalculate Series Hash to regroup
                 from utils.helpers import generate_series_hash

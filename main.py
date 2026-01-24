@@ -97,7 +97,7 @@ async def fix_schema_if_needed():
             # Índices en claves foráneas
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id ON user_levels(default_theme_id);"))
-
+            
             # Relación de series optimizada (Integer) - Debe ir después de crear series_metadata
             await conn.execute(text("""
                 ALTER TABLE local_books 
@@ -105,18 +105,25 @@ async def fix_schema_if_needed():
             """))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id ON local_books(series_metadata_id);"))
 
-            # Otros ajustes persistentes en user_levels
-            await conn.execute(text("""
-                ALTER TABLE user_levels 
-                ADD COLUMN IF NOT EXISTS default_theme_id INTEGER DEFAULT NULL;
-            """))
-            await conn.execute(text("""
-                ALTER TABLE user_levels 
-                ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;
-            """))
+            # --- COLUMNAS DE METADATA EXTENDIDA (MIGRACIÓN 2025) ---
+            # local_books
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(512);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);"))
             
+            # user_levels
+            await conn.execute(text("ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS default_theme_id INTEGER DEFAULT NULL;"))
+            await conn.execute(text("ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;"))
+            await conn.execute(text("ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS can_upload_epub BOOLEAN DEFAULT FALSE;"))
+            
+            # users
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS can_upload_epub BOOLEAN DEFAULT FALSE;"))
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());"))
+
         await engine.dispose()
-        logger.info("Database schema check completed.")
+        logger.info("Database schema check completed successfully.")
         
     except Exception as e:
         logger.warning(f"Schema check failed: {e}")
