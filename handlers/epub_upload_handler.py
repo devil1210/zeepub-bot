@@ -380,7 +380,11 @@ class EPUBUploader:
         if volume is not None:
             try:
                 v_float = float(volume)
-                vol_str = f"{int(v_float):02d}" if v_float == int(v_float) else f"{v_float:02.1f}"
+                # Ensure at least 2 digits for integer part (e.g., 08 or 08.3)
+                if v_float == int(v_float):
+                    vol_str = f"{int(v_float):02d}"
+                else:
+                    vol_str = f"{v_float:04.1f}"
             except:
                 vol_str = str(volume)
 
