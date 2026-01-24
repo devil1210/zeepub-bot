@@ -949,7 +949,9 @@ function getChangeDescription(log: any): string {
   const changes = log.changes_summary || {};
 
   if (log.action === 'update_level' && (changes.from || changes.to)) {
-    return `Nivel cambiado: ${changes.from || '?'} → ${changes.to || '?'}`;
+    const fromVal = typeof changes.from === 'object' ? (changes.from.name || JSON.stringify(changes.from)) : String(changes.from || '?');
+    const toVal = typeof changes.to === 'object' ? (changes.to.name || JSON.stringify(changes.to)) : String(changes.to || '?');
+    return `Nivel cambiado: ${fromVal} → ${toVal}`;
   }
 
   if (log.action === 'update_permissions') {

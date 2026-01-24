@@ -291,11 +291,28 @@ export const MonitorDashboard: React.FC = () => {
                                         <td className="py-4 px-2">
                                             <div className="max-w-[300px] truncate text-gray-500">
                                                 {log.changes_summary ? (
-                                                    Object.entries(log.changes_summary).map(([key, val]: [string, any]) => (
-                                                        <span key={key} className="inline-block mr-3 px-2 py-0.5 bg-black/20 rounded-md border border-white/5 text-[9px]">
-                                                            <span className="text-gray-600 font-bold lowercase">{key}:</span> <span className="text-primary">{(typeof val === 'object' && val !== null) ? (val.new || val.to || JSON.stringify(val)) : String(val)}</span>
-                                                        </span>
-                                                    ))
+                                                    Object.entries(log.changes_summary).map(([key, val]: [string, any]) => {
+                                                        // Safe rendering for values to avoid Error #31 (Objects are not valid as a React child)
+                                                        const renderSafeValue = (v: any) => {
+                                                            if (v === null || v === undefined) return 'N/A';
+                                                            if (typeof v === 'object') {
+                                                                // Handle {id, name} objects or simple from/to wrappers
+                                                                const inner = v.new !== undefined ? v.new : (v.to !== undefined ? v.to : v);
+                                                                if (inner === null || inner === undefined) return 'N/A';
+                                                                if (typeof inner === 'object') {
+                                                                    return inner.name || inner.username || JSON.stringify(inner);
+                                                                }
+                                                                return String(inner);
+                                                            }
+                                                            return String(v);
+                                                        };
+
+                                                        return (
+                                                            <span key={key} className="inline-block mr-3 px-2 py-0.5 bg-black/20 rounded-md border border-white/5 text-[9px]">
+                                                                <span className="text-gray-600 font-bold lowercase">{key}:</span> <span className="text-primary">{renderSafeValue(val)}</span>
+                                                            </span>
+                                                        );
+                                                    })
                                                 ) : 'No summary'}
                                             </div>
                                         </td>
