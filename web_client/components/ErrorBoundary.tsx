@@ -10,24 +10,28 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
+    public state: State = {
+        hasError: false,
+        error: null
+    };
+
     constructor(props: Props) {
         super(props);
-        this.state = {
-            hasError: false,
-            error: null
-        };
     }
 
     public static getDerivedStateFromError(error: Error): State {
+        // Actualiza el estado para que el siguiente renderizado muestre la interfaz de repuesto.
         return { hasError: true, error };
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+        // También puedes registrar el error en un servicio de reporte de errores
         console.error('🛑 Uncaught React Error:', error, errorInfo);
     }
 
     public render() {
         if (this.state.hasError) {
+            // Puedes renderizar cualquier interfaz de repuesto personalizada
             return (
                 <div style={{
                     height: '100vh',
