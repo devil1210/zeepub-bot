@@ -56,18 +56,37 @@ async def fix_schema_if_needed():
         engine = create_async_engine(DATABASE_URL, echo=False)
         
         async with engine.begin() as conn:
-            # Add default_theme_id column if missing
+            # --- TABLAS MAESTRAS ---
+            # Tabla de metadatos de series
             await conn.execute(text("""
-                ALTER TABLE user_levels 
-                ADD COLUMN IF NOT EXISTS default_theme_id INTEGER DEFAULT NULL;
+                CREATE TABLE IF NOT EXISTS series_metadata (
+                    id SERIAL PRIMARY KEY,
+                    series_name VARCHAR(255) NOT NULL,
+                    series_hash VARCHAR(64) UNIQUE NOT NULL,
+                    author VARCHAR(255),
+                    author_jap VARCHAR(255),
+                    illustrator VARCHAR(255),
+                    illustrator_jap VARCHAR(255),
+                    description TEXT,
+                    tags JSONB,
+                    cover_url VARCHAR(1024),
+                    book_count INTEGER DEFAULT 0,
+                    rating_average FLOAT DEFAULT 0.0,
+                    rating_count INTEGER DEFAULT 0,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+                );
+            """))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);"))
+
+            # Tabla de administradores (Local)
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS admins (
+                    id SERIAL PRIMARY KEY,
+                    user_id BIGINT NOT NULL UNIQUE,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+                );
             """))
             
-            # Add allow_theme_templates column if missing  
-            await conn.execute(text("""
-                ALTER TABLE user_levels 
-                ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;
-            """))
-
             # --- OPTIMIZACIONES DE RENDIMIENTO 2025 ---
             # Índices en historiales
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_upload_history_user_id ON upload_history(user_id);"))
@@ -79,12 +98,22 @@ async def fix_schema_if_needed():
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);"))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id ON user_levels(default_theme_id);"))
 
-            # Relación de series optimizada (Integer)
+            # Relación de series optimizada (Integer) - Debe ir después de crear series_metadata
             await conn.execute(text("""
                 ALTER TABLE local_books 
                 ADD COLUMN IF NOT EXISTS series_metadata_id INTEGER REFERENCES series_metadata(id);
             """))
             await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id ON local_books(series_metadata_id);"))
+
+            # Otros ajustes persistentes en user_levels
+            await conn.execute(text("""
+                ALTER TABLE user_levels 
+                ADD COLUMN IF NOT EXISTS default_theme_id INTEGER DEFAULT NULL;
+            """))
+            await conn.execute(text("""
+                ALTER TABLE user_levels 
+                ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;
+            """))
             
         await engine.dispose()
         logger.info("Database schema check completed.")
