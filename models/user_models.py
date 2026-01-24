@@ -44,8 +44,9 @@ class User(Base):
     level_info = relationship("UserLevel", back_populates="users")
     
     # Relaciones Descargas/Votos
-    # downloads = relationship("UserDownload", back_populates="user") # Definido en library models
-    # ratings = relationship("UserRating", back_populates="user")     # Definido en library models
+    downloads = relationship("UserDownload", back_populates="user", cascade="all, delete-orphan", foreign_keys="UserDownload.user_id")
+    ratings = relationship("UserRating", back_populates="user", cascade="all, delete-orphan", foreign_keys="UserRating.user_id")
+    uploads = relationship("UploadBook", back_populates="user", cascade="all, delete-orphan", foreign_keys="UploadBook.telegram_id")
 
     # Fechas
     expires_at = Column(DateTime, nullable=True) # Para suscripciones

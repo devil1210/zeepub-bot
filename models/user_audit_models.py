@@ -14,12 +14,16 @@ class UserAuditLog(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Usuario afectado
-    user_id = Column(String(64), index=True, nullable=False)
+    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), index=True, nullable=False)
     username = Column(String(255))  # Snapshot del username en el momento del cambio
-    
+
     # Quién hizo el cambio
-    changed_by_id = Column(String(64), index=True)
+    changed_by_id = Column(BigInteger, ForeignKey("users.telegram_id"), index=True)
     changed_by_username = Column(String(255))
+
+    # Relaciones
+    user = relationship("User", foreign_keys=[user_id], backref="audit_logs")
+    admin = relationship("User", foreign_keys=[changed_by_id])
     
     # Tipo de cambio
     action = Column(String(50), nullable=False)  # 'update_level', 'update_permissions', 'update_profile', etc.

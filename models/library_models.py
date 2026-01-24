@@ -6,6 +6,33 @@ from .base import Base
 from utils.helpers import limpiar_html_basico
 
 
+class SeriesMetadata(Base):
+    """
+    Centraliza la metadata de una serie para evitar redundancia en LocalBook.
+    """
+    __tablename__ = "series_metadata"
+
+    id = Column(Integer, primary_key=True)
+    series_name = Column(String(255), nullable=False)
+    series_hash = Column(String(64), unique=True, index=True, nullable=False)
+    
+    author = Column(String(255))
+    author_jap = Column(String(255))
+    illustrator = Column(String(255))
+    illustrator_jap = Column(String(255))
+    
+    description = Column(String(5000))
+    tags = Column(JSON) # Géneros consolidados
+    
+    cover_url = Column(String(1024)) # Portada representativa de la serie
+    book_count = Column(Integer, default=0)
+    
+    rating_average = Column(Float, default=0.0)
+    rating_count = Column(Integer, default=0)
+    
+    books = relationship("LocalBook", back_populates="series_info", primaryjoin="SeriesMetadata.series_hash == LocalBook.series_hash", foreign_keys="LocalBook.series_hash", remote_side="LocalBook.series_hash")
+
+
 class UploadBook(Base):
     """
     Tabla temporal para procesar uploads antes de comparar con libros existentes.
@@ -14,9 +41,12 @@ class UploadBook(Base):
     __tablename__ = "upload_books"
 
     id = Column(Integer, primary_key=True)
-    telegram_id = Column(BigInteger, nullable=False)  # Usuario que subió el archivo
+    telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False)  # Usuario que subió el archivo
     original_filename = Column(String(512), nullable=False)
     temp_filepath = Column(String(1024), nullable=False)  # Ruta temporal del archivo
+
+    # Relaciones
+    user = relationship("User", foreign_keys=[telegram_id])
     
     # Metadata extraída (similar a LocalBook)
     title = Column(String(512), nullable=False)
@@ -166,6 +196,10 @@ class LocalBook(Base):
     book_hash = Column(String(64), index=True, unique=True)  # Identificador único del libro (antes content_hash)
     
     source = relationship("LibrarySource", back_populates="books")
+    series_info = relationship("SeriesMetadata", back_populates="books", primaryjoin="LocalBook.series_hash == SeriesMetadata.series_hash", foreign_keys="LocalBook.series_hash", remote_side="SeriesMetadata.series_hash", viewonly=True)
+    
+    ratings = relationship("UserRating", back_populates="book", cascade="all, delete-orphan")
+    downloads = relationship("UserDownload", back_populates="book", cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -260,7 +294,8 @@ class UserRating(Base):
     rating = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    book = relationship("LocalBook")
+    book = relationship("LocalBook", back_populates="ratings")
+    user = relationship("User", foreign_keys=[user_id])
 
 
 class UserDownload(Base):
@@ -281,8 +316,8 @@ class UserDownload(Base):
     downloaded_at = Column(DateTime, default=datetime.utcnow)
 
     # Relaciones
-    book = relationship("LocalBook")
-    # user = relationship("User") # Definido en user_models (back_populates no necesario aquí si no se usa)
+    book = relationship("LocalBook", back_populates="downloads")
+    user = relationship("User", foreign_keys=[user_id])
 
 
 class DuplicateBook(Base):

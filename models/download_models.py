@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, BigInteger, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
 
 # Use the same Base as library_models if possible,
@@ -15,7 +16,10 @@ class DownloadHistory(Base):
     __tablename__ = "download_history"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, nullable=False)
+    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False)
+    
+    # Relaciones
+    user = relationship("User", backref="download_history")
     title = Column(String(512), nullable=False)
     author = Column(String(255))
     download_url = Column(String(1024))
