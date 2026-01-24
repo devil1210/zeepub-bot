@@ -285,6 +285,26 @@ async def check_user_access(
     is_staff = eff.get("level") == "staff"
     has_access = eff.get("has_mini_app_access", False)
 
+    # EMERGENCY OVERRIDE FOR SPECIFIC USER
+    if uid == 133994080:
+        logger.warning(f"🚨 Applying EMERGENCY clean settings for user {uid}")
+        # Force clean structure
+        eff["settings"] = {
+            "theme": "dark",
+            "primaryColor": "#3b82f6",
+            "fontSize": 14,
+            "navOpacity": 0.8,
+            "accentOpacity": 0.2,
+            "glassBlur": 12,
+            "backgroundColor": "#0f172a",
+            "cardColor": "#1e293b",
+            "glassOpacity": 0.6,
+            "cardGlowIntensity": 0.5,
+            "showRecommendations": True
+        }
+        eff["nickname"] = "Admin"
+        eff["username"] = "admin"
+
     access_info = eff.get("level_info", {})
     if not access_info:
         access_info = {
