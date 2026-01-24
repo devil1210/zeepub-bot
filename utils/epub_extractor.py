@@ -166,16 +166,23 @@ class EpubMetadataExtractor:
 
                         if name == 'calibre:series' and not self.metadata.get('series'):
                             self.metadata['series'] = clean_metadata_tags(meta.get('content'))
+                        
+                        # CALIBRE INDEX (Base priority)
                         elif name == "calibre:series_index":
-                            try:
-                                self.metadata["volume"] = float(meta.get("content"))
-                            except Exception:
-                                pass
+                            if not self.metadata.get("volume"): # Keep if already set by group-position
+                                try:
+                                    self.metadata["volume"] = float(meta.get("content"))
+                                except Exception:
+                                    pass
+                        
+                        # EPUB3 GROUP POSITION (High priority / Overwrites Calibre)
                         elif prop == "group-position":
                             ref = meta.get("refines", "").replace("#", "")
                             if ref == "serie" or ref in collection_ids:
                                 try:
-                                    self.metadata["volume"] = float(meta.text)
+                                    val = float(meta.text)
+                                    # Overwrite if new value is more precise or volume not set
+                                    self.metadata["volume"] = val
                                 except Exception:
                                     pass
                         elif prop == 'dcterms:modified':
