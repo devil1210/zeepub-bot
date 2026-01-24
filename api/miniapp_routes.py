@@ -9,6 +9,7 @@ from api.deps import (
     require_mini_app_access,
     get_current_user_data,
 )
+from config.config_settings import config
 
 router = APIRouter(tags=["miniapp"])
 logger = logging.getLogger(__name__)
