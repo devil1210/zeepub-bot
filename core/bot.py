@@ -1,33 +1,34 @@
 # core/bot.py
 
-import logging
 import asyncio
+import logging
+
 from telegram import Update
 from telegram.ext import (
     Application,
     ApplicationBuilder,
     CallbackQueryHandler,
+    ContextTypes,
     MessageHandler,
     TypeHandler,
-    ContextTypes,
     filters,
 )
+from telegram.request import HTTPXRequest
 
 from config.config_settings import config
-from core.session_manager import session_manager
 from core.bot_initializer import BotInitializer
 from core.error_handler import ErrorHandler
-from utils.metrics import metrics
-from handlers.command_handlers import CommandHandlers
+from core.session_manager import session_manager
 from handlers.callback_handlers import (
-    set_destino,
-    buscar_epub,
     abrir_zeepubs,
+    buscar_epub,
     button_handler,
+    set_destino,
 )
+from handlers.command_handlers import CommandHandlers
 from handlers.message_handlers import recibir_texto
 from plugins.plugin_manager import PluginManager
-from telegram.request import HTTPXRequest
+from utils.metrics import metrics
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ class ZeePubBot:
         )
 
         # JSON Upload Handler
-        from handlers.message_handlers import handle_json_upload, handle_donation_proof
+        from handlers.message_handlers import handle_donation_proof, handle_json_upload
 
         self.app.add_handler(
             MessageHandler(
@@ -218,7 +219,9 @@ class ZeePubBot:
                     )
 
                     try:
-                        from services.maintenance_service import trigger_watchtower_update
+                        from services.maintenance_service import (
+                            trigger_watchtower_update,
+                        )
                         success, msg = await trigger_watchtower_update()
                         await context.bot.send_message(chat_id=update.effective_chat.id, text=msg, parse_mode="HTML")
                     except Exception as ex:

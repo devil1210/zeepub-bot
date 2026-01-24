@@ -4,8 +4,13 @@ Script para obtener tu ID de Telegram y verificar configuración de admin
 
 import asyncio
 import logging
+
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+)
 
 # Configuración temporal para obtener tu ID
 TOKEN = "TU_TOKEN_AQUI"  # Reemplaza con tu token real

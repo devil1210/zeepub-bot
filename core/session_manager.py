@@ -1,8 +1,9 @@
 # core/session_manager.py
 
-import aiohttp
 import asyncio
 import logging
+
+import aiohttp
 
 
 class SessionManager:

@@ -1,13 +1,14 @@
 import logging
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime
+from typing import Any, Dict, List, Tuple
+
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text, and_
-from models.user_models import AppTheme
-from models.theme_sync_models import ThemeSyncLog
+
 from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
-from config.config_settings import config
+from models.theme_sync_models import ThemeSyncLog
+from models.user_models import AppTheme
 
 logger = logging.getLogger(__name__)
 

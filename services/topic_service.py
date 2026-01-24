@@ -2,7 +2,9 @@
 
 import logging
 from typing import Dict, Optional
+
 from telegram import Bot
+
 # from repositories.user_repository import user_repo (moved to methods)
 
 logger = logging.getLogger(__name__)

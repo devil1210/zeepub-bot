@@ -1,8 +1,9 @@
 # utils/streaming.py
 
 import logging
-from telegram import Bot
 from typing import Optional
+
+from telegram import Bot
 
 logger = logging.getLogger(__name__)
 

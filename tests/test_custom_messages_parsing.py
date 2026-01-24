@@ -1,7 +1,9 @@
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
-from telegram import Update, Message, User
+from telegram import Message, Update, User
 from telegram.ext import ContextTypes
+
 import plugins.custom_messages_plugin as plugin_mod
 from plugins.custom_messages_plugin import CustomMessagesPlugin
 

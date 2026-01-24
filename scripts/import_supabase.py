@@ -5,15 +5,13 @@ import sys
 # Add root directory to path to import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.future import select
-from supabase import create_client
 from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+from supabase import create_client
 
-from models.user_models import UserLevel, AppTheme, User
 from models.base import Base
-from config.config_settings import config
+from models.user_models import AppTheme, User, UserLevel
 
 # Force load .env
 load_dotenv()

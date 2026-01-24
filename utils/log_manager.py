@@ -2,6 +2,7 @@ import logging
 from collections import deque
 from datetime import datetime
 
+
 class LogBufferHandler(logging.Handler):
     def __init__(self, limit=2000):
         super().__init__()

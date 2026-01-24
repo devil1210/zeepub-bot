@@ -1,31 +1,32 @@
+import html
 import logging
 import os
-import html
 import re
 from datetime import datetime
-from typing import Dict, List, Any
-from sqlalchemy import (
-    create_engine,
-    Column,
-    String,
-    Integer,
-    BigInteger,
-    Text,
-    DateTime,
-)
+from typing import Any, Dict, List
+
 import sqlalchemy as sa
-from sqlalchemy.sql import text  # Importar text explícitamente
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    DateTime,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import declarative_base, sessionmaker
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from sqlalchemy.sql import text  # Importar text explícitamente
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.ext import (
-    ContextTypes,
-    CommandHandler,
-    ChatMemberHandler,
     CallbackQueryHandler,
+    ChatMemberHandler,
+    CommandHandler,
+    ContextTypes,
 )
-from plugins.base_plugin import BasePlugin
+
 from config.config_settings import config
+from plugins.base_plugin import BasePlugin
 from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
@@ -1681,9 +1682,10 @@ class CustomMessagesPlugin(BasePlugin):
         Calcula variables dinámicas del usuario (Nivel, Descargas, etc.)
         Solo se llama si el template las requiere.
         """
-        from services.user_service import get_effective_user
-        from core.state_manager import state_manager
         from datetime import datetime, timedelta
+
+        from core.state_manager import state_manager
+        from services.user_service import get_effective_user
 
         uid = user.id
         user_data = await get_effective_user(uid)

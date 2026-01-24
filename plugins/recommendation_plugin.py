@@ -1,11 +1,13 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
-from services.recommendation_service import RecommendationService
-from services.user_service import get_user_settings, update_user_setting
 # Reuse existing sending logic or custom card
 # from services.telegram_service import enviar_libro_directo
 import logging
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
+
 from plugins.base_plugin import BasePlugin
+from services.recommendation_service import RecommendationService
+from services.user_service import get_user_settings, update_user_setting
 
 logger = logging.getLogger(__name__)
 

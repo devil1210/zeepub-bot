@@ -1,13 +1,13 @@
+import logging
+import os
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from core.bot import ZeePubBot
-import logging
-
 
 # Configurar logging
 from config.config_settings import config
-import os
+from core.bot import ZeePubBot
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -23,12 +23,14 @@ logger = logging.getLogger(__name__)
 
 # Configurar captura de logs para la interfaz
 from utils.log_manager import setup_global_logging
+
 setup_global_logging()
 
 # Instancia global del bot
 bot = ZeePubBot()
 
 import time
+
 app_start_time = time.time()
 
 # Estado de la aplicación para acceso desde rutas
@@ -112,17 +114,17 @@ enable_miniapp = os.getenv("ENABLE_MINI_APP", "True").lower() == "true"
 
 if enable_miniapp:
     # Importar rutas solo si está activo
-    from api.routes import router
-    from api.miniapp_routes import router as miniapp_router
     from api.library_routes import router as library_router
+    from api.miniapp_routes import router as miniapp_router
+    from api.routes import router
 
     app.include_router(router)
     app.include_router(miniapp_router)
     app.include_router(library_router)
 
     # Montar archivos estáticos del frontend
-    from fastapi.staticfiles import StaticFiles
     from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
 
     # Montar portadas de la librería local
     from utils.library_db import COVERS_DIR, PROFILES_DIR

@@ -1,8 +1,9 @@
-import re
-import html
 import hashlib
+import html
+import re
+from typing import Any, Optional
 from urllib.parse import urljoin, urlparse
-from typing import Optional, Any
+
 from config.config_settings import config
 
 

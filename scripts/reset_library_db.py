@@ -5,15 +5,14 @@ ADVERTENCIA: Esto eliminará TODA la información indexada y las portadas genera
 """
 
 import os
-import sys
 import shutil
+import sys
 from pathlib import Path
 
 # Agregar el directorio raíz al path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
-from config.config_settings import config
 
 # Paths
 DATA_DIR = os.path.join(ROOT_DIR, "data")
@@ -64,12 +63,12 @@ def reset_database():
             print(f"❌ Error eliminando portadas: {e}")
             return False
     else:
-        items_deleted.append(f"ℹ️  Directorio de portadas no existía")
+        items_deleted.append("ℹ️  Directorio de portadas no existía")
     
     # 3. Recrear directorio de portadas vacío
     try:
         os.makedirs(COVERS_DIR, exist_ok=True)
-        items_deleted.append(f"✅ Directorio de portadas recreado")
+        items_deleted.append("✅ Directorio de portadas recreado")
     except Exception as e:
         print(f"❌ Error recreando directorio: {e}")
         return False

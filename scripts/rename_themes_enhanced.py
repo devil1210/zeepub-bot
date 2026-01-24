@@ -6,13 +6,13 @@ Verifica qué temas existen realmente y renombra todos los que tienen "2"
 import asyncio
 import logging
 import sys
-import os
 
 # Agregar el path del proyecto
 sys.path.append('/app')
 
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from config.config_settings import config
 
 logging.basicConfig(level=logging.INFO)

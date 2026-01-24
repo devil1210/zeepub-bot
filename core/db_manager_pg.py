@@ -1,9 +1,10 @@
 import logging
-import asyncio
-from typing import AsyncGenerator
 from contextlib import asynccontextmanager
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from typing import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
+
 from config.config_settings import config
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ class PostgresManager:
             try:
                 yield session
                 await session.commit()
-            except Exception as e:
+            except Exception:
                 await session.rollback()
                 raise
             finally:

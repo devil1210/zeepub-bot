@@ -1,18 +1,17 @@
-import logging
-import os
 import asyncio
 import csv
 import io
-import shutil
-import re
+import logging
+import os
 from datetime import datetime
+
 from telegram import Update
-from telegram.ext import ContextTypes, CommandHandler
-from plugins.base_plugin import BasePlugin
+from telegram.ext import CommandHandler, ContextTypes
+
 from config.config_settings import config
-from utils.helpers import get_thread_id
-from core.state_manager import state_manager
 from core.db_manager_pg import pg_manager
+from plugins.base_plugin import BasePlugin
+from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
 

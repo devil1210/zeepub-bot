@@ -1,7 +1,9 @@
 import asyncio
 import logging
-from sqlalchemy.ext.asyncio import create_async_engine
+
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from config.config_settings import config
 
 logging.basicConfig(level=logging.INFO)
@@ -37,7 +39,29 @@ async def fix_postgres_schema():
                 ALTER TABLE user_levels 
                 ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;
             """))
-            logger.info("Added allow_theme_templates column successfully (if it didn't exist).")
+            logger.info("Added allow_theme_templates column.")
+
+            # --- NUEVAS MEJORAS DE RENDIMIENTO ---
+            
+            # 1. Índices en Tablas de Historial (Punto 3 del plan)
+            logger.info("Añadiendo índices a tablas de historial...")
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_upload_history_user_id ON upload_history(user_id);"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_download_history_user_id ON download_history(user_id);"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_ratings_user_id ON user_ratings(user_id);"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_downloads_user_id ON user_downloads(user_id);"))
+            
+            # 2. Claves Foráneas con Índice (Punto 1 del plan anterior)
+            logger.info("Añadiendo índices a claves foráneas críticas...")
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id ON user_levels(default_theme_id);"))
+
+            # 3. Optimización de Series (Punto 2 del plan - Integer vs String)
+            logger.info("Optimizando relación de series (LocalBook -> SeriesMetadata)...")
+            await conn.execute(text("""
+                ALTER TABLE local_books 
+                ADD COLUMN IF NOT EXISTS series_metadata_id INTEGER REFERENCES series_metadata(id);
+            """))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id ON local_books(series_metadata_id);"))
             
         await engine.dispose()
         logger.info("Schema fix completed.")

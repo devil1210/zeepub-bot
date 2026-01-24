@@ -5,8 +5,9 @@ Revises: add_user_levels
 Create Date: 2026-01-23 06:20:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'create_upload_books_table'

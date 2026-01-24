@@ -1,12 +1,16 @@
-import logging
 import asyncio
+import logging
+
 from sqlalchemy import text
+
 from core.db_manager_pg import pg_manager
 from models.base import Base
+from models.library_models import (
+    LibrarySource,
+)
+
 # Import custom models so they are registered in Base.metadata
-from models.user_models import User, UserLevel, UserUISettings
-from models.library_models import LibrarySource, LocalBook, UserRating, UserDownload, DuplicateBook
-from models.download_models import DownloadHistory
+from models.user_models import UserLevel
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +83,6 @@ class SchemaOrchestrator:
     @staticmethod
     async def _seed_initial_data():
         """Populates the database with required initial data like User Levels."""
-        from models.user_models import UserLevel
-        from models.library_models import LibrarySource
         from sqlalchemy import select
         
         # Max retries for seeding if table not visible yet

@@ -1,29 +1,30 @@
-import io
-import os
-import logging
 import asyncio
-from urllib.parse import urlparse, unquote
-from typing import Dict, Any, Optional
-from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup, Update
+import io
+import logging
+import os
+from typing import Any, Dict, Optional
+from urllib.parse import unquote, urlparse
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Update
 from telegram.error import BadRequest, Forbidden
 from telegram.ext import ContextTypes
 
 # from core.state_manager import state_manager (Moved to local scope)
 # from core.session_manager import session_manager (Moved to local scope)
 from config.config_settings import config
+from services.epub_service import extract_cover_from_epub
 from services.metadata_service import (
     obtener_metadatos_opds,
     obtener_sinopsis_opds,
     obtener_sinopsis_opds_volumen,
 )
-from utils.http_client import fetch_bytes, cleanup_tmp
+from utils.download_limiter import can_download, downloads_left, record_download
 from utils.helpers import (
-    generar_slug_from_meta,
-    formatear_mensaje_portada,
     escapar_html,
+    formatear_mensaje_portada,
+    generar_slug_from_meta,
 )
-from utils.download_limiter import record_download, can_download, downloads_left
-from services.epub_service import extract_cover_from_epub
+from utils.http_client import cleanup_tmp, fetch_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -749,7 +750,7 @@ async def descargar_epub_pendiente(
         record_download(uid)
 
         # Gamificación: Incrementar contador y verificar hitos
-        from services.user_service import increment_download_count, check_milestones
+        from services.user_service import check_milestones, increment_download_count
 
         await increment_download_count(uid)
         milestone_msg = await check_milestones(uid, context)
@@ -834,9 +835,9 @@ async def descargar_epub_pendiente(
         # Solución simple: Si el epub_url es un path local, buscar el libro en DB por path
         if epub_url and "local_library" in epub_url or os.path.exists(epub_url):
             try:
-                from utils.library_db import get_session
                 from models.library_models import LocalBook
                 from repositories.download_repository import download_repo
+                from utils.library_db import get_session
 
                 session = get_session()
                 # filepath in db matches epub_url
@@ -1000,8 +1001,8 @@ async def enviar_libro_directo(
         if format_type in ["fb_preview", "fb_direct"]:
             # Generar caption FB
             # Construir link público acortado
+            from utils.helpers import formatear_metadata_fb, formatear_titulo_fb
             from utils.url_cache import create_short_url
-            from utils.helpers import formatear_titulo_fb, formatear_metadata_fb
 
             dl_domain = config.DL_DOMAIN.rstrip("/")
             if not dl_domain.startswith("http"):
@@ -1378,8 +1379,8 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
         return
 
     # Construir link público acortado con SHA256 persistente
+    from utils.helpers import escapar_html, formatear_metadata_fb, formatear_titulo_fb
     from utils.url_cache import create_short_url
-    from utils.helpers import formatear_titulo_fb, formatear_metadata_fb, escapar_html
 
     dl_domain = config.DL_DOMAIN.rstrip("/")
     if not dl_domain.startswith("http"):

@@ -1,5 +1,6 @@
-from prometheus_client import Counter, Histogram, Gauge, start_http_server
 import logging
+
+from prometheus_client import Counter, Gauge, Histogram, start_http_server
 
 logger = logging.getLogger(__name__)
 

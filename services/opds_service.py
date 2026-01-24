@@ -1,20 +1,21 @@
-import uuid
 import logging
 import re
+import uuid
 from difflib import SequenceMatcher
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 # from core.state_manager import state_manager (Moved to local scope)
 from config.config_settings import config
-from utils.http_client import parse_feed_from_url
+from services.cache_service import AsyncTTLCache
 from utils.helpers import (
     abs_url,
-    find_zeepubs_destino,
     extract_author,
+    find_zeepubs_destino,
     parse_metadata_from_title,
 )
-from services.cache_service import AsyncTTLCache
+from utils.http_client import parse_feed_from_url
 
 logger = logging.getLogger(__name__)
 
@@ -358,8 +359,8 @@ async def get_zeepubs_first_library(url: str) -> str:
 
 async def mostrar_recomendaciones(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Muestra lista de libros recomendados usando la UI del catálogo."""
-    from services.recommendation_service import RecommendationService
     from core.state_manager import state_manager
+    from services.recommendation_service import RecommendationService
 
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)

@@ -1,5 +1,6 @@
 import random
-from typing import List, Dict
+from typing import Dict, List
+
 
 def generate_themes() -> List[Dict]:
     modes = ['light', 'dark', 'amoled']
@@ -103,8 +104,9 @@ def generate_themes() -> List[Dict]:
 
 if __name__ == "__main__":
     import os
-    from supabase import create_client
+
     from dotenv import load_dotenv
+    from supabase import create_client
     
     load_dotenv()
     

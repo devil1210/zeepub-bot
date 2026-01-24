@@ -1,11 +1,12 @@
-import hmac
 import hashlib
+import hmac
 import json
-from urllib.parse import parse_qsl
-from typing import Dict, Any, Optional
-import time
-from fastapi import HTTPException, Header
 import os
+import time
+from typing import Any, Dict, Optional
+from urllib.parse import parse_qsl
+
+from fastapi import Header, HTTPException
 
 
 def validate_telegram_data(

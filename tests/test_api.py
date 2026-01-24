@@ -1,5 +1,6 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
 
 
 @pytest.fixture
@@ -11,8 +12,9 @@ def client(monkeypatch):
         mock_instance.start_async = AsyncMock()
         mock_instance.stop_async = AsyncMock()
 
-        from api.main import app
         from fastapi.testclient import TestClient
+
+        from api.main import app
 
         return TestClient(app)
 

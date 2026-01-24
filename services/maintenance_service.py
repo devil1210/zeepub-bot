@@ -1,6 +1,7 @@
 import logging
-import httpx
 import os
+
+import httpx
 
 logger = logging.getLogger(__name__)
 

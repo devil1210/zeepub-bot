@@ -5,8 +5,9 @@ Se ejecuta como un comando del bot
 
 import asyncio
 import logging
-from sqlalchemy.ext.asyncio import create_async_engine
+
 from sqlalchemy import text
+
 from core.db_manager_pg import pg_manager
 
 logging.basicConfig(level=logging.INFO)

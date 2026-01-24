@@ -6,13 +6,13 @@ Ejecutar dentro del contenedor Docker: docker exec -it <container> python script
 import asyncio
 import logging
 import sys
-import os
 
 # Agregar el path del proyecto
 sys.path.append('/app')
 
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from config.config_settings import config
 
 logging.basicConfig(level=logging.INFO)
@@ -96,7 +96,7 @@ async def analyze_library_paths():
             for pattern, count in sorted(path_patterns.items(), key=lambda x: x[1], reverse=True):
                 logger.info(f"   {pattern}: {count} libros")
             
-            logger.info(f"\n🏗️ ANÁLISIS ESTRUCTURAL:")
+            logger.info("\n🏗️ ANÁLISIS ESTRUCTURAL:")
             for structure, count in structure_analysis.items():
                 logger.info(f"   {structure}: {count}")
             

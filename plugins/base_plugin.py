@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Callable, List, Any, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 
 class BasePlugin(ABC):

@@ -3,9 +3,10 @@ Script para diagnosticar problemas con archivos EPUB
 """
 
 import sys
-import zipfile
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
+
 
 def diagnose_epub(epub_path):
     """Diagnostica un archivo EPUB y muestra información detallada."""
@@ -30,7 +31,7 @@ def diagnose_epub(epub_path):
     # Intentar abrir como ZIP
     try:
         with zipfile.ZipFile(path, 'r') as zip_file:
-            print(f"✅ Formato ZIP válido")
+            print("✅ Formato ZIP válido")
             
             # Listar archivos
             file_list = zip_file.namelist()
@@ -42,7 +43,7 @@ def diagnose_epub(epub_path):
             ncx_files = [f for f in file_list if f.lower().endswith('.ncx')]
             html_files = [f for f in file_list if f.lower().endswith(('.html', '.htm', '.xhtml'))]
             
-            print(f"\n📁 ARCHIVOS ENCONTRADOS:")
+            print("\n📁 ARCHIVOS ENCONTRADOS:")
             print(f"   📄 OPF (metadata): {len(opf_files)}")
             for opf in opf_files:
                 print(f"      - {opf}")
@@ -61,7 +62,7 @@ def diagnose_epub(epub_path):
             
             # Analizar container.xml si existe
             if container_files:
-                print(f"\n🔍 ANALIZANDO CONTAINER.XML:")
+                print("\n🔍 ANALIZANDO CONTAINER.XML:")
                 try:
                     container_content = zip_file.read(container_files[0])
                     root = ET.fromstring(container_content)
@@ -76,16 +77,16 @@ def diagnose_epub(epub_path):
                         
                         # Verificar que el OPF exista
                         if opf_path in file_list:
-                            print(f"   ✅ OPF encontrado en el ZIP")
+                            print("   ✅ OPF encontrado en el ZIP")
                         else:
-                            print(f"   ❌ OPF NO encontrado en el ZIP")
+                            print("   ❌ OPF NO encontrado en el ZIP")
                             
                 except Exception as e:
                     print(f"   ❌ Error leyendo container.xml: {e}")
             
             # Analizar OPF si existe
             if opf_files:
-                print(f"\n🔍 ANALIZANDO OPF:")
+                print("\n🔍 ANALIZANDO OPF:")
                 try:
                     opf_content = zip_file.read(opf_files[0])
                     root = ET.fromstring(opf_content)
@@ -112,7 +113,7 @@ def diagnose_epub(epub_path):
                 except Exception as e:
                     print(f"   ❌ Error leyendo OPF: {e}")
             
-            print(f"\n✅ DIAGNÓSTICO COMPLETADO")
+            print("\n✅ DIAGNÓSTICO COMPLETADO")
             return True
             
     except zipfile.BadZipFile:

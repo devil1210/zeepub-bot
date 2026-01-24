@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-import logging
 import asyncio
+import logging
+
 from config.config_settings import config
 from core.bot import ZeePubBot
-from services.theme_sync_service import theme_sync_service
 from core.optimized_sync_engine import optimized_sync_engine
+from services.theme_sync_service import theme_sync_service
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -19,8 +20,8 @@ logger = logging.getLogger(__name__)
 async def auto_scan_library():
     """Función de escaneo automático de la biblioteca."""
     try:
+
         from services.scanner_service import ScannerService
-        import os
         
         # No usar os.getenv("LOCAL_LIBRARIES") ya que scanner toma config_json en __init__
         # pero es mejor pasarlo vacío si no lo usamos para este auto_scan
@@ -42,8 +43,8 @@ async def auto_scan_library():
 async def fix_schema_if_needed():
     """Fix missing database columns before starting bot"""
     try:
-        from sqlalchemy.ext.asyncio import create_async_engine
         from sqlalchemy import text
+        from sqlalchemy.ext.asyncio import create_async_engine
         
         # Use the same DATABASE_URL as the bot
         DATABASE_URL = config.DATABASE_URL
@@ -66,6 +67,24 @@ async def fix_schema_if_needed():
                 ALTER TABLE user_levels 
                 ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;
             """))
+
+            # --- OPTIMIZACIONES DE RENDIMIENTO 2025 ---
+            # Índices en historiales
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_upload_history_user_id ON upload_history(user_id);"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_download_history_user_id ON download_history(user_id);"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_ratings_user_id ON user_ratings(user_id);"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_downloads_user_id ON user_downloads(user_id);"))
+            
+            # Índices en claves foráneas
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id ON user_levels(default_theme_id);"))
+
+            # Relación de series optimizada (Integer)
+            await conn.execute(text("""
+                ALTER TABLE local_books 
+                ADD COLUMN IF NOT EXISTS series_metadata_id INTEGER REFERENCES series_metadata(id);
+            """))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id ON local_books(series_metadata_id);"))
             
         await engine.dispose()
         logger.info("Database schema check completed.")

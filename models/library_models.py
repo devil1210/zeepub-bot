@@ -1,9 +1,21 @@
-from sqlalchemy import Column, Integer, String, DateTime, JSON, ForeignKey, Float, BigInteger
-from sqlalchemy.orm import relationship
-from datetime import datetime
 import re
-from .base import Base
+from datetime import datetime
+
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+)
+from sqlalchemy.orm import relationship
+
 from utils.helpers import limpiar_html_basico
+
+from .base import Base
 
 
 class SeriesMetadata(Base):
@@ -30,7 +42,7 @@ class SeriesMetadata(Base):
     rating_average = Column(Float, default=0.0)
     rating_count = Column(Integer, default=0)
     
-    books = relationship("LocalBook", back_populates="series_info", primaryjoin="SeriesMetadata.series_hash == LocalBook.series_hash", foreign_keys="LocalBook.series_hash", remote_side="LocalBook.series_hash")
+    books = relationship("LocalBook", back_populates="series_info")
 
 
 class UploadBook(Base):
@@ -85,7 +97,7 @@ class UploadHistory(Base):
     __tablename__ = "upload_history"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(BigInteger, nullable=False)
+    user_id = Column(BigInteger, index=True, nullable=False)
     filename = Column(String(512), nullable=False)
     book_hash = Column(String(64))
     status = Column(String(50), nullable=False)  # success, error, duplicate_rejected
@@ -192,11 +204,12 @@ class LocalBook(Base):
     indexed_at = Column(DateTime, default=datetime.utcnow)
 
     # Identificadores estables basados en metadatos
-    series_hash = Column(String(64), index=True)  # Agrupa volúmenes de la misma serie/tipo
+    series_metadata_id = Column(Integer, ForeignKey("series_metadata.id"), index=True)
+    series_hash = Column(String(64), index=True)  # Mantener por compatibilidad y búsqueda rápida
     book_hash = Column(String(64), index=True, unique=True)  # Identificador único del libro (antes content_hash)
     
     source = relationship("LibrarySource", back_populates="books")
-    series_info = relationship("SeriesMetadata", back_populates="books", primaryjoin="LocalBook.series_hash == SeriesMetadata.series_hash", foreign_keys="LocalBook.series_hash", remote_side="SeriesMetadata.series_hash", viewonly=True)
+    series_info = relationship("SeriesMetadata", back_populates="books")
     
     ratings = relationship("UserRating", back_populates="book", cascade="all, delete-orphan")
     downloads = relationship("UserDownload", back_populates="book", cascade="all, delete-orphan")

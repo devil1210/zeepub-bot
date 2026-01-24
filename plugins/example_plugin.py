@@ -1,7 +1,9 @@
-from typing import Dict, Callable, Any, Optional
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from typing import Any, Callable, Dict, Optional
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
+
 from plugins.base_plugin import BasePlugin
 from utils.decorators import log_user_action
 

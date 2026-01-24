@@ -1,10 +1,12 @@
 # plugins/verification_plugin.py
 
 import logging
+
 from telegram import Update
-from telegram.ext import ContextTypes, CommandHandler
-from plugins.base_plugin import BasePlugin
+from telegram.ext import CommandHandler, ContextTypes
+
 from config.config_settings import config
+from plugins.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
 

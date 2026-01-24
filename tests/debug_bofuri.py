@@ -6,9 +6,10 @@ import sys
 
 sys.path.insert(0, "/app")
 
-from utils.http_client import fetch_bytes
-from services.epub_service import parse_opf_from_epub, extract_internal_title
 from urllib.parse import unquote, urlparse
+
+from services.epub_service import extract_internal_title, parse_opf_from_epub
+from utils.http_client import fetch_bytes
 
 
 async def test_epub_metadata():

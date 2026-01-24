@@ -1,14 +1,16 @@
-import logging
 import asyncio
-import os
 import html
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
-from plugins.base_plugin import BasePlugin
+import logging
+import os
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
+
 from config.config_settings import config
-from utils.helpers import get_thread_id
+from plugins.base_plugin import BasePlugin
 from services.settings_service import get_setting, set_setting
 from services.user_service import get_effective_user
+from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
 
@@ -858,11 +860,11 @@ class HelpPlugin(BasePlugin):
 
         from telegram import (
             BotCommand,
-            BotCommandScopeDefault,
-            BotCommandScopeChat,
-            BotCommandScopeAllPrivateChats,
-            BotCommandScopeAllGroupChats,
             BotCommandScopeAllChatAdministrators,
+            BotCommandScopeAllGroupChats,
+            BotCommandScopeAllPrivateChats,
+            BotCommandScopeChat,
+            BotCommandScopeDefault,
         )
 
         try:

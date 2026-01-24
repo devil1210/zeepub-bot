@@ -5,19 +5,21 @@ Sistema de caché persistente para URLs acortadas usando PostgreSQL (via SQLAlch
 import hashlib
 import logging
 from typing import Optional
-from config.config_settings import config
+
 import sqlalchemy as sa
 from sqlalchemy import (
-    Table,
-    Column,
-    String,
-    Text,
-    Integer,
     Boolean,
-    MetaData,
+    Column,
     DateTime,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    Text,
 )
 from sqlalchemy.exc import IntegrityError
+
+from config.config_settings import config
 
 logger = logging.getLogger(__name__)
 
@@ -312,5 +314,6 @@ def get_candidates_for_validation(limit: int = 100, older_than_seconds: int = 36
         return []
 
 import os
+
 if not os.getenv("PYTEST_CURRENT_TEST"):
     init_db()

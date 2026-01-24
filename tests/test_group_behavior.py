@@ -1,6 +1,7 @@
 import sys
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
 
 
 @pytest.fixture(autouse=True)
@@ -64,8 +65,8 @@ async def test_recibir_texto_group_chat_suppression(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_recibir_texto_group_chat_with_active_state(monkeypatch):
-    from handlers.message_handlers import recibir_texto
     import handlers.message_handlers as mh
+    from handlers.message_handlers import recibir_texto
 
     update = MagicMock()
     context = MagicMock()
@@ -90,8 +91,8 @@ async def test_recibir_texto_group_chat_with_active_state(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_recibir_texto_private_chat_response(monkeypatch):
-    from handlers.message_handlers import recibir_texto
     import handlers.message_handlers as mh
+    from handlers.message_handlers import recibir_texto
 
     update = MagicMock()
     context = MagicMock()

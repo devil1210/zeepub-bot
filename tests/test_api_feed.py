@@ -1,8 +1,10 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi import HTTPException
-from api.routes import get_feed, tunnel_opds
+
 from api.deps import require_mini_app_access
+from api.routes import get_feed, tunnel_opds
 
 
 # Mock entry with links

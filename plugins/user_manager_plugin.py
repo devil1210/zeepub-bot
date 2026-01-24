@@ -1,18 +1,20 @@
 import logging
+
 from telegram import Update
-from telegram.ext import ContextTypes, CommandHandler
-from plugins.base_plugin import BasePlugin
+from telegram.ext import CommandHandler, ContextTypes
+
 from config.config_settings import config
-from utils.helpers import get_thread_id
-from services.user_service import (
-    upsert_user,
-    remove_user,
-    update_user_status_label,
-    update_user_nickname,
-)
-from services.settings_service import SettingsService, get_setting
-from utils.download_limiter import save_download
 from core.state_manager import state_manager
+from plugins.base_plugin import BasePlugin
+from services.settings_service import SettingsService, get_setting
+from services.user_service import (
+    remove_user,
+    update_user_nickname,
+    update_user_status_label,
+    upsert_user,
+)
+from utils.download_limiter import save_download
+from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
 

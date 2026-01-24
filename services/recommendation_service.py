@@ -1,8 +1,10 @@
 import logging
 import random
 from datetime import date
-from typing import List, Dict, Any
-from sqlalchemy import select, desc, or_, func
+from typing import Any, Dict, List
+
+from sqlalchemy import desc, or_, select
+
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, UserDownload, UserRating
 

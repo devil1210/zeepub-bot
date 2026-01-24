@@ -1,17 +1,15 @@
-from typing import Optional, Dict, Any
-from repositories.base_repository import BaseRepository
 import logging
-from datetime import datetime
-from dateutil import parser
+from typing import Any, Dict, Optional
 
-from services.cache_service import cache_manager
-from core.db_manager_pg import pg_manager
-from models.user_models import User, UserLevel, UserUISettings
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from config.config_settings import config
-from core.supabase_manager import supabase_manager
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import selectinload
+
+from core.db_manager_pg import pg_manager
+from core.supabase_manager import supabase_manager
+from models.user_models import User
+from repositories.base_repository import BaseRepository
+from services.cache_service import cache_manager
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +21,6 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
 
     def __init__(self, db=None):
         self.table_name = "users"
-        from core.supabase_manager import supabase_manager
         self.supabase = supabase_manager
 
     async def get_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:

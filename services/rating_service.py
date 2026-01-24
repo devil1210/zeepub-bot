@@ -1,8 +1,10 @@
 import logging
-from typing import Dict, Any, Optional
-from sqlalchemy import select, func, update, delete
+from typing import Any, Dict, Optional
+
+from sqlalchemy import delete, func, select
+
 from core.db_manager_pg import pg_manager
-from models.library_models import UserRating, LocalBook
+from models.library_models import LocalBook, UserRating
 
 logger = logging.getLogger(__name__)
 

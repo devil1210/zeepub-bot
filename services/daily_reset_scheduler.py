@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
+
 from utils.download_limiter import reset_all_downloads
 
 logger = logging.getLogger(__name__)
@@ -30,8 +31,8 @@ async def daily_reset_loop(bot=None):
             # Ejecutar reporte antes del reset
             if bot:
                 try:
-                    from services.stats_service import get_daily_stats, reset_stats
                     from config.config_settings import config
+                    from services.stats_service import get_daily_stats, reset_stats
 
                     data = get_daily_stats()
 

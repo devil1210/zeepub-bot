@@ -1,37 +1,31 @@
+import asyncio
 import json
 import logging
-from sqlalchemy import func, or_
-import urllib.parse
-import asyncio
-import time
-from datetime import datetime, timedelta
-from typing import Dict, Any, List
-
-from fastapi import HTTPException
-
-from config.config_settings import config
 import os
 import shutil
-from core.supabase_manager import supabase_manager
-from utils.library_db import get_session
-from models.library_models import LocalBook, LibrarySource, DuplicateBook, UploadBook
+import time
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
+
+from fastapi import HTTPException
+from sqlalchemy import desc, func, or_
+
+from config.config_settings import config
 from core.state_manager import state_manager
+from core.supabase_manager import supabase_manager
+from models.library_models import DuplicateBook, LibrarySource, LocalBook, UploadBook
 from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
 from services.library_service import LibraryService
 from services.opds_service import get_cached_feed
 from services.rating_service import RatingService
 from services.settings_service import get_setting, set_setting
-from sqlalchemy import desc
 from services.telegram_service import enviar_libro_directo
 from utils.helpers import (
-    build_search_url,
-    abs_url,
-    extract_author,
-    extract_creators_by_role,
-    parse_metadata_from_title,
     limpiar_html_basico,
+    parse_metadata_from_title,
 )
+from utils.library_db import get_session
 
 logger = logging.getLogger(__name__)
 
@@ -385,9 +379,10 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
     # Try to find book by content_hash first (most reliable)
     if book_id and not book_id.startswith("http"):
         try:
+            from sqlalchemy import select
+
             from core.db_manager_pg import pg_manager
             from models.library_models import LocalBook
-            from sqlalchemy import select
 
             async with pg_manager.get_session() as session:
                 lb = None
@@ -621,10 +616,10 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
     if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
 
+    from sqlalchemy import select, text
+
     from core.db_manager_pg import pg_manager
-    from sqlalchemy import text, select, func
-    from models.library_models import LocalBook, UserDownload
-    from models.user_models import User
+    from models.library_models import LocalBook
     
     total_users = 0
     total_books = 0
@@ -662,8 +657,9 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
         logger.error(f"Error fetching global stats from Postgres: {e}")
 
     # Calculate Uptime
-    from api.main import app_state
     import time
+
+    from api.main import app_state
     start_time = app_state.get("start_time", time.time())
     uptime_seconds = int(time.time() - start_time)
     days, remainder = divmod(uptime_seconds, 86400)
@@ -952,11 +948,12 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
         return {"success": False, "message": "Supabase no está habilitado."}
 
     try:
+
+        from sqlalchemy import select
+
         from core.db_manager_pg import pg_manager
         from core.supabase_manager import supabase_manager
         from models.user_models import User, UserLevel
-        from sqlalchemy import select
-        import json
         
         client = supabase_manager.get_client()
         
@@ -1190,8 +1187,9 @@ async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, 
         }
     
     try:
-        from utils.library_db import COVERS_DIR, engine
         import sqlalchemy as sa
+
+        from utils.library_db import COVERS_DIR, engine
         
         items_deleted = []
         cover_count = 0
@@ -1368,7 +1366,7 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             set_setting("ui_defaults_global", json.dumps(current_global))
             
             # Record change for audit if needed (can be added later)
-            logger.info(f"ADMIN: Saved GLOBAL tier config locally and to Supabase (if active)")
+            logger.info("ADMIN: Saved GLOBAL tier config locally and to Supabase (if active)")
             return {"success": True, "tierId": "global"}
 
         # Determine tier_id
@@ -1814,11 +1812,11 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
         raise HTTPException(status_code=400, detail="Falta userId")
     
     try:
-        from repositories.user_repository import user_repo
-        from services.user_service import invalidate_user_cache
-        from services.user_audit_service import UserAuditService
-        from datetime import datetime
         import asyncio
+
+        from repositories.user_repository import user_repo
+        from services.user_audit_service import UserAuditService
+        from services.user_service import invalidate_user_cache
         
         # Get existing user to preserve values if not provided
         existing = await user_repo.get_by_id(int(user_id))
@@ -2006,9 +2004,10 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     try:
-        from utils.library_db import get_session
-        from models.library_models import LocalBook
         from sqlalchemy import func
+
+        from models.library_models import LocalBook
+        from utils.library_db import get_session
         
         session = get_session()
         
@@ -2105,11 +2104,13 @@ async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[st
         return {"success": False, "message": "No se especificaron libros"}
     
     try:
-        from utils.library_db import get_session, COVERS_DIR
-        from models.library_models import LocalBook
-        from sqlalchemy import func
-        from collections import defaultdict
         import os
+        from collections import defaultdict
+
+        from sqlalchemy import func
+
+        from models.library_models import LocalBook
+        from utils.library_db import COVERS_DIR, get_session
         
         session = get_session()
         
@@ -2348,10 +2349,11 @@ async def handle_admin_send_logs_telegram(data: Dict[str, Any], user_data: Dict[
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     try:
-        from utils.log_manager import log_buffer_handler
-        from api.main import bot as bot_instance
         import io
         from datetime import datetime
+
+        from api.main import bot as bot_instance
+        from utils.log_manager import log_buffer_handler
 
         level = data.get("level", "DEBUG") 
         hours = data.get("hours")
@@ -2400,8 +2402,9 @@ async def handle_admin_bulk_upload_confirm(data: Dict[str, Any], user_data: Dict
     if not selected_ids and not discarded_ids:
         raise HTTPException(status_code=400, detail="No selected or discarded IDs provided")
     
-    from handlers.epub_upload_handler import epub_uploader, pending_uploads
     from pathlib import Path
+
+    from handlers.epub_upload_handler import epub_uploader, pending_uploads
     
     # 1. Manejar descartados (limpieza)
     for disc_id in discarded_ids:
@@ -2450,9 +2453,10 @@ async def handle_admin_bulk_upload_confirm(data: Dict[str, Any], user_data: Dict
 
 async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     """Obtiene el historial de subidas paginado."""
+    from sqlalchemy import desc
+
     from models.library_models import UploadHistory
     from utils.library_db import get_session
-    from sqlalchemy import desc
 
     try:
         with get_session() as session:

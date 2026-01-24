@@ -1,14 +1,18 @@
+import asyncio
+import hashlib
+import json
+import logging
 import os
 import re
-import json
-import hashlib
-import logging
-import asyncio
 from datetime import datetime
-from utils.library_db import get_session, init_library_db, COVERS_DIR
-from models.library_models import LibrarySource, LocalBook, DuplicateBook
+
+from models.library_models import DuplicateBook, LibrarySource, LocalBook
 from utils.epub_extractor import EpubMetadataExtractor
-from utils.helpers import generate_book_hash, generate_series_hash, extract_author, parse_metadata_from_title
+from utils.helpers import (
+    generate_book_hash,
+    generate_series_hash,
+)
+from utils.library_db import COVERS_DIR, get_session
 
 logger = logging.getLogger(__name__)
 
@@ -349,7 +353,9 @@ class ScannerService:
                 return
 
             # --- LÓGICA UNIFICADA DE IDENTIDAD ---
-            from utils.helpers import process_book_identity_comprehensive, normalize_author_name
+            from utils.helpers import (
+                process_book_identity_comprehensive,
+            )
             
             identity = process_book_identity_comprehensive(filepath)
             if not identity:
@@ -623,7 +629,7 @@ class ScannerService:
             response = httpx.get(url, timeout=10.0)
             
             if response.status_code == 429:
-                logger.warning(f"Google Books API rate limited (429). Esperando...")
+                logger.warning("Google Books API rate limited (429). Esperando...")
                 return False
 
             if response.status_code == 200:

@@ -1,10 +1,11 @@
 import asyncio
+import logging
 import os
 import sys
-import logging
+
+from dotenv import load_dotenv
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
-from dotenv import load_dotenv
 
 # Add path to find modules
 sys.path.append('/app')

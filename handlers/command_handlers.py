@@ -1,20 +1,22 @@
 # handlers/command_handlers.py
 
-import logging
 import html
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.constants import ParseMode
+import logging
 from datetime import datetime, timedelta
-from telegram.ext import ContextTypes, CommandHandler
-from core.state_manager import state_manager
-from utils.download_limiter import downloads_left
-from services.opds_service import mostrar_colecciones, get_cached_feed
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.constants import ParseMode
+from telegram.ext import CommandHandler, ContextTypes
+
 from config.config_settings import config
-from utils.helpers import get_thread_id, is_command_for_bot, build_search_url
+from core.state_manager import state_manager
+from services.opds_service import get_cached_feed, mostrar_colecciones
 from services.user_service import get_effective_user
 
 # from utils.http_client import parse_feed_from_url  <-- Removing this
 from utils.decorators import rate_limit
+from utils.download_limiter import downloads_left
+from utils.helpers import build_search_url, get_thread_id, is_command_for_bot
 
 logger = logging.getLogger(__name__)
 

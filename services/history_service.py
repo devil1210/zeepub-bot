@@ -1,19 +1,21 @@
-import logging
 import json
+import logging
 import os
 import re
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 import sqlalchemy as sa
 from sqlalchemy import (
-    Table,
-    Column,
-    Integer,
-    Text,
     BigInteger,
+    Column,
     DateTime,
+    Integer,
     MetaData,
+    Table,
+    Text,
 )
+
 from config.config_settings import config
 from utils.helpers import generar_slug_from_meta
 

@@ -1,19 +1,17 @@
-from typing import Optional, Dict, Any, List
-from repositories.base_repository import BaseRepository
 import logging
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from dateutil import parser
-import json
-
-from services.cache_service import cache_manager
-from core.db_manager_pg import pg_manager
-from models.user_models import User, UserLevel, UserUISettings
-from sqlalchemy import select, delete, cast, String
+from sqlalchemy import String, cast, delete, select
 from sqlalchemy.orm import selectinload
-from config.config_settings import config
-from core.state_manager import state_manager
 
-from sqlalchemy.exc import IntegrityError
+from config.config_settings import config
+from core.db_manager_pg import pg_manager
+from core.state_manager import state_manager
+from models.user_models import User, UserLevel, UserUISettings
+from repositories.base_repository import BaseRepository
+from services.cache_service import cache_manager
 
 logger = logging.getLogger(__name__)
 

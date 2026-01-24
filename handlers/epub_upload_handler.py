@@ -4,20 +4,21 @@ Comando para subir EPUBs a la librería con validación admin
 
 import logging
 import os
-import tempfile
-from pathlib import Path
-from typing import Dict, Any, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, constants
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
-from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters, CallbackQueryHandler
+from telegram.ext import (
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+)
 
-from config.config_settings import config
-from utils.library_db import get_session
 from models.library_models import LocalBook
-from utils.helpers import generate_book_hash, parse_metadata_from_title
-from services.epub_service import parse_opf_from_epub, enrich_metadata_from_epub
+from services.epub_service import enrich_metadata_from_epub, parse_opf_from_epub
+from utils.library_db import get_session
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +215,10 @@ class EPUBUploader:
             }
 
             # --- LÓGICA UNIFICADA DE IDENTIDAD ---
-            from utils.helpers import process_book_identity_comprehensive, generate_book_hash
+            from utils.helpers import (
+                generate_book_hash,
+                process_book_identity_comprehensive,
+            )
             
             identity = process_book_identity_comprehensive(str(epub_path), original_filename)
             
@@ -244,7 +248,7 @@ class EPUBUploader:
             metadata['author'] = identity['author']
             
             # Guardar en tabla temporal UploadBook con la misma lógica que scanner
-            from models.library_models import UploadBook, LocalBook
+            from models.library_models import LocalBook, UploadBook
             from utils.library_db import get_session
             
             with get_session() as session:
@@ -314,8 +318,6 @@ class EPUBUploader:
         3. Revisa el patrón de nombres de los archivos en esa carpeta.
         4. Renombra el nuevo archivo siguiendo el patrón (incluyendo Vol y Grupo).
         """
-        from utils.library_db import get_session
-        from models.library_models import LocalBook
         import os
         import re
         from pathlib import Path
@@ -573,7 +575,7 @@ class EPUBUploader:
         
         if identity_match:
             # Caso 1: El libro ya existe (ID idéntico)
-            preview_text += f"\n\n⚠️ **DUPLICADO DETECTADO**\nEsta misma edición ya existe en la biblioteca."
+            preview_text += "\n\n⚠️ **DUPLICADO DETECTADO**\nEsta misma edición ya existe en la biblioteca."
             if path_match and identity_match['id'] == path_match['id']:
                 preview_text += f"\n📍 **Ubicación coincidente:** `{identity_match['path']}`"
             else:
@@ -600,7 +602,7 @@ class EPUBUploader:
             approve_label = "⚠️ Sobrescribir Archivo"
             callback_prefix = "overwrite_epub"
         else:
-            preview_text += f"\n\n✅ Este es un archivo nuevo para la biblioteca."
+            preview_text += "\n\n✅ Este es un archivo nuevo para la biblioteca."
             approve_label = "✅ Aprobar Subida"
             callback_prefix = "approve_epub"
 
@@ -852,8 +854,9 @@ class EPUBUploader:
             
             # ESCANEO INMEDIATO Y ESPECÍFICO
             # Importar el servicio de escaneo
-            from services.scanner_service import ScannerService
             import os
+
+            from services.scanner_service import ScannerService
             
             # Obtener configuración de librerías desde variable de entorno
             libs_json = os.getenv("LOCAL_LIBRARIES", "{}")

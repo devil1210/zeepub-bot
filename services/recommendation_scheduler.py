@@ -1,9 +1,11 @@
-import logging
 import asyncio
+import json
+import logging
+
 from telegram.ext import ContextTypes
+
 # from repositories.user_repository import user_repo (moved to function to avoid circular import)
 from services.recommendation_service import RecommendationService
-import json
 
 logger = logging.getLogger(__name__)
 

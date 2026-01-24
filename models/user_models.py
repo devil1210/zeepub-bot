@@ -1,8 +1,21 @@
 # sqlalchemy models for user management
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, JSON, BigInteger, ForeignKey, Text, Float
-from sqlalchemy.orm import relationship
 from datetime import datetime
+
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+)
+from sqlalchemy.orm import relationship
+
 from .base import Base
+
 
 class User(Base):
     """
@@ -21,7 +34,7 @@ class User(Base):
     photo_url = Column(String(500), nullable=True) # URL local de la foto de perfil
     
     # Nivel/Permisos
-    level_id = Column(Integer, ForeignKey('user_levels.id'), default=6) # 6 = Free por defecto
+    level_id = Column(Integer, ForeignKey('user_levels.id'), default=6, index=True) # 6 = Free por defecto
     role = Column(String(50), default='user') # admin, mod, user
     
     # Flags y Estado
@@ -119,7 +132,7 @@ class UserLevel(Base):
     show_recommendations = Column(Boolean, default=True)
     
     # Default Theme Association
-    default_theme_id = Column(Integer, ForeignKey('app_themes.id'), nullable=True)
+    default_theme_id = Column(Integer, ForeignKey('app_themes.id'), nullable=True, index=True)
     default_theme = relationship("AppTheme")
     
     users = relationship("User", back_populates="level_info")

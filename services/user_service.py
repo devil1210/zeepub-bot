@@ -1,15 +1,17 @@
-import logging
-import json
-import os
 import io
-from typing import Optional, Dict, Any
+import json
+import logging
+import os
 from datetime import datetime
+from typing import Any, Dict, Optional
+
 from PIL import Image
+
 from config.config_settings import config
 from repositories.user_repository import user_repo
 from services.cache_service import AsyncTTLCache
 from services.settings_service import get_setting
-from utils.library_db import PROFILES_DIR, THUMBNAILS_DIR
+from utils.library_db import PROFILES_DIR
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,11 @@
 import asyncio
 import logging
-from sqlalchemy import text, select
+
+from sqlalchemy import text
+
 from core.db_manager_pg import pg_manager
-from models.user_models import UserLevel
 from models.base import Base
+from models.user_models import UserLevel
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("DB_REPAIR")

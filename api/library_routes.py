@@ -1,18 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Body
-from fastapi.responses import FileResponse
-from typing import Optional, List, Dict, Any
 import os
 import shutil
-from starlette.concurrency import run_in_threadpool
-from PIL import Image
+from typing import Any, Dict, List, Optional
 
-from utils.library_db import COVERS_DIR, THUMBNAILS_DIR
-from api.deps import require_mini_app_access, require_admin
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
+from PIL import Image
+from sqlalchemy import select
+from starlette.concurrency import run_in_threadpool
+
+from api.deps import require_admin, require_mini_app_access
+from core.db_manager_pg import pg_manager
+from models.library_models import LibrarySource
 from services.library_service import LibraryService
 from services.scanner_service import ScannerService
-from models.library_models import LibrarySource
-from core.db_manager_pg import pg_manager
-from sqlalchemy import select
+from utils.library_db import COVERS_DIR, THUMBNAILS_DIR
 
 router = APIRouter(tags=["library"])
 
@@ -222,8 +223,9 @@ async def delete_backup(backup_filename: str, user_data: dict = Depends(require_
     return {"success": BackupService.delete_backup(backup_filename)}
 
 # ===== EXPORT/IMPORT ENDPOINTS =====
-from services.library_export_service import LibraryExportService
 from fastapi.responses import JSONResponse
+
+from services.library_export_service import LibraryExportService
 
 
 @router.get("/api/library/export")

@@ -1,7 +1,9 @@
 
 import logging
-from typing import List, Dict, Any, Optional
-from supabase import create_client, Client
+from typing import Optional
+
+from supabase import Client, create_client
+
 from config.config_settings import config
 
 logger = logging.getLogger(__name__)

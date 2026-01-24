@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, DateTime, BigInteger, ForeignKey
-from sqlalchemy.orm import relationship
 from datetime import datetime
+
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 
 # Use the same Base as library_models if possible,
 # but for a new file we can define it or import it.
@@ -16,7 +17,7 @@ class DownloadHistory(Base):
     __tablename__ = "download_history"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False)
+    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
     
     # Relaciones
     user = relationship("User", backref="download_history")

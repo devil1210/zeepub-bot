@@ -1,9 +1,11 @@
-from fastapi import Header, HTTPException, Query, Depends
-from typing import Optional, Dict, Any
 import logging
+from typing import Any, Dict, Optional
+
+from fastapi import Depends, Header, HTTPException, Query
+
 from config.config_settings import config
-from utils.security import validate_telegram_data
 from services.user_service import get_effective_user
+from utils.security import validate_telegram_data
 
 logger = logging.getLogger(__name__)
 

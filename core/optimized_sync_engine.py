@@ -2,14 +2,14 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional, Set
-from sqlalchemy import select, text, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any, Dict, List, Optional, Set
+
+from sqlalchemy import select, text
 
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
-from models.user_models import User, UserLevel, UserUISettings
+from models.user_models import UserLevel
 from services.cache_service import cache_manager
 
 logger = logging.getLogger(__name__)

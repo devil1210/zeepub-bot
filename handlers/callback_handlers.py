@@ -1,13 +1,19 @@
 # handlers/callback_handlers.py
 
-import re
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, CallbackQueryHandler, MessageHandler, filters
-from core.state_manager import state_manager
-from services.opds_service import mostrar_colecciones, buscar_zeepubs_directo, mostrar_recomendaciones
-from services.telegram_service import publicar_libro
+import re
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackQueryHandler, ContextTypes, MessageHandler, filters
+
 from config.config_settings import config
+from core.state_manager import state_manager
+from services.opds_service import (
+    buscar_zeepubs_directo,
+    mostrar_colecciones,
+    mostrar_recomendaciones,
+)
+from services.telegram_service import publicar_libro
 
 logger = logging.getLogger(__name__)
 
@@ -263,9 +269,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Stateless lookup from DB (for recommendations/scheduler)
             try:
                 local_id = int(key.split("_")[1])
+                from sqlalchemy import select
+
                 from core.db_manager_pg import pg_manager
                 from models.library_models import LocalBook
-                from sqlalchemy import select
 
                 async with pg_manager.get_session() as session:
                     stmt = select(LocalBook).where(LocalBook.id == local_id)

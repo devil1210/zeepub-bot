@@ -1,6 +1,7 @@
 import logging
-from plugins.base_plugin import BasePlugin
+
 from config.config_settings import config
+from plugins.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
 

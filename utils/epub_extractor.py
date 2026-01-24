@@ -1,10 +1,11 @@
-import os
-import zipfile
-import xml.etree.ElementTree as ET
-from PIL import Image
-import io
-import re
 import html
+import io
+import os
+import re
+import xml.etree.ElementTree as ET
+import zipfile
+
+from PIL import Image
 
 
 def clean_metadata_tags(text):
@@ -353,7 +354,7 @@ class EpubMetadataExtractor:
                 
                 self.cover_data = z.read(full_href)
                 self.cover_extension = os.path.splitext(cover_href)[1]
-        except Exception as e:
+        except Exception:
             # Silencioso pero útil para debug manual si es necesario
             pass
 

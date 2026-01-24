@@ -1,13 +1,13 @@
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
 from api.deps import (
+    get_current_user_data,
     require_admin,
     require_mini_app_access,
-    get_current_user_data,
 )
 from config.config_settings import config
 
@@ -130,55 +130,55 @@ async def handle_bot_request(
     try:
         # Mapping of actions to their respective handlers
         from api.miniapp_handlers import (
-            handle_search,
-            handle_book_detail,
-            handle_user_status,
-            handle_user_downloads_history,
-            handle_recommendations,
-            handle_rate_book,
-            handle_remove_rating,
-            handle_rating_breakdown,
-            handle_get_download_count,
-            handle_save_badge_config,
-            handle_status,
-            handle_download,
-            handle_bot_info,
-            handle_ui_settings,
-            handle_create_stars_invoice,
-            handle_admin_stats,
-            handle_admin_get_tiers,
-            handle_admin_save_tier,
-            handle_admin_get_users,
-            handle_admin_set_user_level,
             handle_admin_backup_library,
-            handle_admin_sync_users_cloud,
-            handle_admin_scan_library,
-            handle_admin_reset_library,
-            handle_admin_restart_docker,
-            handle_admin_update_system,
-            handle_admin_save_tier_config,
-            handle_admin_get_tier_config,
-            handle_admin_save_user_permissions,
-            handle_admin_get_user_permissions,
-            handle_admin_find_duplicates,
+            handle_admin_clear_duplicates,
             handle_admin_delete_duplicate,
             handle_admin_enrich_metadata,
-            handle_update_user_setting,
-            handle_get_user_audit_history,
-            handle_admin_get_recent_audit_logs,
-            handle_admin_get_themes,
-            handle_admin_save_theme,
-            handle_admin_sync_themes,
-            handle_admin_get_theme_sync_logs,
-            handle_admin_get_sync_status,
+            handle_admin_find_duplicates,
             handle_admin_force_sync,
-            handle_admin_rename_themes,
             handle_admin_get_duplicates,
-            handle_admin_clear_duplicates,
-            handle_admin_scan_user,
-            handle_admin_scan_series,
+            handle_admin_get_recent_audit_logs,
+            handle_admin_get_sync_status,
             handle_admin_get_system_logs,
+            handle_admin_get_theme_sync_logs,
+            handle_admin_get_themes,
+            handle_admin_get_tier_config,
+            handle_admin_get_tiers,
+            handle_admin_get_user_permissions,
+            handle_admin_get_users,
+            handle_admin_rename_themes,
+            handle_admin_reset_library,
+            handle_admin_restart_docker,
+            handle_admin_save_theme,
+            handle_admin_save_tier,
+            handle_admin_save_tier_config,
+            handle_admin_save_user_permissions,
+            handle_admin_scan_library,
+            handle_admin_scan_series,
+            handle_admin_scan_user,
             handle_admin_send_logs_telegram,
+            handle_admin_set_user_level,
+            handle_admin_stats,
+            handle_admin_sync_themes,
+            handle_admin_sync_users_cloud,
+            handle_admin_update_system,
+            handle_book_detail,
+            handle_bot_info,
+            handle_create_stars_invoice,
+            handle_download,
+            handle_get_download_count,
+            handle_get_user_audit_history,
+            handle_rate_book,
+            handle_rating_breakdown,
+            handle_recommendations,
+            handle_remove_rating,
+            handle_save_badge_config,
+            handle_search,
+            handle_status,
+            handle_ui_settings,
+            handle_update_user_setting,
+            handle_user_downloads_history,
+            handle_user_status,
         )
 
         ACTION_HANDLERS = {
@@ -269,7 +269,6 @@ async def check_user_access(
     user_data: Dict[str, Any] = Depends(get_current_user_data),
 ):
     from services.user_service import get_effective_user
-    from repositories.user_repository import user_repo
 
     current_uid = user_data.get("user_id", 0)
     # Priorizar el ID verificado por Telegram
@@ -375,7 +374,6 @@ async def check_user_access(
         response_payload.status_label = "Admin"
 
     if uid == 133994080:
-        import json
         try:
             logger.warning(f"🚨 FINAL PAYLOAD FOR 133994080: {response_payload.model_dump_json()}")
         except Exception as e:
@@ -429,9 +427,10 @@ async def upload_epub_miniapp(
         )
     
     import tempfile
-    from pathlib import Path
-    from handlers.epub_upload_handler import epub_uploader, pending_uploads
     from datetime import datetime
+    from pathlib import Path
+
+    from handlers.epub_upload_handler import epub_uploader, pending_uploads
     
     # Crear directorio temporal si no existe
     temp_dir = Path(tempfile.gettempdir()) / "zeepub_uploads"
@@ -557,9 +556,10 @@ async def upload_epub_bulk(
         )
 
     import tempfile
-    from pathlib import Path
-    from handlers.epub_upload_handler import epub_uploader, pending_uploads
     from datetime import datetime
+    from pathlib import Path
+
+    from handlers.epub_upload_handler import epub_uploader, pending_uploads
 
     temp_dir = Path(tempfile.gettempdir()) / "zeepub_bulk_uploads"
     temp_dir.mkdir(exist_ok=True)
@@ -628,9 +628,10 @@ async def get_upload_history(
 @router.get("/api/bot/avatar")
 async def get_bot_avatar(file_id: str):
     """Proxies the Telegram avatar file to the frontend."""
-    from api.main import bot
     import httpx
     from fastapi.responses import StreamingResponse
+
+    from api.main import bot
 
     try:
         # 1. Get file path from Telegram

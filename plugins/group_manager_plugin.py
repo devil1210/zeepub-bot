@@ -1,13 +1,20 @@
-import logging
-import os
 import html
-from sqlalchemy import create_engine, Column, String, Boolean, BigInteger
+import logging
+
 import sqlalchemy as sa
+from sqlalchemy import BigInteger, Boolean, Column, String
 from sqlalchemy.orm import declarative_base, sessionmaker
-from telegram import Update, ChatMember, ChatMemberUpdated
-from telegram.ext import ContextTypes, CommandHandler, ChatMemberHandler, MessageHandler, filters
-from plugins.base_plugin import BasePlugin
+from telegram import ChatMember, ChatMemberUpdated, Update
+from telegram.ext import (
+    ChatMemberHandler,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
+
 from config.config_settings import config
+from plugins.base_plugin import BasePlugin
 from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)

@@ -6,9 +6,11 @@ Backend: PostgreSQL (via SQLAlchemy).
 import logging
 import os
 from typing import Optional
-from config.config_settings import config
+
 import sqlalchemy as sa
-from sqlalchemy import Table, Column, String, Text, MetaData
+from sqlalchemy import Column, MetaData, String, Table, Text
+
+from config.config_settings import config
 
 logger = logging.getLogger(__name__)
 

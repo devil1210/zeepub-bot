@@ -1,16 +1,17 @@
 import asyncio
 import logging
-import sys
 import os
+import sys
 
 # Añadir el path raíz al sistema para importar módulos del proyecto
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from utils.library_db import get_session, init_library_db
+from sqlalchemy import text
+
+from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook
 from utils.helpers import generate_book_hash, generate_series_hash
-from core.db_manager_pg import pg_manager
-from sqlalchemy import text
+from utils.library_db import get_session, init_library_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("migrate_hashes_v2")

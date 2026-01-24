@@ -5,13 +5,13 @@ Script de diagnóstico para verificar qué temas existen en la base de datos
 import asyncio
 import logging
 import sys
-import os
 
 # Agregar el path del proyecto
 sys.path.append('/app')
 
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from config.config_settings import config
 
 logging.basicConfig(level=logging.INFO)
@@ -70,7 +70,7 @@ async def diagnose_themes():
                 logger.info(f"  - ID: {theme_id}, Name: '{name}'")
             
             # Resumen
-            logger.info(f"\n📊 SUMMARY:")
+            logger.info("\n📊 SUMMARY:")
             logger.info(f"  - Total themes: {len(all_themes)}")
             logger.info(f"  - Themes ending with '2': {len(themes_ending_2)}")
             logger.info(f"  - Themes containing '2': {len(themes_containing_2)}")
@@ -83,7 +83,7 @@ async def diagnose_themes():
                     base_name = name.replace(' 2', '').strip()
                     logger.info(f"  - '{name}' → '{base_name} Pro' (suggested)")
             else:
-                logger.info(f"\n❌ ACTION: No themes ending with '2' found to rename")
+                logger.info("\n❌ ACTION: No themes ending with '2' found to rename")
                 
         await engine.dispose()
         logger.info("\n=== DIAGNOSTIC COMPLETE ===")

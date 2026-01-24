@@ -1,7 +1,10 @@
 from __future__ import with_statement
+
 import os
 from logging.config import fileConfig
+
 from sqlalchemy import pool
+
 from alembic import context
 
 # this is the Alembic Config object, which provides
@@ -17,7 +20,8 @@ if db_url:
     config.set_main_option('sqlalchemy.url', db_url)
 
 # Define metadata directly to avoid circular imports
-from sqlalchemy import MetaData, Table, Column, String, Text, Integer, Boolean, DateTime
+from sqlalchemy import Boolean, Column, DateTime, Integer, MetaData, String, Table, Text
+
 meta = MetaData()
 Table(
     "url_mappings",

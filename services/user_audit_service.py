@@ -3,9 +3,10 @@ User Audit Service
 Servicio para registrar cambios en usuarios y permisos.
 """
 import logging
-from typing import Dict, Any, Optional
-from datetime import datetime
+from typing import Any, Dict, Optional
+
 from sqlalchemy.orm import Session
+
 from models.user_audit_models import UserAuditLog
 from utils.library_db import get_session
 

@@ -3,11 +3,11 @@ Pytest configuration file.
 Adds the project root to sys.path so tests can import project modules.
 """
 
-import sys
-import os
-import pytest
 import asyncio
+import sys
 from pathlib import Path
+
+import pytest
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent
@@ -34,7 +34,6 @@ def setup_test_db():
     Ensures the database is initialized before any tests run.
     Uses PostgreSQL as configured in config.
     """
-    from config.config_settings import config
     from core.db_manager_pg import pg_manager
 
     # Ensure we are in test mode if needed

@@ -1,11 +1,13 @@
 # plugins/stars_payment_plugin.py
 
 import logging
-from telegram import Update, LabeledPrice
-from telegram.ext import ContextTypes, PreCheckoutQueryHandler, MessageHandler, filters
+
+from telegram import LabeledPrice, Update
+from telegram.ext import ContextTypes, MessageHandler, PreCheckoutQueryHandler, filters
+
 from plugins.base_plugin import BasePlugin
-from services.user_service import invalidate_user_cache
 from repositories.user_repository import user_repo
+from services.user_service import invalidate_user_cache
 
 logger = logging.getLogger(__name__)
 

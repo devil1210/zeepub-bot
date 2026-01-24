@@ -1,8 +1,10 @@
-import logging
 import functools
+import logging
+
 from telegram import Update
+
 from config.config_settings import config
-from utils.rate_limiter import rate_limiter, RateLimitType
+from utils.rate_limiter import RateLimitType, rate_limiter
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,9 @@
 import logging
-from typing import Dict, Any, Optional, List
-from config.config_settings import config
-from core.db_manager_pg import pg_manager
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy import text
+
+from core.db_manager_pg import pg_manager
 
 logger = logging.getLogger(__name__)
 

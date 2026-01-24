@@ -4,8 +4,10 @@ Create theme_sync_logs table in PostgreSQL
 
 import asyncio
 import logging
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
+
 from config.config_settings import config
 
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +25,7 @@ async def create_theme_sync_logs_table():
         logger.error("DATABASE_URL not configured")
         return
     
-    logger.info(f"Creating theme_sync_logs table in PostgreSQL")
+    logger.info("Creating theme_sync_logs table in PostgreSQL")
     
     try:
         engine = create_async_engine(DATABASE_URL, echo=True)

@@ -1,31 +1,31 @@
-from fastapi import APIRouter, HTTPException, Query, Request, Response, Depends
-from fastapi.responses import StreamingResponse
-from typing import Optional, Dict, Any
-import httpx
-import os
-import hmac
 import hashlib
+import hmac
 import json
-from config.config_settings import config
-from services.opds_service import get_cached_feed
-from utils.helpers import (
-    build_search_url,
-    formatear_mensaje_portada,
-    find_zeepubs_destino,
-    extract_author,
-    parse_metadata_from_title,
-)
-from utils.http_client import fetch_bytes
-from services.epub_service import (
-    parse_opf_from_epub,
-    extract_internal_title,
-)
 import logging
+import os
+from typing import Any, Dict, Optional
 
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi.responses import StreamingResponse
 
 from api.deps import (
     require_mini_app_access,
 )
+from config.config_settings import config
+from services.epub_service import (
+    extract_internal_title,
+    parse_opf_from_epub,
+)
+from services.opds_service import get_cached_feed
+from utils.helpers import (
+    build_search_url,
+    extract_author,
+    find_zeepubs_destino,
+    formatear_mensaje_portada,
+    parse_metadata_from_title,
+)
+from utils.http_client import fetch_bytes
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
@@ -748,8 +748,9 @@ async def prepare_facebook_post(
             raise HTTPException(status_code=400, detail="No download URL found")
 
         # Construir link público acortado con SHA256
-        from utils.url_cache import create_short_url
         from urllib.parse import unquote, urlparse
+
+        from utils.url_cache import create_short_url
 
         dl_domain = config.DL_DOMAIN.rstrip("/")
         # Asegurar esquema

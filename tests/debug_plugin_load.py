@@ -1,7 +1,7 @@
 import asyncio
 import logging
-import sys
 import os
+import sys
 from unittest.mock import MagicMock
 
 # Add root to path

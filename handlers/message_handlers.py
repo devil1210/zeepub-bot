@@ -1,16 +1,17 @@
 # handlers/message_handlers.py
 
-import logging
 import html
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+import logging
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
-from core.state_manager import state_manager
-from services.opds_service import mostrar_colecciones, get_cached_feed
+
 from config.config_settings import config
-from utils.helpers import build_search_url
+from core.state_manager import state_manager
+from services.opds_service import get_cached_feed, mostrar_colecciones
 
 # from utils.http_client import parse_feed_from_url
-from utils.helpers import get_thread_id
+from utils.helpers import build_search_url, get_thread_id
 
 logger = logging.getLogger(__name__)
 
@@ -323,6 +324,7 @@ async def handle_json_upload(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
         # Procesar en un thread aparte para no bloquear
         import asyncio
+
         from services.history_service import process_history_json
 
         loop = asyncio.get_running_loop()

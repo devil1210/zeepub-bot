@@ -1,9 +1,11 @@
 import logging
 import re
-from typing import Dict, Any, Optional, List
-from sqlalchemy import select, func, or_, desc, cast, String
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import String, cast, func, or_, select
+
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, LibrarySource
+from models.library_models import LocalBook
 from repositories.download_repository import download_repo
 
 logger = logging.getLogger(__name__)

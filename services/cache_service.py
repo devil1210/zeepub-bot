@@ -1,8 +1,7 @@
 import asyncio
 import logging
-from typing import Any, Optional, Dict, List, Tuple
 from datetime import datetime, timedelta
-import json
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 

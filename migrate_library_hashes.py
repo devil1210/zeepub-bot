@@ -1,15 +1,13 @@
+import logging
 import os
 import sys
-import logging
-import hashlib
 
 # Add current directory to path
 sys.path.append(os.getcwd())
 
-from utils.library_db import get_session, engine
 from models.library_models import LocalBook
 from utils.helpers import generate_book_hash, generate_series_hash
-from sqlalchemy import text
+from utils.library_db import get_session
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("HashMigration")

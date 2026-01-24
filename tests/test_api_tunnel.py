@@ -1,6 +1,8 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi import HTTPException
+
 from api.routes import tunnel_opds
 from config.config_settings import config
 

@@ -1,10 +1,11 @@
 import logging
-from typing import List, Dict, Any, Optional
 from datetime import datetime
-from repositories.base_repository import BaseRepository
-from config.config_settings import config
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import text
+
 from core.db_manager_pg import pg_manager
-from sqlalchemy import text, func
+from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
 

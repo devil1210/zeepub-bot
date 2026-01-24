@@ -6,13 +6,13 @@ Ejecutar dentro del contenedor Docker: docker exec -it <container> python script
 import asyncio
 import logging
 import sys
-import os
 
 # Agregar el path del proyecto
 sys.path.append('/app')
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import select, text, update
+
 from config.config_settings import config
 
 logging.basicConfig(level=logging.INFO)

@@ -1,7 +1,7 @@
 import json
-import os
 import logging
-from typing import Dict, Any
+import os
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +57,10 @@ async def get_stats_summary(period: str = "day") -> Dict[str, Any]:
     Obtiene métricas del periodo solicitado consultando la BD Postgres.
     period: 'day', 'month', 'year', 'all'
     """
-    from core.db_manager_pg import pg_manager
     from sqlalchemy import text
+
     from config.config_settings import config
+    from core.db_manager_pg import pg_manager
 
     if not config.ENABLE_POSTGRES_PLUGIN:
         return {"unique_users": 0, "total_downloads": 0, "new_users": 0, "by_role": {}}

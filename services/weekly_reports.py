@@ -5,6 +5,7 @@ Servicio para enviar reportes semanales de links a publishers.
 import asyncio
 import logging
 from datetime import datetime, timedelta
+
 from config.config_settings import config
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 async def generate_weekly_report():
     """Genera el reporte semanal de links."""
     try:
-        from utils.url_cache import get_stats, get_broken_links
+        from utils.url_cache import get_broken_links, get_stats
 
         stats = get_stats()
         broken = get_broken_links(limit=10)

@@ -29,6 +29,8 @@ Cada skill en este proyecto debe seguir esta estructura:
     2. Verificar que todos los tipos (typing) usados estén importados.
 - **skill: systematic-debugging**
   **reason**: Logical isolation of bugs in a distributed system.
+  **Regla de Oro (Iron Law)**: NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.
+  **Proceso**: 1. Investigar Causa Raíz (Logs, Stack traces) -> 2. Análisis de Patrones -> 3. Hipótesis Mínima -> 4. Implementación y Prueba Failing Test.
 
 ## Datos & Infraestructura
 - skill: postgres-best-practices

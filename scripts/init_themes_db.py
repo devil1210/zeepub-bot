@@ -1,15 +1,15 @@
 import asyncio
+import logging
 import os
 import sys
-import logging
-from sqlalchemy.ext.asyncio import create_async_engine
+
 from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import create_async_engine
 
 # Add path to find modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.base import Base
-from models.user_models import AppTheme  # Import to register in Base.metadata
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)

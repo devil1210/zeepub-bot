@@ -2,10 +2,11 @@
 
 import logging
 import xml.etree.ElementTree as ET
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from config.config_settings import config
-from utils.http_client import fetch_bytes, cleanup_tmp
 from utils.helpers import limpiar_html_basico
+from utils.http_client import cleanup_tmp, fetch_bytes
 
 logger = logging.getLogger(__name__)
 

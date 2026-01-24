@@ -5,8 +5,9 @@ Revises: 58670adf5f59
 Create Date: 2026-01-08 20:10:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'add_user_levels'

@@ -1,6 +1,7 @@
 # core/state_manager.py
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 from config.config_settings import config
 
 

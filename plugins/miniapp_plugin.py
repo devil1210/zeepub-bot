@@ -1,5 +1,6 @@
-import os
 import logging
+import os
+
 from plugins.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
