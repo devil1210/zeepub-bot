@@ -151,11 +151,25 @@ async def get_effective_user(
         }
 
     def normalize_ui(s: Dict[str, Any]):
-        """Normaliza valores de opacidad y otros parámetros visuales."""
-        opacity_keys = ["navOpacity", "accentOpacity", "glassOpacity"]
+        """Normaliza valores de opacidad y asegura que no haya Nones en campos críticos."""
+        # 1. Opacity normalization (0-100 to 0.0-1.0)
+        opacity_keys = ["navOpacity", "accentOpacity", "glassOpacity", "cardGlowIntensity"]
         for k in opacity_keys:
-            if k in s and isinstance(s[k], (int, float)) and s[k] > 1.1:
-                s[k] = s[k] / 100.0
+            if k in s and isinstance(s[k], (int, float)):
+                if s[k] > 1.1:
+                    s[k] = s[k] / 100.0
+            elif k in s and s[k] is None:
+                # Provide defaults if None
+                defaults = {"navOpacity": 0.8, "accentOpacity": 0.2, "glassOpacity": 0.6, "cardGlowIntensity": 0.5}
+                s[k] = defaults.get(k)
+
+        # 2. Key fallbacks for common visual properties
+        if not s.get("theme"): s["theme"] = "dark"
+        if not s.get("primaryColor"): s["primaryColor"] = "#3b82f6"
+        if s.get("fontSize") is None: s["fontSize"] = 14
+        if not s.get("backgroundColor"): s["backgroundColor"] = "#0f172a"
+        if not s.get("cardColor"): s["cardColor"] = "#1e293b"
+        
         return s
 
     result = {
@@ -325,6 +339,7 @@ async def get_effective_user(
             is_forced = level_settings.get("forceSettings", False)
             
             for k, v in personal_settings.items():
+                if v is None: continue # Skip nulls
                 if not is_forced:
                     # Not forced: user settings always win
                     final_ui[k] = v

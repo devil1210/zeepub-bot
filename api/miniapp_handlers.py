@@ -217,9 +217,10 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
             "can_download": bool(level_info.get("canDownload", True) is not False),
             "can_read": bool(level_info.get("canRead", True) is not False),
             "can_upload_epub": bool(user_data.get("can_upload_epub", False) or level_info.get("canUploadEpub", False)),
+            "is_real_admin": user_data.get("is_real_admin", False),
             "downloads": {
                 "used": int(used or 0),
-                "limit": max_dl
+                "limit": max_dl if max_dl is not None else 999
             }
         },
         "timeUntilReset": f"{hours}h {minutes}m",
