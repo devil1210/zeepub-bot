@@ -364,6 +364,14 @@ async def check_user_access(
         titlePreference=user_settings.get("title_preference") or "romaji"
     )
 
+    if uid == 133994080:
+        import json
+        try:
+            logger.warning(f"🚨 FINAL PAYLOAD FOR 133994080: {response_payload.model_dump_json()}")
+        except Exception as e:
+            logger.error(f"Failed to log payload: {e}")
+
+    return response_payload
 
 
 @router.get("/api/admin/levels")
