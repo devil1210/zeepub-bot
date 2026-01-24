@@ -85,16 +85,19 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
             "volumes": volumes # Retornamos los volúmenes reales
         }
 
-    # 2. Local Book ONLY (Individual)
+    # 2. Local Book Handling
     if isinstance(book_id_raw, str) and (
         book_id_raw.isdigit() or (book_id_raw.startswith("local_") and not book_id_raw.startswith("series_"))
     ):
         clean_id = int(str(book_id_raw).replace("local_", ""))
         local_book = await LibraryService.get_book_by_id(clean_id)
+        
         if local_book:
             logger.info(
-                f"[book-detail] Found local book via LibraryService: {local_book['title']}"
+                f"[book-detail] Found local book: {local_book['title']} (series_hash: {local_book.get('series_hash')})"
             )
+            
+            # Enrich with download info
             local_book["is_downloaded"] = await download_repo.has_user_downloaded(
                 user_id,
                 local_book["title"],
@@ -106,6 +109,18 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
                 local_book.get("cleanTitle"),
                 local_book.get("book_hash"),
             )
+            
+            # If part of a series, ALWAYS include volumes to avoid "empty volumes list" in frontend
+            s_hash = local_book.get("series_hash")
+            if s_hash:
+                volumes = await LibraryService.get_series_volumes(s_hash)
+                local_book["volumes"] = volumes
+                local_book["is_series"] = True # Treat as series for UI consistency if requested from series detail
+                local_book["series_hash"] = s_hash
+            else:
+                local_book["volumes"] = [local_book]
+                local_book["is_series"] = False
+                
             return local_book
     
     # OPDS fallback removed
@@ -641,8 +656,9 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
             storage_gb = round(storage_bytes / (1024**3), 2) if storage_bytes else 0.0
             
             # 3. Download Metrics
-            dls_24h = (await session.execute(text("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= NOW() - INTERVAL '24 hours'"))).scalar() or 0
-            dls_prev_24h = (await session.execute(text("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= NOW() - INTERVAL '48 hours' AND downloaded_at < NOW() - INTERVAL '24 hours'"))).scalar() or 0
+            # Use a more explicit comparison for 24h
+            dls_24h = (await session.execute(text("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= (CURRENT_TIMESTAMP - INTERVAL '1 day')"))).scalar() or 0
+            dls_prev_24h = (await session.execute(text("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= (CURRENT_TIMESTAMP - INTERVAL '2 days') AND downloaded_at < (CURRENT_TIMESTAMP - INTERVAL '1 day')"))).scalar() or 0
             
             # 4. Revenue Estimation (Real from levels)
             cursor = await session.execute(text("""

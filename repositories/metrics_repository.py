@@ -23,7 +23,7 @@ class MetricsRepository:
     ):
         try:
             async with pg_manager.get_session() as session:
-                query = text("INSERT INTO user_downloads (user_id, book_hash, series_hash, title) VALUES (:user_id, :book_hash, :series_hash, :title)")
+                query = text("INSERT INTO user_downloads (user_id, book_hash, series_hash, title, downloaded_at) VALUES (:user_id, :book_hash, :series_hash, :title, CURRENT_TIMESTAMP)")
                 await session.execute(query, {"user_id": user_id, "book_hash": book_hash, "series_hash": series_hash, "title": title})
                 await session.commit()
             

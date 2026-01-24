@@ -11,7 +11,13 @@ import {
   Star,
   PlayCircle,
   Library,
-  RefreshCw
+  RefreshCw,
+  ShieldCheck,
+  Copy,
+  Upload,
+  History,
+  ShieldHalf,
+  ArrowDownToLine
 } from 'lucide-react';
 import { api } from '../src/services/api';
 import { useTelegram } from '../contexts/TelegramContext';
@@ -23,7 +29,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { user: tgUser, status, showRecommendations, extendedInfo } = useTelegram();
+  const { user: tgUser, status, showRecommendations, extendedInfo, isAdmin } = useTelegram();
   const { settings } = useTheme();
   const [history, setHistory] = useState<any[]>([]);
   const [recommendations, setRecommendations] = useState<any[]>([]);
@@ -170,15 +176,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <h3 className="text-[11px] font-black text-primary/60 uppercase tracking-[0.3em] mb-6 px-1 drop-shadow-sm">Acceso Directo</h3>
             {(() => {
               const actions = [
-                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar Todo', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', glow: 'bg-blue-500/10', visible: true },
-                { id: 'library', icon: Library, label: 'Biblioteca', desc: 'Mis Adquisiciones', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', glow: 'bg-purple-500/10', visible: status?.user?.has_library_access !== false },
-                { id: 'requests', icon: BookOpen, label: 'Pedidos', desc: 'Solicitar Libros', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', glow: 'bg-emerald-500/10', visible: status?.user?.can_request_books !== false },
-                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Personalización', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', glow: 'bg-amber-500/10', visible: true },
+                { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar Todo', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
+                { id: 'library', icon: Library, label: 'Biblioteca', desc: 'Mis Libros', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
+                { id: 'requests', icon: BookOpen, label: 'Pedidos', desc: 'Solicitar Libros', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', visible: status?.user?.can_request_books !== false },
+                { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Personalización', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true },
               ].filter(a => a.visible);
 
-              const gridCols = actions.length === 2 ? 'grid-cols-2' :
-                actions.length === 3 ? 'grid-cols-3' :
-                  'grid-cols-2 sm:grid-cols-4';
+              const gridCols = 'grid-cols-2 sm:grid-cols-4';
 
               return (
                 <div className={`grid gap-5 ${gridCols}`}>
@@ -276,6 +280,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </div>
             </div>
           )}
+
+          {/* New Admin/Tools Section */}
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500 mt-12">
+            <h3 className="text-[11px] font-black text-primary/60 uppercase tracking-[0.3em] mb-6 px-1 drop-shadow-sm">Panel de Control</h3>
+            {(() => {
+              const adminActions = [
+                { id: 'downloads', icon: ArrowDownToLine, label: 'Descargas', desc: 'Mis Libros', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
+                { id: 'upload', icon: Upload, label: 'Subir Epub', desc: 'Aportar Contenido', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.can_upload_epub !== false },
+                { id: 'admin?view=duplicates', icon: Copy, label: 'Duplicados', desc: 'Gestión DB', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', visible: isAdmin },
+                { id: 'admin', icon: ShieldCheck, label: 'Admin Panel', desc: 'Sistema Global', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', visible: isAdmin },
+                { id: 'admin?view=uploads', icon: History, label: 'Subidas', desc: 'Historial Global', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: isAdmin },
+                { id: 'admin?view=access', icon: ShieldHalf, label: 'Niveles', desc: 'Accesos', color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', visible: isAdmin },
+              ].filter(a => a.visible);
+
+              const adminGridCols = adminActions.length > 4 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2 sm:grid-cols-4';
+
+              return (
+                <div className={`grid gap-5 ${adminGridCols}`}>
+                  {adminActions.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => onNavigate && onNavigate(item.id)}
+                      className="group relative h-32 flex flex-col items-center justify-center text-center gap-2 active:scale-95 transition-all duration-500"
+                    >
+                      <div className={`absolute inset-0 rounded-[2rem] bg-[var(--panel-bg)] border border-[var(--panel-border)] group-hover:bg-[var(--panel-bg-lighter)] group-hover:border-[var(--panel-border-hover)] group-hover:shadow-2xl transition-all duration-500`}></div>
+                      <div className={`relative z-10 p-3 rounded-xl ${item.bg} ${item.color} border border-[var(--panel-border)] shadow-inner group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-500`}>
+                        <item.icon className="w-6 h-6" strokeWidth={2.5} />
+                      </div>
+                      <div className="relative z-10">
+                        <span className="block text-white font-black text-[10px] uppercase tracking-[0.1em] mb-0.5">{item.label}</span>
+                        <span className="block text-gray-500 text-[8px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{item.desc}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
 
         </div>
 

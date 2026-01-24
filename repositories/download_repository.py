@@ -67,8 +67,8 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             async with pg_manager.get_session() as session:
                 query = text("""
                     INSERT INTO download_history
-                    (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash, is_uncensored, color_mode)
-                    VALUES (:user_id, :title, :author, :download_url, :file_size, :romaji_title, :series, :volume, :translator, :clean_title, :book_hash, :iu, :cm)
+                    (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash, is_uncensored, color_mode, downloaded_at)
+                    VALUES (:user_id, :title, :author, :download_url, :file_size, :romaji_title, :series, :volume, :translator, :clean_title, :book_hash, :iu, :cm, CURRENT_TIMESTAMP)
                     RETURNING id
                 """)
                 result = await session.execute(query, {
