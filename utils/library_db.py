@@ -56,14 +56,15 @@ def check_migrations():
                 res = conn.execute(text(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{name}');"))
                 return res.scalar()
 
-            # 1. local_books.description_clean
+            # 1. Japanese Metadata columns
             if table_exists("local_books"):
                 try:
-                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS description_clean VARCHAR(5000);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"))
                    conn.commit()
-                   _log.info("Checked/Added description_clean to local_books")
+                   _log.info("Checked/Added Japanese columns to local_books")
                 except Exception as e:
-                   _log.warning(f"Error checking description_clean: {e}")
+                   _log.warning(f"Error checking Japanese columns on local_books: {e}")
                    conn.rollback()
 
             # 2. user_levels
@@ -104,10 +105,12 @@ def check_migrations():
                 try:
                    conn.execute(text("ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;"))
                    conn.execute(text("ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);"))
+                   conn.execute(text("ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);"))
+                   conn.execute(text("ALTER TABLE upload_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"))
                    conn.commit()
-                   _log.info("Checked/Added edition columns to upload_books")
+                   _log.info("Checked/Added edition and Japanese columns to upload_books")
                 except Exception as e:
-                   _log.warning(f"Error checking edition columns on upload_books: {e}")
+                   _log.warning(f"Error checking upload_books migrations: {e}")
                    conn.rollback()
 
             # 6. download_history
