@@ -45,6 +45,7 @@ export interface Volume {
   demography?: string[];
   isVerified?: boolean;
   downloadCount?: number;
+  ratingCount?: number;
 
   // Staff & IDs
   illustrator?: string;
@@ -58,6 +59,7 @@ export interface Volume {
   modifiedAtOpf?: string;
   englishTitle?: string;
   spanishTitle?: string;
+  bookType?: string;
   series?: string;
   cleanTitle?: string;
 }

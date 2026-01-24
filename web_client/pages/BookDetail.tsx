@@ -111,6 +111,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             tags: bookData.tags || [],
             demography: bookData.demographics || [],
             downloadCount: bookData.download_count || 0,
+            ratingCount: bookData.rating_count || 0,
             illustrator: bookData.illustrator,
             translator: bookData.translator,
             typesetter: bookData.layoutBy,
@@ -122,7 +123,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             modifiedAtOpf: bookData.modifiedAtOpf,
             englishTitle: bookData.english_title,
             spanishTitle: bookData.spanish_title,
-            romajiTitle: bookData.romaji_title || bookData.romaji
+            romajiTitle: bookData.romaji_title || bookData.romaji,
+            bookType: bookData.bookType || bookData.categoria || 'Novela Ligera'
           };
 
           const mappedSeries: Series = {
@@ -201,8 +203,15 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   const handleRateSubmit = async (rating: number) => {
     if (!curVolume) return;
     try {
-      await api.rateBook(curVolume.id, rating);
-      setLocalRating(rating);
+      const res = await api.rateBook(curVolume.id, rating);
+      if (res && res.new_average !== undefined) {
+        setLocalRating(res.new_average);
+        setLocalDownloadCount(prev => prev); // trigger re-render if needed, though not used for count here
+        // Update volume state to keep it in sync
+        setCurVolume(prev => prev ? { ...prev, rating: res.new_average, downloadCount: res.total_votes ?? prev.downloadCount } : null);
+      } else {
+        setLocalRating(rating);
+      }
       setIsRatingModalOpen(false);
     } catch (err) {
       console.error("Error rating book", err);
@@ -250,7 +259,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     title: String(curVolume.title || ''),
     language: String(curVolume.language || 'Español'),
     size: String(curVolume.size || '0 MB'),
-    format: String(curVolume.format || 'EPUB'),
+    format: 'EPUB',
+    bookType: String(curVolume.bookType || 'Novela Ligera'),
     epubVersion: String(curVolume.epubVersion || '3.0'),
     uploader: 'ZeePub',
     wordCount: curVolume.wordCount || 0,
@@ -423,9 +433,14 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                 {/* Rating Block */}
                 <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Valoración</span>
-                  <div className="flex items-center gap-1.5 text-yellow-500">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="text-gray-900 dark:text-white font-bold">{displayData.rating?.toFixed(1) || 4.7}</span>
+                  <div className="flex flex-col items-end">
+                    <div className="flex items-center gap-1.5 text-yellow-500">
+                      <Star className="w-4 h-4 fill-current" />
+                      <span className="text-gray-900 dark:text-white font-bold">{displayData.rating > 0 ? displayData.rating.toFixed(1) : '—'}</span>
+                    </div>
+                    {displayData.ratingCount !== undefined && displayData.ratingCount > 0 && (
+                      <span className="text-[10px] text-gray-400 mt-1">{displayData.ratingCount} {displayData.ratingCount === 1 ? 'voto' : 'votos'}</span>
+                    )}
                   </div>
                 </div>
 
@@ -484,7 +499,10 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
                   <div className="flex items-center gap-1.5 text-yellow-500">
                     <Star className="w-4 h-4 fill-current" />
-                    <span className="text-gray-900 dark:text-white font-bold">{displayData.rating?.toFixed(1) || 4.7}</span>
+                    <span className="text-gray-900 dark:text-white font-bold">{displayData.rating > 0 ? displayData.rating.toFixed(1) : '—'}</span>
+                    {displayData.ratingCount !== undefined && displayData.ratingCount > 0 && (
+                      <span className="text-xs text-gray-400 font-medium">({displayData.ratingCount})</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 text-primary">
                     <Download className="w-4 h-4" />
@@ -560,14 +578,18 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                     <h3 className="text-xs font-black uppercase tracking-widest">Detalles del Libro</h3>
                   </div>
                   <div className="space-y-0.5">
-                    {[
+                    {([
                       { label: 'Serie', value: curSeries.title, highlight: true, clickable: true, type: 'series' },
                       { label: 'Volumen', value: curVolume.volumeNumber > 0 ? `${curVolume.volumeNumber}` : 'Único' },
+                      { label: 'Tipo de libro', value: displayData.bookType },
                       { label: 'ISBN', value: displayData.isbn, highlight: true, font: 'mono' },
                       { label: 'ASIN', value: displayData.asin, highlight: true, font: 'mono' },
+                      { label: 'Idioma', value: displayData.language, highlight: true },
                       { label: 'Group', value: displayData.group, color: 'text-primary', clickable: true, type: 'group' },
+                      { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
                       { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
-                    ].map((item, idx) => (
+                      { label: 'Fecha de publicación', value: displayData.publishedDate, highlight: true },
+                    ] as any[]).map((item, idx) => (
                       <div key={idx} className="flex justify-between py-3 border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/[0.02] px-2 -mx-2 rounded transition-colors">
                         <span className="text-sm text-gray-500 font-medium">{item.label}</span>
                         {item.clickable ? (
@@ -594,20 +616,16 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                     <h3 className="text-xs font-black uppercase tracking-widest">Ficha Técnica</h3>
                   </div>
                   <div className="space-y-0.5">
-                    {[
-                      { label: 'Formato', value: displayData.format, highlight: true },
-                      { label: 'Tipo de libro', value: displayData.format },
+                    {([
+                      { label: 'Formato', value: 'EPUB', highlight: true },
                       { label: 'Versión Epub', value: `v${displayData.epubVersion}` },
-                      { label: 'Idioma', value: displayData.language, highlight: true },
                       { label: 'Palabras', value: displayData.wordCount?.toLocaleString() || 'N/A' },
                       { label: 'Páginas', value: displayData.pages || 'N/A' },
                       { label: 'Lectura Aprox.', value: displayData.readTime },
                       { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
                       { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400' },
-                      { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
-                      { label: 'Fecha de publicación', value: displayData.publishedDate, highlight: true },
-                      { label: 'Fecha de actualización', value: displayData.lastUpdated },
-                    ].map((item, idx) => (
+                      { label: 'Fecha de actualización', value: displayData.lastUpdated, highlight: true },
+                    ] as any[]).map((item, idx) => (
                       <div key={idx} className="flex justify-between py-3 border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/[0.02] px-2 -mx-2 rounded transition-colors">
                         <span className="text-sm text-gray-500 font-medium">{item.label}</span>
                         {item.clickable ? (
