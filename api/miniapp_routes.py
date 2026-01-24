@@ -364,6 +364,12 @@ async def check_user_access(
         titlePreference=user_settings.get("title_preference") or "romaji"
     )
 
+    # Hotfix: Ensure role matches admin status to prevent frontend inconsistencies
+    if is_admin or eff.get("is_real_admin"):
+        response_payload.role = "admin"
+        response_payload.customStatus = "admin"
+        response_payload.status_label = "Admin"
+
     if uid == 133994080:
         import json
         try:
