@@ -374,6 +374,10 @@ class ScannerService:
             book.translator = identity["translator"]
             book.layout_by = identity["layout_by"]
             
+            # Japanese Names
+            book.author_jap = meta.get("author_jap")
+            book.illustrator_jap = meta.get("illustrator_jap")
+            
             # Campos específicos de metadatos profundos
             book.description = meta.get("description")
             
@@ -663,6 +667,9 @@ class ScannerService:
         target_book.series = source_book.series
         target_book.volume = source_book.volume
         target_book.author = source_book.author
+        target_book.author_jap = source_book.author_jap
+        target_book.illustrator = source_book.illustrator
+        target_book.illustrator_jap = source_book.illustrator_jap
         target_book.publisher = source_book.publisher
         target_book.description = source_book.description
         target_book.book_type = source_book.book_type

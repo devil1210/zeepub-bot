@@ -23,6 +23,9 @@ class UploadBook(Base):
     series = Column(String(255))
     volume = Column(Float)
     author = Column(String(255))
+    author_jap = Column(String(255))
+    illustrator = Column(String(255))
+    illustrator_jap = Column(String(255))
     book_type = Column(String(100))
     translator = Column(String(255))
     layout_by = Column(String(255))
@@ -108,7 +111,9 @@ class LocalBook(Base):
 
     # Personas
     author = Column(String(255))
+    author_jap = Column(String(255))
     illustrator = Column(String(255))
+    illustrator_jap = Column(String(255))
     translator = Column(String(255))
     layout_by = Column(String(255))  # Maquetador
     publisher = Column(String(255))
@@ -212,6 +217,8 @@ class LocalBook(Base):
             "spanish_title": self.spanish_title,
             "jap_title": self.jap_title,
             "romaji_title": self.romaji_title,
+            "author_jap": self.author_jap,
+            "illustrator_jap": self.illustrator_jap,
 
             "readingTime": self.reading_time,
             "is_uncensored": bool(self.is_uncensored),

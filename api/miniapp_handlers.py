@@ -904,7 +904,7 @@ async def handle_admin_scan_user(data: Dict[str, Any], user_data: Dict[str, Any]
 
 
 async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str, Any]):
-    """Syncs SQLite library data to Supabase."""
+    """Syncs SQLite library data (books, duplicates, uploads) to Supabase."""
     user_level = user_data.get("level", "free")
     if user_level != "admin":
         raise HTTPException(status_code=403, detail="Acceso denegado")
@@ -916,6 +916,8 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
         session = get_session()
         sources = session.query(LibrarySource).all()
         books = session.query(LocalBook).all()
+        duplicates = session.query(DuplicateBook).all()
+        uploads = session.query(UploadBook).all()
         
         client = supabase_manager.get_client()
         
@@ -950,7 +952,9 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "jap_title": b.jap_title,
                     "volume": float(b.volume) if b.volume is not None else None,
                     "author": b.author,
+                    "author_jap": b.author_jap,
                     "illustrator": b.illustrator,
+                    "illustrator_jap": b.illustrator_jap,
                     "translator": b.translator,
                     "layout_by": b.layout_by,
                     "publisher": b.publisher,
@@ -970,14 +974,12 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "demographics": b.demographics,
                     "tags": b.tags,
                     "language": b.language,
-                    # Cover images - all quality levels
                     "cover_original": b.cover_original,
                     "cover_high": b.cover_high,
                     "cover_medium": b.cover_medium,
                     "cover_low": b.cover_low,
-                    # Legacy cover paths for backward compatibility
-                    "cover_path": b.cover_low or b.cover_medium,  # Fallback to low quality
-                    "cover_thumb_path": b.cover_low,  # Thumbnail is now low quality
+                    "cover_path": b.cover_low or b.cover_medium,
+                    "cover_thumb_path": b.cover_low,
                     "file_created_at": b.file_created_at.isoformat() if b.file_created_at else None,
                     "file_modified_at": b.file_modified_at.isoformat() if b.file_modified_at else None,
                     "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
@@ -985,9 +987,56 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "book_hash": b.book_hash
                 })
             client.table('local_books').upsert(books_data).execute()
+
+        # 3. Sync Duplicate Books
+        if duplicates:
+            dups_data = []
+            for d in duplicates:
+                dups_data.append({
+                    "id": d.id,
+                    "book_hash": d.book_hash,
+                    "original_filepath": d.original_filepath,
+                    "duplicate_filepath": d.duplicate_filepath,
+                    "title": d.title,
+                    "author": d.author,
+                    "detected_at": d.detected_at.isoformat() if d.detected_at else None
+                })
+            client.table('duplicate_books').upsert(dups_data).execute()
+
+        # 4. Sync Uploads (pendientes)
+        if uploads:
+            uploads_data = []
+            for u in uploads:
+                uploads_data.append({
+                    "id": u.id,
+                    "telegram_id": u.telegram_id,
+                    "original_filename": u.original_filename,
+                    "temp_filepath": u.temp_filepath,
+                    "title": u.title,
+                    "series": u.series,
+                    "volume": float(u.volume) if u.volume is not None else None,
+                    "author": u.author,
+                    "author_jap": u.author_jap,
+                    "illustrator": u.illustrator,
+                    "illustrator_jap": u.illustrator_jap,
+                    "book_type": u.book_type,
+                    "translator": u.translator,
+                    "layout_by": u.layout_by,
+                    "language": u.language,
+                    "is_uncensored": u.is_uncensored,
+                    "color_mode": u.color_mode,
+                    "book_hash": u.book_hash,
+                    "series_hash": u.series_hash,
+                    "identity_match": str(u.identity_match),
+                    "path_collision": str(u.path_collision),
+                    "processed": str(u.processed),
+                    "upload_metadata": u.upload_metadata,
+                    "created_at": u.created_at.isoformat() if u.created_at else None
+                })
+            client.table('upload_books').upsert(uploads_data).execute()
             
         session.close()
-        return {"success": True, "message": f"Sincronizados {len(sources)} fuentes y {len(books)} libros."}
+        return {"success": True, "message": f"Sincronizados {len(sources)} fuentes, {len(books)} libros, {len(duplicates)} duplicados y {len(uploads)} uploads."}
     except Exception as e:
         logger.error(f"Error backup library to Supabase: {e}")
         return {"success": False, "message": str(e)}

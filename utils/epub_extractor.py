@@ -94,24 +94,33 @@ class EpubMetadataExtractor:
 
                     # Asignar personas
                     self.metadata['author'] = self._get_dc_value(metadata_node, 'creator')  # Fallback
+                    self.metadata['author_jap'] = None
+                    self.metadata['illustrator'] = None
+                    self.metadata['illustrator_jap'] = None
+
                     for cid, text in creators.items():
                         role = role_map.get(cid, "aut")
                         jap_name = creators_jap.get(cid)
-                        full_name = f"{text} ({jap_name})" if jap_name else text
                         
                         if role == "aut":
-                            self.metadata["author"] = full_name
+                            self.metadata["author"] = text
+                            self.metadata["author_jap"] = jap_name
                         elif role == "ill":
-                            self.metadata["illustrator"] = full_name
+                            self.metadata["illustrator"] = text
+                            self.metadata["illustrator_jap"] = jap_name
 
                     for cid, text in contributors.items():
                         role = role_map.get(cid)
+                        jap_name = creators_jap.get(cid)
                         if role == "trl":
                             self.metadata["translator"] = text
                         elif role == "mrk":
                             self.metadata["layout_by"] = text
-                        elif role == "ill" and not self.metadata.get("illustrator"):
-                            self.metadata["illustrator"] = text
+                        elif role == "ill":
+                            if not self.metadata.get("illustrator"):
+                                self.metadata["illustrator"] = text
+                            if not self.metadata.get("illustrator_jap"):
+                                self.metadata["illustrator_jap"] = jap_name
 
                     # 3.2 Identificadores (ISBN, ASIN, URI)
                     for ident in metadata_node.findall('dc:identifier', self.NAMESPACE):
