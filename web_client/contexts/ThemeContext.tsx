@@ -163,15 +163,27 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     // Apply settings to CSS variables (no localStorage needed - handled by hook)
 
+    // Helper to safely get hex components
+    const getHexPart = (hex: string | undefined | null, start: number, end: number, fallback: string = '00') => {
+      if (!hex || typeof hex !== 'string' || hex.length < end) return parseInt(fallback, 16);
+      try {
+        const val = hex.substring(start, end);
+        return parseInt(val, 16) || parseInt(fallback, 16);
+      } catch (e) {
+        return parseInt(fallback, 16);
+      }
+    };
+
     // Apply settings to CSS variables
     const root = document.documentElement;
-    root.style.setProperty('--color-primary', settings.primaryColor);
-    root.style.setProperty('--color-primary-dark', settings.primaryColorDark);
+    const primaryColor = settings.primaryColor || defaultSettings.primaryColor;
+    root.style.setProperty('--color-primary', primaryColor);
+    root.style.setProperty('--color-primary-dark', settings.primaryColorDark || defaultSettings.primaryColorDark);
 
     // Add RGB components for primary color to allow alpha variations
-    const r = parseInt(settings.primaryColor.substring(1, 3), 16);
-    const g = parseInt(settings.primaryColor.substring(3, 5), 16);
-    const b = parseInt(settings.primaryColor.substring(5, 7), 16);
+    const r = getHexPart(primaryColor, 1, 3);
+    const g = getHexPart(primaryColor, 3, 5);
+    const b = getHexPart(primaryColor, 5, 7);
     root.style.setProperty('--color-primary-rgb', `${r}, ${g}, ${b}`);
 
     root.style.setProperty('--glass-opacity', (settings.glassOpacity ?? 0.6).toString());
@@ -186,18 +198,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const bgColor = settings.theme === 'amoled' ? '#000000' : (settings.backgroundColor ?? '#0f172a');
     root.style.setProperty('--bg-color', bgColor);
     root.style.setProperty('--app-bg', bgColor);
+
     // Handle card color RGB for glass effects (e.g. Nav Bar)
     if (settings.cardColor) {
-      const cR = parseInt(settings.cardColor.substring(1, 3), 16);
-      const cG = parseInt(settings.cardColor.substring(3, 5), 16);
-      const cB = parseInt(settings.cardColor.substring(5, 7), 16);
+      const cR = getHexPart(settings.cardColor, 1, 3);
+      const cG = getHexPart(settings.cardColor, 3, 5);
+      const cB = getHexPart(settings.cardColor, 5, 7);
       root.style.setProperty('--glass-rgb', `${cR}, ${cG}, ${cB}`);
 
       // Construct card color with transparency
-      // If cardColor is HEX8 (#RRGGBBAA), use its alpha. Otherwise use glassOpacity.
       let cardAlpha = settings.theme === 'amoled' ? 1 : (settings.glassOpacity ?? 0.6);
       if (settings.theme !== 'amoled' && settings.cardColor.length === 9) {
-        cardAlpha = parseInt(settings.cardColor.substring(7, 9), 16) / 255;
+        cardAlpha = getHexPart(settings.cardColor, 7, 9) / 255;
       }
 
       root.style.setProperty('--card-color', settings.theme === 'amoled' ? '#000000' : `rgba(${cR}, ${cG}, ${cB}, ${cardAlpha})`);
@@ -205,13 +217,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Handle background color RGB for variations
     if (settings.backgroundColor) {
-      const bgR = parseInt(settings.backgroundColor.substring(1, 3), 16);
-      const bgG = parseInt(settings.backgroundColor.substring(3, 5), 16);
-      const bgB = parseInt(settings.backgroundColor.substring(5, 7), 16);
+      const bgR = getHexPart(settings.backgroundColor, 1, 3);
+      const bgG = getHexPart(settings.backgroundColor, 3, 5);
+      const bgB = getHexPart(settings.backgroundColor, 5, 7);
       root.style.setProperty('--bg-color-rgb', `${bgR}, ${bgG}, ${bgB}`);
 
       if (settings.backgroundColor.length === 9) {
-        const bgA = parseInt(settings.backgroundColor.substring(7, 9), 16) / 255;
+        const bgA = getHexPart(settings.backgroundColor, 7, 9) / 255;
         root.style.setProperty('--bg-opacity', bgA.toString());
         root.style.setProperty('--bg-color', settings.backgroundColor);
       } else {
@@ -326,7 +338,9 @@ export const useTheme = () => {
 };
 
 // Helper to darken hex color for "primary-dark" generation
-export function adjustBrightness(hex: string, percent: number) {
+export function adjustBrightness(hex: string | undefined | null, percent: number) {
+  if (!hex || typeof hex !== 'string' || hex.length < 7) return hex || '#000000';
+
   let r = parseInt(hex.substring(1, 3), 16);
   let g = parseInt(hex.substring(3, 5), 16);
   let b = parseInt(hex.substring(5, 7), 16);
