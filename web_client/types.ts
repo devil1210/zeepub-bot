@@ -74,7 +74,8 @@ export interface Series {
   description: string;
   genre: string; // Used for display list
   genres?: string[]; // Full list
-  type?: string; // e.g. "NOVELA LIGERA", "MANGA"
+  format?: string; // e.g. "EPUB", "PDF"
+  book_type?: string; // e.g. "NOVELA LIGERA", "WEB NOVEL"
   rating: number;
   voteCount?: number;
   downloadCount?: number;
@@ -87,7 +88,6 @@ export interface Series {
   illustrator?: string;
   translator?: string;
   group?: string;
-  book_type?: string;
   volumes: Volume[];
 }
 

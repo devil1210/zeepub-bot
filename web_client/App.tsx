@@ -132,7 +132,7 @@ const AppContent: React.FC = () => {
                   coverUrl: cover,
                   description: 'Description loaded from library...',
                   genre: 'Fantasy',
-                  rating: 5.0,
+                  rating: 0,
                   volumesCount: 1,
                   status: 'Ongoing',
                   lastUpdated: 'Hoy',
@@ -147,7 +147,7 @@ const AppContent: React.FC = () => {
                   publishedDate: '2023',
                   pages: 300,
                   format: 'EPUB',
-                  rating: 5.0
+                  rating: 0
                 };
                 onNavigate('search', mockSeries, mockVolume);
               }}

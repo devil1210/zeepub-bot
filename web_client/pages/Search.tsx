@@ -25,6 +25,7 @@ import { Series } from '../types';
 import { SearchScopeModal } from '../components/SearchScopeModal';
 import { api } from '../src/services/api';
 import { preloadImages } from '../src/utils/imagePreloader';
+import { getCoverUrl } from '../src/utils/imageUtils';
 
 interface SearchProps {
   onSelectSeries: (series: Series) => void;
@@ -125,7 +126,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           coverThumbUrl: item.cover_thumb || item.cover || '',
           description: item.summary,
           genre: item.categories ? item.categories.join(', ') : '',
-          type: item.fileType ? item.fileType.replace('application/', '').toUpperCase() : 'EPUB',
+          format: item.fileType ? item.fileType.replace('application/', '').toUpperCase() : 'EPUB',
           rating: item.rating_average || 0,
           voteCount: item.rating_count || 0,
           downloadCount: item.download_count || 0,
@@ -136,7 +137,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           translator: item.translator,
           typesetter: item.typesetter,
           group: item.group,
-          book_type: item.book_type,
+          book_type: item.book_type || 'Novela Ligera',
           volumes: []
         }));
 
@@ -283,7 +284,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   <img
                     alt={series.title}
                     className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                    src={series.coverThumbUrl || series.coverUrl}
+                    src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality)}
                   />
                 </div>
 
@@ -323,14 +324,19 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   </div>
 
                   {/* Meta Info Row */}
-                  <div className="flex flex-wrap items-center gap-3 mt-3 mb-2">
+                  <div className="flex flex-wrap items-center gap-2 mt-3 mb-2">
                     <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">
                       {series.volumesCount} {series.volumesCount === 1 ? 'VOLUMEN' : 'VOLÚMENES'}
                     </span>
 
-                    {series.type && (
+                    {series.book_type && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase tracking-wider border border-primary/20">
+                        {series.book_type}
+                      </span>
+                    )}
+                    {series.format && (
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#004d40] text-[#4db6ac] uppercase tracking-wider border border-[#00695c]/30">
-                        {series.type}
+                        {series.format}
                       </span>
                     )}
                   </div>
@@ -339,7 +345,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   <div className="flex items-center gap-4 text-xs font-bold text-gray-500 dark:text-gray-400">
                     <div className="flex items-center gap-1.5 text-yellow-500">
                       <Star className="w-3.5 h-3.5 fill-current" />
-                      <span className="text-gray-700 dark:text-gray-300">{series.rating.toFixed(1)}</span>
+                      <span className="text-gray-700 dark:text-gray-300">{series.rating > 0 ? series.rating.toFixed(1) : '—'}</span>
                       <span className="text-gray-400 dark:text-gray-600 font-normal">({series.voteCount || 0})</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[var(--color-primary)]">
@@ -371,7 +377,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                     <img
                       alt={series.title}
                       className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-                      src={series.coverThumbUrl || series.coverUrl}
+                      src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality)}
                     />
                     {/* Bottom Gradient & Text Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-90"></div>
@@ -394,7 +400,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                       </span>
                       <div className="flex items-center gap-1 text-yellow-500 text-xs shrink-0">
                         <Star className="w-3.5 h-3.5 fill-current" />
-                        <span className="font-bold text-gray-200">{series.rating.toFixed(1)}</span>
+                        <span className="font-bold text-gray-200">{series.rating > 0 ? series.rating.toFixed(1) : '—'}</span>
                       </div>
                     </div>
 

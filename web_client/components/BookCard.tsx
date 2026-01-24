@@ -48,9 +48,9 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
         )}
 
         <div className="flex items-center gap-2 mb-3">
-          <div className="flex items-center gap-1 text-yellow-500 text-xs bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
+          <div className="flex items-center gap-1.5 text-yellow-500 text-xs bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
             <Star className="w-3 h-3 fill-current" />
-            <span className="font-bold">{book.rating}</span>
+            <span className="font-bold">{book.rating > 0 ? book.rating.toFixed(1) : '—'}</span>
           </div>
           <span className="text-[10px] text-gray-500 font-mono px-2 py-0.5 bg-white/5 rounded">{book.size}</span>
         </div>

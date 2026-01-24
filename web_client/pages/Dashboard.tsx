@@ -264,7 +264,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-5">
                           <div className="flex items-center gap-1.5 text-yellow-400 mb-2">
                             <Star className="w-3 h-3 fill-current" />
-                            <span className="text-xs font-black">{book.rating_average || '4.8'}</span>
+                            <span className="text-xs font-black">{book.rating_average > 0 ? book.rating_average.toFixed(1) : '—'}</span>
                           </div>
                           <span className="text-sm font-black text-white leading-tight drop-shadow-lg">{book.cleanTitle || book.title}</span>
                           <span className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-widest truncate">{book.author || 'Zeepub Author'}</span>

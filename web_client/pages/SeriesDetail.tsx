@@ -291,7 +291,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 </button>
                 <span className="flex items-center gap-1.5 text-yellow-500 text-xs sm:text-sm font-black">
                   <Star className="w-4 h-4 fill-current" />
-                  {realSeries.rating}
+                  {realSeries.rating > 0 ? realSeries.rating.toFixed(1) : '—'}
                 </span>
               </div>
 
@@ -422,7 +422,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     <div className="flex items-center gap-4 text-xs font-bold mb-auto">
                       <div className="flex items-center gap-1.5 text-gray-400">
                         <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
-                        <span className="text-gray-200">{vol.rating.toFixed(1)}</span>
+                        <span className="text-gray-200">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-primary">
                         <Download className="w-3.5 h-3.5" />
@@ -492,7 +492,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     <div className="flex items-center justify-between text-[10px] font-bold text-gray-400">
                       <div className="flex items-center gap-1">
                         <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                        <span>{vol.rating.toFixed(1)}</span>
+                        <span>{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Download className="w-3 h-3 text-primary" />
