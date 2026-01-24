@@ -135,7 +135,7 @@ class LibraryService:
                     LocalBook.series_hash,
                     func.max(LocalBook.series).label("series_name"),
                     func.max(LocalBook.author).label("author"),
-                    func.max(LocalBook.description_clean).label("description"),
+                    func.max(LocalBook.description).label("description"),
                     func.max(LocalBook.cover_low).label("cover"),
                     func.count(LocalBook.id).label("book_count"),
                     func.avg(LocalBook.rating_average).label("rating_avg"),
