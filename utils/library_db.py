@@ -58,15 +58,59 @@ def check_migrations():
                 res = conn.execute(text(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{name}');"))
                 return res.scalar()
 
-            # 1. Japanese Metadata columns
+            # 0. Table series_metadata (Must exist before FK)
+            try:
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS series_metadata (
+                        id SERIAL PRIMARY KEY,
+                        series_name VARCHAR(255) NOT NULL,
+                        series_hash VARCHAR(64) UNIQUE NOT NULL,
+                        author VARCHAR(255),
+                        author_jap VARCHAR(255),
+                        illustrator VARCHAR(255),
+                        illustrator_jap VARCHAR(255),
+                        description TEXT,
+                        tags JSONB,
+                        cover_url VARCHAR(1024),
+                        book_count INTEGER DEFAULT 0,
+                        rating_average FLOAT DEFAULT 0.0,
+                        rating_count INTEGER DEFAULT 0,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+                    );
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);"))
+                conn.commit()
+            except Exception as e:
+                _log.warning(f"Error creating series_metadata table: {e}")
+                conn.rollback()
+
+            # 0.1 Table admins
+            try:
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS admins (
+                        id SERIAL PRIMARY KEY,
+                        user_id BIGINT NOT NULL UNIQUE,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+                    );
+                """))
+                conn.commit()
+            except Exception as e:
+                _log.warning(f"Error creating admins table: {e}")
+                conn.rollback()
+
+            # 1. Metadata and Title variants
             if table_exists("local_books"):
                 try:
                    conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);"))
                    conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS romaji_title VARCHAR(512);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(512);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS english_title VARCHAR(512);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS jap_title VARCHAR(512);"))
                    conn.commit()
-                   _log.info("Checked/Added Japanese columns to local_books")
+                   _log.info("Checked/Added Metadata and Title columns to local_books")
                 except Exception as e:
-                   _log.warning(f"Error checking Japanese columns on local_books: {e}")
+                   _log.warning(f"Error checking Metadata/Title columns on local_books: {e}")
                    conn.rollback()
 
             # 2. user_levels
@@ -91,15 +135,24 @@ def check_migrations():
                     _log.warning(f"Error checking users migrations: {e}")
                     conn.rollback()
 
-            # 4. local_books edition characteristics
+            # 4. local_books edition characteristics, optimized series & covers
             if table_exists("local_books"):
                 try:
                    conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;"))
                    conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS series_metadata_id INTEGER REFERENCES series_metadata(id);"))
+                   
+                   # Cover Quality columns
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS cover_original VARCHAR(1024);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS cover_high VARCHAR(1024);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS cover_medium VARCHAR(1024);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS cover_low VARCHAR(1024);"))
+                   
+                   conn.execute(text("CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id ON local_books(series_metadata_id);"))
                    conn.commit()
-                   _log.info("Checked/Added edition columns to local_books")
+                   _log.info("Checked/Added edition, series and cover columns to local_books")
                 except Exception as e:
-                   _log.warning(f"Error checking edition columns on local_books: {e}")
+                   _log.warning(f"Error checking edition/series/cover columns on local_books: {e}")
                    conn.rollback()
 
             # 5. upload_books
