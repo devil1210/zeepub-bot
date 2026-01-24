@@ -619,3 +619,40 @@ async def get_upload_history(
     """
     from api.miniapp_handlers import handle_get_upload_history
     return await handle_get_upload_history(limit, offset)
+
+
+@router.get("/api/bot/avatar")
+async def get_bot_avatar(file_id: str):
+    """Proxies the Telegram avatar file to the frontend."""
+    from api.main import bot
+    import httpx
+    from fastapi.responses import StreamingResponse
+
+    try:
+        # 1. Get file path from Telegram
+        file_obj = await bot.app.bot.get_file(file_id)
+        if not file_obj.file_path:
+            raise HTTPException(status_code=404, detail="File path not found")
+
+        # 2. Download content (Proxy)
+        token = bot.app.bot.token
+        download_url = file_obj.file_path
+        
+        if not download_url.startswith("http"):
+             download_url = f"https://api.telegram.org/file/bot{token}/{file_obj.file_path}"
+
+        # Create a generator for streaming
+        async def file_stream():
+            async with httpx.AsyncClient() as client:
+                async with client.stream("GET", download_url) as response:
+                    if response.status_code != 200:
+                        raise HTTPException(status_code=404, detail="Upstream image not found")
+                    async for chunk in response.aiter_bytes():
+                        yield chunk
+
+        return StreamingResponse(file_stream(), media_type="image/jpeg")
+
+    except Exception as e:
+        logger.error(f"Avatar proxy error: {e}")
+        # Return a fallback 404 
+        raise HTTPException(status_code=404, detail="Avatar not found")
