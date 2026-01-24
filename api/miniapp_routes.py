@@ -340,7 +340,7 @@ async def check_user_access(
         else access_info.get("showRecommendations", True)
     )
 
-    return AccessResponse(
+    response_payload = AccessResponse(
         level=UserLevelModel(**access_info),
         hasAccess=has_access,
         isAdmin=is_admin,
