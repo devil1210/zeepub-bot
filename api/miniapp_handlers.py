@@ -85,7 +85,9 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
             "cover": rep.get("cover") if rep else "",
             "rating_average": rep.get("rating_average", 0) if rep else 0,
             "rating_count": rep.get("rating_count", 0) if rep else 0,
-            "numBooks": len(volumes) if v_limit is None else None, # numBooks es ambiguo con paginación
+            "numBooks": len(volumes) if v_limit is None else None, 
+            "is_uncensored": rep.get("is_uncensored", False) if rep else False,
+            "color_mode": rep.get("color_mode") if rep else None,
             "is_series": True,
             "volumes": volumes 
         }

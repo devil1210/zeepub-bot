@@ -138,6 +138,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           typesetter: item.typesetter,
           group: item.group,
           book_type: item.book_type || 'Novela Ligera',
+          is_uncensored: item.is_uncensored,
+          color_mode: item.color_mode,
           volumes: []
         }));
 
@@ -339,6 +341,16 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                         {series.format}
                       </span>
                     )}
+                    {series.color_mode === 'color' && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase tracking-wider shadow-sm">
+                        A Color
+                      </span>
+                    )}
+                    {series.is_uncensored && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-500 uppercase tracking-wider border border-red-500/30">
+                        Sin Censura
+                      </span>
+                    )}
                   </div>
 
                   {/* Stats Row */}
@@ -398,13 +410,29 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                       <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20 truncate max-w-[70%]">
                         {series.genre?.split(',')[0]}
                       </span>
-                      <div className="flex items-center gap-1 text-yellow-500 text-xs shrink-0">
-                        <Star className="w-3.5 h-3.5 fill-current" />
-                        <span className="font-bold text-gray-200">{series.rating > 0 ? series.rating.toFixed(1) : '—'}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                        <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">
+                          {series.rating > 0 ? series.rating.toFixed(1) : '—'}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Stats Grid */}
+                    {/* Meta Row: Color/Censura badges in Grid */}
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {series.color_mode === 'color' && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase tracking-wider shadow-sm">
+                          A Color
+                        </span>
+                      )}
+                      {series.is_uncensored && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-500/10 text-red-500 uppercase tracking-wider border border-red-500/30">
+                          Sin Censura
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Bottom Row: Volumes & Updated */}
                     <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-500 mb-4 font-mono">
                       <div className="flex items-center gap-1.5" title="Volúmenes">
                         <Book className="w-3.5 h-3.5" />

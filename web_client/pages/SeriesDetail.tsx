@@ -128,7 +128,9 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               modifiedAt: v.modifiedAt,
               modifiedAtOpf: v.modifiedAtOpf,
               series: v.series,
-              cleanTitle: v.clean_title
+              cleanTitle: v.clean_title,
+              is_uncensored: v.is_uncensored,
+              color_mode: v.color_mode
             }));
             setVolumes(mappedVols);
 
@@ -410,6 +412,19 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                       </p>
                     </div>
 
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {vol.color_mode === 'color' && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase tracking-wider shadow-sm">
+                          A Color
+                        </span>
+                      )}
+                      {vol.is_uncensored && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-red-500/10 text-red-500 uppercase tracking-wider border border-red-500/30">
+                          Sin Censura
+                        </span>
+                      )}
+                    </div>
+
                     <div className="mb-2">
                       <p className="text-primary text-sm font-medium">
                         {series.author} {vol.illustrator ? `- ${vol.illustrator} ` : ''}
@@ -481,8 +496,14 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                       src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <span className="text-[10px] font-black text-white/90 uppercase tracking-widest bg-primary/80 px-2 py-0.5 rounded shadow-sm">Vol {vol.volumeNumber}</span>
+                    <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-1">
+                      {vol.color_mode === 'color' && (
+                        <span className="text-[8px] font-black text-white uppercase tracking-widest bg-gradient-to-r from-orange-400 to-pink-500 px-1.5 py-0.5 rounded shadow-sm self-start">A Color</span>
+                      )}
+                      {vol.is_uncensored && (
+                        <span className="text-[8px] font-black text-white uppercase tracking-widest bg-red-600/90 px-1.5 py-0.5 rounded shadow-sm self-start">Sin Censura</span>
+                      )}
+                      <span className="text-[10px] font-black text-white/90 uppercase tracking-widest bg-primary/80 px-2 py-0.5 rounded shadow-sm self-start">Vol {vol.volumeNumber}</span>
                     </div>
                   </div>
                   <div className="flex flex-col gap-1">

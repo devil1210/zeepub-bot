@@ -142,7 +142,9 @@ class LibraryService:
                     func.count(LocalBook.id).label("book_count"),
                     func.avg(LocalBook.rating_average).label("rating_avg"),
                     func.sum(LocalBook.rating_count).label("rating_sum"),
-                    func.max(LocalBook.book_type).label("book_type")
+                    func.max(LocalBook.book_type).label("book_type"),
+                    func.max(LocalBook.is_uncensored).label("is_uncensored"),
+                    func.max(LocalBook.color_mode).label("color_mode")
                 ).where(or_(*match_filters))
 
                 if source_id:
@@ -186,6 +188,8 @@ class LibraryService:
                         "rating_average": round(float(row[6] or 0), 2),
                         "rating_count": int(row[7] or 0),
                         "book_type": row[8],
+                        "is_uncensored": bool(row[9]),
+                        "color_mode": row[10],
                         "is_series": True,
                         "type": "series"
                     })

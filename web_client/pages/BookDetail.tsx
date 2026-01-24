@@ -124,7 +124,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             englishTitle: bookData.english_title,
             spanishTitle: bookData.spanish_title,
             romajiTitle: bookData.romaji_title || bookData.romaji,
-            bookType: bookData.bookType || bookData.categoria || 'Novela Ligera'
+            bookType: bookData.bookType || bookData.categoria || 'Novela Ligera',
+            is_uncensored: bookData.is_uncensored,
+            color_mode: bookData.color_mode
           };
 
           const mappedSeries: Series = {
@@ -147,6 +149,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             englishTitle: bookData.english_title,
             spanishTitle: bookData.spanish_title,
             romajiTitle: bookData.romaji_title || bookData.romaji,
+            is_uncensored: bookData.is_uncensored,
+            color_mode: bookData.color_mode,
             volumes: []
           };
 
@@ -278,7 +282,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     isbn: String(curVolume.isbn || 'N/A'),
     asin: String(curVolume.asin || 'N/A'),
     demography: Array.isArray(curVolume.demography) ? curVolume.demography : (Array.isArray((curVolume as any).demographics) ? (curVolume as any).demographics : []),
-    genres: Array.isArray((curVolume as any).genres) ? (curVolume as any).genres : (Array.isArray((curVolume as any).tags) ? (curVolume as any).tags : (Array.isArray(curSeries?.genres) ? curSeries.genres : []))
+    genres: Array.isArray((curVolume as any).genres) ? (curVolume as any).genres : (Array.isArray((curVolume as any).tags) ? (curVolume as any).tags : (Array.isArray(curSeries?.genres) ? curSeries.genres : [])),
+    is_uncensored: curVolume.is_uncensored,
+    color_mode: curVolume.color_mode
   };
 
   const formatDescription = (desc: string) => {
@@ -481,6 +487,16 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                   >
                     {displayData.translator}
                   </button>
+                  {displayData.color_mode === 'color' && (
+                    <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white px-2 py-1 rounded-md shadow-sm">
+                      A Color
+                    </span>
+                  )}
+                  {displayData.is_uncensored && (
+                    <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-2 py-1 rounded-md">
+                      Sin Censura
+                    </span>
+                  )}
                 </div>
 
                 <h1 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold text-gray-900 dark:text-white leading-tight mb-2">

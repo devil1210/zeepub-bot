@@ -261,6 +261,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             {book.book_type || 'EPUB'}
                           </span>
                         </div>
+                        <div className="absolute top-10 right-3 z-10 flex flex-col gap-1.5 items-end">
+                          {book.color_mode === 'color' && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase tracking-wider shadow-sm">
+                              A Color
+                            </span>
+                          )}
+                          {book.is_uncensored && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-red-500/10 text-red-500 uppercase tracking-wider border border-red-500/30">
+                              Sin Censura
+                            </span>
+                          )}
+                        </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-5">
                           <div className="flex items-center gap-1.5 text-yellow-400 mb-2">
                             <Star className="w-3 h-3 fill-current" />

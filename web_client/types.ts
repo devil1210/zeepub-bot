@@ -20,6 +20,8 @@ export interface Book {
   series?: string;
   cleanTitle?: string;
   bookType?: string;
+  is_uncensored?: boolean;
+  color_mode?: string;
 }
 
 export interface Volume {
@@ -62,6 +64,8 @@ export interface Volume {
   bookType?: string;
   series?: string;
   cleanTitle?: string;
+  is_uncensored?: boolean;
+  color_mode?: string;
 }
 
 export interface Series {
@@ -88,6 +92,8 @@ export interface Series {
   illustrator?: string;
   translator?: string;
   group?: string;
+  is_uncensored?: boolean;
+  color_mode?: string;
   volumes: Volume[];
 }
 
