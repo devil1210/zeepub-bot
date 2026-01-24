@@ -14,7 +14,7 @@ import os
 import shutil
 from core.supabase_manager import supabase_manager
 from utils.library_db import get_session
-from models.library_models import LocalBook, LibrarySource, DuplicateBook
+from models.library_models import LocalBook, LibrarySource, DuplicateBook, UploadBook
 from core.state_manager import state_manager
 from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
