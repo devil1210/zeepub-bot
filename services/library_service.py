@@ -211,7 +211,19 @@ class LibraryService:
                     stmt = stmt.offset(offset).limit(limit)
                 res = await session.execute(stmt)
                 books = res.scalars().all()
-                return [b.to_dict() for b in books]
+                
+                results = []
+                for b in books:
+                    d = b.to_dict()
+                    d["download_count"] = await download_repo.get_total_download_count(
+                        b.title, b.book_hash
+                    )
+                    # Use actual column values from LocalBook (synchronized with RatingService)
+                    d["rating_average"] = b.rating_average or 0.0
+                    d["rating_count"] = b.rating_count or 0
+                    results.append(d)
+                
+                return results
             except Exception as e:
                 logger.error(f"[LibraryService.get_series_volumes] Error: {e}")
                 return []

@@ -9,7 +9,9 @@ import {
     RefreshCw,
     HardDrive,
     Info,
-    ArrowRight
+    ArrowRight,
+    X,
+    Tag
 } from 'lucide-react';
 import { api } from '../src/services/api';
 
@@ -28,6 +30,7 @@ export const DuplicatesDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [clearing, setClearing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDuplicate, setSelectedDuplicate] = useState<DuplicateEntry | null>(null);
 
     const fetchDuplicates = async () => {
         setLoading(true);
@@ -130,7 +133,7 @@ export const DuplicatesDashboard: React.FC = () => {
                             <tr className="bg-white/[0.02] text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5">
                                 <th className="px-6 py-4">Libro / Información</th>
                                 <th className="px-6 py-4">Conflicto de Rutas</th>
-                                <th className="px-6 py-4 text-right">Detección</th>
+                                <th className="px-6 py-4 text-right">Acción</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -153,7 +156,11 @@ export const DuplicatesDashboard: React.FC = () => {
                                 </tr>
                             ) : (
                                 filtered.map((dup) => (
-                                    <tr key={dup.id} className="group hover:bg-white/[0.01] transition-all">
+                                    <tr
+                                        key={dup.id}
+                                        className="group hover:bg-white/[0.01] transition-all cursor-pointer"
+                                        onClick={() => setSelectedDuplicate(dup)}
+                                    >
                                         <td className="px-6 py-6">
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-xs font-black text-white group-hover:text-primary transition-colors">{dup.title || 'Título desconocido'}</span>
@@ -164,36 +171,21 @@ export const DuplicatesDashboard: React.FC = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-6">
-                                            <div className="flex flex-col gap-3">
-                                                <div className="flex items-start gap-2 max-w-md">
-                                                    <div className="mt-1 p-1 bg-green-500/20 rounded text-green-500 border border-green-500/20">
-                                                        <CheckCircle className="w-2.5 h-2.5" />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">Original (En DB)</span>
-                                                        <span className="text-[10px] text-gray-400 font-mono break-all line-clamp-1">{dup.original}</span>
-                                                    </div>
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1 h-1 rounded-full bg-green-500"></div>
+                                                    <span className="text-[10px] text-gray-400 font-mono truncate max-w-xs">{dup.original.split('/').pop() || dup.original}</span>
                                                 </div>
-                                                <div className="flex items-start gap-2 max-w-md">
-                                                    <div className="mt-1 p-1 bg-red-500/20 rounded text-red-500 border border-red-500/20">
-                                                        <AlertTriangle className="w-2.5 h-2.5" />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Copia Omitida</span>
-                                                        <span className="text-[10px] text-gray-400 font-mono break-all line-clamp-1">{dup.duplicate}</span>
-                                                    </div>
+                                                <div className="flex items-center gap-2 text-red-400">
+                                                    <AlertTriangle className="w-2.5 h-2.5" />
+                                                    <span className="text-[10px] font-mono truncate max-w-xs">{dup.duplicate.split('/').pop() || dup.duplicate}</span>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-6 text-right">
-                                            <div className="flex flex-col items-end gap-1">
-                                                <span className="text-[10px] font-bold text-gray-300">
-                                                    {new Date(dup.detectedAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                                </span>
-                                                <span className="text-[9px] text-gray-500 uppercase tracking-widest">
-                                                    {new Date(dup.detectedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </div>
+                                            <button className="p-2 bg-white/5 rounded-lg text-gray-500 group-hover:text-primary group-hover:bg-primary/10 transition-all">
+                                                <ArrowRight className="w-4 h-4" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
@@ -202,6 +194,112 @@ export const DuplicatesDashboard: React.FC = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Detail View (Overlay-like) */}
+            {selectedDuplicate && (
+                <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
+                    <div className="glass-panel w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[2.5rem] border border-white/10 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
+                        {/* Detail Header */}
+                        <div className="p-8 border-b border-white/5 flex items-start justify-between">
+                            <div className="flex items-center gap-6">
+                                <div className="p-4 bg-amber-500/20 rounded-2xl text-amber-500 border border-amber-500/20">
+                                    <Copy className="w-8 h-8" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-1">Análisis de Duplicado</h2>
+                                    <p className="text-xs text-gray-500 uppercase tracking-widest font-black opacity-60">ID: #{selectedDuplicate.id} • Hash: {selectedDuplicate.hash}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setSelectedDuplicate(null)}
+                                className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-gray-400 hover:text-white transition-all"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Detail Content */}
+                        <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Comparison Section */}
+                                <div className="space-y-6">
+                                    <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-4">Conflicto de Contenido</h4>
+
+                                    <div className="p-6 bg-green-500/5 border border-green-500/10 rounded-2xl space-y-2">
+                                        <div className="flex items-center gap-2 text-green-500 mb-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider">Libro en Biblioteca (Original)</span>
+                                        </div>
+                                        <p className="text-xs text-white font-bold">{selectedDuplicate.title}</p>
+                                        <p className="text-[10px] text-gray-400 font-mono break-all leading-relaxed">{selectedDuplicate.original}</p>
+                                    </div>
+
+                                    <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-2">
+                                        <div className="flex items-center gap-2 text-red-500 mb-2">
+                                            <AlertTriangle className="w-4 h-4" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider">Copia Rechazada (Nuevo)</span>
+                                        </div>
+                                        <p className="text-xs text-white font-bold">{selectedDuplicate.title}</p>
+                                        <p className="text-[10px] text-gray-400 font-mono break-all leading-relaxed">{selectedDuplicate.duplicate}</p>
+                                    </div>
+                                </div>
+
+                                {/* Suggested Action Section */}
+                                <div className="space-y-6">
+                                    <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-4">Resolución Recomendada</h4>
+
+                                    <div className="p-8 bg-blue-500/5 border border-blue-500/10 rounded-3xl">
+                                        <p className="text-sm text-gray-300 leading-relaxed mb-6">
+                                            El sistema ha detectado que estos archivos son <span className="text-white font-bold">binariamente idénticos</span>. Si deseas que ambos convivan como registros separados, debes editarlos para que sus metadatos internos sean lo suficientemente distintos.
+                                        </p>
+
+                                        <div className="space-y-4">
+                                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Acciones posibles para diferenciar:</span>
+                                            <ul className="space-y-3">
+                                                {[
+                                                    { icon: Info, text: "Añadir un sufijo al título (ej: '[Edición 2024]')" },
+                                                    { icon: HardDrive, text: "Modificar el nombre del autor levemente" },
+                                                    { icon: RefreshCw, text: "Cambiar el 'Tipo de Libro' (Novela Ligera vs Web)" },
+                                                    { icon: Tag, text: "Añadir etiquetas únicas en el metadato del EPUB" }
+                                                ].map((action, i) => (
+                                                    <li key={i} className="flex items-center gap-3 text-[10px] text-gray-400 font-medium">
+                                                        <action.icon className="w-3.5 h-3.5 text-blue-400/60" />
+                                                        {action.text}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        <div className="mt-10 p-4 bg-white/5 rounded-2xl border border-white/5">
+                                            <p className="text-[9px] text-gray-500 italic leading-relaxed">
+                                                Una vez editado el archivo físico, el escáner le asignará un nuevo hash y podrá indexarlo sin conflictos.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="p-8 bg-white/[0.02] border-t border-white/5 flex justify-end gap-3">
+                            <button
+                                onClick={() => setSelectedDuplicate(null)}
+                                className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                            >
+                                Entendido
+                            </button>
+                            <button
+                                className="px-8 py-3 bg-primary hover:brightness-110 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20"
+                                onClick={() => {
+                                    alert("Funcionalidad de borrado físico no disponible por seguridad. Por favor, elimina el archivo manualmente en el servidor.");
+                                }}
+                            >
+                                Ignorar Conflicto
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Help Card */}
             <div className="p-8 rounded-3xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-6">

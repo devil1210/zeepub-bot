@@ -401,6 +401,14 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                 */}
 
                 <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => setIsRatingModalOpen(true)}
+                    className="w-full py-3.5 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg shadow-yellow-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <Star className="w-5 h-5 fill-current" />
+                    Valorar Libro
+                  </button>
+
                   <button onClick={() => setIsReportModalOpen(true)} className="py-3.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 rounded-xl border border-red-200 dark:border-red-500/20 transition-colors flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider">
                     <Flag className="w-4 h-4" />
                     Reportar Error
@@ -588,15 +596,17 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                   <div className="space-y-0.5">
                     {[
                       { label: 'Formato', value: displayData.format, highlight: true },
+                      { label: 'Tipo de libro', value: displayData.format },
                       { label: 'Versión Epub', value: `v${displayData.epubVersion}` },
-                      { label: 'Idioma', value: displayData.language },
+                      { label: 'Idioma', value: displayData.language, highlight: true },
                       { label: 'Palabras', value: displayData.wordCount?.toLocaleString() || 'N/A' },
                       { label: 'Páginas', value: displayData.pages || 'N/A' },
                       { label: 'Lectura Aprox.', value: displayData.readTime },
                       { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
                       { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400' },
                       { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
-                      { label: 'Fecha de actualización', value: displayData.lastUpdated, highlight: true },
+                      { label: 'Fecha de publicación', value: displayData.publishedDate, highlight: true },
+                      { label: 'Fecha de actualización', value: displayData.lastUpdated },
                     ].map((item, idx) => (
                       <div key={idx} className="flex justify-between py-3 border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/[0.02] px-2 -mx-2 rounded transition-colors">
                         <span className="text-sm text-gray-500 font-medium">{item.label}</span>
