@@ -13,9 +13,37 @@ from sqlalchemy.orm import selectinload
 from config.config_settings import config
 from core.state_manager import state_manager
 
+from sqlalchemy.exc import IntegrityError
+
 logger = logging.getLogger(__name__)
 
 class UserRepository(BaseRepository[Dict[str, Any]]):
+    # ... (existing init) ...
+
+    async def create_minimal_user(
+        self,
+        telegram_id: int,
+        name: Optional[str] = None,
+        username: Optional[str] = None
+    ):
+        """Creates a basic user record if not exists. Handles race conditions."""
+        try:
+            res = await self.upsert(
+                telegram_id=telegram_id,
+                level="free",
+                name=name,
+                username=username,
+                role="user"
+            )
+            if res: return res
+            
+            # If None, might be race condition in upsert or other error.
+            # Try fetching existing user.
+            return await self.get_access_info(telegram_id)
+            
+        except Exception:
+            # Fallback for any other race condition
+            return await self.get_access_info(telegram_id)
     """
     Repositorio para gestión de usuarios (roles, expiración, status).
     Migrado totalmente a PostgreSQL (ORM) con fallback a Supabase REST.
