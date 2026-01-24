@@ -110,8 +110,6 @@ async def get_effective_user(
     # EMERGENCY: Clear simulation for stuck admins
     if uid in config.ADMIN_USERS:
         simulated_level_id = None
-        # Ensure they always have access in result base
-        result["has_mini_app_access"] = True
 
     # 0. Check Cache (Bypass if simulating)
     cache_key = f"user_effective:{uid}"
