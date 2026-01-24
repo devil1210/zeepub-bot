@@ -293,7 +293,7 @@ export const MonitorDashboard: React.FC = () => {
                                                 {log.changes_summary ? (
                                                     Object.entries(log.changes_summary).map(([key, val]: [string, any]) => (
                                                         <span key={key} className="inline-block mr-3 px-2 py-0.5 bg-black/20 rounded-md border border-white/5 text-[9px]">
-                                                            <span className="text-gray-600 font-bold lowercase">{key}:</span> <span className="text-primary">{typeof val === 'object' ? (val.new || val.to) : val}</span>
+                                                            <span className="text-gray-600 font-bold lowercase">{key}:</span> <span className="text-primary">{(typeof val === 'object' && val !== null) ? (val.new || val.to || JSON.stringify(val)) : String(val)}</span>
                                                         </span>
                                                     ))
                                                 ) : 'No summary'}

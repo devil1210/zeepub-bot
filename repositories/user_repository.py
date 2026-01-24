@@ -720,7 +720,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                         "canUploadEpub": lvl.can_upload_epub if lvl else False
                     }
                     
-                    is_admin = (user.role == 'admin') or (user.telegram_id in config.ADMIN_USERS)
+                    is_admin = (user.role == 'admin') or (user.level_id == 1) or (user.telegram_id in config.ADMIN_USERS)
                     return {
                         "level": level_dict,
                         "hasAccess": level_dict["hasAccess"] or is_admin,

@@ -281,14 +281,19 @@ async def check_user_access(
     eff = await get_effective_user(uid, use_cache=use_cache)
 
     # Everything we need is already in 'eff'
-    is_admin = (eff.get("level") == "admin") or eff.get("is_admin_db", False)
+    # Everyone in config.ADMIN_USERS or with admin role is an admin
+    is_admin = (eff.get("level") == "admin") or eff.get("is_admin_db", False) or (uid in config.ADMIN_USERS)
     is_staff = eff.get("level") == "staff"
+    
+    # Force access for all admins
     has_access = eff.get("has_mini_app_access", False)
+    if is_admin:
+        has_access = True
 
-    # EMERGENCY OVERRIDE FOR SPECIFIC USER
-    if uid == 133994080:
-        logger.warning(f"🚨 Applying EMERGENCY clean settings for user {uid}")
-        # Force clean structure
+    # EMERGENCY OVERRIDE FOR ADMINS (Sanitize settings if they get stuck)
+    if is_admin and (eff.get("settings") is None or not eff.get("settings")):
+        logger.warning(f"🚨 Applying EMERGENCY clean settings for admin {uid}")
+        # Force clean structure only if missing
         eff["settings"] = {
             "theme": "dark",
             "primaryColor": "#3b82f6",
@@ -302,8 +307,6 @@ async def check_user_access(
             "cardGlowIntensity": 0.5,
             "showRecommendations": True
         }
-        eff["nickname"] = "Admin"
-        eff["username"] = "admin"
         
         # ALSO SANITIZE LEVEL INFO
         if "level_info" in eff:

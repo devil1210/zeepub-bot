@@ -101,10 +101,9 @@ async def require_admin(user_data: Dict[str, Any] = Depends(get_current_user_dat
 async def require_mini_app_access(
     user_data: Dict[str, Any] = Depends(get_current_user_data)
 ):
-    """
-    Dependency that enforces Mini App access permissions.
-    """
-    if not user_data.get("has_mini_app_access") and user_data.get("level") != "admin":
+    curr_uid = user_data.get("user_id", 0)
+    is_configured_admin = curr_uid in config.ADMIN_USERS
+    if not user_data.get("has_mini_app_access") and user_data.get("level") != "admin" and not user_data.get("is_real_admin") and not is_configured_admin:
         raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.",

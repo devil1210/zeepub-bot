@@ -107,9 +107,11 @@ async def get_effective_user(
     Retorna un dict con keys: level (tier), role (label), status_label, expires_at.
     Tiers (level): 'admin', 'staff', 'premium', 'vip', 'white', 'free'.
     """
-    # EMERGENCY: Clear simulation for stuck admin
-    if uid == 133994080:
+    # EMERGENCY: Clear simulation for stuck admins
+    if uid in config.ADMIN_USERS:
         simulated_level_id = None
+        # Ensure they always have access in result base
+        result["has_mini_app_access"] = True
 
     # 0. Check Cache (Bypass if simulating)
     cache_key = f"user_effective:{uid}"
@@ -189,26 +191,25 @@ async def get_effective_user(
 
     # 1. Config Admins always have top precedence
     if uid in config.ADMIN_USERS:
-        # AUTO-SYNC: Ensure config admins have level_id=1 in DB
-        # This runs every time to ensure consistency
-        try:
-            # AUTO-SYNC: Ensure config admins have level_id=1 in DB
-            await user_repo.upsert(uid, level="admin", level_id=1)
-            logger.info(f"Auto-synced config admin {uid} to level_id=1 in database")
-        except Exception as e:
-            logger.warning(f"Could not auto-sync admin {uid} to DB: {e}")
-        
-        # Load DB info even for config admins to preserve personal settings
+        # Pre-fetch info to avoid NameError and sync level if needed
         info = await get_user_info(uid)
         
+        if info and info.get("level_id") != 1:
+            try:
+                await user_repo.update_user_level(uid, "Administrador", days=3650)
+                logger.info(f"Fixed level mismatch for admin {uid}: forced to level_id 1")
+                # Reload info after update
+                info = await get_user_info(uid)
+            except: pass
+
         # Merge personal settings on top of global defaults
         personal_settings = info.get("settings", {}) if info else {}
         base_settings = global_ui.copy()
         base_settings.update(personal_settings)
-        
+
         result.update({
             "level": "admin",
-            "role": info.get("role") if info else "",
+            "role": info.get("role") if info else "admin",
             "status_label": "Admin",
             "expires_at": None,
             "nickname": info.get("nickname") if (info and info.get("nickname")) else (nickname_from_tg or f"Admin_{uid}"),
@@ -216,9 +217,10 @@ async def get_effective_user(
             "username": info.get("username") if (info and info.get("username")) else (username_from_tg or ""),
             "roles": info.get("roles") if (info and info.get("roles")) else ["Administrador"],
             "has_mini_app_access": True,
+            "is_real_admin": True,
             "can_request_books": info.get("can_request_books", True) if info else True,
             "has_library_access": info.get("has_library_access", True) if info else True,
-            "can_upload_epub": info.get("can_upload_epub", False) if info else False,
+            "can_upload_epub": info.get("can_upload_epub", True) if info else True,
             "settings": normalize_ui(base_settings),
             "level_info": { # Default level info for config admins if DB is missing it
                 "id": "1", "name": "Administrador", "priority": 100, "color": "#FF6B6B", "hasAccess": True,
@@ -280,7 +282,7 @@ async def get_effective_user(
         result["level_info"] = access_info["level"]
 
         # Check if this is a hard admin FIRST
-        is_hard_admin = access_info["isAdmin"] or uid in config.ADMIN_USERS
+        is_hard_admin = access_info.get("isAdmin") or uid in config.ADMIN_USERS
         result["is_real_admin"] = is_hard_admin
         
         if is_hard_admin:

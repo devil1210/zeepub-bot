@@ -625,30 +625,30 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
     if user_repo.supabase.is_active:
         try:
             # Users
-            res_u = user_repo.supabase.get_client().table('users').select("telegram_id", count='exact').execute()
+            res_u = user_repo.supabase.get_client().table('users').select("telegram_id", count='exact', head=True).execute()
             total_users = res_u.count or 0
             
             # Books
-            res_b = user_repo.supabase.get_client().table('local_books').select("id", count='exact').execute()
+            res_b = user_repo.supabase.get_client().table('local_books').select("id", count='exact', head=True).execute()
             total_books = res_b.count or 0
             
             # Downloads 24h
             day_ago = (datetime.now() - timedelta(hours=24)).isoformat()
-            res_d = user_repo.supabase.get_client().table('download_history').select("id", count='exact').gte('downloaded_at', day_ago).execute()
+            res_d = user_repo.supabase.get_client().table('download_history').select("id", count='exact', head=True).gte('downloaded_at', day_ago).execute()
             dls_24h = res_d.count or 0
 
             # Downloads prev 24h (comparison)
             two_days_ago = (datetime.now() - timedelta(hours=48)).isoformat()
-            res_dp = user_repo.supabase.get_client().table('download_history').select("id", count='exact').gte('downloaded_at', two_days_ago).lt('downloaded_at', day_ago).execute()
+            res_dp = user_repo.supabase.get_client().table('download_history').select("id", count='exact', head=True).gte('downloaded_at', two_days_ago).lt('downloaded_at', day_ago).execute()
             dls_prev_24h = res_dp.count or 0
 
-            # Users 7d - Handle missing created_at column gracefully
+            # Users 7d - Use correct column 'created_at'
             try:
                 week_ago = (datetime.now() - timedelta(days=7)).isoformat()
-                res_u7 = user_repo.supabase.get_client().table('users').select("telegram_id", count='exact').gte('added_at', week_ago).execute()
+                res_u7 = user_repo.supabase.get_client().table('users').select("telegram_id", count='exact', head=True).gte('created_at', week_ago).execute()
                 users_7d = res_u7.count or 0
             except Exception as e:
-                logger.warning(f"Could not fetch users_7d stats (missing created_at column): {e}")
+                logger.warning(f"Could not fetch users_7d stats: {e}")
                 # Use fallback based on total users (5% heuristic for new users)
                 users_7d = max(1, int(total_users * 0.05)) if total_users > 0 else 0
         except Exception as e:
@@ -719,7 +719,12 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
             # We can use RPC or join
             res = user_repo.supabase.get_client().table('users').select("level:user_levels(price)").execute()
             if res.data:
-                total_revenue = sum(u.get('level', {}).get('price', 0) for u in res.data)
+                # Add check to ensure 'level' is a dict and not None
+                total_revenue = sum(
+                    (u.get('level') or {}).get('price', 0) 
+                    for u in res.data 
+                    if u.get('level') is not None
+                )
         except Exception as e:
             logger.error(f"Supabase revenue error: {e}")
     else:
