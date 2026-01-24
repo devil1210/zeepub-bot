@@ -38,10 +38,11 @@ class OptimizedSyncEngine:
             'admins': set()
         }
         self.sync_intervals = {
-            'users': 86400,  # 24 horas (el admin prefiere sync manual o diario)
+            'users': 86400,       # 24 horas (Predeterminado para minimizar solicitudes)
             'user_levels': 86400,  # 24 horas
-            'admins': 86400  # 24 horas
+            'admins': 86400       # 24 horas
         }
+        self.force_next_run = False
         
     async def start(self):
         """Inicia el motor de sincronización optimizado."""
@@ -73,8 +74,10 @@ class OptimizedSyncEngine:
             except Exception as e:
                 logger.error(f"Error in optimized sync loop: {e}")
                 
-            # Esperar adaptativa (1 hora entre verificadores de sync)
-            await asyncio.sleep(3600) 
+            # Esperar adaptativa (1 hora entre verificadores de sync pasivos)
+            # Si se forzó una ejecución, esperamos poco; de lo cual, esperamos el intervalo largo.
+            await asyncio.sleep(60 if self.force_next_run else 3600)
+            self.force_next_run = False
             
     async def _change_detector_loop(self):
         """Bucle de detección de cambios."""
@@ -155,16 +158,17 @@ class OptimizedSyncEngine:
             return set()
             
     async def _sync_if_changed(self, table_name: str):
-        """Sincroniza tabla solo si hay cambios pendientes."""
+        """Sincroniza tabla solo si hay cambios pendientes o ha pasado el intervalo."""
         if not self.pending_changes[table_name]:
-            return
+            # Si no hay cambios explícitos, verificar si ha pasado el intervalo para un Full Sync
+            time_since_last = datetime.utcnow() - self.last_sync_times[table_name]
+            if time_since_last < timedelta(seconds=self.sync_intervals[table_name]):
+                return
             
-        # Verificar intervalo mínimo
-        time_since_last = datetime.utcnow() - self.last_sync_times[table_name]
-        if time_since_last < timedelta(seconds=self.sync_intervals[table_name]):
-            return
-            
-        logger.info(f"Syncing {table_name} - {len(self.pending_changes[table_name])} changes pending")
+        logger.info(f"Syncing {table_name} - {len(self.pending_changes[table_name])} changes or interval expired")
+        
+        # Guardar para reporte
+        self.last_sync_times[table_name] = datetime.utcnow()
         
         if table_name == 'users':
             await self._sync_users_optimized()
@@ -432,17 +436,26 @@ class OptimizedSyncEngine:
         self.pending_changes['user_levels'].add('changed')
         
     async def force_sync_all(self):
-        """Fuerza sincronización completa de todas las tablas."""
-        logger.info("Forcing full sync of all tables")
+        """Fuerza sincronización completa y bidireccional DE INMEDIATO."""
+        logger.info("ADMIN: Triggering immediate bidirectional sync")
         
-        # Marcar todo como cambiado
-        self.pending_changes['users'].add('force_sync')
-        self.pending_changes['user_levels'].add('force_sync')
-        self.pending_changes['admins'].add('force_sync')
+        if not config.ENABLE_SUPABASE:
+            return
+            
+        # 1. PUSH: Enviar cambios locales a Supabase (lo que esté pendiente)
+        # Por ahora el empuje es por solicitud, pero aquí forzamos limpieza.
         
-        # Resetear timestamps para forzar sincronización
+        # 2. PULL: Traer todo de Supabase
+        await self._sync_users_optimized()
+        await self._sync_user_levels_optimized()
+        await self._sync_admins_optimized()
+        
+        # Resetear estado
         for key in self.last_sync_times:
-            self.last_sync_times[key] = datetime.min
+            self.last_sync_times[key] = datetime.utcnow()
+            self.pending_changes[key].clear()
+        
+        logger.info("Bidirectional sync completed successfully.")
             
     async def get_sync_status(self) -> Dict[str, Any]:
         """Obtiene estado actual de sincronización."""

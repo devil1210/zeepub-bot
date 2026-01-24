@@ -239,9 +239,10 @@ class ZeePubBot:
             except Exception as e2:
                 logger.error(f"FATAL: Could not register emergency handler: {e2}")
 
-        # Start Sync Engine (Background)
-        from core.sync_engine import sync_engine
-        await sync_engine.start()
+        # Legacy Sync Engine disabled to minimize requests. 
+        # OptimizedSyncEngine is now used instead (triggered or long-interval).
+        # from core.sync_engine import sync_engine
+        # await sync_engine.start()
 
     async def start_async(self):
         """Inicia el bot y el polling de forma asíncrona (para uso con API)."""

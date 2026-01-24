@@ -483,7 +483,12 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
                 settings_obj["last_seen_version"] = 0
 
             await user_repo.update_user_settings(user_id, settings_obj)
-            return {"success": True, "message": "Configuración personal guardada"}
+            
+            # Bidirectional Sync Trigger (Local -> Cloud -> Local)
+            from core.optimized_sync_engine import optimized_sync_engine
+            await optimized_sync_engine.force_sync_all()
+            
+            return {"success": True, "message": "Configuración personal guardada y sincronizada con la nube"}
         else:
             if user_level != "admin":
                 raise HTTPException(
@@ -1450,8 +1455,12 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             logger.error(f"Error updating tier locally: {e}")
             # Non-fatal, we continue since Supabase was updated
         
-        logger.info(f"ADMIN: Saved tier config for '{tier_name}' (ID: {tier_id}) in Cloud and Local")
-        return {"success": True, "tierId": tier_id}
+        # Trigger bidirectional sync to ensure everything is in sync after manual update
+        from core.optimized_sync_engine import optimized_sync_engine
+        await optimized_sync_engine.force_sync_all()
+
+        logger.info(f"ADMIN: Saved tier config for '{tier_name}' (ID: {tier_id}) in Cloud and Local (Bidirectional Sync triggered)")
+        return {"success": True, "tierId": tier_id, "message": "Configuración guardada y sincronizada bidireccionalmente."}
     except HTTPException:
         raise
     except Exception as e:

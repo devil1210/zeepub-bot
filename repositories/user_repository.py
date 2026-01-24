@@ -624,6 +624,7 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
         photo_url: Optional[str] = None,
         settings: Optional[dict] = None,
         allow_theme_templates: Optional[bool] = None,
+        sync_to_supabase: bool = False,
     ):
         level_to_tier_id = {
             'admin': 1, 'staff': 2, 'premium': 3, 'vip': 4, 'white': 5, 'free': 6, 'user': 6
@@ -660,14 +661,13 @@ class UserRepository(BaseRepository[Dict[str, Any]]):
                 await cache_manager.delete_user(telegram_id)
                 
             # 2. Supabase Fallback
-            if self.supabase.is_active:
-                data = {"telegram_id": telegram_id, "level": lvl_str, "level_id": level_id}
-                if expires_at: data["expires_at"] = expires_at.isoformat()
-                if role is not None: data["role"] = role
-                if nickname is not None: data["nickname"] = nickname
-                if insignias is not None: data["insignias"] = insignias
                 if settings is not None: data["settings"] = settings
-                self.supabase.get_client().table('users').upsert(data).execute()
+                
+                if sync_to_supabase:
+                    self.supabase.get_client().table('users').upsert(data).execute()
+                else:
+                    from core.optimized_sync_engine import optimized_sync_engine
+                    await optimized_sync_engine.mark_user_changed(telegram_id)
 
             return {"telegram_id": telegram_id, "level": lvl_str}
         except Exception as e:
