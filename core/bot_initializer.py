@@ -7,7 +7,7 @@ from services.daily_reset_scheduler import start_daily_reset_scheduler
 from services.recommendation_scheduler import start_recommendations_scheduler
 from services.weekly_reports import start_weekly_scheduler
 from utils.download_limiter import load_downloads
-from utils.helpers import get_last_commit_message, get_version_string
+from utils.helpers import escapar_html, get_last_commit_message, get_version_string
 
 logger = logging.getLogger(__name__)
 
@@ -81,8 +81,8 @@ class BotInitializer:
                     chat_id=chat_id,
                     text=(
                         f"✅ <b>¡Actualización Completada!</b>\n"
-                        f"🤖 ZeePub Bot {v} está en línea. 🚀\n\n"
-                        f"📝 <b>Cambios:</b> {commit_msg}"
+                        f"🤖 ZeePub Bot {escapar_html(v)} está en línea. 🚀\n\n"
+                        f"📝 <b>Cambios:</b> {escapar_html(commit_msg)}"
                     ),
                     parse_mode="HTML",
                     message_thread_id=thread_id,
