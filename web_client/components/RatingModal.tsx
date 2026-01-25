@@ -5,11 +5,13 @@ interface RatingModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (rating: number) => void;
+    onDelete?: () => void;
     title: string;
+    currentRating?: number;
 }
 
-export const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, title }) => {
-    const [rating, setRating] = useState(0);
+export const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSubmit, onDelete, title, currentRating = 0 }) => {
+    const [rating, setRating] = useState(currentRating);
     const [hover, setHover] = useState(0);
 
     if (!isOpen) return null;
@@ -39,8 +41,8 @@ export const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSub
                             >
                                 <Star
                                     className={`w-10 h-10 ${(hover || rating) >= star
-                                            ? 'fill-yellow-500 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.3)]'
-                                            : 'text-gray-700'
+                                        ? 'fill-yellow-500 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.3)]'
+                                        : 'text-gray-700'
                                         } transition-all duration-200`}
                                     strokeWidth={1.5}
                                 />
@@ -53,12 +55,22 @@ export const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSub
                             onClick={() => rating > 0 && onSubmit(rating)}
                             disabled={rating === 0}
                             className={`w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${rating > 0
-                                    ? 'bg-primary text-white shadow-lg shadow-primary/20 active:scale-[0.98]'
-                                    : 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
+                                ? 'bg-primary text-white shadow-lg shadow-primary/20 active:scale-[0.98]'
+                                : 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
                                 }`}
                         >
                             Enviar Valoración
                         </button>
+
+                        {currentRating > 0 && onDelete && (
+                            <button
+                                onClick={onDelete}
+                                className="w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-red-500/60 hover:text-red-500 hover:bg-red-500/5 transition-all text-center"
+                            >
+                                Borrar valoración
+                            </button>
+                        )}
+
                         <button
                             onClick={onClose}
                             className="w-full py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/5 transition-all"

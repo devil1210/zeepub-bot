@@ -210,9 +210,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       const res = await api.rateBook(curVolume.id, rating);
       if (res && res.new_average !== undefined) {
         setLocalRating(res.new_average);
-        setLocalDownloadCount(prev => prev); // trigger re-render if needed, though not used for count here
-        // Update volume state to keep it in sync
-        setCurVolume(prev => prev ? { ...prev, rating: res.new_average, downloadCount: res.total_votes ?? prev.downloadCount } : null);
+        setCurVolume(prev => prev ? { ...prev, rating: res.new_average } : null);
       } else {
         setLocalRating(rating);
       }
@@ -220,6 +218,23 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     } catch (err) {
       console.error("Error rating book", err);
       alert("Error al enviar valoración: " + (err as Error).message);
+    }
+  };
+
+  const handleRateDelete = async () => {
+    if (!curVolume) return;
+    try {
+      const res = await api.removeRating(curVolume.id);
+      if (res && res.new_average !== undefined) {
+        setLocalRating(res.new_average);
+        setCurVolume(prev => prev ? { ...prev, rating: res.new_average } : null);
+      } else {
+        setLocalRating(0);
+      }
+      setIsRatingModalOpen(false);
+    } catch (err) {
+      console.error("Error deleting rating", err);
+      alert("Error al eliminar valoración: " + (err as Error).message);
     }
   };
 
@@ -310,7 +325,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({
         isOpen={isRatingModalOpen}
         onClose={() => setIsRatingModalOpen(false)}
         onSubmit={handleRateSubmit}
+        onDelete={handleRateDelete}
         title={displayData.title}
+        currentRating={localRating}
       />
 
       {/* Fullscreen Image Overlay */}
@@ -603,7 +620,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                       { label: 'Idioma', value: displayData.language, highlight: true },
                       { label: 'Group', value: displayData.group, color: 'text-primary', clickable: true, type: 'group' },
                       { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
-                      { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
                       { label: 'Fecha de publicación', value: displayData.publishedDate, highlight: true },
                     ] as any[]).map((item, idx) => (
                       <div key={idx} className="flex justify-between py-3 border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/[0.02] px-2 -mx-2 rounded transition-colors">
@@ -637,6 +653,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                       { label: 'Versión Epub', value: `v${displayData.epubVersion}` },
                       { label: 'Palabras', value: displayData.wordCount?.toLocaleString() || 'N/A' },
                       { label: 'Páginas', value: displayData.pages || 'N/A' },
+                      { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
                       { label: 'Lectura Aprox.', value: displayData.readTime },
                       { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
                       { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400' },

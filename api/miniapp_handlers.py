@@ -755,7 +755,8 @@ async def handle_admin_get_tiers(data: dict[str, Any], user_data: dict[str, Any]
     """Obtiene todos los niveles y su configuración."""
     check_staff(user_data)
     
-    levels = await user_repo.get_all_levels()
+    from services.tier_service import tier_service
+    levels = await tier_service.get_all_tiers()
     logger.info(f"ADMIN: handle_admin_get_tiers found {len(levels)} levels")
     return {"success": True, "levels": levels, "tiers": levels}
 
@@ -768,7 +769,8 @@ async def handle_admin_save_tier(data: dict[str, Any], user_data: dict[str, Any]
     if not level_id:
         raise HTTPException(status_code=400, detail="Falta level_id")
     
-    await user_repo.update_level(int(level_id), data)
+    from services.tier_service import tier_service
+    await tier_service.update_tier(int(level_id), data)
     return {"success": True}
 
 

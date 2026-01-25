@@ -11,6 +11,7 @@ from config.config_settings import config
 from repositories.user_repository import user_repo
 from services.cache_service import AsyncTTLCache
 from services.rbac_service import rbac_service
+from services.tier_service import tier_service
 from services.settings_service import get_setting
 from utils.library_db import PROFILES_DIR
 
@@ -426,7 +427,7 @@ async def get_effective_user(
     
     if is_real_admin and simulated_level_id is not None:
         logger.info(f"ADMIN SIMULATION: User {uid} simulating level {simulated_level_id}")
-        sim_level = await user_repo.get_level_by_id(simulated_level_id)
+        sim_level = await tier_service.get_tier_by_id(simulated_level_id)
         if sim_level:
             # Override essential access flags
             result["has_mini_app_access"] = sim_level.get("hasAccess", True)

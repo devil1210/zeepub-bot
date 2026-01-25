@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -41,6 +42,10 @@ app_state = {"start_time": app_start_time}
 async def lifespan(app: FastAPI):
     # Startup: Iniciar el bot
     logger.info("Iniciando ZeePub Bot junto con la API...")
+
+    # Pre-cargar temas en caché de forma asíncrona
+    from services.theme_service import theme_service
+    asyncio.create_task(theme_service.get_all_themes())
     
     # Run DB migrations/checks
     from utils.library_db import check_migrations

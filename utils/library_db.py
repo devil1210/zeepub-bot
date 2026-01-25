@@ -174,6 +174,7 @@ def check_migrations():
                        ("identity_match", "VARCHAR(10) DEFAULT 'False'"),
                        ("path_collision", "VARCHAR(10) DEFAULT 'False'"),
                        ("processed", "VARCHAR(10) DEFAULT 'False'"),
+                       ("series_spanish", "VARCHAR(255)"),
                        ("upload_metadata", "JSONB")
                    ]
                    for col_name, col_type in cols:

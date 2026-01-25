@@ -115,6 +115,9 @@ export const api = {
     rateBook: (bookId: string, rating: number) =>
         rpc('rate_book', { bookId, rating }),
 
+    removeRating: (bookId: string) =>
+        rpc('remove_rating', { bookId }),
+
     // Config
     getUiSettings: () => rpc('ui_settings', { subAction: 'get', role: 'auto' }),
     savePersonalSettings: (settings: any) =>
