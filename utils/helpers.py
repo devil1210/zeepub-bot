@@ -295,7 +295,7 @@ def process_book_identity_comprehensive(
         fname_lower = filename_to_check.lower()
         
         # 1. Color Mode detection
-        if meta.get("color_mode") == "bw": # Default in extractor is "bw", check if filename says otherwise
+        if meta.get("color_mode", "bw") == "bw": # Default in extractor is "bw", check if filename says otherwise
              if any(x in fname_lower for x in ["[color]", "(color)", "[full color]", "color version"]):
                  meta["color_mode"] = "color"
         
