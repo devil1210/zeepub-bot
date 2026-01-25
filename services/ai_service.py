@@ -59,22 +59,18 @@ class AIService:
         prompt = f"""
         Actúa como un bibliotecario experto en novelas ligeras y manga. Tu tarea es normalizar los metadatos de un archivo de libro.
 
-        Reglas de Idioma:
-        1. **Series (English)**: El nombre de la serie oficial en INGLÉS. Este se usará para la base de datos.
-        2. **Series (Spanish)**: El nombre oficial o más común en ESPAÑOL. **IMPORTANTE**: Este nombre se usará EXCLUSIVAMENTE para generar el 'Suggested Filename'.
-           - Ejemplo: "The Hidden Dungeon Only I Can Enter" (English) vs "El calabozo oculto en el que solo yo puedo entrar" (Spanish).
+        REGLAS DE IDIOMA:
+        - Todas las EXPLICACIONES y campos de texto libre deben estar SIEMPRE en ESPAÑOL.
+        - **Series (English)**: El nombre de la serie oficial en INGLÉS.
+        - **Series (Spanish)**: El nombre oficial o más común en ESPAÑOL.
 
         Reglas de Extracción:
-        3. **Volume (CRÍTICO)**: Extrae el número de volumen con total precisión.
-           - **Prioridad 1 (Metadata)**: Busca 'volume_index', 'calibre:series_index'.
-           - **Prioridad 2 (Filename)**: Si el archivo dice "V08" o "Volumen 8", el volumen es 8.0.
-           - **EVITA EL V00**: Si no encuentras el volumen, intenta inferirlo. No pongas 0 a menos que sea realmente un volumen 0, prólogo o extra.
-        4. **Group & Siglas**:
-           - **Group**: Nombre completo del grupo (ej. 'Athena Scanlation').
-           - **Siglas**: La abreviatura del grupo que suele ir entre corchetes (ej. 'GET', 'Tdx', 'AS'). Búscalo en el nombre del archivo: lo que esté entre `[]` es la sigla.
-        5. **Suggested Filename**: Genera el nombre EXACTO: "{{Series Spanish}} - V{{XX}} [{{Siglas}}].epub".
-           - **Formato V{{XX}}**: Siempre 2 dígitos. Ej: V01, V09, V10. 
-           - **Decimales**: Solo si existen. Ej: V08.5. NUNCA uses V01.0.
+        1. **Volume (CRÍTICO)**: Extrae el número de volumen con total precisión.
+           - Si el archivo no especifica volumen, es un tomo único, o el volumen es 0, pon 0.0.
+        2. **Group & Siglas**: Identifica el grupo y su sigla (ej. [GET]).
+        3. **Suggested Filename**: Genera el nombre EXACTO: "{{Series Spanish}} - {{Volumen}} [{{Siglas}}].epub".
+           - Si el volumen es 0.0, usa "Volumen Único".
+           - Si el volumen es > 0, usa "V{{XX}}" (ej: V01, V08.5).
 
         Datos de Entrada:
         - Filename Original: "{filename}"
@@ -154,18 +150,17 @@ class AIService:
         prompt = f"""
         Actúa como un bibliotecario experto. Analiza este grupo de libros y propón una estandarización coherente.
         
+        REGLAS DE IDIOMA:
+        - El campo 'reason' (explicación) debe estar SIEMPRE en ESPAÑOL.
+        
         Nombre Actual en DB: "{current_series_name}"
         Archivos de muestra: {json.dumps(sample_titles, indent=2)}
         
         Tareas:
-        1. **Proposed English Name**: El nombre canónico en INGLÉS/ROMAJI (para la base de datos).
-        2. **Proposed Spanish Name**: El nombre oficial en ESPAÑOL (para los archivos).
-        3. **Group Siglas**: Identifica la sigla del grupo (ej: 'GET', 'Tdx') de los archivos.
-        4. **Volumes**: Para cada archivo, confirma su volumen real.
-        
-        REGLA DE ORO DE VOLUMEN:
-        - NUNCA uses "V00" si el archivo tiene un número (ej: "Volumen 1" -> V01).
-        - Si no estás seguro, usa el número que aparezca en el título o filename.
+        1. **Proposed English Name**: El nombre canónico en INGLÉS/ROMAJI.
+        2. **Proposed Spanish Name**: El nombre oficial en ESPAÑOL.
+        3. **Group Siglas**: Identifica la sigla del grupo (ej: 'GET', 'Tdx').
+        4. **Volumes**: Para cada archivo, confirma su volumen real. Usa 0.0 si es Volumen Único.
         
         Responde SOLO con este JSON:
         {{
@@ -208,16 +203,20 @@ class AIService:
                 # Usar volumen detectado por IA si existe, sino el actual
                 current_vol = ai_volumes.get(orig_name, book.get("volume", 0))
                 
-                # Pad volume with leading zero
-                vol_val = float(current_vol)
-                vol_str = f"{int(vol_val):02d}"
-                if vol_val % 1 != 0:
-                    vol_str += f".{str(vol_val).split('.')[1]}"
+                # Handling volume string
+                if not current_vol or float(current_vol) == 0:
+                    vol_part = "Volumen Único"
+                else:
+                    vol_val = float(current_vol)
+                    vol_str = f"{int(vol_val):02d}"
+                    if vol_val % 1 != 0:
+                        vol_str += f".{str(vol_val).split('.')[1]}"
+                    vol_part = f"V{vol_str}"
                 
                 # Generar nuevo nombre de archivo usando el nombre en ESPAÑOL y las SIGLAS
                 spanish_name = proposal["proposed_spanish"] or proposal["proposed_series"]
                 siglas = proposal["group_siglas"] or "Unknown"
-                new_filename = f"{spanish_name} - V{vol_str} [{siglas}].epub"
+                new_filename = f"{spanish_name} - {vol_part} [{siglas}].epub"
                 
                 if book.get("filename") != new_filename:
                     proposal["changes"].append({
@@ -226,6 +225,14 @@ class AIService:
                         "proposed_filename": new_filename,
                         "volume": current_vol
                     })
+
+            # Check if there is NO CHANGE at all (Series matches AND no files renamed)
+            if proposal["proposed_series"] == current_series_name and not proposal["changes"]:
+                # If proposed is identical to current and no changes, mark as 'sin propuesta'
+                proposal["proposed_series"] = "sin propuesta"
+                proposal["proposed_spanish"] = "sin propuesta"
+                if not proposal["reason"]:
+                    proposal["reason"] = "El estado actual coincide perfectamente con la estandarización sugerida."
             
             return proposal
             
