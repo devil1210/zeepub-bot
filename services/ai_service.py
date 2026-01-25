@@ -172,11 +172,13 @@ class AIService:
             # Esto se hace en código Python para garantizar consistencia con la Regla 8, 
             # usando el nombre de serie propuesto por la IA.
             for book in books:
-                current_vol = book.get("volume", 0)
-                # Formato estándar: "{Series} - V{XX} [{Group}]" (Simplificado para propuesta)
-                # En realidad, el renombrado final lo hará el backend usando helpers, 
-                # aquí solo mostramos la intención.
-                new_filename = f"{analysis.get('proposed_series')} - V{current_vol:02d}.epub"
+                # Pad volume with leading zero if needed (supporting floats like 8.5 -> 08.5)
+                vol_val = float(current_vol)
+                vol_str = f"{int(vol_val):02d}"
+                if vol_val % 1 != 0:
+                    vol_str += f".{str(vol_val).split('.')[1]}"
+                
+                new_filename = f"{analysis.get('proposed_series')} - V{vol_str}.epub"
                 
                 if book.get("filename") != new_filename:
                     proposal["changes"].append({

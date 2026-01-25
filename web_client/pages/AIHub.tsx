@@ -70,7 +70,7 @@ export const AIHub: React.FC = () => {
             if (res.dry_run && res.proposal) {
                 // Show interactive modal
                 setProposal(res.proposal);
-                setApprovedChanges(res.proposal.changes || []);
+                setApprovedChanges(res.proposal?.changes || []);
                 setShowProposal(true);
             } else {
                 // Fallback (shouldn't happen with new backend)
@@ -109,7 +109,7 @@ export const AIHub: React.FC = () => {
         if (exists) {
             setApprovedChanges(approvedChanges.filter(c => c.book_id !== bookId));
         } else {
-            const originalChange = proposal.changes.find((c: any) => c.book_id === bookId);
+            const originalChange = proposal?.changes?.find((c: any) => c.book_id === bookId);
             if (originalChange) {
                 setApprovedChanges([...approvedChanges, originalChange]);
             }
@@ -395,7 +395,7 @@ export const AIHub: React.FC = () => {
                                 <div>
                                     <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide mb-3">Tags Detectados</h4>
                                     <div className="flex gap-2">
-                                        {proposal.global_tags.map((tag: string) => (
+                                        {proposal.global_tags?.map((tag: string) => (
                                             <span key={tag} className="px-3 py-1 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold">
                                                 {tag}
                                             </span>
@@ -413,7 +413,7 @@ export const AIHub: React.FC = () => {
                             <div>
                                 <div className="flex items-center justify-between mb-4">
                                     <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide">
-                                        Archivos a Renombrar ({approvedChanges.length}/{proposal.changes.length})
+                                        Archivos a Renombrar ({approvedChanges.length}/{proposal.changes?.length || 0})
                                     </h4>
                                     <label className="flex items-center gap-2 text-xs font-bold text-primary cursor-pointer">
                                         <input
@@ -427,7 +427,7 @@ export const AIHub: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    {proposal.changes.map((change: any) => {
+                                    {proposal.changes?.map((change: any) => {
                                         const isSelected = approvedChanges.some(c => c.book_id === change.book_id);
                                         return (
                                             <div

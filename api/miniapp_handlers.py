@@ -2583,6 +2583,10 @@ async def handle_ai_scan_series(data: Dict[str, Any], user_data: Dict[str, Any])
              if dry_run:
                  books_dicts = [b.to_dict() for b in books]
                  proposal = await AIService.analyze_series_for_updates(series_hash, current_name, books_dicts)
+                 
+                 if "error" in proposal:
+                      return {"success": False, "message": f"Error de IA: {proposal['error']}"}
+
                  return {
                      "success": True,
                      "proposal": proposal,
