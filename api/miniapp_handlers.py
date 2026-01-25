@@ -2546,40 +2546,134 @@ async def handle_ai_scan_series(data: Dict[str, Any], user_data: Dict[str, Any])
     """Dispara un escaneo on-demand de una serie específica."""
     series_hash = data.get("series_hash")
     series_name = data.get("series_name") # Optional fallback
+    dry_run = data.get("dry_run", False)
     
     if not config.GEMINI_API_KEY:
         return {"success": False, "message": "IA no configurada (Falta API Key)"}
         
     try:
-        # Reutilizamos la lógica del jardinero pero para un solo grupo
-        from scripts.ai_library_gardener import process_groups, get_series_groups
         from models.library_models import LocalBook
-        
-        # Construir grupo ficticio para esa series_hash
+        from services.ai_service import AIService
+        from scripts.ai_library_gardener import process_groups
+        from utils.library_db import get_session
+
         with get_session() as session:
-             # Buscar un libro de esa serie
+             # Buscar libros de esa serie
              query = session.query(LocalBook).filter(LocalBook.series_hash == series_hash)
-             count = query.count()
-             rep_book = query.order_by(LocalBook.series.desc()).first()
+             books = query.order_by(LocalBook.volume.asc()).all()
              
-             if not rep_book:
+             if not books:
                   return {"success": False, "message": "Serie no encontrada"}
-                  
+
+             count = len(books)
+             rep_book = books[0] # Usar cualquiera como representante base
+             current_name = rep_book.series or series_name or rep_book.title
+
+             # --- DRY RUN MODE (PROPOSAL) ---
+             if dry_run:
+                 books_dicts = [b.to_dict() for b in books]
+                 proposal = await AIService.analyze_series_for_updates(series_hash, current_name, books_dicts)
+                 return {
+                     "success": True,
+                     "proposal": proposal,
+                     "dry_run": True
+                 }
+
+             # --- EXECUTE MODE (AUTO) ---
+             # Esto usa la lógica legacy del script (solo actualiza DB series_spanish)
              group = {
                  "hash": series_hash,
                  "representative": rep_book,
                  "count": count
              }
              
-             # Procesar
              updated = await process_groups([group])
              
              return {
                  "success": True, 
-                 "message": f"Serie '{rep_book.series or series_name}' optimizada.",
+                 "message": f"Serie '{current_name}' optimizada automáticamente.",
                  "updated_count": updated
              }
              
     except Exception as e:
         logger.error(f"Error in AI scan series: {e}")
         return {"success": False, "message": str(e)}
+
+
+async def handle_ai_apply_changes(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Aplica los cambios confirmados por el usuario desde la propuesta de IA."""
+    if not config.GEMINI_API_KEY:
+        return {"success": False, "message": "IA no configurada"}
+
+    proposal = data.get("proposal")
+    if not proposal:
+        raise HTTPException(status_code=400, detail="Faltan datos de la propuesta")
+
+    series_hash = proposal.get("series_hash")
+    # Changes is a list of approved changes: { "book_id": 123, "proposed_filename": "..." }
+    approved_changes = data.get("approved_changes", []) 
+    # Global series metadata overrides
+    proposed_series = data.get("proposed_series")
+    
+    # Optional flags
+    apply_renames = data.get("apply_renames", True)
+    apply_meta = data.get("apply_meta", True)
+
+    updated_count = 0
+    errors = []
+
+    from models.library_models import LocalBook, SeriesMetadata
+    from utils.library_db import get_session
+    from utils.helpers import generate_book_hash, generate_series_hash
+    from sqlalchemy import select
+    import os
+    import shutil
+
+    with get_session() as session:
+        # 1. Update Series Metadata (Global)
+        if apply_meta and proposed_series:
+            # Update all books in this hash group to the new series name
+            stmt = select(LocalBook).where(LocalBook.series_hash == series_hash)
+            books = session.execute(stmt).scalars().all()
+            
+            for book in books:
+                book.series_spanish = proposed_series
+                book.is_uncensored = proposal.get("is_uncensored_series", False)
+            
+            updated_count += len(books)
+
+        # 2. Apply File Renames
+        if apply_renames and approved_changes:
+             for change in approved_changes:
+                 book_id = change.get("book_id")
+                 proposed_filename = change.get("proposed_filename")
+                 
+                 if not book_id or not proposed_filename:
+                     continue
+
+                 book = session.query(LocalBook).filter(LocalBook.id == book_id).scalar()
+                 if not book or not book.filepath or not os.path.exists(book.filepath):
+                     errors.append(f"Libro {book_id} no encontrado en disco")
+                     continue
+
+                 old_path = book.filepath
+                 dir_name = os.path.dirname(old_path)
+                 new_path = os.path.join(dir_name, proposed_filename)
+                 
+                 if old_path != new_path:
+                     try:
+                        shutil.move(old_path, new_path)
+                        book.filepath = new_path
+                        book.filename = proposed_filename
+                        # Update database record
+                        updated_count += 1
+                     except Exception as e:
+                        errors.append(f"Error renombrando {book.filename}: {e}")
+
+        session.commit()
+
+    return {
+        "success": True, 
+        "message": f"Cambios aplicados. {updated_count} actualizaciones.",
+        "errors": errors
+    }

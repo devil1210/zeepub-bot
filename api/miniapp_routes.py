@@ -181,6 +181,7 @@ async def handle_bot_request(
             handle_user_status,
             handle_ai_stats,
             handle_ai_scan_series,
+            handle_ai_apply_changes
         )
 
         ACTION_HANDLERS = {
@@ -201,6 +202,7 @@ async def handle_bot_request(
             "create_stars_invoice": handle_create_stars_invoice,
             "ai_stats": handle_ai_stats,
             "ai_scan_series": handle_ai_scan_series,
+            "ai_apply_changes": handle_ai_apply_changes,
             "admin_stats": handle_admin_stats,
             "admin_get_tiers": handle_admin_get_tiers,
             "admin_save_tier": handle_admin_save_tier,

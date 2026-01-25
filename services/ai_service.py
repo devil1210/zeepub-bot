@@ -116,3 +116,78 @@ class AIService:
             return response.text.strip()
         except Exception:
             return current_name
+
+    @staticmethod
+    async def analyze_series_for_updates(series_hash: str, current_series_name: str, books: list[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Analiza un grupo de libros y propone estandarización.
+        Retorna un objeto 'proposal' con los cambios sugeridos.
+        """
+        model = AIService._get_model()
+        if not model:
+            return {"error": "AI not configured"}
+            
+        # 1. Preparar contexto para la IA
+        # Tomamos hasta 5 títulos de muestra para que la IA entienda el patrón
+        sample_titles = [b.get("title", "") for b in books[:5]]
+        
+        prompt = f"""
+        Actúa como un bibliotecario experto. Analiza esta serie de novelas ligeras/manga y propón una estandarización.
+        
+        Nombre Actual de la Serie: "{current_series_name}"
+        Ejemplos de archivos en el grupo:
+        {json.dumps(sample_titles, indent=2)}
+        
+        Tareas:
+        1. **Series Name**: Determina el nombre canónico y limpio en Español (o Inglés si es el original). Elimina "Volumen X", "Novel", tags irrelevantes.
+        2. **Tags**: Detecta tags globales basados en los títulos (ej: "Uncensored", "Color").
+        3. **Confidence**: Qué tan seguro estás de que estos libros pertenecen a la misma serie (0.0 a 1.0).
+        
+        Responde SOLO con este JSON:
+        {{
+            "proposed_series": "string",
+            "reason": "string (breve explicación)",
+            "detected_tags": ["tag1", "tag2"],
+            "is_uncensored_series": boolean,
+            "confidence": float
+        }}
+        """
+        
+        try:
+            response = await model.generate_content_async(prompt)
+            analysis = json.loads(response.text)
+            
+            # Construir propuesta detallada
+            proposal = {
+                "series_hash": series_hash,
+                "current_series": current_series_name,
+                "proposed_series": analysis.get("proposed_series"),
+                "reason": analysis.get("reason"),
+                "confidence": analysis.get("confidence"),
+                "global_tags": analysis.get("detected_tags", []),
+                "changes": []
+            }
+            
+            # Generar cambios individuales (Renombrado de archivos)
+            # Esto se hace en código Python para garantizar consistencia con la Regla 8, 
+            # usando el nombre de serie propuesto por la IA.
+            for book in books:
+                current_vol = book.get("volume", 0)
+                # Formato estándar: "{Series} - V{XX} [{Group}]" (Simplificado para propuesta)
+                # En realidad, el renombrado final lo hará el backend usando helpers, 
+                # aquí solo mostramos la intención.
+                new_filename = f"{analysis.get('proposed_series')} - V{current_vol:02d}.epub"
+                
+                if book.get("filename") != new_filename:
+                    proposal["changes"].append({
+                        "book_id": book.get("id"),
+                        "current_filename": book.get("filename") or book.get("title"),
+                        "proposed_filename": new_filename,
+                        "volume": current_vol
+                    })
+            
+            return proposal
+            
+        except Exception as e:
+            logger.error(f"Error analyzing series: {e}")
+            return {"error": str(e)}

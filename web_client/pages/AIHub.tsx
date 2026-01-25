@@ -11,7 +11,10 @@ import {
     AlertTriangle,
     Play,
     X,
-    ArrowRight
+    ArrowRight,
+    Edit2,
+    Save,
+    Trash2
 } from 'lucide-react';
 import { api } from '../src/services/api';
 
@@ -27,6 +30,14 @@ export const AIHub: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);
+
+    // Proposal State (Interactive Mode)
+    const [proposal, setProposal] = useState<any>(null);
+    const [showProposal, setShowProposal] = useState(false);
+    const [approvedChanges, setApprovedChanges] = useState<any[]>([]);
+    const [applyRenames, setApplyRenames] = useState(true);
+    const [applyMeta, setApplyMeta] = useState(true);
+    const [processingProposal, setProcessingProposal] = useState(false);
 
     useEffect(() => {
         loadStats();
@@ -50,14 +61,58 @@ export const AIHub: React.FC = () => {
         if (!scanHash) return;
         setScanning(true);
         setScanResult(null);
+        setProposal(null);
+
         try {
-            const res = await api.scanSeriesAi(scanHash);
-            setScanResult(res.result || res);
+            // ALWAYS use dry_run=true first for user safety
+            const res = await api.scanSeriesAi(scanHash, true); // true = dry_run
+
+            if (res.dry_run && res.proposal) {
+                // Show interactive modal
+                setProposal(res.proposal);
+                setApprovedChanges(res.proposal.changes || []);
+                setShowProposal(true);
+            } else {
+                // Fallback (shouldn't happen with new backend)
+                setScanResult(res.result || res);
+            }
         } catch (e: any) {
             setScanResult({ success: false, message: e.message || "Error desconocido" });
         } finally {
             setScanning(false);
-            loadStats(); // Refresh stats
+        }
+    };
+
+    const handleApplyChanges = async () => {
+        if (!proposal) return;
+        setProcessingProposal(true);
+        try {
+            const res = await api.applyAiChanges(
+                proposal,
+                approvedChanges,
+                applyRenames,
+                applyMeta
+            );
+            setScanResult(res);
+            setShowProposal(false);
+            setProposal(null);
+            loadStats(); // Refresh final stats
+        } catch (e: any) {
+            alert("Error aplicando cambios: " + e.message);
+        } finally {
+            setProcessingProposal(false);
+        }
+    };
+
+    const toggleChange = (bookId: number) => {
+        const exists = approvedChanges.find(c => c.book_id === bookId);
+        if (exists) {
+            setApprovedChanges(approvedChanges.filter(c => c.book_id !== bookId));
+        } else {
+            const originalChange = proposal.changes.find((c: any) => c.book_id === bookId);
+            if (originalChange) {
+                setApprovedChanges([...approvedChanges, originalChange]);
+            }
         }
     };
 
@@ -237,6 +292,164 @@ export const AIHub: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Proposal Modal (New) */}
+            {showProposal && proposal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="w-full max-w-4xl bg-[#0a0a0c] border border-white/10 rounded-3xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                            <div>
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <Sparkles className="w-5 h-5 text-purple-400" />
+                                    Propuesta de Estandarización
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider font-bold">
+                                    Confianza IA: {(proposal.confidence * 100).toFixed(0)}%
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowProposal(false)}
+                                className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+
+                            {/* Series Name Proposal */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide">Nombre de la Serie</h4>
+                                    <label className="flex items-center gap-2 text-xs font-bold text-primary cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={applyMeta}
+                                            onChange={(e) => setApplyMeta(e.target.checked)}
+                                            className="rounded border-white/20 bg-white/5"
+                                        />
+                                        Aplicar cambio
+                                    </label>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
+                                        <p className="text-xs text-red-400 font-bold uppercase mb-1">Actual</p>
+                                        <p className="text-lg font-medium text-white">{proposal.current_series}</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20 relative">
+                                        <ArrowRight className="absolute -left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-600 hidden md:block" />
+                                        <p className="text-xs text-green-400 font-bold uppercase mb-1">Propuesto</p>
+                                        <p className="text-lg font-bold text-green-100">{proposal.proposed_series}</p>
+                                        {proposal.reason && (
+                                            <p className="text-xs text-gray-500 mt-2 border-t border-white/5 pt-2 italic">
+                                                "{proposal.reason}"
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Tags Detected */}
+                            {proposal.global_tags?.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide mb-3">Tags Detectados</h4>
+                                    <div className="flex gap-2">
+                                        {proposal.global_tags.map((tag: string) => (
+                                            <span key={tag} className="px-3 py-1 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                        {proposal.is_uncensored_series && (
+                                            <span className="px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-bold">
+                                                Uncensored
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* File Renames */}
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide">
+                                        Archivos a Renombrar ({approvedChanges.length}/{proposal.changes.length})
+                                    </h4>
+                                    <label className="flex items-center gap-2 text-xs font-bold text-primary cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={applyRenames}
+                                            onChange={(e) => setApplyRenames(e.target.checked)}
+                                            className="rounded border-white/20 bg-white/5"
+                                        />
+                                        Habilitar Renombrado
+                                    </label>
+                                </div>
+
+                                <div className="space-y-2">
+                                    {proposal.changes.map((change: any) => {
+                                        const isSelected = approvedChanges.some(c => c.book_id === change.book_id);
+                                        return (
+                                            <div
+                                                key={change.book_id}
+                                                className={`p-3 rounded-lg border flex items-center gap-4 text-sm transition-all ${isSelected && applyRenames
+                                                        ? 'bg-white/5 border-white/10 opacity-100'
+                                                        : 'bg-black/20 border-white/5 opacity-50 grayscale'
+                                                    }`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleChange(change.book_id)}
+                                                    disabled={!applyRenames}
+                                                    className="rounded border-white/20 bg-white/5 cursor-pointer"
+                                                />
+                                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-8">
+                                                    <div className="text-red-300/70 truncate" title={change.current_filename}>
+                                                        {change.current_filename}
+                                                    </div>
+                                                    <div className="text-green-300 font-mono truncate" title={change.proposed_filename}>
+                                                        {change.proposed_filename}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowProposal(false)}
+                                className="px-6 py-3 rounded-xl font-bold text-gray-400 hover:bg-white/5 transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleApplyChanges}
+                                disabled={processingProposal}
+                                className="px-8 py-3 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white flex items-center gap-2 transition-all shadow-lg shadow-primary/20"
+                            >
+                                {processingProposal ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        Aplicando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-4 h-4" />
+                                        Aplicar Cambios
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Search Modal */}
             {showSearch && (

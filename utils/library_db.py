@@ -107,6 +107,7 @@ def check_migrations():
                    conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(512);"))
                    conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS english_title VARCHAR(512);"))
                    conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS jap_title VARCHAR(512);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS series_spanish VARCHAR(255);"))
                    conn.commit()
                    _log.info("Checked/Added Metadata and Title columns to local_books")
                 except Exception as e:

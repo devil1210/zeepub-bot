@@ -1,6 +1,7 @@
 import hashlib
 import html
 import re
+import os
 from typing import Any, Optional
 from urllib.parse import urljoin, urlparse
 

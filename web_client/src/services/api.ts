@@ -215,7 +215,17 @@ export const api = {
 
     // AI Hub
     getAiStats: () => rpc('ai_stats'),
-    scanSeriesAi: (seriesHash: string) => rpc('ai_scan_series', { series_hash: seriesHash }),
+    scanSeriesAi: (seriesHash: string, dryRun: boolean = false) =>
+        rpc('ai_scan_series', { series_hash: seriesHash, dry_run: dryRun }),
+
+    applyAiChanges: (proposal: any, approvedChanges: any[], applyRenames: boolean = true, applyMeta: boolean = true) =>
+        rpc('ai_apply_changes', {
+            proposal,
+            approved_changes: approvedChanges,
+            proposed_series: proposal.proposed_series,
+            apply_renames: applyRenames,
+            apply_meta: applyMeta
+        }),
 
     uploadEpub: (file: File, onProgress?: (p: number) => void) =>
         uploadFile('/api/library/upload', file, onProgress),
