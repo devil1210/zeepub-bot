@@ -386,51 +386,81 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             </div>
           </div>
 
-          <div className={viewMode === 'list' ? "flex flex-col gap-3" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"}>
+          <div className={viewMode === 'list' ? "flex flex-col gap-4" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6"}>
             {currentVolumes.map((vol, index) => (
               viewMode === 'list' ? (
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative flex gap-6 p-5 rounded-[2.5rem] border border-white/5 hover:bg-white/[0.08] hover:border-primary/40 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] transition-all duration-500 cursor-pointer overflow-hidden shadow-premium mb-3"
+                  className="group relative flex gap-6 p-6 rounded-[2.5rem] bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] hover:border-primary/40 hover:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.6)] transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl mb-2"
                 >
+                  {/* Backdrop Glow */}
+                  <div className="absolute -inset-20 bg-primary/5 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+
                   {/* Image */}
-                  <div className="relative shrink-0 aspect-[2/3] w-24 sm:w-32 rounded-2xl overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
+                  <div className="relative shrink-0 aspect-[2/3] w-28 sm:w-36 rounded-2xl overflow-hidden shadow-2xl border border-white/10 group-hover:-translate-y-1 transition-transform duration-700">
                     <img
                       alt={vol.title}
                       className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
                       src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)}
                     />
-                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black to-transparent"></div>
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent"></div>
+
+                    {/* Floating Badges on Image (Mobile) */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-1.5 sm:hidden">
+                      {vol.color_mode === 'color' && (
+                        <div className="bg-gradient-to-br from-orange-400 to-pink-500 p-1.5 rounded-lg shadow-2xl border border-white/20">
+                          <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 min-w-0 flex flex-col py-1">
-                    <div className="mb-2">
-                      <div className="flex items-center gap-3 mb-1.5">
-                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] group-hover:tracking-[0.3em] transition-all">Volumen {vol.volumeNumber}</span>
-                        {vol.is_uncensored && <span className="bg-red-500/10 text-red-500 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest border border-red-500/30">N/C</span>}
+                  <div className="flex-1 min-w-0 flex flex-col py-2 z-10">
+                    <div className="mb-3">
+                      <div className="flex flex-wrap items-center gap-3 mb-2.5">
+                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.25em] group-hover:tracking-[0.35em] transition-all">Volumen {vol.volumeNumber}</span>
+                        <div className="flex gap-2">
+                          {vol.color_mode === 'color' && (
+                            <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg border border-white/10">
+                              Color
+                            </span>
+                          )}
+                          {vol.is_uncensored && (
+                            <span className="bg-red-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg border border-white/10">
+                              N/C
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <h3 className="text-white font-black text-lg sm:text-xl leading-snug line-clamp-2 tracking-tight group-hover:text-primary transition-colors">
+                      <h3 className="text-white font-black text-xl sm:text-2xl leading-tight line-clamp-2 tracking-tighter group-hover:text-primary transition-colors">
                         {vol.cleanTitle || vol.title}
                       </h3>
                     </div>
 
-                    <div className="flex items-center gap-5 mt-auto">
-                      <div className="flex items-center gap-2 text-yellow-500">
-                        <Star className="w-4 h-4 fill-current" />
-                        <span className="text-sm font-black text-gray-300">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
+                    <div className="flex items-center gap-6 mt-auto">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-500 font-extrabold uppercase tracking-widest mb-1">Valoración</span>
+                        <div className="flex items-center gap-1.5 text-yellow-500">
+                          <Star className="w-5 h-5 fill-current" />
+                          <span className="text-base font-black text-gray-100">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-primary">
-                        <Download className="w-4 h-4" />
-                        <span className="text-sm font-black text-gray-300">{vol.downloadCount}</span>
+                      <div className="w-px h-8 bg-white/5"></div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-500 font-extrabold uppercase tracking-widest mb-1">Lectores</span>
+                        <div className="flex items-center gap-1.5 text-primary">
+                          <Download className="w-5 h-5" />
+                          <span className="text-base font-black text-gray-100">{vol.downloadCount}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-center pl-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-gray-500 group-hover:bg-primary group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-xl">
-                      <ChevronRight className="w-6 h-6" />
+                    <div className="w-14 h-14 rounded-[1.5rem] bg-white/5 flex items-center justify-center text-gray-500 group-hover:bg-primary group-hover:text-white group-hover:scale-110 active:scale-95 transition-all duration-500 shadow-2xl border border-white/5 group-hover:border-white/20">
+                      <ChevronRight className="w-8 h-8" />
                     </div>
                   </div>
                 </div>
@@ -439,7 +469,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative bg-[#0f1115] rounded-[2rem] overflow-hidden border border-white/5 hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
+                  className="group relative bg-white/[0.02] rounded-[2.5rem] overflow-hidden border border-white/5 hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
                 >
                   <div className="relative aspect-[2/3] w-full overflow-hidden bg-white/5 shadow-2xl">
                     <img
@@ -450,18 +480,28 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
                     {/* Floating Badges */}
                     <div className="absolute top-4 left-4 flex flex-col gap-2">
-                      <span className="bg-primary text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest shadow-xl">
+                      <span className="bg-primary text-white text-[10px] font-black px-4 py-2 rounded-xl uppercase tracking-widest shadow-2xl border border-white/10">
                         Vol {vol.volumeNumber}
                       </span>
+                      {vol.color_mode === 'color' && (
+                        <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-2xl border border-white/10">
+                          Color
+                        </span>
+                      )}
+                      {vol.is_uncensored && (
+                        <span className="bg-red-500 text-white text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-2xl border border-white/10">
+                          N/C
+                        </span>
+                      )}
                     </div>
 
                     {/* Gradient Overlay */}
-                    <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black via-black/40 to-transparent">
-                      <div className="flex items-center gap-2 text-yellow-400 mb-1.5">
-                        <Star className="w-3 h-3 fill-current" />
-                        <span className="text-[11px] font-black">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
+                    <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black via-black/40 to-transparent">
+                      <div className="flex items-center gap-2 text-yellow-400 mb-2">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="text-[12px] font-black">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
                       </div>
-                      <h3 className="text-white font-black text-sm leading-tight line-clamp-2 drop-shadow-xl group-hover:text-primary transition-colors">
+                      <h3 className="text-white font-black text-sm sm:text-lg leading-tight line-clamp-2 drop-shadow-2xl group-hover:text-primary transition-colors tracking-tight">
                         {vol.cleanTitle || vol.title}
                       </h3>
                     </div>
@@ -473,6 +513,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
               )
             ))}
+
 
             <div className="text-center py-4 text-xs text-gray-500 font-medium">
               Página {currentPage} de {totalPages} • {volumes.length} Volúmenes
