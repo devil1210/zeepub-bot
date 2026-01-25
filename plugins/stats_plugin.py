@@ -69,7 +69,7 @@ class StatsPlugin(BasePlugin):
         # Modo Listar Usuarios por Rol: /stats premium
         if context.args:
             target_level = context.args[0].lower()
-            users_list = get_users_by_level(target_level)
+            users_list = await get_users_by_level(target_level)
 
             if not users_list:
                 cms = context.application.plugin_manager.get_plugin("custom_messages")

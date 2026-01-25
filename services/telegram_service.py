@@ -603,8 +603,8 @@ async def enviar_libro_directo(
         if explicit_file_buffer:
             logger.info(f"Usando buffer explícito para: {title}")
             epub_bytes = explicit_file_buffer
-        # Detectar si es ruta local absoluta
-        elif download_url and download_url.startswith("/") and os.path.exists(download_url):
+        # Detectar si es ruta local absoluta (Compatible con Windows C:/ y Linux /)
+        elif download_url and not download_url.startswith("http") and os.path.isabs(download_url) and os.path.exists(download_url):
             logger.info(f"Usando archivo local: {download_url}")
             epub_bytes = download_url  # send_doc_bytes acepta rutas
         elif download_url:

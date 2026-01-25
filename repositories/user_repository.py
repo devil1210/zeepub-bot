@@ -751,6 +751,45 @@ class UserRepository(BaseRepository[dict[str, Any]]):
     # In a real scenario, all 1300+ lines of user_repository.py would need to be reviewed.
     # Below I provide a structure that adheres to the request.
 
+    async def increment_download_count(self, telegram_id: int) -> int:
+        """Incrementa el contador total de descargas de un usuario en PostgreSQL."""
+        try:
+            async with pg_manager.get_session() as session:
+                stmt = select(User).where(User.telegram_id == telegram_id)
+                result = await session.execute(stmt)
+                user = result.scalar_one_or_none()
+                if user:
+                    user.total_downloads = (user.total_downloads or 0) + 1
+                    current_count = user.total_downloads
+                    await session.commit()
+                    await cache_manager.delete_user(telegram_id)
+                    return current_count
+        except Exception as e:
+            logger.error(f"Error incrementing download count for {telegram_id}: {e}")
+        return 0
+
+    async def get_by_level(self, level_name: str) -> list[dict[str, Any]]:
+        """Devuelve una lista de usuarios que tienen un nivel específico."""
+        try:
+            async with pg_manager.get_session() as session:
+                # 1. Obtener el ID del nivel
+                stmt_level = select(UserLevel).where(UserLevel.name == level_name.lower())
+                res_level = await session.execute(stmt_level)
+                level_obj = res_level.scalar_one_or_none()
+                
+                if not level_obj:
+                    return []
+                
+                # 2. Obtener usuarios
+                stmt_users = select(User).where(User.level_id == level_obj.id)
+                res_users = await session.execute(stmt_users)
+                users = res_users.scalars().all()
+                
+                return [self._to_dict(u) for u in users]
+        except Exception as e:
+            logger.error(f"Error in get_by_level: {e}")
+            return []
+
     async def get_access_info(self, telegram_id: int) -> dict[str, Any] | None:
         try:
             async with pg_manager.get_session() as session:

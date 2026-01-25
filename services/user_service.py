@@ -585,16 +585,7 @@ async def upgrade_user_level(telegram_id: int, new_level_name: str) -> None:
     """
     Actualiza el nivel de un usuario buscando por nombre de nivel.
     """
-    async with user_repo.db.connection() as conn:
-        await conn.execute(
-            """
-            UPDATE users
-            SET level_id = (SELECT id FROM user_levels WHERE name = ?)
-            WHERE telegram_id = ?
-            """,
-            (new_level_name, telegram_id),
-        )
-        await conn.commit()
+    await user_repo.update_user_level(telegram_id, new_level_name)
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
