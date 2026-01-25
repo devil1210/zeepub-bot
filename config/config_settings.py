@@ -8,7 +8,7 @@ from typing import List, Set, Tuple
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 @dataclass
