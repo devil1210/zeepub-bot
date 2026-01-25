@@ -18,7 +18,16 @@ from utils.helpers import limpiar_html_basico
 from .base import Base
 
 
-class SeriesMetadata(Base):
+class TranslatorsGroup(Base):
+    """
+    Grupos de traducción y sus siglas para normalización de nombres de archivo.
+    """
+    __tablename__ = "translators_groups"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    siglas = Column(String(50))
+    created_at = Column(DateTime, default=datetime.utcnow)
     """
     Centraliza la metadata de una serie para evitar redundancia en LocalBook.
     """
