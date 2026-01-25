@@ -73,13 +73,22 @@ venv/
 !run_with_api.py
 
 !zeepub-web/
-!zeepub-web/**
+!zeepub-web/**/
+!zeepub-web/**/*.ts
+!zeepub-web/**/*.tsx
+!zeepub-web/**/*.json
+!zeepub-web/**/*.html
+!zeepub-web/**/*.css
+!zeepub-web/**/*.js
 
 !requirements.txt
 !requirements-dev.txt
 !alembic.ini
 !alembic/
-!alembic/**
+!alembic/**/
+!alembic/**/*.py
+!alembic/**/*.ini
+!alembic/**/*.mako
 
 !repositories/
 !repositories/**
@@ -91,7 +100,13 @@ venv/
 !v0/**
 
 !zeepub-miniapp/
-!zeepub-miniapp/**
+!zeepub-miniapp/**/
+!zeepub-miniapp/**/*.ts
+!zeepub-miniapp/**/*.tsx
+!zeepub-miniapp/**/*.json
+!zeepub-miniapp/**/*.html
+!zeepub-miniapp/**/*.css
+!zeepub-miniapp/**/*.js
 
 !migrate_sqlite_schema.py
 !migrate_supabase.py
@@ -99,7 +114,13 @@ venv/
 !migrate_library_hashes.py
 
 !web_client/
-!web_client/**
+!web_client/**/
+!web_client/**/*.ts
+!web_client/**/*.tsx
+!web_client/**/*.json
+!web_client/**/*.html
+!web_client/**/*.css
+!web_client/**/*.js
 
 # --- Asegurar que archivos compilados NUNCA se suban ---
 __pycache__/
