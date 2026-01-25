@@ -2530,7 +2530,7 @@ async def handle_ai_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
             # Asumimos que cada renombrado manual toma 30 segundos
             time_saved_minutes = total_processed * 0.5
 
-            return {
+            res = {
                 "total_processed": total_processed,
                 "total_books": total_books,
                 "pending_optimization": pending,
@@ -2539,6 +2539,8 @@ async def handle_ai_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
                 "background_scan_enabled": get_setting("enable_background_ai_scan", "false").lower() == "true",
                 "ai_key_masked": f"{config.GEMINI_API_KEY[:4]}...{config.GEMINI_API_KEY[-4:]}" if config.GEMINI_API_KEY else "NONE"
             }
+            logger.info(f"📊 AI Stats requested. Active: {res['ai_active']}, Key Masked: {res['ai_key_masked']}")
+            return res
     except Exception as e:
         logger.error(f"Error getting AI stats: {e}")
         return {"error": str(e)}

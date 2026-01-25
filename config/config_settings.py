@@ -142,7 +142,15 @@ class BotConfig:
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")  # Anon key
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    @property
+    def GEMINI_API_KEY(self) -> str:
+        key = os.getenv("GEMINI_API_KEY", "")
+        if key and not getattr(self, "_ai_key_logged", False):
+            # Log only once to avoid spamming
+            import logging
+            logging.getLogger("config").info(f"🤖 AI Key detected: {key[:4]}...{key[-4:]}")
+            self._ai_key_logged = True
+        return key
 
     # SQLAlchemy URL
     # PostgreSQL es obligatorio.
