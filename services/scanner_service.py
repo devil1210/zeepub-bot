@@ -117,10 +117,33 @@ class ScannerService:
                     s.id for s in session.query(LibrarySource).filter(LibrarySource.path.in_(local_libs_map.values())).all()
                 ]
                 if scanned_source_ids:
-                    orphans = session.query(func.count(LocalBook.id)).filter(LocalBook.source_id.notin_(scanned_source_ids)).scalar()
-                    if orphans and orphans > 0:
-                        logger.warning(f"⚠️ ALERTA DE ORDANDAD: Existen {orphans} libros en la base de datos que pertenecen a fuentes NO incluidas en este escaneo. Total Index ({results['updated'] + orphans}) vs Escaneados ({results['updated']}).")
-                        results["orphans_skipped"] = orphans
+                    # Get orphans instead of just counting
+                    orphans_q = session.query(LocalBook).filter(LocalBook.source_id.notin_(scanned_source_ids))
+                    orphans_list = orphans_q.all()
+                    
+                    if orphans_list:
+                        logger.warning(f"⚠️ ALERTA DE ORDANDAD: {len(orphans_list)} libros huérfanos detectados. Moviendo a tabla de Duplicados para revisión.")
+                        
+                        count_moved = 0
+                        for orphan in orphans_list:
+                            # Verify if already in duplicates to avoid spam
+                            exists = session.query(DuplicateBook).filter_by(duplicate_filepath=orphan.filepath).first()
+                            if not exists:
+                                dup = DuplicateBook(
+                                    book_hash=orphan.book_hash,
+                                    original_filepath="ORPHAN_RECORD", # Marker for frontend/admin
+                                    duplicate_filepath=orphan.filepath,
+                                    title=f"[HUÉRFANO] {orphan.title}",
+                                    author=orphan.author
+                                )
+                                session.add(dup)
+                                count_moved += 1
+                        
+                        if count_moved > 0:
+                            session.commit()
+                            
+                        results["orphans_detected"] = len(orphans_list)
+                        results["orphans_moved_to_duplicates"] = count_moved
 
             logger.info(f"Escaneo completado: {results}")
             return results
