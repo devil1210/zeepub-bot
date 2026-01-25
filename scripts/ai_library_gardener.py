@@ -87,23 +87,30 @@ async def process_groups(groups: List[dict]):
         
         # 2. Consultar IA
         try:
-            suggested_name = await AIService.suggest_series_rename(input_name)
+            suggested_data = await AIService.suggest_series_rename(input_name)
         except Exception as e:
             console.print(f"  [red]Error consultando IA:[/red] {e}")
             continue
             
-        if not suggested_name:
-            console.print("  [yellow]IA no devolvió sugerencia. Saltando.[/yellow]")
+        proposed_en = suggested_data.get("proposed_english")
+        proposed_es = suggested_data.get("proposed_spanish")
+            
+        if not proposed_en:
+            console.print("  [yellow]IA no devolvió sugerencia válida. Saltando.[/yellow]")
             continue
             
-        console.print(f"  [green]Sugerencia IA:[/green] '{suggested_name}'")
+        console.print(f"  [green]Sugerencia IA (EN):[/green] '{proposed_en}'")
+        console.print(f"  [green]Sugerencia IA (ES):[/green] '{proposed_es}'")
         
         # 3. Actualizar DB (Todos los libros del hash)
         async with pg_manager.get_session() as session:
             stmt = (
                 update(LocalBook)
                 .where(LocalBook.series_hash == series_hash)
-                .values(series_spanish=suggested_name)
+                .values(
+                    series=proposed_en,
+                    series_spanish=proposed_es
+                )
             )
             await session.execute(stmt)
             await session.commit()

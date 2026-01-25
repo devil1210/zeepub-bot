@@ -17,7 +17,8 @@ import {
   Upload,
   History,
   ShieldHalf,
-  ArrowDownToLine
+  ArrowDownToLine,
+  BrainCircuit
 } from 'lucide-react';
 import { api } from '../src/services/api';
 import { useTelegram } from '../contexts/TelegramContext';
@@ -179,6 +180,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar Todo', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
                 { id: 'library', icon: Library, label: 'Biblioteca', desc: 'Mis Libros', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
                 { id: 'requests', icon: BookOpen, label: 'Pedidos', desc: 'Solicitar Libros', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', visible: status?.user?.can_request_books !== false },
+                { id: 'ai', icon: BrainCircuit, label: 'AI Hub', desc: 'IA Gardener', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: isAdmin },
                 { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Personalización', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true },
               ].filter(a => a.visible);
 

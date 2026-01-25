@@ -57,36 +57,40 @@ class AIService:
             return None
 
         prompt = f"""
-        Actúa como un bibliotecario experto en novelas ligeras y manga. Tu tarea es normalizar los metadatos de un archivo de libro, extrayendo información precisa especialmente del número de volumen.
+        Actúa como un bibliotecario experto en novelas ligeras y manga. Tu tarea es normalizar los metadatos de un archivo de libro.
 
-        Reglas de Normalización:
-        1. **Series (Spanish)**: El nombre de la serie limpio. Elimina "Volumen X", tags, etc. 
-           **REGLA DE ORO**: PRIORIZA SIEMPRE EL IDIOMA ESPAÑOL. Aunque la serie sea más conocida por su nombre en Inglés o Romaji, debes usar el título oficial en español (ej: "El calabozo oculto en el que solo yo puedo entrar" en lugar de "The Hidden Dungeon..." u "Ore dake Haireru...").
-        2. **Volume (EXTREMANTE IMPORTANTE)**: Debes extraer el número de volumen con total precisión.
-           - **Prioridad 1 (Metadata)**: Busca en la 'Metadata Cruda'. Busca campos como 'volume_index', 'calibre:series_index', o menciones dentro de 'titulo_volumen', 'title', o 'sinopsis'. 
-           - **Prioridad 2 (Filename)**: Si no hay metadata clara, usa el nombre del archivo.
-           - **Formato**: Devuelve un número (float). Ej: 1.0, 8.5.
-        3. **Group**: El grupo de traducción o editorial (ej. 'Athena', 'Traduxiones', 'Athena Scanlation'). Si no hay, usa "Unknown".
-        4. **Suggested Filename**: Genera el nombre de archivo EXACTO con este formato: "{{Series Clean}} - V{{XX}} [{{Group}}].epub".
-           - **REGLAS DE FORMATO V{{XX}}**:
-             - Si el volumen es entero (1, 9, 10): Usa 2 dígitos PAD. Ej: **V01, V09, V10**.
-             - Si el volumen es decimal (8.5): Usa 2 dígitos para la parte entera. Ej: **V08.5, V10.5**.
-             - **CRÍTICO**: NUNCA uses V01.0, V02.0, etc. Si es un número entero, no debe llevar decimales.
-        5. **Censura/Tipo**: Detecta si el libro es "Sin Censura" (Uncensored) o "A Color" basándote en la metadata cruda o el nombre.
+        Reglas de Idioma:
+        1. **Series (English)**: El nombre de la serie oficial en INGLÉS. Este se usará para la base de datos.
+        2. **Series (Spanish)**: El nombre oficial o más común en ESPAÑOL. **IMPORTANTE**: Este nombre se usará EXCLUSIVAMENTE para generar el 'Suggested Filename'.
+           - Ejemplo: "The Hidden Dungeon Only I Can Enter" (English) vs "El calabozo oculto en el que solo yo puedo entrar" (Spanish).
+
+        Reglas de Extracción:
+        3. **Volume (CRÍTICO)**: Extrae el número de volumen con total precisión.
+           - **Prioridad 1 (Metadata)**: Busca 'volume_index', 'calibre:series_index'.
+           - **Prioridad 2 (Filename)**: Si el archivo dice "V08" o "Volumen 8", el volumen es 8.0.
+           - **EVITA EL V00**: Si no encuentras el volumen, intenta inferirlo. No pongas 0 a menos que sea realmente un volumen 0, prólogo o extra.
+        4. **Group & Siglas**:
+           - **Group**: Nombre completo del grupo (ej. 'Athena Scanlation').
+           - **Siglas**: La abreviatura del grupo que suele ir entre corchetes (ej. 'GET', 'Tdx', 'AS'). Búscalo en el nombre del archivo: lo que esté entre `[]` es la sigla.
+        5. **Suggested Filename**: Genera el nombre EXACTO: "{{Series Spanish}} - V{{XX}} [{{Siglas}}].epub".
+           - **Formato V{{XX}}**: Siempre 2 dígitos. Ej: V01, V09, V10. 
+           - **Decimales**: Solo si existen. Ej: V08.5. NUNCA uses V01.0.
 
         Datos de Entrada:
         - Filename Original: "{filename}"
-        - Metadata Cruda (Contenido del EPUB): {json.dumps(raw_meta, default=str)}
+        - Metadata Cruda: {json.dumps(raw_meta, default=str)}
 
-        Devuelve SOLO un JSON con esta estructura:
+        Devuelve SOLO un JSON:
         {{
+            "series_english": "string",
             "series_spanish": "string",
             "volume": float,
-            "group": "string",
+            "group_full": "string",
+            "group_siglas": "string",
             "suggested_filename": "string",
             "is_uncensored": boolean,
             "color_mode": "color" | "bw" | "mixed",
-            "confidence": float (0.0 to 1.0)
+            "confidence": float
         }}
         """
 
@@ -107,25 +111,28 @@ class AIService:
             return current_name
 
         prompt = f"""
-        Normaliza el siguiente nombre de una serie de novela ligera.
+        Normaliza el nombre de la serie.
         
         REGLAS:
         1. Elimina volúmenes, "Novela Ligera", etiquetas de formato.
-        2. PRIORIZA SIEMPRE EL IDIOMA ESPAÑOL. Si el input está en Inglés o Romaji y conoces el título oficial en Español, usa el de Español.
+        2. proposed_english: Nombre oficial en INGLÉS o ROMAJI.
+        3. proposed_spanish: Nombre oficial en ESPAÑOL.
         
         Input: "{current_name}"
         
-        Responde SOLO con el string del nombre limpio en ESPAÑOL. Nada más.
+        Responde SOLO con un JSON:
+        {{
+            "proposed_english": "string",
+            "proposed_spanish": "string"
+        }}
         """
         
         try:
-            # For this simple query we don't strictly need JSON, but let's keep it consistent or just get text
-            # Override config for simple text
-            simple_model = genai.GenerativeModel("gemini-3-flash-preview") 
-            response = await simple_model.generate_content_async(prompt)
-            return response.text.strip()
+            response = await model.generate_content_async(prompt)
+            txt = AIService._extract_json_from_text(response.text)
+            return json.loads(txt)
         except Exception:
-            return current_name
+            return {"proposed_english": current_name, "proposed_spanish": current_name}
 
     @staticmethod
     async def analyze_series_for_updates(series_hash: str, current_series_name: str, books: list[Dict[str, Any]]) -> Dict[str, Any]:
@@ -145,26 +152,33 @@ class AIService:
             sample_titles.append(name)
         
         prompt = f"""
-        Actúa como un bibliotecario experto. Analiza esta serie de novelas ligeras/manga y propón una estandarización.
+        Actúa como un bibliotecario experto. Analiza este grupo de libros y propón una estandarización coherente.
         
-        Nombre Actual de la Serie: "{current_series_name}"
-        Ejemplos de archivos en el grupo:
-        {json.dumps(sample_titles, indent=2)}
+        Nombre Actual en DB: "{current_series_name}"
+        Archivos de muestra: {json.dumps(sample_titles, indent=2)}
         
         Tareas:
-        1. **Series Name**: Determina el nombre canónico y limpio en ESPAÑOL. 
-           - **REGLA CRÍTICA**: Ignora nombres en Inglés o Romaji si existe un título en Español. Preferimos "El calabozo oculto..." sobre "The Hidden Dungeon..." u "Ore dake Haireru...".
-           - Los archivos actuales pueden estar ya en español; úsalos como referencia.
-        2. **Tags**: Detecta tags globales basados en los títulos (ej: "Uncensored", "Color").
-        3. **Confidence**: Qué tan seguro estás de que estos libros pertenecen a la misma serie (0.0 a 1.0).
+        1. **Proposed English Name**: El nombre canónico en INGLÉS/ROMAJI (para la base de datos).
+        2. **Proposed Spanish Name**: El nombre oficial en ESPAÑOL (para los archivos).
+        3. **Group Siglas**: Identifica la sigla del grupo (ej: 'GET', 'Tdx') de los archivos.
+        4. **Volumes**: Para cada archivo, confirma su volumen real.
+        
+        REGLA DE ORO DE VOLUMEN:
+        - NUNCA uses "V00" si el archivo tiene un número (ej: "Volumen 1" -> V01).
+        - Si no estás seguro, usa el número que aparezca en el título o filename.
         
         Responde SOLO con este JSON:
         {{
-            "proposed_series": "string",
-            "reason": "string (breve explicación)",
+            "proposed_english": "string",
+            "proposed_spanish": "string",
+            "group_siglas": "string",
             "detected_tags": ["tag1", "tag2"],
             "is_uncensored_series": boolean,
-            "confidence": float
+            "confidence": float,
+            "reason": "string",
+            "volumes": {{
+                "filename_original": float_volumen
+            }}
         }}
         """
         
@@ -177,7 +191,9 @@ class AIService:
             proposal = {
                 "series_hash": series_hash,
                 "current_series": current_series_name,
-                "proposed_series": analysis.get("proposed_series"),
+                "proposed_series": analysis.get("proposed_english"),
+                "proposed_spanish": analysis.get("proposed_spanish"),
+                "group_siglas": analysis.get("group_siglas", "Unknown"),
                 "reason": analysis.get("reason"),
                 "confidence": analysis.get("confidence"),
                 "global_tags": analysis.get("detected_tags", []),
@@ -185,17 +201,23 @@ class AIService:
             }
             
             # Generar cambios individuales (Renombrado de archivos)
-            # Esto se hace en código Python para garantizar consistencia con la Regla 8, 
-            # usando el nombre de serie propuesto por la IA.
+            ai_volumes = analysis.get("volumes", {})
+            
             for book in books:
-                current_vol = book.get("volume", 0)
-                # Pad volume with leading zero if needed (supporting floats like 8.5 -> 08.5)
+                orig_name = book.get("filename") or book.get("title", "")
+                # Usar volumen detectado por IA si existe, sino el actual
+                current_vol = ai_volumes.get(orig_name, book.get("volume", 0))
+                
+                # Pad volume with leading zero
                 vol_val = float(current_vol)
                 vol_str = f"{int(vol_val):02d}"
                 if vol_val % 1 != 0:
                     vol_str += f".{str(vol_val).split('.')[1]}"
                 
-                new_filename = f"{analysis.get('proposed_series')} - V{vol_str}.epub"
+                # Generar nuevo nombre de archivo usando el nombre en ESPAÑOL y las SIGLAS
+                spanish_name = proposal["proposed_spanish"] or proposal["proposed_series"]
+                siglas = proposal["group_siglas"] or "Unknown"
+                new_filename = f"{spanish_name} - V{vol_str} [{siglas}].epub"
                 
                 if book.get("filename") != new_filename:
                     proposal["changes"].append({

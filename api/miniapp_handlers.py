@@ -2650,9 +2650,19 @@ async def handle_ai_apply_changes(data: Dict[str, Any], user_data: Dict[str, Any
             stmt = select(LocalBook).where(LocalBook.series_hash == series_hash)
             books = session.execute(stmt).scalars().all()
             
+            proposed_spanish = proposal.get("proposed_spanish")
+            
             for book in books:
-                book.series_spanish = proposed_series
+                book.series = proposed_series  # English
+                if proposed_spanish:
+                    book.series_spanish = proposed_spanish # Spanish
+                
                 book.is_uncensored = proposal.get("is_uncensored_series", False)
+                
+                # Aprovechar y actualizar volumen si está en la propuesta
+                orig_filename = book.filename or book.title
+                if proposal.get("volumes") and orig_filename in proposal["volumes"]:
+                    book.volume = proposal["volumes"][orig_filename]
             
             updated_count += len(books)
 

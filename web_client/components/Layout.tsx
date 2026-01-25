@@ -42,9 +42,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
     { id: 'search', icon: Search, label: 'Búsqueda y Catálogos' },
     { id: 'library', icon: Library, label: 'Mi Biblioteca' },
     { id: 'settings', icon: Settings, label: 'Ajustes' },
-    { id: 'ai', icon: BrainCircuit, label: 'AI Hub' },
+    ...(isAdmin ? [
+      { id: 'ai', icon: BrainCircuit, label: 'AI Hub' },
+      { id: 'admin', icon: ShieldCheck, label: 'Admin' }
+    ] : []),
     ...(canUploadEpub ? [{ id: 'upload', icon: Upload, label: 'Subir' }] : []),
-    ...(isAdmin ? [{ id: 'admin', icon: ShieldCheck, label: 'Admin' }] : []),
   ];
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;

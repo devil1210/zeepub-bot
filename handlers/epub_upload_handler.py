@@ -241,18 +241,23 @@ class EPUBUploader:
                 logger.info(f"🤖 AI Analysis Result: {ai_data}")
                 # Actualizar metadatos con la inteligencia de la IA
                 
-                # Nombre de serie limpio (Regla 1)
+                # Nombre de serie en Inglés (Regla: DB en Inglés)
+                if ai_data.get("series_english"):
+                    metadata['series'] = ai_data["series_english"]
+                
+                # Nombre de serie en Español (Regla: Solo para archivos)
                 if ai_data.get("series_spanish"):
-                    metadata['series'] = ai_data["series_spanish"]
-                    metadata['series_spanish'] = ai_data["series_spanish"] # Nueva columna
+                    metadata['series_spanish'] = ai_data["series_spanish"]
                 
                 # Volumen corregido (Regla 2)
                 if ai_data.get("volume") is not None:
                     metadata['volume'] = ai_data["volume"]
                 
-                # Grupo detectado (Regla 3)
-                if ai_data.get("group"):
-                    metadata['group'] = ai_data["group"]
+                # Grupo detectado (siglas son vitales para el nombre de archivo)
+                if ai_data.get("group_full"):
+                    metadata['group'] = ai_data["group_full"]
+                if ai_data.get("group_siglas"):
+                    metadata['group_siglas'] = ai_data["group_siglas"]
                 
                 # Nombres de archivo sugerido (Regla 4) - Lo usamos como base para suggested_path
                 if ai_data.get("suggested_filename"):

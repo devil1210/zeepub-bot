@@ -157,8 +157,23 @@ class ThemeSyncService:
         normalized['updated_at'] = updated_at
         return normalized
     
+    async def fix_theme_sequence(self, session: AsyncSession):
+        """Asegura que la secuencia del ID de app_themes esté sincronizada con los datos."""
+        try:
+            # PostgreSQL specific: Reset sequence to max(id)
+            # Usamos COALESCE para manejar el caso de tabla vacía
+            await session.execute(text("SELECT setval('app_themes_id_seq', (SELECT COALESCE(MAX(id), 1) FROM app_themes))"))
+            await session.commit()
+            logger.info("app_themes_id_seq synchronized with max(id)")
+        except Exception as e:
+            logger.error(f"Error fixing theme sequence: {e}")
+            await session.rollback()
+
     async def sync_supabase_to_local(self, session: AsyncSession) -> Tuple[int, int]:
         """Sincronizar temas de Supabase a la base de datos local de forma robusta."""
+        # 0. Asegurar secuencia
+        await self.fix_theme_sequence(session)
+        
         supabase_themes = await self.get_supabase_themes()
         
         # Obtener todos los temas locales para mapeo y limpieza

@@ -163,7 +163,9 @@ const AppContent: React.FC = () => {
             />
           } />
           <Route path="/upload" element={<PageWrapper Component={UploadEpub} />} />
-          <Route path="/ai" element={<PageWrapper Component={AIHub} />} />
+          <Route path="/ai" element={
+            isAdmin ? <PageWrapper Component={AIHub} /> : <Navigate to="/" replace />
+          } />
           <Route path="/admin" element={
             isAdmin ? <PageWrapper Component={Admin} /> : <Navigate to="/" replace />
           } />
