@@ -555,7 +555,7 @@ async def get_user_access_data(uid: int) -> dict[str, Any]:
             "permissions": list(permissions)
         }
         
-    await user_cache.set(cache_key, access_data, ttl=300) # 5 min cache for lite version
+    await user_cache.set(cache_key, access_data, custom_ttl=300) # 5 min cache for lite version
     return access_data
 
 
