@@ -3,7 +3,7 @@ import random
 from datetime import date
 from typing import Any, Dict, List
 
-from sqlalchemy import desc, or_, select
+from sqlalchemy import desc, or_, select, cast, String, case
 
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, UserDownload, UserRating
@@ -75,7 +75,7 @@ class RecommendationService:
                     # tags is JSONB in Postgres usually, or if it's text we use like
                     # LocalBook.tags is JSON (Column(JSON))
                     # In Postgres, we can use JSONB containment or just cast to string for simplicity if it varies
-                    tag_filters = [LocalBook.tags.astext.ilike(f"%{tag}%") for tag in target_tags]
+                    tag_filters = [cast(LocalBook.tags, String).ilike(f"%{tag}%") for tag in target_tags]
                     filters.append(or_(*tag_filters))
 
                 if filters:
@@ -117,7 +117,7 @@ class RecommendationService:
             
             # Priorizar libros con miniatura y buen rating
             query = query.order_by(
-                desc(LocalBook.cover_low is not None),
+                desc(case((LocalBook.cover_low != None, 1), else_=0)), # Fix: is not None evaluates to True in python, use != None expression
                 desc(LocalBook.rating_average), 
                 desc(LocalBook.rating_count)
             ).limit(limit * 3)
