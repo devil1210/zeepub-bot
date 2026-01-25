@@ -287,6 +287,27 @@ def process_book_identity_comprehensive(
             except Exception:
                 volume = None
 
+    # --- ENRICHMENT FROM FILENAME ---
+    # Detectar variantes de edición (Color, Censura) desde el nombre de archivo
+    # si no vinieron en la metadata interna.
+    filename_to_check = original_filename or (os.path.basename(epub_path) if epub_path else "")
+    if filename_to_check:
+        fname_lower = filename_to_check.lower()
+        
+        # 1. Color Mode detection
+        if meta.get("color_mode") == "bw": # Default in extractor is "bw", check if filename says otherwise
+             if any(x in fname_lower for x in ["[color]", "(color)", "[full color]", "color version"]):
+                 meta["color_mode"] = "color"
+        
+        # If explicitly marked as B&W in filename, ensure it stays B&W (redundant but safe)
+        if any(x in fname_lower for x in ["[b&n]", "[b&w]", "(b&n)", "(b&w)"]):
+             meta["color_mode"] = "bw"
+
+        # 2. Uncensored detection
+        if not meta.get("is_uncensored"):
+            if any(x in fname_lower for x in ["[sin censura]", "[uncensored]", "[no censura]", "(uncensored)"]):
+                meta["is_uncensored"] = 1
+
     return {
         "series": series,
         "author": author,
