@@ -1559,9 +1559,9 @@ async def handle_admin_get_themes(data: dict[str, Any], user_data: dict[str, Any
     # if user_data.get("level") != "admin":
     #    raise HTTPException(status_code=403, detail="No tienes permisos")
     
-    from repositories.theme_repository import theme_repo
+    from services.theme_service import theme_service
     try:
-        themes = await theme_repo.get_all_themes()
+        themes = await theme_service.get_all_themes()
         logger.info(f"Returning {len(themes)} themes to frontend")
         return {"success": True, "themes": themes}
     except Exception as e:
@@ -1712,6 +1712,10 @@ async def handle_admin_rename_themes(data: dict[str, Any], user_data: dict[str, 
             
             await session.commit()
             
+            # Invalidate cache after bulk rename
+            from services.theme_service import theme_service
+            await theme_service.invalidate_caches()
+            
             logger.info(f"Enhanced theme renaming completed. {renamed_count} themes renamed.")
             
             return {
@@ -1750,11 +1754,11 @@ async def handle_admin_save_theme(data: dict[str, Any], user_data: dict[str, Any
     # Clean name: remove trailing numbers that look like " 2", " 3"
     theme_name = re.sub(r"\s+\d+$", "", theme_name).strip()
     
-    from repositories.theme_repository import theme_repo
+    from services.theme_service import theme_service
     
     # Ensure name uniqueness if it's a new theme request
     if data.get("is_new"):
-        existing_themes = await theme_repo.get_all_themes()
+        existing_themes = await theme_service.get_all_themes()
         existing_names = [t["name"] for t in existing_themes]
         
         if theme_name in existing_names:
@@ -1794,7 +1798,7 @@ async def handle_admin_save_theme(data: dict[str, Any], user_data: dict[str, Any
     insert_data = {k: v for k, v in insert_data.items() if v is not None}
     
     try:
-        res = await theme_repo.upsert(insert_data)
+        res = await theme_service.save_theme(insert_data)
         if not res:
              return {"success": False, "message": "No se pudo guardar el tema"}
         return {"success": True, "theme": res}
