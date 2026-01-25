@@ -283,33 +283,36 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               <img alt={`${realSeries.title} Cover`} className="w-full h-full object-cover" src={getCoverUrl(realSeries.coverUrl, realSeries.coverThumbUrl, settings.coverQuality)} />
             </div>
 
-            <div className="flex-1 pb-2 w-full">
-              <div className="flex flex-wrap items-center gap-3 mb-2">
+            <div className="flex-1 pb-4 w-full">
+              <div className="flex flex-wrap items-center gap-4 mb-4 animate-in fade-in slide-in-from-left duration-700">
                 <button
                   onClick={() => onSearch?.(realSeries.genre || '')}
-                  className="px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-black bg-green-500/20 text-green-400 border border-green-500/30 uppercase tracking-widest leading-relaxed hover:bg-green-500/30 transition-all"
+                  className="px-4 py-1.5 rounded-full text-[10px] font-black bg-primary/20 text-primary border border-primary/30 uppercase tracking-[0.2em] hover:bg-primary/30 transition-all shadow-lg shadow-primary/10"
                 >
-                  {realSeries.genre}
+                  {realSeries.genre || 'Fantasía'}
                 </button>
-                <span className="flex items-center gap-1.5 text-yellow-500 text-xs sm:text-sm font-black">
+                <div className="flex items-center gap-2 text-yellow-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 shadow-xl">
                   <Star className="w-4 h-4 fill-current" />
-                  {realSeries.rating > 0 ? realSeries.rating.toFixed(1) : '—'}
-                </span>
+                  <span className="text-[13px] font-black">{realSeries.rating > 0 ? realSeries.rating.toFixed(1) : '—'}</span>
+                </div>
               </div>
 
-              <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 leading-tight">
+              <h1 className="text-4xl sm:text-6xl font-black text-white mb-3 leading-[1.1] tracking-tighter drop-shadow-2xl animate-in fade-in slide-in-from-left duration-1000">
                 {realSeries.englishTitle || realSeries.title}
               </h1>
+
               {realSeries.romajiTitle && (
-                <h2 className="text-sm sm:text-lg text-white/60 italic font-serif mb-4 leading-relaxed">
+                <h2 className="text-lg sm:text-2xl text-white/50 font-medium tracking-tight mb-6 leading-relaxed opacity-80 animate-in fade-in slide-in-from-left duration-1000 delay-100">
                   {realSeries.romajiTitle}
                 </h2>
               )}
+
               <button
                 onClick={() => onSearch?.(realSeries.author || '')}
-                className="text-white/80 text-sm sm:text-base mb-6 font-medium hover:text-primary transition-colors hover:underline"
+                className="group flex items-center gap-3 text-white/70 text-sm font-bold uppercase tracking-[0.1em] mb-8 hover:text-primary transition-all duration-300"
               >
-                Por {realSeries.author}
+                <div className="w-1 h-4 bg-primary rounded-full group-hover:h-6 transition-all duration-300"></div>
+                Por <span className="text-white group-hover:text-primary">{realSeries.author}</span>
               </button>
 
               <div className="relative mb-6">
@@ -389,139 +392,85 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative flex gap-4 p-4 rounded-xl border border-white/5 hover:bg-white/5 hover:border-primary/30 transition-all duration-200 cursor-pointer overflow-hidden shadow-sm"
-                  style={{
-                    backgroundColor: `rgba(var(--glass-rgb), ${settings.glassOpacity / 2})`,
-                    backdropFilter: `blur(${settings.glassBlur}px)`,
-                    WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-                  }}
+                  className="group relative flex gap-6 p-5 rounded-[2.5rem] border border-white/5 hover:bg-white/[0.08] hover:border-primary/40 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] transition-all duration-500 cursor-pointer overflow-hidden shadow-premium mb-3"
                 >
                   {/* Image */}
-                  <div className="shrink-0 aspect-[2/3] bg-slate-800 rounded-lg overflow-hidden shadow-lg border border-white/5" style={{ width: settings.coverWidth }}>
-                    <img alt={vol.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)} />
+                  <div className="relative shrink-0 aspect-[2/3] w-24 sm:w-32 rounded-2xl overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
+                    <img
+                      alt={vol.title}
+                      className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
+                      src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black to-transparent"></div>
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 min-w-0 flex flex-col">
-                    <div className="mb-1">
-                      <h3 className="text-white font-bold text-base sm:text-lg leading-tight line-clamp-2">
+                  <div className="flex-1 min-w-0 flex flex-col py-1">
+                    <div className="mb-2">
+                      <div className="flex items-center gap-3 mb-1.5">
+                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] group-hover:tracking-[0.3em] transition-all">Volumen {vol.volumeNumber}</span>
+                        {vol.is_uncensored && <span className="bg-red-500/10 text-red-500 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest border border-red-500/30">N/C</span>}
+                      </div>
+                      <h3 className="text-white font-black text-lg sm:text-xl leading-snug line-clamp-2 tracking-tight group-hover:text-primary transition-colors">
                         {vol.cleanTitle || vol.title}
                       </h3>
-                      <p className="text-gray-500 text-xs italic font-serif mt-0.5 line-clamp-1">
-                        {vol.romajiTitle ? vol.title : ''}
-                      </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {vol.color_mode === 'color' && (
-                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase tracking-wider shadow-sm">
-                          A Color
-                        </span>
-                      )}
-                      {vol.is_uncensored && (
-                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-red-500/10 text-red-500 uppercase tracking-wider border border-red-500/30">
-                          Sin Censura
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mb-2">
-                      <p className="text-primary text-sm font-medium">
-                        {series.author} {vol.illustrator ? `- ${vol.illustrator} ` : ''}
-                      </p>
-                      <p className="text-gray-400 text-xs mt-0.5">
-                        Volumen {vol.volumeNumber} <button onClick={(e) => { e.stopPropagation(); onSearch?.(vol.uploader || 'ZeePub'); }} className="text-primary font-bold hover:underline">{vol.uploader}</button>
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-xs font-bold mb-auto">
-                      <div className="flex items-center gap-1.5 text-gray-400">
-                        <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
-                        <span className="text-gray-200">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
+                    <div className="flex items-center gap-5 mt-auto">
+                      <div className="flex items-center gap-2 text-yellow-500">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="text-sm font-black text-gray-300">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-primary">
-                        <Download className="w-3.5 h-3.5" />
-                        <span>{vol.downloadCount}</span>
+                      <div className="flex items-center gap-2 text-primary">
+                        <Download className="w-4 h-4" />
+                        <span className="text-sm font-black text-gray-300">{vol.downloadCount}</span>
                       </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      <button
-                        className="flex items-center gap-2 px-5 py-2 rounded-lg bg-transparent border border-primary/40 text-primary text-[10px] font-black tracking-widest hover:bg-primary hover:text-white transition-all uppercase"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const downloadUrl = `/api/books/${vol.id}/download`;
-                          const link = document.createElement('a');
-                          link.href = downloadUrl;
-                          link.download = vol.cleanTitle || vol.title;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                        }}
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        DESCARGAR
-                      </button>
-
-                      <button
-                        className="flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg bg-transparent border border-white/10 text-gray-400 text-[10px] sm:text-[10px] font-black tracking-widest hover:text-white hover:bg-white/10 transition-all uppercase whitespace-nowrap"
-                        onClick={(e) => { e.stopPropagation(); /* Add logic */ }}
-                      >
-                        <Bookmark className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">BIBLIOTECA</span>
-                        <span className="sm:hidden">+</span>
-                      </button>
                     </div>
                   </div>
 
-                  <div className="hidden sm:flex items-center justify-center pl-2 text-gray-600 group-hover:text-primary transition-colors">
-                    <ChevronRight className="w-6 h-6" />
+                  <div className="flex items-center justify-center pl-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-gray-500 group-hover:bg-primary group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-xl">
+                      <ChevronRight className="w-6 h-6" />
+                    </div>
                   </div>
                 </div>
+
               ) : (
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative flex flex-col gap-3 rounded-xl p-3 transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5 cursor-pointer border border-white/5"
-                  style={{
-                    backgroundColor: `rgba(var(--glass-rgb), ${settings.glassOpacity / 2})`,
-                    backdropFilter: `blur(${settings.glassBlur}px)`,
-                    WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-                  }}
+                  className="group relative bg-[#0f1115] rounded-[2rem] overflow-hidden border border-white/5 hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
                 >
-                  <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-gray-800 shadow-md">
+                  <div className="relative aspect-[2/3] w-full overflow-hidden bg-white/5 shadow-2xl">
                     <img
                       alt={vol.title}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="absolute inset-0 w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
                       src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
-                    <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-1">
-                      {vol.color_mode === 'color' && (
-                        <span className="text-[8px] font-black text-white uppercase tracking-widest bg-gradient-to-r from-orange-400 to-pink-500 px-1.5 py-0.5 rounded shadow-sm self-start">A Color</span>
-                      )}
-                      {vol.is_uncensored && (
-                        <span className="text-[8px] font-black text-white uppercase tracking-widest bg-red-600/90 px-1.5 py-0.5 rounded shadow-sm self-start">Sin Censura</span>
-                      )}
-                      <span className="text-[10px] font-black text-white/90 uppercase tracking-widest bg-primary/80 px-2 py-0.5 rounded shadow-sm self-start">Vol {vol.volumeNumber}</span>
+
+                    {/* Floating Badges */}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2">
+                      <span className="bg-primary text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest shadow-xl">
+                        Vol {vol.volumeNumber}
+                      </span>
+                    </div>
+
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black via-black/40 to-transparent">
+                      <div className="flex items-center gap-2 text-yellow-400 mb-1.5">
+                        <Star className="w-3 h-3 fill-current" />
+                        <span className="text-[11px] font-black">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
+                      </div>
+                      <h3 className="text-white font-black text-sm leading-tight line-clamp-2 drop-shadow-xl group-hover:text-primary transition-colors">
+                        {vol.cleanTitle || vol.title}
+                      </h3>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <h3 className="truncate text-sm font-bold text-white group-hover:text-primary transition-colors">
-                      {vol.cleanTitle || vol.title}
-                    </h3>
-                    <div className="flex items-center justify-between text-[10px] font-bold text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                        <span>{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Download className="w-3 h-3 text-primary" />
-                        <span>{vol.downloadCount}</span>
-                      </div>
-                    </div>
-                  </div>
+
+                  {/* Hover Accent Glow */}
+                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
                 </div>
+
               )
             ))}
 

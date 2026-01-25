@@ -41,24 +41,27 @@ export const SearchScopeModal: React.FC<SearchScopeModalProps> = ({
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-auto">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-black/85 backdrop-blur-md transition-opacity duration-500"
         onClick={onClose}
       ></div>
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-md bg-[#0f1115] rounded-t-3xl sm:rounded-2xl border-t sm:border border-white/10 shadow-2xl transform transition-transform animate-in slide-in-from-bottom-full duration-300 flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-md glass-panel rounded-t-[3rem] sm:rounded-[3rem] border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)] transform transition-all animate-in slide-in-from-bottom-20 fade-in duration-500 flex flex-col max-h-[90vh] overflow-hidden">
+
+        {/* Shine Header */}
+        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
 
         {/* Handle for mobile drag feel */}
-        <div className="w-full flex justify-center pt-3 pb-1">
-          <div className="w-12 h-1.5 bg-gray-700 rounded-full"></div>
+        <div className="w-full flex justify-center pt-4 pb-2 relative z-10">
+          <div className="w-16 h-1.5 bg-white/10 rounded-full shadow-inner"></div>
         </div>
 
-        <div className="p-6 pt-2">
-          <h3 className="text-center text-primary font-black uppercase tracking-widest text-sm mb-6">
+        <div className="p-8 pt-4 relative z-10">
+          <h3 className="text-center text-primary font-black uppercase tracking-[0.3em] text-[11px] mb-8 drop-shadow-[0_0_10px_rgba(var(--color-primary-rgb),0.3)]">
             Tipo de Búsqueda
           </h3>
 
-          <div className="space-y-2 overflow-y-auto max-h-[60vh] custom-scrollbar pr-1">
+          <div className="grid grid-cols-1 gap-3 overflow-y-auto max-h-[55vh] custom-scrollbar pr-2 mb-2">
             {scopes.map((scope) => {
               const isSelected = selectedScope === scope.id;
               return (
@@ -68,16 +71,21 @@ export const SearchScopeModal: React.FC<SearchScopeModalProps> = ({
                     onSelectScope(scope.id);
                     onClose();
                   }}
-                  className={`w-full flex items-center justify-between p-4 rounded-xl transition-all border ${isSelected
-                    ? 'bg-primary/10 border-primary/30 text-primary'
-                    : 'bg-transparent border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
+                  className={`w-full flex items-center justify-between p-4.5 rounded-2xl transition-all duration-500 relative group overflow-hidden ${isSelected
+                    ? 'bg-primary/20 border-primary/30 text-white shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.2)]'
+                    : 'bg-white/[0.03] border-white/5 text-gray-500 hover:bg-white/[0.08] hover:text-white'
                     }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <scope.icon className={`w-5 h-5 ${isSelected ? 'text-primary' : 'text-gray-500'}`} />
-                    <span className="text-xs font-black uppercase tracking-wider">{scope.label}</span>
+                  {isSelected && <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent"></div>}
+
+                  <div className="flex items-center gap-5 relative z-10">
+                    <div className={`p-3 rounded-xl ${isSelected ? 'bg-primary text-white shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)]' : 'bg-white/5 text-gray-600 group-hover:text-gray-300'} transition-all duration-500`}>
+                      <scope.icon className="w-5 h-5" strokeWidth={2.5} />
+                    </div>
+                    <span className={`text-[13px] uppercase tracking-[0.15em] transition-all duration-500 ${isSelected ? 'font-black scale-105' : 'font-bold opacity-60 group-hover:opacity-100'}`}>{scope.label}</span>
                   </div>
-                  {isSelected && <Check className="w-5 h-5 text-primary" />}
+
+                  {isSelected && <Check className="w-5 h-5 text-primary animate-in zoom-in duration-300" strokeWidth={3} />}
                 </button>
               );
             })}
@@ -85,9 +93,9 @@ export const SearchScopeModal: React.FC<SearchScopeModalProps> = ({
 
           <button
             onClick={onClose}
-            className="w-full mt-6 py-3.5 rounded-xl border border-white/10 bg-[#1a1d24] text-gray-300 font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-colors"
+            className="w-full mt-8 py-4.5 rounded-[1.5rem] bg-white/5 border border-white/10 text-gray-400 font-black text-[10px] uppercase tracking-[0.25em] hover:bg-white/10 hover:text-white transition-all duration-300"
           >
-            Cerrar
+            Cerrar Panel
           </button>
         </div>
       </div>

@@ -386,68 +386,74 @@ export const BookDetail: React.FC<BookDetailProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
 
             {/* LEFT COLUMN: Cover & Actions */}
-            <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
-              {/* Cover Wrapper */}
+            <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-8">
+              {/* Cover Wrapper (Pro Max) */}
               <div
-                className="relative w-[70%] sm:w-[60%] lg:w-full mx-auto lg:mx-0 cursor-zoom-in group"
+                className="relative w-[85%] sm:w-[50%] lg:w-full mx-auto lg:mx-0 group cursor-pointer"
                 onClick={() => setIsFullscreenCover(true)}
               >
-                <div className="aspect-[2/3] rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-black/5 dark:ring-white/10 relative">
-                  <img src={getCoverUrl(displayData.coverUrl, displayData.coverThumbUrl, settings.coverQuality)} alt={displayData.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                  {/* Zoom Hint */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
-                    <BookOpen className="w-10 h-10 text-white" />
+                {/* Outer Glow */}
+                <div className="absolute -inset-4 bg-primary/20 rounded-[2.5rem] blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+
+                <div className="relative aspect-[2/3] rounded-[2.2rem] overflow-hidden shadow-2xl border border-white/10 group-hover:-translate-y-2 transition-all duration-700 bg-white/5">
+                  <img
+                    src={getCoverUrl(displayData.coverUrl, displayData.coverThumbUrl, settings.coverQuality)}
+                    alt={displayData.title}
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+
+                  {/* Floating Zoom Badge */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/20">
+                    <div className="p-4 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
+                      <BookOpen className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+
+                  {/* Format Badge */}
+                  <div className="absolute bottom-6 left-6">
+                    <span className="bg-primary text-white text-[10px] font-black px-4 py-2 rounded-xl uppercase tracking-[0.2em] shadow-2xl">
+                      {displayData.format}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Actions (Desktop mainly) */}
-              <div className="hidden md:flex flex-col gap-3">
+              {/* Actions (Premium Stack) */}
+              <div className="hidden md:flex flex-col gap-4">
                 <button
                   onClick={handleDownload}
-                  className={`w-full py-3.5 text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2 ${hasDownloaded ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' : 'bg-primary hover:brightness-110 shadow-primary/20'}`}
+                  className={`w-full py-5 rounded-[2rem] text-sm font-black uppercase tracking-[0.25em] flex items-center justify-center gap-4 transition-all duration-500 shadow-2xl active:scale-95 group overflow-hidden relative ${hasDownloaded
+                      ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                      : 'bg-primary text-white shadow-primary/30'
+                    }`}
                 >
-                  {hasDownloaded ? (
-                    <>
-                      <Check className="w-5 h-5" />
-                      Descargado
-                    </>
-                  ) : (
-                    <>
-                      <ArrowDownToLine className="w-5 h-5" />
-                      Descargar
-                    </>
-                  )}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
+                  {hasDownloaded ? <Check className="w-6 h-6" strokeWidth={3} /> : <ArrowDownToLine className="w-6 h-6" strokeWidth={3} />}
+                  {hasDownloaded ? 'En Biblioteca' : 'Descargar'}
                 </button>
 
-                {/* 
-                {hasDownloaded && (
-                  <button
-                    onClick={() => onNavigate && onNavigate('reader')}
-                    className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2"
-                  >
-                    <BookOpen className="w-5 h-5" />
-                    Leer Online
-                  </button>
-                )} 
-                */}
-
-                <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 gap-4">
                   <button
                     onClick={() => setIsRatingModalOpen(true)}
-                    className="w-full py-3.5 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg shadow-yellow-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2"
+                    className="w-full py-4 px-6 glass-panel rounded-[1.75rem] border border-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-all flex items-center justify-center gap-4 group/rate shadow-xl"
                   >
-                    <Star className="w-5 h-5 fill-current" />
-                    Valorar Libro
+                    <Star className={`w-5 h-5 ${localRating > 0 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 group-hover/rate:text-yellow-400'} transition-colors`} />
+                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 group-hover/rate:text-white transition-colors">
+                      {localRating > 0 ? `Valoración: ${localRating.toFixed(1)}` : 'Valorar Libro'}
+                    </span>
                   </button>
 
-                  <button onClick={() => setIsReportModalOpen(true)} className="py-3.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 rounded-xl border border-red-200 dark:border-red-500/20 transition-colors flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider">
-                    <Flag className="w-4 h-4" />
-                    Reportar Error
+                  <button
+                    onClick={() => setIsReportModalOpen(true)}
+                    className="w-full py-4 px-6 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/30 rounded-[1.75rem] flex items-center justify-center gap-4 transition-all group/report shadow-xl"
+                  >
+                    <Flag className="w-5 h-5 text-red-500/40 group-hover/report:text-red-500 transition-colors" />
+                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-red-500/60 group-hover/report:text-red-500 transition-colors">Reportar Error</span>
                   </button>
                 </div>
               </div>
+
 
 
               {/* Extra Info visible in sidebar (Desktop) */}

@@ -57,67 +57,81 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 animate-in fade-in duration-500 pb-28">
 
          {/* Page Header */}
-         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between mb-8">
+         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between mb-12">
             <div>
-               <h1 className="text-4xl font-black tracking-tight text-gray-900 dark:text-white mb-2">Mi Biblioteca</h1>
-               <p className="text-gray-400">Gestiona tu lista de lectura y actualizaciones.</p>
+               <h1 className="text-5xl font-black tracking-tighter text-white mb-3">Mi Biblioteca</h1>
+               <p className="text-gray-500 font-medium tracking-wide">Gestiona tu colección y sigue tus lecturas.</p>
             </div>
             {/* Filter Chips */}
             <div className="flex flex-wrap gap-2">
-               <button className="flex h-9 items-center gap-2 rounded-full bg-black dark:bg-white text-white dark:text-black px-4 text-sm font-medium transition-transform active:scale-95 hover:bg-gray-900 dark:hover:bg-gray-100 border border-transparent shadow-sm">
+               <button className="h-10 px-6 rounded-full bg-primary text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_10px_20px_-5px_rgba(var(--color-primary-rgb),0.5)] active:scale-95 transition-all">
                   Todas
                </button>
-               <button className="flex h-9 items-center gap-2 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10 px-4 text-sm font-medium text-gray-900 dark:text-white transition-all active:scale-95">
+               <button className="h-10 px-6 rounded-full bg-white/[0.03] border border-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3">
                   Actualizadas
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">1</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-primary text-[9px] font-black text-white shadow-lg">1</span>
                </button>
-               <button className="flex h-9 items-center gap-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 px-4 text-sm font-medium text-gray-400 transition-all active:scale-95">
+               <button className="h-10 px-6 rounded-full bg-white/[0.03] border border-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] font-black uppercase tracking-[0.2em] transition-all">
                   Completadas
                </button>
             </div>
          </div>
 
          {/* Grid Section */}
-         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mb-12">
+         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mb-12">
             {sortedBooks.map((book) => (
                <div
                   key={book.id}
                   onClick={() => onSelectBook && onSelectBook(book.title, book.author, book.cover)}
-                  className={`group relative flex flex-col gap-3 rounded-xl p-3 transition-all duration-300 glass-panel hover:bg-white/10 hover:-translate-y-0.5 cursor-pointer ${book.isNew ? 'ring-1 ring-primary/30 shadow-[0_0_20px_rgba(var(--primary-rgb),0.15)]' : ''}`}
+                  className={`group relative flex flex-col gap-4 rounded-[2.5rem] p-4 transition-all duration-700 glass-panel hover:bg-white/[0.08] hover:border-primary/40 hover:-translate-y-2 cursor-pointer shadow-premium ${book.isNew ? 'border-primary/30 ring-1 ring-primary/20' : ''}`}
                >
-                  {/* Badge */}
-                  {book.isNew && (
-                     <div className="absolute -right-1 -top-1 z-20 flex items-center gap-1 rounded bg-primary px-2 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-lg">
-                        Nuevo
-                     </div>
-                  )}
-                  {/* Image Container */}
-                  <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-slate-200 dark:bg-gray-800 shadow-md">
-                     <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
-                        style={{ backgroundImage: `url("${book.cover}")` }}
-                     ></div>
-                     {/* Dark Gradient Overlay for text readability on hover */}
-                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
-                     {/* Pulsing Dot Notification on Image */}
+                  {/* Status Badges */}
+                  <div className="absolute top-6 right-6 z-20 flex flex-col gap-2">
+                     {book.isNew && (
+                        <div className="bg-primary text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-xl animate-pulse">
+                           Nuevo
+                        </div>
+                     )}
                      {book.updated && (
-                        <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                           <span className="relative flex h-3 w-3">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                           </span>
-                           <span className="text-[10px] font-bold text-blue-100 uppercase tracking-widest drop-shadow-md">Updated</span>
+                        <div className="bg-emerald-500 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-xl">
+                           Upd
                         </div>
                      )}
                   </div>
+
+                  {/* Image Container */}
+                  <div className="relative aspect-[2/3] w-full overflow-hidden rounded-[1.75rem] bg-white/5 shadow-2xl border border-white/10">
+                     <div
+                        className="absolute inset-0 bg-cover bg-center transition-all duration-1000 group-hover:scale-110 grayscale-[30%] group-hover:grayscale-0"
+                        style={{ backgroundImage: `url("${book.cover}")` }}
+                     ></div>
+
+                     {/* Modern Multi-Layer Gradient */}
+                     <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+
+                     {/* Pulsing Notification */}
+                     {book.updated && (
+                        <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                           <div className="relative flex h-3 w-3">
+                              <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></div>
+                              <div className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></div>
+                           </div>
+                           <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] drop-shadow-md">Updated</span>
+                        </div>
+                     )}
+                  </div>
+
                   {/* Content */}
-                  <div className="flex flex-col gap-1">
-                     <h3 className="truncate text-base font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">{book.title}</h3>
-                     <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-gray-700 dark:text-white">Vol {book.vol}</span>
-                        <span className="text-gray-500 dark:text-gray-400">{book.time}</span>
+                  <div className="flex flex-col gap-1 px-1">
+                     <h3 className="truncate text-[15px] font-black text-white group-hover:text-primary transition-colors tracking-tight">{book.title}</h3>
+                     <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                        <span>Vol {book.vol}</span>
+                        <span className="opacity-50">{book.time}</span>
                      </div>
                   </div>
+
+                  {/* Hover Accent Glow */}
+                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
                </div>
             ))}
          </div>
