@@ -221,11 +221,12 @@ export const api = {
     scanSeriesAi: (seriesHash: string, dryRun: boolean = false) =>
         rpc('ai_scan_series', { series_hash: seriesHash, dry_run: dryRun }),
 
-    applyAiChanges: (proposal: any, approvedChanges: any[], applyRenames: boolean = true, applyMeta: boolean = true) =>
+    applyAiChanges: (proposal: any, approvedChanges: any[], applyRenames: boolean = true, applyMeta: boolean = true, proposedSeries?: string, proposedSpanish?: string) =>
         rpc('ai_apply_changes', {
             proposal,
             approved_changes: approvedChanges,
-            proposed_series: proposal.proposed_series,
+            proposed_series: proposedSeries !== undefined ? proposedSeries : proposal.proposed_series,
+            proposed_spanish: proposedSpanish !== undefined ? proposedSpanish : proposal.proposed_spanish,
             apply_renames: applyRenames,
             apply_meta: applyMeta
         }),

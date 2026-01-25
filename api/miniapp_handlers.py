@@ -2632,6 +2632,21 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
         session.commit()
 
+        # 3. Log feedback for learning
+        from services.ai_service import AIService
+        status = "accepted"
+        if proposed_series != proposal.get("proposed_english"):
+            status = "edited"
+            
+        await AIService.log_feedback(
+            series_hash=series_hash,
+            original=proposal.get("current_series"),
+            proposed=proposal.get("proposed_english"),
+            final=proposed_series,
+            status=status,
+            ai_reason=proposal.get("reason")
+        )
+
     return {
         "success": True, 
         "message": f"Cambios aplicados. {updated_count} actualizaciones.",

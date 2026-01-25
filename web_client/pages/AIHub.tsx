@@ -38,6 +38,9 @@ export const AIHub: React.FC = () => {
     const [applyRenames, setApplyRenames] = useState(true);
     const [applyMeta, setApplyMeta] = useState(true);
     const [processingProposal, setProcessingProposal] = useState(false);
+    const [isEditingSeries, setIsEditingSeries] = useState(false);
+    const [editedSeries, setEditedSeries] = useState('');
+    const [editedSpanish, setEditedSpanish] = useState('');
 
     useEffect(() => {
         loadStats();
@@ -71,6 +74,9 @@ export const AIHub: React.FC = () => {
                 // Show interactive modal
                 setProposal(res.proposal);
                 setApprovedChanges(res.proposal?.changes || []);
+                setEditedSeries(res.proposal?.proposed_series || '');
+                setEditedSpanish(res.proposal?.proposed_spanish || '');
+                setIsEditingSeries(false);
                 setShowProposal(true);
             } else {
                 // Fallback (shouldn't happen with new backend)
@@ -91,7 +97,9 @@ export const AIHub: React.FC = () => {
                 proposal,
                 approvedChanges,
                 applyRenames,
-                applyMeta
+                applyMeta,
+                editedSeries, // Pass edited name
+                editedSpanish // Pass edited spanish name
             );
             setScanResult(res);
             setShowProposal(false);
@@ -361,7 +369,7 @@ export const AIHub: React.FC = () => {
                             {/* Series Name Proposal */}
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide">Nombre de la Serie</h4>
+                                    <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide">Nombre de la Serie (Identificación)</h4>
                                     <label className="flex items-center gap-2 text-xs font-bold text-primary cursor-pointer">
                                         <input
                                             type="checkbox"
@@ -372,20 +380,86 @@ export const AIHub: React.FC = () => {
                                         Aplicar cambio
                                     </label>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
-                                        <p className="text-xs text-red-400 font-bold uppercase mb-1">Actual</p>
-                                        <p className="text-lg font-medium text-white">{proposal.current_series}</p>
-                                    </div>
-                                    <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20 relative">
-                                        <ArrowRight className="absolute -left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-600 hidden md:block" />
-                                        <p className="text-xs text-green-400 font-bold uppercase mb-1">Propuesto</p>
-                                        <p className="text-lg font-bold text-green-100">{proposal.proposed_series}</p>
-                                        {proposal.reason && (
-                                            <p className="text-xs text-gray-500 mt-2 border-t border-white/5 pt-2 italic">
-                                                "{proposal.reason}"
+                                <div className="grid grid-cols-1 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Current Name Card */}
+                                        <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/10">
+                                            <p className="text-[10px] text-red-400 font-black uppercase mb-3 tracking-widest">Estado Actual en DB</p>
+                                            <p className="text-lg font-medium text-white break-words leading-relaxed whitespace-pre-wrap">
+                                                {proposal.current_series}
                                             </p>
-                                        )}
+                                        </div>
+
+                                        {/* Proposed Name Card */}
+                                        <div className="p-5 rounded-2xl bg-green-500/5 border border-green-500/10 relative group">
+                                            <ArrowRight className="absolute -left-6 top-1/2 -translate-y-1/2 w-8 h-8 text-white/10 hidden md:block" />
+                                            <div className="flex justify-between items-start mb-3">
+                                                <p className="text-[10px] text-green-400 font-black uppercase tracking-widest text-glow-green">Propuesta IA</p>
+                                                {!isEditingSeries ? (
+                                                    <button
+                                                        onClick={() => setIsEditingSeries(true)}
+                                                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                        title="Editar propuesta"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => setIsEditingSeries(false)}
+                                                        className="p-1.5 rounded-lg bg-primary/20 text-primary border border-primary/30"
+                                                    >
+                                                        <Save className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {isEditingSeries ? (
+                                                <div className="space-y-4 animate-in fade-in duration-300">
+                                                    <div>
+                                                        <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Nombre Inglés (Serie)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editedSeries}
+                                                            onChange={(e) => setEditedSeries(e.target.value)}
+                                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Nombre Español (Visualización)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editedSpanish}
+                                                            onChange={(e) => setEditedSpanish(e.target.value)}
+                                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <p className="text-lg font-bold text-green-100 break-words leading-relaxed whitespace-pre-wrap">
+                                                            <DiffHighlighter
+                                                                oldText={proposal.current_series}
+                                                                newText={editedSeries}
+                                                            />
+                                                        </p>
+                                                        {editedSpanish !== editedSeries && (
+                                                            <p className="text-sm text-gray-400 mt-2 flex items-center gap-2">
+                                                                <span className="text-[10px] font-black bg-white/5 px-1.5 rounded text-gray-500">ES</span>
+                                                                {editedSpanish}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    {proposal.reason && (
+                                                        <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                                            <p className="text-xs text-gray-400 leading-relaxed italic">
+                                                                "{proposal.reason}"
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -432,9 +506,9 @@ export const AIHub: React.FC = () => {
                                         return (
                                             <div
                                                 key={change.book_id}
-                                                className={`p-3 rounded-lg border flex items-center gap-4 text-sm transition-all ${isSelected && applyRenames
+                                                className={`p-3 rounded-2xl border flex items-center gap-4 text-sm transition-all group ${isSelected && applyRenames
                                                     ? 'bg-white/5 border-white/10 opacity-100'
-                                                    : 'bg-black/20 border-white/5 opacity-50 grayscale'
+                                                    : 'bg-black/20 border-white/5 opacity-40 grayscale'
                                                     }`}
                                             >
                                                 <input
@@ -442,14 +516,17 @@ export const AIHub: React.FC = () => {
                                                     checked={isSelected}
                                                     onChange={() => toggleChange(change.book_id)}
                                                     disabled={!applyRenames}
-                                                    className="rounded border-white/20 bg-white/5 cursor-pointer"
+                                                    className="w-5 h-5 rounded-lg border-white/20 bg-white/5 cursor-pointer accent-primary"
                                                 />
-                                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-8">
-                                                    <div className="text-red-300/70 truncate" title={change.current_filename}>
+                                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="text-red-300/50 break-words line-through decoration-red-500/30">
                                                         {change.current_filename}
                                                     </div>
-                                                    <div className="text-green-300 font-mono truncate" title={change.proposed_filename}>
-                                                        {change.proposed_filename}
+                                                    <div className="text-green-300 font-medium break-words leading-tight">
+                                                        <DiffHighlighter
+                                                            oldText={change.current_filename}
+                                                            newText={change.proposed_filename}
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
@@ -554,6 +631,34 @@ export const AIHub: React.FC = () => {
                 </div>
             )}
         </div>
+    );
+};
+
+interface DiffHighlighterProps {
+    oldText: string;
+    newText: string;
+}
+
+const DiffHighlighter: React.FC<DiffHighlighterProps> = ({ oldText, newText }) => {
+    if (!oldText || !newText) return <>{newText}</>;
+
+    const oldWords = oldText.split(' ');
+    const newWords = newText.split(' ');
+
+    return (
+        <span className="leading-relaxed">
+            {newWords.map((word, i) => {
+                const isMatch = oldWords.includes(word);
+                return (
+                    <span
+                        key={i}
+                        className={isMatch ? "" : "bg-green-500/20 text-green-300 px-0.5 rounded border-b border-green-500/30 font-bold"}
+                    >
+                        {word}{' '}
+                    </span>
+                );
+            })}
+        </span>
     );
 };
 

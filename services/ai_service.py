@@ -177,8 +177,32 @@ class AIService:
         }}
         """
         
+        # 0. Get Learning Context (RAG-lite)
+        learning_context = ""
         try:
-            response = await model.generate_content_async(prompt)
+            from sqlalchemy import text
+            from utils.library_db import get_session
+            with get_session() as session:
+                # Get valid siglas
+                res_siglas = session.execute(text("SELECT siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 100"))
+                valid_siglas = [r[0] for r in res_siglas]
+                
+                # Get similar historical corrections
+                res_learning = session.execute(
+                    text("SELECT proposed_name, final_name FROM ai_learning_feedback WHERE status='edited' LIMIT 5")
+                )
+                corrections = [f"IA propuso '{r[0]}' pero el usuario corrigió a '{r[1]}'" for r in res_learning]
+                
+                if valid_siglas:
+                    learning_context += f"\nSIGLAS VÁLIDAS CONOCIDAS (Úsalas si encajan): {', '.join(valid_siglas)}"
+                if corrections:
+                    learning_context += f"\nAPRENDIZAJE DE CORRECCIONES PASADAS:\n" + "\n".join(corrections)
+        except Exception as e:
+            logger.warning(f"Failed to load learning context: {e}")
+
+        try:
+            full_prompt = prompt + f"\n\nCONTEXTO ADICIONAL DE APRENDIZAJE:\n{learning_context}"
+            response = await model.generate_content_async(full_prompt)
             txt = AIService._extract_json_from_text(response.text)
             analysis = json.loads(txt)
             
@@ -239,6 +263,24 @@ class AIService:
         except Exception as e:
             logger.error(f"Error analyzing series: {e}")
             return {"error": str(e)}
+
+    @staticmethod
+    async def log_feedback(series_hash: str, original: str, proposed: str, final: str, status: str, ai_reason: str = None):
+        """Guarda retroalimentación para el aprendizaje de la IA."""
+        try:
+            from sqlalchemy import text
+            from utils.library_db import get_session
+            with get_session() as session:
+                query = text("""
+                    INSERT INTO ai_learning_feedback (series_hash, original_name, proposed_name, final_name, status, ai_reason)
+                    VALUES (:h, :o, :p, :f, :s, :r)
+                """)
+                session.execute(query, {
+                    "h": series_hash, "o": original, "p": proposed, "f": final, "s": status, "r": ai_reason
+                })
+                session.commit()
+        except Exception as e:
+            logger.error(f"Error logging AI feedback: {e}")
 
     @staticmethod
     async def generate_synopsis(title: str, description: str) -> str | None:
