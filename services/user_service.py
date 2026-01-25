@@ -539,9 +539,23 @@ async def get_user_access_data(uid: int) -> dict[str, Any]:
     else:
         # Standard info
         is_admin = access_info.get("isAdmin", False) or uid in config.ADMIN_USERS
+        
+        # Normalize level using ID mapping (consistency with get_effective_user)
+        lvl_id_raw = access_info["level"].get("id")
+        try:
+            lvl_id = int(lvl_id_raw) if lvl_id_raw is not None else 0
+        except:
+            lvl_id = 0
+            
+        level_to_role = {
+           1: "admin", 2: "staff", 3: "premium", 4: "vip", 5: "white", 6: "free"
+        }
+        
+        level_slug = level_to_role.get(lvl_id, access_info["level"]["name"].lower().strip())
+
         user_data_for_rbac = {
             "telegram_id": uid,
-            "level": access_info["level"]["name"].lower(),
+            "level": level_slug,
             "level_info": access_info["level"],
             "is_real_admin": is_admin
         }
