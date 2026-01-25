@@ -40,8 +40,7 @@ class AIService:
 
             cls._model = genai.GenerativeModel(
                 model_name="gemini-1.5-flash",
-                safety_settings=safety_settings,
-                generation_config={"response_mime_type": "application/json"}
+                safety_settings=safety_settings
             )
             return cls._model
         except Exception as e:
@@ -88,7 +87,10 @@ class AIService:
         try:
             # Ejecutar en threadpool para no bloquear el loop async
             response = await model.generate_content_async(prompt)
-            return json.loads(response.text)
+            txt = response.text.strip()
+            if txt.startswith("```"):
+                txt = txt.strip("```").strip("json").strip()
+            return json.loads(txt)
         except Exception as e:
             logger.error(f"Error en consulta a Gemini: {e}")
             return None
@@ -155,7 +157,10 @@ class AIService:
         
         try:
             response = await model.generate_content_async(prompt)
-            analysis = json.loads(response.text)
+            txt = response.text.strip()
+            if txt.startswith("```"):
+                txt = txt.strip("```").strip("json").strip()
+            analysis = json.loads(txt)
             
             # Construir propuesta detallada
             proposal = {
