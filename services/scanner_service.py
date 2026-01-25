@@ -542,32 +542,51 @@ class ScannerService:
                     ).first()
                     
                     if existing_with_same_hash:
-                        # This is a REAL duplicate (different file, same content)
-                        # We SKIP it to avoid UNIQUE constraint violation on book_hash
-                        # But we RECORD it for the user to review
-                        logger.warning(f"📕 Duplicado detectado: {book.title}")
-                        
-                        try:
-                            # Check duplicate record existence
-                            dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
-                            if not dup_exists:
-                                dup = DuplicateBook(
-                                    book_hash=book.book_hash,
-                                    original_filepath=existing_with_same_hash.filepath,
-                                    duplicate_filepath=filepath,
-                                    title=book.title,
-                                    author=book.author
-                                )
-                                session.add(dup)
-                                # Force commit to ensure Duplicate is saved even if transaction rolls back later? 
-                                # Or just let it be part of the flow.
-                                # Since we return "duplicate", we should ensure it's persisted.
-                                session.commit() 
-                        except Exception as de:
-                            logger.error(f"Error guardando registro de duplicado: {de}")
-                            session.rollback() # Rollback only the duplicate attempt
+                        # Conflict detected based on Content Hash.
+                        # Check if the "original" file still exists on disk.
+                        if not os.path.exists(existing_with_same_hash.filepath):
+                            # The original file is GONE. This is likely a RENAME or MOVE operation.
+                            # Instead of creating a duplicate, we MIGRATE the record to the new filepath.
+                            logger.info(f"🔄 Migración detectada (Renombrado/Movido): {existing_with_same_hash.filepath} -> {filepath}")
+                            
+                            # Update identity of the existing record
+                            existing_with_same_hash.filepath = filepath
+                            existing_with_same_hash.filename = os.path.basename(filepath)
+                            existing_with_same_hash.file_size = size
+                            existing_with_same_hash.file_modified_at = mtime
+                            existing_with_same_hash.source_id = source.id
+                            
+                            # Update metadata using the fresh scan
+                            self._copy_metadata_to_existing(book, existing_with_same_hash)
+                            
+                            # Point 'book' to the managed instance so covers are updated on IT
+                            book = existing_with_same_hash
+                            session.add(book)
+                            outcome = "updated" 
+                        else:
+                            # This is a REAL duplicate (two different files, same content, both exist)
+                            # We SKIP it but record it
+                            logger.warning(f"📕 Duplicado detectado: {book.title}")
+                            
+                            try:
+                                # Check duplicate record existence
+                                dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
+                                if not dup_exists:
+                                    dup = DuplicateBook(
+                                        book_hash=book.book_hash,
+                                        original_filepath=existing_with_same_hash.filepath,
+                                        duplicate_filepath=filepath,
+                                        title=book.title,
+                                        author=book.author
+                                    )
+                                    session.add(dup)
+                                    # Force commit
+                                    session.commit() 
+                            except Exception as de:
+                                logger.error(f"Error guardando registro de duplicado: {de}")
+                                session.rollback()
 
-                        return "duplicate"
+                            return "duplicate"
                     else:
                         # New unique file, add to session
                         session.add(book)
