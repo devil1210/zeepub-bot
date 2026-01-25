@@ -2605,11 +2605,17 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         # 2. Apply File Renames
         if apply_renames and approved_changes:
              for change in approved_changes:
-                 book_id = change.get("book_id")
+                 book_id_raw = change.get("book_id")
                  proposed_filename = change.get("proposed_filename")
                  
-                 if not book_id or not proposed_filename:
+                 if not book_id_raw or not proposed_filename:
                      continue
+
+                 try:
+                    book_id = int(str(book_id_raw).replace("local_", ""))
+                 except ValueError:
+                    errors.append(f"ID de libro inválido: {book_id_raw}")
+                    continue
 
                  book = session.query(LocalBook).filter(LocalBook.id == book_id).scalar()
                  if not book or not book.filepath or not os.path.exists(book.filepath):

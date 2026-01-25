@@ -77,16 +77,28 @@ class BotInitializer:
                 logger.info(
                     f"Sending update success message to {chat_id} (Thread: {thread_id})"
                 )
-                await bot.send_message(
-                    chat_id=chat_id,
-                    text=(
-                        f"✅ <b>¡Actualización Completada!</b>\n"
-                        f"🤖 ZeePub Bot {escapar_html(v)} está en línea. 🚀\n\n"
-                        f"📝 <b>Cambios:</b> {escapar_html(commit_msg)}"
-                    ),
-                    parse_mode="HTML",
-                    message_thread_id=thread_id,
-                )
+                try:
+                    await bot.send_message(
+                        chat_id=chat_id,
+                        text=(
+                            f"✅ <b>¡Actualización Completada!</b>\n"
+                            f"🤖 ZeePub Bot {escapar_html(v)} está en línea. 🚀\n\n"
+                            f"📝 <b>Cambios:</b> {escapar_html(commit_msg)}"
+                        ),
+                        parse_mode="HTML",
+                        message_thread_id=thread_id,
+                    )
+                except Exception as e:
+                    logger.warning(f"Error enviando notificación HTML de update, reintentando texto plano: {e}")
+                    await bot.send_message(
+                        chat_id=chat_id,
+                        text=(
+                            f"✅ ¡Actualización Completada!\n"
+                            f"🤖 ZeePub Bot {v} está en línea. 🚀\n\n"
+                            f"📝 Cambios: {commit_msg}"
+                        ),
+                        message_thread_id=thread_id,
+                    )
             else:
                 logger.warning("Update state file found but no chat_id key")
 
