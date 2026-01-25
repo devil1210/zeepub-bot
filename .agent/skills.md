@@ -8,7 +8,7 @@ Cada skill en este proyecto debe seguir esta estructura:
 - **Propósito**: Por qué es importante para Zeepub-bot.
 - **Lecciones Aprendidas**: Errores pasados evitados mediante esta skill.
 - **Reglas de Oro**: Pasos mandatorios al usarla.
-- **Actualización Global**: Sincronizado con `antigravity-awesome-skills` (Enero 2025), incluyendo soporte nativo para **Gemini 3** y modelos Pro.
+- **Actualización Global**: Sincronizado con `antigravity-awesome-skills` (Enero 2025), incluyendo soporte nativo para **Gemini 3**, **Telegram Stars** y **RAG architectures**.
 
 ---
 
@@ -56,6 +56,14 @@ Cada skill en este proyecto debe seguir esta estructura:
   reason: High-level reasoning for complex system design and refactoring.
 - skill: mcp-builder
   reason: Manage and create modern tools using the Model Context Protocol.
+- **skill: subagent-driven-development**
+  **reason**: Execute complex features (like the AI Gardener) using fresh subagents for implementation and multi-stage review.
+- **skill: telegram-stars-monetization**
+  **reason**: Implement the new Telegram Stars (XTR) system for premium plans and book requests.
+- **skill: rag-library-search**
+  **reason**: Implementation of Semantic Search across the book library using Gemini embeddings.
+- **skill: kaizen-improvement**
+  **reason**: Continuous refactoring of the bot's core systems to maintain high performance.
 
 ---
 

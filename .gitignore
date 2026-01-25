@@ -17,6 +17,9 @@
 !scripts/*.sh
 !scripts/*.py
 
+!.agent/
+!.agent/**
+
 # Virtualenvs
 venv/
 .env
