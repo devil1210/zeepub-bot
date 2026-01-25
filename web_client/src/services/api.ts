@@ -227,6 +227,9 @@ export const api = {
             apply_meta: applyMeta
         }),
 
+    toggleAiBackgroundScan: (enabled: boolean) =>
+        rpc('ai_toggle_background_scan', { enabled }),
+
     uploadEpub: (file: File, onProgress?: (p: number) => void) =>
         uploadFile('/api/library/upload', file, onProgress),
     uploadEpubBulk: (files: File[], onProgress?: (p: number) => void) => {

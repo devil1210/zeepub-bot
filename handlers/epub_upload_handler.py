@@ -228,7 +228,14 @@ class EPUBUploader:
 
             # 2. Análisis con IA (Gemini)
             # Pasamos metadata enriquecida + contexto
-            ai_data = await AIService.normalize_book_metadata(original_filename, {**metadata, **extra_context})
+            from services.settings_service import get_setting
+            bg_ai_enabled = get_setting("enable_background_ai_scan", "false").lower() == "true"
+            
+            ai_data = None
+            if bg_ai_enabled:
+                ai_data = await AIService.normalize_book_metadata(original_filename, {**metadata, **extra_context})
+            else:
+                logger.info("🤖 AI Background Analysis skipped (disabled by user setting)")
             
             if ai_data:
                 logger.info(f"🤖 AI Analysis Result: {ai_data}")

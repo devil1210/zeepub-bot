@@ -2535,11 +2535,19 @@ async def handle_ai_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
                 "total_books": total_books,
                 "pending_optimization": pending,
                 "time_saved_hours": round(time_saved_minutes / 60, 1),
-                "ai_active": bool(config.GEMINI_API_KEY)
+                "ai_active": bool(config.GEMINI_API_KEY),
+                "background_scan_enabled": get_setting("enable_background_ai_scan", "false").lower() == "true",
+                "ai_key_masked": f"{config.GEMINI_API_KEY[:4]}...{config.GEMINI_API_KEY[-4:]}" if config.GEMINI_API_KEY else "NONE"
             }
     except Exception as e:
         logger.error(f"Error getting AI stats: {e}")
         return {"error": str(e)}
+
+async def handle_ai_toggle_background_scan(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Activa o desactiva el escaneo con IA en segundo plano."""
+    enabled = data.get("enabled", False)
+    set_setting("enable_background_ai_scan", "true" if enabled else "false")
+    return {"success": True, "enabled": enabled}
 
 
 async def handle_ai_scan_series(data: Dict[str, Any], user_data: Dict[str, Any]):

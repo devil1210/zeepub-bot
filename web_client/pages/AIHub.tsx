@@ -143,6 +143,20 @@ export const AIHub: React.FC = () => {
     }
 
     const aiActive = stats?.ai_active;
+    const backgroundScanEnabled = stats?.background_scan_enabled;
+    const aiKeyMasked = stats?.ai_key_masked;
+
+    const handleToggleBackgroundScan = async () => {
+        try {
+            const nextState = !backgroundScanEnabled;
+            // Optimistic update
+            setStats({ ...stats, background_scan_enabled: nextState });
+            await api.toggleAiBackgroundScan(nextState);
+        } catch (e: any) {
+            alert("Error cambiando configuración: " + e.message);
+            loadStats(); // Revert
+        }
+    };
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8 animate-in fade-in duration-500">
@@ -273,9 +287,25 @@ export const AIHub: React.FC = () => {
 
                 {/* Info Side */}
                 <div className="lg:col-span-4">
-                    <div className="glass-panel p-6 rounded-[2rem] border border-white/5 relative h-full">
-                        <h3 className="text-lg font-bold text-white mb-4">Notas del Jardinero</h3>
-                        <ul className="space-y-4">
+                    <div className="glass-panel p-6 rounded-[2rem] border border-white/5 relative h-full flex flex-col">
+                        <h3 className="text-lg font-bold text-white mb-6">Configuración de IA</h3>
+
+                        {/* Toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 mb-8">
+                            <div>
+                                <h4 className="text-sm font-bold text-white">Escaneo Automático</h4>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black mt-1">Segundo Plano</p>
+                            </div>
+                            <button
+                                onClick={handleToggleBackgroundScan}
+                                className={`w-12 h-6 rounded-full transition-all relative ${backgroundScanEnabled ? 'bg-primary shadow-[0_0_15px_-3px_rgba(59,130,246,0.5)]' : 'bg-white/10'}`}
+                            >
+                                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${backgroundScanEnabled ? 'left-7' : 'left-1'}`}></div>
+                            </button>
+                        </div>
+
+                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-4">Notas del Jardinero</h3>
+                        <ul className="space-y-4 mb-auto">
                             <li className="flex gap-3 text-sm text-gray-400">
                                 <span className="w-2 h-2 mt-1.5 rounded-full bg-blue-500 shrink-0"></span>
                                 La IA solo actúa sobre campos vacíos o inconsistentes en modo automático.
@@ -289,6 +319,15 @@ export const AIHub: React.FC = () => {
                                 Las cuotas de la API Gemini se respetan automáticamente (Rate Limit).
                             </li>
                         </ul>
+
+                        {/* Debug Info (Masked Key) */}
+                        <div className="mt-8 pt-4 border-t border-white/5">
+                            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mb-2">Estado del Sistema</p>
+                            <div className="flex items-center justify-between text-[10px] font-mono">
+                                <span className="text-gray-500">API Key:</span>
+                                <span className={aiActive ? "text-green-500/50" : "text-red-500/50"}>{aiKeyMasked}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -394,8 +433,8 @@ export const AIHub: React.FC = () => {
                                             <div
                                                 key={change.book_id}
                                                 className={`p-3 rounded-lg border flex items-center gap-4 text-sm transition-all ${isSelected && applyRenames
-                                                        ? 'bg-white/5 border-white/10 opacity-100'
-                                                        : 'bg-black/20 border-white/5 opacity-50 grayscale'
+                                                    ? 'bg-white/5 border-white/10 opacity-100'
+                                                    : 'bg-black/20 border-white/5 opacity-50 grayscale'
                                                     }`}
                                             >
                                                 <input
