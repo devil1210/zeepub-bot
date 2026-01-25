@@ -142,6 +142,8 @@ class BotConfig:
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")  # Anon key
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+
     # SQLAlchemy URL
     # PostgreSQL es obligatorio.
     DATABASE_URL: str = field(init=False)
@@ -207,6 +209,12 @@ class BotConfig:
             errors.append("SECRET_SEED")
         if not self.DONATION_URL:
             errors.append("DONATION_URL")
+        
+        # Optional warning for AI features
+        if not self.GEMINI_API_KEY:
+            # We don't block start, but AI features will be disabled
+            pass
+
         return (len(errors) == 0, errors)
 
     def get_six_hour_password(self) -> str:

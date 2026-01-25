@@ -214,17 +214,92 @@ class EPUBUploader:
                 'original_filename': original_filename  # Agregar el nombre original del archivo
             }
 
-            # --- LÓGICA UNIFICADA DE IDENTIDAD ---
+            # -------------------------------------------------------------
+            # AI & ENRICHMENT INTEGRATION
+            # -------------------------------------------------------------
+            from services.ai_service import AIService
+            
+            # 1. Enriquecimiento manual (ISBN/ASIN) si están disponibles, para dar contexto a la IA
+            extra_context = {}
+            if metadata.get('isbn'):
+               # Aquí podríamos llamar a un helper externo si quisiéramos más datos, 
+               # por ahora pasamos el ISBN a la IA para que lo use si puede.
+               extra_context['isbn'] = metadata.get('isbn')
+
+            # 2. Análisis con IA (Gemini)
+            # Pasamos metadata enriquecida + contexto
+            ai_data = await AIService.normalize_book_metadata(original_filename, {**metadata, **extra_context})
+            
+            if ai_data:
+                logger.info(f"🤖 AI Analysis Result: {ai_data}")
+                # Actualizar metadatos con la inteligencia de la IA
+                
+                # Nombre de serie limpio (Regla 1)
+                if ai_data.get("series_spanish"):
+                    metadata['series'] = ai_data["series_spanish"]
+                    metadata['series_spanish'] = ai_data["series_spanish"] # Nueva columna
+                
+                # Volumen corregido (Regla 2)
+                if ai_data.get("volume") is not None:
+                    metadata['volume'] = ai_data["volume"]
+                
+                # Grupo detectado (Regla 3)
+                if ai_data.get("group"):
+                    metadata['group'] = ai_data["group"]
+                
+                # Nombres de archivo sugerido (Regla 4) - Lo usamos como base para suggested_path
+                if ai_data.get("suggested_filename"):
+                    metadata['ai_filename'] = ai_data["suggested_filename"]
+                
+                # Flags de censura/color (Regla 5)
+                if ai_data.get("is_uncensored") is not None:
+                    metadata['is_uncensored'] = 1 if ai_data["is_uncensored"] else 0
+                if ai_data.get("color_mode"):
+                    metadata['color_mode'] = ai_data["color_mode"]
+            else:
+                logger.warning("🤖 AI Analysis skipped or failed (using standard regex logic)")
+
+            # --- LÓGICA UNIFICADA DE IDENTIDAD (Regla 8) ---
+            # Aunque la IA nos de datos, las reglas de identidad (hashes) deben generarse 
+            # de forma determinista con nuestra función canónica.
             from utils.helpers import (
                 generate_book_hash,
                 process_book_identity_comprehensive,
             )
             
-            identity = process_book_identity_comprehensive(str(epub_path), original_filename)
+            # Si la IA nos dio una serie limpia, la usamos para el cálculo de identidad
+            # Esto mejora el hash porque usa el nombre de serie "Real" en vez del del archivo sucio
+            # Pero seguimos usando la función oficial para generar el hash string.
             
+            # Simulamos un identity dict con los datos (posiblemente mejorados por IA)
+            identity = {
+                'series': metadata.get('series'),
+                'author': metadata.get('author'),
+                'book_type': metadata.get('book_type'),
+                'volume': metadata.get('volume'),
+                'translator': metadata.get('translator'),
+                'layout_by': metadata.get('layout_by'),
+                'language': metadata.get('language'),
+                'series_spanish': metadata.get('series_spanish'), # Importante para agrupamiento
+                'is_uncensored': metadata.get('is_uncensored', 0),
+                'color_mode': metadata.get('color_mode')
+            }
+            
+            # Si no hubo IA, usamos el fallback de regex standard
+            if not ai_data:
+                 identity_standard = process_book_identity_comprehensive(str(epub_path), original_filename)
+                 # Fusionar: Preferir standard si IA no existe, pero si IA existe ya tenemos los datos en `metadata`
+                 if identity_standard:
+                     identity = identity_standard
+
             if not identity:
                 logger.error("Could not process book identity")
                 return None
+            
+            # Asegurar consistencia de metadatos tras merge IA/Regex
+            metadata['series'] = identity.get('series')
+            metadata['author'] = identity.get('author')
+            metadata['volume'] = identity.get('volume')
                 
             # Generar hash final usando utils.helpers (idéntico a ScannerService)
             book_hash = generate_book_hash(
@@ -262,7 +337,7 @@ class EPUBUploader:
                     # Metadata procesada
                     title=metadata['title'],
                     series=metadata['series'],
-                    series_spanish=identity['series_spanish'],
+                    series_spanish=metadata.get('series_spanish'), # Usar el de la IA/Metadata directamente
                     volume=self._parse_volume(metadata['volume']),
                     author=metadata['author'],
                     book_type=metadata.get('book_type') or metadata.get('category'),
@@ -364,8 +439,13 @@ class EPUBUploader:
             
             target_dir = library_base / series_folder_name
 
-        # 3. Determinar nombre de archivo basado en patrón
-        filename = self._generate_pattern_filename(target_dir, metadata, original_filename)
+        # 3. Determinar nombre de archivo
+        # Si la IA sugirió un nombre de archivo EXACTO, lo usamos (respetando la carpeta de destino)
+        if metadata.get('ai_filename'):
+             filename = metadata['ai_filename']
+        else:
+             # Fallback a lógica patrística antigua
+             filename = self._generate_pattern_filename(target_dir, metadata, original_filename)
         
         return f"{series_folder_name}/{filename}"
 

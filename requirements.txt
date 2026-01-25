@@ -45,3 +45,4 @@ EbookLib==0.18
 
 # Supabase
 supabase==2.10.0
+google-generativeai==0.3.2
