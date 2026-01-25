@@ -40,7 +40,8 @@ class AIService:
 
             cls._model = genai.GenerativeModel(
                 model_name="gemini-1.5-flash",
-                safety_settings=safety_settings
+                safety_settings=safety_settings,
+                generation_config={"response_mime_type": "application/json"}
             )
             return cls._model
         except Exception as e:
