@@ -6,6 +6,7 @@ from fastapi import Depends, Header, HTTPException, Query
 from config.config_settings import config
 from services.rbac_service import Permission
 from services.user_service import get_effective_user, get_user_access_data
+from utils.security import validate_telegram_data
 
 logger = logging.getLogger(__name__)
 
