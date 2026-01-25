@@ -48,19 +48,19 @@ __pycache__/
 !bot/*.py
 
 !config/
-!config/*.py
+!config/**
 
 !core/
-!core/*.py
+!core/**
 
 !handlers/
-!handlers/*.py
+!handlers/**
 
 !plugins/
-!plugins/*.py
+!plugins/**
 
 !services/
-!services/*.py
+!services/**
 
 !opds/
 !opds/*.py
@@ -69,10 +69,10 @@ __pycache__/
 !tests/*.py
 
 !utils/
-!utils/*.py
+!utils/**
 
 !api/
-!api/*.py
+!api/**
 
 !run_with_api.py
 
@@ -86,10 +86,10 @@ __pycache__/
 !alembic/**
 
 !repositories/
-!repositories/*.py
+!repositories/**
 
 !models/
-!models/*.py
+!models/**
 
 !v0/
 !v0/**
