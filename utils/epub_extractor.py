@@ -13,9 +13,9 @@ def clean_metadata_tags(text):
     if not text:
         return text
     # Remove all content within square brackets
-    cleaned = re.sub(r'\s*\[.*?\]\s*', ' ', text)
+    cleaned = re.sub(r"\s*\[.*?\]\s*", " ", text)
     # Remove multiple spaces
-    cleaned = re.sub(r'\s+', ' ', cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned)
     return cleaned.strip()
 
 
@@ -26,9 +26,9 @@ class EpubMetadataExtractor:
     """
 
     NAMESPACE = {
-        'container': 'urn:oasis:names:tc:opendocument:xmlns:container',
-        'opf': 'http://www.idpf.org/2007/opf',
-        'dc': 'http://purl.org/dc/elements/1.1/',
+        "container": "urn:oasis:names:tc:opendocument:xmlns:container",
+        "opf": "http://www.idpf.org/2007/opf",
+        "dc": "http://purl.org/dc/elements/1.1/",
     }
 
     def __init__(self, epub_path):
@@ -39,65 +39,65 @@ class EpubMetadataExtractor:
 
     def extract(self):
         try:
-            with zipfile.ZipFile(self.epub_path, 'r') as z:
+            with zipfile.ZipFile(self.epub_path, "r") as z:
                 # 1. Encontrar el archivo OPF
-                container_xml = z.read('META-INF/container.xml')
+                container_xml = z.read("META-INF/container.xml")
                 root = ET.fromstring(container_xml)
-                opf_path = root.find('.//container:rootfile', self.NAMESPACE).get('full-path')
+                opf_path = root.find(".//container:rootfile", self.NAMESPACE).get("full-path")
 
                 # 2. Leer el OPF
                 opf_content = z.read(opf_path)
                 opf_root = ET.fromstring(opf_content)
-                self.metadata['version'] = opf_root.get('version')
+                self.metadata["version"] = opf_root.get("version")
 
                 # 3. Extraer Metadatos Básicos
-                metadata_node = opf_root.find('opf:metadata', self.NAMESPACE)
+                metadata_node = opf_root.find("opf:metadata", self.NAMESPACE)
                 if metadata_node is not None:
                     # Clean title from tags like [ShinsengumiTL]
-                    raw_title = self._get_dc_value(metadata_node, 'title')
-                    self.metadata['title'] = clean_metadata_tags(raw_title)
-                    self.metadata['publisher'] = self._get_dc_value(metadata_node, 'publisher')
-                    self.metadata['language'] = self._get_dc_value(metadata_node, 'language')
-                    self.metadata['description'] = self._get_dc_value(metadata_node, 'description')
-                    self.metadata['book_type'] = self._get_dc_value(metadata_node, 'type')
-                    self.metadata['published_at'] = self._get_dc_value(metadata_node, 'date')
+                    raw_title = self._get_dc_value(metadata_node, "title")
+                    self.metadata["title"] = clean_metadata_tags(raw_title)
+                    self.metadata["publisher"] = self._get_dc_value(metadata_node, "publisher")
+                    self.metadata["language"] = self._get_dc_value(metadata_node, "language")
+                    self.metadata["description"] = self._get_dc_value(metadata_node, "description")
+                    self.metadata["book_type"] = self._get_dc_value(metadata_node, "type")
+                    self.metadata["published_at"] = self._get_dc_value(metadata_node, "date")
 
                     # Extraer fecha de modificación de dc:date (específico de EPUB2/Calibre)
-                    for date_node in metadata_node.findall('dc:date', self.NAMESPACE):
-                        if date_node.get('{http://www.idpf.org/2007/opf}event') == 'modification':
-                            self.metadata['modified_at_opf'] = date_node.text
+                    for date_node in metadata_node.findall("dc:date", self.NAMESPACE):
+                        if date_node.get("{http://www.idpf.org/2007/opf}event") == "modification":
+                            self.metadata["modified_at_opf"] = date_node.text
                             break
 
                     # 3.1 Mapear Roles de Creadores y Contribuidores
                     # Guardamos IDs de creadores para asociar roles refinados
                     creators = {}  # id -> text
                     creators_jap = {} # id -> jap_text
-                    for node in metadata_node.findall('dc:creator', self.NAMESPACE):
-                        creators[node.get('{http://www.w3.org/XML/1998/namespace}id') or node.get('id')] = node.text
+                    for node in metadata_node.findall("dc:creator", self.NAMESPACE):
+                        creators[node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")] = node.text
 
                     contributors = {}  # id -> text
-                    for node in metadata_node.findall('dc:contributor', self.NAMESPACE):
-                        contributors[node.get('{http://www.w3.org/XML/1998/namespace}id') or node.get('id')] = node.text
+                    for node in metadata_node.findall("dc:contributor", self.NAMESPACE):
+                        contributors[node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")] = node.text
 
                     # Roles y Scripts Alternativos
-                    meta_tags = metadata_node.findall('opf:meta', self.NAMESPACE)
+                    meta_tags = metadata_node.findall("opf:meta", self.NAMESPACE)
                     role_map = {}  # id -> role (aut, ill, trl, mrk)
                     
                     for meta in meta_tags:
-                        refines = meta.get('refines')
-                        prop = meta.get('property')
+                        refines = meta.get("refines")
+                        prop = meta.get("property")
                         if refines:
-                            cid = refines.replace('#', '')
-                            if prop == 'role':
+                            cid = refines.replace("#", "")
+                            if prop == "role":
                                 role_map[cid] = meta.text
-                            elif prop == 'alternate-script' and meta.get('{http://www.w3.org/XML/1998/namespace}lang') == 'ja' or meta.get('xml:lang') == 'ja':
+                            elif prop == "alternate-script" and meta.get("{http://www.w3.org/XML/1998/namespace}lang") == "ja" or meta.get("xml:lang") == "ja":
                                 creators_jap[cid] = meta.text
 
                     # Asignar personas
-                    self.metadata['author'] = self._get_dc_value(metadata_node, 'creator')  # Fallback
-                    self.metadata['author_jap'] = None
-                    self.metadata['illustrator'] = None
-                    self.metadata['illustrator_jap'] = None
+                    self.metadata["author"] = self._get_dc_value(metadata_node, "creator")  # Fallback
+                    self.metadata["author_jap"] = None
+                    self.metadata["illustrator"] = None
+                    self.metadata["illustrator_jap"] = None
 
                     for cid, text in creators.items():
                         role = role_map.get(cid, "aut")
@@ -124,49 +124,49 @@ class EpubMetadataExtractor:
                                 self.metadata["illustrator_jap"] = jap_name
 
                     # 3.2 Identificadores (ISBN, ASIN, URI)
-                    for ident in metadata_node.findall('dc:identifier', self.NAMESPACE):
+                    for ident in metadata_node.findall("dc:identifier", self.NAMESPACE):
                         id_text = ident.text or ""
                         # Limpiar prefijos comunes como urn:isbn:, urn:amazon:, urn:uri:
-                        clean_id = re.sub(r'^urn:(isbn|amazon|uri|uuid|asin):', '', id_text, flags=re.IGNORECASE).strip()
+                        clean_id = re.sub(r"^urn:(isbn|amazon|uri|uuid|asin):", "", id_text, flags=re.IGNORECASE).strip()
                         
                         lower_id = id_text.lower()
-                        if 'isbn:978' in lower_id or 'isbn' in lower_id:
+                        if "isbn:978" in lower_id or "isbn" in lower_id:
                             # Preferir ISBN13 si es posible
-                            if '978' in clean_id and not self.metadata.get('isbn'):
-                                self.metadata['isbn'] = clean_id
-                            elif not self.metadata.get('isbn'):
-                                self.metadata['isbn'] = clean_id
-                        elif 'amazon' in lower_id or 'asin' in lower_id:
-                            self.metadata['asin'] = clean_id
-                        elif 'uri' in lower_id:
+                            if "978" in clean_id and not self.metadata.get("isbn"):
+                                self.metadata["isbn"] = clean_id
+                            elif not self.metadata.get("isbn"):
+                                self.metadata["isbn"] = clean_id
+                        elif "amazon" in lower_id or "asin" in lower_id:
+                            self.metadata["asin"] = clean_id
+                        elif "uri" in lower_id:
                             # Limpiar también urn:uri: de blogspot, etc.
-                            self.metadata['uri'] = clean_id
+                            self.metadata["uri"] = clean_id
 
                     # 3.3 Etiquetas (Géneros)
                     tags = []
-                    for subject in metadata_node.findall('dc:subject', self.NAMESPACE):
+                    for subject in metadata_node.findall("dc:subject", self.NAMESPACE):
                         if subject.text:
                             tags.append(subject.text)
-                    self.metadata['tags'] = tags
+                    self.metadata["tags"] = tags
 
                     # 3.4 Series y Volumen (Calibre / EPUB3 metadata)
                     collection_ids = {} # id -> title
                     # First pass: collect IDs
                     for meta in meta_tags:
-                        prop = meta.get('property')
-                        meta_id = meta.get('id')
-                        if prop == 'belongs-to-collection':
-                            self.metadata['series'] = clean_metadata_tags(meta.text)
+                        prop = meta.get("property")
+                        meta_id = meta.get("id")
+                        if prop == "belongs-to-collection":
+                            self.metadata["series"] = clean_metadata_tags(meta.text)
                             if meta_id:
-                                collection_ids[meta_id] = self.metadata['series']
+                                collection_ids[meta_id] = self.metadata["series"]
 
                     # Second pass: process remaining properties
                     for meta in meta_tags:
-                        name = meta.get('name')
-                        prop = meta.get('property')
+                        name = meta.get("name")
+                        prop = meta.get("property")
 
-                        if name == 'calibre:series' and not self.metadata.get('series'):
-                            self.metadata['series'] = clean_metadata_tags(meta.get('content'))
+                        if name == "calibre:series" and not self.metadata.get("series"):
+                            self.metadata["series"] = clean_metadata_tags(meta.get("content"))
                         
                         # CALIBRE INDEX (Base priority)
                         elif name == "calibre:series_index":
@@ -186,50 +186,50 @@ class EpubMetadataExtractor:
                                     self.metadata["volume"] = val
                                 except Exception:
                                     pass
-                        elif prop == 'dcterms:modified':
-                            self.metadata['modified_at_opf'] = meta.text
+                        elif prop == "dcterms:modified":
+                            self.metadata["modified_at_opf"] = meta.text
 
                     # 3.4.1 Detección automática de características de edición
                     all_tags_text = " ".join(tags).lower()
                     
                     # Defaults
-                    self.metadata['is_uncensored'] = 0
-                    self.metadata['color_mode'] = "bw"
+                    self.metadata["is_uncensored"] = 0
+                    self.metadata["color_mode"] = "bw"
 
                     # Option 1: Detection via tags/subjects
                     if any(x in all_tags_text for x in ["sin censura", "uncensored", "no censura"]):
-                        self.metadata['is_uncensored'] = 1
+                        self.metadata["is_uncensored"] = 1
                     
                     if any(x in all_tags_text for x in ["ilustraciones a color", "color", "full color"]):
-                        self.metadata['color_mode'] = "color"
+                        self.metadata["color_mode"] = "color"
                     elif any(x in all_tags_text for x in ["blanco y negro", "b&w", "grayscale", "b/n"]):
-                        self.metadata['color_mode'] = "bw"
+                        self.metadata["color_mode"] = "bw"
 
                     # Option 3: Detection via custom meta properties (Zeepub extensions)
                     for meta in meta_tags:
-                        name = meta.get('name')
-                        prop = meta.get('property')
-                        content = meta.get('content')
+                        name = meta.get("name")
+                        prop = meta.get("property")
+                        content = meta.get("content")
                         
                         # Uncensored check
-                        if (name == 'zeepub:uncensored' or prop == 'zeepub:uncensored'):
+                        if (name == "zeepub:uncensored" or prop == "zeepub:uncensored"):
                             val = (content or meta.text or "").lower().strip()
-                            if val in ['true', '1', 'yes']:
-                                self.metadata['is_uncensored'] = 1
-                            elif val in ['false', '0', 'no']:
-                                self.metadata['is_uncensored'] = 0
+                            if val in ["true", "1", "yes"]:
+                                self.metadata["is_uncensored"] = 1
+                            elif val in ["false", "0", "no"]:
+                                self.metadata["is_uncensored"] = 0
                                 
                         # Color mode check
-                        if (name == 'zeepub:color_mode' or prop == 'zeepub:color_mode'):
+                        if (name == "zeepub:color_mode" or prop == "zeepub:color_mode"):
                             val = (content or meta.text or "").lower().strip()
-                            if val in ['color', 'full-color', 'c']:
-                                self.metadata['color_mode'] = "color"
-                            elif val in ['bw', 'b/n', 'bn', 'grayscale', 'gray']:
-                                self.metadata['color_mode'] = "bw"
+                            if val in ["color", "full-color", "c"]:
+                                self.metadata["color_mode"] = "color"
+                            elif val in ["bw", "b/n", "bn", "grayscale", "gray"]:
+                                self.metadata["color_mode"] = "bw"
 
                     # 3.5 Content Check (Final fallback for title)
-                    if not self.metadata.get('title'):
-                        self.metadata['title'] = clean_metadata_tags(raw_title)
+                    if not self.metadata.get("title"):
+                        self.metadata["title"] = clean_metadata_tags(raw_title)
 
                 # 4. Calcular métricas técnicas (palabras, páginas)
                 self._calculate_technical_metrics(z, opf_root, os.path.dirname(opf_path))
@@ -243,7 +243,7 @@ class EpubMetadataExtractor:
             return None
 
     def _get_dc_value(self, node, tag):
-        found = node.find(f'dc:{tag}', self.NAMESPACE)
+        found = node.find(f"dc:{tag}", self.NAMESPACE)
         return found.text if found is not None else None
 
     def _calculate_technical_metrics(self, z, opf_root, base_dir):
@@ -251,8 +251,8 @@ class EpubMetadataExtractor:
         Lee el contenido de texto del EPUB para contar palabras y estimar páginas.
         """
         try:
-            spine_nodes = opf_root.find('opf:spine', self.NAMESPACE)
-            manifest_node = opf_root.find('opf:manifest', self.NAMESPACE)
+            spine_nodes = opf_root.find("opf:spine", self.NAMESPACE)
+            manifest_node = opf_root.find("opf:manifest", self.NAMESPACE)
 
             if spine_nodes is None or manifest_node is None:
                 return
@@ -261,36 +261,36 @@ class EpubMetadataExtractor:
 
             # Mapear itemref idref -> href
             item_map = {}
-            for item in manifest_node.findall('opf:item', self.NAMESPACE):
-                item_map[item.get('id')] = item.get('href')
+            for item in manifest_node.findall("opf:item", self.NAMESPACE):
+                item_map[item.get("id")] = item.get("href")
 
-            for itemref in spine_nodes.findall('opf:itemref', self.NAMESPACE):
-                idref = itemref.get('idref')
+            for itemref in spine_nodes.findall("opf:itemref", self.NAMESPACE):
+                idref = itemref.get("idref")
                 href = item_map.get(idref)
 
-                if href and any(href.lower().endswith(ext) for ext in ['.xhtml', '.html', '.htm', '.xml', '.txt']):
+                if href and any(href.lower().endswith(ext) for ext in [".xhtml", ".html", ".htm", ".xml", ".txt"]):
                     try:
                         raw_path = os.path.join(base_dir, href)
-                        full_href = os.path.normpath(raw_path).replace('\\', '/')
-                        if full_href.startswith('/'):
+                        full_href = os.path.normpath(raw_path).replace("\\", "/")
+                        if full_href.startswith("/"):
                             full_href = full_href[1:]
                             
-                        content = z.read(full_href).decode('utf-8', errors='ignore')
+                        content = z.read(full_href).decode("utf-8", errors="ignore")
 
                         # Limpiar HTML básico y contar palabras
-                        text = re.sub(r'<[^>]+>', ' ', content)  # Quitar tags
+                        text = re.sub(r"<[^>]+>", " ", content)  # Quitar tags
                         text = html.unescape(text)  # Unescape entidades
-                        words = len(re.findall(r'\w+', text))
+                        words = len(re.findall(r"\w+", text))
                         total_words += words
                     except Exception:
                         continue
 
             if total_words > 0:
-                self.metadata['word_count'] = total_words
+                self.metadata["word_count"] = total_words
                 # Heurística: 300 palabras por página es estándar para libros físicos
-                self.metadata['page_count'] = max(1, total_words // 300)
+                self.metadata["page_count"] = max(1, total_words // 300)
                 # Heurística: 200 palabras por minuto es una velocidad de lectura promedio
-                self.metadata['reading_time'] = max(1, total_words // 200)
+                self.metadata["reading_time"] = max(1, total_words // 200)
         except Exception:
             pass
 
@@ -299,57 +299,57 @@ class EpubMetadataExtractor:
         Intenta encontrar la imagen de portada y guardarla en memoria.
         """
         try:
-            metadata_node = opf_root.find('opf:metadata', self.NAMESPACE)
+            metadata_node = opf_root.find("opf:metadata", self.NAMESPACE)
             cover_id = None
             
             # 1. Buscar en <meta name="cover" content="id_imagen">
             # Intentamos buscar con y sin prefijo opf: por compatibilidad
-            meta_tags = metadata_node.findall('opf:meta', self.NAMESPACE)
+            meta_tags = metadata_node.findall("opf:meta", self.NAMESPACE)
             if not meta_tags:
-                meta_tags = metadata_node.findall('meta')
+                meta_tags = metadata_node.findall("meta")
             
             for meta in meta_tags:
-                if meta.get('name') == 'cover':
-                    cover_id = meta.get('content')
+                if meta.get("name") == "cover":
+                    cover_id = meta.get("content")
                     break
 
-            manifest_node = opf_root.find('opf:manifest', self.NAMESPACE)
+            manifest_node = opf_root.find("opf:manifest", self.NAMESPACE)
             cover_href = None
 
             # 2. Buscar por ID (EPUB2)
             if cover_id:
-                for item in manifest_node.findall('opf:item', self.NAMESPACE):
-                    if item.get('id') == cover_id:
-                        cover_href = item.get('href')
+                for item in manifest_node.findall("opf:item", self.NAMESPACE):
+                    if item.get("id") == cover_id:
+                        cover_href = item.get("href")
                         break
 
             # 3. EPUB3 Fallback: Buscar en el manifest un item con properties="cover-image"
             if not cover_href:
-                for item in manifest_node.findall('opf:item', self.NAMESPACE):
+                for item in manifest_node.findall("opf:item", self.NAMESPACE):
                     # properties puede contener múltiples valores separados por espacio
-                    properties = item.get('properties', '').split()
-                    if 'cover-image' in properties:
-                        cover_href = item.get('href')
+                    properties = item.get("properties", "").split()
+                    if "cover-image" in properties:
+                        cover_href = item.get("href")
                         break
 
             # 4. Fallback extremo: buscar archivos que tengan "cover" en el nombre o id
             if not cover_href:
-                for item in manifest_node.findall('opf:item', self.NAMESPACE):
-                    item_id = item.get('id', '').lower()
-                    href = item.get('href', '').lower()
-                    if 'cover' in item_id or 'cover' in href:
-                        if any(href.endswith(ext) for ext in ['.jpg', '.jpeg', '.png']):
-                            cover_href = item.get('href')
+                for item in manifest_node.findall("opf:item", self.NAMESPACE):
+                    item_id = item.get("id", "").lower()
+                    href = item.get("href", "").lower()
+                    if "cover" in item_id or "cover" in href:
+                        if any(href.endswith(ext) for ext in [".jpg", ".jpeg", ".png"]):
+                            cover_href = item.get("href")
                             break
 
             if cover_href:
                 # IMPORTANTE: Normalizar ruta para resolver '..' y usar separadores correctos
                 # ZipFile no resuelve '..' automáticamente.
                 raw_path = os.path.join(base_dir, cover_href)
-                full_href = os.path.normpath(raw_path).replace('\\', '/')
+                full_href = os.path.normpath(raw_path).replace("\\", "/")
                 
                 # Asegurarse de que no empiece por '/' (algunas veces normpath lo hace si base_dir es vacío)
-                if full_href.startswith('/'):
+                if full_href.startswith("/"):
                     full_href = full_href[1:]
                 
                 self.cover_data = z.read(full_href)
@@ -372,45 +372,45 @@ class EpubMetadataExtractor:
             try:
                 img = Image.open(io.BytesIO(self.cover_data))
                 # Convertir a RGB si es necesario (para JPEG)
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
 
                 # 1. VERSION ORIGINAL (sin modificar, full quality)
-                original_path = output_path.replace('.jpg', '_original.jpg')
+                original_path = output_path.replace(".jpg", "_original.jpg")
                 img.save(original_path, "JPEG", quality=95, optimize=True)
                 
                 # 2. VERSION HIGH (800px, quality 85)
-                high_path = output_path.replace('.jpg', '_high.jpg')
+                high_path = output_path.replace(".jpg", "_high.jpg")
                 high_img = img.copy()
                 if high_img.width > 800:
                     ratio = 800 / float(high_img.width)
-                    height = int((float(high_img.height) * float(ratio)))
+                    height = int(float(high_img.height) * float(ratio))
                     high_img = high_img.resize((800, height), Image.LANCZOS)
                 high_img.save(high_path, "JPEG", quality=85, optimize=True)
                 
                 # 3. VERSION MEDIUM (400px, quality 80)
-                medium_path = output_path.replace('.jpg', '_medium.jpg')
+                medium_path = output_path.replace(".jpg", "_medium.jpg")
                 medium_img = img.copy()
                 if medium_img.width > 400:
                     ratio = 400 / float(medium_img.width)
-                    height = int((float(medium_img.height) * float(ratio)))
+                    height = int(float(medium_img.height) * float(ratio))
                     medium_img = medium_img.resize((400, height), Image.LANCZOS)
                 medium_img.save(medium_path, "JPEG", quality=80, optimize=True)
                 
                 # 4. VERSION LOW (200px, quality 70) - DEFAULT PARA UI
-                low_path = output_path.replace('.jpg', '_low.jpg')
+                low_path = output_path.replace(".jpg", "_low.jpg")
                 low_img = img.copy()
                 if low_img.width > 200:
                     ratio = 200 / float(low_img.width)
-                    height = int((float(low_img.height) * float(ratio)))
+                    height = int(float(low_img.height) * float(ratio))
                     low_img = low_img.resize((200, height), Image.LANCZOS)
                 low_img.save(low_path, "JPEG", quality=70, optimize=True, progressive=True)
                 
                 return {
-                    'original': original_path,
-                    'high': high_path,
-                    'medium': medium_path,
-                    'low': low_path
+                    "original": original_path,
+                    "high": high_path,
+                    "medium": medium_path,
+                    "low": low_path
                 }
             except Exception as e:
                 print(f"Error guardando portada: {e}")

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -13,7 +13,7 @@ class BaseRepository(ABC, Generic[T]):
         from core.supabase_manager import supabase_manager
         self.supabase = supabase_manager
     @abstractmethod
-    async def get_by_id(self, id: Any) -> Optional[T]:
+    async def get_by_id(self, id: Any) -> T | None:
         pass
 
     @abstractmethod

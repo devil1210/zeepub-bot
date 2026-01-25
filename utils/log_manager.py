@@ -13,7 +13,7 @@ class LogBufferHandler(logging.Handler):
             self.format(record)
             # Store unix timestamp for filtering
             timestamp = record.created 
-            time_str = datetime.fromtimestamp(timestamp).strftime('%H:%M:%S')
+            time_str = datetime.fromtimestamp(timestamp).strftime("%H:%M:%S")
             
             self.buffer.append({
                 "time": time_str,

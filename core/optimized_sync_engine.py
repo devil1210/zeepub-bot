@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from sqlalchemy import select, text
 
@@ -28,19 +28,19 @@ class OptimizedSyncEngine:
     def __init__(self):
         self.running = False
         self.last_sync_times = {
-            'users': datetime.min,
-            'user_levels': datetime.min,
-            'admins': datetime.min
+            "users": datetime.min,
+            "user_levels": datetime.min,
+            "admins": datetime.min
         }
         self.pending_changes = {
-            'users': set(),
-            'user_levels': set(),
-            'admins': set()
+            "users": set(),
+            "user_levels": set(),
+            "admins": set()
         }
         self.sync_intervals = {
-            'users': 86400,       # 24 horas (Predeterminado para minimizar solicitudes)
-            'user_levels': 86400,  # 24 horas
-            'admins': 86400       # 24 horas
+            "users": 86400,       # 24 horas (Predeterminado para minimizar solicitudes)
+            "user_levels": 86400,  # 24 horas
+            "admins": 86400       # 24 horas
         }
         self.force_next_run = False
         
@@ -67,9 +67,9 @@ class OptimizedSyncEngine:
             try:
                 if config.ENABLE_SUPABASE and config.ENABLE_POSTGRES_PLUGIN:
                     # Sincronizar solo si hay cambios pendientes
-                    await self._sync_if_changed('users')
-                    await self._sync_if_changed('user_levels')
-                    await self._sync_if_changed('admins')
+                    await self._sync_if_changed("users")
+                    await self._sync_if_changed("user_levels")
+                    await self._sync_if_changed("admins")
                     
             except Exception as e:
                 logger.error(f"Error in optimized sync loop: {e}")
@@ -99,7 +99,7 @@ class OptimizedSyncEngine:
             await self._detect_user_changes()
             
             # Detectar cambios en niveles (menos frecuente)
-            if datetime.utcnow() - self.last_sync_times['user_levels'] > timedelta(hours=1):
+            if datetime.utcnow() - self.last_sync_times["user_levels"] > timedelta(hours=1):
                 await self._detect_level_changes()
                 
         except Exception as e:
@@ -109,18 +109,18 @@ class OptimizedSyncEngine:
         """Detecta cambios en usuarios de Supabase."""
         try:
             # Usar timestamp differential query
-            last_check = self.last_sync_times['users']
+            last_check = self.last_sync_times["users"]
             
             # Query optimizada para obtener solo usuarios modificados
-            result = supabase_manager.get_client().table('users')\
+            result = supabase_manager.get_client().table("users")\
                 .select("telegram_id, updated_at")\
                 .gte("updated_at", last_check.isoformat())\
                 .limit(100)\
                 .execute()
                 
             if result and result.data:
-                changed_users = {item['telegram_id'] for item in result.data}
-                self.pending_changes['users'].update(changed_users)
+                changed_users = {item["telegram_id"] for item in result.data}
+                self.pending_changes["users"].update(changed_users)
                 
                 if changed_users:
                     logger.info(f"Detected {len(changed_users)} user changes in Supabase")
@@ -131,23 +131,23 @@ class OptimizedSyncEngine:
     async def _detect_level_changes(self):
         """Detecta cambios en niveles de usuario."""
         try:
-            result = supabase_manager.get_client().table('user_levels')\
+            result = supabase_manager.get_client().table("user_levels")\
                 .select("id, updated_at")\
                 .execute()
                 
             if result and result.data:
                 # Comparar con versión local
                 local_levels = await self._get_local_level_ids()
-                remote_levels = {item['id'] for item in result.data}
+                remote_levels = {item["id"] for item in result.data}
                 
                 if local_levels != remote_levels:
-                    self.pending_changes['user_levels'].update(remote_levels)
+                    self.pending_changes["user_levels"].update(remote_levels)
                     logger.info("Detected user_levels changes")
                     
         except Exception as e:
             logger.error(f"Error detecting level changes: {e}")
             
-    async def _get_local_level_ids(self) -> Set[int]:
+    async def _get_local_level_ids(self) -> set[int]:
         """Obtiene IDs de niveles locales."""
         try:
             async with pg_manager.get_session() as session:
@@ -170,11 +170,11 @@ class OptimizedSyncEngine:
         # Guardar para reporte
         self.last_sync_times[table_name] = datetime.utcnow()
         
-        if table_name == 'users':
+        if table_name == "users":
             await self._sync_users_optimized()
-        elif table_name == 'user_levels':
+        elif table_name == "user_levels":
             await self._sync_user_levels_optimized()
-        elif table_name == 'admins':
+        elif table_name == "admins":
             await self._sync_admins_optimized()
             
         # Limpiar cambios procesados y actualizar timestamp
@@ -188,11 +188,11 @@ class OptimizedSyncEngine:
             
         try:
             # Obtener usuarios modificados de Supabase
-            last_sync = self.last_sync_times['users']
+            last_sync = self.last_sync_times["users"]
             
             try:
                 # Intento 1: Filtrado por updated_at (eficiente)
-                query = supabase_manager.get_client().table('users').select("*")
+                query = supabase_manager.get_client().table("users").select("*")
                 if last_sync > datetime.min:
                     query = query.gte("updated_at", last_sync.isoformat())
                 
@@ -201,7 +201,7 @@ class OptimizedSyncEngine:
                 if "column" in str(query_e) and "updated_at" in str(query_e):
                     logger.warning("Supabase schema missing 'updated_at'. Falling back to full fetch.")
                     # Intento 2: Fallback sin filtros de tiempo (menos eficiente pero robusto)
-                    result = supabase_manager.get_client().table('users').select("*").limit(500).execute()
+                    result = supabase_manager.get_client().table("users").select("*").limit(500).execute()
                 else:
                     raise query_e
                 
@@ -215,7 +215,7 @@ class OptimizedSyncEngine:
             for user_data in result.data:
                 # Usar invalidate_user que es lo correcto en cache_manager
                 try:
-                    await cache_manager.delete_user(user_data['telegram_id'])
+                    await cache_manager.delete_user(user_data["telegram_id"])
                 except:
                     pass
                 
@@ -224,29 +224,29 @@ class OptimizedSyncEngine:
         except Exception as e:
             logger.error(f"Error in optimized users sync: {e}")
             
-    async def _batch_update_users(self, users_data: List[Dict[str, Any]]):
+    async def _batch_update_users(self, users_data: list[dict[str, Any]]):
         """Actualización batch de usuarios en local."""
         try:
             async with pg_manager.get_session() as session:
                 for user_data in users_data:
                     # Mapear datos de Supabase a modelo local
                     mapped_data = {
-                        "telegram_id": user_data['telegram_id'],
-                        "username": user_data.get('username'),
-                        "name": user_data.get('name'),
-                        "nickname": user_data.get('nickname'),
-                        "photo_url": user_data.get('photo_url'),
-                        "level_id": user_data.get('level_id', 6),
-                        "role": user_data.get('role', 'user'),
-                        "beta_tester": user_data.get('beta_tester', False),
-                        "has_library_access": user_data.get('has_library_access', True),
-                        "can_request_books": user_data.get('can_request_books', True),
-                        "can_upload_epub": user_data.get('can_upload_epub', False),
-                        "total_downloads": user_data.get('total_downloads', 0),
-                        "insignias": json.dumps(user_data.get('insignias', [])),
-                        "settings": json.dumps(user_data.get('settings', {})),
-                        "expires_at": self._parse_datetime(user_data.get('expires_at')),
-                        "created_at": self._parse_datetime(user_data.get('added_at') or user_data.get('created_at')),
+                        "telegram_id": user_data["telegram_id"],
+                        "username": user_data.get("username"),
+                        "name": user_data.get("name"),
+                        "nickname": user_data.get("nickname"),
+                        "photo_url": user_data.get("photo_url"),
+                        "level_id": user_data.get("level_id", 6),
+                        "role": user_data.get("role", "user"),
+                        "beta_tester": user_data.get("beta_tester", False),
+                        "has_library_access": user_data.get("has_library_access", True),
+                        "can_request_books": user_data.get("can_request_books", True),
+                        "can_upload_epub": user_data.get("can_upload_epub", False),
+                        "total_downloads": user_data.get("total_downloads", 0),
+                        "insignias": json.dumps(user_data.get("insignias", [])),
+                        "settings": json.dumps(user_data.get("settings", {})),
+                        "expires_at": self._parse_datetime(user_data.get("expires_at")),
+                        "created_at": self._parse_datetime(user_data.get("added_at") or user_data.get("created_at")),
                         "updated_at": datetime.utcnow()
                     }
                     
@@ -295,7 +295,7 @@ class OptimizedSyncEngine:
             return
             
         try:
-            result = supabase_manager.get_client().table('user_levels')\
+            result = supabase_manager.get_client().table("user_levels")\
                 .select("*")\
                 .execute()
                 
@@ -308,29 +308,29 @@ class OptimizedSyncEngine:
         except Exception as e:
             logger.error(f"Error in user levels sync: {e}")
             
-    async def _batch_update_levels(self, levels_data: List[Dict[str, Any]]):
+    async def _batch_update_levels(self, levels_data: list[dict[str, Any]]):
         """Actualización batch de niveles."""
         try:
             async with pg_manager.get_session() as session:
                 for level_data in levels_data:
                     # Mapear datos
                     mapped_data = {
-                        "id": level_data['id'],
-                        "name": level_data['name'],
-                        "priority": level_data.get('priority', 0),
-                        "color": level_data.get('color', '#607D8B'),
-                        "price": level_data.get('price', 0.0),
-                        "can_download": level_data.get('can_download', True),
-                        "can_read": level_data.get('can_read', True),
-                        "daily_downloads": level_data.get('daily_downloads', 5),
-                        "has_mini_app_access": level_data.get('has_mini_app_access', True),
-                        "has_library_access": level_data.get('has_library_access', True),
-                        "can_request_books": level_data.get('can_request_books', True),
-                        "early_access": level_data.get('early_access', False),
-                        "custom_themes": level_data.get('custom_themes', False),
-                        "allow_theme_templates": level_data.get('allow_theme_templates', False),
-                        "show_recommendations": level_data.get('show_recommendations', True),
-                        "default_theme_id": level_data.get('default_theme_id'),
+                        "id": level_data["id"],
+                        "name": level_data["name"],
+                        "priority": level_data.get("priority", 0),
+                        "color": level_data.get("color", "#607D8B"),
+                        "price": level_data.get("price", 0.0),
+                        "can_download": level_data.get("can_download", True),
+                        "can_read": level_data.get("can_read", True),
+                        "daily_downloads": level_data.get("daily_downloads", 5),
+                        "has_mini_app_access": level_data.get("has_mini_app_access", True),
+                        "has_library_access": level_data.get("has_library_access", True),
+                        "can_request_books": level_data.get("can_request_books", True),
+                        "early_access": level_data.get("early_access", False),
+                        "custom_themes": level_data.get("custom_themes", False),
+                        "allow_theme_templates": level_data.get("allow_theme_templates", False),
+                        "show_recommendations": level_data.get("show_recommendations", True),
+                        "default_theme_id": level_data.get("default_theme_id"),
                         # ... otros campos de UI
                     }
                     
@@ -380,14 +380,14 @@ class OptimizedSyncEngine:
             return
             
         try:
-            result = supabase_manager.get_client().table('admins')\
+            result = supabase_manager.get_client().table("admins")\
                 .select("*")\
                 .execute()
                 
             if not result or not result.data:
                 return
                 
-            admin_ids = {item['user_id'] for item in result.data}
+            admin_ids = {item["user_id"] for item in result.data}
             await self._update_admins_table(admin_ids)
             
             logger.info(f"Synced {len(admin_ids)} admins from Supabase")
@@ -395,7 +395,7 @@ class OptimizedSyncEngine:
         except Exception as e:
             logger.error(f"Error in admins sync: {e}")
             
-    async def _update_admins_table(self, admin_ids: Set[int]):
+    async def _update_admins_table(self, admin_ids: set[int]):
         """Actualiza tabla de admins."""
         try:
             async with pg_manager.get_session() as session:
@@ -415,25 +415,25 @@ class OptimizedSyncEngine:
             logger.error(f"Error updating admins table: {e}")
             raise
             
-    def _parse_datetime(self, dt_str: Optional[str]) -> Optional[datetime]:
+    def _parse_datetime(self, dt_str: str | None) -> datetime | None:
         """Parsea datetime de Supabase."""
         if not dt_str:
             return None
             
         try:
             # Supabase envía ISO 8601 con Z
-            dt_str = dt_str.replace('Z', '+00:00')
+            dt_str = dt_str.replace("Z", "+00:00")
             return datetime.fromisoformat(dt_str).astimezone().replace(tzinfo=None)
         except Exception:
             return None
             
     async def mark_user_changed(self, telegram_id: int):
         """Marca un usuario como modificado para sincronización."""
-        self.pending_changes['users'].add(telegram_id)
+        self.pending_changes["users"].add(telegram_id)
         
     async def mark_levels_changed(self):
         """Marca los niveles como modificados."""
-        self.pending_changes['user_levels'].add('changed')
+        self.pending_changes["user_levels"].add("changed")
         
     async def force_sync_all(self):
         """Fuerza sincronización completa y bidireccional DE INMEDIATO."""
@@ -457,14 +457,14 @@ class OptimizedSyncEngine:
         
         logger.info("Bidirectional sync completed successfully.")
             
-    async def get_sync_status(self) -> Dict[str, Any]:
+    async def get_sync_status(self) -> dict[str, Any]:
         """Obtiene estado actual de sincronización."""
         return {
-            'running': self.running,
-            'last_sync_times': {k: v.isoformat() for k, v in self.last_sync_times.items()},
-            'pending_changes': {k: len(v) for k, v in self.pending_changes.items()},
-            'supabase_active': supabase_manager.is_active,
-            'postgres_enabled': config.ENABLE_POSTGRES_PLUGIN
+            "running": self.running,
+            "last_sync_times": {k: v.isoformat() for k, v in self.last_sync_times.items()},
+            "pending_changes": {k: len(v) for k, v in self.pending_changes.items()},
+            "supabase_active": supabase_manager.is_active,
+            "postgres_enabled": config.ENABLE_POSTGRES_PLUGIN
         }
 
 # Instancia global

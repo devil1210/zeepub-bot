@@ -8,7 +8,7 @@ import logging
 import sys
 
 # Agregar el path del proyecto
-sys.path.append('/app')
+sys.path.append("/app")
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine

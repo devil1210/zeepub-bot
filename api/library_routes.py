@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
@@ -29,7 +29,7 @@ async def search_local_books(
     q: str = Query(..., min_length=1),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
-    source_id: Optional[int] = None,
+    source_id: int | None = None,
     search_type: str = Query("all", pattern="^(all|title|author|illustrator|translator|genres)$"),
     user_data: dict = Depends(require_mini_app_access),
 ):
@@ -46,8 +46,8 @@ async def search_local_books(
 
 @router.post("/api/library/upload")
 async def upload_epubs(
-    files: List[UploadFile] = File(...),
-    source_id: Optional[int] = Query(None),
+    files: list[UploadFile] = File(...),
+    source_id: int | None = Query(None),
     user_data: dict = Depends(require_admin)
 ):
     """
@@ -135,7 +135,7 @@ async def get_book_detail(
 @router.patch("/api/library/books/{book_id}")
 async def update_book(
     book_id: str,
-    updates: Dict[str, Any] = Body(...),
+    updates: dict[str, Any] = Body(...),
     user_data: dict = Depends(require_admin)
 ):
     """Actualiza metadatos de un libro (Admin only)."""
@@ -177,9 +177,9 @@ async def get_orphaned_books(
 
 @router.get("/api/library/catalog")
 async def get_catalog(
-    source_id: Optional[int] = Query(None),
-    folder: Optional[str] = Query(None),
-    series_hash: Optional[str] = Query(None),
+    source_id: int | None = Query(None),
+    folder: str | None = Query(None),
+    series_hash: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
     use_random_covers: bool = Query(True),
@@ -229,7 +229,7 @@ from services.library_export_service import LibraryExportService
 
 
 @router.get("/api/library/export")
-async def export_library(source_id: Optional[int] = Query(None), series: Optional[str] = Query(None), user_data: dict = Depends(require_admin)):
+async def export_library(source_id: int | None = Query(None), series: str | None = Query(None), user_data: dict = Depends(require_admin)):
     return JSONResponse(content=LibraryExportService.export_library(source_id=source_id, series=series))
 
 

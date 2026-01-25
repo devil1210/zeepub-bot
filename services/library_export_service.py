@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from models.library_models import LibrarySource, LocalBook
 from utils.library_db import get_session
@@ -13,10 +13,10 @@ class LibraryExportService:
 
     @staticmethod
     def export_library(
-        source_id: Optional[int] = None,
-        series: Optional[str] = None,
+        source_id: int | None = None,
+        series: str | None = None,
         include_stats: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Exporta metadatos de la biblioteca a un diccionario.
 
@@ -87,8 +87,8 @@ class LibraryExportService:
     @staticmethod
     def export_to_json_file(
         filepath: str,
-        source_id: Optional[int] = None,
-        series: Optional[str] = None,
+        source_id: int | None = None,
+        series: str | None = None,
         pretty: bool = True,
     ) -> str:
         """
@@ -114,7 +114,7 @@ class LibraryExportService:
         return filepath
 
     @staticmethod
-    def import_from_json(data: Dict[str, Any], merge: bool = True) -> Dict[str, int]:
+    def import_from_json(data: dict[str, Any], merge: bool = True) -> dict[str, int]:
         """
         Importa metadatos desde un diccionario JSON.
 
@@ -190,7 +190,7 @@ class LibraryExportService:
             session.close()
 
     @staticmethod
-    def import_from_json_file(filepath: str, merge: bool = True) -> Dict[str, int]:
+    def import_from_json_file(filepath: str, merge: bool = True) -> dict[str, int]:
         """
         Importa metadatos desde un archivo JSON.
 
@@ -201,7 +201,7 @@ class LibraryExportService:
         Returns:
             Diccionario con estadísticas de la importación
         """
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
 
         return LibraryExportService.import_from_json(data, merge)

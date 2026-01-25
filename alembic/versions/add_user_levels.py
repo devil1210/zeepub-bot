@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'add_user_levels'
-down_revision = '58670adf5f59'
+revision = "add_user_levels"
+down_revision = "58670adf5f59"
 branch_labels = None
 depends_on = None
 
@@ -19,15 +19,15 @@ depends_on = None
 def upgrade():
     # Create user_levels table
     op.create_table(
-        'user_levels',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(50), nullable=False),
-        sa.Column('priority', sa.Integer(), nullable=False),
-        sa.Column('color', sa.String(20), nullable=True),
-        sa.Column('has_mini_app_access', sa.Boolean(), nullable=False, server_default=sa.text('false')),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-        sa.PrimaryKeyConstraint('id')
+        "user_levels",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("name", sa.String(50), nullable=False),
+        sa.Column("priority", sa.Integer(), nullable=False),
+        sa.Column("color", sa.String(20), nullable=True),
+        sa.Column("has_mini_app_access", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+        sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+        sa.PrimaryKeyConstraint("id")
     )
 
     # Insert default levels
@@ -42,10 +42,10 @@ def upgrade():
     """)
 
     # Add level_id column to users table
-    op.add_column('users', sa.Column('level_id', sa.Integer(), nullable=True))
+    op.add_column("users", sa.Column("level_id", sa.Integer(), nullable=True))
 
     # Create foreign key
-    op.create_foreign_key('fk_users_level_id', 'users', 'user_levels', ['level_id'], ['id'])
+    op.create_foreign_key("fk_users_level_id", "users", "user_levels", ["level_id"], ["id"])
 
     # Migrate existing users to new level system
     op.execute("""
@@ -61,11 +61,11 @@ def upgrade():
 
     # Create admins table if it doesn't exist
     op.create_table(
-        'admins',
-        sa.Column('user_id', sa.BigInteger(), nullable=False),
-        sa.Column('granted_by', sa.BigInteger(), nullable=True),
-        sa.Column('granted_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-        sa.PrimaryKeyConstraint('user_id')
+        "admins",
+        sa.Column("user_id", sa.BigInteger(), nullable=False),
+        sa.Column("granted_by", sa.BigInteger(), nullable=True),
+        sa.Column("granted_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+        sa.PrimaryKeyConstraint("user_id")
     )
 
     # Add settings and total_downloads columns if they don't exist
@@ -86,9 +86,9 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_constraint('fk_users_level_id', 'users', type_='foreignkey')
-    op.drop_column('users', 'level_id')
-    op.drop_table('user_levels')
-    op.drop_table('admins')
-    op.drop_column('users', 'settings')
-    op.drop_column('users', 'total_downloads')
+    op.drop_constraint("fk_users_level_id", "users", type_="foreignkey")
+    op.drop_column("users", "level_id")
+    op.drop_table("user_levels")
+    op.drop_table("admins")
+    op.drop_column("users", "settings")
+    op.drop_column("users", "total_downloads")

@@ -418,7 +418,7 @@ async def mostrar_recomendaciones(update: Update, context: ContextTypes.DEFAULT_
         }
         st["libros"][key] = b_state
 
-        rating_str = f" ⭐ {book.get('rating_average'):.1f}" if book.get('rating_average') else ""
+        rating_str = f" ⭐ {book.get('rating_average'):.1f}" if book.get("rating_average") else ""
         display_text = f"{book['title']} ({book['author']}){rating_str}"
         keyboard.append([InlineKeyboardButton(display_text, callback_data=f"lib|{key}")])
 

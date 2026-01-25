@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
@@ -34,15 +34,15 @@ class UserLevelModel(BaseModel):
     canRead: bool = True
     canUploadEpub: bool = False
     # Extra UI fields for new interface
-    theme: Optional[str] = "dark"
-    primaryColor: Optional[str] = "#3b82f6"
-    fontSize: Optional[int] = 14
-    glassBlur: Optional[int] = 12
-    navOpacity: Optional[float] = 0.8
-    accentOpacity: Optional[float] = 0.2
-    glassOpacity: Optional[float] = 0.6
-    backgroundColor: Optional[str] = "#0f172a"
-    cardColor: Optional[str] = "#1e293b"
+    theme: str | None = "dark"
+    primaryColor: str | None = "#3b82f6"
+    fontSize: int | None = 14
+    glassBlur: int | None = 12
+    navOpacity: float | None = 0.8
+    accentOpacity: float | None = 0.2
+    glassOpacity: float | None = 0.6
+    backgroundColor: str | None = "#0f172a"
+    cardColor: str | None = "#1e293b"
     forceSettings: bool = False
 
 
@@ -55,18 +55,18 @@ class AccessResponse(BaseModel):
     customThemes: bool = False
     showRecommendations: bool = True
     allowThemeTemplates: bool = False
-    nickname: Optional[str] = None
-    name: Optional[str] = None
-    username: Optional[str] = None
-    roles: List[str] = []
-    insignias: List[str] = []
-    customStatus: Optional[str] = None
-    role: Optional[str] = None
-    status_label: Optional[str] = None  # Display label for user status
+    nickname: str | None = None
+    name: str | None = None
+    username: str | None = None
+    roles: list[str] = []
+    insignias: list[str] = []
+    customStatus: str | None = None
+    role: str | None = None
+    status_label: str | None = None  # Display label for user status
     hasLibraryAccess: bool = True
     canRequestBooks: bool = True
     canUploadEpub: bool = False
-    ui_exported_settings: List[str] = []
+    ui_exported_settings: list[str] = []
     titlePreference: str = "romaji"
 
 
@@ -76,17 +76,17 @@ class LevelUpdate(BaseModel):
 
 
 class UpdateLevelsRequest(BaseModel):
-    levels: List[LevelUpdate]
+    levels: list[LevelUpdate]
 
 
 class UploadHistoryResponse(BaseModel):
     id: int
     user_id: int
     filename: str
-    book_hash: Optional[str] = None
+    book_hash: str | None = None
     status: str
-    final_path: Optional[str] = None
-    error_message: Optional[str] = None
+    final_path: str | None = None
+    error_message: str | None = None
     created_at: str  # Send as ISO string
 
 
@@ -96,7 +96,7 @@ class UploadHistoryResponse(BaseModel):
 @router.post("/api/bot")
 async def handle_bot_request(
     request: Request,
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Main endpoint for Mini App requests.
@@ -116,17 +116,14 @@ async def handle_bot_request(
     action = body.get("action")
     data = body.get("data", {})
 
-    # --- Control de Acceso por Niveles ---
-    # Los administradores siempre tienen acceso.
-    # El resto depende de su nivel (has_mini_app_access).
-    is_staff = user_level in ["admin", "staff"]
-    is_configured_admin = user_id in config.ADMIN_USERS
-    is_real_admin = user_effective.get("is_real_admin", False)
-    
-    if not user_effective.get("has_mini_app_access") and not is_staff and not is_real_admin and not is_configured_admin and action != "status":
-        raise HTTPException(
-            status_code=403, detail="Tu nivel de usuario no tiene acceso a la Mini App"
-        )
+    # --- Role-Based Access Control ---
+    # Staff always have access, others check granular permission
+    if action != "status":
+        from services.rbac_service import Permission, rbac_service
+        if not rbac_service.is_staff(user_effective) and Permission.ACCESS_MINI_APP.value not in user_effective.get("permissions", []):
+            raise HTTPException(
+                status_code=403, detail="Tu nivel de usuario no tiene acceso a la Mini App"
+            )
 
     if action not in ["admin_get_system_logs", "admin_send_logs_telegram"]:
         logger.info(f"Miniapp action: {action} User: {user_id} Level: {user_level}")
@@ -166,6 +163,11 @@ async def handle_bot_request(
             handle_admin_sync_themes,
             handle_admin_sync_users_cloud,
             handle_admin_update_system,
+            handle_ai_apply_changes,
+            handle_ai_generate_summary,
+            handle_ai_scan_series,
+            handle_ai_stats,
+            handle_ai_toggle_background_scan,
             handle_book_detail,
             handle_bot_info,
             handle_create_stars_invoice,
@@ -183,11 +185,6 @@ async def handle_bot_request(
             handle_update_user_setting,
             handle_user_downloads_history,
             handle_user_status,
-            handle_ai_stats,
-            handle_ai_scan_series,
-            handle_ai_apply_changes,
-            handle_ai_generate_summary,
-            handle_ai_toggle_background_scan
         )
 
         ACTION_HANDLERS = {
@@ -262,7 +259,7 @@ async def handle_bot_request(
         # Check if handler accepts request argument
         import inspect
         sig = inspect.signature(handler)
-        if 'request' in sig.parameters:
+        if "request" in sig.parameters:
             return await handler(data, user_effective, request=request)
         else:
             return await handler(data, user_effective)
@@ -280,7 +277,7 @@ async def handle_bot_request(
 @router.post("/api/user/access", response_model=AccessResponse)
 async def check_user_access(
     request: AccessCheckRequest,
-    user_data: Dict[str, Any] = Depends(get_current_user_data),
+    user_data: dict[str, Any] = Depends(get_current_user_data),
 ):
     from services.user_service import get_effective_user
 
@@ -295,12 +292,13 @@ async def check_user_access(
     eff = await get_effective_user(uid, use_cache=use_cache)
 
     # Everything we need is already in 'eff'
-    # Everyone in config.ADMIN_USERS or with admin role is an admin
-    is_admin = (eff.get("level") in ["admin", "staff"]) or eff.get("is_admin_db", False) or (uid in config.ADMIN_USERS) or eff.get("is_real_admin", False)
+    from services.rbac_service import Permission, rbac_service
+    is_admin = rbac_service.is_admin(eff)
+    is_staff = rbac_service.is_staff(eff)
     
-    # Force access for all admins
-    has_access = eff.get("has_mini_app_access", False)
-    if is_admin:
+    # Force access for all admins/staff
+    has_access = eff.get("has_mini_app_access") or Permission.ACCESS_MINI_APP.value in eff.get("permissions", [])
+    if is_staff:
         has_access = True
 
     # EMERGENCY OVERRIDE FOR ADMINS (Sanitize settings if they get stuck)
@@ -394,7 +392,7 @@ async def check_user_access(
 
 @router.get("/api/admin/levels")
 @router.get("/api/admin/access-levels")
-async def get_levels(user_data: Dict[str, Any] = Depends(require_admin)):
+async def get_levels(user_data: dict[str, Any] = Depends(require_admin)):
 
     logger.info("Fetching all access levels")
     from repositories.user_repository import user_repo
@@ -408,7 +406,7 @@ async def get_levels(user_data: Dict[str, Any] = Depends(require_admin)):
 @router.put("/api/admin/levels")
 @router.post("/api/admin/access-levels")
 async def update_levels(
-    request: UpdateLevelsRequest, user_data: Dict[str, Any] = Depends(require_admin)
+    request: UpdateLevelsRequest, user_data: dict[str, Any] = Depends(require_admin)
 ):
 
     from repositories.user_repository import user_repo
@@ -422,7 +420,7 @@ async def update_levels(
 @router.post("/api/library/upload")
 async def upload_epub_miniapp(
     file: UploadFile = File(...),
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """Sube un archivo EPUB y retorna su metadata para validación."""
     curr_uid = user_data.get("user_id", 0)
@@ -455,7 +453,7 @@ async def upload_epub_miniapp(
             f.write(await file.read())
         
         # Analizar EPUB
-        metadata = await epub_uploader.analyze_epub(temp_file, file.filename, user_data['user_id'])
+        metadata = await epub_uploader.analyze_epub(temp_file, file.filename, user_data["user_id"])
         
         if not metadata:
             if temp_file.exists():
@@ -463,10 +461,10 @@ async def upload_epub_miniapp(
             
             # Log failure
             epub_uploader._log_history(
-                user_id=user_data['user_id'],
+                user_id=user_data["user_id"],
                 filename=file.filename,
                 book_hash=None,
-                status='error',
+                status="error",
                 error_message="Analysis failed (corrupt or invalid EPUB)"
             )
             
@@ -477,10 +475,10 @@ async def upload_epub_miniapp(
         # Guardar en pendientes
         upload_id = f"app_upload_{user_data['user_id']}_{datetime.now().timestamp()}"
         pending_uploads[upload_id] = {
-            'file_path': str(temp_file),
-            'metadata': metadata,
-            'user_id': user_data['user_id'],
-            'original_filename': file.filename
+            "file_path": str(temp_file),
+            "metadata": metadata,
+            "user_id": user_data["user_id"],
+            "original_filename": file.filename
         }
         
         return {
@@ -498,8 +496,8 @@ async def upload_epub_miniapp(
 
 @router.post("/api/library/upload/confirm")
 async def confirm_epub_upload_miniapp(
-    data: Dict[str, Any],
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    data: dict[str, Any],
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """Confirma y finaliza la subida de un EPUB."""
     upload_id = data.get("upload_id")
@@ -514,16 +512,16 @@ async def confirm_epub_upload_miniapp(
     
     # Verificar que el usuario sea el mismo o admin
     is_admin = user_data.get("level") in ["admin", "staff"] or user_data.get("is_real_admin") or user_data.get("is_admin_db")
-    if upload_info['user_id'] != user_data['user_id'] and not is_admin:
+    if upload_info["user_id"] != user_data["user_id"] and not is_admin:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     try:
         from pathlib import Path
-        file_path = Path(upload_info['file_path'])
-        metadata = upload_info['metadata']
+        file_path = Path(upload_info["file_path"])
+        metadata = upload_info["metadata"]
         
         # Usar ruta personalizada si se proporcionó
-        suggested_path = custom_path or metadata.get('suggested_path')
+        suggested_path = custom_path or metadata.get("suggested_path")
         
         # Mover a la librería
         success = await epub_uploader.add_to_library(file_path, suggested_path, metadata)
@@ -531,10 +529,10 @@ async def confirm_epub_upload_miniapp(
         if success:
             # Log success
             epub_uploader._log_history(
-                user_id=upload_info['user_id'],
-                filename=upload_info['original_filename'],
-                book_hash=metadata.get('book_hash'),
-                status='success',
+                user_id=upload_info["user_id"],
+                filename=upload_info["original_filename"],
+                book_hash=metadata.get("book_hash"),
+                status="success",
                 final_path=suggested_path
             )
             
@@ -544,10 +542,10 @@ async def confirm_epub_upload_miniapp(
         else:
             # Log error
             epub_uploader._log_history(
-                user_id=upload_info['user_id'],
-                filename=upload_info['original_filename'],
-                book_hash=metadata.get('book_hash'),
-                status='error',
+                user_id=upload_info["user_id"],
+                filename=upload_info["original_filename"],
+                book_hash=metadata.get("book_hash"),
+                status="error",
                 error_message="Failed to move file to library"
             )
             raise HTTPException(status_code=500, detail="Error al mover el archivo a la librería")
@@ -559,8 +557,8 @@ async def confirm_epub_upload_miniapp(
 
 @router.post("/api/library/upload/bulk")
 async def upload_epub_bulk(
-    files: List[UploadFile] = File(...),
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    files: list[UploadFile] = File(...),
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """Sube múltiples EPUBs de una vez."""
     if not user_data.get("can_upload_epub") and user_data.get("level") != "admin":
@@ -588,7 +586,7 @@ async def upload_epub_bulk(
             with open(temp_file, "wb") as f:
                 f.write(await file.read())
 
-            metadata = await epub_uploader.analyze_epub(temp_file, file.filename, user_data['user_id'])
+            metadata = await epub_uploader.analyze_epub(temp_file, file.filename, user_data["user_id"])
             if not metadata:
                 if temp_file.exists(): temp_file.unlink()
                 results.append({"filename": file.filename, "success": False, "error": "Error de análisis"})
@@ -596,11 +594,11 @@ async def upload_epub_bulk(
 
             upload_id = f"bulk_{user_data['user_id']}_{datetime.now().timestamp()}_{len(results)}"
             pending_uploads[upload_id] = {
-                'file_path': str(temp_file),
-                'metadata': metadata,
-                'user_id': user_data['user_id'],
-                'original_filename': file.filename,
-                'is_bulk': True
+                "file_path": str(temp_file),
+                "metadata": metadata,
+                "user_id": user_data["user_id"],
+                "original_filename": file.filename,
+                "is_bulk": True
             }
 
             results.append({
@@ -617,19 +615,19 @@ async def upload_epub_bulk(
 
 @router.post("/api/library/upload/bulk/confirm")
 async def confirm_epub_upload_bulk_miniapp(
-    data: Dict[str, Any],
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    data: dict[str, Any],
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """Confirma y finaliza múltiples subidas de EPUB."""
     from api.miniapp_handlers import handle_admin_bulk_upload_confirm
     return await handle_admin_bulk_upload_confirm(data, user_data)
 
 
-@router.get("/api/admin/upload-history", response_model=List[UploadHistoryResponse])
+@router.get("/api/admin/upload-history", response_model=list[UploadHistoryResponse])
 async def get_upload_history(
     limit: int = 100,
     offset: int = 0,
-    user_data: Dict[str, Any] = Depends(require_admin)
+    user_data: dict[str, Any] = Depends(require_admin)
 ):
     """
     Obtiene el historial de subidas desde UploadHistory.

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -13,7 +13,7 @@ from services.cache_service import cache_manager
 
 logger = logging.getLogger(__name__)
 
-class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
+class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
     """
     Repositorio optimizado para gestión de usuarios con PostgreSQL y Cache-First.
     SQLite eliminado.
@@ -23,7 +23,7 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
         self.table_name = "users"
         self.supabase = supabase_manager
 
-    async def get_by_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, telegram_id: int) -> dict[str, Any] | None:
         # 1. Cache-First
         cached_user = await cache_manager.get_user(telegram_id)
         if cached_user:
@@ -104,7 +104,7 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
                 user = result.scalar_one_or_none()
                 if user:
                     user.level_id = level_id
-                    if level_key == 'admin': user.role = 'admin'
+                    if level_key == "admin": user.role = "admin"
                     await session.commit()
         except Exception as e:
             logger.error(f"Postgres update_user_level error: {e}")
@@ -112,7 +112,7 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
         # Supabase
         if self.supabase.is_active:
              try:
-                 self.supabase.get_client().table('users').update({"level_id": level_id, "level": level_key}).eq('telegram_id', telegram_id).execute()
+                 self.supabase.get_client().table("users").update({"level_id": level_id, "level": level_key}).eq("telegram_id", telegram_id).execute()
              except: pass
 
     async def increment_download_count(self, telegram_id: int):
@@ -128,10 +128,10 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
         except Exception as e:
             logger.error(f"Postgres increment_download_count error: {e}")
 
-    async def create(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+    async def create(self, entity: dict[str, Any]) -> dict[str, Any]:
         return await self.upsert(entity)
     
-    async def update(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+    async def update(self, entity: dict[str, Any]) -> dict[str, Any]:
         return await self.upsert(entity)
     
     async def delete(self, id: int) -> bool:
@@ -148,15 +148,15 @@ class OptimizedUserRepository(BaseRepository[Dict[str, Any]]):
             return False
         except: return False
     
-    async def upsert(self, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        telegram_id = data.get('telegram_id')
+    async def upsert(self, data: dict[str, Any]) -> dict[str, Any] | None:
+        telegram_id = data.get("telegram_id")
         if not telegram_id: return None
         await cache_manager.invalidate_user(telegram_id)
         
         try:
             async with pg_manager.get_session() as session:
                 stmt = pg_insert(User).values(**data).on_conflict_do_update(
-                    index_elements=['telegram_id'],
+                    index_elements=["telegram_id"],
                     set_=data
                 ).returning(User)
                 await session.execute(stmt)

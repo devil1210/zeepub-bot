@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 # Add path to find modules
-sys.path.append('/app')
+sys.path.append("/app")
 sys.path.append(os.getcwd())
 
 from config.config_settings import config
@@ -61,10 +61,10 @@ async def nuclear_reset_user(telegram_id: int):
             client = supabase_manager.get_client()
             
             # UI Settings
-            client.table('user_ui_settings').delete().eq('user_id', telegram_id).execute()
+            client.table("user_ui_settings").delete().eq("user_id", telegram_id).execute()
             
             # User
-            client.table('users').delete().eq('telegram_id', telegram_id).execute()
+            client.table("users").delete().eq("telegram_id", telegram_id).execute()
             
             logger.info("✅ Supabase user record deleted.")
             

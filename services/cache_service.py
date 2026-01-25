@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,10 +11,10 @@ class MemoryCache:
     def __init__(self, max_size: int = 1000, default_ttl: int = 300):
         self.max_size = max_size
         self.default_ttl = default_ttl
-        self.cache: Dict[str, Dict[str, Any]] = {}
-        self.access_times: Dict[str, datetime] = {}
+        self.cache: dict[str, dict[str, Any]] = {}
+        self.access_times: dict[str, datetime] = {}
         
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Obtiene valor del cache."""
         if key not in self.cache:
             return None
@@ -23,7 +23,7 @@ class MemoryCache:
         now = datetime.utcnow()
         
         # Verificar TTL
-        if item['expires_at'] < now:
+        if item["expires_at"] < now:
             del self.cache[key]
             if key in self.access_times:
                 del self.access_times[key]
@@ -31,9 +31,9 @@ class MemoryCache:
             
         # Actualizar tiempo de acceso
         self.access_times[key] = now
-        return item['value']
+        return item["value"]
         
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Establece valor en cache."""
         now = datetime.utcnow()
         
@@ -43,9 +43,9 @@ class MemoryCache:
             
         ttl = ttl or self.default_ttl
         self.cache[key] = {
-            'value': value,
-            'expires_at': now + timedelta(seconds=ttl),
-            'created_at': now
+            "value": value,
+            "expires_at": now + timedelta(seconds=ttl),
+            "created_at": now
         }
         self.access_times[key] = now
         
@@ -70,16 +70,16 @@ class MemoryCache:
         lru_key = min(self.access_times.items(), key=lambda x: x[1])[0]
         self.invalidate(lru_key)
         
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Obtiene estadísticas del cache."""
         now = datetime.utcnow()
-        expired = sum(1 for item in self.cache.values() if item['expires_at'] < now)
+        expired = sum(1 for item in self.cache.values() if item["expires_at"] < now)
         
         return {
-            'size': len(self.cache),
-            'max_size': self.max_size,
-            'expired': expired,
-            'hit_rate': getattr(self, '_hits', 0) / max(getattr(self, '_requests', 1), 1)
+            "size": len(self.cache),
+            "max_size": self.max_size,
+            "expired": expired,
+            "hit_rate": getattr(self, "_hits", 0) / max(getattr(self, "_requests", 1), 1)
         }
 
 class AsyncTTLCache:
@@ -90,11 +90,11 @@ class AsyncTTLCache:
     """
 
     def __init__(self, ttl_seconds: int = 300):
-        self._cache: Dict[str, Tuple[Any, datetime]] = {}
+        self._cache: dict[str, tuple[Any, datetime]] = {}
         self._ttl = ttl_seconds
         self._write_lock = asyncio.Lock()  # Solo para escrituras y limpieza
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """
         Obtiene un valor del caché si existe y no ha expirado.
         """
@@ -107,7 +107,7 @@ class AsyncTTLCache:
                 del self._cache[key]
         return None
 
-    async def set(self, key: str, value: Any, custom_ttl: Optional[int] = None) -> None:
+    async def set(self, key: str, value: Any, custom_ttl: int | None = None) -> None:
         """
         Establece un valor en el caché con TTL.
         """
@@ -144,7 +144,7 @@ class AsyncTTLCache:
                 del self._cache[key]
             return len(expired_keys)
 
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """
         Retorna estadísticas básicas del caché.
         """
@@ -171,7 +171,7 @@ class CacheManager:
         self._hits = 0
         self._requests = 0
         
-    async def get_user(self, telegram_id: int) -> Optional[Dict[str, Any]]:
+    async def get_user(self, telegram_id: int) -> dict[str, Any] | None:
         """Obtiene usuario desde cache."""
         self._requests += 1
         
@@ -191,7 +191,7 @@ class CacheManager:
             
         return None
         
-    async def set_user(self, telegram_id: int, user_data: Dict[str, Any], ttl: int = 300) -> None:
+    async def set_user(self, telegram_id: int, user_data: dict[str, Any], ttl: int = 300) -> None:
         """Guarda usuario en cache."""
         await self.user_cache.set(f"user:{telegram_id}", user_data, ttl)
         self.memory_cache.set(f"user:{telegram_id}", user_data, ttl)
@@ -205,7 +205,7 @@ class CacheManager:
         """Alias para invalidate_user (compatibilidad con user_repository)."""
         await self.invalidate_user(telegram_id)
         
-    async def get_user_effective(self, telegram_id: int) -> Optional[Dict[str, Any]]:
+    async def get_user_effective(self, telegram_id: int) -> dict[str, Any] | None:
         """Obtiene usuario efectivo (con defaults)."""
         user = await self.get_user(telegram_id)
         if user:
@@ -214,7 +214,7 @@ class CacheManager:
         # Cache miss - debería venir de DB
         return None
         
-    async def get_user_settings(self, telegram_id: int) -> Optional[Dict[str, Any]]:
+    async def get_user_settings(self, telegram_id: int) -> dict[str, Any] | None:
         """Obtiene configuración de usuario."""
         settings = self.memory_cache.get(f"settings:{telegram_id}")
         if settings:
@@ -227,7 +227,7 @@ class CacheManager:
             
         return None
         
-    async def set_user_settings(self, telegram_id: int, settings: Dict[str, Any], ttl: int = 600) -> None:
+    async def set_user_settings(self, telegram_id: int, settings: dict[str, Any], ttl: int = 600) -> None:
         """Guarda configuración de usuario."""
         await self.settings_cache.set(f"settings:{telegram_id}", settings, ttl)
         self.memory_cache.set(f"settings:{telegram_id}", settings, ttl)
@@ -237,7 +237,7 @@ class CacheManager:
         await self.settings_cache.invalidate(f"settings:{telegram_id}")
         self.memory_cache.invalidate(f"settings:{telegram_id}")
         
-    async def get_user_level(self, level_id: int) -> Optional[Dict[str, Any]]:
+    async def get_user_level(self, level_id: int) -> dict[str, Any] | None:
         """Obtiene nivel de usuario."""
         level = self.memory_cache.get(f"level:{level_id}")
         if level:
@@ -250,7 +250,7 @@ class CacheManager:
             
         return None
         
-    async def set_user_level(self, level_id: int, level_data: Dict[str, Any], ttl: int = 1800) -> None:
+    async def set_user_level(self, level_id: int, level_data: dict[str, Any], ttl: int = 1800) -> None:
         """Guarda nivel de usuario."""
         await self.level_cache.set(f"level:{level_id}", level_data, ttl)
         self.memory_cache.set(f"level:{level_id}", level_data, ttl)
@@ -260,7 +260,7 @@ class CacheManager:
         await self.level_cache.invalidate(f"level:{level_id}")
         self.memory_cache.invalidate(f"level:{level_id}")
         
-    async def get_themes(self) -> Optional[List[Dict[str, Any]]]:
+    async def get_themes(self) -> list[dict[str, Any]] | None:
         """Obtiene temas cacheados."""
         themes = self.memory_cache.get("themes:all")
         if themes:
@@ -273,7 +273,7 @@ class CacheManager:
             
         return None
         
-    async def set_themes(self, themes: List[Dict[str, Any]], ttl: int = 600) -> None:
+    async def set_themes(self, themes: list[dict[str, Any]], ttl: int = 600) -> None:
         """Guarda temas en cache."""
         await self.theme_cache.set("themes:all", themes, ttl)
         self.memory_cache.set("themes:all", themes, ttl)
@@ -283,7 +283,7 @@ class CacheManager:
         await self.theme_cache.invalidate("themes:all")
         self.memory_cache.invalidate("themes:all")
         
-    async def get_sync_status(self) -> Optional[Dict[str, Any]]:
+    async def get_sync_status(self) -> dict[str, Any] | None:
         """Obtiene estado de sincronización."""
         status = self.memory_cache.get("sync:status")
         if status:
@@ -291,7 +291,7 @@ class CacheManager:
             
         return None
         
-    async def set_sync_status(self, status: Dict[str, Any], ttl: int = 60) -> None:
+    async def set_sync_status(self, status: dict[str, Any], ttl: int = 60) -> None:
         """Guarda estado de sincronización."""
         self.memory_cache.set("sync:status", status, ttl)
         
@@ -309,7 +309,7 @@ class CacheManager:
         await self.user_cache.clear_pattern("user:")
         await self.settings_cache.clear_pattern("settings:")
         
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Obtiene estadísticas del cache."""
         memory_stats = self.memory_cache.get_stats()
         user_stats = await self.user_cache.get_stats()
@@ -318,14 +318,14 @@ class CacheManager:
         theme_stats = await self.theme_cache.get_stats()
         
         return {
-            'memory_cache': memory_stats,
-            'user_cache': user_stats,
-            'settings_cache': settings_stats,
-            'level_cache': level_stats,
-            'theme_cache': theme_stats,
-            'overall_hit_rate': self._hits / max(self._requests, 1),
-            'total_requests': self._requests,
-            'total_hits': self._hits
+            "memory_cache": memory_stats,
+            "user_cache": user_stats,
+            "settings_cache": settings_stats,
+            "level_cache": level_stats,
+            "theme_cache": theme_stats,
+            "overall_hit_rate": self._hits / max(self._requests, 1),
+            "total_requests": self._requests,
+            "total_hits": self._hits
         }
         
     async def cleanup_expired(self) -> None:

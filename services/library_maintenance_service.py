@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict
 
 from sqlalchemy import func, text
 
@@ -16,7 +15,7 @@ class LibraryMaintenanceService:
     """
 
     @staticmethod
-    def optimize_database() -> Dict[str, any]:
+    def optimize_database() -> dict[str, any]:
         """
         Ejecuta mantenimiento básico en PostgreSQL (VACUUM ANALYZE).
         """
@@ -46,7 +45,7 @@ class LibraryMaintenanceService:
         }
 
     @staticmethod
-    def cleanup_orphaned_covers() -> Dict[str, any]:
+    def cleanup_orphaned_covers() -> dict[str, any]:
         """
         Elimina archivos de portada huérfanos (sin libro asociado).
         """
@@ -56,7 +55,7 @@ class LibraryMaintenanceService:
             covers_in_use = set()
 
             for book in books:
-                for cover_attr in ['cover_low', 'cover_medium', 'cover_high', 'cover_original']:
+                for cover_attr in ["cover_low", "cover_medium", "cover_high", "cover_original"]:
                     cover_path = getattr(book, cover_attr, None)
                     if cover_path:
                         filename = cover_path.split("/")[-1]
@@ -94,7 +93,7 @@ class LibraryMaintenanceService:
             session.close()
 
     @staticmethod
-    def get_library_stats() -> Dict[str, any]:
+    def get_library_stats() -> dict[str, any]:
         """
         Genera estadísticas detalladas de la biblioteca.
         """

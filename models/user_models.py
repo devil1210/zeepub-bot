@@ -22,7 +22,7 @@ class User(Base):
     Representa un usuario del bot (Telegram).
     Espejo de la tabla 'users' en Supabase.
     """
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     # Telegram ID es la PK (BigInteger para soportar IDs de Telegram)
     telegram_id = Column(BigInteger, primary_key=True, autoincrement=False)
@@ -34,8 +34,8 @@ class User(Base):
     photo_url = Column(String(500), nullable=True) # URL local de la foto de perfil
     
     # Nivel/Permisos
-    level_id = Column(Integer, ForeignKey('user_levels.id'), default=6, index=True) # 6 = Free por defecto
-    role = Column(String(50), default='user') # admin, mod, user
+    level_id = Column(Integer, ForeignKey("user_levels.id"), default=6, index=True) # 6 = Free por defecto
+    role = Column(String(50), default="user") # admin, mod, user
     
     # Flags y Estado
     beta_tester = Column(Boolean, default=False)
@@ -92,26 +92,26 @@ class UserLevel(Base):
     Niveles de usuario (Free, Premium, VIP, etc).
     Tabla: user_levels
     """
-    __tablename__ = 'user_levels'
+    __tablename__ = "user_levels"
     
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False) # python_free, python_premium
     priority = Column(Integer, default=0)
     
     # Metadata visual
-    color = Column(String(20), default='#607D8B') # Color identificador (badges)
+    color = Column(String(20), default="#607D8B") # Color identificador (badges)
     
     # UI Defaults del nivel
-    ui_theme = Column(String(20), default='dark')
-    ui_primary_color = Column(String(20), default='#3b82f6')
+    ui_theme = Column(String(20), default="dark")
+    ui_primary_color = Column(String(20), default="#3b82f6")
     ui_font_size = Column(Integer, default=14)
     ui_nav_opacity = Column(Integer, default=80)
     ui_glass_blur = Column(Integer, default=12)
     ui_cover_width = Column(Integer, default=120)
     ui_accent_opacity = Column(Integer, default=20)
     panel_transparency = Column(Integer, default=60)
-    background_color = Column(String(20), default='#0f172a')
-    card_color = Column(String(20), default='#1e293b')
+    background_color = Column(String(20), default="#0f172a")
+    card_color = Column(String(20), default="#1e293b")
     banner_content_offset = Column(Integer, default=0)
     force_settings = Column(Boolean, default=False)
     
@@ -132,7 +132,7 @@ class UserLevel(Base):
     show_recommendations = Column(Boolean, default=True)
     
     # Default Theme Association
-    default_theme_id = Column(Integer, ForeignKey('app_themes.id'), nullable=True, index=True)
+    default_theme_id = Column(Integer, ForeignKey("app_themes.id"), nullable=True, index=True)
     default_theme = relationship("AppTheme")
     
     users = relationship("User", back_populates="level_info")
@@ -142,9 +142,9 @@ class UserUISettings(Base):
     Configuración de UI específica del usuario (Overrides).
     Tabla: user_ui_settings (Espejo de Supabase)
     """
-    __tablename__ = 'user_ui_settings'
+    __tablename__ = "user_ui_settings"
     
-    user_id = Column(BigInteger, ForeignKey('users.telegram_id'), primary_key=True)
+    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)
     
     theme_type = Column(String(20))
     primary_color = Column(String(20))
@@ -154,7 +154,7 @@ class UserUISettings(Base):
     accent_opacity = Column(Integer)
     card_glow_intensity = Column(Integer)
     show_recommendations = Column(Boolean)
-    title_language = Column(String(20), default='romaji')
+    title_language = Column(String(20), default="romaji")
     
     user = relationship("User", back_populates="ui_settings")
 
@@ -163,14 +163,14 @@ class AppTheme(Base):
     Temas globales de la aplicación (Presets).
     Tabla: app_themes
     """
-    __tablename__ = 'app_themes'
+    __tablename__ = "app_themes"
     
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True, nullable=False)
     description = Column(String(500))
     
     # Visual Properties
-    theme_type = Column(String(20), default='dark') # 'theme' in frontend
+    theme_type = Column(String(20), default="dark") # 'theme' in frontend
     primary_color = Column(String(20))
     background_color = Column(String(20))
     card_color = Column(String(20))

@@ -61,33 +61,33 @@ async def import_data():
         for item in levels_data:
             # Map/Clean data if necessary
             level = UserLevel(
-                id=item.get('id'),
-                name=item.get('name'),
-                priority=item.get('priority', 0),
-                color=item.get('color'),
-                ui_theme=item.get('ui_theme'),
-                ui_primary_color=item.get('ui_primary_color'),
-                ui_font_size=item.get('ui_font_size'),
-                ui_nav_opacity=item.get('ui_nav_opacity'),
-                ui_glass_blur=item.get('ui_glass_blur'),
-                ui_cover_width=item.get('ui_cover_width'),
-                ui_accent_opacity=item.get('ui_accent_opacity'),
-                panel_transparency=item.get('panel_transparency'),
-                background_color=item.get('background_color'),
-                card_color=item.get('card_color'),
-                banner_content_offset=item.get('banner_content_offset'),
-                force_settings=item.get('force_settings', False),
-                price=item.get('price', 0.0),
-                can_download=item.get('can_download', True),
-                can_read=item.get('can_read', True),
-                daily_downloads=item.get('daily_downloads', 5),
-                has_mini_app_access=item.get('has_mini_app_access', True),
-                has_library_access=item.get('has_library_access', True),
-                can_request_books=item.get('can_request_books', True),
-                early_access=item.get('early_access', False),
-                custom_themes=item.get('custom_themes', False),
-                allow_theme_templates=item.get('allow_theme_templates', False),
-                show_recommendations=item.get('show_recommendations', True)
+                id=item.get("id"),
+                name=item.get("name"),
+                priority=item.get("priority", 0),
+                color=item.get("color"),
+                ui_theme=item.get("ui_theme"),
+                ui_primary_color=item.get("ui_primary_color"),
+                ui_font_size=item.get("ui_font_size"),
+                ui_nav_opacity=item.get("ui_nav_opacity"),
+                ui_glass_blur=item.get("ui_glass_blur"),
+                ui_cover_width=item.get("ui_cover_width"),
+                ui_accent_opacity=item.get("ui_accent_opacity"),
+                panel_transparency=item.get("panel_transparency"),
+                background_color=item.get("background_color"),
+                card_color=item.get("card_color"),
+                banner_content_offset=item.get("banner_content_offset"),
+                force_settings=item.get("force_settings", False),
+                price=item.get("price", 0.0),
+                can_download=item.get("can_download", True),
+                can_read=item.get("can_read", True),
+                daily_downloads=item.get("daily_downloads", 5),
+                has_mini_app_access=item.get("has_mini_app_access", True),
+                has_library_access=item.get("has_library_access", True),
+                can_request_books=item.get("can_request_books", True),
+                early_access=item.get("early_access", False),
+                custom_themes=item.get("custom_themes", False),
+                allow_theme_templates=item.get("allow_theme_templates", False),
+                show_recommendations=item.get("show_recommendations", True)
             )
             await session.merge(level)
         print(f"✅ Synced {len(levels_data)} levels.")
@@ -101,23 +101,23 @@ async def import_data():
             for item in themes_data:
                 from dateutil import parser
                 theme = AppTheme(
-                    id=item.get('id'),
-                    name=item.get('name'),
-                    description=item.get('description'),
-                    theme_type=item.get('theme_type'),
-                    primary_color=item.get('primary_color'),
-                    background_color=item.get('background_color'),
-                    card_color=item.get('card_color'),
-                    glass_opacity=item.get('glass_opacity'),
-                    nav_opacity=item.get('nav_opacity'),
-                    accent_opacity=item.get('accent_opacity'),
-                    glass_blur=item.get('glass_blur'),
-                    card_glow_intensity=item.get('card_glow_intensity'),
-                    font_size=item.get('font_size'),
-                    cover_width=item.get('cover_width'),
-                    banner_content_offset=item.get('banner_content_offset'),
-                    created_at=parser.parse(item.get('created_at')) if item.get('created_at') else None,
-                    updated_at=parser.parse(item.get('updated_at')) if item.get('updated_at') else None
+                    id=item.get("id"),
+                    name=item.get("name"),
+                    description=item.get("description"),
+                    theme_type=item.get("theme_type"),
+                    primary_color=item.get("primary_color"),
+                    background_color=item.get("background_color"),
+                    card_color=item.get("card_color"),
+                    glass_opacity=item.get("glass_opacity"),
+                    nav_opacity=item.get("nav_opacity"),
+                    accent_opacity=item.get("accent_opacity"),
+                    glass_blur=item.get("glass_blur"),
+                    card_glow_intensity=item.get("card_glow_intensity"),
+                    font_size=item.get("font_size"),
+                    cover_width=item.get("cover_width"),
+                    banner_content_offset=item.get("banner_content_offset"),
+                    created_at=parser.parse(item.get("created_at")) if item.get("created_at") else None,
+                    updated_at=parser.parse(item.get("updated_at")) if item.get("updated_at") else None
                 )
                 await session.merge(theme)
             print(f"✅ Synced {len(themes_data)} themes.")
@@ -134,20 +134,20 @@ async def import_data():
             users_data = res.data
             for item in users_data:
                 user = User(
-                    telegram_id=item.get('telegram_id'),
-                    username=item.get('username'),
-                    name=item.get('name'),
-                    nickname=item.get('nickname'),
-                    photo_url=item.get('photo_url'),
-                    level_id=item.get('level_id'),
-                    role=item.get('role'),
-                    beta_tester=item.get('beta_tester'),
-                    has_library_access=item.get('has_library_access'),
-                    can_request_books=item.get('can_request_books'),
-                    total_downloads=item.get('total_downloads'),
-                    insignias=item.get('insignias'),
-                    settings=item.get('settings'),
-                    expires_at=item.get('expires_at')
+                    telegram_id=item.get("telegram_id"),
+                    username=item.get("username"),
+                    name=item.get("name"),
+                    nickname=item.get("nickname"),
+                    photo_url=item.get("photo_url"),
+                    level_id=item.get("level_id"),
+                    role=item.get("role"),
+                    beta_tester=item.get("beta_tester"),
+                    has_library_access=item.get("has_library_access"),
+                    can_request_books=item.get("can_request_books"),
+                    total_downloads=item.get("total_downloads"),
+                    insignias=item.get("insignias"),
+                    settings=item.get("settings"),
+                    expires_at=item.get("expires_at")
                 )
                 await session.merge(user)
             print(f"✅ Synced {len(users_data)} admin users.")

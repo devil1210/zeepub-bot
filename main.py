@@ -137,7 +137,7 @@ async def initialize_application():
     # Initial theme sync from Supabase to local
     logger.info("Starting initial theme synchronization...")
     sync_result = await theme_sync_service.initial_sync()
-    if sync_result.get('status') == 'success':
+    if sync_result.get("status") == "success":
         logger.info(f"Initial sync completed: {sync_result.get('added', 0)} themes added, {sync_result.get('updated', 0)} updated")
     else:
         logger.warning(f"Initial sync failed: {sync_result.get('error', 'Unknown error')}")
@@ -149,20 +149,20 @@ async def initialize_application():
     # Schedule daily sync at 3:00 AM
     scheduler.add_job(
         theme_sync_service.daily_sync,
-        'cron',
+        "cron",
         hour=3,
         minute=0,
-        id='daily_theme_sync',
+        id="daily_theme_sync",
         replace_existing=True
     )
     
     # Schedule automatic library scan every 2 hours
     scheduler.add_job(
         lambda: asyncio.create_task(auto_scan_library()),
-        'cron',
-        hour='*/2',  # Every 2 hours
+        "cron",
+        hour="*/2",  # Every 2 hours
         minute=0,
-        id='auto_library_scan',
+        id="auto_library_scan",
         replace_existing=True
     )
     

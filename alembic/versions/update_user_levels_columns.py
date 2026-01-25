@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'update_user_levels_columns'
-down_revision = 'add_user_levels'
+revision = "update_user_levels_columns"
+down_revision = "add_user_levels"
 branch_labels = None
 depends_on = None
 
@@ -19,19 +19,19 @@ depends_on = None
 def upgrade():
     # Add missing columns to user_levels
     try:
-        op.add_column('user_levels', sa.Column('daily_downloads', sa.Integer(), nullable=False, server_default='1'))
+        op.add_column("user_levels", sa.Column("daily_downloads", sa.Integer(), nullable=False, server_default="1"))
     except Exception: pass
     
     try:
-        op.add_column('user_levels', sa.Column('early_access', sa.Boolean(), nullable=False, server_default=sa.text('false')))
+        op.add_column("user_levels", sa.Column("early_access", sa.Boolean(), nullable=False, server_default=sa.text("false")))
     except Exception: pass
     
     try:
-        op.add_column('user_levels', sa.Column('custom_themes', sa.Boolean(), nullable=False, server_default=sa.text('false')))
+        op.add_column("user_levels", sa.Column("custom_themes", sa.Boolean(), nullable=False, server_default=sa.text("false")))
     except Exception: pass
     
     try:
-        op.add_column('user_levels', sa.Column('price', sa.Float(), nullable=False, server_default='0.0'))
+        op.add_column("user_levels", sa.Column("price", sa.Float(), nullable=False, server_default="0.0"))
     except Exception: pass
 
     # Update default values for existing levels
@@ -44,7 +44,7 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_column('user_levels', 'price')
-    op.drop_column('user_levels', 'custom_themes')
-    op.drop_column('user_levels', 'early_access')
-    op.drop_column('user_levels', 'daily_downloads')
+    op.drop_column("user_levels", "price")
+    op.drop_column("user_levels", "custom_themes")
+    op.drop_column("user_levels", "early_access")
+    op.drop_column("user_levels", "daily_downloads")

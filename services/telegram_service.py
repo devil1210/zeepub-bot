@@ -2,7 +2,7 @@ import asyncio
 import io
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import unquote, urlparse
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Update
@@ -906,7 +906,7 @@ async def enviar_libro_directo(
     target_chat_id: int = None,
     format_type: str = "standard",
     message_thread_id: int = None,
-    metadata_override: Optional[Dict[str, Any]] = None,
+    metadata_override: dict[str, Any] | None = None,
 ):
     """
     Descarga y envía un libro directamente al usuario (para la Mini App).

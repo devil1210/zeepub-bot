@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy import select, text
 
@@ -10,7 +10,7 @@ from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
 
-class ThemeRepository(BaseRepository[Dict[str, Any]]):
+class ThemeRepository(BaseRepository[dict[str, Any]]):
     """
     Repositorio para gestión de temas (AppTheme) usando PostgreSQL.
     SQLite eliminado.
@@ -66,7 +66,7 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
         except Exception as e:
             logger.error(f"Error seeding default themes: {e}")
 
-    async def get_all_themes(self) -> List[Dict[str, Any]]:
+    async def get_all_themes(self) -> list[dict[str, Any]]:
         await self.ensure_default_themes()
         try:
             async with pg_manager.get_session() as session:
@@ -78,7 +78,7 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
             logger.error(f"Postgres get_all_themes error: {e}")
             return []
 
-    async def upsert(self, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def upsert(self, data: dict[str, Any]) -> dict[str, Any] | None:
         name = data.get("name")
         if not name: return None
         
@@ -120,7 +120,7 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
             logger.error(f"Postgres upsert theme error: {e}")
             return None
 
-    def _to_dict(self, theme: AppTheme) -> Dict[str, Any]:
+    def _to_dict(self, theme: AppTheme) -> dict[str, Any]:
         return {
             "id": theme.id,
             "name": theme.name,
@@ -139,17 +139,17 @@ class ThemeRepository(BaseRepository[Dict[str, Any]]):
             "bannerContentOffset": theme.banner_content_offset
         }
 
-    async def get_by_id(self, id: int) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, id: int) -> dict[str, Any] | None:
         try:
             async with pg_manager.get_session() as session:
                 theme = await session.get(AppTheme, id)
                 return self._to_dict(theme) if theme else None
         except: return None
 
-    async def create(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+    async def create(self, entity: dict[str, Any]) -> dict[str, Any]:
         return await self.upsert(entity)
 
-    async def update(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+    async def update(self, entity: dict[str, Any]) -> dict[str, Any]:
         return await self.upsert(entity)
 
     async def delete(self, id: int) -> bool:

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from sqlalchemy import delete, func, select
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class RatingService:
     @staticmethod
-    async def rate_book(user_id: int, book_id: int, rating: int) -> Dict[str, Any]:
+    async def rate_book(user_id: int, book_id: int, rating: int) -> dict[str, Any]:
         """
         Registra el voto de un usuario y actualiza el promedio del libro (Async).
         Retorna el nuevo promedio y total de votos.
@@ -78,7 +78,7 @@ class RatingService:
                 raise
 
     @staticmethod
-    async def remove_rating(user_id: int, book_id: int) -> Dict[str, Any]:
+    async def remove_rating(user_id: int, book_id: int) -> dict[str, Any]:
         """
         Elimina el voto de un usuario y recalcula el promedio (Async).
         """
@@ -125,7 +125,7 @@ class RatingService:
                 raise
 
     @staticmethod
-    async def get_user_rating(user_id: int, book_id: int) -> Optional[int]:
+    async def get_user_rating(user_id: int, book_id: int) -> int | None:
         """Retorna el voto previo del usuario si existe (Async)."""
         async with pg_manager.get_session() as session:
             try:
@@ -139,7 +139,7 @@ class RatingService:
                 return None
 
     @staticmethod
-    async def get_rating_breakdown(book_id: int) -> Dict[int, int]:
+    async def get_rating_breakdown(book_id: int) -> dict[int, int]:
         """
         Retorna el desglose de votos por estrella (Async).
         Returns: {1: count, 2: count, 3: count, 4: count, 5: count}

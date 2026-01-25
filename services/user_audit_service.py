@@ -3,7 +3,7 @@ User Audit Service
 Servicio para registrar cambios en usuarios y permisos.
 """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -23,13 +23,13 @@ class UserAuditService:
         action: str,
         changed_by_id: str,
         changed_by_username: str,
-        field_changed: Optional[str] = None,
+        field_changed: str | None = None,
         old_value: Any = None,
         new_value: Any = None,
-        changes_summary: Optional[Dict[str, Any]] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        session: Optional[Session] = None
+        changes_summary: dict[str, Any] | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        session: Session | None = None
     ) -> UserAuditLog:
         """
         Registra un cambio en el audit log.
@@ -92,7 +92,7 @@ class UserAuditService:
         user_id: str,
         limit: int = 50,
         offset: int = 0
-    ) -> list[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Obtiene el historial de cambios de un usuario.
         
@@ -121,8 +121,8 @@ class UserAuditService:
     def get_recent_changes(
         limit: int = 100,
         offset: int = 0,
-        changed_by_id: Optional[str] = None
-    ) -> list[Dict[str, Any]]:
+        changed_by_id: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Obtiene los cambios recientes en el sistema.
         
@@ -154,13 +154,13 @@ class UserAuditService:
     def log_level_change(
         user_id: str,
         username: str,
-        old_level_id: Optional[int],
+        old_level_id: int | None,
         new_level_id: int,
-        old_level_name: Optional[str],
+        old_level_name: str | None,
         new_level_name: str,
         changed_by_id: str,
         changed_by_username: str,
-        session: Optional[Session] = None
+        session: Session | None = None
     ) -> UserAuditLog:
         """Registra un cambio de nivel de usuario"""
         return UserAuditService.log_change(
@@ -183,10 +183,10 @@ class UserAuditService:
     def log_permissions_change(
         user_id: str,
         username: str,
-        changes: Dict[str, Dict[str, Any]],
+        changes: dict[str, dict[str, Any]],
         changed_by_id: str,
         changed_by_username: str,
-        session: Optional[Session] = None
+        session: Session | None = None
     ) -> UserAuditLog:
         """
         Registra cambios en permisos de usuario.
@@ -208,10 +208,10 @@ class UserAuditService:
     def log_profile_change(
         user_id: str,
         username: str,
-        changes: Dict[str, Dict[str, Any]],
+        changes: dict[str, dict[str, Any]],
         changed_by_id: str,
         changed_by_username: str,
-        session: Optional[Session] = None
+        session: Session | None = None
     ) -> UserAuditLog:
         """Registra cambios en el perfil de usuario"""
         return UserAuditService.log_change(

@@ -2,14 +2,12 @@
 import asyncio
 import logging
 import os
-from typing import List, Optional
 
-from sqlalchemy import select, update, func, and_
 from rich.console import Console
-from rich.progress import Progress
+from sqlalchemy import func, select, update
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, SeriesMetadata
+from models.library_models import LocalBook
 from services.ai_service import AIService
 
 # Configure logging
@@ -67,7 +65,8 @@ async def get_series_groups(limit: int = 50):
 
 from sqlalchemy import or_
 
-async def process_groups(groups: List[dict]):
+
+async def process_groups(groups: list[dict]):
     """Procesa cada grupo con la IA."""
     
     updated_total = 0
@@ -149,7 +148,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        if os.name == 'nt':
+        if os.name == "nt":
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         asyncio.run(main())
     except KeyboardInterrupt:

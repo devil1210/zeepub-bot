@@ -1,7 +1,6 @@
 # services/topic_service.py
 
 import logging
-from typing import Dict, Optional
 
 from telegram import Bot
 
@@ -22,7 +21,7 @@ class TopicService:
     def __init__(self):
         pass
 
-    async def ensure_topics(self, bot: Bot, user_id: int) -> Dict[str, int]:
+    async def ensure_topics(self, bot: Bot, user_id: int) -> dict[str, int]:
         """
         Asegura que los tópicos existan para el usuario en su chat privado.
         Retorna un diccionario de {slug: message_thread_id}.
@@ -61,7 +60,7 @@ class TopicService:
 
         return new_topics
 
-    async def get_topic_id(self, user_id: int, slug: str) -> Optional[int]:
+    async def get_topic_id(self, user_id: int, slug: str) -> int | None:
         """Recupera el thread_id para un slug específico."""
         from repositories.user_repository import user_repo
         user_data = await user_repo.get_user_by_id(user_id)

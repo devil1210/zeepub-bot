@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy import text
 
@@ -18,8 +18,8 @@ class MetricsRepository:
         self,
         user_id: int,
         book_hash: str,
-        series_hash: Optional[str] = None,
-        title: Optional[str] = None,
+        series_hash: str | None = None,
+        title: str | None = None,
     ):
         try:
             async with pg_manager.get_session() as session:
@@ -30,7 +30,7 @@ class MetricsRepository:
             if self.supabase.is_active:
                 try:
                     data = {"user_id": user_id, "book_hash": book_hash, "series_hash": series_hash, "title": title}
-                    self.supabase.get_client().table('user_downloads').insert(data).execute()
+                    self.supabase.get_client().table("user_downloads").insert(data).execute()
                 except: pass
         except Exception as e:
             logger.error(f"Postgres metrics add_download error: {e}")
@@ -71,7 +71,7 @@ class MetricsRepository:
             logger.error(f"Postgres metrics get_series_downloads error: {e}")
             return 0
 
-    async def get_total_downloads_by_hashes(self, hashes: List[str]) -> int:
+    async def get_total_downloads_by_hashes(self, hashes: list[str]) -> int:
         if not hashes:
             return 0
         try:
@@ -101,12 +101,12 @@ class MetricsRepository:
             if self.supabase.is_active:
                 try:
                     data = {"user_id": user_id, "book_hash": book_hash, "rating": rating}
-                    self.supabase.get_client().table('user_ratings').upsert(data).execute()
+                    self.supabase.get_client().table("user_ratings").upsert(data).execute()
                 except: pass
         except Exception as e:
             logger.error(f"Postgres metrics add_rating error: {e}")
 
-    async def get_rating_stats(self, book_hash: str) -> Dict[str, Any]:
+    async def get_rating_stats(self, book_hash: str) -> dict[str, Any]:
         if not book_hash:
             return {"average": 0.0, "count": 0}
         try:

@@ -5,7 +5,6 @@ Backend: PostgreSQL (via SQLAlchemy).
 
 import logging
 import os
-from typing import Optional
 
 import sqlalchemy as sa
 from sqlalchemy import Column, MetaData, String, Table, Text
@@ -47,7 +46,7 @@ def init_settings_db():
         logger.error(f"Error initializing settings DB: {e}")
 
 
-def get_setting(key: str, default: str = None) -> Optional[str]:
+def get_setting(key: str, default: str = None) -> str | None:
     """Obtiene un valor de configuración."""
     try:
         engine = _get_sa_engine()
@@ -101,6 +100,6 @@ class SettingsService:
         import asyncio
         return await asyncio.to_thread(set_setting, key, value)
 
-    async def get_setting(self, key: str, default: str = None) -> Optional[str]:
+    async def get_setting(self, key: str, default: str = None) -> str | None:
         import asyncio
         return await asyncio.to_thread(get_setting, key, default)

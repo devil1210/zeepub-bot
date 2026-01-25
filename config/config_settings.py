@@ -4,7 +4,6 @@ import hashlib
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Set, Tuple
 
 from dotenv import load_dotenv
 
@@ -35,7 +34,7 @@ class BotConfig:
     SECRET_SEED: str = os.getenv("SECRET_SEED", "")
 
     # Administradores (no tienen descargas ilimitadas aquí)
-    ADMIN_USERS: Set[int] = field(
+    ADMIN_USERS: set[int] = field(
         default_factory=lambda: {
             int(x.strip())
             for x in os.getenv("ADMIN_USERS", "").split(",")
@@ -44,21 +43,21 @@ class BotConfig:
     )
 
     # Listas de usuarios con distintos niveles
-    WHITELIST: Set[int] = field(
+    WHITELIST: set[int] = field(
         default_factory=lambda: {
             int(x.strip())
             for x in os.getenv("WHITELIST", "").split(",")
             if x.strip().isdigit()
         }
     )
-    VIP_LIST: Set[int] = field(
+    VIP_LIST: set[int] = field(
         default_factory=lambda: {
             int(x.strip())
             for x in os.getenv("VIP_LIST", "").split(",")
             if x.strip().isdigit()
         }
     )
-    PREMIUM_LIST: Set[int] = field(
+    PREMIUM_LIST: set[int] = field(
         default_factory=lambda: {
             int(x.strip())
             for x in os.getenv("PREMIUM_LIST", "").split(",")
@@ -67,7 +66,7 @@ class BotConfig:
     )
 
     # Facebook Publishers
-    FACEBOOK_PUBLISHERS: Set[int] = field(
+    FACEBOOK_PUBLISHERS: set[int] = field(
         default_factory=lambda: {
             int(x.strip())
             for x in os.getenv("FACEBOOK_PUBLISHERS", "").split(",")
@@ -172,7 +171,7 @@ class BotConfig:
         return f"{base}{self.OPDS_ROOT_EVIL_SUFFIX}"
 
     @property
-    def OPDS_AUTH(self) -> Tuple[str, str]:
+    def OPDS_AUTH(self) -> tuple[str, str]:
         """
         Retorna las credenciales OPDS (usuario, pass) %SAME% autenticación.
         Asumimos que están en variables de entorno OPDS_USER y OPDS_PASS.
@@ -188,8 +187,8 @@ class BotConfig:
             return (user, password)
         return None
 
-    def validate(self) -> Tuple[bool, List[str]]:
-        errors: List[str] = []
+    def validate(self) -> tuple[bool, list[str]]:
+        errors: list[str] = []
         if not self.TELEGRAM_TOKEN:
             errors.append("TELEGRAM_TOKEN")
 

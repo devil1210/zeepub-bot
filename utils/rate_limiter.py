@@ -2,7 +2,6 @@ import asyncio
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List
 
 
 class RateLimitType(Enum):
@@ -16,14 +15,14 @@ class RateLimitType(Enum):
 class RateLimit:
     max_requests: int
     window_seconds: int
-    requests: List[float]
+    requests: list[float]
 
 
 class RateLimitManager:
     def __init__(self):
-        self._limits: Dict[int, Dict[RateLimitType, RateLimit]] = {}
+        self._limits: dict[int, dict[RateLimitType, RateLimit]] = {}
         self._lock = asyncio.Lock()
-        self._default_limits: Dict[RateLimitType, tuple[int, int]] = {}
+        self._default_limits: dict[RateLimitType, tuple[int, int]] = {}
 
     def set_default_limit(
         self, limit_type: RateLimitType, max_requests: int, window_seconds: int

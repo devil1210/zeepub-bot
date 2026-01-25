@@ -1,12 +1,11 @@
 import os
 import random
-from typing import Dict, List
 
 from dotenv import load_dotenv
 from supabase import create_client
 
 
-def generate_premium_themes(count: int = 100) -> List[Dict]:
+def generate_premium_themes(count: int = 100) -> list[dict]:
     # Expanded palettes specifically for requested themes
     palettes = [
         # --- PASTEL THEMES ---
@@ -184,7 +183,7 @@ if __name__ == "__main__":
     
     try:
         # Upsert allows updating if names collide or just adding new ones
-        res = supabase.table('app_themes').upsert(new_themes).execute()
+        res = supabase.table("app_themes").upsert(new_themes).execute()
         print("✅ ¡Éxito! Se han añadido/actualizado 100 temas en la base de datos.")
         print(f"Total de registros procesados: {len(res.data)}")
     except Exception as e:

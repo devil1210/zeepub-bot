@@ -410,7 +410,7 @@ class ScannerService:
             # Romaji extraction
             romaji = meta.get("romaji_title")
             if not romaji and book.title:
-                title_without_vol = re.sub(r'\s*-\s*Volumen\s+\d+.*$', '', book.title, flags=re.IGNORECASE).strip()
+                title_without_vol = re.sub(r"\s*-\s*Volumen\s+\d+.*$", "", book.title, flags=re.IGNORECASE).strip()
                 romaji = title_without_vol.split(" - ")[0].strip() if " - " in title_without_vol else title_without_vol
             book.romaji_title = romaji
 
@@ -539,10 +539,10 @@ class ScannerService:
                 if cover_paths:
                     # Guardar las 4 versiones en la base de datos
                     base_url = "/api/library/covers/"
-                    book.cover_original = base_url + os.path.basename(cover_paths['original'])
-                    book.cover_high = base_url + os.path.basename(cover_paths['high'])
-                    book.cover_medium = base_url + os.path.basename(cover_paths['medium'])
-                    book.cover_low = base_url + os.path.basename(cover_paths['low'])
+                    book.cover_original = base_url + os.path.basename(cover_paths["original"])
+                    book.cover_high = base_url + os.path.basename(cover_paths["high"])
+                    book.cover_medium = base_url + os.path.basename(cover_paths["medium"])
+                    book.cover_low = base_url + os.path.basename(cover_paths["low"])
 
             # session.commit()  # Movido a nivel de batch o fuente
             return outcome
@@ -593,7 +593,7 @@ class ScannerService:
             # Buscar libros con ISBN pero sin spanish_title o descripción
             books = session.query(LocalBook).filter(
                 LocalBook.isbn is not None,
-                LocalBook.isbn != '',
+                LocalBook.isbn != "",
                 (LocalBook.spanish_title is None) | (LocalBook.description is None)
             ).all()
 
@@ -623,7 +623,7 @@ class ScannerService:
         import httpx
         try:
             if not book.isbn: return False
-            isbn = re.sub(r'[^\d]', '', str(book.isbn))
+            isbn = re.sub(r"[^\d]", "", str(book.isbn))
             if not isbn: return False
 
             url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}&hl=es"

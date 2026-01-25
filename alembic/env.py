@@ -1,4 +1,3 @@
-from __future__ import with_statement
 
 import os
 from logging.config import fileConfig
@@ -15,9 +14,9 @@ config = context.config
 fileConfig(config.config_file_name)
 
 # set the sqlalchemy.url to environment DATABASE_URL if provided
-db_url = os.environ.get('DATABASE_URL')
+db_url = os.environ.get("DATABASE_URL")
 if db_url:
-    config.set_main_option('sqlalchemy.url', db_url)
+    config.set_main_option("sqlalchemy.url", db_url)
 
 # Define metadata directly to avoid circular imports
 from sqlalchemy import Boolean, Column, DateTime, Integer, MetaData, String, Table, Text

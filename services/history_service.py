@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy import (
@@ -75,10 +75,10 @@ def _get_table(engine):
 
 
 def log_published_book(
-    meta: Dict[str, Any],
+    meta: dict[str, Any],
     message_id: int,
     channel_id: int,
-    file_info: Dict[str, Any] = None,
+    file_info: dict[str, Any] = None,
 ):
     """
     Logs a published book to the database.
@@ -163,7 +163,7 @@ def log_published_book(
         logger.error(f"Error logging published book: {e}")
 
 
-def process_history_json(file_path: str) -> Dict[str, int]:
+def process_history_json(file_path: str) -> dict[str, int]:
     """
     Parses a Telegram export JSON file and imports books into the database.
     Returns stats: {'total': 0, 'imported': 0, 'errors': 0}
@@ -176,7 +176,7 @@ def process_history_json(file_path: str) -> Dict[str, int]:
         return stats
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
     except Exception as e:
         logger.error(f"Error loading JSON: {e}")
@@ -397,7 +397,7 @@ def process_history_json(file_path: str) -> Dict[str, int]:
     return stats
 
 
-def get_latest_books(limit: int = 10, channel_id: Optional[int] = None) -> list:
+def get_latest_books(limit: int = 10, channel_id: int | None = None) -> list:
     """
     Retrieves the last N published books from the database.
 

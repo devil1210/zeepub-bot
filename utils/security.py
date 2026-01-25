@@ -3,7 +3,7 @@ import hmac
 import json
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import parse_qsl
 
 from fastapi import Header, HTTPException
@@ -11,7 +11,7 @@ from fastapi import Header, HTTPException
 
 def validate_telegram_data(
     init_data: str, token: str, expire_seconds: int = 86400
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Valida los datos de inicialización de Telegram Mini App.
 

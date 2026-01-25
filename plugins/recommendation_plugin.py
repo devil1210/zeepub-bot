@@ -71,7 +71,7 @@ class RecommendationPlugin(BasePlugin):
             )
 
             # Botón para descargar
-            local_id = book.get('id')
+            local_id = book.get("id")
             kb = []
             if local_id:
                 # Use standard flow: lib|local_{id}
@@ -79,14 +79,14 @@ class RecommendationPlugin(BasePlugin):
 
             # Enviar portada si hay path
             sent = False
-            if book.get('cover_path') and book['cover_path'].startswith("/"):
+            if book.get("cover_path") and book["cover_path"].startswith("/"):
                  try:
                      # Check file existence to avoid errors
                      import os
-                     if os.path.exists(book['cover_path']):
+                     if os.path.exists(book["cover_path"]):
                          await context.bot.send_photo(
                              chat_id=uid,
-                             photo=open(book['cover_path'], 'rb'),
+                             photo=open(book["cover_path"], "rb"),
                              caption=caption,
                              parse_mode="HTML",
                              reply_markup=InlineKeyboardMarkup(kb)

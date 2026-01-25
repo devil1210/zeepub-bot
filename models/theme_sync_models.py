@@ -9,7 +9,7 @@ class ThemeSyncLog(Base):
     """
     Registro de sincronizaciones de temas entre local y Supabase.
     """
-    __tablename__ = 'theme_sync_logs'
+    __tablename__ = "theme_sync_logs"
     
     id = Column(Integer, primary_key=True)
     sync_type = Column(String(20), nullable=False)  # 'initial', 'daily', 'manual'
@@ -34,18 +34,18 @@ class ThemeSyncLog(Base):
     
     def to_dict(self):
         return {
-            'id': self.id,
-            'sync_type': self.sync_type,
-            'direction': self.direction,
-            'status': self.status,
-            'local_themes_before': self.local_themes_before,
-            'local_themes_after': self.local_themes_after,
-            'supabase_themes_before': self.supabase_themes_before,
-            'supabase_themes_after': self.supabase_themes_after,
-            'themes_added': self.themes_added,
-            'themes_updated': self.themes_updated,
-            'themes_deleted': self.themes_deleted,
-            'errors': self.errors,
-            'started_at': self.started_at.isoformat() if self.started_at else None,
-            'completed_at': self.completed_at.isoformat() if self.completed_at else None
+            "id": self.id,
+            "sync_type": self.sync_type,
+            "direction": self.direction,
+            "status": self.status,
+            "local_themes_before": self.local_themes_before,
+            "local_themes_after": self.local_themes_after,
+            "supabase_themes_before": self.supabase_themes_before,
+            "supabase_themes_after": self.supabase_themes_after,
+            "themes_added": self.themes_added,
+            "themes_updated": self.themes_updated,
+            "themes_deleted": self.themes_deleted,
+            "errors": self.errors,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None
         }

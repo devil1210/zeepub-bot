@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy import text
 
@@ -9,14 +9,14 @@ from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
 
-class DownloadRepository(BaseRepository[Dict[str, Any]]):
+class DownloadRepository(BaseRepository[dict[str, Any]]):
     """Repository for managing download history using PostgreSQL."""
 
     def __init__(self, db_manager=None):
         # db_manager is ignored, we use pg_manager directly
         super().__init__(None, "download_history")
 
-    async def get_by_id(self, id: Any) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, id: Any) -> dict[str, Any] | None:
         try:
             async with pg_manager.get_session() as session:
                 query = text("SELECT * FROM download_history WHERE id = :id")
@@ -29,12 +29,12 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             logger.error(f"Postgres get_by_id error: {e}")
             return None
 
-    async def create(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+    async def create(self, entity: dict[str, Any]) -> dict[str, Any]:
         new_id = await self.add_download(**entity)
         entity["id"] = new_id
         return entity
 
-    async def update(self, entity: Dict[str, Any]) -> Dict[str, Any]:
+    async def update(self, entity: dict[str, Any]) -> dict[str, Any]:
         return entity
 
     async def delete(self, id: Any) -> bool:
@@ -51,17 +51,17 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
         self,
         user_id: int,
         title: str,
-        author: Optional[str] = None,
-        download_url: Optional[str] = None,
-        file_size: Optional[int] = None,
-        romaji_title: Optional[str] = None,
-        series: Optional[str] = None,
-        volume: Optional[str] = None,
-        translator: Optional[str] = None,
-        clean_title: Optional[str] = None,
-        book_hash: Optional[str] = None,
+        author: str | None = None,
+        download_url: str | None = None,
+        file_size: int | None = None,
+        romaji_title: str | None = None,
+        series: str | None = None,
+        volume: str | None = None,
+        translator: str | None = None,
+        clean_title: str | None = None,
+        book_hash: str | None = None,
         is_uncensored: int = 0,
-        color_mode: Optional[str] = None
+        color_mode: str | None = None
     ) -> int:
         try:
             async with pg_manager.get_session() as session:
@@ -89,7 +89,7 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
                              "download_url": download_url, "file_size": file_size, "book_hash": book_hash,
                              "is_uncensored": is_uncensored, "color_mode": color_mode
                          }
-                         self.supabase.get_client().table('download_history').insert(data).execute()
+                         self.supabase.get_client().table("download_history").insert(data).execute()
                      except: pass
 
                 return new_id
@@ -97,7 +97,7 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             logger.error(f"Postgres add_download error: {e}")
             return 0
 
-    async def get_user_downloads(self, user_id: int, limit: int = 10) -> List[Dict[str, Any]]:
+    async def get_user_downloads(self, user_id: int, limit: int = 10) -> list[dict[str, Any]]:
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
@@ -121,7 +121,7 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             logger.error(f"Postgres get_user_downloads error: {e}")
             return []
 
-    async def get_download_count(self, user_id: int, since: Optional[datetime] = None) -> int:
+    async def get_download_count(self, user_id: int, since: datetime | None = None) -> int:
         try:
             async with pg_manager.get_session() as session:
                 if since:
@@ -137,7 +137,7 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             logger.error(f"Postgres get_download_count error: {e}")
             return 0
 
-    async def has_user_downloaded(self, user_id: int, title: str, clean_title: Optional[str] = None, book_hash: Optional[str] = None) -> bool:
+    async def has_user_downloaded(self, user_id: int, title: str, clean_title: str | None = None, book_hash: str | None = None) -> bool:
         try:
             from utils.epub_extractor import clean_metadata_tags
             search_clean = clean_title or clean_metadata_tags(title)
@@ -160,7 +160,7 @@ class DownloadRepository(BaseRepository[Dict[str, Any]]):
             logger.error(f"Postgres has_user_downloaded error: {e}")
             return False
 
-    async def get_total_download_count(self, title: str, clean_title: Optional[str] = None, book_hash: Optional[str] = None) -> int:
+    async def get_total_download_count(self, title: str, clean_title: str | None = None, book_hash: str | None = None) -> int:
         try:
             from utils.epub_extractor import clean_metadata_tags
             search_clean = clean_title or clean_metadata_tags(title)

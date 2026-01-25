@@ -5,12 +5,12 @@ import os
 import re
 import xml.etree.ElementTree as ET
 import zipfile
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from utils.helpers import limpiar_html_basico
 
 
-def extract_internal_title(data_or_path: Union[bytes, str]) -> Optional[str]:
+def extract_internal_title(data_or_path: bytes | str) -> str | None:
     """
     Busca un título interno en archivos 'title' o 'titulo' dentro del EPUB.
     Prioriza <... epub:type="fulltitle"> y combina title/subtitle.
@@ -100,7 +100,7 @@ def extract_internal_title(data_or_path: Union[bytes, str]) -> Optional[str]:
         return None
 
 
-async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]:
+async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
     """
     Extrae metadatos OPF de un EPUB (bytes o ruta) usando namespaces y heurísticas.
     Retorna dict con claves:
@@ -109,7 +109,7 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
       publisher_url, sinopsis.
     """
 
-    def _read_opf(z: zipfile.ZipFile) -> Optional[bytes]:
+    def _read_opf(z: zipfile.ZipFile) -> bytes | None:
         # Leer container.xml para ubicar el .opf
         try:
             container = z.read("META-INF/container.xml")
@@ -135,12 +135,12 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
     def local_name_attr(attr_name: str) -> str:
         return attr_name.split("}", 1)[-1] if "}" in attr_name else attr_name
 
-    def parse_date(raw_date: str) -> Optional[str]:
+    def parse_date(raw_date: str) -> str | None:
         if not raw_date:
             return None
         try:
             # Basic cleanup and separator normalization
-            clean = raw_date.strip().replace('/', '-').split("T")[0]
+            clean = raw_date.strip().replace("/", "-").split("T")[0]
             parts = clean.split("-")
             
             y, m, d = 0, 0, 0
@@ -178,13 +178,13 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
             
         return None # Return None on failure to avoid DB TypeErrors
 
-    def _parse_opf(data: bytes) -> Dict[str, Any]:
+    def _parse_opf(data: bytes) -> dict[str, Any]:
         import logging
 
         logger = logging.getLogger(__name__)
 
         root = ET.fromstring(data)
-        out: Dict[str, Any] = {
+        out: dict[str, Any] = {
             "titulo_volumen": None,
             "titulo_serie": None,
             "volume_index": None,
@@ -308,7 +308,7 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
 
         # Creators & contributors
         contributors = []
-        id_to_name: Dict[str, str] = {}
+        id_to_name: dict[str, str] = {}
         for el in root.iter():
             ln = local_name(el).lower()
             if ln in ("creator", "dc:creator"):
@@ -446,7 +446,7 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
                         # Extract potential ISBN part
                         # Simple regex for cleaner extraction from strings like "ISBN: 978..."
                         import re
-                        match = re.search(r'(?:ISBN(?:\-1[03])?:?\s*)?([0-9X\-]{10,17})', txt, re.IGNORECASE)
+                        match = re.search(r"(?:ISBN(?:\-1[03])?:?\s*)?([0-9X\-]{10,17})", txt, re.IGNORECASE)
                         if match:
                             candidate_raw = match.group(1)
                             clean_cand = re.sub(r"[^0-9X]", "", candidate_raw.upper())
@@ -455,7 +455,7 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
                                 break
 
         # Roles meta: map id->role
-        roles: Dict[str, str] = {}
+        roles: dict[str, str] = {}
         for el in root.iter():
             if local_name(el).lower() == "meta":
                 prop = el.attrib.get("property", "") or el.attrib.get(
@@ -521,7 +521,7 @@ async def parse_opf_from_epub(data_or_path: Union[bytes, str]) -> Dict[str, Any]
         return None
 
 
-def extract_cover_from_epub(data_or_path: Union[bytes, str]) -> Optional[bytes]:
+def extract_cover_from_epub(data_or_path: bytes | str) -> bytes | None:
     """
     Extrae y devuelve los bytes de la portada embebida en el EPUB,
     buscando primero <meta property="cover"> y luego cualquier
@@ -592,10 +592,10 @@ def extract_cover_from_epub(data_or_path: Union[bytes, str]) -> Optional[bytes]:
 
 
 async def enrich_metadata_from_epub(
-    epub_bytes: Union[bytes, str],
+    epub_bytes: bytes | str,
     epub_url: str,
-    existing_meta: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    existing_meta: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Centralized metadata enrichment function.
 
@@ -705,7 +705,7 @@ async def enrich_metadata_from_epub(
     return meta
 
 
-def extract_publisher_url_from_html(data_or_path: Union[bytes, str]) -> Optional[str]:
+def extract_publisher_url_from_html(data_or_path: bytes | str) -> str | None:
     """
     Busca la URL del publisher/traductor en archivos HTML internos (title/titulo).
     Prioridad:

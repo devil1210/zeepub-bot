@@ -361,7 +361,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         cms = context.application.plugin_manager.get_plugin("custom_messages")
                         base_success = f"✅ Publicado: {libro['titulo']}"
                         text_success = (
-                            await cms.get_text("publish_success_telegram", Titulo=libro['titulo'])
+                            await cms.get_text("publish_success_telegram", Titulo=libro["titulo"])
                             if (cms and cms.enabled)
                             else base_success
                         )
@@ -386,7 +386,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 cms = context.application.plugin_manager.get_plugin("custom_messages")
                 base_success = f"✅ Publicado: {libro['titulo']}"
                 text_success = (
-                    await cms.get_text("publish_success_telegram", Titulo=libro['titulo'])
+                    await cms.get_text("publish_success_telegram", Titulo=libro["titulo"])
                     if (cms and cms.enabled)
                     else base_success
                 )

@@ -1,18 +1,18 @@
 import json
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 STATS_FILE = os.path.join("data", "daily_stats.json")
 
 
-def _load_stats() -> Dict[str, Any]:
+def _load_stats() -> dict[str, Any]:
     if not os.path.exists(STATS_FILE):
         return {"users": [], "downloads": 0}
     try:
-        with open(STATS_FILE, "r") as f:
+        with open(STATS_FILE) as f:
             data = json.load(f)
             # Ensure structure
             if "users" not in data:
@@ -25,7 +25,7 @@ def _load_stats() -> Dict[str, Any]:
         return {"users": [], "downloads": 0}
 
 
-def _save_stats(data: Dict[str, Any]):
+def _save_stats(data: dict[str, Any]):
     try:
         os.makedirs(os.path.dirname(STATS_FILE), exist_ok=True)
         with open(STATS_FILE, "w") as f:
@@ -52,7 +52,7 @@ def record_activity(uid: int, activity_type: str = "download"):
     _save_stats(data)
 
 
-async def get_stats_summary(period: str = "day") -> Dict[str, Any]:
+async def get_stats_summary(period: str = "day") -> dict[str, Any]:
     """
     Obtiene métricas del periodo solicitado consultando la BD Postgres.
     period: 'day', 'month', 'year', 'all'
@@ -108,7 +108,7 @@ async def get_stats_summary(period: str = "day") -> Dict[str, Any]:
         return {"unique_users": 0, "total_downloads": 0, "new_users": 0, "by_role": {}}
 
 
-async def get_daily_stats() -> Dict[str, Any]:
+async def get_daily_stats() -> dict[str, Any]:
     """Compatibility wrapper for existing calls."""
     return await get_stats_summary("day")
 

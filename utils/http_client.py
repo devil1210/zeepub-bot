@@ -6,7 +6,6 @@ import asyncio
 import logging
 import os
 import tempfile
-from typing import Union
 
 import aiohttp
 import feedparser
@@ -31,7 +30,7 @@ async def fetch_bytes(
     timeout: int = 15,
     max_retries: int = 3,
     auth: aiohttp.BasicAuth = None,
-) -> Union[bytes, str, None]:
+) -> bytes | str | None:
     """
     Descarga el contenido de `url`. Si supera MAX_IN_MEMORY_BYTES escribe a fichero temporal.
     Retorna bytes o ruta al fichero temporal, o None en error.
@@ -153,7 +152,7 @@ async def fetch_bytes(
                 return None
         except Exception as e:
             msg = f"Error inesperado fetch_bytes para {url}: {e}"
-            if 'resp' in locals() and hasattr(resp, 'status'):
+            if "resp" in locals() and hasattr(resp, "status"):
                 msg += f" (Status: {resp.status})"
             logger.error(msg, exc_info=True)
             return None

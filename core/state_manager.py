@@ -1,6 +1,6 @@
 # core/state_manager.py
 
-from typing import Any, Dict
+from typing import Any
 
 from config.config_settings import config
 
@@ -9,9 +9,9 @@ class StateManager:
     """Gestión de estado por usuario en memoria."""
 
     def __init__(self):
-        self.user_state: Dict[int, Dict[str, Any]] = {}
+        self.user_state: dict[int, dict[str, Any]] = {}
 
-    def get_user_state(self, uid: int) -> Dict[str, Any]:
+    def get_user_state(self, uid: int) -> dict[str, Any]:
         if uid not in self.user_state:
             self.user_state[uid] = {
                 "historial": [],

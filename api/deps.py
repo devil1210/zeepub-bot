@@ -1,26 +1,25 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import Depends, Header, HTTPException, Query
 
 from config.config_settings import config
-from services.user_service import get_effective_user
-from utils.security import validate_telegram_data
+from services.rbac_service import Permission
+from services.user_service import get_effective_user, get_user_access_data
 
 logger = logging.getLogger(__name__)
 
 
 async def get_telegram_user_id(
-    x_telegram_init_data: Optional[str] = Header(None, alias="x-telegram-init-data"),
-    x_telegram_data: Optional[str] = Header(None, alias="X-Telegram-Data"),
-    uid: Optional[int] = Query(None),
+    x_telegram_init_data: str | None = Header(None, alias="x-telegram-init-data"),
+    x_telegram_data: str | None = Header(None, alias="X-Telegram-Data"),
+    uid: int | None = Query(None),
 ) -> int:
     """
     Dependency that extracts and validates the Telegram User ID from headers or query.
     Prioritizes initData validation for security.
     """
     init_data = x_telegram_init_data or x_telegram_data
-    logger.debug(f"Received init_data='{init_data}' (type: {type(init_data)})")
     bot_token = config.TELEGRAM_TOKEN
 
     # Local development bypass
@@ -48,17 +47,17 @@ async def get_telegram_user_id(
 
 
 async def get_current_user_data(
-    x_telegram_init_data: Optional[str] = Header(None, alias="x-telegram-init-data"),
-    x_telegram_data: Optional[str] = Header(None, alias="X-Telegram-Data"),
-    x_simulated_level: Optional[str] = Header(None, alias="x-simulated-level"),
+    x_telegram_init_data: str | None = Header(None, alias="x-telegram-init-data"),
+    x_telegram_data: str | None = Header(None, alias="X-Telegram-Data"),
+    x_simulated_level: str | None = Header(None, alias="x-simulated-level"),
     user_id: int = Depends(get_telegram_user_id),
-) -> Dict[str, Any]:
-
+) -> dict[str, Any]:
     """
-    Dependency that returns the full effective user data.
+    Dependency that returns the full effective user data (Profile + Permissions).
+    Use this when you need UI settings or nickname.
     """
     if user_id == 0:
-        return {"user_id": 0, "level": "anonymous", "role": None, "has_mini_app_access": False}
+        return {"user_id": 0, "level": "anonymous", "role": None, "has_mini_app_access": False, "permissions": []}
 
     # Extract user metadata from initData to allow nickname sync
     init_data = x_telegram_init_data or x_telegram_data
@@ -84,32 +83,43 @@ async def get_current_user_data(
     if init_data and "debug" in str(init_data).lower():
         data["level"] = "admin"
         data["is_real_admin"] = True
+        data["permissions"] = ["all"]
 
     data["user_id"] = user_id
     data["telegram_id"] = user_id
     return data
 
 
-async def require_admin(user_data: Dict[str, Any] = Depends(get_current_user_data)):
+async def get_current_user_permissions(
+    user_id: int = Depends(get_telegram_user_id),
+) -> dict[str, Any]:
     """
-    Dependency that enforces admin role.
-    Allows real admins even if they are currently simulating another level.
+    Lighter dependency that ONLY returns access data (Tier + Permissions).
+    Faster than get_current_user_data as it skips UI/Theme loading.
     """
-    authorized_levels = ["admin", "staff"]
-    if user_data.get("level") not in authorized_levels and not user_data.get("is_real_admin"):
-        raise HTTPException(status_code=403, detail="Admin privileges required")
-    return user_data
+    return await get_user_access_data(user_id)
+
+
+async def require_admin(access_data: dict[str, Any] = Depends(get_current_user_permissions)):
+    """
+    Enforces staff or higher roles.
+    Uses the lighter access_data dependency.
+    """
+    if not access_data.get("isStaff") and not access_data.get("isAdmin"):
+        raise HTTPException(status_code=403, detail="Admin or Staff privileges required")
+    return access_data
 
 
 async def require_mini_app_access(
-    user_data: Dict[str, Any] = Depends(get_current_user_data)
+    access_data: dict[str, Any] = Depends(get_current_user_permissions)
 ):
-    curr_uid = user_data.get("user_id", 0)
-    is_configured_admin = curr_uid in config.ADMIN_USERS
-    is_staff = user_data.get("level") in ["admin", "staff"]
-    if not user_data.get("has_mini_app_access") and not is_staff and not user_data.get("is_real_admin") and not is_configured_admin:
+    """
+    Enforces mini app access permission.
+    """
+    # Admins/Staff always have access, others check granular permission
+    if not access_data.get("isStaff") and Permission.ACCESS_MINI_APP.value not in access_data.get("permissions", []):
         raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.",
         )
-    return user_data
+    return access_data

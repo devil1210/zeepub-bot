@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy import (
@@ -1677,7 +1677,7 @@ class CustomMessagesPlugin(BasePlugin):
                 session.commit()
         self._refresh_global_vars_cache()
 
-    async def _get_extended_user_context(self, user) -> Dict[str, Any]:
+    async def _get_extended_user_context(self, user) -> dict[str, Any]:
         """
         Calcula variables dinámicas del usuario (Nivel, Descargas, etc.)
         Solo se llama si el template las requiere.
@@ -1916,7 +1916,7 @@ class CustomMessagesPlugin(BasePlugin):
 
         return final_text
 
-    async def get_web_strings(self) -> Dict[str, str]:
+    async def get_web_strings(self) -> dict[str, str]:
         """
         Recupera todos los strings destinados a la Mini App.
         """
@@ -2372,7 +2372,7 @@ class CustomMessagesPlugin(BasePlugin):
         finally:
             session.close()
 
-    def _get_template_categories(self) -> Dict[str, List[str]]:
+    def _get_template_categories(self) -> dict[str, list[str]]:
         categories = {
             "Ayuda y Menús": [],
             "Inicio y Bienvenida": [],

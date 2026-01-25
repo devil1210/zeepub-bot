@@ -3,13 +3,14 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from PIL import Image
 
 from config.config_settings import config
 from repositories.user_repository import user_repo
 from services.cache_service import AsyncTTLCache
+from services.rbac_service import rbac_service
 from services.settings_service import get_setting
 from utils.library_db import PROFILES_DIR
 
@@ -22,15 +23,15 @@ user_cache = AsyncTTLCache(ttl_seconds=300)
 async def upsert_user(
     telegram_id: int,
     level: str,
-    duration_months: Optional[int] = None,
-    role: Optional[str] = None,
-    created_by: Optional[int] = None,
-    duration_days: Optional[int] = None,
-    nickname: Optional[str] = None,
-    name: Optional[str] = None,
-    username: Optional[str] = None,
-    roles: Optional[list] = None,
-    level_id: Optional[int] = None,
+    duration_months: int | None = None,
+    role: str | None = None,
+    created_by: int | None = None,
+    duration_days: int | None = None,
+    nickname: str | None = None,
+    name: str | None = None,
+    username: str | None = None,
+    roles: list | None = None,
+    level_id: int | None = None,
 ):
     """
     Agrega o actualiza un usuario.
@@ -59,7 +60,7 @@ async def remove_user(telegram_id: int):
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
-async def update_user_status_label(telegram_id: int, new_role: Optional[str]) -> None:
+async def update_user_status_label(telegram_id: int, new_role: str | None) -> None:
     # Check if user exists first
     info = await get_user_info(telegram_id)
     if not info:
@@ -75,7 +76,7 @@ async def update_user_status_label(telegram_id: int, new_role: Optional[str]) ->
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
-async def update_user_nickname(telegram_id: int, new_nickname: Optional[str]) -> None:
+async def update_user_nickname(telegram_id: int, new_nickname: str | None) -> None:
     # Check if user exists first
     info = await get_user_info(telegram_id)
     if not info:
@@ -90,7 +91,7 @@ async def update_user_nickname(telegram_id: int, new_nickname: Optional[str]) ->
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
-async def get_user_info(telegram_id: int) -> Optional[Dict[str, Any]]:
+async def get_user_info(telegram_id: int) -> dict[str, Any] | None:
     """
     Retorna info del usuario desde DB.
     """
@@ -100,9 +101,9 @@ async def get_user_info(telegram_id: int) -> Optional[Dict[str, Any]]:
 async def get_effective_user(
     uid: int, 
     use_cache: bool = True, 
-    tg_user: Optional[Any] = None,
-    simulated_level_id: Optional[int] = None
-) -> Dict[str, Any]:
+    tg_user: Any | None = None,
+    simulated_level_id: int | None = None
+) -> dict[str, Any]:
 
     """
     Determina el nivel efectivo del usuario y estado, considerando DB y Config (legacy).
@@ -131,11 +132,11 @@ async def get_effective_user(
             nickname_from_tg = f"{first_name} {last_name}".strip() or tg_user.get("username")
         else:
             # From Bot (Telegram User object)
-            nickname_from_tg = getattr(tg_user, 'full_name', getattr(tg_user, 'first_name', None))
+            nickname_from_tg = getattr(tg_user, "full_name", getattr(tg_user, "first_name", None))
         
         # Propagate name and username from tg_user if present
         name_from_tg = nickname_from_tg
-        username_from_tg = getattr(tg_user, 'username', None) if not isinstance(tg_user, dict) else tg_user.get("username")
+        username_from_tg = getattr(tg_user, "username", None) if not isinstance(tg_user, dict) else tg_user.get("username")
 
     # 0. Load Global UI Defaults
     global_raw = get_setting("ui_defaults_global", "{}")
@@ -156,7 +157,7 @@ async def get_effective_user(
             "cardGlowIntensity": 0.5
         }
 
-    def normalize_ui(s: Dict[str, Any]):
+    def normalize_ui(s: dict[str, Any]):
         """Normaliza valores de opacidad y asegura que no haya Nones en campos críticos."""
         # 1. Opacity normalization (0-100 to 0.0-1.0)
         opacity_keys = ["navOpacity", "accentOpacity", "glassOpacity", "cardGlowIntensity"]
@@ -232,10 +233,10 @@ async def get_effective_user(
         # Note: We DON'T return early here anymore to allow enrichment and simulation
     
     # 2. Check DB Info
-    info: Optional[Dict[str, Any]] = await get_user_info(uid)
+    info: dict[str, Any] | None = await get_user_info(uid)
     if info and uid not in config.ADMIN_USERS: # Admins already handled result base above
         # Check expiration
-        expires_at: Optional[datetime] = info.get("expires_at")
+        expires_at: datetime | None = info.get("expires_at")
         if expires_at and expires_at < datetime.now():
             # Expired
             result.update({
@@ -482,11 +483,62 @@ async def get_effective_user(
 
     if simulated_level_id is None:
         await user_cache.set(cache_key, result)
+    
+    # Enrich with dynamic permissions from RBAC service
+    result["permissions"] = list(await rbac_service.get_user_permissions(result))
+    
     return result
 
+async def get_user_access_data(uid: int) -> dict[str, Any]:
+    """
+    Lighter version of get_effective_user that only returns roles and permissions.
+    Avoids loading UI settings, themes, and complex merges if not needed.
+    """
+    if uid == 0:
+        return {"level": "anonymous", "isAdmin": False, "permissions": []}
+        
+    cache_key = f"user_access_lite:{uid}"
+    cached = await user_cache.get(cache_key)
+    if cached:
+        return cached
+        
+    # We still need basic level/role info
+    access_info = await user_repo.get_access_info(uid)
+    if not access_info:
+        # Minimal info if user doesn't exist yet
+        is_admin = uid in config.ADMIN_USERS
+        access_data = {
+            "user_id": uid,
+            "level": "admin" if is_admin else "free",
+            "isAdmin": is_admin,
+            "isStaff": is_admin,
+            "permissions": ["all"] if is_admin else []
+        }
+    else:
+        # Standard info
+        is_admin = access_info.get("isAdmin", False) or uid in config.ADMIN_USERS
+        user_data_for_rbac = {
+            "telegram_id": uid,
+            "level": access_info["level"]["name"].lower(),
+            "level_info": access_info["level"],
+            "is_real_admin": is_admin
+        }
+        permissions = await rbac_service.get_user_permissions(user_data_for_rbac)
+        
+        access_data = {
+            "user_id": uid,
+            "level": user_data_for_rbac["level"],
+            "isAdmin": is_admin,
+            "isStaff": is_admin or user_data_for_rbac["level"] == "staff",
+            "permissions": list(permissions)
+        }
+        
+    await user_cache.set(cache_key, access_data, ttl=300) # 5 min cache for lite version
+    return access_data
 
 
-async def get_users_by_level(level: str) -> list[Dict[str, Any]]:
+
+async def get_users_by_level(level: str) -> list[dict[str, Any]]:
     """
     Retorna lista de usuarios con un nivel específico desde la DB.
     """
@@ -516,7 +568,7 @@ async def increment_download_count(telegram_id: int) -> int:
     return count
 
 
-async def check_milestones(uid: int, context) -> Optional[str]:
+async def check_milestones(uid: int, context) -> str | None:
     """Verifica si el usuario alcanzó un hito y retorna el mensaje de recompensa."""
     # This would ideally use templates from the custom_messages plugin
     user_info = await get_user_info(uid)
@@ -556,7 +608,7 @@ async def invalidate_user_cache(telegram_id: int):
     await user_cache.invalidate(f"user_effective:{telegram_id}")
 
 
-async def get_user_settings(telegram_id: int) -> Dict[str, Any]:
+async def get_user_settings(telegram_id: int) -> dict[str, Any]:
     """Obtiene la configuración personal del usuario."""
     info = await get_user_info(telegram_id)
     if info:
@@ -564,7 +616,7 @@ async def get_user_settings(telegram_id: int) -> Dict[str, Any]:
     return {}
 
 
-async def update_user_setting(telegram_id: int, key: str, value: Any) -> Dict[str, Any]:
+async def update_user_setting(telegram_id: int, key: str, value: Any) -> dict[str, Any]:
     """Actualiza una clave específica de la configuración del usuario."""
     current_settings = await get_user_settings(telegram_id)
     current_settings[key] = value
@@ -585,7 +637,7 @@ async def update_user_setting(telegram_id: int, key: str, value: Any) -> Dict[st
 # We don't need init_user_db() explicit call here as repo handles connections lazily or via manager
 
 
-async def sync_user_from_env(telegram_id: int, tg_user=None) -> Optional[Dict]:
+async def sync_user_from_env(telegram_id: int, tg_user=None) -> dict | None:
     """
     Verifica si el usuario está en alguna lista del .env y
     sincroniza su rol/nivel en Supabase automáticamente.
@@ -649,7 +701,7 @@ async def sync_user_from_env(telegram_id: int, tg_user=None) -> Optional[Dict]:
     return current_user
 
 
-async def sync_user_profile_photo(telegram_id: int, bot) -> Optional[str]:
+async def sync_user_profile_photo(telegram_id: int, bot) -> str | None:
     """
     Obtiene la foto de perfil del usuario desde Telegram y la guarda localmente.
     Retorna la URL relativa para acceder a la imagen.
@@ -678,8 +730,8 @@ async def sync_user_profile_photo(telegram_id: int, bot) -> Optional[str]:
         
         # 5. Guardar original y crear thumbnail
         with Image.open(io.BytesIO(photo_bytes)) as img:
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
+            if img.mode != "RGB":
+                img = img.convert("RGB")
             
             # Guardar "grande" (pero optimizado)
             img.save(local_path, "JPEG", quality=85, optimize=True)

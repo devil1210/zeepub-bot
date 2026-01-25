@@ -30,7 +30,7 @@ def diagnose_epub(epub_path):
     
     # Intentar abrir como ZIP
     try:
-        with zipfile.ZipFile(path, 'r') as zip_file:
+        with zipfile.ZipFile(path, "r") as zip_file:
             print("✅ Formato ZIP válido")
             
             # Listar archivos
@@ -38,10 +38,10 @@ def diagnose_epub(epub_path):
             print(f"📋 Total de archivos: {len(file_list)}")
             
             # Buscar archivos importantes
-            opf_files = [f for f in file_list if f.lower().endswith('.opf')]
-            container_files = [f for f in file_list if 'container.xml' in f.lower()]
-            ncx_files = [f for f in file_list if f.lower().endswith('.ncx')]
-            html_files = [f for f in file_list if f.lower().endswith(('.html', '.htm', '.xhtml'))]
+            opf_files = [f for f in file_list if f.lower().endswith(".opf")]
+            container_files = [f for f in file_list if "container.xml" in f.lower()]
+            ncx_files = [f for f in file_list if f.lower().endswith(".ncx")]
+            html_files = [f for f in file_list if f.lower().endswith((".html", ".htm", ".xhtml"))]
             
             print("\n📁 ARCHIVOS ENCONTRADOS:")
             print(f"   📄 OPF (metadata): {len(opf_files)}")
@@ -68,11 +68,11 @@ def diagnose_epub(epub_path):
                     root = ET.fromstring(container_content)
                     
                     # Buscar rootfile
-                    namespaces = {'container': 'urn:oasis:names:tc:opendocument:xmlns:container'}
-                    rootfiles = root.findall('.//container:rootfile', namespaces)
+                    namespaces = {"container": "urn:oasis:names:tc:opendocument:xmlns:container"}
+                    rootfiles = root.findall(".//container:rootfile", namespaces)
                     
                     for rootfile in rootfiles:
-                        opf_path = rootfile.get('full-path', '')
+                        opf_path = rootfile.get("full-path", "")
                         print(f"   📖 Apunta a OPF: {opf_path}")
                         
                         # Verificar que el OPF exista
@@ -93,21 +93,21 @@ def diagnose_epub(epub_path):
                     
                     # Namespaces comunes
                     namespaces = {
-                        'opf': 'http://www.idpf.org/2007/opf',
-                        'dc': 'http://purl.org/dc/elements/1.1/'
+                        "opf": "http://www.idpf.org/2007/opf",
+                        "dc": "http://purl.org/dc/elements/1.1/"
                     }
                     
                     # Extraer metadata básica
-                    title_elem = root.find('.//dc:title', namespaces)
-                    author_elem = root.find('.//dc:creator', namespaces)
-                    lang_elem = root.find('.//dc:language', namespaces)
+                    title_elem = root.find(".//dc:title", namespaces)
+                    author_elem = root.find(".//dc:creator", namespaces)
+                    lang_elem = root.find(".//dc:language", namespaces)
                     
                     print(f"   📖 Título: {title_elem.text if title_elem is not None else 'No encontrado'}")
                     print(f"   ✍️ Autor: {author_elem.text if author_elem is not None else 'No encontrado'}")
                     print(f"   🌐 Idioma: {lang_elem.text if lang_elem is not None else 'No encontrado'}")
                     
                     # Contar metadatos
-                    metadata_items = root.findall('.//dc:*', namespaces)
+                    metadata_items = root.findall(".//dc:*", namespaces)
                     print(f"   📊 Metadatos DC: {len(metadata_items)} encontrados")
                     
                 except Exception as e:

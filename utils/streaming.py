@@ -1,7 +1,6 @@
 # utils/streaming.py
 
 import logging
-from typing import Optional
 
 from telegram import Bot
 
@@ -12,8 +11,8 @@ async def send_message_draft(
     bot: Bot,
     chat_id: int,
     text: str,
-    message_thread_id: Optional[int] = None,
-    parse_mode: Optional[str] = "HTML"
+    message_thread_id: int | None = None,
+    parse_mode: str | None = "HTML"
 ):
     """
     Usa el método sendMessageDraft (API 9.3) para enviar un borrador de mensaje.

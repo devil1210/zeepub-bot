@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from typing import Any, Optional, Union
+from typing import Any
 
 from config.config_settings import config
 
@@ -25,7 +25,7 @@ def load_downloads() -> None:
         return
 
     try:
-        with open(DAILY_DOWNLOADS_FILE, "r") as f:
+        with open(DAILY_DOWNLOADS_FILE) as f:
             data = json.load(f)
 
         count = 0
@@ -54,7 +54,7 @@ def save_download(uid: int, count: int) -> None:
         data = {}
         if os.path.exists(DAILY_DOWNLOADS_FILE):
             try:
-                with open(DAILY_DOWNLOADS_FILE, "r") as f:
+                with open(DAILY_DOWNLOADS_FILE) as f:
                     data = json.load(f)
             except json.JSONDecodeError:
                 pass  # Si está corrupto, empezamos de nuevo
@@ -96,7 +96,7 @@ def reset_all_downloads() -> None:
         logger.info("No había archivo de descargas diarias para eliminar.")
 
 
-async def downloads_left(uid: int, tg_user: Optional[Any] = None) -> Union[int, str]:
+async def downloads_left(uid: int, tg_user: Any | None = None) -> int | str:
     """
     Devuelve el número de descargas restantes según el nivel de usuario:
     - Staff/Admin: ilimitadas
@@ -128,7 +128,7 @@ async def downloads_left(uid: int, tg_user: Optional[Any] = None) -> Union[int, 
     return remaining if remaining > 0 else 0
 
 
-async def can_download(uid: int, tg_user: Optional[Any] = None) -> bool:
+async def can_download(uid: int, tg_user: Any | None = None) -> bool:
     """
     Comprueba si el usuario aún puede descargar:
     - Siempre True para PremiumList

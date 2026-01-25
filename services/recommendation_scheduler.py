@@ -67,7 +67,7 @@ async def send_recommendation_to_user(context: ContextTypes.DEFAULT_TYPE, uid: i
                 f"👤 {book['author']}\n"
                 f"⭐ {book.get('rating_average', 0):.1f}"
             )
-            local_id = book.get('id')
+            local_id = book.get("id")
             kb = []
             if local_id:
                 kb = [[InlineKeyboardButton("📥 Ver", callback_data=f"lib|local_{local_id}")]]
@@ -97,13 +97,13 @@ def start_recommendations_scheduler(application):
     time_to_run = datetime.time(hour=17, minute=00)  # 5 PM
 
     # Check if job exists named 'weekly_recs'
-    current_jobs = application.job_queue.get_jobs_by_name('weekly_recs')
+    current_jobs = application.job_queue.get_jobs_by_name("weekly_recs")
     if not current_jobs:
         # Run every Friday (5)
         application.job_queue.run_daily(
             job_weekly_recommendations,
             time=time_to_run,
             days=(4,),  # 0=Monday, 4=Friday
-            name='weekly_recs'
+            name="weekly_recs"
         )
         logger.info("Scheduler de recomendaciones (Viernes 17:00) configurado.")

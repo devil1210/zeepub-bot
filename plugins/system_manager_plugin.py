@@ -107,7 +107,7 @@ class SystemManagerPlugin(BasePlugin):
         # 1. Local
         try:
             if os.path.exists("version_hash.txt"):
-                with open("version_hash.txt", "r") as f:
+                with open("version_hash.txt") as f:
                     local_hash = f.read().strip()[:7]
             else:
                 local_hash = (
@@ -429,7 +429,7 @@ class SystemManagerPlugin(BasePlugin):
         try:
             import re
 
-            with open(compose_path, "r") as f:
+            with open(compose_path) as f:
                 content = f.read()
 
             # Pattern to match the image tag for zeepubs_bot service

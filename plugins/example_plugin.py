@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
@@ -34,10 +35,10 @@ class ExamplePlugin(BasePlugin):
     async def cleanup(self) -> None:
         logging.info(f"Plugin {self.name} desactivado")
 
-    def get_commands(self) -> Dict[str, Callable]:
+    def get_commands(self) -> dict[str, Callable]:
         return {"plugin_stats": self.stats_command, "plugin_help": self.help_command}
 
-    def get_callback_handlers(self) -> Dict[str, Callable]:
+    def get_callback_handlers(self) -> dict[str, Callable]:
         return {"^plugin_demo": self.demo_callback}
 
     @log_user_action("plugin_stats")
@@ -74,8 +75,8 @@ class ExamplePlugin(BasePlugin):
         )
 
     async def on_download_request(
-        self, user_id: int, epub_url: str, metadata: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, user_id: int, epub_url: str, metadata: dict[str, Any]
+    ) -> dict[str, Any] | None:
         self.download_count += 1
         logging.info(
             f"Plugin {self.name}: Descarga #{self.download_count} por usuario {user_id}"

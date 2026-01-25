@@ -1,6 +1,5 @@
 
 import logging
-from typing import Optional
 
 from supabase import Client, create_client
 
@@ -14,7 +13,7 @@ class SupabaseManager:
     def __init__(self):
         self.url = config.SUPABASE_URL
         self.key = config.SUPABASE_SERVICE_ROLE_KEY or config.SUPABASE_KEY
-        self.client: Optional[Client] = None
+        self.client: Client | None = None
 
         if self.url and self.key:
             try:

@@ -5,7 +5,7 @@ import os
 import shutil
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy import desc, func, or_
@@ -19,6 +19,7 @@ from repositories.user_repository import user_repo
 from services.library_service import LibraryService
 from services.opds_service import get_cached_feed
 from services.rating_service import RatingService
+from services.rbac_service import rbac_service
 from services.settings_service import get_setting, set_setting
 from services.telegram_service import enviar_libro_directo
 from utils.helpers import (
@@ -29,10 +30,20 @@ from utils.library_db import get_session
 
 logger = logging.getLogger(__name__)
 
+
+def check_admin(user_data: dict[str, Any]):
+    if not rbac_service.is_admin(user_data):
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+
+
+def check_staff(user_data: dict[str, Any]):
+    if not rbac_service.is_staff(user_data):
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+
 # --- Handlers ---
 
 
-async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_search(data: dict[str, Any], user_data: dict[str, Any]):
     """Busca libros en la base de datos local o en el servidor OPDS."""
     user_data.get("user_id", 0)
     user_data.get("level", "free")
@@ -53,7 +64,7 @@ async def handle_search(data: Dict[str, Any], user_data: Dict[str, Any]):
     return {"results": []}
 
 
-async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve el detalle de un libro desde la base de datos local o OPDS."""
     user_id = user_data.get("user_id", 0)
     book_id_raw = data.get("bookId")
@@ -136,7 +147,7 @@ async def handle_book_detail(data: Dict[str, Any], user_data: Dict[str, Any]):
     raise HTTPException(status_code=404, detail="Book not found in local library")
 
 
-async def handle_bot_info(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_bot_info(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve información básica del bot y configuración de UI global."""
     from api.main import bot
 
@@ -182,7 +193,7 @@ async def handle_bot_info(data: Dict[str, Any], user_data: Dict[str, Any]):
     }
 
 
-async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve el nivel del usuario e información de descargas (límites, etc)."""
     user_id = user_data.get("user_id")
     level_key = user_data.get("level", "free")
@@ -250,7 +261,7 @@ async def handle_user_status(data: Dict[str, Any], user_data: Dict[str, Any]):
 
 
 async def handle_user_downloads_history(
-    data: Dict[str, Any], user_data: Dict[str, Any]
+    data: dict[str, Any], user_data: dict[str, Any]
 ):
     """Devuelve el historial reciente de descargas del usuario."""
     user_id = user_data.get("user_id")
@@ -262,7 +273,7 @@ async def handle_user_downloads_history(
         return {"downloads": []}
 
 
-async def handle_recommendations(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve recomendaciones personalizadas (Beta exclusiva Staff)."""
     from services.recommendation_service import RecommendationService
 
@@ -313,7 +324,7 @@ async def handle_recommendations(data: Dict[str, Any], user_data: Dict[str, Any]
     return {"results": results}
 
 
-async def handle_rate_book(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_rate_book(data: dict[str, Any], user_data: dict[str, Any]):
     """Permite al usuario calificar un libro."""
     user_id = user_data.get("user_id")
     book_id_raw = data.get("bookId")
@@ -332,7 +343,7 @@ async def handle_rate_book(data: Dict[str, Any], user_data: Dict[str, Any]):
     return await RatingService.rate_book(user_id, book_id, rating)
 
 
-async def handle_remove_rating(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_remove_rating(data: dict[str, Any], user_data: dict[str, Any]):
     """Elimina la calificación previa del usuario sobre un libro."""
     user_id = user_data.get("user_id")
     book_id_raw = data.get("bookId")
@@ -347,7 +358,7 @@ async def handle_remove_rating(data: Dict[str, Any], user_data: Dict[str, Any]):
     return await RatingService.remove_rating(user_id, book_id)
 
 
-async def handle_save_badge_config(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_save_badge_config(data: dict[str, Any], user_data: dict[str, Any]):
     """Guarda la configuración global de los badges (solo Admin)."""
     user_level = user_data.get("level", "free")
     if user_level not in ["admin", "staff"]:
@@ -364,7 +375,7 @@ async def handle_save_badge_config(data: Dict[str, Any], user_data: Dict[str, An
     return {"success": True, "message": "Configuración de badge guardada correctamente"}
 
 
-async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
     """Envía el archivo del libro directamente a través del bot."""
     user_id = user_data.get("user_id")
     book_id = data.get("bookId")
@@ -454,7 +465,7 @@ async def handle_download(data: Dict[str, Any], user_data: Dict[str, Any]):
     return {"success": success}
 
 
-async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_ui_settings(data: dict[str, Any], user_data: dict[str, Any]):
     """Gestiona configuraciones de UI (globales, por nivel o personales)."""
     user_id = user_data.get("user_id")
     user_level = user_data.get("level", "free")
@@ -537,7 +548,7 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
             }
 
 
-async def handle_create_stars_invoice(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_create_stars_invoice(data: dict[str, Any], user_data: dict[str, Any]):
     """Crea un link de factura de Telegram Stars."""
     tier = data.get("tier", "premium")
     amount = data.get("amount", 100)
@@ -561,12 +572,12 @@ async def handle_create_stars_invoice(data: Dict[str, Any], user_data: Dict[str,
     return {"invoiceLink": invoice_link}
 
 
-async def handle_status(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_status(data: dict[str, Any], user_data: dict[str, Any]):
     """Alias para handle_user_status (compatible con acción 'status')."""
     return await handle_user_status(data, user_data)
 
 
-async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_get_download_count(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve el conteo de descargas de un libro específico."""
     book_id_raw = data.get("bookId")
     if not book_id_raw:
@@ -619,7 +630,7 @@ async def handle_get_download_count(data: Dict[str, Any], user_data: Dict[str, A
     return {"count": count}
 
 
-async def handle_rating_breakdown(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_rating_breakdown(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve el desglose de calificaciones para un libro."""
     book_id_raw = data.get("bookId")
     if not book_id_raw:
@@ -633,11 +644,9 @@ async def handle_rating_breakdown(data: Dict[str, Any], user_data: Dict[str, Any
     return {"breakdown": await RatingService.get_rating_breakdown(book_id)}
 
 
-async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
     """Calcula y devuelve estadísticas globales reales desde PostgreSQL para el Panel Admin."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
 
     from sqlalchemy import select, text
 
@@ -742,22 +751,18 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
     }
 
 
-async def handle_admin_get_tiers(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_get_tiers(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene todos los niveles y su configuración."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     levels = await user_repo.get_all_levels()
     logger.info(f"ADMIN: handle_admin_get_tiers found {len(levels)} levels")
     return {"success": True, "levels": levels, "tiers": levels}
 
 
-async def handle_admin_save_tier(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_save_tier(data: dict[str, Any], user_data: dict[str, Any]):
     """Guarda cambios en un nivel."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     level_id = data.get("id")
     if not level_id:
@@ -767,11 +772,9 @@ async def handle_admin_save_tier(data: Dict[str, Any], user_data: Dict[str, Any]
     return {"success": True}
 
 
-async def handle_admin_get_users(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_get_users(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene la lista paginada de usuarios para el panel admin."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     limit = data.get("limit", 20)
     offset = data.get("offset", 0)
@@ -782,11 +785,9 @@ async def handle_admin_get_users(data: Dict[str, Any], user_data: Dict[str, Any]
     return {"users": users}
 
 
-async def handle_admin_set_user_level(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_set_user_level(data: dict[str, Any], user_data: dict[str, Any]):
     """Cambia el nivel de un usuario específico."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     target_id = data.get("userId")
     level_id = data.get("levelId")
@@ -798,11 +799,9 @@ async def handle_admin_set_user_level(data: Dict[str, Any], user_data: Dict[str,
     return {"success": True}
 
 
-async def handle_admin_scan_user(data: Dict[str, Any], user_data: Dict[str, Any], request=None):
+async def handle_admin_scan_user(data: dict[str, Any], user_data: dict[str, Any], request=None):
     """Sincroniza la foto de perfil de un usuario desde Telegram."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     target_id = data.get("userId")
     if not target_id:
@@ -823,11 +822,9 @@ async def handle_admin_scan_user(data: Dict[str, Any], user_data: Dict[str, Any]
         return {"success": False, "message": "No se pudo sincronizar la foto de perfil (el usuario puede no tener una o tenerla privada)."}
 
 
-async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_backup_library(data: dict[str, Any], user_data: dict[str, Any]):
     """Syncs SQLite library data (books, duplicates, uploads) to Supabase."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     if not config.ENABLE_SUPABASE:
         return {"success": False, "message": "Supabase no está habilitado."}
@@ -849,7 +846,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                 "path": s.path,
                 "last_scanned": s.last_scanned.isoformat() if s.last_scanned else None
             }
-            client.table('library_sources').upsert(source_data, on_conflict='path').execute()
+            client.table("library_sources").upsert(source_data, on_conflict="path").execute()
             
         # 2. Sync Books in batches
         batch_size = 100
@@ -906,7 +903,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "series_hash": b.series_hash,
                     "book_hash": b.book_hash
                 })
-            client.table('local_books').upsert(books_data).execute()
+            client.table("local_books").upsert(books_data).execute()
 
         # 3. Sync Duplicate Books
         if duplicates:
@@ -921,7 +918,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "author": d.author,
                     "detected_at": d.detected_at.isoformat() if d.detected_at else None
                 })
-            client.table('duplicate_books').upsert(dups_data).execute()
+            client.table("duplicate_books").upsert(dups_data).execute()
 
         # 4. Sync Uploads (pendientes)
         if uploads:
@@ -953,7 +950,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
                     "upload_metadata": u.upload_metadata,
                     "created_at": u.created_at.isoformat() if u.created_at else None
                 })
-            client.table('upload_books').upsert(uploads_data).execute()
+            client.table("upload_books").upsert(uploads_data).execute()
             
         session.close()
         return {"success": True, "message": f"Sincronizados {len(sources)} fuentes, {len(books)} libros, {len(duplicates)} duplicados y {len(uploads)} uploads."}
@@ -962,11 +959,9 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[str, Any]):
     """Sincroniza usuarios y niveles locales (Postgres) a Supabase."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     if not config.ENABLE_SUPABASE:
         return {"success": False, "message": "Supabase no está habilitado."}
@@ -1019,7 +1014,7 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
                     "default_theme_id": lvl.default_theme_id
                 }
                 try:
-                    client.table('user_levels').upsert(lvl_data).execute()
+                    client.table("user_levels").upsert(lvl_data).execute()
                 except Exception as upsert_e:
                     logger.warning(f"Supabase upsert error for user_level {lvl.id}: {upsert_e}")
 
@@ -1054,7 +1049,7 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
                 for i in range(0, len(user_batch), 50):
                     batch = user_batch[i:i+50]
                     try:
-                        client.table('users').upsert(batch).execute()
+                        client.table("users").upsert(batch).execute()
                     except Exception as upsert_e:
                         logger.error(f"Supabase PUSH error for user batch (indices {i}-{i+len(batch)-1}): {upsert_e}")
 
@@ -1080,11 +1075,9 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
         logger.error(f"Error syncing users to Supabase: {e}")
         return {"success": False, "message": str(e)}
 
-async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, Any]):
     """Activates forced library scan."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     force = data.get("force", False)
     
@@ -1121,11 +1114,9 @@ async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, A
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_scan_series(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, Any]):
     """Activates forced scan for a specific series."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     series_hash = data.get("series_hash")
     force = data.get("force", True) # Default to True for series sync
@@ -1165,11 +1156,9 @@ async def handle_admin_scan_series(data: Dict[str, Any], user_data: Dict[str, An
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_enrich_metadata(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_enrich_metadata(data: dict[str, Any], user_data: dict[str, Any]):
     """Activates manual enrichment of metadata from online sources."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     async def run_enrichment_in_background(scanner_obj):
         try:
@@ -1195,11 +1184,9 @@ async def handle_admin_enrich_metadata(data: Dict[str, Any], user_data: Dict[str
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, Any]):
     """Reset complete library database (admin only, requires confirmation)."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     # Require explicit confirmation
     confirmed = data.get("confirmed", False)
@@ -1274,11 +1261,9 @@ async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, 
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_restart_docker(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_restart_docker(data: dict[str, Any], user_data: dict[str, Any]):
     """Restart Docker container (admin only)."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     try:
         import subprocess
@@ -1312,11 +1297,9 @@ async def handle_admin_restart_docker(data: Dict[str, Any], user_data: Dict[str,
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_update_system(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_update_system(data: dict[str, Any], user_data: dict[str, Any]):
     """Trigger system update (git pull + restart) using existing bot infrastructure."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     try:
         from services.maintenance_service import trigger_watchtower_update
@@ -1336,11 +1319,9 @@ async def handle_admin_update_system(data: Dict[str, Any], user_data: Dict[str, 
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[str, Any]):
     """Guarda la configuración completa de un nivel/tier."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     tier_name = data.get("name")
     level_id = data.get("level_id") or data.get("id")
@@ -1400,10 +1381,10 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
             tier_id = int(level_id)
         else:
             # Find tier by name
-            result = client.table('user_levels').select('id').ilike('name', tier_name).execute()
+            result = client.table("user_levels").select("id").ilike("name", tier_name).execute()
             if not result.data:
                 raise HTTPException(status_code=404, detail=f"Tier '{tier_name}' no encontrado")
-            tier_id = result.data[0]['id']
+            tier_id = result.data[0]["id"]
         
         # Build update data
         update_data = {}
@@ -1456,7 +1437,7 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
         
         # Update tier in Supabase
         try:
-            client.table('user_levels').update(update_data).eq('id', tier_id).execute()
+            client.table("user_levels").update(update_data).eq("id", tier_id).execute()
         except Exception as e:
             msg = str(e)
             if "Could not find the" in msg and "column" in msg:
@@ -1465,7 +1446,7 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
                 core_fields = ["name", "icon", "color", "daily_downloads", "priority_requests"]
                 safe_data = {k: v for k, v in update_data.items() if k in core_fields}
                 if safe_data:
-                    client.table('user_levels').update(safe_data).eq('id', tier_id).execute()
+                    client.table("user_levels").update(safe_data).eq("id", tier_id).execute()
                     return {"success": True, "tierId": tier_id, "warning": "Partial save: Schema update required"}
             raise e
         
@@ -1490,11 +1471,9 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_get_tier_config(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene la configuración completa de un nivel/tier."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     tier_name = data.get("name")
     tier_id = data.get("id")
@@ -1555,7 +1534,7 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
         elif tier_name:
             # Fallback to fetching all and finding by name if no ID
             all_lvls = await user_repo.get_all_levels()
-            tier = next((l for l in all_lvls if l['name'].lower() == tier_name.lower()), None)
+            tier = next((l for l in all_lvls if l["name"].lower() == tier_name.lower()), None)
         
         if not tier:
             raise HTTPException(status_code=404, detail=f"Tier '{tier_name or tier_id}' no encontrado")
@@ -1574,7 +1553,7 @@ async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str
 
 
 
-async def handle_admin_get_themes(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_get_themes(data: dict[str, Any], user_data: dict[str, Any]):
     """Retorna la lista de plantillas de temas disponibles."""
     # Relaxed permission: Allow all authorized mini-app users to view themes (controlled by UI)
     # if user_data.get("level") != "admin":
@@ -1589,7 +1568,7 @@ async def handle_admin_get_themes(data: Dict[str, Any], user_data: Dict[str, Any
         logger.error(f"Error fetching themes: {e}")
         return {"success": False, "message": str(e)}
 
-async def handle_admin_sync_themes(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_sync_themes(data: dict[str, Any], user_data: dict[str, Any]):
     """Ejecuta sincronización manual de temas."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
@@ -1603,7 +1582,7 @@ async def handle_admin_sync_themes(data: Dict[str, Any], user_data: Dict[str, An
         logger.error(f"Error in manual theme sync: {e}")
         return {"success": False, "message": str(e)}
 
-async def handle_admin_get_sync_status(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_get_sync_status(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene estado del motor de sincronización optimizado."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
@@ -1624,7 +1603,7 @@ async def handle_admin_get_sync_status(data: Dict[str, Any], user_data: Dict[str
         logger.error(f"Error getting sync status: {e}")
         return {"success": False, "message": str(e)}
 
-async def handle_admin_force_sync(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_force_sync(data: dict[str, Any], user_data: dict[str, Any]):
     """Fuerza sincronización completa de todas las tablas."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
@@ -1638,7 +1617,7 @@ async def handle_admin_force_sync(data: Dict[str, Any], user_data: Dict[str, Any
         logger.error(f"Error forcing sync: {e}")
         return {"success": False, "message": str(e)}
 
-async def handle_admin_rename_themes(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_rename_themes(data: dict[str, Any], user_data: dict[str, Any]):
     """Renombra temas duplicados con nombres únicos usando detección mejorada."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
@@ -1659,9 +1638,9 @@ async def handle_admin_rename_themes(data: Dict[str, Any], user_data: Dict[str, 
             themes_to_rename = []
             for theme in all_themes:
                 name = theme[1]
-                if name and ('2' in name):
+                if name and ("2" in name):
                     # Priorizar temas que terminan exactamente con " 2"
-                    if name.strip().endswith('2'):
+                    if name.strip().endswith("2"):
                         themes_to_rename.append(theme)
                         logger.info(f"Found theme ending with '2': ID {theme[0]}, Name: '{name}'")
                     else:
@@ -1683,7 +1662,7 @@ async def handle_admin_rename_themes(data: Dict[str, Any], user_data: Dict[str, 
             
             for theme_id, old_name in themes_to_rename:
                 # Extraer el nombre base
-                base_name = old_name.replace(' 2', '').replace('2', '').strip()
+                base_name = old_name.replace(" 2", "").replace("2", "").strip()
                 
                 # Generar nombres únicos
                 name_variants = [
@@ -1745,7 +1724,7 @@ async def handle_admin_rename_themes(data: Dict[str, Any], user_data: Dict[str, 
         logger.error(f"Error in enhanced theme renaming: {e}")
         return {"success": False, "message": str(e)}
 
-async def handle_admin_get_theme_sync_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_get_theme_sync_logs(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene historial de sincronizaciones de temas."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
@@ -1759,7 +1738,7 @@ async def handle_admin_get_theme_sync_logs(data: Dict[str, Any], user_data: Dict
         logger.error(f"Error getting theme sync logs: {e}")
         return {"success": False, "message": str(e)}
 
-async def handle_admin_save_theme(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_save_theme(data: dict[str, Any], user_data: dict[str, Any]):
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
@@ -1769,14 +1748,14 @@ async def handle_admin_save_theme(data: Dict[str, Any], user_data: Dict[str, Any
     
     import re
     # Clean name: remove trailing numbers that look like " 2", " 3"
-    theme_name = re.sub(r'\s+\d+$', '', theme_name).strip()
+    theme_name = re.sub(r"\s+\d+$", "", theme_name).strip()
     
     from repositories.theme_repository import theme_repo
     
     # Ensure name uniqueness if it's a new theme request
     if data.get("is_new"):
         existing_themes = await theme_repo.get_all_themes()
-        existing_names = [t['name'] for t in existing_themes]
+        existing_names = [t["name"] for t in existing_themes]
         
         if theme_name in existing_names:
             # Avoid ending in " 2"
@@ -1824,12 +1803,10 @@ async def handle_admin_save_theme(data: Dict[str, Any], user_data: Dict[str, Any
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: dict[str, Any]):
     """Guarda los permisos de un usuario específico."""
     logger.info(f"ADMIN: Save permissions request for data: {data}")
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     user_id = data.get("userId")
     if not user_id:
@@ -1938,7 +1915,7 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
         
         # betaTester is handled separately if needed, or we could add it to upsert too
         if config.ENABLE_SUPABASE and "betaTester" in data:
-            supabase_manager.get_client().table('users').update({"beta_tester": data["betaTester"]}).eq('telegram_id', int(user_id)).execute()
+            supabase_manager.get_client().table("users").update({"beta_tester": data["betaTester"]}).eq("telegram_id", int(user_id)).execute()
 
         # Log changes to audit log if there were any
         if changes:
@@ -1965,11 +1942,9 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene los permisos de un usuario específico."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     user_id = data.get("userId")
     if not user_id:
@@ -2018,14 +1993,12 @@ async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dic
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_find_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
     """
     Find all duplicate books grouped by content_hash.
     Returns duplicate groups with file info and statistics.
     """
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     try:
         from sqlalchemy import func
@@ -2038,7 +2011,7 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
         # Query to find duplicates
         duplicate_hashes = session.query(
             LocalBook.book_hash,
-            func.count().label('count')
+            func.count().label("count")
         ).filter(
             LocalBook.book_hash.isnot(None)
         ).group_by(
@@ -2098,7 +2071,7 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
             
             duplicate_groups.append(group)
         
-        duplicate_groups.sort(key=lambda x: x['wasted_space'], reverse=True)
+        duplicate_groups.sort(key=lambda x: x["wasted_space"], reverse=True)
         session.close()
         
         return {
@@ -2117,11 +2090,9 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[str, Any]):
     """Delete duplicate books safely, ensuring at least one copy remains."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     book_ids = data.get("book_ids", [])
     if not book_ids:
@@ -2172,11 +2143,11 @@ async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[st
                         os.remove(book.filepath)
                     
                     if book.cover_path:
-                        cover_file = book.cover_path.replace('/api/library/covers/', '')
+                        cover_file = book.cover_path.replace("/api/library/covers/", "")
                         cover_path = os.path.join(COVERS_DIR, cover_file)
                         if os.path.exists(cover_path):
                             os.remove(cover_path)
-                        thumb_path = cover_path.replace('.jpg', '_thumb.jpg')
+                        thumb_path = cover_path.replace(".jpg", "_thumb.jpg")
                         if os.path.exists(thumb_path):
                             os.remove(thumb_path)
                     
@@ -2209,7 +2180,7 @@ async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[st
         return {"success": False, "message": str(e)}
 
 
-async def handle_update_user_setting(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_update_user_setting(data: dict[str, Any], user_data: dict[str, Any]):
     """Actualiza una o múltiples configuraciones del usuario."""
     from services.user_service import update_user_setting
     
@@ -2247,11 +2218,9 @@ async def handle_update_user_setting(data: Dict[str, Any], user_data: Dict[str, 
             raise HTTPException(status_code=500, detail=str(e))
 
 
-async def handle_get_user_audit_history(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_get_user_audit_history(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene el historial de cambios de un usuario."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     user_id = data.get("userId")
     if not user_id:
@@ -2279,11 +2248,9 @@ async def handle_get_user_audit_history(data: Dict[str, Any], user_data: Dict[st
         return {"success": False, "message": str(e)}
         
         
-async def handle_admin_get_recent_audit_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_get_recent_audit_logs(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene los cambios recientes en el sistema."""
-    user_level = user_data.get("level", "free")
-    if user_level not in ["admin", "staff"]:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+    check_staff(user_data)
     
     try:
         from services.user_audit_service import UserAuditService
@@ -2306,7 +2273,7 @@ async def handle_admin_get_recent_audit_logs(data: Dict[str, Any], user_data: Di
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_get_duplicates(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_get_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
     """Retorna la lista de archivos duplicados detectados."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
@@ -2334,7 +2301,7 @@ async def handle_admin_get_duplicates(data: Dict[str, Any], user_data: Dict[str,
     finally:
         session.close()
 
-async def handle_admin_clear_duplicates(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
     """Limpia la tabla de registros de duplicados."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
@@ -2350,11 +2317,9 @@ async def handle_admin_clear_duplicates(data: Dict[str, Any], user_data: Dict[st
     finally:
         session.close()
 
-async def handle_admin_get_system_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_get_system_logs(data: dict[str, Any], user_data: dict[str, Any]):
     """Retorna los últimos logs capturados en memoria con opción de filtrado."""
-    is_admin = user_data.get("level") in ["admin", "staff"] or user_data.get("is_real_admin") or user_data.get("is_admin_db")
-    if not is_admin:
-        raise HTTPException(status_code=403, detail="No tienes permisos")
+    check_staff(user_data)
     
     try:
         from utils.log_manager import log_buffer_handler
@@ -2368,11 +2333,9 @@ async def handle_admin_get_system_logs(data: Dict[str, Any], user_data: Dict[str
         logger.error(f"Error fetching system logs: {e}")
         return {"success": False, "message": str(e)}
 
-async def handle_admin_send_logs_telegram(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_send_logs_telegram(data: dict[str, Any], user_data: dict[str, Any]):
     """Envía los logs capturados directamente al chat de Telegram del usuario."""
-    is_admin = user_data.get("level") in ["admin", "staff"] or user_data.get("is_real_admin") or user_data.get("is_admin_db")
-    if not is_admin:
-        raise HTTPException(status_code=403, detail="No tienes permisos")
+    check_staff(user_data)
     
     try:
         import io
@@ -2392,13 +2355,13 @@ async def handle_admin_send_logs_telegram(data: Dict[str, Any], user_data: Dict[
         log_text = "\n".join([f"[{l['time']}] {l['level']}: {l['msg']}" for l in logs])
         
         # Create file
-        file_obj = io.BytesIO(log_text.encode('utf-8'))
+        file_obj = io.BytesIO(log_text.encode("utf-8"))
         
         # Filename with range
-        first_t = logs[0]['timestamp']
-        last_t = logs[-1]['timestamp']
+        first_t = logs[0]["timestamp"]
+        last_t = logs[-1]["timestamp"]
         def fmt(t):
-            return datetime.fromtimestamp(t).strftime('%Y%m%d_%H%M')
+            return datetime.fromtimestamp(t).strftime("%Y%m%d_%H%M")
         filename = f"logs_{fmt(first_t)}_{fmt(last_t)}.txt"
         file_obj.name = filename
         
@@ -2417,7 +2380,7 @@ async def handle_admin_send_logs_telegram(data: Dict[str, Any], user_data: Dict[
         logger.error(f"Error sending logs to Telegram: {e}")
         return {"success": False, "message": f"Error: {str(e)}"}
 
-async def handle_admin_bulk_upload_confirm(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict[str, Any]):
     """Confirma y finaliza múltiples subidas de EPUB."""
     selected_ids = data.get("selected_ids", [])
     discarded_ids = data.get("discarded_ids", [])
@@ -2437,7 +2400,7 @@ async def handle_admin_bulk_upload_confirm(data: Dict[str, Any], user_data: Dict
     for disc_id in discarded_ids:
         if disc_id in pending_uploads:
             info = pending_uploads[disc_id]
-            epub_uploader.cleanup_upload(disc_id, Path(info['file_path']))
+            epub_uploader.cleanup_upload(disc_id, Path(info["file_path"]))
             
     # 2. Manejar seleccionados (procesamiento)
     results = []
@@ -2447,28 +2410,28 @@ async def handle_admin_bulk_upload_confirm(data: Dict[str, Any], user_data: Dict
             continue
             
         upload_info = pending_uploads[upload_id]
-        file_path = Path(upload_info['file_path'])
-        metadata = upload_info['metadata']
-        suggested_path = metadata.get('suggested_path')
+        file_path = Path(upload_info["file_path"])
+        metadata = upload_info["metadata"]
+        suggested_path = metadata.get("suggested_path")
         
         try:
             success = await epub_uploader.add_to_library(file_path, suggested_path, metadata)
             if success:
                 epub_uploader._log_history(
-                    user_id=upload_info['user_id'],
-                    filename=upload_info['original_filename'],
-                    book_hash=metadata.get('book_hash'),
-                    status='success',
+                    user_id=upload_info["user_id"],
+                    filename=upload_info["original_filename"],
+                    book_hash=metadata.get("book_hash"),
+                    status="success",
                     final_path=suggested_path
                 )
                 epub_uploader.cleanup_upload(upload_id, file_path)
                 results.append({"upload_id": upload_id, "success": True})
             else:
                 epub_uploader._log_history(
-                    user_id=upload_info['user_id'],
-                    filename=upload_info['original_filename'],
-                    book_hash=metadata.get('book_hash'),
-                    status='error',
+                    user_id=upload_info["user_id"],
+                    filename=upload_info["original_filename"],
+                    book_hash=metadata.get("book_hash"),
+                    status="error",
                     error_message="Failed to move file to library"
                 )
                 results.append({"upload_id": upload_id, "success": False, "error": "Error al mover a librería"})
@@ -2478,7 +2441,7 @@ async def handle_admin_bulk_upload_confirm(data: Dict[str, Any], user_data: Dict
     return {"success": True, "results": results}
 
 
-async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
     """Obtiene el historial de subidas paginado."""
     from sqlalchemy import desc
 
@@ -2509,7 +2472,7 @@ async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> List[D
         return []
 
 
-async def handle_ai_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve estadísticas sobre el uso de la IA."""
     from models.library_models import LocalBook
     from utils.library_db import get_session
@@ -2547,14 +2510,14 @@ async def handle_ai_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
         logger.error(f"Error getting AI stats: {e}")
         return {"error": str(e)}
 
-async def handle_ai_toggle_background_scan(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_ai_toggle_background_scan(data: dict[str, Any], user_data: dict[str, Any]):
     """Activa o desactiva el escaneo con IA en segundo plano."""
     enabled = data.get("enabled", False)
     set_setting("enable_background_ai_scan", "true" if enabled else "false")
     return {"success": True, "enabled": enabled}
 
 
-async def handle_ai_scan_series(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any]):
     """Dispara un escaneo on-demand de una serie específica."""
     series_hash = data.get("series_hash")
     series_name = data.get("series_name") # Optional fallback
@@ -2565,8 +2528,8 @@ async def handle_ai_scan_series(data: Dict[str, Any], user_data: Dict[str, Any])
         
     try:
         from models.library_models import LocalBook
-        from services.ai_service import AIService
         from scripts.ai_library_gardener import process_groups
+        from services.ai_service import AIService
         from utils.library_db import get_session
 
         with get_session() as session:
@@ -2616,7 +2579,7 @@ async def handle_ai_scan_series(data: Dict[str, Any], user_data: Dict[str, Any])
         return {"success": False, "message": str(e)}
 
 
-async def handle_ai_apply_changes(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any]):
     """Aplica los cambios confirmados por el usuario desde la propuesta de IA."""
     if not config.GEMINI_API_KEY:
         return {"success": False, "message": "IA no configurada"}
@@ -2638,12 +2601,13 @@ async def handle_ai_apply_changes(data: Dict[str, Any], user_data: Dict[str, Any
     updated_count = 0
     errors = []
 
-    from models.library_models import LocalBook, SeriesMetadata
-    from utils.library_db import get_session
-    from utils.helpers import generate_book_hash, generate_series_hash
-    from sqlalchemy import select
     import os
     import shutil
+
+    from sqlalchemy import select
+
+    from models.library_models import LocalBook
+    from utils.library_db import get_session
 
     with get_session() as session:
         # 1. Update Series Metadata (Global)
@@ -2704,7 +2668,7 @@ async def handle_ai_apply_changes(data: Dict[str, Any], user_data: Dict[str, Any
         "errors": errors
     }
 
-async def handle_ai_generate_summary(data: Dict[str, Any], user_data: Dict[str, Any]):
+async def handle_ai_generate_summary(data: dict[str, Any], user_data: dict[str, Any]):
     """
     Genera una sinopsis corta por IA para un libro.
     """

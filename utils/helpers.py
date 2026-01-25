@@ -2,13 +2,13 @@ import hashlib
 import html
 import os
 import re
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 from config.config_settings import config
 
 
-def extract_creators_by_role(entry, role_code: str) -> Optional[str]:
+def extract_creators_by_role(entry, role_code: str) -> str | None:
     """Extrae personas de una entrada OPDS filtrando por rol (ill, trl, bkp, etc)."""
     creators = []
 
@@ -161,9 +161,9 @@ def norm_string(s: Any, lowercase: bool = True) -> str:
         return ""
     text = str(s)
     # Remove content in square brackets [Tags]
-    text = re.sub(r'\[.*?\]', '', text)
+    text = re.sub(r"\[.*?\]", "", text)
     # Remove content in parentheses (Jap Name / Extra Info)
-    text = re.sub(r'\(.*?\)', '', text)
+    text = re.sub(r"\(.*?\)", "", text)
     # Normalize spaces
     res = " ".join(text.split()).strip()
     return res.casefold() if lowercase else res
@@ -184,7 +184,7 @@ def normalize_author_name(name: str) -> str:
     # 2. Eliminar roles que a veces vienen sin paréntesis
     roles_to_remove = ["autor", "writer", "escritor", "story", "ilustrador", "illustrator", "art", "dibujo"]
     for role in roles_to_remove:
-        clean_name = re.sub(rf'\b{role}\b', '', clean_name, flags=re.IGNORECASE)
+        clean_name = re.sub(rf"\b{role}\b", "", clean_name, flags=re.IGNORECASE)
 
     # 3. Si detecta formato "Apellido, Nombre", invertir
     if "," in clean_name:
@@ -211,7 +211,7 @@ def extract_spanish_series_from_filename(filename: str) -> str:
         return ""
     
     # 1. Quitar extensión
-    name = filename.rsplit('.', 1)[0]
+    name = filename.rsplit(".", 1)[0]
     
     # 2. Quitar tags entre corchetes [TAG]
     name = re.sub(r"\[.*?\]", "", name)
@@ -230,7 +230,7 @@ def extract_spanish_series_from_filename(filename: str) -> str:
 
 
 def process_book_identity_comprehensive(
-    epub_path: str, original_filename: Optional[str] = None
+    epub_path: str, original_filename: str | None = None
 ) -> dict:
     """
     Lógica UNIFICADA para extraer componentes de identidad de un EPUB.
@@ -303,13 +303,13 @@ def process_book_identity_comprehensive(
 
 
 def generate_book_hash(
-    series: Optional[str] = None,
-    author: Optional[str] = None,
-    book_type: Optional[str] = None,
-    volume: Optional[Any] = None,
-    translator: Optional[str] = None,
-    layout_by: Optional[str] = None,
-    language: Optional[str] = "es",
+    series: str | None = None,
+    author: str | None = None,
+    book_type: str | None = None,
+    volume: Any | None = None,
+    translator: str | None = None,
+    layout_by: str | None = None,
+    language: str | None = "es",
     is_uncensored: int = 0,
     color_mode: str = "bw"
 ) -> str:
@@ -345,8 +345,8 @@ def generate_book_hash(
 
 def generate_series_hash(
     series: str,
-    author: Optional[str] = None,
-    book_type: Optional[str] = None
+    author: str | None = None,
+    book_type: str | None = None
 ) -> str:
     """
     Genera un hash estable para la serie basado exclusivamente en: series + author + book_type.
@@ -868,7 +868,7 @@ def get_commit_hash() -> str:
     try:
         import os
         if os.path.exists("version_hash.txt"):
-            with open("version_hash.txt", "r") as f:
+            with open("version_hash.txt") as f:
                 return f.read().strip()[:7]
     except Exception:
         pass

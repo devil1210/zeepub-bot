@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 
 class BasePlugin(ABC):
@@ -26,18 +27,18 @@ class BasePlugin(ABC):
     async def cleanup(self) -> None:
         pass
 
-    def get_commands(self) -> Dict[str, Callable]:
+    def get_commands(self) -> dict[str, Callable]:
         return {}
 
-    def get_callback_handlers(self) -> Dict[str, Callable]:
+    def get_callback_handlers(self) -> dict[str, Callable]:
         return {}
 
-    def get_message_handlers(self) -> List[Callable]:
+    def get_message_handlers(self) -> list[Callable]:
         return []
 
     async def on_download_request(
-        self, user_id: int, epub_url: str, metadata: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, user_id: int, epub_url: str, metadata: dict[str, Any]
+    ) -> dict[str, Any] | None:
         return None
 
     async def on_download_complete(

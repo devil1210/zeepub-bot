@@ -4,7 +4,6 @@ Sistema de caché persistente para URLs acortadas usando PostgreSQL (via SQLAlch
 
 import hashlib
 import logging
-from typing import Optional
 
 import sqlalchemy as sa
 from sqlalchemy import (
@@ -142,7 +141,7 @@ def create_short_url(
         logger.error(f"create_short_url failed: {e}")
         return hashlib.sha256(url.encode("utf-8")).hexdigest()[:12]
 
-def get_url_from_hash(url_hash: str) -> Optional[str]:
+def get_url_from_hash(url_hash: str) -> str | None:
     try:
         engine = _get_sa_engine()
         metadata = MetaData()

@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from sqlalchemy.engine import make_url
 
@@ -111,7 +111,7 @@ class BackupService:
                 logger.error(f"Error rotating backup {old_backup}: {e}")
 
     @staticmethod
-    def list_backups() -> List[Dict[str, Any]]:
+    def list_backups() -> list[dict[str, Any]]:
         """Lista todos los backups disponibles."""
         backups = []
         if not BACKUP_DIR.exists():
@@ -139,7 +139,7 @@ class BackupService:
         return False
 
     @staticmethod
-    def get_backup_stats() -> Dict[str, Any]:
+    def get_backup_stats() -> dict[str, Any]:
         """Obtiene estadísticas de backups."""
         backups = BackupService.list_backups()
         total_size = sum(b["size_bytes"] for b in backups)

@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '58670adf5f59'
-down_revision = '0002_published_books'
+revision = "58670adf5f59"
+down_revision = "0002_published_books"
 branch_labels = None
 depends_on = None
 
@@ -42,6 +42,6 @@ def downgrade() -> None:
     inspector = sa.inspect(conn)
 
     if inspector.has_table("users"):
-        columns = [c['name'] for c in inspector.get_columns('users')]
-        if 'nickname' in columns:
-            op.drop_column('users', 'nickname')
+        columns = [c["name"] for c in inspector.get_columns("users")]
+        if "nickname" in columns:
+            op.drop_column("users", "nickname")

@@ -59,7 +59,7 @@ class SyncEngine:
     async def sync_levels_down(self):
         """Syncs user_levels from Supabase -> local."""
         try:
-            res = supabase_manager.get_client().table('user_levels').select("*").execute()
+            res = supabase_manager.get_client().table("user_levels").select("*").execute()
             if not res.data: return
             
             async with pg_manager.get_session() as session:
@@ -96,7 +96,7 @@ class SyncEngine:
                         "show_recommendations": lvl.get("show_recommendations", True),
                     }
                     stmt = pg_insert(UserLevel).values(**lvl_data).on_conflict_do_update(
-                        index_elements=['id'], set_=lvl_data
+                        index_elements=["id"], set_=lvl_data
                     )
                     await session.execute(stmt)
                 await session.commit()
@@ -106,15 +106,15 @@ class SyncEngine:
     async def sync_themes_down(self):
         """Syncs app_themes from Supabase -> local."""
         try:
-            res = supabase_manager.get_client().table('app_themes').select("*").execute()
+            res = supabase_manager.get_client().table("app_themes").select("*").execute()
             if not res.data: return
             
             async with pg_manager.get_session() as session:
                 for t in res.data:
                     # Omit internal IDs if necessary, but here we sync IDs too
-                    t_data = {k: v for k, v in t.items() if k not in ['created_at', 'updated_at']}
+                    t_data = {k: v for k, v in t.items() if k not in ["created_at", "updated_at"]}
                     stmt = pg_insert(AppTheme).values(**t_data).on_conflict_do_update(
-                        index_elements=['id'], set_=t_data
+                        index_elements=["id"], set_=t_data
                     )
                     await session.execute(stmt)
                 await session.commit()
@@ -125,31 +125,31 @@ class SyncEngine:
         """Pulls updated users from Supabase -> Local Postgres."""
         try:
             # Fetch last 100 modified users for robustness
-            res = supabase_manager.get_client().table('users').select("*").order('updated_at', desc=True).limit(100).execute()
+            res = supabase_manager.get_client().table("users").select("*").order("updated_at", desc=True).limit(100).execute()
             users_data = res.data
             if not users_data: return
 
             async with pg_manager.get_session() as session:
                 for u in users_data:
                     user_data = {
-                        "telegram_id": u['telegram_id'],
-                        "username": u.get('username'),
-                        "name": u.get('name'),
-                        "nickname": u.get('nickname'),
-                        "photo_url": u.get('photo_url'),
-                        "level_id": u.get('level_id', 6),
-                        "role": u.get('role', 'user'),
-                        "beta_tester": u.get('beta_tester', False),
-                        "has_library_access": u.get('has_library_access', True),
-                        "can_request_books": u.get('can_request_books', True),
-                        "can_upload_epub": u.get('can_upload_epub', False),
-                        "total_downloads": u.get('total_downloads', 0),
-                        "insignias": u.get('insignias', []),
-                        "settings": u.get('settings', {}),
-                        "expires_at": datetime.fromisoformat(u['expires_at'].replace('Z', '+00:00')).replace(tzinfo=None) if u.get('expires_at') else None,
+                        "telegram_id": u["telegram_id"],
+                        "username": u.get("username"),
+                        "name": u.get("name"),
+                        "nickname": u.get("nickname"),
+                        "photo_url": u.get("photo_url"),
+                        "level_id": u.get("level_id", 6),
+                        "role": u.get("role", "user"),
+                        "beta_tester": u.get("beta_tester", False),
+                        "has_library_access": u.get("has_library_access", True),
+                        "can_request_books": u.get("can_request_books", True),
+                        "can_upload_epub": u.get("can_upload_epub", False),
+                        "total_downloads": u.get("total_downloads", 0),
+                        "insignias": u.get("insignias", []),
+                        "settings": u.get("settings", {}),
+                        "expires_at": datetime.fromisoformat(u["expires_at"].replace("Z", "+00:00")).replace(tzinfo=None) if u.get("expires_at") else None,
                     }
                     stmt = pg_insert(User).values(**user_data).on_conflict_do_update(
-                        index_elements=['telegram_id'], set_=user_data
+                        index_elements=["telegram_id"], set_=user_data
                     )
                     await session.execute(stmt)
                 await session.commit()
@@ -159,14 +159,14 @@ class SyncEngine:
     async def sync_ui_settings_down(self):
         """Syncs user_ui_settings from Supabase -> local."""
         try:
-            res = supabase_manager.get_client().table('user_ui_settings').select("*").execute()
+            res = supabase_manager.get_client().table("user_ui_settings").select("*").execute()
             if not res.data: return
             
             async with pg_manager.get_session() as session:
                 for s in res.data:
                     s_data = {k: v for k, v in s.items()}
                     stmt = pg_insert(UserUISettings).values(**s_data).on_conflict_do_update(
-                        index_elements=['user_id'], set_=s_data
+                        index_elements=["user_id"], set_=s_data
                     )
                     await session.execute(stmt)
                 await session.commit()
@@ -177,7 +177,7 @@ class SyncEngine:
         """Syncs bot_settings from Supabase -> local."""
         try:
             from sqlalchemy import text
-            res = supabase_manager.get_client().table('bot_settings').select("*").execute()
+            res = supabase_manager.get_client().table("bot_settings").select("*").execute()
             if not res.data: return
             
             async with pg_manager.get_session() as session:

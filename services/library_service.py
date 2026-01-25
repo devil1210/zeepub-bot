@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy import String, cast, func, or_, select
 
@@ -17,8 +17,8 @@ class LibraryService:
         page: int = 1,
         items_per_page: int = 10,
         search_type: str = "all",
-        source_id: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        source_id: int | None = None,
+    ) -> dict[str, Any]:
         """
         Realiza una búsqueda de libros utilizando PostgreSQL ILIKE (Async).
         """
@@ -108,10 +108,10 @@ class LibraryService:
         query: str,
         page: int = 1,
         items_per_page: int = 20,
-        source_id: Optional[int] = None,
+        source_id: int | None = None,
         search_type: str = "todos",
         sort_by: str = "a-z"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Búsqueda agrupada por series_hash. Retorna un objeto similar a Series
         en lugar de volúmenes individuales (Exclusivo para PostgreSQL).
@@ -207,7 +207,7 @@ class LibraryService:
                 return {"results": [], "totalItems": 0}
 
     @staticmethod
-    async def get_series_volumes(series_hash: str, limit: Optional[int] = None, offset: int = 0) -> List[Dict[str, Any]]:
+    async def get_series_volumes(series_hash: str, limit: int | None = None, offset: int = 0) -> list[dict[str, Any]]:
         """Retorna los volúmenes de una serie agrupada con soporte para paginación (Async)."""
         async with pg_manager.get_session() as session:
             try:
@@ -234,7 +234,7 @@ class LibraryService:
                 return []
 
     @staticmethod
-    async def get_book_by_id(book_id: int) -> Optional[Dict[str, Any]]:
+    async def get_book_by_id(book_id: int) -> dict[str, Any] | None:
         """Busca un libro por su ID en la base de datos local (Async)."""
         async with pg_manager.get_session() as session:
             try:
@@ -261,7 +261,7 @@ class LibraryService:
                 return None
 
     @staticmethod
-    async def update_book_metadata(book_id: int, updates: Dict[str, Any]) -> bool:
+    async def update_book_metadata(book_id: int, updates: dict[str, Any]) -> bool:
         """Actualiza metadatos de un libro y recalcula el hash de serie."""
         async with pg_manager.get_session() as session:
             try:
@@ -312,7 +312,7 @@ class LibraryService:
 
 
     @staticmethod
-    async def get_regroup_suggestions(threshold: float = 0.8) -> List[Dict[str, Any]]:
+    async def get_regroup_suggestions(threshold: float = 0.8) -> list[dict[str, Any]]:
         """
         Analiza libros sin serie o con series diferentes y sugiere agrupaciones
         basadas en similitud de títulos y autor.
@@ -376,7 +376,7 @@ class LibraryService:
                 return []
 
     @staticmethod
-    async def get_books_without_series(limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_books_without_series(limit: int = 100) -> list[dict[str, Any]]:
         """Retorna una lista simple de libros que no tienen serie asignada."""
         async with pg_manager.get_session() as session:
             try:
@@ -393,14 +393,14 @@ class LibraryService:
                 return []
     @staticmethod
     async def get_catalog(
-        source_id: Optional[int] = None,
-        folder: Optional[str] = None,
-        series_hash: Optional[str] = None,
+        source_id: int | None = None,
+        folder: str | None = None,
+        series_hash: str | None = None,
         page: int = 1,
         page_size: int = 10,
         sort_by: str = "alpha",
         use_random_covers: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Navega por el catálogo agrupando por series_hash o mostrando volúmenes (Async).
         """

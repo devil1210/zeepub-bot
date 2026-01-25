@@ -3,7 +3,7 @@ import hmac
 import json
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
@@ -33,9 +33,9 @@ logger = logging.getLogger(__name__)
 
 @router.get("/feed")
 async def get_feed(
-    url: Optional[str] = None,
+    url: str | None = None,
     admin_mode: bool = False,
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Obtiene el feed OPDS.
@@ -409,7 +409,7 @@ async def get_feed(
 @router.get("/search")
 async def search_books(
     q: str = Query(..., min_length=1),
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Busca libros en el servidor OPDS.
@@ -500,7 +500,7 @@ async def bot_avatar_proxy(file_id: str = Query(...)):
 async def tunnel_opds(
     url: str = Query(..., description="Target OPDS URL"),
     admin_mode: bool = Query(False, description="Whether to show full admin catalog"),
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Proxies OPDS requests directly to the server, injecting credentials.
@@ -717,7 +717,7 @@ async def public_download(
 @router.post("/facebook/prepare")
 async def prepare_facebook_post(
     request: Request,
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Prepara el texto y link para un post de Facebook.
@@ -816,7 +816,7 @@ async def prepare_facebook_post(
 @router.post("/facebook/publish")
 async def publish_facebook_post(
     request: Request,
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Publica en el grupo de Facebook configurado.
@@ -877,7 +877,7 @@ async def publish_facebook_post(
 
 
 @router.get("/config")
-async def get_config(user_data: Dict[str, Any] = Depends(require_mini_app_access)):
+async def get_config(user_data: dict[str, Any] = Depends(require_mini_app_access)):
     """
     Retorna configuración inicial para la Mini App, incluyendo permisos de admin y publisher.
     """
@@ -956,7 +956,7 @@ async def get_app_strings(request: Request):
 @router.post("/download")
 async def download_book(
     request: Request,
-    user_data: Dict[str, Any] = Depends(require_mini_app_access),
+    user_data: dict[str, Any] = Depends(require_mini_app_access),
 ):
     """
     Handle EPUB download requests from Mini App.

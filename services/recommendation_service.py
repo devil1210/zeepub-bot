@@ -1,9 +1,9 @@
 import logging
 import random
 from datetime import date
-from typing import Any, Dict, List
+from typing import Any
 
-from sqlalchemy import desc, or_, select, cast, String, case
+from sqlalchemy import String, case, cast, desc, or_, select
 
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, UserDownload, UserRating
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class RecommendationService:
     @staticmethod
-    async def get_recommendations(user_id: int, limit: int = 4) -> List[Dict[str, Any]]:
+    async def get_recommendations(user_id: int, limit: int = 4) -> list[dict[str, Any]]:
         """
         Genera recomendaciones basadas en descargas y valoraciones.
         Cambia una vez al día por usuario.
@@ -107,7 +107,7 @@ class RecommendationService:
             return await RecommendationService._get_popular_recommendations(user_id, None, limit, set())
 
     @staticmethod
-    async def _get_popular_recommendations(user_id: int, session, limit: int, exclude_hashes: set) -> List[Dict[str, Any]]:
+    async def _get_popular_recommendations(user_id: int, session, limit: int, exclude_hashes: set) -> list[dict[str, Any]]:
         """Fallback: Libros populares del catálogo total si no hay historial."""
         
         async def execute_query(sess):

@@ -1,12 +1,11 @@
 import asyncio
 import logging
-from typing import Optional
 
 from .url_cache import get_candidates_for_validation, validate_and_update_url
 
 logger = logging.getLogger(__name__)
 
-_validator_task: Optional[asyncio.Task] = None
+_validator_task: asyncio.Task | None = None
 
 
 async def _validator_loop(interval: int = 3600, batch_size: int = 50):
@@ -35,7 +34,7 @@ async def _validator_loop(interval: int = 3600, batch_size: int = 50):
 
 
 def start_background_validator(
-    loop: Optional[asyncio.AbstractEventLoop] = None,
+    loop: asyncio.AbstractEventLoop | None = None,
     interval: int = 3600,
     batch_size: int = 50,
 ):

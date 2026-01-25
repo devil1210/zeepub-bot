@@ -3,7 +3,6 @@ import importlib.util
 import inspect
 import logging
 from pathlib import Path
-from typing import Dict
 
 from plugins.base_plugin import BasePlugin
 
@@ -11,7 +10,7 @@ from plugins.base_plugin import BasePlugin
 class PluginManager:
     def __init__(self, plugin_directory: str = "plugins"):
         self.plugin_directory = Path(plugin_directory)
-        self.plugins: Dict[str, BasePlugin] = {}
+        self.plugins: dict[str, BasePlugin] = {}
 
     async def initialize(self, bot_instance):
         self._bot_instance = bot_instance

@@ -8,7 +8,7 @@ import logging
 import sys
 
 # Agregar el path del proyecto
-sys.path.append('/app')
+sys.path.append("/app")
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -47,10 +47,10 @@ async def analyze_library_paths():
             
             path_patterns = {}
             structure_analysis = {
-                'with_author_folder': 0,
-                'direct_in_library': 0,
-                'category_folders': 0,
-                'other': 0
+                "with_author_folder": 0,
+                "direct_in_library": 0,
+                "category_folders": 0,
+                "other": 0
             }
             
             for file_path, title, author in books:
@@ -59,27 +59,27 @@ async def analyze_library_paths():
                 logger.info(f"   ✍️ Autor: {author}")
                 
                 # Analizar estructura
-                if '/' in file_path:
-                    parts = file_path.split('/')
+                if "/" in file_path:
+                    parts = file_path.split("/")
                     if len(parts) >= 2:
                         folder = parts[0]
                         parts[1]
                         
                         # Verificar si el folder parece ser un autor
                         if author and folder.lower() in author.lower() or author.lower() in folder.lower():
-                            structure_analysis['with_author_folder'] += 1
+                            structure_analysis["with_author_folder"] += 1
                             pattern = f"Author/{title}"
-                        elif folder.lower() in ['library', 'books', 'epub', 'libros']:
-                            structure_analysis['direct_in_library'] += 1
+                        elif folder.lower() in ["library", "books", "epub", "libros"]:
+                            structure_analysis["direct_in_library"] += 1
                             pattern = f"Category/{title}"
                         else:
-                            structure_analysis['category_folders'] += 1
+                            structure_analysis["category_folders"] += 1
                             pattern = f"Category/{title}"
                     else:
-                        structure_analysis['direct_in_library'] += 1
+                        structure_analysis["direct_in_library"] += 1
                         pattern = "Direct"
                 else:
-                    structure_analysis['direct_in_library'] += 1
+                    structure_analysis["direct_in_library"] += 1
                     pattern = "Direct"
                 
                 # Contar patrones
@@ -112,21 +112,21 @@ async def analyze_library_paths():
                     
                 # Determinar si sigue el patrón más común
                 if most_common_pattern == "Author/Title":
-                    if '/' in file_path:
-                        parts = file_path.split('/')
+                    if "/" in file_path:
+                        parts = file_path.split("/")
                         if len(parts) >= 2:
                             folder = parts[0]
                             if author and (folder.lower() in author.lower() or author.lower() in folder.lower()):
                                 logger.info(f"   📁 {file_path}")
                                 count += 1
                 elif most_common_pattern == "Category/Title":
-                    if '/' in file_path:
-                        parts = file_path.split('/')
+                    if "/" in file_path:
+                        parts = file_path.split("/")
                         if len(parts) >= 2:
                             logger.info(f"   📁 {file_path}")
                             count += 1
                 elif most_common_pattern == "Direct":
-                    if '/' not in file_path:
+                    if "/" not in file_path:
                         logger.info(f"   📁 {file_path}")
                         count += 1
                 

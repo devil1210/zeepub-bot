@@ -1,7 +1,7 @@
 
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import google.generativeai as genai
 from google.generativeai.types import HarmBlockThreshold, HarmCategory
@@ -48,7 +48,7 @@ class AIService:
             return None
 
     @staticmethod
-    async def normalize_book_metadata(filename: str, raw_meta: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def normalize_book_metadata(filename: str, raw_meta: dict[str, Any]) -> dict[str, Any] | None:
         """
         Analiza un libro y devuelve metadatos normalizados, priorizando la extracción de volumen desde metadatos internos.
         """
@@ -135,7 +135,7 @@ class AIService:
             return {"proposed_english": current_name, "proposed_spanish": current_name}
 
     @staticmethod
-    async def analyze_series_for_updates(series_hash: str, current_series_name: str, books: list[Dict[str, Any]]) -> Dict[str, Any]:
+    async def analyze_series_for_updates(series_hash: str, current_series_name: str, books: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Analiza un grupo de libros y propone estandarización.
         Retorna un objeto 'proposal' con los cambios sugeridos.
@@ -234,7 +234,7 @@ class AIService:
             return {"error": str(e)}
 
     @staticmethod
-    async def generate_synopsis(title: str, description: str) -> Optional[str]:
+    async def generate_synopsis(title: str, description: str) -> str | None:
         """Genera una sinopsis corta y atractiva para el libro."""
         model = AIService._get_model()
         if not model:

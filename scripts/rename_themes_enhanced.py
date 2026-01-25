@@ -8,7 +8,7 @@ import logging
 import sys
 
 # Agregar el path del proyecto
-sys.path.append('/app')
+sys.path.append("/app")
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -50,7 +50,7 @@ async def check_and_rename_themes():
             for theme in all_themes:
                 name = theme[1]
                 # Buscar nombres que terminan con espacio + número
-                if name and ' 2' in name and name.strip().endswith('2'):
+                if name and " 2" in name and name.strip().endswith("2"):
                     themes_with_2.append(theme)
                     logger.info(f"Found theme with '2': ID {theme[0]}, Name: '{name}'")
             
@@ -59,7 +59,7 @@ async def check_and_rename_themes():
                 # Buscar otros patrones posibles
                 for theme in all_themes:
                     name = theme[1]
-                    if name and ('2' in name):
+                    if name and ("2" in name):
                         logger.info(f"Theme containing '2': ID {theme[0]}, Name: '{name}'")
                 return
             
@@ -70,7 +70,7 @@ async def check_and_rename_themes():
             
             for theme_id, old_name in themes_with_2:
                 # Extraer el nombre base (sin el " 2")
-                base_name = old_name.replace(' 2', '').strip()
+                base_name = old_name.replace(" 2", "").strip()
                 
                 # Generar nombres únicos basados en el patrón
                 new_name_variants = [

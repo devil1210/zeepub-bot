@@ -65,7 +65,7 @@ class BotInitializer:
 
         logger.info(f"Found update state file at {state_path}")
         try:
-            with open(state_path, "r") as f:
+            with open(state_path) as f:
                 state = json.load(f)
 
             chat_id = state.get("chat_id")

@@ -7,7 +7,7 @@ import logging
 import sys
 
 # Agregar el path del proyecto
-sys.path.append('/app')
+sys.path.append("/app")
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -49,9 +49,9 @@ async def diagnose_themes():
             
             for theme in all_themes:
                 theme_id, name = theme
-                if name and name.strip().endswith('2'):
+                if name and name.strip().endswith("2"):
                     themes_ending_2.append(theme)
-                elif name and '2' in name:
+                elif name and "2" in name:
                     themes_containing_2.append(theme)
                 else:
                     other_themes.append(theme)
@@ -80,7 +80,7 @@ async def diagnose_themes():
             if themes_ending_2:
                 logger.info(f"\n✅ ACTION: Found {len(themes_ending_2)} themes to rename")
                 for theme_id, name in themes_ending_2:
-                    base_name = name.replace(' 2', '').strip()
+                    base_name = name.replace(" 2", "").strip()
                     logger.info(f"  - '{name}' → '{base_name} Pro' (suggested)")
             else:
                 logger.info("\n❌ ACTION: No themes ending with '2' found to rename")

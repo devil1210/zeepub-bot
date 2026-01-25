@@ -85,7 +85,7 @@ class UploadBook(Base):
     book_type = Column(String(100))
     translator = Column(String(255))
     layout_by = Column(String(255))
-    language = Column(String(10), default='es')
+    language = Column(String(10), default="es")
     is_uncensored = Column(Integer, default=0)
     color_mode = Column(String(50))
     
@@ -94,9 +94,9 @@ class UploadBook(Base):
     series_hash = Column(String(64))
     
     # Estado del procesamiento
-    identity_match = Column(String(10), default='False')  # Si coincide con libro existente
-    path_collision = Column(String(10), default='False')  # Si hay colisión de ruta
-    processed = Column(String(10), default='False')  # Si ya fue procesado
+    identity_match = Column(String(10), default="False")  # Si coincide con libro existente
+    path_collision = Column(String(10), default="False")  # Si hay colisión de ruta
+    processed = Column(String(10), default="False")  # Si ya fue procesado
     
     # Metadata adicional en JSON
     upload_metadata = Column(JSON)
@@ -304,10 +304,10 @@ class LocalBook(Base):
             
             # Frontend compatibility (CamelCase)
             "cleanTitle": self.series or self.english_title or (
-                re.sub(r'\[.*?\]', '', self.title).strip() if self.title else ""
+                re.sub(r"\[.*?\]", "", self.title).strip() if self.title else ""
             ),
             "clean_title": self.series or self.english_title or (
-                re.sub(r'\[.*?\]', '', self.title).strip() if self.title else ""
+                re.sub(r"\[.*?\]", "", self.title).strip() if self.title else ""
             )
         }
 

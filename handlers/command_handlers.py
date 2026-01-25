@@ -579,7 +579,7 @@ class CommandHandlers:
             import os
             # Intentar leer del .env directamente para mostrar lo real
             try:
-                with open(".env", "r") as f:
+                with open(".env") as f:
                     for line in f:
                         if line.startswith("WEB_CLIENT_DIR="):
                             current = line.split("=")[1].strip()
@@ -616,7 +616,7 @@ class CommandHandlers:
         
         try:
             if os.path.exists(env_path):
-                with open(env_path, "r") as f:
+                with open(env_path) as f:
                     lines = f.readlines()
                 
                 with open(env_path, "w") as f:

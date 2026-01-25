@@ -2,7 +2,7 @@
 
 import logging
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, Optional
+from typing import Any
 
 from config.config_settings import config
 from utils.helpers import limpiar_html_basico
@@ -11,7 +11,7 @@ from utils.http_client import cleanup_tmp, fetch_bytes
 logger = logging.getLogger(__name__)
 
 
-async def obtener_sinopsis_opds(series_id: str) -> Optional[str]:
+async def obtener_sinopsis_opds(series_id: str) -> str | None:
     """Obtiene la sinopsis de una serie desde OPDS."""
     if not series_id:
         return None
@@ -41,7 +41,7 @@ async def obtener_sinopsis_opds(series_id: str) -> Optional[str]:
 
 async def obtener_sinopsis_opds_volumen(
     series_id: str, volume_id: str
-) -> Optional[str]:
+) -> str | None:
     """Obtiene la sinopsis específica de un volumen."""
     if not series_id or not volume_id:
         return None
@@ -73,9 +73,9 @@ async def obtener_sinopsis_opds_volumen(
     return None
 
 
-async def obtener_metadatos_opds(series_id: str, volume_id: str) -> Dict[str, Any]:
+async def obtener_metadatos_opds(series_id: str, volume_id: str) -> dict[str, Any]:
     """Extrae metadatos (título, autor, géneros, etc.) desde OPDS."""
-    datos: Dict[str, Any] = {
+    datos: dict[str, Any] = {
         "titulo_serie": None,
         "titulo_volumen": None,
         "autor": None,
