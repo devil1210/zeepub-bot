@@ -18,12 +18,12 @@ services:
       - ENABLE_POSTGRES_PLUGIN=true
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - URL_CACHE_DB_PATH=data/url_cache.db
-    
+
     # Dependencia de la DB
     depends_on:
       db:
         condition: service_healthy
-        
+
     ports:
       - "${DEV_PORT:-8000}:8000"
     labels:
@@ -61,11 +61,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_POLL_INTERVAL=30
       - WATCHTOWER_HTTP_API_UPDATE=true
       - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
       - WATCHTOWER_MONITOR_ONLY=${WATCHTOWER_MONITOR_ONLY:-false}
       - WATCHTOWER_DEBUG=false
       - DOCKER_API_VERSION=1.52
       - WATCHTOWER_LABEL_ENABLE=true
-    command: --interval 300 --label-enable
+    command: --interval 30 --label-enable
