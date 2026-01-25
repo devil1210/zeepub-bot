@@ -8,6 +8,7 @@ Cada skill en este proyecto debe seguir esta estructura:
 - **Propósito**: Por qué es importante para Zeepub-bot.
 - **Lecciones Aprendidas**: Errores pasados evitados mediante esta skill.
 - **Reglas de Oro**: Pasos mandatorios al usarla.
+- **Actualización Global**: Sincronizado con `antigravity-awesome-skills` (Enero 2025), incluyendo soporte nativo para **Gemini 3** y modelos Pro.
 
 ---
 
@@ -51,6 +52,10 @@ Cada skill en este proyecto debe seguir esta estructura:
 - skill: ui-ux-pro-max
   reason: Enforce "Premium/Glassmorphism" design aesthetic.
 - skill: react-patterns
+- skill: senior-architect
+  reason: High-level reasoning for complex system design and refactoring.
+- skill: mcp-builder
+  reason: Manage and create modern tools using the Model Context Protocol.
 
 ---
 
