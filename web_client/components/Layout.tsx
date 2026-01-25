@@ -8,7 +8,8 @@ import {
   BookOpen,
   LogOut,
   ChevronRight,
-  Upload
+  Upload,
+  BrainCircuit
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTelegram } from '../contexts/TelegramContext';
@@ -41,6 +42,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
     { id: 'search', icon: Search, label: 'Búsqueda y Catálogos' },
     { id: 'library', icon: Library, label: 'Mi Biblioteca' },
     { id: 'settings', icon: Settings, label: 'Ajustes' },
+    { id: 'ai', icon: BrainCircuit, label: 'AI Hub' },
     ...(canUploadEpub ? [{ id: 'upload', icon: Upload, label: 'Subir' }] : []),
     ...(isAdmin ? [{ id: 'admin', icon: ShieldCheck, label: 'Admin' }] : []),
   ];

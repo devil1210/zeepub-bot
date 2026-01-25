@@ -213,6 +213,10 @@ export const api = {
     getSystemLogs: (level: string = 'INFO', hours?: number) => rpc('admin_get_system_logs', { level, hours }),
     sendLogsToTelegram: (level: string = 'DEBUG', hours?: number) => rpc('admin_send_logs_telegram', { level, hours }),
 
+    // AI Hub
+    getAiStats: () => rpc('ai_stats'),
+    scanSeriesAi: (seriesHash: string) => rpc('ai_scan_series', { series_hash: seriesHash }),
+
     uploadEpub: (file: File, onProgress?: (p: number) => void) =>
         uploadFile('/api/library/upload', file, onProgress),
     uploadEpubBulk: (files: File[], onProgress?: (p: number) => void) => {

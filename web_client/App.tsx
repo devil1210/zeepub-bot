@@ -17,6 +17,7 @@ import { RequestBook } from './pages/RequestBook';
 import { Library } from './pages/Library';
 import { Downloads } from './pages/Downloads';
 import { UploadEpub } from './pages/Upload';
+import { AIHub } from './pages/AIHub';
 import { Series, Volume, Book } from './types';
 
 // Custom hook to bridge legacy onNavigate prop to React Router
@@ -162,6 +163,7 @@ const AppContent: React.FC = () => {
             />
           } />
           <Route path="/upload" element={<PageWrapper Component={UploadEpub} />} />
+          <Route path="/ai" element={<PageWrapper Component={AIHub} />} />
           <Route path="/admin" element={
             isAdmin ? <PageWrapper Component={Admin} /> : <Navigate to="/" replace />
           } />

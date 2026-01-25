@@ -2505,3 +2505,81 @@ async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> List[D
     except Exception as e:
         logger.error(f"Error fetching upload history: {e}")
         return []
+
+
+async def handle_ai_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Devuelve estadísticas sobre el uso de la IA."""
+    from models.library_models import LocalBook
+    from utils.library_db import get_session
+
+    try:
+        with get_session() as session:
+            # 1. Libros con series_spanish (procesados por IA o limpios manual)
+            total_processed = session.query(func.count(LocalBook.id)).filter(
+                LocalBook.series_spanish != None,
+                LocalBook.series_spanish != ""
+            ).scalar()
+
+            # 2. Total de libros
+            total_books = session.query(func.count(LocalBook.id)).scalar()
+            
+            # 3. Libros pendientes de estandarización
+            pending = total_books - total_processed if total_books else 0
+            
+            # 4. Eficiencia (Estimado)
+            # Asumimos que cada renombrado manual toma 30 segundos
+            time_saved_minutes = total_processed * 0.5
+
+            return {
+                "total_processed": total_processed,
+                "total_books": total_books,
+                "pending_optimization": pending,
+                "time_saved_hours": round(time_saved_minutes / 60, 1),
+                "ai_active": bool(config.GEMINI_API_KEY)
+            }
+    except Exception as e:
+        logger.error(f"Error getting AI stats: {e}")
+        return {"error": str(e)}
+
+
+async def handle_ai_scan_series(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """Dispara un escaneo on-demand de una serie específica."""
+    series_hash = data.get("series_hash")
+    series_name = data.get("series_name") # Optional fallback
+    
+    if not config.GEMINI_API_KEY:
+        return {"success": False, "message": "IA no configurada (Falta API Key)"}
+        
+    try:
+        # Reutilizamos la lógica del jardinero pero para un solo grupo
+        from scripts.ai_library_gardener import process_groups, get_series_groups
+        from models.library_models import LocalBook
+        
+        # Construir grupo ficticio para esa series_hash
+        with get_session() as session:
+             # Buscar un libro de esa serie
+             query = session.query(LocalBook).filter(LocalBook.series_hash == series_hash)
+             count = query.count()
+             rep_book = query.order_by(LocalBook.series.desc()).first()
+             
+             if not rep_book:
+                  return {"success": False, "message": "Serie no encontrada"}
+                  
+             group = {
+                 "hash": series_hash,
+                 "representative": rep_book,
+                 "count": count
+             }
+             
+             # Procesar
+             updated = await process_groups([group])
+             
+             return {
+                 "success": True, 
+                 "message": f"Serie '{rep_book.series or series_name}' optimizada.",
+                 "updated_count": updated
+             }
+             
+    except Exception as e:
+        logger.error(f"Error in AI scan series: {e}")
+        return {"success": False, "message": str(e)}
