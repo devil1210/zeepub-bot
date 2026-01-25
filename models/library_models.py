@@ -185,6 +185,7 @@ class LocalBook(Base):
 
     # Contenido
     description = Column(String(5000))
+    summary = Column(String(1024))  # AI generated catchy summary
     demographics = Column(JSON)  # Ej: ["Seinen", "Adultos"]
     tags = Column(JSON)  # Lista de géneros/etiquetas
     language = Column(String(10), default="es")
@@ -234,7 +235,7 @@ class LocalBook(Base):
             "demographics": self.demographics,
             "description": limpiar_html_basico(self.description),
             "description_clean": limpiar_html_basico(self.description), # Alias for backward compatibility
-            "summary": limpiar_html_basico(self.description),  # Prefer cleaner version
+            "summary": self.summary or limpiar_html_basico(self.description),  # Prefer AI summary if available
             "fileSize": self.file_size,
             "modifiedAt": (
                 self.file_modified_at.isoformat() if self.file_modified_at else None

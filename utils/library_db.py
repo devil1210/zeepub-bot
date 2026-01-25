@@ -148,6 +148,7 @@ def check_migrations():
                    conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS cover_high VARCHAR(1024);"))
                    conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS cover_medium VARCHAR(1024);"))
                    conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS cover_low VARCHAR(1024);"))
+                   conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS summary VARCHAR(1024);"))
                    
                    conn.execute(text("CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id ON local_books(series_metadata_id);"))
                    conn.commit()

@@ -2677,3 +2677,46 @@ async def handle_ai_apply_changes(data: Dict[str, Any], user_data: Dict[str, Any
         "message": f"Cambios aplicados. {updated_count} actualizaciones.",
         "errors": errors
     }
+
+async def handle_ai_generate_summary(data: Dict[str, Any], user_data: Dict[str, Any]):
+    """
+    Genera una sinopsis corta por IA para un libro.
+    """
+    from sqlalchemy import select
+
+    from core.db_manager_pg import pg_manager
+    from models.library_models import LocalBook
+    from services.ai_service import AIService
+
+    book_id_raw = data.get("bookId")
+    if not book_id_raw:
+        raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
+
+    try:
+        book_id = int(str(book_id_raw).replace("local_", ""))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de libro inválido")
+
+    async with pg_manager.get_session() as session:
+        stmt = select(LocalBook).where(LocalBook.id == book_id)
+        res = await session.execute(stmt)
+        book = res.scalar()
+
+        if not book:
+            raise HTTPException(status_code=404, detail="Libro no encontrado")
+
+        if not book.description:
+            return {"success": False, "message": "El libro no tiene una descripción base para resumir."}
+
+        # Generar sinopsis
+        summary = await AIService.generate_synopsis(book.title, book.description)
+        if summary:
+            book.summary = summary
+            await session.commit()
+            return {
+                "success": True, 
+                "summary": summary,
+                "message": "Sinopsis generada y guardada."
+            }
+        else:
+            return {"success": False, "message": "Fallo al generar la sinopsis con IA."}

@@ -191,3 +191,33 @@ class AIService:
         except Exception as e:
             logger.error(f"Error analyzing series: {e}")
             return {"error": str(e)}
+
+    @staticmethod
+    async def generate_synopsis(title: str, description: str) -> Optional[str]:
+        """Genera una sinopsis corta y atractiva para el libro."""
+        model = AIService._get_model()
+        if not model:
+            return None
+
+        prompt = f"""
+        Actúa como un redactor creativo de una editorial de novelas ligeras. Tu tarea es escribir una sinopsis corta y atractiva para el siguiente libro.
+        
+        Título: "{title}"
+        Descripción Original: "{description[:2000] if description else 'Sin descripción'}" 
+        
+        Reglas:
+        1. Idioma: Español.
+        2. Longitud: Máximo 300 caracteres.
+        3. Tono: Intrigante y emocionante.
+        4. Evita: Spoilers innecesarios y listas de capítulos. Solo el núcleo de la trama.
+        5. Formato: Solo el texto de la sinopsis, sin comillas ni intros.
+        """
+
+        try:
+            # Use basic model for text output
+            simple_model = genai.GenerativeModel("gemini-1.5-flash")
+            response = await simple_model.generate_content_async(prompt)
+            return response.text.strip()
+        except Exception as e:
+            logger.error(f"Error generando sinopsis: {e}")
+            return None

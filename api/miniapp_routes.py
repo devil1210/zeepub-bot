@@ -181,7 +181,8 @@ async def handle_bot_request(
             handle_user_status,
             handle_ai_stats,
             handle_ai_scan_series,
-            handle_ai_apply_changes
+            handle_ai_apply_changes,
+            handle_ai_generate_summary
         )
 
         ACTION_HANDLERS = {
@@ -203,6 +204,7 @@ async def handle_bot_request(
             "ai_stats": handle_ai_stats,
             "ai_scan_series": handle_ai_scan_series,
             "ai_apply_changes": handle_ai_apply_changes,
+            "ai_generate_summary": handle_ai_generate_summary,
             "admin_stats": handle_admin_stats,
             "admin_get_tiers": handle_admin_get_tiers,
             "admin_save_tier": handle_admin_save_tier,
