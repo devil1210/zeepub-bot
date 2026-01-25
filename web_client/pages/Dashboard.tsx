@@ -126,23 +126,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="lg:col-span-8 space-y-8">
 
           {/* Hero / Greeting */}
-          <div className="pt-4 md:pt-2 relative group">
-            <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 to-transparent rounded-[3rem] blur-3xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
+          <div className="pt-6 md:pt-4 relative group">
+            <div className="absolute -top-20 -left-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] pointer-events-none animate-pulse-slow"></div>
             <div className="relative">
-              <h1 className="text-4xl md:text-5xl lg:text-7xl font-black text-gray-900 dark:text-white tracking-tighter mb-4 leading-[1.1]">
-                Hola, <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary via-blue-400 to-indigo-500 animate-gradient-x">{userName}</span> 👋
+              <div className="flex items-center gap-3 mb-4 animate-in fade-in slide-in-from-left-4 duration-700">
+                <span className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em]">
+                  Vista General
+                </span>
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
+                <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">
+                  {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </span>
+              </div>
+              <h1 className="text-5xl md:text-6xl lg:text-8xl font-black text-gray-900 dark:text-white tracking-tighter mb-6 leading-[0.95] drop-shadow-2xl">
+                Hola, <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary via-blue-400 to-indigo-500 animate-gradient-x">
+                  {userName}
+                </span> 👋
               </h1>
-              <p className="text-gray-400 text-xl mb-4 font-medium opacity-80 max-w-xl">
+              <p className="text-gray-400 text-xl md:text-2xl mb-2 font-medium opacity-80 max-w-2xl leading-relaxed">
                 {extendedInfo?.customStatus || "Hoy es un gran día para descubrir mundos nuevos a través de la lectura."}
               </p>
+
               {extendedInfo?.insignias && extendedInfo.insignias.length > 0 && (
-                <div className="flex flex-wrap gap-2.5 mt-4">
+                <div className="flex flex-wrap gap-2.5 mt-8">
                   {extendedInfo.insignias.map((badge, idx) => (
                     <div
                       key={idx}
-                      className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[var(--panel-bg-subtle)] text-gray-300 border border-[var(--panel-border)] hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all duration-300 cursor-default flex items-center gap-2"
+                      className="px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-white/5 text-gray-300 border border-white/10 hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all duration-500 cursor-default flex items-center gap-2 group/badge"
                     >
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                      <div className="w-2 h-2 rounded-full bg-primary group-hover:scale-125 transition-transform shadow-[0_0_8px_rgba(var(--color-primary-rgb),0.5)]"></div>
                       {badge}
                     </div>
                   ))}
@@ -152,22 +165,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
 
           {/* Main Search Bar (Floating Glass) */}
-          <div className="relative group w-full">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-purple-600/20 to-blue-500/20 rounded-[2.5rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-500"></div>
-            <div className="relative glass-panel rounded-[2rem] p-3 flex items-center shadow-2xl backdrop-blur-2xl">
-              <div className="pl-6 text-primary">
-                <Search className="w-7 h-7" strokeWidth={2.5} />
+          <div className="relative group w-full pt-4">
+            <div className="absolute -inset-2 bg-gradient-to-r from-primary/30 via-purple-600/20 to-blue-500/30 rounded-[3rem] blur-3xl opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-500 animate-pulse-slow"></div>
+            <div className="relative glass-panel rounded-[2.5rem] p-4 flex items-center shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] backdrop-blur-3xl border-white/10 ring-1 ring-white/5 transition-all duration-500 group-focus-within:ring-primary/40 group-focus-within:border-primary/40">
+              <div className="pl-6 text-primary group-focus-within:scale-110 transition-transform duration-500">
+                <Search className="w-8 h-8" strokeWidth={3} />
               </div>
               <input
                 type="text"
                 placeholder="Busca mundos, autores, historias..."
-                className="w-full bg-transparent text-white p-5 text-lg md:text-xl placeholder-gray-500 focus:outline-none font-medium"
+                aria-label="Buscar en la biblioteca"
+                className="w-full bg-transparent text-white px-6 py-4 text-xl md:text-2xl placeholder-gray-600 focus:outline-none font-medium selection:bg-primary/30"
                 onClick={() => onNavigate && onNavigate('search')}
               />
               <button
                 onClick={() => onNavigate && onNavigate('search')}
-                className="hidden sm:flex bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20 active:scale-95 mr-2"
+                className="hidden sm:flex bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all shadow-[0_10px_25px_-5px_rgba(var(--color-primary-rgb),0.4)] active:scale-95 mr-2 group/btn relative overflow-hidden"
               >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-shimmer"></div>
                 Buscar
               </button>
             </div>
@@ -187,30 +202,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               const gridCols = 'grid-cols-2 sm:grid-cols-4';
 
               return (
-                <div className={`grid gap-5 ${gridCols}`}>
+                <div className={`grid gap-6 ${gridCols}`}>
                   {actions.map((item, i) => {
                     return (
                       <button
                         key={item.id}
                         onClick={() => onNavigate && onNavigate(item.id)}
-                        className="group relative h-40 flex flex-col items-center justify-center text-center gap-3 active:scale-95 transition-all duration-500"
+                        className="group relative h-44 flex flex-col items-center justify-center text-center gap-4 cursor-pointer active:scale-95 transition-all duration-500"
+                        aria-label={`Acceder a ${item.label}`}
                       >
                         {/* Glow and Background */}
-                        <div className={`absolute inset-0 rounded-[2.5rem] bg-[var(--panel-bg)] border border-[var(--panel-border)] group-hover:bg-[var(--panel-bg-lighter)] group-hover:border-[var(--panel-border-hover)] group-hover:shadow-2xl transition-all duration-500`}></div>
-                        <div className={`absolute -inset-0.5 bg-gradient-to-br from-white/10 to-transparent rounded-[2.5rem] opacity-0 group-hover:opacity-10 transition duration-500`}></div>
+                        <div className={`absolute inset-0 rounded-[2.8rem] bg-[var(--panel-bg)] border border-[var(--panel-border)] group-hover:bg-white/[0.07] group-hover:border-white/20 group-hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-700`}></div>
 
-                        {/* Icon Circle */}
-                        <div className={`relative z-10 p-4 rounded-2xl ${item.bg} ${item.color} border border-[var(--panel-border)] shadow-inner group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-500`}>
-                          <item.icon className="w-7 h-7" strokeWidth={2.5} />
+                        {/* Dynamic Icon Background Glow */}
+                        <div className={`absolute w-16 h-16 rounded-full ${item.bg} blur-2xl opacity-0 group-hover:opacity-40 transition-opacity duration-700`}></div>
+
+                        {/* Icon Container */}
+                        <div className={`relative z-10 p-5 rounded-[1.6rem] ${item.bg} ${item.color} border border-white/5 shadow-inner group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-700`}>
+                          <item.icon className="w-8 h-8" strokeWidth={2.5} />
                         </div>
 
                         <div className="relative z-10">
-                          <span className="block text-white font-black text-xs uppercase tracking-[0.1em] mb-1">{item.label}</span>
-                          <span className="block text-gray-500 text-[9px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{item.desc}</span>
+                          <span className="block text-white font-black text-[13px] uppercase tracking-[0.15em] mb-1.5 drop-shadow-sm group-hover:text-primary transition-colors">{item.label}</span>
+                          <span className="block text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] opacity-50 group-hover:opacity-100 transition-opacity duration-500">{item.desc}</span>
                         </div>
-
-                        {/* Hover Decorative Element */}
-                        <div className={`absolute bottom-6 w-1 h-1 rounded-full ${item.bg.replace('bg-', 'bg-').split('/')[0]} opacity-0 group-hover:opacity-100 group-hover:scale-[3] transition-all duration-500`}></div>
                       </button>
                     );
                   })}
@@ -316,15 +331,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <button
                       key={item.id}
                       onClick={() => onNavigate && onNavigate(item.id)}
-                      className="group relative h-32 flex flex-col items-center justify-center text-center gap-2 active:scale-95 transition-all duration-500"
+                      className="group relative h-36 flex flex-col items-center justify-center text-center gap-3 cursor-pointer active:scale-95 transition-all duration-500"
+                      aria-label={`Administrar ${item.label}`}
                     >
-                      <div className={`absolute inset-0 rounded-[2rem] bg-[var(--panel-bg)] border border-[var(--panel-border)] group-hover:bg-[var(--panel-bg-lighter)] group-hover:border-[var(--panel-border-hover)] group-hover:shadow-2xl transition-all duration-500`}></div>
-                      <div className={`relative z-10 p-3 rounded-xl ${item.bg} ${item.color} border border-[var(--panel-border)] shadow-inner group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-500`}>
+                      <div className={`absolute inset-0 rounded-[2.2rem] bg-[var(--panel-bg)] border border-[var(--panel-border)] group-hover:bg-white/[0.05] group-hover:border-white/20 group-hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] transition-all duration-700`}></div>
+
+                      <div className={`relative z-10 p-4 rounded-2xl ${item.bg} ${item.color} border border-white/5 shadow-inner group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-700`}>
                         <item.icon className="w-6 h-6" strokeWidth={2.5} />
                       </div>
+
                       <div className="relative z-10">
-                        <span className="block text-white font-black text-[10px] uppercase tracking-[0.1em] mb-0.5">{item.label}</span>
-                        <span className="block text-gray-500 text-[8px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{item.desc}</span>
+                        <span className="block text-white font-black text-[11px] uppercase tracking-[0.12em] mb-1 group-hover:text-primary transition-colors">{item.label}</span>
+                        <span className="block text-gray-500 text-[9px] font-bold uppercase tracking-[0.15em] opacity-50 group-hover:opacity-100 transition-opacity duration-500">{item.desc}</span>
                       </div>
                     </button>
                   ))}
@@ -339,76 +357,85 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="lg:col-span-4 space-y-6">
 
           {/* Profile / Stats Widget */}
-          <div className="glass-panel rounded-[2.5rem] p-8 relative overflow-hidden group hover:scale-[1.01] transition-all duration-700 shadow-premium">
+          <div className="glass-panel rounded-[3rem] p-10 relative overflow-hidden group hover:scale-[1.01] transition-all duration-700 shadow-premium border-white/10">
             <div
-              className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] group-hover:bg-primary/20 transition-all duration-1000 pointer-events-none"
+              className="absolute -top-32 -right-32 w-80 h-80 bg-primary/10 rounded-full blur-[120px] group-hover:bg-primary/20 transition-all duration-1000 pointer-events-none"
               style={{ opacity: settings.cardGlowIntensity }}
             ></div>
 
-            <div className="flex items-center gap-5 mb-10 relative z-10">
+            <div className="flex items-center gap-6 mb-12 relative z-10">
               <div className="relative group/avatar">
-                <div className="absolute -inset-1.5 bg-gradient-to-tr from-primary via-purple-500 to-blue-400 rounded-[2rem] blur opacity-40 group-hover/avatar:opacity-100 transition duration-700 animate-pulse"></div>
-                <div className="relative w-20 h-20 rounded-[1.75rem] p-[2px] bg-white/10 overflow-hidden shadow-2xl">
-                  <div className="w-full h-full rounded-[1.6rem] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
+                <div className="absolute -inset-2 bg-gradient-to-tr from-primary via-purple-500 to-blue-400 rounded-3xl blur opacity-30 group-hover/avatar:opacity-80 transition duration-700 animate-pulse"></div>
+                <div className="relative w-24 h-24 rounded-[2rem] p-[3px] bg-white/10 overflow-hidden shadow-2xl">
+                  <div className="w-full h-full rounded-[1.85rem] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
                     <img
-                      src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"}
+                      src={tgUser?.photo_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=200"}
                       alt="Profile"
                       className="w-full h-full object-cover group-hover/avatar:scale-110 transition duration-1000"
                     />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-[3px] border-[#0a0a0c] rounded-full shadow-lg z-20"></div>
+                  <div className="absolute bottom-1 right-1 w-7 h-7 bg-green-500 border-4 border-[#0a0a0c] rounded-full shadow-lg z-20"></div>
                 </div>
               </div>
-              <div>
-                <h3 className="text-white font-black text-2xl tracking-tighter leading-none mb-1">{userLevel}</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-primary font-black uppercase tracking-[0.2em]">{status?.user?.role || "Free Member"}</span>
-                  <div className="w-1 h-1 rounded-full bg-white/20"></div>
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{tgUser?.username ? `@${tgUser.username}` : `ID: ${tgUser?.id}`}</span>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-white font-black text-3xl tracking-tighter leading-none mb-2 truncate">{userLevel}</h3>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="px-2 py-0.5 rounded-lg bg-primary/20 text-primary text-[9px] font-black uppercase tracking-[0.2em] border border-primary/20">{status?.user?.role || "Free Member"}</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/10"></div>
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest truncate">{tgUser?.username ? `@${tgUser.username}` : `ID: ${tgUser?.id}`}</span>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-8 relative z-10">
-              <div className="bg-[var(--panel-bg-subtle)] rounded-[2rem] p-6 border border-[var(--panel-border)] shadow-inner backdrop-blur-md relative overflow-hidden group/quota">
-                <div className="absolute top-0 right-0 p-2 opacity-5">
-                  <Zap className="w-20 h-20 text-primary" />
+            <div className="space-y-10 relative z-10">
+              <div className="bg-white/[0.03] rounded-[2.5rem] p-8 border border-white/5 shadow-inner backdrop-blur-3xl relative overflow-hidden group/quota">
+                <div className="absolute -top-6 -right-6 p-2 opacity-[0.03] rotate-12">
+                  <Zap className="w-32 h-32 text-primary" />
                 </div>
-                <div className="flex justify-between items-end mb-4 relative z-10">
-                  <span className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary animate-pulse" />
-                    Consumo Diario
-                  </span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-white font-black text-2xl tracking-tighter">{downloadsUsed}</span>
-                    <span className="text-gray-600 font-bold text-sm uppercase">/ {limitDisplay}</span>
+                <div className="flex justify-between items-end mb-6 relative z-10">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.25em] flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-primary animate-pulse" />
+                      Consumo Diario
+                    </span>
+                    <span className="text-white font-black text-4xl tracking-tighter">{downloadsUsed}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-gray-700 text-[8px] font-black uppercase tracking-widest">Límite Total</span>
+                    <span className="text-gray-500 font-black text-xl tracking-tighter">/ {limitDisplay}</span>
                   </div>
                 </div>
+
                 {!isUnlimited && (
-                  <div className="relative w-full h-2.5 bg-black/40 rounded-full overflow-hidden p-[1px] border border-[var(--panel-border)]">
-                    <div className="absolute inset-0 bg-primary/20 blur-[2px]"></div>
-                    <div className="relative h-full bg-gradient-to-r from-primary via-blue-400 to-indigo-500 rounded-full shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)] transition-all duration-1000 ease-out" style={{ width: `${progressPercent}%` }}></div>
+                  <div className="relative w-full h-3 bg-black/40 rounded-full overflow-hidden p-[1px] border border-white/5 shadow-inner">
+                    <div className="absolute inset-0 bg-primary/10 blur-[4px]"></div>
+                    <div
+                      className="relative h-full bg-gradient-to-r from-primary via-blue-400 to-indigo-500 rounded-full shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.6)] transition-all duration-1000 ease-out-expo"
+                      style={{ width: `${progressPercent}%` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent"></div>
+                    </div>
                   </div>
                 )}
                 {isUnlimited && (
-                  <div className="w-full h-2 bg-gradient-to-r from-yellow-500/20 via-amber-400/40 to-yellow-200/20 rounded-full animate-shimmer bg-[length:200%_100%]"></div>
+                  <div className="w-full h-2.5 bg-gradient-to-r from-amber-500/20 via-yellow-400/40 to-amber-200/20 rounded-full animate-shimmer bg-[length:200%_100%]"></div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
-                <div className="glass-panel rounded-[1.75rem] p-5 border-[var(--panel-border)] flex flex-col items-center justify-center text-center group/stat hover:bg-[var(--panel-bg-lighter)] hover:border-[var(--panel-border-hover)] transition-all duration-500">
-                  <div className="p-3 bg-green-500/10 rounded-2xl text-green-400 mb-3 border border-green-500/10 shadow-lg group-hover/stat:scale-110 group-hover/stat:rotate-3 transition-all duration-500">
-                    <TrendingUp className="w-5 h-5" />
+              <div className="grid grid-cols-2 gap-6">
+                <div className="glass-panel rounded-[2rem] p-6 border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-white/20 transition-all duration-700">
+                  <div className="p-4 bg-blue-500/10 rounded-2xl text-blue-400 mb-4 border border-blue-500/10 shadow-xl group-hover/stat:scale-110 group-hover/stat:rotate-3 transition-all duration-700">
+                    <TrendingUp className="w-6 h-6" strokeWidth={2.5} />
                   </div>
                   <span className="text-white font-black text-2xl tracking-tighter">Top 5%</span>
-                  <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-1 opacity-60">Status Ranking</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-2 opacity-50">Status Ranking</span>
                 </div>
-                <div className="glass-panel rounded-[1.75rem] p-5 border-[var(--panel-border)] flex flex-col items-center justify-center text-center group/stat hover:bg-[var(--panel-bg-lighter)] hover:border-[var(--panel-border-hover)] transition-all duration-500">
-                  <div className="p-3 bg-primary/10 rounded-2xl text-primary mb-3 border border-primary/10 shadow-lg group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-500">
-                    <Download className="w-5 h-5" />
+                <div className="glass-panel rounded-[2rem] p-6 border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-white/20 transition-all duration-700">
+                  <div className="p-4 bg-primary/10 rounded-2xl text-primary mb-4 border border-primary/10 shadow-xl group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-700">
+                    <Download className="w-6 h-6" strokeWidth={2.5} />
                   </div>
                   <span className="text-white font-black text-2xl tracking-tighter">{totalDownloads}</span>
-                  <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-1 opacity-60">Libros Leídos</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-2 opacity-50">Libros Leídos</span>
                 </div>
               </div>
             </div>

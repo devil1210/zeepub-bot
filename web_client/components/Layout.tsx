@@ -61,10 +61,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       } as React.CSSProperties}
     >
       {/* Background Mesh Gradients (Immersive) */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-40">
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/20 rounded-full blur-[150px] animate-pulse-slow"></div>
-        <div className="absolute bottom-[-10%] left-[-20%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px] animate-float"></div>
-        <div className="absolute top-[30%] left-[20%] w-[400px] h-[400px] bg-blue-400/5 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 opacity-50">
+        <div className="absolute top-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-primary/20 rounded-full blur-[180px] animate-pulse-slow"></div>
+        <div className="absolute bottom-[-15%] left-[-20%] w-[800px] h-[800px] bg-purple-600/10 rounded-full blur-[150px] animate-float"></div>
+        <div className="absolute top-[20%] left-[10%] w-[500px] h-[500px] bg-blue-400/5 rounded-full blur-[120px] animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--bg-color)]/20 to-[var(--bg-color)]"></div>
       </div>
 
       <div className="fixed inset-0 bg-[var(--bg-color)]/60 backdrop-blur-[2px] z-[1] pointer-events-none"></div>
@@ -88,23 +89,28 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar">
-          <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 mt-2">Menú Principal</p>
+        <nav className="flex-1 px-5 space-y-1.5 overflow-y-auto custom-scrollbar pt-4">
+          <p className="px-4 text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4 opacity-70">Menú Principal</p>
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden ${isActive
-                  ? 'bg-primary/10 text-white shadow-[inset_0_0_20px_rgba(43,108,238,0.1)]'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive
+                  ? 'bg-white/[0.08] text-white shadow-premium'
+                  : 'text-gray-500 hover:text-white hover:bg-white/5'
                   }`}
               >
-                {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full shadow-[0_0_10px_rgba(43,108,238,0.8)]"></div>}
-                <item.icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? 'text-primary' : 'text-gray-500 group-hover:text-white'}`} />
-                <span className={`text-sm font-medium ${isActive ? 'font-bold' : ''}`}>{item.label}</span>
-                {isActive && <ChevronRight className="w-4 h-4 ml-auto text-primary opacity-50" />}
+                {isActive && (
+                  <>
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-10 bg-primary rounded-r-full shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.8)]"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-50"></div>
+                  </>
+                )}
+                <item.icon className={`w-5.5 h-5.5 transition-all duration-500 group-hover:scale-110 ${isActive ? 'text-primary drop-shadow-[0_0_8px_rgba(var(--color-primary-rgb),0.5)]' : 'text-gray-600 group-hover:text-white'}`} />
+                <span className={`text-sm tracking-tight transition-all duration-500 ${isActive ? 'font-black' : 'font-medium'}`}>{item.label}</span>
+                {isActive && <ChevronRight className="w-4 h-4 ml-auto text-primary animate-in fade-in slide-in-from-left-2" />}
               </button>
             );
           })}
@@ -127,22 +133,25 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         </nav>
 
         {/* User Profile (Bottom of Sidebar) */}
-        <div className="p-4 mt-auto">
-          <div className="glass-panel p-3 rounded-2xl border border-[var(--panel-border)] flex items-center gap-3 hover:border-primary/30 transition-colors cursor-pointer group">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 p-[1px]">
-              <img
-                src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"}
-                alt="User"
-                className="w-full h-full rounded-full object-cover border border-black"
-              />
+        <div className="p-6 mt-auto">
+          <div
+            onClick={() => onTabChange('settings')}
+            className="glass-panel p-4 rounded-[1.75rem] border border-white/5 flex items-center gap-4 hover:border-primary/40 hover:bg-white/[0.05] transition-all duration-500 cursor-pointer group shadow-2xl"
+          >
+            <div className="relative group/avatar">
+              <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-purple-600 rounded-full blur opacity-20 group-hover/avatar:opacity-60 transition duration-500"></div>
+              <div className="relative w-11 h-11 rounded-full bg-white/10 p-[2px] overflow-hidden">
+                <img
+                  src={tgUser?.photo_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=200"}
+                  alt="User"
+                  className="w-full h-full rounded-full object-cover grayscale-[20%] group-hover/avatar:grayscale-0 transition-all duration-500"
+                />
+              </div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate">{tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Usuario'}</p>
-              <p className="text-xs text-primary font-medium truncate uppercase tracking-wider">{status?.user?.status_label || 'Visitante'}</p>
+              <p className="text-sm font-black text-white truncate leading-tight">{tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Usuario'}</p>
+              <p className="text-[10px] text-primary font-black truncate uppercase tracking-widest mt-1 opacity-80">{status?.user?.status_label || 'Visitante'}</p>
             </div>
-            <button className="text-gray-500 hover:text-white transition-colors">
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </aside>
