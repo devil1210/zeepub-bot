@@ -1,11 +1,10 @@
 
 import json
 import logging
-import os
 from typing import Any, Dict, Optional
 
 import google.generativeai as genai
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google.generativeai.types import HarmBlockThreshold, HarmCategory
 
 from config.config_settings import config
 
@@ -88,9 +87,7 @@ class AIService:
         try:
             # Ejecutar en threadpool para no bloquear el loop async
             response = await model.generate_content_async(prompt)
-            txt = response.text.strip()
-            if txt.startswith("```"):
-                txt = txt.strip("```").strip("json").strip()
+            txt = AIService._extract_json_from_text(response.text)
             return json.loads(txt)
         except Exception as e:
             logger.error(f"Error en consulta a Gemini: {e}")
@@ -158,9 +155,7 @@ class AIService:
         
         try:
             response = await model.generate_content_async(prompt)
-            txt = response.text.strip()
-            if txt.startswith("```"):
-                txt = txt.strip("```").strip("json").strip()
+            txt = AIService._extract_json_from_text(response.text)
             analysis = json.loads(txt)
             
             # Construir propuesta detallada
@@ -178,6 +173,7 @@ class AIService:
             # Esto se hace en código Python para garantizar consistencia con la Regla 8, 
             # usando el nombre de serie propuesto por la IA.
             for book in books:
+                current_vol = book.get("volume", 0)
                 # Pad volume with leading zero if needed (supporting floats like 8.5 -> 08.5)
                 vol_val = float(current_vol)
                 vol_str = f"{int(vol_val):02d}"
@@ -229,3 +225,18 @@ class AIService:
         except Exception as e:
             logger.error(f"Error generando sinopsis: {e}")
             return None
+
+    @staticmethod
+    def _extract_json_from_text(text: str) -> str:
+        """Extrae el bloque JSON de una respuesta de Gemini (maneja markdown)."""
+        txt = text.strip()
+        if "```json" in txt:
+            txt = txt.split("```json")[1].split("```")[0].strip()
+        elif "```" in txt:
+            # Buscar el primer bloque de código si no tiene etiqueta 'json'
+            parts = txt.split("```")
+            if len(parts) >= 3:
+                txt = parts[1].strip()
+            else:
+                txt = txt.strip("`").strip()
+        return txt
