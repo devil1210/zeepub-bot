@@ -381,6 +381,10 @@ async def handle_save_badge_config(data: dict[str, Any], user_data: dict[str, An
 
 async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
     """Envía el archivo del libro directamente a través del bot."""
+    from services.identity.identity_service import identity_service
+    from services.metadata_orchestrator.metadata_service import metadata_orchestrator
+    from services.delivery.delivery_service import delivery_service
+
     user_id = user_data.get("user_id")
     book_id = data.get("bookId")
     title = data.get("title", "Libro")
@@ -391,81 +395,37 @@ async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
     if not book_id:
         raise HTTPException(status_code=400, detail="Missing bookId")
 
-    from api.main import bot
-
+    # 1. Resolve Target Chat and Thread
     target_chat_id = user_id
     message_thread_id = None
-    is_admin = user_id in config.ADMIN_USERS
-
-    if is_admin:
+    
+    if identity_service.is_admin(user_data):
         if target == "channel":
-            target_chat_id = target_id_override or get_setting(
-                "mini_app_channel_id", "@ZeePubs"
-            )
+            target_chat_id = target_id_override or get_setting("mini_app_channel_id", "@ZeePubs")
         elif target == "group":
-            target_chat_id = target_id_override or get_setting(
-                "mini_app_group_id", "@ZeePubBotTest"
-            )
+            target_chat_id = target_id_override or get_setting("mini_app_group_id", "@ZeePubBotTest")
             message_thread_id = thread_id_override
 
-    metadata_override = None
-    actual_download_url = book_id  # Default to book_id for remote books
+    # 2. Get/Resolve Metadata
+    book_metadata = await metadata_orchestrator.resolve_book(book_id)
+    if not book_metadata:
+        # Fallback for books not in local library but available via URL
+        book_metadata = {"title": title, "url": book_id}
+        if not book_id.startswith("http"):
+            logger.warning(f"Book not found in library and not a URL: {book_id}")
 
-    logger.debug(
-        f"handle_download called with book_id: {book_id}, type: {type(book_id)}"
+    # 3. Deliver Book
+    success = await delivery_service.deliver(
+        platform="telegram",
+        target_id=user_id,
+        book_data=book_metadata,
+        options={
+            "target_chat_id": target_chat_id,
+            "message_thread_id": message_thread_id,
+            "title_override": title
+        }
     )
-
-    # Try to find book by content_hash first (most reliable)
-    if book_id and not book_id.startswith("http"):
-        try:
-            from sqlalchemy import select
-
-            from core.db_manager_pg import pg_manager
-            from models.library_models import LocalBook
-
-            async with pg_manager.get_session() as session:
-                lb = None
-
-                # Try by content_hash first
-                stmt_hash = select(LocalBook).where(LocalBook.book_hash == book_id)
-                res_hash = await session.execute(stmt_hash)
-                lb = res_hash.scalar_one_or_none()
-
-                # Fallback: try by ID if it's numeric
-                if not lb and (book_id.startswith("local_") or book_id.isdigit()):
-                    local_id = int(str(book_id).replace("local_", ""))
-                    stmt_id = select(LocalBook).where(LocalBook.id == local_id)
-                    res_id = await session.execute(stmt_id)
-                    lb = res_id.scalar_one_or_none()
-
-                # Fallback: try by filepath
-                if not lb and (
-                    book_id.startswith("/library/") or book_id.startswith("library/")
-                ):
-                    stmt_path = select(LocalBook).where(LocalBook.filepath == book_id)
-                    res_path = await session.execute(stmt_path)
-                    lb = res_path.scalar_one_or_none()
-
-                if lb:
-                    metadata_override = lb.to_dict()
-                    actual_download_url = lb.filepath
-                    logger.debug(
-                        f"Local book found: book_hash={metadata_override.get('hash')}, filepath={actual_download_url}"
-                    )
-                else:
-                    logger.warning(f"Book not found in library: {book_id}")
-        except Exception as e:
-            logger.error(f"Error fetching metadata for handle_download: {e}")
-
-    success = await enviar_libro_directo(
-        bot=bot.app.bot,
-        user_id=user_id,
-        title=title,
-        download_url=actual_download_url,
-        target_chat_id=target_chat_id,
-        message_thread_id=message_thread_id,
-        metadata_override=metadata_override,
-    )
+    
     return {"success": success}
 
 

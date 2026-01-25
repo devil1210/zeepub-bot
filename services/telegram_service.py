@@ -264,272 +264,93 @@ async def publicar_libro(
     menu_prep: tuple = None,
 ):
     """Descarga EPUB para metadatos, muestra portada, sinopsis y botones."""
-    bot = context.bot
-
+    from services.publisher.publisher_service import publisher_service
+    from services.metadata_orchestrator.metadata_service import metadata_orchestrator
     from core.state_manager import state_manager
+    from core.session_manager import session_manager
+    from utils.helpers import get_thread_id
 
     user_state = state_manager.get_user_state(uid)
-    from core.session_manager import session_manager
-
     lock = session_manager.get_publish_lock(uid)
 
     async with lock:
-        from utils.helpers import get_thread_id
-
         thread_id_origen = get_thread_id(update)
-
         destino = user_state.get("destino") or update.effective_chat.id
         chat_origen = user_state.get("chat_origen") or destino
         series_id = user_state.get("series_id")
         volume_id = user_state.get("volume_id")
         user_state["ultima_pagina"] = user_state.get("url", config.OPDS_ROOT_START)
 
-        # Solo usar thread_id si destino == chat_origen
+        # Topic resolution for Catalog
         thread_id_destino = thread_id_origen if destino == chat_origen else None
-
-        # API 9.3: Si es chat privado y es el origen, usar tópico de Catálogo
         if uid == destino:
             from services.topic_service import topic_service
-
             topic_id = await topic_service.get_topic_id(uid, "catalogo")
             if topic_id:
                 thread_id_destino = topic_id
 
-        # Verificar límite antes de descargar
+        # 1. Quota Check
         if not await can_download(uid):
-            await bot.send_message(
+            await context.bot.send_message(
                 chat_id=destino,
                 text="🚫 Has alcanzado tu límite de descargas por hoy.",
                 message_thread_id=thread_id_destino,
             )
             return
 
-        # Obtener metadatos OPDS
+        # 2. Metadata Gathering and Enrichment
+        # Start with OPDS metadata
         meta = await obtener_metadatos_opds(series_id, volume_id)
-
-        # Descargar EPUB para parsear metadatos
+        
         epub_downloaded = None
         if epub_url:
             import aiohttp
-
-            auth = (
-                aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
-                if config.OPDS_AUTH
-                else None
-            )
+            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
             epub_downloaded = await fetch_bytes(epub_url, timeout=120, auth=auth)
+            
             if epub_downloaded:
-                # Use centralized metadata enrichment
-                from services.epub_service import enrich_metadata_from_epub
-
-                meta = await enrich_metadata_from_epub(epub_downloaded, epub_url, meta)
-
-                # Guardar EPUB y metadatos para envío posterior
+                # Use orchestrator for enrichment
+                meta = await metadata_orchestrator.get_enriched_metadata(
+                    book_id=epub_url, 
+                    epub_bytes=epub_downloaded
+                )
+                
+                # Maintain state for subsequent download click
                 user_state["epub_buffer"] = epub_downloaded
                 user_state["epub_url"] = epub_url
                 user_state["meta_pendiente"] = meta
+                
+                # Calculate size for display
+                if isinstance(epub_downloaded, (bytes, bytearray)):
+                    meta["size_mb"] = len(epub_downloaded) / (1024 * 1024)
+                elif isinstance(epub_downloaded, str):
+                    meta["size_mb"] = os.path.getsize(epub_downloaded) / (1024 * 1024)
 
-        # Store pending portada and title so callback flows can continue
+        # Fallback for cover and title
+        if not meta.get("cover"): meta["cover"] = portada_url
+        if not meta.get("title"): meta["title"] = titulo
+
+        # 3. Cleanup "Preparing" message
+        if menu_prep:
+            try:
+                await context.bot.delete_message(chat_id=menu_prep[0], message_id=menu_prep[1])
+            except: pass
+
+        # 4. Announce Book using PublisherService
+        await publisher_service.announce(
+            platform="telegram",
+            target_id=destino,
+            book_data=meta,
+            options={
+                "message_thread_id": thread_id_destino,
+                "state": user_state
+            }
+        )
+
         user_state["portada_pendiente"] = portada_url
         user_state["titulo_pendiente"] = titulo
 
-        logger.debug(
-            "publicar_libro called uid=%s titulo=%r destino=%s chat_origen=%s",
-            uid,
-            titulo,
-            destino,
-            chat_origen,
-        )
 
-        # Borrar mensaje "Preparando..." si existe
-        if menu_prep:
-            try:
-                await bot.delete_message(chat_id=menu_prep[0], message_id=menu_prep[1])
-            except Exception as e:
-                logger.debug("No se pudo borrar mensaje 'Preparando...': %s", e)
-
-        # For publishers the choice is asked earlier; just continue publishing normally
-
-        # Dentro de publicar_libro, donde quieras enviar portada:
-        mensaje_portada = formatear_mensaje_portada(meta)
-
-        # Extraer portada embebida
-        cover_bytes = None
-        if epub_downloaded:
-            cover_bytes = extract_cover_from_epub(epub_downloaded)
-
-        # Fallback a URL OPDS
-        if cover_bytes:
-            portada_data = cover_bytes
-        else:
-            import aiohttp
-
-            auth = (
-                aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
-                if config.OPDS_AUTH
-                else None
-            )
-            portada_data = await fetch_bytes(portada_url, timeout=15, auth=auth)
-
-        await send_photo_bytes(
-            bot,
-            destino,
-            mensaje_portada,
-            portada_data,
-            filename="cover.jpg",
-            parse_mode="HTML",
-            message_thread_id=thread_id_destino,
-        )
-
-        if not cover_bytes:
-            cleanup_tmp(portada_data)
-
-        # Sinopsis
-        sinopsis = meta.get("sinopsis")
-        if not sinopsis:
-            if series_id and volume_id:
-                sinopsis = await obtener_sinopsis_opds_volumen(series_id, volume_id)
-            if not sinopsis and series_id:
-                try:
-                    sinopsis = await obtener_sinopsis_opds(series_id)
-                except Exception as e:
-                    logger.error(f"Error sinopsis OPDS: {e}")
-
-        if sinopsis:
-            sinopsis_esc = escapar_html(sinopsis)
-            texto = f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
-            try:
-                await bot.send_message(
-                    chat_id=destino,
-                    text=texto,
-                    parse_mode="HTML",
-                    message_thread_id=thread_id_destino,
-                )
-            except BadRequest as e:
-                if (
-                    "Message thread not found" in str(e)
-                    and thread_id_destino is not None
-                ):
-                    await bot.send_message(
-                        chat_id=destino,
-                        text=texto,
-                        parse_mode="HTML",
-                        message_thread_id=None,
-                    )
-                else:
-                    raise e
-        else:
-            slug = generar_slug_from_meta(meta)
-            fallback = (
-                f"Sinopsis: (no disponible)\n#{slug}"
-                if slug
-                else "Sinopsis: (no disponible)"
-            )
-            try:
-                await bot.send_message(
-                    chat_id=destino, text=fallback, message_thread_id=thread_id_destino
-                )
-            except BadRequest as e:
-                if (
-                    "Message thread not found" in str(e)
-                    and thread_id_destino is not None
-                ):
-                    await bot.send_message(
-                        chat_id=destino, text=fallback, message_thread_id=None
-                    )
-                else:
-                    raise e
-
-        # Mostrar botones
-        # Calcular tamaño y versión para el mensaje de confirmación
-        if epub_downloaded:
-            # Calcular tamaño: fetch_bytes puede devolver bytes o ruta de archivo
-            if isinstance(epub_downloaded, (bytes, bytearray)):
-                size_mb = len(epub_downloaded) / (1024 * 1024)
-            elif isinstance(epub_downloaded, str) and await asyncio.to_thread(
-                os.path.exists, epub_downloaded
-            ):
-                size_mb = (
-                    await asyncio.to_thread(os.path.getsize, epub_downloaded)
-                ) / (1024 * 1024)
-            else:
-                size_mb = 0.0
-
-            version = meta.get("epub_version", "2.0")
-            fecha = meta.get("fecha_modificacion", "Desconocida")
-            titulo_vol = meta.get("titulo_volumen") or titulo or "Desconocido"
-
-            # --- Stars Display (v6.1.0) ---
-            rating_txt = ""
-            if meta.get("rating_average"):
-                avg = meta.get("rating_average")
-                count = meta.get("rating_count", 0)
-                if avg > 0:
-                    rating_txt = f"\n⭐ {avg:.1f} ({count} votos)"
-            # ------------------------------
-
-            info_text = (
-                f"📂 <b>{titulo_vol}</b>\n"
-                f"ℹ️ Versión Epub: {version}\n"
-                f"📅 Actualizado: {fecha}\n"
-                f"📦 Tamaño: {size_mb:.2f} MB{rating_txt}"
-            )
-
-            slug = generar_slug_from_meta(meta)
-            if slug:
-                info_text += f"\n#{slug}"
-
-            # Enviar mensaje de información separado (siempre en chat_origen con thread_id)
-            try:
-                msg_info = await bot.send_message(
-                    chat_id=chat_origen,
-                    text=info_text,
-                    parse_mode="HTML",
-                    message_thread_id=thread_id_origen,
-                )
-            except BadRequest as e:
-                if (
-                    "Message thread not found" in str(e)
-                    and thread_id_origen is not None
-                ):
-                    msg_info = await bot.send_message(
-                        chat_id=chat_origen,
-                        text=info_text,
-                        parse_mode="HTML",
-                        message_thread_id=None,
-                    )
-                else:
-                    raise e
-            user_state["msg_info_id"] = msg_info.message_id
-
-        keyboard = [
-            [
-                InlineKeyboardButton("📥 Descargar", callback_data="descargar_epub"),
-                InlineKeyboardButton("↩️ Volver", callback_data="volver_ultima"),
-            ],
-        ]
-
-        try:
-            sent = await bot.send_message(
-                chat_id=chat_origen,
-                text="¿Deseas descargar este EPUB?",
-                parse_mode="HTML",
-                message_thread_id=thread_id_origen,
-                reply_markup=InlineKeyboardMarkup(keyboard),
-            )
-        except BadRequest as e:
-            if "Message thread not found" in str(e) and thread_id_origen is not None:
-                sent = await bot.send_message(
-                    chat_id=chat_origen,
-                    text="¿Deseas descargar este EPUB?",
-                    parse_mode="HTML",
-                    message_thread_id=None,
-                    reply_markup=InlineKeyboardMarkup(keyboard),
-                )
-            else:
-                raise e
-        user_state["msg_botones_id"] = sent.message_id
-        user_state["titulo_pendiente"] = titulo
 
 
 async def descargar_epub_pendiente(
