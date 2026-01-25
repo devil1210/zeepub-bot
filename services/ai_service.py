@@ -39,7 +39,7 @@ class AIService:
             }
 
             cls._model = genai.GenerativeModel(
-                model_name="gemini-1.5-pro",
+                model_name="gemini-3-flash-preview",
                 safety_settings=safety_settings,
                 generation_config={"response_mime_type": "application/json"}
             )
@@ -114,7 +114,7 @@ class AIService:
         try:
             # For this simple query we don't strictly need JSON, but let's keep it consistent or just get text
             # Override config for simple text
-            simple_model = genai.GenerativeModel("gemini-1.5-pro") 
+            simple_model = genai.GenerativeModel("gemini-3-flash-preview") 
             response = await simple_model.generate_content_async(prompt)
             return response.text.strip()
         except Exception:
@@ -223,7 +223,7 @@ class AIService:
 
         try:
             # Use basic model for text output
-            simple_model = genai.GenerativeModel("gemini-1.5-pro")
+            simple_model = genai.GenerativeModel("gemini-3-flash-preview")
             response = await simple_model.generate_content_async(prompt)
             return response.text.strip()
         except Exception as e:
