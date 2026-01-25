@@ -1,7 +1,7 @@
 import hashlib
 import html
-import re
 import os
+import re
 from typing import Any, Optional
 from urllib.parse import urljoin, urlparse
 
@@ -320,7 +320,19 @@ def generate_book_hash(
     s_norm = norm_string(series, lowercase=True)
     a_norm = norm_string(author, lowercase=True)
     t_norm = norm_string(book_type, lowercase=True)
-    v_norm = norm_string(volume, lowercase=True)
+    
+    # Normalización estricta de volumen para estabilidad del hash
+    v_norm = ""
+    if volume is not None:
+        try:
+            v_val = float(volume)
+            if v_val == int(v_val):
+                v_norm = str(int(v_val))
+            else:
+                v_norm = str(v_val)
+        except (ValueError, TypeError):
+            v_norm = norm_string(volume, lowercase=True)
+    
     tr_norm = norm_string(translator, lowercase=True)
     l_norm = norm_string(layout_by, lowercase=True)
     lang_norm = norm_string(language or "es", lowercase=True)

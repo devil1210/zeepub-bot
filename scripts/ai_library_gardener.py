@@ -80,8 +80,8 @@ async def process_groups(groups: List[dict]):
         console.print(f"\n[cyan]Procesando grupo:[/cyan] Hash={series_hash[:8]}... (Items: {count})")
         
         # 1. Determinar string de entrada para la IA
-        # Si tiene serie, usarla. Si no, usar el título.
-        input_name = rep_book.series if rep_book.series else rep_book.title
+        # Si tiene nombre en español (por filename o prev.), usarlo.
+        input_name = rep_book.filename or rep_book.series_spanish or rep_book.series or rep_book.title
         
         console.print(f"  [dim]Input para IA:[/dim] '{input_name}'")
         

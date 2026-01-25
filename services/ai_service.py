@@ -50,27 +50,33 @@ class AIService:
     @staticmethod
     async def normalize_book_metadata(filename: str, raw_meta: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
-        Analiza un libro y devuelve metadatos normalizados.
+        Analiza un libro y devuelve metadatos normalizados, priorizando la extracción de volumen desde metadatos internos.
         """
         model = AIService._get_model()
         if not model:
             return None
 
         prompt = f"""
-        Actúa como un bibliotecario experto en novelas ligeras y manga. Tu tarea es normalizar los metadatos de un archivo de libro.
-        
+        Actúa como un bibliotecario experto en novelas ligeras y manga. Tu tarea es normalizar los metadatos de un archivo de libro, extrayendo información precisa especialmente del número de volumen.
+
         Reglas de Normalización:
-        1. **Series (Spanish)**: El nombre de la serie limpio. Si es "Kono Subarashii...", usa "KonoSuba". Si es en inglés, usa el nombre común en español si existe o mantenlo en inglés pero limpio. Elimina "Volumen X", tags, etc.
-        2. **Volume**: Número del volumen. Si es 8, usa 8.0. Si es 8.5, usa 8.5.
-        3. **Group**: El grupo de traducción o editorial. Si no hay, usa "Unknown".
-        4. **Filename**: Genera el nombre de archivo EXACTO con este formato: "{{Series Name}} - V{{XX}} [{{Group}}].epub".
-           - XX debe ser siempre 2 dígitos (01, 09, 10).
-           - Si el volumen es float (8.5), usa (08.5).
-        5. **Censura**: Detecta si el libro es "Sin Censura" (Uncensored) o "A Color" extraído del nombre o tags.
+        1. **Series (Spanish)**: El nombre de la serie limpio. Elimina "Volumen X", tags, etc. 
+           **REGLA DE ORO**: PRIORIZA SIEMPRE EL IDIOMA ESPAÑOL. Aunque la serie sea más conocida por su nombre en Inglés o Romaji, debes usar el título oficial en español (ej: "El calabozo oculto en el que solo yo puedo entrar" en lugar de "The Hidden Dungeon..." u "Ore dake Haireru...").
+        2. **Volume (EXTREMANTE IMPORTANTE)**: Debes extraer el número de volumen con total precisión.
+           - **Prioridad 1 (Metadata)**: Busca en la 'Metadata Cruda'. Busca campos como 'volume_index', 'calibre:series_index', o menciones dentro de 'titulo_volumen', 'title', o 'sinopsis'. 
+           - **Prioridad 2 (Filename)**: Si no hay metadata clara, usa el nombre del archivo.
+           - **Formato**: Devuelve un número (float). Ej: 1.0, 8.5.
+        3. **Group**: El grupo de traducción o editorial (ej. 'Athena', 'Traduxiones', 'Athena Scanlation'). Si no hay, usa "Unknown".
+        4. **Suggested Filename**: Genera el nombre de archivo EXACTO con este formato: "{{Series Clean}} - V{{XX}} [{{Group}}].epub".
+           - **REGLAS DE FORMATO V{{XX}}**:
+             - Si el volumen es entero (1, 9, 10): Usa 2 dígitos PAD. Ej: **V01, V09, V10**.
+             - Si el volumen es decimal (8.5): Usa 2 dígitos para la parte entera. Ej: **V08.5, V10.5**.
+             - **CRÍTICO**: NUNCA uses V01.0, V02.0, etc. Si es un número entero, no debe llevar decimales.
+        5. **Censura/Tipo**: Detecta si el libro es "Sin Censura" (Uncensored) o "A Color" basándote en la metadata cruda o el nombre.
 
         Datos de Entrada:
-        - Filename: "{filename}"
-        - Metadata Cruda: {json.dumps(raw_meta, default=str)}
+        - Filename Original: "{filename}"
+        - Metadata Cruda (Contenido del EPUB): {json.dumps(raw_meta, default=str)}
 
         Devuelve SOLO un JSON con esta estructura:
         {{
@@ -101,11 +107,15 @@ class AIService:
             return current_name
 
         prompt = f"""
-        Normaliza el siguiene nombre de una serie de novela ligera. Elimina volúmenes, "Novela Ligera", etiquetas de formato, y déjalo lo más limpio posible (Título Principal).
+        Normaliza el siguiente nombre de una serie de novela ligera.
+        
+        REGLAS:
+        1. Elimina volúmenes, "Novela Ligera", etiquetas de formato.
+        2. PRIORIZA SIEMPRE EL IDIOMA ESPAÑOL. Si el input está en Inglés o Romaji y conoces el título oficial en Español, usa el de Español.
         
         Input: "{current_name}"
         
-        Responde SOLO con el string del nombre limpio. Nada más.
+        Responde SOLO con el string del nombre limpio en ESPAÑOL. Nada más.
         """
         
         try:
@@ -128,8 +138,11 @@ class AIService:
             return {"error": "AI not configured"}
             
         # 1. Preparar contexto para la IA
-        # Tomamos hasta 5 títulos de muestra para que la IA entienda el patrón
-        sample_titles = [b.get("title", "") for b in books[:5]]
+        # Preferimos mostrar el filename o el nombre en español para que la IA entienda el estado actual
+        sample_titles = []
+        for b in books[:10]:
+            name = b.get("filename") or b.get("spanish_title") or b.get("title", "")
+            sample_titles.append(name)
         
         prompt = f"""
         Actúa como un bibliotecario experto. Analiza esta serie de novelas ligeras/manga y propón una estandarización.
@@ -139,7 +152,9 @@ class AIService:
         {json.dumps(sample_titles, indent=2)}
         
         Tareas:
-        1. **Series Name**: Determina el nombre canónico y limpio en Español (o Inglés si es el original). Elimina "Volumen X", "Novel", tags irrelevantes.
+        1. **Series Name**: Determina el nombre canónico y limpio en ESPAÑOL. 
+           - **REGLA CRÍTICA**: Ignora nombres en Inglés o Romaji si existe un título en Español. Preferimos "El calabozo oculto..." sobre "The Hidden Dungeon..." u "Ore dake Haireru...".
+           - Los archivos actuales pueden estar ya en español; úsalos como referencia.
         2. **Tags**: Detecta tags globales basados en los títulos (ej: "Uncensored", "Color").
         3. **Confidence**: Qué tan seguro estás de que estos libros pertenecen a la misma serie (0.0 a 1.0).
         
@@ -185,7 +200,7 @@ class AIService:
                 if book.get("filename") != new_filename:
                     proposal["changes"].append({
                         "book_id": book.get("id"),
-                        "current_filename": book.get("filename") or book.get("title"),
+                        "current_filename": book.get("filename") or book.get("filepath") or book.get("title"),
                         "proposed_filename": new_filename,
                         "volume": current_vol
                     })

@@ -471,12 +471,15 @@ class EPUBUploader:
         if volume is not None:
             try:
                 v_float = float(volume)
-                # Ensure at least 2 digits for integer part (e.g., 08 or 08.3)
-                if v_float == int(v_float):
-                    vol_str = f"{int(v_float):02d}"
+                v_int = int(v_float)
+                if v_float == v_int:
+                    vol_str = f"{v_int:02d}"
                 else:
-                    vol_str = f"{v_float:04.1f}"
-            except:
+                    # Formato decimal: aseguramos 2 dígitos en la parte entera
+                    v_str = str(v_float)
+                    parts = v_str.split('.')
+                    vol_str = f"{int(parts[0]):02d}.{parts[1]}"
+            except Exception:
                 vol_str = str(volume)
 
         # Detectar grupo (maquetador o traductor)

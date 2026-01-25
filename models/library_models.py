@@ -248,6 +248,8 @@ class LocalBook(Base):
             # Backward compatibility aliases
             "cover": self.cover_low or self.cover_medium or self.cover_high or self.cover_original,
             "cover_thumb": self.cover_low,
+            "filename": self.filename,
+            "filepath": self.filepath,
             "downloadUrl": self.filepath,  # Ruta local para enviar_libro_directo
             "is_folder": False,
             # Enriched data
