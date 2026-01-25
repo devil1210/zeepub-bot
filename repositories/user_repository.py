@@ -176,6 +176,15 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                 result = await session.execute(stmt)
                 levels = result.scalars().all()
                 
+                if not levels:
+                    await self.ensure_default_levels()
+                    # Re-query after seed
+                    result = await session.execute(stmt)
+                    levels = result.scalars().all()
+                
+                if not levels: # Fallback if seeding failed or still empty
+                    return self.get_default_levels()
+
                 return [
                     {
                         "id": str(l.id),
@@ -195,79 +204,152 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                 ]
         except Exception as e:
             logger.error(f"Error fetching user levels: {e}")
-            # Return default levels if database fails
-            return [
-                {
-                    "id": "1",
-                    "name": "Administrador",
-                    "priority": 100,
-                    "color": "#FF6B6B",
-                    "price": 0.0,
-                    "dailyDownloads": -1,
-                    "canDownload": True,
-                    "canRead": True,
-                    "hasAccess": True,
-                    "allowThemeTemplates": True,
-                    "earlyAccess": True,
-                    "customThemes": True
-                },
-                {
-                    "id": "2",
-                    "name": "Staff",
-                    "priority": 90,
-                    "color": "#4ECDC4",
-                    "price": 0.0,
-                    "dailyDownloads": 20,
-                    "canDownload": True,
-                    "canRead": True,
-                    "hasAccess": True,
-                    "allowThemeTemplates": True,
-                    "earlyAccess": True,
-                    "customThemes": True
-                },
-                {
-                    "id": "3",
-                    "name": "Premium",
-                    "priority": 80,
-                    "color": "#FFD93D",
-                    "price": 0.0,
-                    "dailyDownloads": 10,
-                    "canDownload": True,
-                    "canRead": True,
-                    "hasAccess": True,
-                    "allowThemeTemplates": True,
-                    "earlyAccess": True,
-                    "customThemes": True
-                },
-                {
-                    "id": "4",
-                    "name": "VIP",
-                    "priority": 70,
-                    "color": "#A8E6CF",
-                    "price": 0.0,
-                    "dailyDownloads": 7,
-                    "canDownload": True,
-                    "canRead": True,
-                    "hasAccess": True,
-                    "allowThemeTemplates": False,
-                    "earlyAccess": True,
-                    "customThemes": False
-                },
-                {
-                    "id": "5",
-                    "name": "Lector",
-                    "priority": 50,
-                    "color": "#B4B4B4",
-                    "price": 0.0,
-                    "dailyDownloads": 3,
-                    "canDownload": True,
-                    "canRead": True,
-                    "hasAccess": False,
-                    "allowThemeTemplates": False,
-                    "earlyAccess": False,
-                    "customThemes": False
-                }
-            ]
+            return self.get_default_levels()
+
+    def get_default_levels(self) -> list[dict[str, Any]]:
+        """Devuelve los niveles por defecto cuando la DB está vacía o falla."""
+        return [
+            {
+                "id": "1",
+                "name": "Administrador",
+                "priority": 100,
+                "color": "#FF4B4B",
+                "price": 0.0,
+                "dailyDownloads": -1,
+                "canDownload": True,
+                "canRead": True,
+                "hasAccess": True,
+                "allowThemeTemplates": True,
+                "earlyAccess": True,
+                "customThemes": True,
+                "canUploadEpub": True
+            },
+            {
+                "id": "2",
+                "name": "Staff",
+                "priority": 90,
+                "color": "#4ECDC4",
+                "price": 0.0,
+                "dailyDownloads": -1,
+                "canDownload": True,
+                "canRead": True,
+                "hasAccess": True,
+                "allowThemeTemplates": True,
+                "earlyAccess": True,
+                "customThemes": True,
+                "canUploadEpub": False
+            },
+            {
+                "id": "3",
+                "name": "Premium",
+                "priority": 80,
+                "color": "#FFD93D",
+                "price": 0.0,
+                "dailyDownloads": -1,
+                "canDownload": True,
+                "canRead": False,
+                "hasAccess": True,
+                "allowThemeTemplates": True,
+                "earlyAccess": False,
+                "customThemes": False,
+                "canUploadEpub": False
+            },
+            {
+                "id": "4",
+                "name": "VIP",
+                "priority": 70,
+                "color": "#1A5F7A",
+                "price": 0.0,
+                "dailyDownloads": 20,
+                "canDownload": True,
+                "canRead": False,
+                "hasAccess": True,
+                "allowThemeTemplates": True,
+                "earlyAccess": False,
+                "customThemes": False,
+                "canUploadEpub": False
+            },
+            {
+                "id": "5",
+                "name": "Patrocinador",
+                "priority": 60,
+                "color": "#FFFFFF",
+                "price": 0.0,
+                "dailyDownloads": 10,
+                "canDownload": True,
+                "canRead": False,
+                "hasAccess": True,
+                "allowThemeTemplates": True,
+                "earlyAccess": True,
+                "customThemes": False,
+                "canUploadEpub": False
+            },
+            {
+                "id": "6",
+                "name": "Gratis",
+                "priority": 0,
+                "color": "#888888",
+                "price": 0.0,
+                "dailyDownloads": 2,
+                "canDownload": True,
+                "canRead": False,
+                "hasAccess": True,
+                "allowThemeTemplates": True,
+                "earlyAccess": False,
+                "customThemes": False,
+                "canUploadEpub": False
+            }
+        ]
+
+    async def ensure_default_levels(self):
+        """Asegura que existan los niveles básicos en la base de datos."""
+        try:
+            from sqlalchemy import text
+            async with pg_manager.get_session() as session:
+                res = await session.execute(text("SELECT count(*) FROM user_levels"))
+                if res.scalar() > 0:
+                    return
+
+                logger.info("Seeding default user levels into Postgres...")
+                
+                defaults = self.get_default_levels()
+                for l in defaults:
+                    # Convert frontend-style keys to DB-style columns
+                    await session.execute(text("""
+                        INSERT INTO user_levels (
+                            id, name, priority, color, price, daily_downloads, 
+                            can_download, can_read, has_mini_app_access, 
+                            has_library_access, can_request_books, can_upload_epub, 
+                            early_access, custom_themes, allow_theme_templates, show_recommendations
+                        ) VALUES (
+                            :id, :name, :priority, :color, :price, :dailyDownloads, 
+                            :canDownload, :canRead, :hasAccess, 
+                            :has_library_access, :can_request_books, :canUploadEpub, 
+                            :earlyAccess, :customThemes, :allowThemeTemplates, :show_recommendations
+                        )
+                    """), {
+                        "id": int(l["id"]),
+                        "name": l["name"],
+                        "priority": l["priority"],
+                        "color": l["color"],
+                        "price": l["price"],
+                        "dailyDownloads": l["dailyDownloads"],
+                        "canDownload": l["canDownload"],
+                        "canRead": l["canRead"],
+                        "hasAccess": l["hasAccess"],
+                        "has_library_access": l.get("has_library_access", True),
+                        "can_request_books": l.get("can_request_books", True),
+                        "canUploadEpub": l["canUploadEpub"],
+                        "earlyAccess": l["earlyAccess"],
+                        "customThemes": l["customThemes"],
+                        "allowThemeTemplates": l["allowThemeTemplates"],
+                        "show_recommendations": l.get("show_recommendations", True)
+                    })
+                
+                await session.commit()
+                logger.info("Default user levels seeded.")
+        except Exception as e:
+            logger.error(f"Error seeding default levels: {e}")
 
     async def update_user_level(self, telegram_id: int, level_name: str, days: int = 30) -> bool:
         """Actualiza el nivel de un usuario y su fecha de expiración."""

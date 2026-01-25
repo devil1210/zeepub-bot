@@ -32,13 +32,17 @@ logger = logging.getLogger(__name__)
 
 
 def check_admin(user_data: dict[str, Any]):
+    uid = user_data.get("user_id") or user_data.get("telegram_id")
     if not rbac_service.is_admin(user_data):
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+        logger.warning(f"Admin Access Denied for user {uid} (Level: {user_data.get('level')})")
+        raise HTTPException(status_code=403, detail="Acceso denegado: Se requieren permisos de Administrador")
 
 
 def check_staff(user_data: dict[str, Any]):
+    uid = user_data.get("user_id") or user_data.get("telegram_id")
     if not rbac_service.is_staff(user_data):
-        raise HTTPException(status_code=403, detail="Acceso denegado")
+        logger.warning(f"Staff Access Denied for user {uid} (Level: {user_data.get('level')})")
+        raise HTTPException(status_code=403, detail="Acceso denegado: Se requieren permisos de Staff")
 
 # --- Handlers ---
 

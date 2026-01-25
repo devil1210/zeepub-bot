@@ -131,6 +131,19 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
             }
         } catch (err) {
             console.error("Error loading level config:", err);
+            if (!config) {
+                setConfig({
+                    id: levelId === 'global' ? 'global' : levelId,
+                    name: levelId === 'global' ? 'Global' : 'Nivel',
+                    theme: 'dark',
+                    primaryColor: '#3b82f6',
+                    backgroundColor: '#0f172a',
+                    cardColor: '#1e293b',
+                    glassOpacity: 0.6,
+                    glassBlur: 12,
+                    exportedSettings: ['theme', 'primaryColor', 'fontSize']
+                });
+            }
         } finally {
             setLoading(false);
         }

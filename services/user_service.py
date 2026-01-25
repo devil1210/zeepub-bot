@@ -201,7 +201,22 @@ async def get_effective_user(
     if is_config_admin:
         # Pre-fetch info to avoid NameError and sync level if needed
         info = await get_user_info(uid)
-        
+        if not info:
+            # Automatic upsert for config admins so they appear in users list
+            logger.info(f"Auto-upserting config admin {uid} into DB")
+            try:
+                await user_repo.upsert(
+                    uid, 
+                    level="Administrador", 
+                    role="admin", 
+                    name=nickname_from_tg or f"Admin_{uid}",
+                    username=username_from_tg or "",
+                    level_id=1
+                )
+                info = await get_user_info(uid)
+            except Exception as e:
+                logger.error(f"Failed to auto-upsert admin {uid}: {e}")
+
         if info and info.get("level_id") != 1:
             try:
                 await user_repo.update_user_level(uid, "Administrador", days=3650)
