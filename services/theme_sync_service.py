@@ -429,10 +429,9 @@ class ThemeSyncService:
                 
                 logger.info(f"Manual sync completed: Local: {local_added} added, {local_updated} updated; Supabase: {supabase_added} added, {supabase_updated} updated")
             
-            # Invalidate Caches
-            from services.theme_service import theme_service
-            await theme_service.invalidate_caches()
-
+                # Invalidate Caches
+                from services.theme_service import theme_service
+                await theme_service.invalidate_caches()
                 
                 return {
                     "status": "success",
