@@ -21,10 +21,6 @@
 venv/
 .env
 
-# Archivos compilados de Python
-__pycache__/
-*.py[cod]
-*$py.class
 
 # Logs
 *.log
@@ -104,3 +100,10 @@ __pycache__/
 
 !web_client/
 !web_client/**
+
+# --- Asegurar que archivos compilados NUNCA se suban ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
