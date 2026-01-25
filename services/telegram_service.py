@@ -445,187 +445,87 @@ async def descargar_epub_pendiente(
         )
         return
 
-    # Preparar envío - intentar enviar al destino
-    prep = None
-    try:
-        prep = await bot.send_message(
-            chat_id=destino,
-            text="⏳ Preparando archivo...",
-            message_thread_id=thread_id_destino,
-        )
-    except Forbidden:
-        # El bot no puede iniciar conversación con el usuario
-        # Mostrar botón para que inicie el bot primero
+    # Calculo de auto-borrado
+    delete_seconds = 0
+    if is_group and is_privileged and str(destino) == str(update.effective_chat.id):
+        from services.settings_service import get_setting
+        try:
+            delete_minutes_str = get_setting("auto_delete_time", "2")
+            delete_minutes = int(delete_minutes_str)
+            if delete_minutes > 0:
+                delete_seconds = delete_minutes * 60
+        except Exception:
+            pass
 
-        bot_username = (await bot.get_me()).username
-        start_link = f"https://t.me/{bot_username}?start=download"
+    # Usar DeliveryService
+    from services.delivery.delivery_service import delivery_service
 
-        keyboard = [[InlineKeyboardButton("🤖 Iniciar Bot", url=start_link)]]
+    # Preparar datos
+    book_data = {
+        "title": titulo,
+        "epub_buffer": epub_buffer, # Bytes or Path
+        "url": epub_url,
+        **meta # Include all metadata
+    }
 
-        await bot.send_message(
-            chat_id=chat_origen,
-            text="⚠️ Para recibir el archivo, primero debes iniciar una conversación privada con el bot.\n\n"
-                 "👉 Haz clic en el botón de abajo para iniciar el bot y luego intenta descargar nuevamente.",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            message_thread_id=thread_id_origen,
-        )
-        return
+    # Intentar enviar
+    success = await delivery_service.deliver(
+        platform="telegram",
+        target_id=uid, # User ID for quota checks
+        book_data=book_data,
+        options={
+            "target_chat_id": destino, # Where to send the file
+            "message_thread_id": thread_id_destino,
+            "job_queue": job_queue,
+            "auto_delete_seconds": delete_seconds
+        }
+    )
 
-    try:
-        # Enviar EPUB
-        fname = unquote(urlparse(epub_url).path.split("/")[-1]) or "archivo.epub"
-
-        # Calcular tamaño: epub_buffer puede ser bytes o ruta de archivo
-        if isinstance(epub_buffer, (bytes, bytearray)):
-            size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and await asyncio.to_thread(
-            os.path.exists, epub_buffer
-        ):
-            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (
-                1024 * 1024
-            )
-        else:
-            size_mb = 0.0
-        version = meta.get("epub_version", "2.0")  # Default a 2.0 si no se encuentra
-        fecha = meta.get("fecha_modificacion", "Desconocida")
-        titulo_vol = meta.get("titulo_volumen") or titulo or "Desconocido"
-
-        caption = (
-            f"📂 <b>{titulo_vol}</b>\n"
-            f"ℹ️ Versión Epub: {version}\n"
-            f"📅 Actualizado: {fecha}\n"
-            f"📦 Tamaño: {size_mb:.2f} MB"
-        )
-
-        slug = generar_slug_from_meta(meta)
-        if slug:
-            caption += f"\n#{slug}"
-
-        # Lógica de auto-borrado para admins en grupos
-        delete_seconds = 0
-        if is_group and is_privileged and str(destino) == str(update.effective_chat.id):
-            from services.settings_service import get_setting
-
-            try:
-                # Default 2 minutos (120s) si no está seteado. 0 = no borrar.
-                delete_minutes_str = get_setting("auto_delete_time", "2")
-                delete_minutes = int(delete_minutes_str)
-                logger.debug(
-                    f"Auto-delete check: group={is_group}, priv={is_privileged}, min={delete_minutes}"
-                )
-                if delete_minutes > 0:
-                    delete_seconds = delete_minutes * 60
-                    caption += f"\n\n🗑️ <i>Se borrará en {delete_minutes} min</i>"
-            except Exception as e:
-                logger.error(f"Error reading auto_delete_time: {e}")
-        else:
-            logger.debug(
-                f"Skipping auto-delete: group={is_group}, priv={is_privileged}"
-            )
-
-        sent_doc = await send_doc_bytes(
-            bot,
-            destino,
-            caption,
-            epub_buffer,
-            filename=fname,
-            parse_mode="HTML",
-            message_thread_id=thread_id_destino,
-        )
-
-        if sent_doc:
-            # Programar auto-borrado si corresponde
-            if delete_seconds > 0:
-                if job_queue:
-                    job_queue.run_once(
-                        lambda ctx: ctx.bot.delete_message(
-                            chat_id=destino, message_id=sent_doc.message_id
-                        ),
-                        when=delete_seconds,
-                    )
-                else:
-                    logger.warning("Auto-delete skipped: No job_queue available")
-
-            # Log to history
-            from services.history_service import log_published_book
-
-            # file_info construction
-            file_info = {
-                "file_size": sent_doc.document.file_size,
-                "file_unique_id": sent_doc.document.file_unique_id,
-            }
-            # Run in background or await? It's sync db op, maybe run in thread or make it async?
-            # The service uses sqlalchemy sync engine. Better to run in thread if possible, or just call it if it's fast.
-            # For now, just call it. SQLite is fast.
-            try:
-                log_published_book(
-                    meta=meta,
-                    message_id=sent_doc.message_id,
-                    channel_id=sent_doc.chat.id,
-                    file_info=file_info,
-                )
-            except Exception as e:
-                logger.error(f"Failed to log book history: {e}")
-
-        # Registrar descarga
-        record_download(uid)
-
-        # Gamificación: Incrementar contador y verificar hitos
-        from services.user_service import check_milestones, increment_download_count
-
-        await increment_download_count(uid)
+    if success:
+        # Gamificación: Hitos (No incluido en DeliveryService aún)
+        from services.user_service import check_milestones
         milestone_msg = await check_milestones(uid, context)
         if milestone_msg:
-            try:
+             try:
                 await bot.send_message(
                     chat_id=destino,
                     text=milestone_msg,
                     parse_mode="HTML",
                     message_thread_id=thread_id_destino,
                 )
-            except Exception as e:
-                logger.warning(f"Error enviando mensaje de hito: {e}")
+             except Exception: pass
 
-        # Registrar en historial de descargas
-        try:
-            from repositories.download_repository import download_repo
+    cleanup_tmp(epub_buffer)
 
-            author = meta.get("autor", "Desconocido")
+    if success:
+        # --- Interactive Feedback (v6.1.0) ---
+        # Mostrar botón de calificar si tenemos book_id local
+        if epub_url and ("local_library" in epub_url or os.path.exists(epub_url)):
+             try:
+                from models.library_models import LocalBook
+                from utils.library_db import get_session
 
-            # Enrich metadata if needed from title
-            from utils.helpers import parse_metadata_from_title
+                # Simple path matching. 
+                # Note: This session is sync, so we wrap or just use it quickly.
+                session = get_session()
+                book_db = session.query(LocalBook).filter_by(filepath=epub_url).first()
+                if book_db:
+                    kb_rate = [[InlineKeyboardButton("⭐ Calificar Libro", callback_data=f"prompt_rate|{book_db.id}")]]
+                    try:
+                        await bot.send_message(
+                            chat_id=destino,
+                            text="¿Qué te pareció este libro?",
+                            reply_markup=InlineKeyboardMarkup(kb_rate),
+                            message_thread_id=thread_id_destino
+                        )
+                    except Exception: pass
+                session.close()
+             except Exception as e:
+                logger.error(f"Error finding local book for rating: {e}")
+        # -------------------------------------
 
-            title_meta = parse_metadata_from_title(titulo_vol)
-
-            romaji = meta.get("romaji_title") or title_meta.get("romaji")
-            series = meta.get("titulo_serie") or title_meta.get("series")
-            volume = (
-                meta.get("volumen")
-                or meta.get("series_index")
-                or title_meta.get("volume")
-            )
-            clean_title = meta.get("internal_title") or title_meta.get("clean_title")
-            translator = meta.get("traductor") or meta.get("publisher")
-
-            await download_repo.add_download(
-                user_id=uid,
-                title=titulo_vol,
-                author=author,
-                download_url=epub_url,
-                file_size=int(size_mb * 1024 * 1024) if size_mb else None,
-                romaji_title=romaji,
-                series=series,
-                volume=volume,
-                translator=translator,
-                clean_title=clean_title,
-                book_hash=meta.get("book_hash"),
-                is_uncensored=meta.get("is_uncensored", 0),
-                color_mode=meta.get("color_mode", "bw")
-            )
-        except Exception as e:
-            logger.error(f"Error saving download history: {e}")
-
-        restantes = await downloads_left(uid)
+    from utils.download_limiter import downloads_left
+    restantes = await downloads_left(uid)
 
         # Mostrar descargas restantes (excepto Premium)
         if restantes != "ilimitadas":
@@ -728,6 +628,9 @@ async def enviar_libro_directo(
     format_type: str = "standard",
     message_thread_id: int = None,
     metadata_override: dict[str, Any] | None = None,
+    explicit_file_buffer: bytes | str | None = None,
+    job_queue = None,
+    auto_delete_seconds: int = 0,
 ):
     """
     Descarga y envía un libro directamente al usuario (para la Mini App).
@@ -758,11 +661,14 @@ async def enviar_libro_directo(
         # 3. Obtener EPUB (Local o Servidor)
         epub_bytes = None
 
+        if explicit_file_buffer:
+            logger.info(f"Usando buffer explícito para: {title}")
+            epub_bytes = explicit_file_buffer
         # Detectar si es ruta local absoluta
-        if download_url.startswith("/") and os.path.exists(download_url):
+        elif download_url and download_url.startswith("/") and os.path.exists(download_url):
             logger.info(f"Usando archivo local: {download_url}")
             epub_bytes = download_url  # send_doc_bytes acepta rutas
-        else:
+        elif download_url:
             logger.info(f"Descargando EPUB desde: {download_url}")
             import aiohttp
 
@@ -1022,6 +928,10 @@ async def enviar_libro_directo(
             if slug:
                 caption += f"\n#{slug}"
 
+            if auto_delete_seconds > 0:
+                mins = auto_delete_seconds // 60
+                caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
+
             # Nombre de archivo desde URL
             fname = (
                 unquote(urlparse(download_url).path.split("/")[-1]) or "archivo.epub"
@@ -1036,6 +946,17 @@ async def enviar_libro_directo(
                 parse_mode="HTML",
                 message_thread_id=message_thread_id,
             )
+
+            if sent_doc and auto_delete_seconds > 0:
+                if job_queue:
+                    job_queue.run_once(
+                        lambda ctx: ctx.bot.delete_message(
+                            chat_id=destino, message_id=sent_doc.message_id
+                        ),
+                        when=auto_delete_seconds,
+                    )
+                else:
+                    logger.warning("Auto-delete skipped: No job_queue provided")
 
             # Registrar en historial
             if sent_doc:
@@ -1639,105 +1560,62 @@ async def publicar_facebook_action(
     """Publica el post en Facebook."""
     bot = context.bot
 
+    from services.publisher.publisher_service import publisher_service
     from core.state_manager import state_manager
-
     user_state = state_manager.get_user_state(uid)
-
-    # Validar credenciales antes de proceder
-    from utils.helpers import validate_facebook_credentials
-
-    is_valid, error_msg = validate_facebook_credentials(config)
-
-    if not is_valid:
-        await bot.send_message(chat_id=uid, text=error_msg, parse_mode="HTML")
-        return
-
+    
     caption = user_state.get("fb_caption")
-
     if not caption:
         await bot.send_message(chat_id=uid, text="❌ No hay post preparado.")
         return
 
-    # Intentar obtener portada
-    epub_buffer = user_state.get("epub_buffer")
-    cover_bytes = None
-    if epub_buffer:
-        cover_bytes = extract_cover_from_epub(epub_buffer)
-
-    if not cover_bytes:
-        await bot.send_message(
-            chat_id=uid, text="⚠️ No se pudo obtener la portada para subir a Facebook."
-        )
-        return
-
-    # Subir a Facebook usando Graph API
-    import httpx
-
-    logger.debug(
-        "publicar_facebook_action: uid=%s publish_command_origin=%s thread=%s caption_len=%s",
-        uid,
-        user_state.get("publish_command_origin"),
-        user_state.get("publish_command_thread_id"),
-        len(caption) if caption else 0,
-    )
-
-    # Send progress message in the chat where the preview/button was clicked (origin) if available
+    # Send progress message
     publish_chat = (
         user_state.get("publish_command_origin") or update.effective_chat.id or uid
     )
     publish_thread = user_state.get("publish_command_thread_id")
     try:
-        msg = await bot.send_message(
+        await bot.send_message(
             chat_id=publish_chat,
             text="⏳ Publicando en Facebook...",
             message_thread_id=publish_thread,
         )
-    except BadRequest as e:
-        if "Message thread not found" in str(e) and publish_thread is not None:
-            msg = await bot.send_message(
+    except BadRequest:
+        # Retry without thread if failed (similar to original logic but simpler)
+        try:
+            await bot.send_message(
                 chat_id=publish_chat,
                 text="⏳ Publicando en Facebook...",
                 message_thread_id=None,
             )
-        else:
-            raise e
+        except: pass
 
-    try:
-        url = f"https://graph.facebook.com/{config.FACEBOOK_GROUP_ID}/photos"
+    # Prepare data for publisher
+    # Publisher needs cover_url and caption
+    book_data = {
+        "cover_url": user_state.get("portada_pendiente"),
+        "cover": user_state.get("portada_pendiente"), # Fallback key
+        # We pass other meta just in case, but caption is explict
+    }
+    
+    options = {
+        "caption": caption
+    }
 
-        # Limpiar caption de HTML para FB
-        clean_caption = (
-            caption.replace("<b>", "")
-            .replace("</b>", "")
-            .replace("<i>", "")
-            .replace("</i>", "")
+    success = await publisher_service.announce(
+        "facebook",
+        target_id=uid, # Not used by FB provider technically (it uses config Group ID), but required by interface
+        book_data=book_data,
+        options=options
+    )
+
+    if success:
+        await bot.send_message(
+            chat_id=uid,
+            text="✅ Publicado exitosamente en el Grupo de Facebook.",
         )
-
-        data = {
-            "caption": clean_caption,
-            "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
-            "published": "true",
-        }
-
-        # Enviar archivo
-        files = {"source": ("cover.jpg", io.BytesIO(cover_bytes), "image/jpeg")}
-
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(url, data=data, files=files, timeout=60)
-            resp.raise_for_status()
-            fb_res = resp.json()
-
-        # Notify origin chat and private publisher chat (if different)
-        await bot.edit_message_text(
-            chat_id=publish_chat,
-            message_id=msg.message_id,
-            text=f"✅ Publicado exitosamente!\nID: {fb_res.get('id')}",
-        )
-
-    except Exception as e:
-        logger.error(f"Error publicando en FB: {e}")
-        await bot.edit_message_text(
-            chat_id=publish_chat,
-            message_id=msg.message_id,
-            text=f"❌ Error al publicar: {str(e)}",
+    else:
+        await bot.send_message(
+            chat_id=uid,
+            text="❌ Error publicando en Facebook. Ver logs.",
         )

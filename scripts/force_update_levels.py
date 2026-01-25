@@ -1,6 +1,9 @@
 import asyncio
 import logging
 from sqlalchemy import text
+from config.config_settings import config
+config.DATABASE_URL = "postgresql://zeepub:zeepub@localhost:5432/zeepub"
+
 from core.db_manager_pg import pg_manager
 from repositories.user_repository import user_repo
 
