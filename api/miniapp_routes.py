@@ -119,7 +119,11 @@ async def handle_bot_request(
     # --- Control de Acceso por Niveles ---
     # Los administradores siempre tienen acceso.
     # El resto depende de su nivel (has_mini_app_access).
-    if user_effective.get("has_mini_app_access") is False and action != "status":
+    is_staff = user_level in ["admin", "staff"]
+    is_configured_admin = user_id in config.ADMIN_USERS
+    is_real_admin = user_effective.get("is_real_admin", False)
+    
+    if not user_effective.get("has_mini_app_access") and not is_staff and not is_real_admin and not is_configured_admin and action != "status":
         raise HTTPException(
             status_code=403, detail="Tu nivel de usuario no tiene acceso a la Mini App"
         )
@@ -292,8 +296,7 @@ async def check_user_access(
 
     # Everything we need is already in 'eff'
     # Everyone in config.ADMIN_USERS or with admin role is an admin
-    is_admin = (eff.get("level") == "admin") or eff.get("is_admin_db", False) or (uid in config.ADMIN_USERS)
-    eff.get("level") == "staff"
+    is_admin = (eff.get("level") in ["admin", "staff"]) or eff.get("is_admin_db", False) or (uid in config.ADMIN_USERS) or eff.get("is_real_admin", False)
     
     # Force access for all admins
     has_access = eff.get("has_mini_app_access", False)
@@ -377,16 +380,14 @@ async def check_user_access(
     )
 
     # Hotfix: Ensure role matches admin status to prevent frontend inconsistencies
-    if is_admin or eff.get("is_real_admin"):
+    if is_admin:
         response_payload.role = "admin"
         response_payload.customStatus = "admin"
         response_payload.status_label = "Admin"
-
-    if uid == 133994080:
-        try:
-            logger.warning(f"🚨 FINAL PAYLOAD FOR 133994080: {response_payload.model_dump_json()}")
-        except Exception as e:
-            logger.error(f"Failed to log payload: {e}")
+    
+    # Debug log for specified user
+    if uid == 133994080 or uid == 15000: # Added 15000 as common test ID
+        logger.warning(f"🚨 ACCESS RESPONSE for {uid}: isAdmin={response_payload.isAdmin}, role={response_payload.role}, level={response_payload.level.name}, status={response_payload.status_label}")
 
     return response_payload
 
@@ -424,8 +425,10 @@ async def upload_epub_miniapp(
     user_data: Dict[str, Any] = Depends(require_mini_app_access),
 ):
     """Sube un archivo EPUB y retorna su metadata para validación."""
-    # Los admins y usuarios con permiso pueden subir
-    if not user_data.get("can_upload_epub") and user_data.get("level") != "admin":
+    curr_uid = user_data.get("user_id", 0)
+    is_configured_admin = curr_uid in config.ADMIN_USERS
+    is_staff = user_data.get("level") in ["admin", "staff"]
+    if not user_data.get("has_mini_app_access") and not is_staff and not user_data.get("is_real_admin") and not is_configured_admin:
         raise HTTPException(
             status_code=403, detail="No tienes permiso para subir archivos EPUB"
         )
@@ -510,8 +513,9 @@ async def confirm_epub_upload_miniapp(
     upload_info = pending_uploads[upload_id]
     
     # Verificar que el usuario sea el mismo o admin
-    if upload_info['user_id'] != user_data['user_id'] and user_data.get("level") != "admin":
-        raise HTTPException(status_code=403, detail="No autorizado")
+    is_admin = user_data.get("level") in ["admin", "staff"] or user_data.get("is_real_admin") or user_data.get("is_admin_db")
+    if upload_info['user_id'] != user_data['user_id'] and not is_admin:
+        raise HTTPException(status_code=403, detail="No tienes permisos")
     
     try:
         from pathlib import Path

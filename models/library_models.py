@@ -28,6 +28,9 @@ class TranslatorsGroup(Base):
     name = Column(String(255), nullable=False)
     siglas = Column(String(50))
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SeriesMetadata(Base):
     """
     Centraliza la metadata de una serie para evitar redundancia en LocalBook.
     """

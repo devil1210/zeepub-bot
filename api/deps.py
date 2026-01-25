@@ -95,7 +95,8 @@ async def require_admin(user_data: Dict[str, Any] = Depends(get_current_user_dat
     Dependency that enforces admin role.
     Allows real admins even if they are currently simulating another level.
     """
-    if user_data.get("level") != "admin" and not user_data.get("is_real_admin"):
+    authorized_levels = ["admin", "staff"]
+    if user_data.get("level") not in authorized_levels and not user_data.get("is_real_admin"):
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return user_data
 
@@ -105,7 +106,8 @@ async def require_mini_app_access(
 ):
     curr_uid = user_data.get("user_id", 0)
     is_configured_admin = curr_uid in config.ADMIN_USERS
-    if not user_data.get("has_mini_app_access") and user_data.get("level") != "admin" and not user_data.get("is_real_admin") and not is_configured_admin:
+    is_staff = user_data.get("level") in ["admin", "staff"]
+    if not user_data.get("has_mini_app_access") and not is_staff and not user_data.get("is_real_admin") and not is_configured_admin:
         raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.",

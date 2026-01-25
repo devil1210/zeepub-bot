@@ -350,7 +350,7 @@ async def handle_remove_rating(data: Dict[str, Any], user_data: Dict[str, Any]):
 async def handle_save_badge_config(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda la configuración global de los badges (solo Admin)."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(
             status_code=403,
             detail="Solo administradores pueden guardar configuración global",
@@ -509,7 +509,7 @@ async def handle_ui_settings(data: Dict[str, Any], user_data: Dict[str, Any]):
             
             return {"success": True, "message": "Configuración personal guardada y sincronizada con la nube"}
         else:
-            if user_level != "admin":
+            if user_level not in ["admin", "staff"]:
                 raise HTTPException(
                     status_code=403,
                     detail="Solo administradores pueden cambiar la configuración global",
@@ -636,7 +636,7 @@ async def handle_rating_breakdown(data: Dict[str, Any], user_data: Dict[str, Any
 async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Calcula y devuelve estadísticas globales reales desde PostgreSQL para el Panel Admin."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
 
     from sqlalchemy import select, text
@@ -745,7 +745,7 @@ async def handle_admin_stats(data: Dict[str, Any], user_data: Dict[str, Any]):
 async def handle_admin_get_tiers(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene todos los niveles y su configuración."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     levels = await user_repo.get_all_levels()
@@ -756,7 +756,7 @@ async def handle_admin_get_tiers(data: Dict[str, Any], user_data: Dict[str, Any]
 async def handle_admin_save_tier(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda cambios en un nivel."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     level_id = data.get("id")
@@ -770,7 +770,7 @@ async def handle_admin_save_tier(data: Dict[str, Any], user_data: Dict[str, Any]
 async def handle_admin_get_users(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene la lista paginada de usuarios para el panel admin."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     limit = data.get("limit", 20)
@@ -785,7 +785,7 @@ async def handle_admin_get_users(data: Dict[str, Any], user_data: Dict[str, Any]
 async def handle_admin_set_user_level(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Cambia el nivel de un usuario específico."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     target_id = data.get("userId")
@@ -801,7 +801,7 @@ async def handle_admin_set_user_level(data: Dict[str, Any], user_data: Dict[str,
 async def handle_admin_scan_user(data: Dict[str, Any], user_data: Dict[str, Any], request=None):
     """Sincroniza la foto de perfil de un usuario desde Telegram."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     target_id = data.get("userId")
@@ -826,7 +826,7 @@ async def handle_admin_scan_user(data: Dict[str, Any], user_data: Dict[str, Any]
 async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Syncs SQLite library data (books, duplicates, uploads) to Supabase."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     if not config.ENABLE_SUPABASE:
@@ -965,7 +965,7 @@ async def handle_admin_backup_library(data: Dict[str, Any], user_data: Dict[str,
 async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Sincroniza usuarios y niveles locales (Postgres) a Supabase."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     if not config.ENABLE_SUPABASE:
@@ -1083,7 +1083,7 @@ async def handle_admin_sync_users_cloud(data: Dict[str, Any], user_data: Dict[st
 async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Activates forced library scan."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     force = data.get("force", False)
@@ -1124,7 +1124,7 @@ async def handle_admin_scan_library(data: Dict[str, Any], user_data: Dict[str, A
 async def handle_admin_scan_series(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Activates forced scan for a specific series."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     series_hash = data.get("series_hash")
@@ -1168,7 +1168,7 @@ async def handle_admin_scan_series(data: Dict[str, Any], user_data: Dict[str, An
 async def handle_admin_enrich_metadata(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Activates manual enrichment of metadata from online sources."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     async def run_enrichment_in_background(scanner_obj):
@@ -1198,7 +1198,7 @@ async def handle_admin_enrich_metadata(data: Dict[str, Any], user_data: Dict[str
 async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Reset complete library database (admin only, requires confirmation)."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     # Require explicit confirmation
@@ -1277,7 +1277,7 @@ async def handle_admin_reset_library(data: Dict[str, Any], user_data: Dict[str, 
 async def handle_admin_restart_docker(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Restart Docker container (admin only)."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     try:
@@ -1315,7 +1315,7 @@ async def handle_admin_restart_docker(data: Dict[str, Any], user_data: Dict[str,
 async def handle_admin_update_system(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Trigger system update (git pull + restart) using existing bot infrastructure."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     try:
@@ -1339,7 +1339,7 @@ async def handle_admin_update_system(data: Dict[str, Any], user_data: Dict[str, 
 async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Guarda la configuración completa de un nivel/tier."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     tier_name = data.get("name")
@@ -1493,7 +1493,7 @@ async def handle_admin_save_tier_config(data: Dict[str, Any], user_data: Dict[st
 async def handle_admin_get_tier_config(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene la configuración completa de un nivel/tier."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     tier_name = data.get("name")
@@ -1591,7 +1591,7 @@ async def handle_admin_get_themes(data: Dict[str, Any], user_data: Dict[str, Any
 
 async def handle_admin_sync_themes(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Ejecuta sincronización manual de temas."""
-    if user_data.get("level") != "admin":
+    if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     from services.theme_sync_service import theme_sync_service
@@ -1605,7 +1605,7 @@ async def handle_admin_sync_themes(data: Dict[str, Any], user_data: Dict[str, An
 
 async def handle_admin_get_sync_status(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene estado del motor de sincronización optimizado."""
-    if user_data.get("level") != "admin":
+    if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     from core.optimized_sync_engine import optimized_sync_engine
@@ -1626,7 +1626,7 @@ async def handle_admin_get_sync_status(data: Dict[str, Any], user_data: Dict[str
 
 async def handle_admin_force_sync(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Fuerza sincronización completa de todas las tablas."""
-    if user_data.get("level") != "admin":
+    if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     from core.optimized_sync_engine import optimized_sync_engine
@@ -1640,7 +1640,7 @@ async def handle_admin_force_sync(data: Dict[str, Any], user_data: Dict[str, Any
 
 async def handle_admin_rename_themes(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Renombra temas duplicados con nombres únicos usando detección mejorada."""
-    if user_data.get("level") != "admin":
+    if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     from sqlalchemy import text
@@ -1747,7 +1747,7 @@ async def handle_admin_rename_themes(data: Dict[str, Any], user_data: Dict[str, 
 
 async def handle_admin_get_theme_sync_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene historial de sincronizaciones de temas."""
-    if user_data.get("level") != "admin":
+    if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     from services.theme_sync_service import theme_sync_service
@@ -1760,7 +1760,7 @@ async def handle_admin_get_theme_sync_logs(data: Dict[str, Any], user_data: Dict
         return {"success": False, "message": str(e)}
 
 async def handle_admin_save_theme(data: Dict[str, Any], user_data: Dict[str, Any]):
-    if user_data.get("level") != "admin":
+    if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     theme_name = data.get("name")
@@ -1828,7 +1828,7 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
     """Guarda los permisos de un usuario específico."""
     logger.info(f"ADMIN: Save permissions request for data: {data}")
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     user_id = data.get("userId")
@@ -1968,7 +1968,7 @@ async def handle_admin_save_user_permissions(data: Dict[str, Any], user_data: Di
 async def handle_admin_get_user_permissions(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene los permisos de un usuario específico."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     user_id = data.get("userId")
@@ -2024,7 +2024,7 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
     Returns duplicate groups with file info and statistics.
     """
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     try:
@@ -2120,7 +2120,7 @@ async def handle_admin_find_duplicates(data: Dict[str, Any], user_data: Dict[str
 async def handle_admin_delete_duplicate(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Delete duplicate books safely, ensuring at least one copy remains."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     book_ids = data.get("book_ids", [])
@@ -2250,7 +2250,7 @@ async def handle_update_user_setting(data: Dict[str, Any], user_data: Dict[str, 
 async def handle_get_user_audit_history(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene el historial de cambios de un usuario."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     user_id = data.get("userId")
@@ -2282,7 +2282,7 @@ async def handle_get_user_audit_history(data: Dict[str, Any], user_data: Dict[st
 async def handle_admin_get_recent_audit_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Obtiene los cambios recientes en el sistema."""
     user_level = user_data.get("level", "free")
-    if user_level != "admin":
+    if user_level not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     try:
@@ -2308,7 +2308,7 @@ async def handle_admin_get_recent_audit_logs(data: Dict[str, Any], user_data: Di
 
 async def handle_admin_get_duplicates(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Retorna la lista de archivos duplicados detectados."""
-    if user_data.get("level") != "admin":
+    if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     session = get_session()
@@ -2336,7 +2336,7 @@ async def handle_admin_get_duplicates(data: Dict[str, Any], user_data: Dict[str,
 
 async def handle_admin_clear_duplicates(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Limpia la tabla de registros de duplicados."""
-    if user_data.get("level") != "admin":
+    if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     session = get_session()
@@ -2352,7 +2352,8 @@ async def handle_admin_clear_duplicates(data: Dict[str, Any], user_data: Dict[st
 
 async def handle_admin_get_system_logs(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Retorna los últimos logs capturados en memoria con opción de filtrado."""
-    if user_data.get("level") != "admin" and not user_data.get("is_admin_db"):
+    is_admin = user_data.get("level") in ["admin", "staff"] or user_data.get("is_real_admin") or user_data.get("is_admin_db")
+    if not is_admin:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     try:
@@ -2369,7 +2370,8 @@ async def handle_admin_get_system_logs(data: Dict[str, Any], user_data: Dict[str
 
 async def handle_admin_send_logs_telegram(data: Dict[str, Any], user_data: Dict[str, Any]):
     """Envía los logs capturados directamente al chat de Telegram del usuario."""
-    if user_data.get("level") != "admin" and not user_data.get("is_admin_db"):
+    is_admin = user_data.get("level") in ["admin", "staff"] or user_data.get("is_real_admin") or user_data.get("is_admin_db")
+    if not is_admin:
         raise HTTPException(status_code=403, detail="No tienes permisos")
     
     try:
