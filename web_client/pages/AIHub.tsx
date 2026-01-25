@@ -9,7 +9,9 @@ import {
     Activity,
     CheckCircle,
     AlertTriangle,
-    Play
+    Play,
+    X,
+    ArrowRight
 } from 'lucide-react';
 import { api } from '../src/services/api';
 
@@ -19,6 +21,12 @@ export const AIHub: React.FC = () => {
     const [scanHash, setScanHash] = useState('');
     const [scanResult, setScanResult] = useState<any>(null);
     const [scanning, setScanning] = useState(false);
+
+    // Search State
+    const [showSearch, setShowSearch] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searching, setSearching] = useState(false);
 
     useEffect(() => {
         loadStats();
@@ -51,6 +59,28 @@ export const AIHub: React.FC = () => {
             setScanning(false);
             loadStats(); // Refresh stats
         }
+    };
+
+    const runSearch = async () => {
+        if (!searchTerm) return;
+        setSearching(true);
+        try {
+            // Use sort='a-z' and type='all' for generic search
+            const res = await api.searchBooks(searchTerm, 1, 'all', 'a-z');
+            // Flatten results if they are mingled (LibraryService.search_series returns {results: [...]} )
+            setSearchResults(res.results || []);
+        } catch (e) {
+            console.error("Search failed", e);
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    const selectSeries = (s: any) => {
+        setScanHash(s.series_hash || '');
+        setShowSearch(false);
+        setSearchResults([]);
+        setSearchTerm('');
     };
 
     if (loading && !stats) {
@@ -136,6 +166,12 @@ export const AIHub: React.FC = () => {
                                     onChange={(e) => setScanHash(e.target.value)}
                                     className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 transition-all font-mono text-sm"
                                 />
+                                <button
+                                    onClick={() => setShowSearch(true)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all text-xs font-bold uppercase tracking-wider"
+                                >
+                                    Buscar
+                                </button>
                             </div>
                             <button
                                 onClick={handleScan}
@@ -201,6 +237,70 @@ export const AIHub: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Search Modal */}
+            {showSearch && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="w-full max-w-2xl bg-[#0a0a0c] border border-white/10 rounded-3xl p-6 shadow-2xl relative">
+                        <button
+                            onClick={() => setShowSearch(false)}
+                            className="absolute top-4 right-4 text-gray-500 hover:text-white"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+
+                        <h3 className="text-xl font-bold text-white mb-6">Buscar Serie</h3>
+
+                        <div className="flex gap-4 mb-6">
+                            <input
+                                type="text"
+                                placeholder="Nombre de la serie..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+                                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary"
+                                autoFocus
+                            />
+                            <button
+                                onClick={runSearch}
+                                disabled={searching}
+                                className="bg-primary hover:bg-primary/90 text-white px-6 rounded-xl font-bold transition-all"
+                            >
+                                {searching ? "..." : "Buscar"}
+                            </button>
+                        </div>
+
+                        <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                            {searchResults.map((s: any, idx) => (
+                                <div
+                                    key={idx}
+                                    onClick={() => selectSeries(s)}
+                                    className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex items-center gap-4 transition-all"
+                                >
+                                    {s.cover ? (
+                                        <img src={s.cover} className="w-10 h-14 object-cover rounded-md" alt="" />
+                                    ) : (
+                                        <div className="w-10 h-14 bg-white/10 rounded-md flex items-center justify-center">
+                                            <Search className="w-4 h-4 opacity-50" />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h4 className="font-bold text-white text-sm">{s.title || s.series}</h4>
+                                        <p className="text-xs text-gray-500">{s.author || 'Autor desconocido'}</p>
+                                        <p className="text-[10px] text-gray-600 font-mono mt-1">{s.series_hash}</p>
+                                    </div>
+                                    <div className="ml-auto">
+                                        <ArrowRight className="w-4 h-4 text-gray-600" />
+                                    </div>
+                                </div>
+                            ))}
+                            {searchTerm && !searching && searchResults.length === 0 && (
+                                <p className="text-center text-gray-500 py-8">No se encontraron resultados</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
