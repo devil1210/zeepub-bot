@@ -6,6 +6,7 @@ import os
 import re
 from datetime import datetime
 
+from sqlalchemy import func
 from models.library_models import DuplicateBook, LibrarySource, LocalBook
 from utils.epub_extractor import EpubMetadataExtractor
 from utils.helpers import (
@@ -105,6 +106,21 @@ class ScannerService:
 
                 source.last_scanned = datetime.utcnow()
                 session.commit()
+
+                session.commit()
+
+            # --- ORPHAN CHECK ---
+            # Verificar si hay libros en la DB que pertenecen a fuentes que NO se han escaneado en esta ejecución.
+            # Esto explica discrepancias entre Total Index y Libros Escaneados.
+            if results["sources_scanned"] > 0:
+                scanned_source_ids = [
+                    s.id for s in session.query(LibrarySource).filter(LibrarySource.path.in_(local_libs_map.values())).all()
+                ]
+                if scanned_source_ids:
+                    orphans = session.query(func.count(LocalBook.id)).filter(LocalBook.source_id.notin_(scanned_source_ids)).scalar()
+                    if orphans and orphans > 0:
+                        logger.warning(f"⚠️ ALERTA DE ORDANDAD: Existen {orphans} libros en la base de datos que pertenecen a fuentes NO incluidas en este escaneo. Total Index ({results['updated'] + orphans}) vs Escaneados ({results['updated']}).")
+                        results["orphans_skipped"] = orphans
 
             logger.info(f"Escaneo completado: {results}")
             return results
@@ -520,10 +536,13 @@ class ScannerService:
                                     author=book.author
                                 )
                                 session.add(dup)
-                                session.commit() # Save duplicate immediately to be safe
+                                # Force commit to ensure Duplicate is saved even if transaction rolls back later? 
+                                # Or just let it be part of the flow.
+                                # Since we return "duplicate", we should ensure it's persisted.
+                                session.commit() 
                         except Exception as de:
                             logger.error(f"Error guardando registro de duplicado: {de}")
-                            session.rollback()
+                            session.rollback() # Rollback only the duplicate attempt
 
                         return "duplicate"
                     else:
