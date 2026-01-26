@@ -2453,7 +2453,8 @@ async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> list[d
 
 async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve estadísticas sobre el uso de la IA."""
-    from models.library_models import LocalBook
+    from sqlalchemy import func
+    from models.library_models import LocalBook, AILearningFeedback
     from utils.library_db import get_session
 
     try:
@@ -2661,6 +2662,14 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             if not db_proposal:
                 raise HTTPException(status_code=404, detail="Propuesta no encontrada")
             proposal = db_proposal.proposal_data
+        else:
+            # Intentar encontrar una propuesta pendiente automática para esta misma serie
+            # (Por si el usuario triggeró el escaneo manualmente pero ya había una pendiente)
+            series_hash_raw = proposal.get("series_hash")
+            if series_hash_raw:
+                db_proposal = session.query(MetadataProposal).filter_by(
+                    series_hash=series_hash_raw, status="pending"
+                ).first()
 
         series_hash = proposal.get("series_hash")
         # Changes is a list of approved changes: { "book_id": 123, "proposed_filename": "..." }
@@ -2771,13 +2780,13 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         # 4. Log feedback for learning
         from services.ai_service import AIService
         status = "accepted"
-        if proposed_series != proposal.get("proposed_english"):
+        if proposed_series != proposal.get("proposed_series"):
             status = "edited"
             
         await AIService.log_feedback(
             series_hash=series_hash,
             original=proposal.get("current_series"),
-            proposed=proposal.get("proposed_english"),
+            proposed=proposal.get("proposed_series"),
             final=proposed_series,
             status=status,
             ai_reason=proposal.get("reason")

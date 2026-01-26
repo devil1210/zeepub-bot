@@ -357,7 +357,12 @@ class AIService:
                     VALUES (:h, :o, :p, :f, :s, :r)
                 """)
                 session.execute(query, {
-                    "h": series_hash, "o": original, "p": proposed, "f": final, "s": status, "r": ai_reason
+                    "h": series_hash, 
+                    "o": original or "Unknown", 
+                    "p": proposed or final or original or "Unknown", 
+                    "f": final or proposed or original or "Unknown", 
+                    "s": status, 
+                    "r": ai_reason
                 })
                 session.commit()
         except Exception as e:
