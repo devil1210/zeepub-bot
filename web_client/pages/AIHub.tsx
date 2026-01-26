@@ -49,6 +49,7 @@ export const AIHub: React.FC = () => {
     const [activeTab, setActiveTab] = useState('control');
     const [pendingList, setPendingList] = useState<any[]>([]);
     const [reviewedList, setReviewedList] = useState<any[]>([]);
+    const [proposals, setProposals] = useState<any[]>([]);
     const [loadingLists, setLoadingLists] = useState(false);
 
     useEffect(() => {
@@ -62,7 +63,8 @@ export const AIHub: React.FC = () => {
             if (res.result) {
                 setStats(res.result);
             }
-            // Load initial lists if needed
+            // Load initial lists
+            loadProposals();
             loadLists('pending');
             loadLists('reviewed');
         } catch (e) {
@@ -82,6 +84,20 @@ export const AIHub: React.FC = () => {
             }
         } catch (e) {
             console.error(`Failed to load ${type} list`, e);
+        } finally {
+            setLoadingLists(false);
+        }
+    };
+
+    const loadProposals = async () => {
+        try {
+            setLoadingLists(true);
+            const res = await api.getAiProposals();
+            if (res.proposals) {
+                setProposals(res.proposals);
+            }
+        } catch (e) {
+            console.error("Failed to load proposals", e);
         } finally {
             setLoadingLists(false);
         }
@@ -131,7 +147,8 @@ export const AIHub: React.FC = () => {
             setScanResult(res);
             setShowProposal(false);
             setProposal(null);
-            loadStats(); // Refresh final stats
+            loadStats(); // Refresh stats
+            loadProposals(); // Refresh proposals list
         } catch (e: any) {
             alert("Error aplicando cambios: " + e.message);
         } finally {
@@ -234,6 +251,7 @@ export const AIHub: React.FC = () => {
             <div className="flex items-center gap-2 bg-white/5 p-2 rounded-[2rem] border border-white/5 w-fit mb-12 overflow-x-auto max-w-full no-scrollbar shadow-inner">
                 {[
                     { id: 'control', label: 'Monitor', icon: BrainCircuit },
+                    { id: 'proposals', label: 'Propuestas', icon: Sparkles },
                     { id: 'pending', label: 'Pendientes', icon: Clock },
                     { id: 'reviewed', label: 'Historial', icon: CheckCircle },
                 ].map(tab => (
@@ -423,6 +441,151 @@ export const AIHub: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'proposals' && (
+                <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+                    <div className="glass-panel p-10 rounded-[3rem] border border-white/5 bg-gradient-to-b from-white/5 to-transparent shadow-2xl">
+                        <div className="flex items-center justify-between mb-10">
+                            <h3 className="text-2xl font-black text-white flex items-center gap-4">
+                                <Sparkles className="w-8 h-8 text-purple-400" />
+                                <span className="uppercase tracking-[0.3em] text-lg">Propuestas del Jardinero</span>
+                            </h3>
+                            <button
+                                onClick={loadProposals}
+                                className="p-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all active:scale-95"
+                                title="Refrescar propuestas"
+                            >
+                                <Activity className={`w-5 h-5 text-gray-400 ${loadingLists ? 'animate-spin text-primary' : ''}`} />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {loadingLists && proposals.length === 0 ? (
+                                <div className="col-span-full py-32 text-center text-gray-500 animate-pulse font-black uppercase tracking-[0.5em] text-xs font-mono">
+                                    ESCANENDO REPOSITORIO DE PROPUESTAS...
+                                </div>
+                            ) : proposals.length > 0 ? (
+                                proposals.map(p => (
+                                    <div
+                                        key={p.id}
+                                        className="relative p-8 bg-white/5 border-2 border-white/5 rounded-[2.5rem] hover:border-primary/20 transition-all flex flex-col group overflow-hidden"
+                                    >
+                                        {/* Type Badge */}
+                                        <div className={`absolute top-0 right-10 px-4 py-1.5 rounded-b-xl text-[9px] font-black uppercase tracking-widest ${p.type === 'merge' ? 'bg-amber-500/20 text-amber-400' : 'bg-primary/20 text-primary'
+                                            }`}>
+                                            {p.type === 'merge' ? 'FUSIÓN DETECTADA' : 'ENRIQUECIMIENTO'}
+                                        </div>
+
+                                        <div className="flex-1">
+                                            <div className="flex items-start gap-4 mb-6">
+                                                <div className={`p-4 rounded-2xl ${p.type === 'merge' ? 'bg-amber-500/10' : 'bg-primary/10'} shrink-0`}>
+                                                    {p.type === 'merge' ? <Trash2 className="w-6 h-6 text-amber-400" /> : <Sparkles className="w-6 h-6 text-primary" />}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-black text-white text-xl tracking-tight leading-tight mb-2">
+                                                        {p.type === 'merge' ? p.proposal.suggested_main_name : p.proposal.proposed_series}
+                                                    </h4>
+                                                    <p className="text-xs text-gray-500 font-medium leading-relaxed">
+                                                        {p.proposal.reason}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {p.type === 'merge' && (
+                                                <div className="bg-black/20 rounded-2xl p-4 border border-white/5 mb-6">
+                                                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3">
+                                                        <span>Series a unificar</span>
+                                                        <span className="text-amber-500/50">Probabilidad: {(p.proposal.confidence * 100).toFixed(0)}%</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/5">
+                                                            <p className="text-[11px] text-white font-bold truncate">{p.proposal.series_a?.name || p.series_hash.substring(0, 8)}</p>
+                                                        </div>
+                                                        <ArrowRight className="w-4 h-4 text-gray-600" />
+                                                        <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/5">
+                                                            <p className="text-[11px] text-white font-bold truncate">{p.proposal.series_b?.name || p.secondary_hash?.substring(0, 8)}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {p.type === 'enrich' && (
+                                                <div className="flex items-center gap-2 mb-6">
+                                                    {p.proposal.global_tags?.slice(0, 3).map((t: string) => (
+                                                        <span key={t} className="px-3 py-1 bg-white/5 rounded-lg text-[10px] font-bold text-gray-400 border border-white/5">
+                                                            {t}
+                                                        </span>
+                                                    ))}
+                                                    {p.proposal.changes?.length > 0 && (
+                                                        <span className="px-3 py-1 bg-primary/10 rounded-lg text-[10px] font-bold text-primary border border-primary/20">
+                                                            {p.proposal.changes.length} RENOMBRADOS
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 mt-auto">
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm("¿Seguro que quieres descartar esta propuesta?")) {
+                                                        await api.rejectAiProposal(p.id);
+                                                        loadProposals();
+                                                    }
+                                                }}
+                                                className="py-3 rounded-2xl bg-white/5 hover:bg-red-500/10 text-gray-500 hover:text-red-400 text-[10px] font-black uppercase tracking-widest border border-white/5 hover:border-red-500/20 transition-all active:scale-95"
+                                            >
+                                                DESCARTAR
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (p.type === 'merge') {
+                                                        if (window.confirm(`¿Confirmas la fusión de estas series? Todos los libros se moverán a '${p.proposal.suggested_main_name}'.`)) {
+                                                            const res = await api.applyAiMerge(p.id);
+                                                            if (res.success) {
+                                                                alert(res.message);
+                                                                loadProposals();
+                                                                loadStats();
+                                                            }
+                                                        }
+                                                    } else {
+                                                        // Abrir modal de revisión para enriquecimiento
+                                                        setProposal(p.proposal);
+                                                        setApprovedChanges(p.proposal.changes || []);
+                                                        setEditedSeries(p.proposal.proposed_series || '');
+                                                        setEditedSpanish(p.proposal.proposed_spanish || '');
+                                                        // Guardar el ID de la propuesta en el state para que handleApplyChanges sepa marcarla como aprobada
+                                                        setScanHash(p.series_hash);
+                                                        // We might need to store proposalId to mark it as approved
+                                                        (proposal as any).id = p.id;
+                                                        setShowProposal(true);
+                                                    }
+                                                }}
+                                                className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg ${p.type === 'merge'
+                                                    ? 'bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/20'
+                                                    : 'bg-primary hover:bg-primary-dark text-white shadow-primary/20'
+                                                    }`}
+                                            >
+                                                {p.type === 'merge' ? 'FUSIONAR' : 'REVISAR Y APLICAR'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full py-40 text-center flex flex-col items-center gap-6">
+                                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                                        <Sparkles className="w-10 h-10 text-gray-600" />
+                                    </div>
+                                    <p className="text-gray-500 font-black uppercase tracking-[0.5em] text-xs">No hay propuestas automáticas todavía</p>
+                                    <p className="text-[10px] text-gray-600 max-w-xs leading-relaxed uppercase font-bold tracking-widest">
+                                        Activa el Escaneo en Background o ejecuta el Gardener para generar sugerencias inteligentes.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

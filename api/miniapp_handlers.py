@@ -2804,6 +2804,68 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         "errors": errors
     }
 
+
+async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any]):
+    """Consolida dos series en una sola tras aprobación de la IA."""
+    proposal_id = data.get("proposal_id")
+    if not proposal_id:
+        raise HTTPException(status_code=400, detail="Falta proposal_id")
+
+    from models.library_models import LocalBook, SeriesMetadata, MetadataProposal
+    from utils.library_db import get_session
+    from services.scanner_service import ScannerService
+
+    with get_session() as session:
+        db_proposal = session.query(MetadataProposal).get(proposal_id)
+        if not db_proposal or db_proposal.type != "merge":
+            raise HTTPException(status_code=404, detail="Propuesta de fusión no encontrada")
+
+        hash_a = db_proposal.series_hash
+        hash_b = db_proposal.secondary_hash
+        proposal = db_proposal.proposal_data
+        
+        # 1. Mover todos los libros de B a A
+        from sqlalchemy import update
+        res = session.execute(
+            update(LocalBook)
+            .where(LocalBook.series_hash == hash_b)
+            .values(series_hash=hash_a)
+        )
+        moved_count = res.rowcount
+
+        # 2. Actualizar metadata de la serie A si el usuario aprobó un nombre específico
+        main_name = proposal.get("suggested_main_name")
+        if main_name:
+            series_a = session.query(SeriesMetadata).filter_by(series_hash=hash_a).first()
+            if series_a:
+                series_a.series_name = main_name
+                # Podríamos también unificar tags aquí
+            
+            # Sincronizar nombre en los libros movidos
+            session.execute(
+                update(LocalBook)
+                .where(LocalBook.series_hash == hash_a)
+                .values(series=main_name)
+            )
+
+        # 3. Eliminar la serie B nula
+        session.query(SeriesMetadata).filter_by(series_hash=hash_b).delete()
+
+        # 4. Marcar como procesada
+        db_proposal.status = "approved"
+        db_proposal.processed_at = datetime.utcnow()
+        
+        session.commit()
+        
+        # 5. Volver a sincronizar metadata para consolidar conteos, etc.
+        ScannerService.sync_series_metadata(session, hash_a)
+        session.commit()
+
+        return {
+            "success": True,
+            "message": f"Fusión completada. {moved_count} libros movidos a la serie principal."
+        }
+
 async def handle_ai_generate_summary(data: dict[str, Any], user_data: dict[str, Any]):
     """
     Genera una sinopsis corta por IA para un libro.
@@ -2860,6 +2922,8 @@ async def handle_ai_get_proposals(data: dict[str, Any], user_data: dict[str, Any
                 {
                     "id": p.id,
                     "series_hash": p.series_hash,
+                    "secondary_hash": p.secondary_hash,
+                    "type": p.type,
                     "proposal": p.proposal_data,
                     "created_at": p.created_at.isoformat()
                 } for p in proposals

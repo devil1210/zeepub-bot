@@ -227,6 +227,7 @@ export const api = {
     applyAiChanges: (proposal: any, approvedChanges: any[], applyRenames: boolean = true, applyMeta: boolean = true, proposedSeries?: string, proposedSpanish?: string) =>
         rpc('ai_apply_changes', {
             proposal,
+            proposal_id: proposal.id, // Include ID if it exists (for background proposals)
             approved_changes: approvedChanges,
             proposed_series: proposedSeries !== undefined ? proposedSeries : proposal.proposed_series,
             proposed_spanish: proposedSpanish !== undefined ? proposedSpanish : proposal.proposed_spanish,
@@ -236,6 +237,14 @@ export const api = {
 
     toggleAiBackgroundScan: (enabled: boolean) =>
         rpc('ai_toggle_background_scan', { enabled }),
+
+    getAiProposals: () => rpc('ai_get_proposals'),
+
+    rejectAiProposal: (proposalId: number) => rpc('ai_reject_proposal', { proposal_id: proposalId }),
+
+    applyAiMerge: (proposalId: number) => rpc('ai_apply_merge', { proposal_id: proposalId }),
+
+    resetAiSeries: (seriesHash: string) => rpc('ai_reset_series', { series_hash: seriesHash }),
 
     uploadEpub: (file: File, onProgress?: (p: number) => void) =>
         uploadFile('/api/library/upload', file, onProgress),
