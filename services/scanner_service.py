@@ -333,6 +333,9 @@ class ScannerService:
                         results["updated"] += 1
                     elif book_res == "duplicate":
                         results["duplicates"] += 1
+                    elif book_res == "skipped":
+                        # Book is fresh on disk, but we still want to ensure its series is synced
+                        pass
                     elif book_res is False:
                         results["failed"] += 1
                     
@@ -397,7 +400,7 @@ class ScannerService:
         """Wrapper de _process_book que también devuelve el hash de la serie."""
         res = self._process_book(filepath, source, session, force_scan)
         # Buscar el hash en la DB tras el procesamiento
-        if res in ("added", "updated"):
+        if res in ("added", "updated", "skipped"):
             book = session.query(LocalBook).filter_by(filepath=filepath).first()
             if book:
                 return res, book.series_hash
@@ -446,8 +449,9 @@ class ScannerService:
                 and book.file_size == size
                 and book.book_hash
                 and book.cover_low
+                and book.series_metadata_id is not None
             ):
-                return False
+                return "skipped"
 
             action_type = "Re-procesando" if book else "Procesando"
             if missing_covers:
@@ -663,7 +667,7 @@ class ScannerService:
                         # New unique file, add to session
                         session.add(book)
                         outcome = "added"
-
+            
             # --- VINCULACIÓN CON SERIES_METADATA ---
             series = self._get_or_create_series(session, book)
             book.series_metadata_id = series.id
