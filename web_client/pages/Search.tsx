@@ -329,7 +329,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                       <Download className="w-3.5 h-3.5" />
                       <span>{series.downloadCount || 0}</span>
                     </div>
-                    <div className="hidden sm:flex items-center gap-1.5 text-purple-400">
+                    <div className="flex items-center gap-1.5 text-purple-400">
                       <Book className="w-3.5 h-3.5" />
                       <span>{series.volumesCount} Vols</span>
                     </div>
@@ -393,9 +393,15 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
                     {/* Overlay Info */}
                     <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black via-black/40 to-transparent">
-                      <div className="flex items-center gap-2 text-yellow-500 mb-2">
-                        <Star className="w-3 h-3 fill-current" />
-                        <span className="text-[11px] font-black">{series.rating > 0 ? series.rating.toFixed(1) : '—'}</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1.5 text-yellow-500">
+                          <Star className="w-3 h-3 fill-current" />
+                          <span className="text-[11px] font-black">{series.rating > 0 ? series.rating.toFixed(1) : '—'}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-purple-400">
+                          <Book className="w-3 h-3" />
+                          <span className="text-[10px] font-black uppercase tracking-wider">{series.volumesCount} Vols</span>
+                        </div>
                       </div>
                       <h3 className="text-white font-black text-base leading-tight line-clamp-2 drop-shadow-xl group-hover:text-primary transition-colors">
                         {series.title}
