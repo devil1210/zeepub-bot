@@ -306,10 +306,17 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                     </button>
                   </div>
 
-                  {/* Author */}
-                  <p className="text-sm text-primary font-black uppercase tracking-widest mb-3 opacity-90">
-                    {series.author}
-                  </p>
+                  {/* Author & Genres */}
+                  <div className="mb-3">
+                    <p className="text-sm text-primary font-black uppercase tracking-widest opacity-90">
+                      {series.author}
+                    </p>
+                    {series.genre && (
+                      <p className="text-[11px] text-gray-500 font-medium italic opacity-70 mt-0.5 line-clamp-1">
+                        {series.genre}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Stats Row */}
                   <div className="flex items-center gap-5 text-[10px] font-black uppercase tracking-[0.15em] text-gray-500 mb-4">
@@ -328,13 +335,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                     </div>
                   </div>
 
-                  {/* Tags */}
+                  {/* Metadata Tags */}
                   <div className="flex flex-wrap items-center gap-2 mt-auto">
-                    {series.book_type && (
-                      <span className="px-3 py-1 rounded-lg text-[9px] font-black bg-white/5 text-gray-300 uppercase tracking-widest border border-white/10 group-hover:border-primary/30 group-hover:text-primary transition-all">
-                        {series.book_type}
-                      </span>
-                    )}
                     {series.format && (
                       <span className="px-3 py-1 rounded-lg text-[9px] font-black bg-emerald-500/10 text-emerald-400 uppercase tracking-widest border border-emerald-500/20">
                         {series.format}
@@ -393,6 +395,11 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                       <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1.5 truncate">
                         {series.author}
                       </p>
+                      {series.genre && (
+                        <p className="text-[9px] text-gray-500 italic opacity-60 truncate">
+                          {series.genre}
+                        </p>
+                      )}
                     </div>
                   </div>
 

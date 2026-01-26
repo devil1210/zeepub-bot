@@ -615,7 +615,12 @@ export const AIHub: React.FC = () => {
                                     )}
                                     <div>
                                         <h4 className="font-bold text-white text-sm">{s.title || s.series}</h4>
-                                        <p className="text-xs text-gray-500">{s.author || 'Autor desconocido'}</p>
+                                        <p className="text-xs text-gray-400 font-black uppercase tracking-widest">{s.author || 'Autor desconocido'}</p>
+                                        {s.categories && (
+                                            <p className="text-[10px] text-gray-500 italic opacity-60 mt-0.5 line-clamp-1">
+                                                {Array.isArray(s.categories) ? s.categories.join(', ') : s.categories}
+                                            </p>
+                                        )}
                                         <p className="text-[10px] text-gray-600 font-mono mt-1">{s.series_hash}</p>
                                     </div>
                                     <div className="ml-auto">

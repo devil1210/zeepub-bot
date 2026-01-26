@@ -297,6 +297,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           </div>
                           <span className="text-sm font-black text-white leading-tight drop-shadow-lg">{book.cleanTitle || book.title}</span>
                           <span className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-widest truncate">{book.author || 'Zeepub Author'}</span>
+                          {book.categories && (
+                            <span className="text-[9px] text-gray-500 font-medium italic mt-0.5 line-clamp-1 opacity-80">
+                              {Array.isArray(book.categories) ? book.categories.join(', ') : book.categories}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="text-center px-2">
