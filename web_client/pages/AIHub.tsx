@@ -14,6 +14,7 @@ import {
     ArrowRight,
     Edit2,
     Save,
+    Check,
     Trash2
 } from 'lucide-react';
 import { api } from '../src/services/api';
@@ -42,6 +43,7 @@ export const AIHub: React.FC = () => {
     const [applyMeta, setApplyMeta] = useState(true);
     const [processingProposal, setProcessingProposal] = useState(false);
     const [isEditingSeries, setIsEditingSeries] = useState(false);
+    const [editingBookId, setEditingBookId] = useState<number | null>(null);
     const [editedSeries, setEditedSeries] = useState('');
     const [editedSpanish, setEditedSpanish] = useState('');
     const [activeTab, setActiveTab] = useState('control');
@@ -135,6 +137,18 @@ export const AIHub: React.FC = () => {
         } finally {
             setProcessingProposal(false);
         }
+    };
+
+    const handleEditFilename = (bookId: number, newFilename: string) => {
+        setApprovedChanges(prev => prev.map(c =>
+            c.book_id === bookId ? { ...c, proposed_filename: newFilename } : c
+        ));
+        setProposal((prev: any) => ({
+            ...prev,
+            changes: prev.changes.map((c: any) =>
+                c.book_id === bookId ? { ...c, proposed_filename: newFilename } : c
+            )
+        }));
     };
 
     const toggleChange = (bookId: number) => {
@@ -708,15 +722,46 @@ export const AIHub: React.FC = () => {
                                                     disabled={!applyRenames}
                                                     className="w-5 h-5 rounded-lg border-white/20 bg-white/5 cursor-pointer accent-primary"
                                                 />
-                                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="text-red-300/50 break-words line-through decoration-red-500/30">
+                                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                                                    <div className="text-red-300/50 break-words line-through decoration-red-500/30 text-[11px] leading-tight">
                                                         {change.current_filename}
                                                     </div>
-                                                    <div className="text-green-300 font-medium break-words leading-tight">
-                                                        <DiffHighlighter
-                                                            oldText={change.current_filename}
-                                                            newText={change.proposed_filename}
-                                                        />
+                                                    <div className="flex items-center gap-2 group/field">
+                                                        {editingBookId === change.book_id ? (
+                                                            <div className="flex-1 flex items-center gap-2 animate-in slide-in-from-right-2 duration-200">
+                                                                <input
+                                                                    type="text"
+                                                                    autoFocus
+                                                                    value={change.proposed_filename}
+                                                                    onChange={(e) => handleEditFilename(change.book_id, e.target.value)}
+                                                                    onKeyDown={(e) => e.key === 'Enter' && setEditingBookId(null)}
+                                                                    onBlur={() => setEditingBookId(null)}
+                                                                    className="flex-1 bg-black/60 border border-primary/50 rounded px-2 py-1 text-xs text-white outline-none focus:ring-1 ring-primary"
+                                                                />
+                                                                <button
+                                                                    onClick={() => setEditingBookId(null)}
+                                                                    className="p-1 text-green-400 hover:text-green-300 transition-colors"
+                                                                >
+                                                                    <Check className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="flex-1 text-green-300 font-medium break-words leading-tight text-[13px]">
+                                                                    <DiffHighlighter
+                                                                        oldText={change.current_filename}
+                                                                        newText={change.proposed_filename}
+                                                                    />
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => setEditingBookId(change.book_id)}
+                                                                    className="p-1 rounded bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                                    title="Editar nombre"
+                                                                >
+                                                                    <Edit2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
