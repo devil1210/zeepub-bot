@@ -127,6 +127,7 @@ def check_migrations():
                     conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS series_spanish VARCHAR(255);"))
                     conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS book_type VARCHAR(100);"))
                     conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS publisher VARCHAR(255);"))
+                    conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());"))
                     conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());"))
                     conn.commit()
                     _log.info("Checked/Added columns to series_metadata")
