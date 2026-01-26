@@ -218,6 +218,9 @@ export const api = {
 
     // AI Hub
     getAiStats: () => rpc('ai_stats'),
+    getAiLists: (type: 'pending' | 'reviewed', limit: number = 100, offset: number = 0) =>
+        rpc('ai_get_lists', { type, limit, offset }),
+
     scanSeriesAi: (seriesHash: string, dryRun: boolean = false) =>
         rpc('ai_scan_series', { series_hash: seriesHash, dry_run: dryRun }),
 

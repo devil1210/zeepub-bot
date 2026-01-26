@@ -2487,6 +2487,73 @@ async def handle_ai_toggle_background_scan(data: dict[str, Any], user_data: dict
     return {"success": True, "enabled": enabled}
 
 
+async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
+    """Devuelve listados de series pendientes y revisadas por la IA."""
+    from sqlalchemy import func, text
+
+    from core.db_manager_pg import pg_manager
+    from models.library_models import LocalBook, SeriesMetadata
+    
+    list_type = data.get("type", "pending") # 'pending' or 'reviewed'
+    limit = data.get("limit", 100)
+    offset = data.get("offset", 0)
+
+    try:
+        async with pg_manager.get_session() as session:
+            if list_type == "reviewed":
+                # Series que están en ai_learning_feedback
+                query = text("""
+                    SELECT f.series_hash, f.original_name, f.proposed_name, f.final_name, f.status, f.created_at,
+                           (SELECT COUNT(*) FROM local_books WHERE series_hash = f.series_hash) as books_count
+                    FROM ai_learning_feedback f
+                    INNER JOIN (
+                        SELECT series_hash, MAX(created_at) as max_date
+                        FROM ai_learning_feedback
+                        GROUP BY series_hash
+                    ) latest ON f.series_hash = latest.series_hash AND f.created_at = latest.max_date
+                    ORDER BY f.created_at DESC
+                    LIMIT :limit OFFSET :offset
+                """)
+                res = await session.execute(query, {"limit": limit, "offset": offset})
+                items = []
+                for row in res:
+                    items.append({
+                        "series_hash": row.series_hash,
+                        "original_name": row.original_name,
+                        "proposed_name": row.proposed_name,
+                        "final_name": row.final_name,
+                        "status": row.status,
+                        "reviewed_at": row.created_at.isoformat() if row.created_at else None,
+                        "books_count": row.books_count
+                    })
+                return {"success": True, "items": items}
+            
+            else:
+                # Pendientes: Series en local_books que NO están en ai_learning_feedback
+                # Y que no tengan series_spanish (opcional, pero mejor ser estrictos con la tabla de feedback)
+                query = text("""
+                    SELECT series_hash, series as name, COUNT(*) as books_count
+                    FROM local_books
+                    WHERE series_hash NOT IN (SELECT series_hash FROM ai_learning_feedback)
+                    GROUP BY series_hash, series
+                    ORDER BY books_count DESC
+                    LIMIT :limit OFFSET :offset
+                """)
+                res = await session.execute(query, {"limit": limit, "offset": offset})
+                items = []
+                for row in res:
+                    items.append({
+                        "series_hash": row.series_hash,
+                        "name": row.name,
+                        "books_count": row.books_count
+                    })
+                return {"success": True, "items": items}
+
+    except Exception as e:
+        logger.error(f"Error getting AI lists: {e}")
+        return {"success": False, "message": str(e)}
+
+
 async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any]):
     """Dispara un escaneo on-demand de una serie específica."""
     series_hash = data.get("series_hash")
