@@ -410,5 +410,8 @@ class MetadataProposal(Base):
     proposal_data = Column(JSON, nullable=False)
     
     status = Column(String(20), default="pending", index=True) # pending, approved, rejected
+    type = Column(String(20), default="enrich", index=True) # enrich, merge
+    secondary_hash = Column(String(64), index=True) # Para propuestas de MERGE (serie B)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     processed_at = Column(DateTime)

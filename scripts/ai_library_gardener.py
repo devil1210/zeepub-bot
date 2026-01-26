@@ -1,7 +1,7 @@
-
 import asyncio
 import logging
 import os
+import difflib
 
 from rich.console import Console
 from sqlalchemy import func, select, update, or_
@@ -89,7 +89,11 @@ async def process_proposals(series_list: list[dict]):
             # Guardar en MetadataProposal
             async with pg_manager.get_session() as session:
                 # Verificar de nuevo por si se creó una en paralelo
-                exists = session.query(MetadataProposal).filter_by(series_hash=series_hash, status="pending").first()
+                stmt_exists = select(MetadataProposal).where(
+                    MetadataProposal.series_hash == series_hash, 
+                    MetadataProposal.status == "pending"
+                )
+                exists = (await session.execute(stmt_exists)).scalar_one_or_none()
                 if exists:
                     console.print("  [yellow]Ya existe una propuesta pendiente para esta serie.[/yellow]")
                     continue
@@ -115,6 +119,75 @@ async def process_proposals(series_list: list[dict]):
         
     return proposed_total
 
+async def find_merges(limit: int = 5):
+    """
+    Busca series con nombres similares y propone unificarlas.
+    """
+    async with pg_manager.get_session() as session:
+        # 1. Obtener todas las series actuales
+        stmt = select(SeriesMetadata)
+        res = await session.execute(stmt)
+        all_series = res.scalars().all()
+        
+        if len(all_series) < 2: return 0
+        
+        # 2. Encontrar candidatos por similitud de nombre (Heurística rápida)
+        merge_count = 0
+        checked_pairs = set()
+        
+        for i, s1 in enumerate(all_series):
+            for j, s2 in enumerate(all_series[i+1:], start=i+1):
+                # Evitar revisar lo mismo
+                pair_id = tuple(sorted([s1.series_hash, s2.series_hash]))
+                if pair_id in checked_pairs: continue
+                checked_pairs.add(pair_id)
+                
+                # Regla rápida: Nombres parecidos
+                ratio = difflib.SequenceMatcher(None, s1.series_name.lower(), s2.series_name.lower()).ratio()
+                
+                if ratio > 0.85 and ratio < 1.0: # Similares pero no idénticos (el hash es distinto)
+                    # Verificar si ya existe propuesta
+                    existing = (await session.execute(
+                        select(MetadataProposal).where(
+                            MetadataProposal.type == "merge",
+                            MetadataProposal.series_hash == s1.series_hash,
+                            MetadataProposal.secondary_hash == s2.series_hash,
+                            MetadataProposal.status == "pending"
+                        )
+                    )).scalar_one_or_none()
+                    
+                    if existing: continue
+                    
+                    console.print(f"\n[bold magenta]🔍 Posible Duplicado:[/bold magenta] '{s1.series_name}' vs '{s2.series_name}' (Similitud: {ratio:.2f})")
+                    
+                    # 3. Consultar IA para confirmación y detalles
+                    s1_dict = {"series_name": s1.series_name, "author": s1.author, "book_count": s1.book_count}
+                    s2_dict = {"series_name": s2.series_name, "author": s2.author, "book_count": s2.book_count}
+                    
+                    merge_analysis = await AIService.analyze_potential_merge(s1_dict, s2_dict)
+                    
+                    if merge_analysis and merge_analysis.get("is_same"):
+                        # Guardar propuesta de unificación
+                        new_prop = MetadataProposal(
+                            series_hash=s1.series_hash,
+                            secondary_hash=s2.series_hash,
+                            type="merge",
+                            proposal_data=merge_analysis,
+                            status="pending"
+                        )
+                        session.add(new_prop)
+                        await session.commit()
+                        
+                        console.print(f"  [green]✅ Propuesta de FUSIÓN generada.[/green]")
+                        console.print(f"  [dim]Razón:[/dim] {merge_analysis.get('reason')}")
+                        merge_count += 1
+                        
+                        if merge_count >= limit: return merge_count
+                    
+                    await asyncio.sleep(1) # Rate limit
+                    
+        return merge_count
+
 async def main():
     console.print("[bold green]🌱 Iniciando Jardinero IA de Biblioteca (Modo Propuestas)...[/bold green]")
     console.print("[dim]En este modo, la IA solo sugiere cambios pero NO los aplica hasta tu aprobación.[/dim]")
@@ -126,21 +199,26 @@ async def main():
         return
 
     while True:
-        # Obtener series que necesitan revisión
+        # 1. Obtener series que necesitan revisión (Enriquecimiento)
         series_to_analyze = await get_series_for_proposal(limit=5)
+        batch_count = 0
         
-        if not series_to_analyze:
-            console.print("[bold blue]✨ No se encontraron más series pendientes de análisis.[/bold blue]")
-            break
-            
-        console.print(f"[yellow]Analizando lote de {len(series_to_analyze)} series...[/yellow]")
+        if series_to_analyze:
+            console.print(f"[yellow]Analizando lote de {len(series_to_analyze)} series para enriquecimiento...[/yellow]")
+            batch_count = await process_proposals(series_to_analyze)
+            console.print(f"[bold cyan]Lote completado: {batch_count} propuestas de enriquecimiento generadas.[/bold cyan]")
         
-        batch_count = await process_proposals(series_to_analyze)
-        
-        console.print(f"[bold cyan]Lote completado: {batch_count} propuestas generadas.[/bold cyan]")
+        # 2. Si no hubo enriquecimientos, buscar fusiones
+        if batch_count == 0:
+            console.print("[yellow]Buscando posibles fusiones de series duplicadas...[/yellow]")
+            merge_count = await find_merges(limit=5)
+            if merge_count == 0:
+                console.print("[bold blue]✨ No se encontraron series pendientes de análisis ni de fusión.[/bold blue]")
+                break
+            console.print(f"[bold magenta]Se detectaron {merge_count} posibles fusiones.[/bold magenta]")
         
         # Pausa entre lotes
-        console.print("esperando para el siguiente lote...")
+        console.print("esperando 10 segundos para el siguiente lote...")
         await asyncio.sleep(10)
 
 if __name__ == "__main__":

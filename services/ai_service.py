@@ -287,9 +287,63 @@ class AIService:
             
             return proposal
             
+            return proposal
+            
         except Exception as e:
             logger.error(f"Error analyzing series: {e}")
             return {"error": str(e)}
+
+    @staticmethod
+    async def analyze_potential_merge(series_a: dict, series_b: dict) -> dict | None:
+        """
+        Analiza dos registros de serie y determina si son la misma obra.
+        """
+        model = AIService._get_model()
+        if not model:
+            return None
+
+        prompt = f"""
+        Actúa como un experto en catalogación. Determina si estas dos entradas corresponden a la misma serie/obra.
+        A veces se crean duplicados por pequeñas diferencias en el nombre o autor.
+
+        SERIE A:
+        - Nombre: "{series_a.get('series_name')}"
+        - Autor: "{series_a.get('author')}"
+        - Libros: {series_a.get('book_count')}
+
+        SERIE B:
+        - Nombre: "{series_b.get('series_name')}"
+        - Autor: "{series_b.get('author')}"
+        - Libros: {series_b.get('book_count')}
+
+        REGLAS:
+        1. Responde solo si la probabilidad de que sean la misma es > 85%.
+        2. Si son la misma, indica cuál nombre es el más "limpio" o correcto para consolidar.
+        3. Explica BREVEMENTE en ESPAÑOL por qué crees que son la misma (ej: "Diferencia solo en el signo de exclamación al final").
+
+        Responde SOLO con un JSON (o nulo si no estás seguro):
+        {{
+            "is_same": boolean,
+            "confidence": float,
+            "reason": "string",
+            "suggested_main_name": "string",
+            "verify_details": ["dato1", "dato2"]
+        }}
+        """
+
+        try:
+            response = await model.generate_content_async(prompt)
+            txt = AIService._extract_json_from_text(response.text)
+            res = json.loads(txt)
+            if res.get("is_same") and res.get("confidence", 0) > 0.85:
+                # Normalizar booleano si llegó como string
+                if isinstance(res["is_same"], str):
+                    res["is_same"] = res["is_same"].lower() == "true"
+                return res
+            return None
+        except Exception as e:
+            logger.error(f"Error detectando merge: {e}")
+            return None
 
     @staticmethod
     async def log_feedback(series_hash: str, original: str, proposed: str, final: str, status: str, ai_reason: str = None):
