@@ -351,6 +351,7 @@ class UserDownload(Base):
     user = relationship("User", foreign_keys=[user_id])
 
 
+
 class DuplicateBook(Base):
     """
     Registra archivos EPUB que tienen el mismo book_hash que otro ya existente.
@@ -371,3 +372,20 @@ class DuplicateBook(Base):
     author = Column(String(255))
     
     detected_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AILearningFeedback(Base):
+    """
+    Almacena el feedback de la IA sobre los nombres de series y decisiones de normalización.
+    """
+    __tablename__ = "ai_learning_feedback"
+
+    id = Column(Integer, primary_key=True)
+    series_hash = Column(String(64), index=True, nullable=False)
+    original_name = Column(String, nullable=False)
+    proposed_name = Column(String, nullable=False)
+    final_name = Column(String)
+    status = Column(String(20), nullable=False) # accepted, rejected, edited, manual
+    ai_reason = Column(String)
+    user_reason = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)

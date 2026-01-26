@@ -1,72 +1,64 @@
-# Zeepub-bot Active Skills Configuration
+# Zeepub-bot Active Skills & Implementation Manifesto
 
-This file defines the prioritized skills that should be active for the Zeepub-bot project context.
+Este archivo consolida las capacidades activas del proyecto y las reglas mandatorias de implementación, siguiendo los estándares globales de **v3.1.0**.
 
-## Estándar de Formato para Skills
-Cada skill en este proyecto debe seguir esta estructura:
-- **Nombre**: Título de la skill.
-- **Propósito**: Por qué es importante para Zeepub-bot.
-- **Lecciones Aprendidas**: Errores pasados evitados mediante esta skill.
-- **Reglas de Oro**: Pasos mandatorios al usarla.
-- **Actualización Global**: Sincronizado con `antigravity-awesome-skills` (Enero 2025), incluyendo soporte nativo para **Gemini 3**, **Telegram Stars** y **RAG architectures**.
+## 🏗️ Protocolos de Mantenimiento y Drift
+1. **CI Drift Fix**: Ante discrepancias entre el código generado y el estado real del sistema (especialmente en bases de datos), seguir el protocolo de `docs/CI_DRIFT_FIX.md`.
+2. **Generated Files**: Mantener una política estricta de no contaminación. Todo archivo generado debe residir en sus carpetas correspondientes (`scripts/`, `data/`, `logs/`).
+3. **Versatilidad de Skills**: Solo se mantienen instaladas las skills que aportan valor directo al proyecto.
 
 ---
 
-## Core & Backend
-- skill: python-patterns
-  reason: Ensure clean, efficient, and typed Python code for FastAPI backend.
-  lecciones: Error de importación de `List` en `miniapp_handlers.py`. Siempre verificar tipos básicos.
-- skill: backend-dev-guidelines
-  reason: Maintain layered architecture (Handlers -> Services -> Repositories).
-- skill: clean-code
-  reason: Prevent technical debt in a growing codebase.
+## 🚀 Capacidades Core Activas
 
-## Calidad y Validación (CRITICAL)
-- **skill: code-validation**
-  **reason**: Evitar errores de sintaxis o imports faltantes antes de reportar éxito.
-  **lecciones**: El bot reportó éxito pero el código falló por un NameError.
-  **Reglas de Oro**: 
-    1. Ejecutar siempre un check de sintaxis (`python -m py_compile`) tras editar un archivo .py.
-    2. Verificar que todos los tipos (typing) usados estén importados.
-- **skill: systematic-debugging**
-  **reason**: Logical isolation of bugs in a distributed system.
-  **Regla de Oro (Iron Law)**: NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.
-  **Proceso**: 1. Investigar Causa Raíz (Logs, Stack traces) -> 2. Análisis de Patrones -> 3. Hipótesis Mínima -> 4. Implementación y Prueba Failing Test.
+### Backend & Arquitectura
+- **python-patterns**: Código limpio, tipado y eficiente para FastAPI.
+- **backend-dev-guidelines**: Arquitectura en capas (Handler -> Service -> Repository).
+- **clean-code**: Prevención de deuda técnica.
+- **software-architecture**: Integridad estructural y patrones de diseño.
+- **postgres-best-practices**: Optimización para PostgreSQL 17 (JSONB, Indexing, ILIKE).
 
-## Datos & Infraestructura
-- skill: postgres-best-practices
-  reason: Optimize complex queries and indexing for library data.
-- skill: database-design
-  reason: Structure schema changes safely (SQLAlchemy/Supabase).
-- skill: supabase-retry-logic
-  reason: Handle transient 500/502 errors from cloud provider.
-- **skill: epub-metadata-mastery**
-  **reason**: Gestión precisa de la identidad del libro para evitar duplicados y enriquecer la experiencia.
-  **lecciones**: Títulos con tags como [Ravelon] generaban hashes diferentes.
-  **Reglas de Oro**:
-    1. Usar siempre `process_book_identity_comprehensive` para cualquier operación que involucre hashes de libros.
-    2. Al extraer metadatos crudos, limpiar siempre los campos de texto con `norm_string`.
+### IA & Automatización
+- **ai-agents-architect**: Flujos de trabajo de agentes autónomos para el mantenimiento de la librería.
+- **subagent-driven-development**: Implementación de features complejas mediante subagentes especializados.
+- **rag-implementation**: Búsqueda semántica usando Gemini embeddings.
+- **epub-metadata-mastery**: Normalización de hashes y metadatos de libros.
 
-## Frontend & Telegram Integration
-- skill: telegram-mini-app
-- skill: ui-ux-pro-max
-  reason: Enforce "Premium/Glassmorphism" design aesthetic.
-- skill: react-patterns
-- skill: senior-architect
-  reason: High-level reasoning for complex system design and refactoring.
-- skill: mcp-builder
-  reason: Manage and create modern tools using the Model Context Protocol.
-- **skill: subagent-driven-development**
-  **reason**: Execute complex features (like the AI Gardener) using fresh subagents for implementation and multi-stage review.
-- **skill: telegram-stars-monetization**
-  **reason**: Implement the new Telegram Stars (XTR) system for premium plans and book requests.
-- **skill: rag-library-search**
-  **reason**: Implementation of Semantic Search across the book library using Gemini embeddings.
-- **skill: kaizen-improvement**
-  **reason**: Continuous refactoring of the bot's core systems to maintain high performance.
+### Frontend & UI/UX
+- **telegram-mini-app**: Integración nativa con la API de Telegram.
+- **ui-ux-pro-max**: Estética Premium con Glassmorphism y micro-animaciones.
+- **react-patterns**: Componentes reutilizables y manejo de estado eficiente.
+- **mobile-design**: Enfoque Mobile-First para la Mini App.
+- **scroll-experience**: Scrolling fluido y optimizado para móviles.
 
 ---
 
-## Próximos Pasos (Pendiente)
-- Configurar Linter automático en GitHub Actions.
-- Implementar reintentos en el cliente de Supabase.
+## 🛠️ Reglas Mandatorias de Implementación
+
+### 🎨 Diseño y UX (`ui-ux-pro-max`, `mobile-design`)
+1. **Línea de Base**: Todo componente React debe usar los tokens definidos en `ThemeContext.tsx`.
+2. **Glassmorphism**: Usar `glass-panel` con desenfoque de 12px y borde `white/5`.
+3. **Mobile-First**: Diseñar primero para pantallas de celular dentro de Telegram.
+4. **Touch Feedback**: Los elementos clickeables deben tener `cursor-pointer` y feedback visual (opacidad/escala).
+5. **Scroll**: Implementar `overflow-y: auto` con `overscroll-behavior: contain`.
+
+### 🐍 Desarrollo Backend (`python-patterns`, `fastapi`)
+1. **Validación**: Usar Pydantic y Type Hints en todos los nuevos métodos.
+2. **Async**: Todo I/O (DB, Telegram, Archivos) DEBE ser `async/await`.
+3. **Manejo de Errores**: Debug sistemático antes de cualquier corrección. No "parchear" sin entender la Causa Raíz.
+4. **Linter**: Respetar `.flake8` y `.ruff.toml`. Prohibido el uso indiscriminado de `# noqa`.
+
+### 🐘 Base de Datos & Datos (`postgres-best-practices`)
+1. **Seguridad**: Consultas parametrizadas siempre (SQLAlchemy).
+2. **Performance**: Índices obligatorios en `series_hash` y `book_hash`.
+3. **Identidad**: El hash del libro es sagrado. Usar siempre `process_book_identity_comprehensive`.
+4. **Normalización**: Priorizar IA (`services/ai_service`) para `series_spanish` y `volume`.
+
+### 🐙 Workflow & GitHub (`git-pushing`)
+1. **Commits**: Usar [Conventional Commits](https://www.conventionalcommits.org/).
+2. **Push**: El resumen del push debe ser técnico y detallado.
+3. **Sincronización**: Verificar rama activa (`GIT_BRANCH`) antes de cambios masivos.
+
+### 🌐 Telegram Stars & Mini App
+1. **Stars (XTR)**: Todo flujo de monetización o niveles premium DEBE usar Telegram Stars.
+2. **Ready Event**: Llamar siempre a `tg.ready()` al montar la aplicación.
