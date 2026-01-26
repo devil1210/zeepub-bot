@@ -411,7 +411,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent"></div>
 
                     {/* Floating Quality Badges on Cover */}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1.5">
+                    <div className="absolute bottom-2 right-2 flex flex-col items-end gap-1.5">
                       {vol.color_mode === 'color' && (
                         <div className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
                           COLOR
@@ -443,7 +443,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     </h3>
 
                     {vol.romajiTitle && (
-                      <p className="text-gray-500 text-[10px] sm:text-xs font-medium italic mb-2 line-clamp-1 opacity-70">
+                      <p className="text-gray-500 text-[10px] sm:text-xs font-medium italic mb-2 line-clamp-2 opacity-70">
                         {vol.romajiTitle}
                       </p>
                     )}
