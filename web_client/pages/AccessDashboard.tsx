@@ -78,10 +78,10 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                 api.getAdminTiers(),
                 api.getAdminUsers(20, 0, searchQuery)
             ]);
-            
+
             console.log('Levels data:', levelsData);
             console.log('Users data:', usersData);
-            
+
             setLevels(levelsData.levels as UserLevel[] || []);
             setUsers(usersData.users as AdminUser[] || []);
         } catch (error) {
@@ -147,6 +147,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
         return (
             <TierConfiguration
                 tierName={configuringTier.name}
+                tierColor={configuringTier.color}
                 onBack={() => { handleConfigureTier(null); fetchData(); }}
                 // Add TierConfig specific refs if needed
                 onSavingChange={onSavingChange}
@@ -179,190 +180,206 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
             {/* Content */}
             {!loading && (
                 <>
-            {/* Tier Cards Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {levels.sort((a, b) => a.priority - b.priority).map((level) => {
-                    const isDefault = level.id === '1' || level.name.toLowerCase() === 'gratis' || level.name.toLowerCase() === 'gratuito';
-
-                    return (
-                        <div
-                            key={level.id}
-                            className="glass-panel p-8 rounded-[2rem] relative overflow-hidden group hover:scale-[1.02] transition-all duration-500 border border-white/5 shadow-2xl flex flex-col justify-between"
-                        >
-                            <div className="relative z-10">
-                                <div className="flex justify-between items-start mb-8">
-                                    <div>
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2 block">
-                                            {isDefault ? 'Nivel por Defecto' : 'Nivel de Usuario'}
-                                        </span>
-                                        <h3 className="text-3xl font-black text-white tracking-tight">{level.name}</h3>
-                                    </div>
-                                    <div
-                                        className="p-4 rounded-2xl border shadow-lg transition-transform duration-500 group-hover:scale-110"
-                                        style={{
-                                            backgroundColor: `${level.color}20`,
-                                            color: level.color,
-                                            borderColor: `${level.color}30`
-                                        }}
-                                    >
-                                        <ShieldCheck className="w-6 h-6" />
-                                    </div>
+                    {/* Tier Summary Table */}
+                    <div className="glass-panel border border-white/5 rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-700">
+                        <div className="p-8 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                                    <ShieldCheck className="w-6 h-6 text-primary" />
                                 </div>
-
-                                <div className="space-y-4 mb-10">
-                                    <div className="flex items-center gap-3 text-[11px] text-gray-400 font-bold uppercase tracking-wider">
-                                        <CheckCircle className="w-4 h-4 text-primary" strokeWidth={3} />
-                                        <span>{level.dailyDownloads === -1 ? 'Descargas Ilimitadas' : `${level.dailyDownloads} Descargas diarias`}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-[11px] text-gray-400 font-bold uppercase tracking-wider">
-                                        <CheckCircle className={`w-4 h-4 ${level.earlyAccess ? 'text-primary' : 'text-gray-800'}`} strokeWidth={3} />
-                                        <span className={level.earlyAccess ? 'text-gray-200' : 'text-gray-600'}>Acceso Anticipado</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-[11px] text-gray-400 font-bold uppercase tracking-wider">
-                                        <CheckCircle className={`w-4 h-4 ${level.customThemes ? 'text-primary' : 'text-gray-800'}`} strokeWidth={3} />
-                                        <span className={level.customThemes ? 'text-gray-200' : 'text-gray-600'}>Temas Personalizados</span>
-                                    </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-white uppercase tracking-tight">Resumen de Niveles</h3>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Configuración rápida de privilegios</p>
                                 </div>
                             </div>
-
-                            <button
-                                onClick={() => handleConfigureTier({ name: level.name, color: level.color })}
-                                className="w-full py-4 rounded-2xl bg-white/[0.03] hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 transition-all active:scale-95 shadow-lg relative z-10"
-                            >
-                                Configurar Nivel
-                            </button>
-
-                            {/* Background Glow */}
-                            <div
-                                className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full blur-[60px] group-hover:scale-150 transition-all duration-700 pointer-events-none"
-                                style={{
-                                    backgroundColor: `${level.color}15`,
-                                    opacity: settings.cardGlowIntensity
-                                }}
-                            ></div>
                         </div>
-                    );
-                })}
-            </div>
 
-            {/* Users List - Dynamic Grid (Square Cards on Mobile) */}
-            <div className="glass-panel border border-white/5 rounded-3xl p-6 sm:p-8">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
-                    <div className="flex items-center gap-3">
-                        <Users className="text-primary w-5 h-5" />
-                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Gesti&oacute;n de Usuarios</h3>
+                        <div className="overflow-x-auto custom-scrollbar">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-black/20">
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5">Nivel</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 hidden md:table-cell text-center">Descargas</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 hidden lg:table-cell text-center">Anticipado</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 hidden xl:table-cell text-center">Temas</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 text-right">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {levels.sort((a, b) => a.priority - b.priority).map((level) => (
+                                        <tr key={level.id} className="group hover:bg-white/[0.02] transition-all duration-300">
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div
+                                                        className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner group-hover:scale-110 transition-transform duration-500"
+                                                        style={{
+                                                            backgroundColor: `${level.color}15`,
+                                                            color: level.color,
+                                                            borderColor: `${level.color}20`
+                                                        }}
+                                                    >
+                                                        <ShieldCheck className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-black text-white text-lg tracking-tight group-hover:text-primary transition-colors">{level.name}</p>
+                                                        <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest bg-black/40 px-2 py-0.5 rounded border border-white/5">
+                                                            PRIORIDAD {level.priority}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 hidden md:table-cell text-center">
+                                                <div className="inline-flex flex-col items-center">
+                                                    <span className="text-white font-black text-sm">{level.dailyDownloads === -1 ? '∞' : level.dailyDownloads}</span>
+                                                    <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest mt-1">LÍMITE DIARIO</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 hidden lg:table-cell text-center">
+                                                <div className={`p-2 rounded-xl inline-flex ${level.earlyAccess ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-gray-700 border border-white/5'}`}>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 hidden xl:table-cell text-center">
+                                                <div className={`p-2 rounded-xl inline-flex ${level.customThemes ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-white/5 text-gray-700 border border-white/5'}`}>
+                                                    <CheckCircle className="w-4 h-4" />
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-right">
+                                                <button
+                                                    onClick={() => handleConfigureTier({ name: level.name, color: level.color })}
+                                                    className="px-6 py-3 rounded-xl bg-white/5 hover:bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 transition-all shadow-lg active:scale-95 group/btn"
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        Configurar
+                                                        <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" strokeWidth={3} />
+                                                    </span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                        <input
-                            type="text"
-                            placeholder="Buscar por ID o Username..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 pr-4 py-2.5 bg-black/20 border border-white/10 rounded-2xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/50 w-full sm:w-80"
-                        />
-                    </div>
-                </div>
-
-                {/* Mobile: Grid of Square Cards | Desktop: Table-like list */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-                    {users.length === 0 ? (
-                        <div className="py-20 text-center text-gray-500 italic text-sm">No se encontraron usuarios...</div>
-                    ) : (
-                        users.map((user) => (
-                            <div
-                                key={user.id}
-                                onClick={() => handleSelectUser(user.id)}
-                                className="group bg-white/[0.01] hover:bg-white/[0.04] border border-white/5 hover:border-primary/20 rounded-3xl p-5 transition-all duration-300 flex flex-col lg:flex-row lg:items-center gap-6 cursor-pointer relative overflow-hidden"
-                            >
-                                {/* User Info Block */}
-                                <div className="flex items-center gap-5 lg:min-w-[260px] relative z-10">
-                                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-xl border border-primary/10 shadow-inner group-hover:scale-110 transition-transform duration-500 overflow-hidden relative">
-                                        {user.photo_url ? (
-                                            <img
-                                                src={user.photo_url}
-                                                alt={user.username}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    // Fallback if image fails to load
-                                                    const target = e.target as HTMLImageElement;
-                                                    target.style.display = 'none';
-                                                    target.parentElement!.innerText = user.username?.charAt(0).toUpperCase() || '?';
-                                                }}
-                                            />
-                                        ) : (
-                                            user.username?.charAt(0).toUpperCase() || '?'
-                                        )}
-
-                                        {scanningUser === user.id && (
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm">
-                                                <Loader2 className="w-6 h-6 text-white animate-spin" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-black text-white truncate text-base tracking-tight group-hover:text-primary transition-colors">@{user.username || 'unknown'}</p>
-                                            <button
-                                                onClick={(e) => handleSyncUserPhoto(e, user.id)}
-                                                disabled={scanningUser === user.id}
-                                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-primary transition-all active:scale-90"
-                                                title="Sincronizar foto de perfil"
-                                            >
-                                                {scanningUser === user.id ? (
-                                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                                ) : (
-                                                    <RefreshCw className="w-3 h-3" />
-                                                )}
-                                            </button>
-                                        </div>
-                                        <p className="text-[10px] text-gray-600 font-mono tracking-tighter mt-1">ID: {user.id}</p>
-                                    </div>
-                                </div>
-
-                                {/* Level Badge */}
-                                <div className="lg:w-36 relative z-10">
-                                    <span
-                                        className="px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border inline-block shadow-lg"
-                                        style={{ backgroundColor: `${user.level.color}15`, color: user.level.color, borderColor: `${user.level.color}20` }}
-                                    >
-                                        {user.level.name}
-                                    </span>
-                                </div>
-
-                                {/* Progress Block */}
-                                <div className="flex-1 flex flex-col gap-3 relative z-10">
-                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider">
-                                        <span className="text-gray-500">Cuota Diaria</span>
-                                        <span className="text-primary">{user.downloads.used} <span className="text-gray-600 mx-1">/</span> {user.downloads.limit === -1 ? '∞' : user.downloads.limit}</span>
-                                    </div>
-                                    <div className="w-full h-2.5 bg-black/40 rounded-full overflow-hidden p-[1px] border border-white/5">
-                                        <div
-                                            className="h-full bg-primary shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)] transition-all duration-700 rounded-full"
-                                            style={{ width: user.downloads.limit === -1 ? '20%' : `${Math.min(100, (user.downloads.used / user.downloads.limit) * 100)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-
-                                {/* Stats & Action */}
-                                <div className="flex items-center justify-between lg:justify-end gap-10 lg:min-w-[180px] relative z-10">
-                                    <div className="text-right">
-                                        <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mb-1">Total DLS</p>
-                                        <p className="text-lg font-black text-white tabular-nums">{user.downloads.total}</p>
-                                    </div>
-                                    <div className="p-3.5 bg-white/5 rounded-[1.25rem] text-gray-500 group-hover:text-white group-hover:bg-primary transition-all duration-300 shadow-lg">
-                                        <ChevronRight className="w-5 h-5" strokeWidth={3} />
-                                    </div>
-                                </div>
-
-                                {/* Subtle Row Glow */}
-                                <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" style={{ opacity: settings.cardGlowIntensity * 0.2 }}></div>
+                    {/* Users List - Dynamic Grid (Square Cards on Mobile) */}
+                    <div className="glass-panel border border-white/5 rounded-3xl p-6 sm:p-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+                            <div className="flex items-center gap-3">
+                                <Users className="text-primary w-5 h-5" />
+                                <h3 className="text-sm font-black text-white uppercase tracking-widest">Gesti&oacute;n de Usuarios</h3>
                             </div>
-                        ))
-                    )}
-                </div>
-            </div>
+
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por ID o Username..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-10 pr-4 py-2.5 bg-black/20 border border-white/10 rounded-2xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/50 w-full sm:w-80"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Mobile: Grid of Square Cards | Desktop: Table-like list */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                            {users.length === 0 ? (
+                                <div className="py-20 text-center text-gray-500 italic text-sm">No se encontraron usuarios...</div>
+                            ) : (
+                                users.map((user) => (
+                                    <div
+                                        key={user.id}
+                                        onClick={() => handleSelectUser(user.id)}
+                                        className="group bg-white/[0.01] hover:bg-white/[0.04] border border-white/5 hover:border-primary/20 rounded-3xl p-5 transition-all duration-300 flex flex-col lg:flex-row lg:items-center gap-6 cursor-pointer relative overflow-hidden"
+                                    >
+                                        {/* User Info Block */}
+                                        <div className="flex items-center gap-5 lg:min-w-[260px] relative z-10">
+                                            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-xl border border-primary/10 shadow-inner group-hover:scale-110 transition-transform duration-500 overflow-hidden relative">
+                                                {user.photo_url ? (
+                                                    <img
+                                                        src={user.photo_url}
+                                                        alt={user.username}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            // Fallback if image fails to load
+                                                            const target = e.target as HTMLImageElement;
+                                                            target.style.display = 'none';
+                                                            target.parentElement!.innerText = user.username?.charAt(0).toUpperCase() || '?';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    user.username?.charAt(0).toUpperCase() || '?'
+                                                )}
+
+                                                {scanningUser === user.id && (
+                                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm">
+                                                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-black text-white truncate text-base tracking-tight group-hover:text-primary transition-colors">@{user.username || 'unknown'}</p>
+                                                    <button
+                                                        onClick={(e) => handleSyncUserPhoto(e, user.id)}
+                                                        disabled={scanningUser === user.id}
+                                                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-primary transition-all active:scale-90"
+                                                        title="Sincronizar foto de perfil"
+                                                    >
+                                                        {scanningUser === user.id ? (
+                                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                                        ) : (
+                                                            <RefreshCw className="w-3 h-3" />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                                <p className="text-[10px] text-gray-600 font-mono tracking-tighter mt-1">ID: {user.id}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Level Badge */}
+                                        <div className="lg:w-36 relative z-10">
+                                            <span
+                                                className="px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border inline-block shadow-lg"
+                                                style={{ backgroundColor: `${user.level.color}15`, color: user.level.color, borderColor: `${user.level.color}20` }}
+                                            >
+                                                {user.level.name}
+                                            </span>
+                                        </div>
+
+                                        {/* Progress Block */}
+                                        <div className="flex-1 flex flex-col gap-3 relative z-10">
+                                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider">
+                                                <span className="text-gray-500">Cuota Diaria</span>
+                                                <span className="text-primary">{user.downloads.used} <span className="text-gray-600 mx-1">/</span> {user.downloads.limit === -1 ? '∞' : user.downloads.limit}</span>
+                                            </div>
+                                            <div className="w-full h-2.5 bg-black/40 rounded-full overflow-hidden p-[1px] border border-white/5">
+                                                <div
+                                                    className="h-full bg-primary shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)] transition-all duration-700 rounded-full"
+                                                    style={{ width: user.downloads.limit === -1 ? '20%' : `${Math.min(100, (user.downloads.used / user.downloads.limit) * 100)}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Stats & Action */}
+                                        <div className="flex items-center justify-between lg:justify-end gap-10 lg:min-w-[180px] relative z-10">
+                                            <div className="text-right">
+                                                <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mb-1">Total DLS</p>
+                                                <p className="text-lg font-black text-white tabular-nums">{user.downloads.total}</p>
+                                            </div>
+                                            <div className="p-3.5 bg-white/5 rounded-[1.25rem] text-gray-500 group-hover:text-white group-hover:bg-primary transition-all duration-300 shadow-lg">
+                                                <ChevronRight className="w-5 h-5" strokeWidth={3} />
+                                            </div>
+                                        </div>
+
+                                        {/* Subtle Row Glow */}
+                                        <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" style={{ opacity: settings.cardGlowIntensity * 0.2 }}></div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
                 </>
             )}
         </div>

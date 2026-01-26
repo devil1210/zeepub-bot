@@ -61,6 +61,7 @@ interface TierConfig {
     hasLibraryAccess: boolean;
     canRequestBooks: boolean;
     backgroundColor: string;
+    cardColor: string;
     bannerContentOffset: number;
     forceSettings: boolean;
     canUploadEpub: boolean;
@@ -322,40 +323,40 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         </div>
                     )}
 
-                    {/* Level Selector & Save */}
-                    <div className="flex items-center gap-3">
-                        <div className="relative group min-w-[240px]">
-                            <div className="absolute -top-2 -left-2 px-2 py-0.5 rounded-full bg-black border border-white/10 text-[8px] font-black uppercase tracking-widest text-gray-500 z-10">
-                                Seleccionar Nivel a Editar
-                            </div>
-                            <div className="relative">
-                                <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
-                                <select
-                                    value={selectedTierName}
-                                    onChange={(e) => setSelectedTierName(e.target.value)}
-                                    className="w-full pl-12 pr-10 py-4 bg-black/40 border-2 border-white/5 rounded-2xl text-base font-black text-white appearance-none focus:outline-none focus:border-primary/50 transition-all cursor-pointer hover:bg-black/60 shadow-xl"
-                                    style={{ color: allLevels.find(l => l.name === selectedTierName)?.color || '#fff' }}
+                    {/* Level Selector - Premium Horizontal List */}
+                    <div className="flex flex-col gap-4 w-full md:w-auto">
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 ml-2">Editar Nivel</span>
+                        <div className="flex items-center gap-2 bg-white/5 p-2 rounded-[2rem] border border-white/5 overflow-x-auto no-scrollbar shadow-inner max-w-[80vw] md:max-w-none">
+                            {allLevels.map(lvl => (
+                                <button
+                                    key={lvl.id}
+                                    onClick={() => setSelectedTierName(lvl.name)}
+                                    className={`
+                                        flex items-center gap-3 px-6 py-4 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap
+                                        ${selectedTierName === lvl.name
+                                            ? 'bg-primary text-white shadow-2xl shadow-primary/40 scale-100 ring-4 ring-primary/10'
+                                            : 'text-gray-500 hover:text-gray-300 hover:bg-white/5 scale-95 opacity-70'}
+                                    `}
                                 >
-                                    {allLevels.map(lvl => (
-                                        <option key={lvl.id} value={lvl.name} style={{ color: lvl.color }}>
-                                            {lvl.name.toUpperCase()}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none group-hover:text-primary transition-colors" />
-                            </div>
+                                    <div
+                                        className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]"
+                                        style={{ backgroundColor: lvl.color, color: lvl.color }}
+                                    />
+                                    {lvl.name}
+                                </button>
+                            ))}
                         </div>
-
-                        <button
-                            onClick={handleSave}
-                            disabled={saving || (JSON.stringify(config) === JSON.stringify(originalConfig))}
-                            className="h-[58px] px-8 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all
-                            bg-primary text-white shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:grayscale disabled:scale-100"
-                        >
-                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            Guardar
-                        </button>
                     </div>
+
+                    <button
+                        onClick={handleSave}
+                        disabled={saving || (JSON.stringify(config) === JSON.stringify(originalConfig))}
+                        className="h-[64px] px-10 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] flex items-center gap-4 transition-all
+                        bg-primary text-white shadow-2xl shadow-primary/30 hover:scale-[1.05] active:scale-[0.95] disabled:opacity-30 disabled:grayscale disabled:scale-100 mt-auto"
+                    >
+                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                        GUARDAR CAMBIOS
+                    </button>
                 </div>
 
                 {/* Config Grid */}
@@ -550,30 +551,6 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                     </div>
                                 ))}
                             </div>
-                        </div>
-
-
-                        {/* Info Note about Interface section */}
-                        <div className="glass-panel p-8 rounded-2xl border border-primary/20 bg-primary/5 flex flex-col md:flex-row items-center gap-6 shadow-xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
-                                <Palette className="w-16 h-16 text-primary" />
-                            </div>
-                            <div className="p-4 rounded-2xl bg-primary/20 text-primary shrink-0">
-                                <Palette className="w-8 h-8" />
-                            </div>
-                            <div className="flex-1">
-                                <h4 className="text-white font-black uppercase tracking-tight mb-1">Personalización Visual Movida</h4>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-relaxed">
-                                    Los ajustes de colores, transparencias, desenfoques y efectos visuales de la interfaz se han movido a la nueva pestaña
-                                    <span className="text-primary font-black ml-1 uppercase">"Interfaz"</span> en el menú principal del panel admin.
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => onNavigate?.('interface')}
-                                className="px-6 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all whitespace-nowrap"
-                            >
-                                Ir a Interfaz
-                            </button>
                         </div>
 
 
