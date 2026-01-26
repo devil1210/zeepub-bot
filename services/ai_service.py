@@ -71,6 +71,10 @@ class AIService:
         3. **Suggested Filename**: Genera el nombre EXACTO: "{{Series Spanish}} - {{Volumen}} [{{Siglas}}].epub".
            - Si el volumen es 0.0, usa "Volumen Único".
            - Si el volumen es > 0, usa "V{{XX}}" (ej: V01, V08.5).
+        
+        SEGURIDAD DE ARCHIVOS:
+        - NUNCA uses caracteres Prohibidos: \ / : * ? " < > |
+        - Si el nombre oficial contiene ":", reemplázalo por "-" o espacio.
 
         Datos de Entrada:
         - Filename Original: "{filename}"
@@ -94,7 +98,10 @@ class AIService:
             # Ejecutar en threadpool para no bloquear el loop async
             response = await model.generate_content_async(prompt)
             txt = AIService._extract_json_from_text(response.text)
-            return json.loads(txt)
+            data = json.loads(txt)
+            if data.get("suggested_filename"):
+                data["suggested_filename"] = AIService.sanitize_filename(data["suggested_filename"])
+            return data
         except Exception as e:
             logger.error(f"Error en consulta a Gemini: {e}")
             return None
@@ -161,6 +168,11 @@ class AIService:
         2. **Proposed Spanish Name**: El nombre oficial en ESPAÑOL.
         3. **Group Siglas**: Identifica la sigla del grupo (ej: 'GET', 'Tdx').
         4. **Volumes**: Para cada archivo, confirma su volumen real. Usa 0.0 si es Volumen Único.
+        
+        SEGURIDAD DE ARCHIVOS:
+        - NUNCA uses caracteres Prohibidos: \ / : * ? " < > |
+        - Si el nombre oficial contiene ":", reemplázalo por "-" o espacio.
+        - Ejemplo: si el nombre es "Serie: Subtitulo" conviértelo a "Serie - Subtitulo".
         
         Responde SOLO con este JSON:
         {{
@@ -240,7 +252,8 @@ class AIService:
                 # Generar nuevo nombre de archivo usando el nombre en ESPAÑOL y las SIGLAS
                 spanish_name = proposal["proposed_spanish"] or proposal["proposed_series"]
                 siglas = proposal["group_siglas"] or "Unknown"
-                new_filename = f"{spanish_name} - {vol_part} [{siglas}].epub"
+                raw_filename = f"{spanish_name} - {vol_part} [{siglas}].epub"
+                new_filename = AIService.sanitize_filename(raw_filename)
                 
                 if book.get("filename") != new_filename:
                     proposal["changes"].append({
@@ -326,3 +339,15 @@ class AIService:
             else:
                 txt = txt.strip("`").strip()
         return txt
+
+    @staticmethod
+    def sanitize_filename(name: str) -> str:
+        """Elimina caracteres prohibidos para sistemas de archivos (\ / : * ? " < > |)."""
+        if not name:
+            return ""
+        import re
+        # Reemplazar caracteres prohibidos por guiones
+        forbidden = r'[\\/:*?"<>|]'
+        clean = re.sub(forbidden, "-", name)
+        # Limpiar espacios extra y puntos al final (prohibidos en Windows)
+        return clean.strip().strip('.')

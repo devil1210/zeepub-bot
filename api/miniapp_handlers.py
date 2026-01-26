@@ -13,7 +13,7 @@ from sqlalchemy import desc, func, or_
 from config.config_settings import config
 from core.state_manager import state_manager
 from core.supabase_manager import supabase_manager
-from models.library_models import DuplicateBook, LibrarySource, LocalBook, UploadBook
+from models.library_models import AILearningFeedback, DuplicateBook, LibrarySource, LocalBook, UploadBook
 from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
 from services.library_service import LibraryService
@@ -2449,17 +2449,18 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
 
     try:
         with get_session() as session:
-            # 1. Libros con series_spanish (procesados por IA o limpios manual)
-            total_processed = session.query(func.count(LocalBook.id)).filter(
-                LocalBook.series_spanish != None,
-                LocalBook.series_spanish != ""
-            ).scalar()
-
-            # 2. Total de libros
+            # 1. Total de libros
             total_books = session.query(func.count(LocalBook.id)).scalar()
+
+            # 2. Libros en series YA revisadas (que están en ai_learning_feedback)
+            # Usamos una subquery para mayor eficiencia
+            reviewed_hashes = session.query(AILearningFeedback.series_hash).distinct()
+            total_processed = session.query(func.count(LocalBook.id)).filter(
+                LocalBook.series_hash.in_(reviewed_hashes)
+            ).scalar() or 0
             
             # 3. Libros pendientes de estandarización
-            pending = total_books - total_processed if total_books else 0
+            pending = total_books - total_processed if total_books > total_processed else 0
             
             # 4. Eficiencia (Estimado)
             # Asumimos que cada renombrado manual toma 30 segundos
