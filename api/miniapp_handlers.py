@@ -2873,3 +2873,32 @@ async def handle_ai_reject_proposal(data: dict[str, Any], user_data: dict[str, A
             return {"success": True, "message": "Propuesta rechazada."}
         else:
             return {"success": False, "message": "Propuesta no encontrada."}
+
+async def handle_ai_reset_series(data: dict[str, Any], user_data: dict[str, Any]):
+    """Limpia los metadatos de una serie para que la IA la vuelva a analizar."""
+    series_hash = data.get("series_hash")
+    if not series_hash:
+        raise HTTPException(status_code=400, detail="Falta series_hash")
+        
+    from models.library_models import LocalBook, SeriesMetadata, MetadataProposal
+    from utils.library_db import get_session
+    from sqlalchemy import update
+    
+    with get_session() as session:
+        # 1. Resetear libros
+        session.execute(
+            update(LocalBook)
+            .where(LocalBook.series_hash == series_hash)
+            .values(series_spanish=None)
+        )
+        
+        # 2. Resetear Serie
+        series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
+        if series:
+            series.series_spanish = None
+            
+        # 3. Eliminar propuestas pendientes/anteriores
+        session.query(MetadataProposal).filter_by(series_hash=series_hash).delete()
+        
+        session.commit()
+        return {"success": True, "message": "Metadatos de la serie reseteados. El Jardinero IA la procesará en breve."}
