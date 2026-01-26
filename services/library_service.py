@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import String, cast, func, or_, select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook
+from models.library_models import LocalBook, SeriesMetadata
 from repositories.download_repository import download_repo
 
 logger = logging.getLogger(__name__)
@@ -120,49 +120,59 @@ class LibraryService:
             try:
                 pattern = f"%{query}%"
                 
-                # Filtros para coincidencias
-                match_filters = [
-                    LocalBook.series.ilike(pattern),
-                    LocalBook.title.ilike(pattern),
-                    LocalBook.author.ilike(pattern),
-                    LocalBook.romaji_title.ilike(pattern),
-                    LocalBook.english_title.ilike(pattern)
-                ]
-                
-                if search_type in ("all", "todos", "genres", "géneros", "tags"):
-                     match_filters.append(cast(LocalBook.tags, String).ilike(pattern))
-
-                # Subconsulta para encontrar series_hashes que coinciden
-                # Agrupamos por series_hash para tratarlos como entidad única
-                stmt_hashes = select(
-                    LocalBook.series_hash,
-                    func.max(LocalBook.series).label("series_name"),
-                    func.max(LocalBook.author).label("author"),
-                    func.max(LocalBook.description).label("description"),
-                    func.max(LocalBook.cover_low).label("cover"),
-                    func.max(LocalBook.cover_medium).label("cover_medium"),
-                    func.max(LocalBook.cover_high).label("cover_high"),
-                    func.max(LocalBook.cover_original).label("cover_original"),
-                    func.count(LocalBook.id).label("book_count"),
-                    func.avg(LocalBook.rating_average).label("rating_avg"),
-                    func.sum(LocalBook.rating_count).label("rating_sum"),
-                    func.max(LocalBook.book_type).label("book_type"),
-                    func.max(LocalBook.is_uncensored).label("is_uncensored"),
-                    func.max(LocalBook.color_mode).label("color_mode")
-                ).where(or_(*match_filters))
+                # Búsqueda directa en SeriesMetadata - Mucho más eficiente
+                stmt = select(SeriesMetadata).where(
+                    or_(
+                        SeriesMetadata.series_name.ilike(pattern),
+                        SeriesMetadata.series_spanish.ilike(pattern),
+                        SeriesMetadata.author.ilike(pattern),
+                        cast(SeriesMetadata.tags, String).ilike(pattern)
+                    )
+                )
 
                 if source_id:
-                    stmt_hashes = stmt_hashes.where(LocalBook.source_id == source_id)
-                
-                stmt_hashes = stmt_hashes.group_by(LocalBook.series_hash)
+                    # Si filtramos por origen, debemos unir con LocalBook
+                    stmt = stmt.join(LocalBook).where(LocalBook.source_id == source_id).distinct()
 
                 # Order by logic
                 if sort_by == "newest":
-                    stmt_hashes = stmt_hashes.order_by(func.max(LocalBook.indexed_at).desc())
+                    stmt = stmt.order_by(SeriesMetadata.id.desc())
                 elif sort_by == "popular":
-                    stmt_hashes = stmt_hashes.order_by(func.sum(LocalBook.rating_count).desc())
+                    stmt = stmt.order_by(SeriesMetadata.rating_count.desc())
                 else: # a-z default
-                    stmt_hashes = stmt_hashes.order_by(func.max(LocalBook.series).asc())
+                    stmt = stmt.order_by(SeriesMetadata.series_name.asc())
+
+                # Count total series
+                count_stmt = select(func.count()).select_from(stmt.subquery())
+                total_series = (await session.execute(count_stmt)).scalar() or 0
+
+                # Pagination
+                start = (page - 1) * items_per_page
+                stmt = stmt.offset(start).limit(items_per_page)
+                
+                res = await session.execute(stmt)
+                series_list = res.scalars().all()
+
+                results = []
+                for s in series_list:
+                    results.append({
+                        "id": f"series_{s.series_hash}",
+                        "series_hash": s.series_hash,
+                        "title": s.series_spanish or s.series_name,
+                        "series": s.series_name,
+                        "author": s.author,
+                        "description": s.description,
+                        "cover": s.cover_url, # Centralized cover
+                        "coverUrl": {
+                            "cover": s.cover_url,
+                            "cover_low": s.cover_url
+                        },
+                        "numBooks": s.book_count,
+                        "rating_average": s.rating_average,
+                        "rating_count": s.rating_count,
+                        "is_series": True,
+                        "type": "series"
+                    })
 
                 # Count total series
                 count_stmt = select(func.count()).select_from(stmt_hashes.subquery())
@@ -432,24 +442,14 @@ class LibraryService:
                         "type": "volumes"
                     }
 
-                # Root or folder navigation: Group by series_hash
-                stmt = select(
-                    LocalBook.series_hash,
-                    func.max(LocalBook.series).label("series_name"),
-                    func.count(LocalBook.id).label("book_count"),
-                    func.max(LocalBook.cover_low).label("cover")
-                )
+                # Root or folder navigation: Use SeriesMetadata
+                stmt = select(SeriesMetadata)
                 
                 if source_id:
-                    stmt = stmt.where(LocalBook.source_id == source_id)
+                    stmt = stmt.join(LocalBook).where(LocalBook.source_id == source_id).distinct()
+
+                stmt = stmt.order_by(SeriesMetadata.series_name.asc())
                 
-                stmt = stmt.group_by(LocalBook.series_hash)
-
-                if sort_by == "newest":
-                    stmt = stmt.order_by(func.max(LocalBook.indexed_at).desc())
-                else:
-                    stmt = stmt.order_by(func.max(LocalBook.series).asc())
-
                 count_stmt = select(func.count()).select_from(stmt.subquery())
                 total_items = (await session.execute(count_stmt)).scalar() or 0
 
@@ -457,17 +457,17 @@ class LibraryService:
                 stmt = stmt.offset(start).limit(page_size)
                 
                 res = await session.execute(stmt)
-                rows = res.fetchall()
+                series_list = res.scalars().all()
 
                 items = []
-                for row in rows:
+                for s in series_list:
                     items.append({
-                        "id": f"series_{row[0]}",
-                        "title": row[1] or "Sin Colección",
+                        "id": f"series_{s.series_hash}",
+                        "title": s.series_spanish or s.series_name,
                         "is_folder": True,
-                        "numBooks": row[2],
-                        "cover": row[3],
-                        "series_hash": row[0]
+                        "numBooks": s.book_count,
+                        "cover": s.cover_url,
+                        "series_hash": s.series_hash
                     })
 
                 return {

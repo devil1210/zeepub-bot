@@ -7,7 +7,7 @@ import re
 from datetime import datetime
 
 from sqlalchemy import func
-from models.library_models import DuplicateBook, LibrarySource, LocalBook
+from models.library_models import DuplicateBook, LibrarySource, LocalBook, SeriesMetadata
 from utils.epub_extractor import EpubMetadataExtractor
 from utils.helpers import (
     generate_book_hash,
@@ -331,6 +331,43 @@ class ScannerService:
         
         return results, found_files
 
+    def _get_or_create_series(self, session, book: LocalBook) -> SeriesMetadata:
+        """
+        Obtiene o crea una entrada en SeriesMetadata para el libro.
+        Normaliza campos comunes de la serie.
+        """
+        series = session.query(SeriesMetadata).filter_by(series_hash=book.series_hash).first()
+        
+        if not series:
+            series = SeriesMetadata(
+                series_name=book.series or book.title,
+                series_spanish=book.series_spanish,
+                series_hash=book.series_hash,
+                author=book.author,
+                author_jap=book.author_jap,
+                description=book.description,
+                tags=book.tags,
+                book_type=book.book_type,
+                publisher=book.publisher,
+                cover_url=book.cover_medium or book.cover_low,
+                book_count=0
+            )
+            session.add(series)
+            session.flush() # Para obtener el ID
+            logger.info(f"🆕 Nueva serie detectada: {series.series_name}")
+        else:
+            # Sincronizar campos si están vacíos en la serie pero presentes en el libro
+            if not series.author and book.author: series.author = book.author
+            if not series.description and book.description: series.description = book.description
+            if not series.tags and book.tags: series.tags = book.tags
+            if not series.series_spanish and book.series_spanish: series.series_spanish = book.series_spanish
+            if not series.book_type and book.book_type: series.book_type = book.book_type
+            if not series.publisher and book.publisher: series.publisher = book.publisher
+            if not series.cover_url and (book.cover_medium or book.cover_low):
+                series.cover_url = book.cover_medium or book.cover_low
+
+        return series
+
     def _process_book(self, filepath, source, session, force_scan=False) -> bool:
         """
         Procesa un archivo individual. Devuelve True si el libro fue procesado/actualizado.
@@ -591,6 +628,14 @@ class ScannerService:
                         # New unique file, add to session
                         session.add(book)
                         outcome = "added"
+
+            # --- VINCULACIÓN CON SERIES_METADATA ---
+            series = self._get_or_create_series(session, book)
+            book.series_metadata_id = series.id
+            
+            # Actualizar conteo de libros en la serie
+            count_stmt = select(func.count(LocalBook.id)).where(LocalBook.series_hash == series.series_hash)
+            series.book_count = session.execute(count_stmt).scalar() or 0
 
             # Guardar Portada en 4 calidades (outside no_autoflush block)
             if extractor.cover_data:

@@ -7,7 +7,7 @@ from rich.console import Console
 from sqlalchemy import func, select, update
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook
+from models.library_models import LocalBook, SeriesMetadata
 from services.ai_service import AIService
 
 # Configure logging
@@ -101,14 +101,22 @@ async def process_groups(groups: list[dict]):
         console.print(f"  [green]Sugerencia IA (EN):[/green] '{proposed_en}'")
         console.print(f"  [green]Sugerencia IA (ES):[/green] '{proposed_es}'")
         
-        # 3. Actualizar DB (Todos los libros del hash)
+        # 3. Actualizar DB (Serie y Libros)
         async with pg_manager.get_session() as session:
+            # Sincronizar SeriesMetadata
+            series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
+            if series:
+                series.series_name = proposed_en
+                series.series_spanish = proposed_es
+            
+            # Actualizar todos los libros
             stmt = (
                 update(LocalBook)
                 .where(LocalBook.series_hash == series_hash)
                 .values(
                     series=proposed_en,
-                    series_spanish=proposed_es
+                    series_spanish=proposed_es,
+                    series_metadata_id=series.id if series else None
                 )
             )
             await session.execute(stmt)

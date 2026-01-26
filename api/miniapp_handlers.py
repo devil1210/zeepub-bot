@@ -2644,19 +2644,41 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
     from sqlalchemy import select
 
-    from models.library_models import LocalBook
+    from models.library_models import LocalBook, SeriesMetadata
     from utils.library_db import get_session
 
     with get_session() as session:
         # 1. Update Series Metadata (Global)
         if apply_meta and proposed_series:
-            # Update all books in this hash group to the new series name
+            # Sync with SeriesMetadata table
+            series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
+            proposed_spanish = proposal.get("proposed_spanish")
+            
+            if series:
+                series.series_name = proposed_series
+                series.series_spanish = proposed_spanish
+                if proposal.get("genres"):
+                    series.tags = proposal["genres"]
+                if proposal.get("description"):
+                    series.description = proposal["description"]
+            else:
+                # Create if missing
+                series = SeriesMetadata(
+                    series_hash=series_hash,
+                    series_name=proposed_series,
+                    series_spanish=proposed_spanish,
+                    tags=proposal.get("genres"),
+                    description=proposal.get("description")
+                )
+                session.add(series)
+                session.flush()
+
+            # Update all books in this hash group to the new series name and link them
             stmt = select(LocalBook).where(LocalBook.series_hash == series_hash)
             books = session.execute(stmt).scalars().all()
             
-            proposed_spanish = proposal.get("proposed_spanish")
-            
             for book in books:
+                book.series_metadata_id = series.id
                 book.series = proposed_series  # English
                 if proposed_spanish:
                     book.series_spanish = proposed_spanish # Spanish

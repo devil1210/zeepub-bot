@@ -52,8 +52,14 @@ class SeriesMetadata(Base):
     cover_url = Column(String(1024)) # Portada representativa de la serie
     book_count = Column(Integer, default=0)
     
+    book_type = Column(String(100)) # Ej: Novela Ligera, Manga
+    publisher = Column(String(255))
+    
     rating_average = Column(Float, default=0.0)
     rating_count = Column(Integer, default=0)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     books = relationship("LocalBook", back_populates="series_info")
 
