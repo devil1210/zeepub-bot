@@ -481,8 +481,8 @@ export const AIHub: React.FC = () => {
                                                 <div className="flex flex-wrap items-center gap-4 mb-3">
                                                     <h4 className="font-black text-white text-xl tracking-tight">{item.final_name || item.proposed_name}</h4>
                                                     <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm ${item.status === 'accepted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                            item.status === 'edited' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                                'bg-gray-500/10 text-gray-400 border-white/10'
+                                                        item.status === 'edited' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                            'bg-gray-500/10 text-gray-400 border-white/10'
                                                         }`}>
                                                         {item.status}
                                                     </span>
@@ -816,7 +816,7 @@ export const AIHub: React.FC = () => {
                                                 <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase">Color</span>
                                             )}
                                             {s.is_uncensored && (
-                                                <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-red-500/10 text-red-500 border border-red-500/20 uppercase">N/C</span>
+                                                <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-red-500/10 text-red-500 border border-red-500/20 uppercase">S/C</span>
                                             )}
                                         </div>
                                         <p className="text-[10px] text-gray-600 font-mono mt-2">{s.series_hash}</p>

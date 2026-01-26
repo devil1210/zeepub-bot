@@ -410,12 +410,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                     </div>
                   </div>
 
-                  {/* Format Badge */}
-                  <div className="absolute bottom-6 left-6">
-                    <span className="bg-primary text-white text-[10px] font-black px-4 py-2 rounded-premium-sm uppercase tracking-[0.2em] shadow-2xl">
-                      {displayData.format}
-                    </span>
-                  </div>
                 </div>
               </div>
 
@@ -424,8 +418,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                 <button
                   onClick={handleDownload}
                   className={`w-full py-5 rounded-[2rem] text-sm font-black uppercase tracking-[0.25em] flex items-center justify-center gap-4 transition-all duration-500 shadow-2xl active:scale-95 group overflow-hidden relative ${hasDownloaded
-                      ? 'bg-emerald-500 text-white shadow-emerald-500/30'
-                      : 'bg-primary text-white shadow-primary/30'
+                    ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                    : 'bg-primary text-white shadow-primary/30'
                     }`}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer"></div>

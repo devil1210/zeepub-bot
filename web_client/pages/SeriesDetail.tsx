@@ -419,7 +419,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                       )}
                       {vol.is_uncensored && (
                         <div className="bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
-                          N/C
+                          S/C
                         </div>
                       )}
                     </div>
@@ -494,7 +494,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                       )}
                       {vol.is_uncensored && (
                         <span className="bg-red-500 text-white text-[9px] font-black px-3 py-1.5 rounded-premium-sm uppercase tracking-widest shadow-2xl border border-white/10">
-                          N/C
+                          S/C
                         </span>
                       )}
                     </div>

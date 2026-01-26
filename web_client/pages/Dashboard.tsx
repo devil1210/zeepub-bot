@@ -286,7 +286,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           )}
                           {book.is_uncensored && (
                             <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-red-500/10 text-red-500 uppercase tracking-wider border border-red-500/30">
-                              Sin Censura
+                              S/C
                             </span>
                           )}
                         </div>

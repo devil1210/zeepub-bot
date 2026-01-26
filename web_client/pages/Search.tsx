@@ -354,7 +354,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                     )}
                     {series.is_uncensored && (
                       <span className="px-2.5 py-1 rounded-lg text-[8px] sm:text-[9px] font-black bg-red-500/10 text-red-500 uppercase tracking-widest border border-red-500/20">
-                        N/C
+                        S/C
                       </span>
                     )}
                   </div>
@@ -387,7 +387,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                         <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest shadow-xl">COLOR</span>
                       )}
                       {series.is_uncensored && (
-                        <span className="bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest shadow-xl">N/C</span>
+                        <span className="bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest shadow-xl">S/C</span>
                       )}
                     </div>
 
