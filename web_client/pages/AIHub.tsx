@@ -167,7 +167,7 @@ export const AIHub: React.FC = () => {
     };
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-8 animate-in fade-in duration-500">
+        <div className="max-w-[1800px] mx-auto px-4 py-8 animate-in fade-in duration-500">
 
             {/* Header */}
             <div className="flex items-center gap-4 mb-10">

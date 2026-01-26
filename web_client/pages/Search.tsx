@@ -271,7 +271,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
       {/* List Content - Header/Nav rendered at Layout level */}
       <div className="flex-1 px-4 pb-32 md:pb-6">
-        <div className="max-w-7xl mx-auto space-y-3">
+        <div className="max-w-[1800px] mx-auto space-y-3">
 
           {viewMode === 'list' ? (
             // LIST VIEW
@@ -397,7 +397,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   </div>
 
                   {/* Hover Accent Glow */}
-                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                  <div className="absolute -inset-20 bg-primary/5 blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
                 </div>
               ))}
             </div>

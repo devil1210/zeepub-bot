@@ -118,7 +118,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto px-4 md:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8">
+    <div className="max-w-[1800px] mx-auto px-4 md:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8">
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
@@ -208,7 +208,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       <button
                         key={item.id}
                         onClick={() => onNavigate && onNavigate(item.id)}
-                        className="group relative h-44 flex flex-col items-center justify-center text-center gap-4 cursor-pointer active:scale-95 transition-all duration-500"
+                        className="group relative h-44 flex flex-col items-center justify-center text-center gap-4 cursor-pointer active:scale-95 hover:scale-[1.02] transition-all duration-500"
                         aria-label={`Acceder a ${item.label}`}
                       >
                         {/* Glow and Background */}
@@ -331,7 +331,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <button
                       key={item.id}
                       onClick={() => onNavigate && onNavigate(item.id)}
-                      className="group relative h-36 flex flex-col items-center justify-center text-center gap-3 cursor-pointer active:scale-95 transition-all duration-500"
+                      className="group relative h-36 flex flex-col items-center justify-center text-center gap-3 cursor-pointer active:scale-95 hover:scale-[1.02] transition-all duration-500"
                       aria-label={`Administrar ${item.label}`}
                     >
                       <div className={`absolute inset-0 rounded-[2.2rem] bg-[var(--panel-bg)] border border-[var(--panel-border)] group-hover:bg-white/[0.05] group-hover:border-white/20 group-hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] transition-all duration-700`}></div>

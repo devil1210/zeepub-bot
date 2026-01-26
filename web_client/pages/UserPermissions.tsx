@@ -395,7 +395,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
 
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 rounded-tl-2xl animate-in fade-in duration-300">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-[1800px] mx-auto">
         {/* Error/Success Alerts */}
         {error && (
           <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">

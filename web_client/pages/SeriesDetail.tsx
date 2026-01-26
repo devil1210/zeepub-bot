@@ -278,7 +278,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           className="relative w-full px-4 sm:px-6 lg:px-8 pb-6 z-20 flex-1"
           style={{ paddingTop: '2rem' }}
         >
-          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
+          <div className="max-w-[1800px] mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
             <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 shadow-2xl rounded-lg overflow-hidden">
               <img alt={`${realSeries.title} Cover`} className="w-full h-full object-cover" src={getCoverUrl(realSeries.coverUrl, realSeries.coverThumbUrl, settings.coverQuality)} />
             </div>
@@ -364,7 +364,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
       )}
 
       <div className="flex-1 pb-32">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <ListOrdered className="w-5 h-5 text-primary" />
@@ -392,7 +392,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative flex gap-6 p-6 rounded-[2.5rem] bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] hover:border-primary/40 hover:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.6)] transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl mb-2"
+                  className="group relative flex gap-6 p-6 rounded-[2.5rem] glass-panel hover:bg-white/[0.08] hover:border-primary/40 hover:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.6)] transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl mb-2"
                 >
                   {/* Backdrop Glow */}
                   <div className="absolute -inset-20 bg-primary/5 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
@@ -469,7 +469,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative bg-white/[0.02] rounded-[2.5rem] overflow-hidden border border-white/5 hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
+                  className="group relative glass-panel rounded-[2.5rem] overflow-hidden hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
                 >
                   <div className="relative aspect-[2/3] w-full overflow-hidden bg-white/5 shadow-2xl">
                     <img
@@ -508,7 +508,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                   </div>
 
                   {/* Hover Accent Glow */}
-                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                  <div className="absolute -inset-20 bg-primary/5 blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
                 </div>
 
               )

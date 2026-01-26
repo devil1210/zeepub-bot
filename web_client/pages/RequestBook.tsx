@@ -16,7 +16,7 @@ interface RequestBookProps {
 export const RequestBook: React.FC<RequestBookProps> = ({ onNavigate }) => {
   return (
     <div className="font-sans text-gray-900 dark:text-gray-100 min-h-full animate-in fade-in duration-300 pb-24">
-      <main className="max-w-3xl mx-auto px-4 py-8 md:py-12">
+      <main className="max-w-5xl mx-auto px-4 py-8 md:py-12">
 
         {/* Header */}
         <div className="text-center mb-10">

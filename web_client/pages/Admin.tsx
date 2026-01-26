@@ -143,7 +143,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     <div className="relative min-h-screen">
       <div className="fixed top-0 left-0 w-full h-[600px] bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none opacity-50 z-0"></div>
 
-      <div className="max-w-7xl mx-auto pb-32 md:pb-12 p-4 md:p-8 animate-in fade-in duration-700 font-sans relative z-10">
+      <div className="max-w-[1800px] mx-auto pb-32 md:pb-12 p-4 md:p-8 animate-in fade-in duration-700 font-sans relative z-10">
 
         {/* Desktop Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
