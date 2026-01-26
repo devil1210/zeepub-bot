@@ -396,14 +396,14 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative flex flex-col sm:flex-row gap-6 p-6 rounded-[2.5rem] glass-panel hover:bg-white/[0.08] hover:border-primary/40 hover:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl mb-4"
+                  className="group relative flex flex-row gap-4 sm:gap-6 p-4 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] glass-panel hover:bg-white/[0.08] hover:border-primary/40 hover:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl mb-4"
                 >
                   {/* Premium Backdrop Glow */}
                   <div className="absolute -inset-20 bg-primary/5 blur-[120px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
 
                   {/* Left Section: Image with Badges */}
-                  <div className="relative shrink-0 flex justify-center sm:block">
-                    <div className="relative aspect-[2/3] w-36 sm:w-44 rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 group-hover:-translate-y-2 transition-transform duration-700">
+                  <div className="relative shrink-0 block">
+                    <div className="relative aspect-[2/3] w-24 sm:w-44 rounded-2xl sm:rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 group-hover:-translate-y-2 transition-transform duration-700">
                       <img
                         alt={vol.title}
                         className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
@@ -411,23 +411,9 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                       />
                       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
 
-                      {/* Floating Quality/Type Badges */}
-                      <div className="absolute top-4 left-4 flex flex-col gap-2">
-                        {vol.color_mode === 'color' && (
-                          <div className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[8px] font-black px-2.5 py-1.5 rounded-lg shadow-2xl border border-white/20 animate-pulse uppercase tracking-widest">
-                            Color
-                          </div>
-                        )}
-                        {vol.is_uncensored && (
-                          <div className="bg-red-600 text-white text-[8px] font-black px-2.5 py-1.5 rounded-lg shadow-2xl border border-white/20 uppercase tracking-widest flex items-center gap-1">
-                            <EyeOff className="w-2.5 h-2.5" /> N/C
-                          </div>
-                        )}
-                      </div>
-
                       {/* Floating Format Badge */}
-                      <div className="absolute bottom-4 right-4">
-                        <div className="bg-white/10 backdrop-blur-md text-white text-[8px] font-black px-2 py-1 rounded-md border border-white/10 uppercase tracking-widest">
+                      <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
+                        <div className="bg-white/10 backdrop-blur-md text-white text-[7px] sm:text-[8px] font-black px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md border border-white/10 uppercase tracking-widest">
                           {vol.format}
                         </div>
                       </div>
@@ -436,88 +422,67 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
                   {/* Middle Section: Detailed Content */}
                   <div className="flex-1 min-w-0 flex flex-col py-1 z-10">
-                    <div className="flex flex-wrap items-center gap-3 mb-3">
-                      <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] group-hover:bg-primary group-hover:text-white transition-all duration-500">
-                        VOLUMEN {vol.volumeNumber}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                      <div className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                        VOL. {vol.volumeNumber}
                       </div>
+                      {vol.color_mode === 'color' && (
+                        <div className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[8px] sm:text-[9px] font-black px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full uppercase tracking-widest shadow-lg border border-white/10">
+                          COLOR
+                        </div>
+                      )}
+                      {vol.is_uncensored && (
+                        <div className="bg-red-600 text-white text-[8px] sm:text-[9px] font-black px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full uppercase tracking-widest shadow-lg border border-white/10">
+                          N/C
+                        </div>
+                      )}
                       {vol.group && (
-                        <div className="flex items-center gap-1.5 text-emerald-400 text-[9px] font-black uppercase tracking-widest bg-emerald-500/5 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                          <Users className="w-3 h-3" />
+                        <div className="flex items-center gap-1.5 text-emerald-400 text-[8px] sm:text-[9px] font-black uppercase tracking-widest bg-emerald-500/5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-emerald-500/20 truncate max-w-[120px] sm:max-w-none">
+                          <Users className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
                           {vol.group}
                         </div>
                       )}
                     </div>
 
-                    <h3 className="text-white font-black text-2xl sm:text-3xl leading-tight line-clamp-2 tracking-tighter group-hover:text-primary transition-colors mb-1">
+                    <h3 className="text-white font-black text-lg sm:text-3xl leading-tight line-clamp-2 tracking-tighter group-hover:text-primary transition-colors mb-0.5 sm:mb-1">
                       {vol.cleanTitle || vol.title}
                     </h3>
 
                     {vol.romajiTitle && (
-                      <p className="text-gray-500 text-sm font-medium italic mb-4 line-clamp-1 opacity-80">
+                      <p className="text-gray-500 text-[10px] sm:text-sm font-medium italic mb-2 sm:mb-4 line-clamp-1 opacity-80">
                         {vol.romajiTitle}
                       </p>
                     )}
 
                     {/* Author & Illustrator Info */}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-gray-400 text-[11px] font-bold uppercase tracking-widest">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-4 gap-y-1 mb-4 sm:mb-6 text-gray-400 text-[9px] sm:text-[11px] font-bold uppercase tracking-widest">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
                         <span className="text-gray-600">Por</span>
-                        <span className="text-white/80 group-hover:text-white">{realSeries.author}</span>
+                        <span className="text-white/80 group-hover:text-white truncate max-w-[80px] sm:max-w-none">{realSeries.author}</span>
                       </div>
-                      {vol.illustrator && (
-                        <>
-                          <div className="w-1 h-1 rounded-full bg-white/10"></div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-600">Arte</span>
-                            <span className="text-white/80 group-hover:text-white">{vol.illustrator}</span>
-                          </div>
-                        </>
-                      )}
                     </div>
 
-                    <div className="flex flex-wrap gap-2 mb-8">
-                      {vol.tags && vol.tags.slice(0, 3).map((tag, i) => (
-                        <span key={i} className="px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/5 text-[9px] font-black text-gray-500 uppercase tracking-widest">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Metrics Footer */}
-                    <div className="mt-auto grid grid-cols-2 sm:flex sm:items-center gap-6 sm:gap-10 pt-4 border-t border-white/5">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mb-1.5">Aceptación</span>
-                        <div className="flex items-center gap-2 text-yellow-500">
-                          <Star className="w-4 h-4 fill-current drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]" />
-                          <span className="text-sm sm:text-lg font-black text-white">{vol.rating > 0 ? vol.rating.toFixed(1) : 'NEW'}</span>
-                        </div>
+                    {/* Metrics Footer - No Labels */}
+                    <div className="mt-auto flex items-center gap-6 sm:gap-10 pt-3 sm:pt-4 border-t border-white/5">
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-yellow-500">
+                        <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]" />
+                        <span className="text-xs sm:text-lg font-black text-white">{vol.rating > 0 ? vol.rating.toFixed(1) : 'NEW'}</span>
                       </div>
 
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mb-1.5">Alcance</span>
-                        <div className="flex items-center gap-2 text-primary">
-                          <Download className="w-4 h-4" />
-                          <span className="text-sm sm:text-lg font-black text-white">{vol.downloadCount} <span className="text-[10px] opacity-40">lectores</span></span>
-                        </div>
-                      </div>
-
-                      <div className="hidden sm:flex flex-col">
-                        <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mb-1.5">Peso Archivo</span>
-                        <div className="flex items-center gap-2 text-indigo-400">
-                          <Maximize2 className="w-4 h-4" />
-                          <span className="text-sm sm:text-lg font-black text-white">{vol.size}</span>
-                        </div>
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-primary">
+                        <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span className="text-xs sm:text-lg font-black text-white">{vol.downloadCount} <span className="text-[10px] opacity-40 hidden sm:inline">lectores</span></span>
                       </div>
                     </div>
                   </div>
 
                   {/* Right Section: Action Button */}
-                  <div className="flex items-center justify-center sm:pl-4">
+                  <div className="flex items-center justify-center pl-2 sm:pl-4">
                     <div className="relative group/btn">
                       <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-0 group-hover/btn:scale-150 transition-transform duration-700"></div>
-                      <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] bg-white/[0.03] border border-white/10 flex flex-col items-center justify-center gap-1 transition-all duration-700 hover:bg-primary hover:border-primary hover:scale-105 active:scale-95 shadow-2xl overflow-hidden group/inner">
-                        <ChevronRight className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-500" />
-                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 group-hover:text-white/80 transition-colors">Ver</span>
+                      <div className="relative w-12 h-12 sm:w-20 sm:h-20 rounded-2xl sm:rounded-[2rem] bg-white/[0.03] border border-white/10 flex flex-col items-center justify-center gap-0.5 sm:gap-1 transition-all duration-700 hover:bg-primary hover:border-primary hover:scale-105 active:scale-95 shadow-2xl overflow-hidden group/inner">
+                        <ChevronRight className="w-6 h-6 sm:w-10 sm:h-10 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-500" />
+                        <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 group-hover:text-white/80 transition-colors">Ver</span>
                       </div>
                     </div>
                   </div>
