@@ -17,8 +17,11 @@ import {
     Trash2
 } from 'lucide-react';
 import { api } from '../src/services/api';
+import { useTheme } from '../contexts/ThemeContext';
+import { getCoverUrl } from '../src/utils/imageUtils';
 
 export const AIHub: React.FC = () => {
+    const { settings } = useTheme();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [scanHash, setScanHash] = useState('');
@@ -794,7 +797,7 @@ export const AIHub: React.FC = () => {
                                     className="p-3 rounded-premium-sm bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex items-center gap-4 transition-all"
                                 >
                                     {s.cover ? (
-                                        <img src={s.cover} className="w-10 h-14 object-cover rounded-md" alt="" />
+                                        <img src={getCoverUrl(s, s.cover_thumb || s.cover, settings.coverQuality)} className="w-10 h-14 object-cover rounded-md" alt="" />
                                     ) : (
                                         <div className="w-10 h-14 bg-white/10 rounded-md flex items-center justify-center">
                                             <Search className="w-4 h-4 opacity-50" />

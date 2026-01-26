@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Download, Star, Book, User, Calendar, Hash, Loader2 } from 'lucide-react';
 import { api } from '../src/services/api';
+import { useTheme } from '../contexts/ThemeContext';
+import { getCoverUrl } from '../src/utils/imageUtils';
 
 interface BookDetailByIdProps {
     bookId: string;
@@ -9,6 +11,7 @@ interface BookDetailByIdProps {
 }
 
 export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, onNavigate }) => {
+    const { settings } = useTheme();
     const [book, setBook] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -116,7 +119,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
                 <div className="w-48 md:w-64 flex-shrink-0 mx-auto md:mx-0">
                     <div className="aspect-[2/3] rounded-premium-sm overflow-hidden border border-white/10 shadow-2xl">
                         <img
-                            src={book.cover || '/api/library/covers/' + bookId.replace('local_', '')}
+                            src={getCoverUrl(book, book.cover_thumb || book.cover, settings.coverQuality)}
                             alt={book.title}
                             className="w-full h-full object-cover"
                             onError={(e) => {

@@ -122,8 +122,14 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           series_hash: item.series_hash,
           title: item.title,
           author: item.author,
-          coverUrl: item.cover || '',
-          coverThumbUrl: item.cover_thumb || item.cover || '',
+          coverUrl: item.coverUrl || {
+            cover_low: item.cover_low,
+            cover_medium: item.cover_medium,
+            cover_high: item.cover_high,
+            cover_original: item.cover_original,
+            cover: item.cover || ''
+          },
+          coverThumbUrl: item.cover_thumb || item.cover_low || item.cover || '',
           description: item.summary,
           genre: item.categories ? item.categories.join(', ') : '',
           format: item.fileType ? item.fileType.replace('application/', '').toUpperCase() : 'EPUB',
@@ -381,7 +387,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                     {/* Floating Badges */}
                     <div className="absolute top-4 right-4 flex flex-col gap-2 scale-90 origin-top-right">
                       <span className="bg-black/80 backdrop-blur-xl text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-[0.2em] border border-white/10">
-                        {series.book_type?.split(' ')[0] || 'EPUB'}
+                        {series.book_type || 'NOVELA'}
                       </span>
                       {series.color_mode === 'color' && (
                         <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest shadow-xl">COLOR</span>

@@ -24,6 +24,7 @@ import { api } from '../src/services/api';
 import { useTelegram } from '../contexts/TelegramContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { preloadImages } from '../src/utils/imagePreloader';
+import { getCoverUrl } from '../src/utils/imageUtils';
 
 interface DashboardProps {
   onNavigate?: (tab: string) => void;
@@ -268,7 +269,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     >
                       <div className="relative aspect-[2/3] rounded-[1.5rem] overflow-hidden mb-4 border border-[var(--panel-border)] shadow-2xl group-hover:scale-[1.04] group-hover:shadow-primary/30 transition-all duration-700 ring-1 ring-[var(--panel-border)]">
                         <img
-                          src={book.cover_thumb || book.cover || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200"}
+                          src={getCoverUrl(book, book.cover_thumb || book.cover, settings.coverQuality)}
                           alt={book.title}
                           className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
                         />
