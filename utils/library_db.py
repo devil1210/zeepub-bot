@@ -64,6 +64,7 @@ def check_migrations():
                     CREATE TABLE IF NOT EXISTS series_metadata (
                         id SERIAL PRIMARY KEY,
                         series_name VARCHAR(255) NOT NULL,
+                        series_spanish VARCHAR(255),
                         series_hash VARCHAR(64) UNIQUE NOT NULL,
                         author VARCHAR(255),
                         author_jap VARCHAR(255),
@@ -73,9 +74,12 @@ def check_migrations():
                         tags JSONB,
                         cover_url VARCHAR(1024),
                         book_count INTEGER DEFAULT 0,
+                        book_type VARCHAR(100),
+                        publisher VARCHAR(255),
                         rating_average FLOAT DEFAULT 0.0,
                         rating_count INTEGER DEFAULT 0,
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
                     );
                 """))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);"))
@@ -97,6 +101,38 @@ def check_migrations():
             except Exception as e:
                 _log.warning(f"Error creating admins table: {e}")
                 conn.rollback()
+
+            # 0.2 Table metadata_proposals
+            try:
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS metadata_proposals (
+                        id SERIAL PRIMARY KEY,
+                        series_hash VARCHAR(64) NOT NULL,
+                        proposal_data JSONB NOT NULL,
+                        status VARCHAR(20) DEFAULT 'pending',
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+                        processed_at TIMESTAMP WITH TIME ZONE
+                    );
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_metadata_proposals_hash ON metadata_proposals(series_hash);"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_metadata_proposals_status ON metadata_proposals(status);"))
+                conn.commit()
+            except Exception as e:
+                _log.warning(f"Error creating metadata_proposals table: {e}")
+                conn.rollback()
+
+            # 0.3 SeriesMetadata Migrations (Columns added later)
+            if table_exists("series_metadata"):
+                try:
+                    conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS series_spanish VARCHAR(255);"))
+                    conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS book_type VARCHAR(100);"))
+                    conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS publisher VARCHAR(255);"))
+                    conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());"))
+                    conn.commit()
+                    _log.info("Checked/Added columns to series_metadata")
+                except Exception as e:
+                    _log.warning(f"Error checking series_metadata migrations: {e}")
+                    conn.rollback()
 
             # 1. Metadata and Title variants
             if table_exists("local_books"):
