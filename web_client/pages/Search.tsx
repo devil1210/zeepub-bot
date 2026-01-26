@@ -295,24 +295,24 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                 <div className="flex flex-col flex-1 min-w-0 py-1">
                   {/* Title & Action */}
                   <div className="flex justify-between items-start gap-4 mb-2">
-                    <h3 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white leading-tight tracking-tight line-clamp-2 group-hover:text-primary transition-colors">
+                    <h3 className="text-white font-black text-base sm:text-lg md:text-xl leading-tight line-clamp-2 tracking-tight group-hover:text-primary transition-colors flex-1 min-w-0">
                       {series.title}
                     </h3>
                     <button
                       onClick={(e) => { e.stopPropagation(); /* Add logic */ }}
-                      className="p-2.5 rounded-xl bg-white/5 hover:bg-primary text-gray-400 hover:text-white transition-all duration-300 transform group-hover:scale-110 shadow-lg active:scale-90"
+                      className="p-2.5 rounded-xl bg-white/5 hover:bg-primary text-gray-400 hover:text-white transition-all duration-300 transform group-hover:scale-110 shadow-lg active:scale-90 shrink-0"
                     >
-                      <PlusCircle className="w-4.5 h-4.5" />
+                      <PlusCircle className="w-4 h-4" />
                     </button>
                   </div>
 
                   {/* Author & Genres */}
-                  <div className="mb-3">
-                    <p className="text-sm text-primary font-black uppercase tracking-widest opacity-90">
+                  <div className="mb-4">
+                    <p className="text-[10px] sm:text-xs text-primary font-black uppercase tracking-[0.15em] opacity-90">
                       {series.author}
                     </p>
                     {series.genre && (
-                      <p className="text-[11px] text-gray-500 font-medium italic opacity-70 mt-0.5 line-clamp-1">
+                      <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium italic opacity-70 mt-1 line-clamp-1">
                         {series.genre}
                       </p>
                     )}
@@ -338,22 +338,22 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   {/* Metadata Tags */}
                   <div className="flex flex-wrap items-center gap-2 mt-auto">
                     {series.book_type && (
-                      <span className="px-3 py-1 rounded-lg text-[9px] font-black bg-white/5 text-gray-300 uppercase tracking-widest border border-white/10 group-hover:border-primary/30 group-hover:text-primary transition-all">
+                      <span className="px-2.5 py-1 rounded-lg text-[8px] sm:text-[9px] font-black bg-white/5 text-gray-400 uppercase tracking-widest border border-white/10 group-hover:border-primary/40 group-hover:text-white transition-all">
                         {series.book_type}
                       </span>
                     )}
                     {series.format && (
-                      <span className="px-3 py-1 rounded-lg text-[9px] font-black bg-emerald-500/10 text-emerald-400 uppercase tracking-widest border border-emerald-500/20">
+                      <span className="px-2.5 py-1 rounded-lg text-[8px] sm:text-[9px] font-black bg-emerald-500/10 text-emerald-400 uppercase tracking-widest border border-emerald-500/20">
                         {series.format}
                       </span>
                     )}
                     {series.color_mode === 'color' && (
-                      <span className="px-3 py-1 rounded-lg text-[9px] font-black bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase tracking-widest shadow-lg">
+                      <span className="px-2.5 py-1 rounded-lg text-[8px] sm:text-[9px] font-black bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase tracking-widest shadow-lg">
                         Color
                       </span>
                     )}
                     {series.is_uncensored && (
-                      <span className="px-3 py-1 rounded-lg text-[9px] font-black bg-red-500/10 text-red-500 uppercase tracking-widest border border-red-500/20">
+                      <span className="px-2.5 py-1 rounded-lg text-[8px] sm:text-[9px] font-black bg-red-500/10 text-red-500 uppercase tracking-widest border border-red-500/20">
                         N/C
                       </span>
                     )}
