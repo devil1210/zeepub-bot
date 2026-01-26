@@ -2663,27 +2663,21 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             proposal = db_proposal.proposal_data
 
         series_hash = proposal.get("series_hash")
-    # Changes is a list of approved changes: { "book_id": 123, "proposed_filename": "..." }
-    approved_changes = data.get("approved_changes", []) 
-    # Global series metadata overrides
-    proposed_series = data.get("proposed_series")
-    
-    # Optional flags
-    apply_renames = data.get("apply_renames", True)
-    apply_meta = data.get("apply_meta", True)
+        # Changes is a list of approved changes: { "book_id": 123, "proposed_filename": "..." }
+        approved_changes = data.get("approved_changes", []) 
+        # Global series metadata overrides
+        proposed_series = data.get("proposed_series")
+        
+        # Optional flags
+        apply_renames = data.get("apply_renames", True)
+        apply_meta = data.get("apply_meta", True)
 
-    updated_count = 0
-    errors = []
+        updated_count = 0
+        errors = []
 
-    import os
-    import shutil
+        import os
+        import shutil
 
-    from sqlalchemy import select
-
-    from models.library_models import LocalBook, SeriesMetadata
-    from utils.library_db import get_session
-
-    with get_session() as session:
         # 1. Update Series Metadata (Global)
         if apply_meta and proposed_series:
             # Sync with SeriesMetadata table
