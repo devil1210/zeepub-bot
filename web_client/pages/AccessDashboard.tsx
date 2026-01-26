@@ -6,7 +6,10 @@ import {
     CheckCircle,
     ChevronRight,
     Loader2,
-    RefreshCw
+    RefreshCw,
+    Settings,
+    Zap,
+    LayoutGrid
 } from 'lucide-react';
 import { UserPermissions } from './UserPermissions';
 import { TierConfiguration } from './TierConfiguration';
@@ -189,9 +192,17 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-black text-white uppercase tracking-tight">Resumen de Niveles</h3>
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Configuración rápida de privilegios</p>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Comparativa de privilegios por rango</p>
                                 </div>
                             </div>
+
+                            <button
+                                onClick={() => handleConfigureTier({ name: levels[0]?.name || 'Global', color: levels[0]?.color || '#ffffff' })}
+                                className="px-8 py-3.5 rounded-2xl bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                            >
+                                <Settings className="w-3.5 h-3.5" />
+                                Gestionar Niveles
+                            </button>
                         </div>
 
                         <div className="overflow-x-auto custom-scrollbar">
@@ -199,10 +210,12 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                 <thead>
                                     <tr className="bg-black/20">
                                         <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5">Nivel</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 hidden md:table-cell text-center">Descargas</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 hidden lg:table-cell text-center">Anticipado</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 hidden xl:table-cell text-center">Temas</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 text-right">Acción</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 text-center">Descargas</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 text-center">Simultáneas</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 text-center hidden md:table-cell">Anticipado</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 text-center hidden lg:table-cell">Temas</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 text-center hidden xl:table-cell">Subidas</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 text-right">Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -211,49 +224,53 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-4">
                                                     <div
-                                                        className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner group-hover:scale-110 transition-transform duration-500"
+                                                        className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner group-hover:scale-110 transition-transform duration-500"
                                                         style={{
                                                             backgroundColor: `${level.color}15`,
                                                             color: level.color,
                                                             borderColor: `${level.color}20`
                                                         }}
                                                     >
-                                                        <ShieldCheck className="w-5 h-5" />
+                                                        <ShieldCheck className="w-4 h-4" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-black text-white text-lg tracking-tight group-hover:text-primary transition-colors">{level.name}</p>
-                                                        <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest bg-black/40 px-2 py-0.5 rounded border border-white/5">
-                                                            PRIORIDAD {level.priority}
+                                                        <p className="font-black text-white text-base tracking-tight group-hover:text-primary transition-colors">{level.name}</p>
+                                                        <span className="text-[7px] font-bold text-gray-600 uppercase tracking-widest bg-black/40 px-1.5 py-0.5 rounded border border-white/5">
+                                                            P{level.priority}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 hidden md:table-cell text-center">
-                                                <div className="inline-flex flex-col items-center">
-                                                    <span className="text-white font-black text-sm">{level.dailyDownloads === -1 ? '∞' : level.dailyDownloads}</span>
-                                                    <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest mt-1">LÍMITE DIARIO</span>
+                                            <td className="px-8 py-6 text-center">
+                                                <span className={`text-xs font-black tabular-nums ${level.dailyDownloads === -1 ? 'text-primary' : 'text-gray-300'}`}>
+                                                    {level.dailyDownloads === -1 ? '∞' : level.dailyDownloads}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-6 text-center">
+                                                <span className="text-xs font-black text-gray-400 tabular-nums">
+                                                    3
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-6 text-center hidden md:table-cell">
+                                                <div className={`p-1.5 rounded-lg inline-flex ${level.earlyAccess ? 'bg-primary/20 text-primary' : 'bg-white/5 text-gray-800'}`}>
+                                                    <Zap className="w-3.5 h-3.5" />
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 hidden lg:table-cell text-center">
-                                                <div className={`p-2 rounded-xl inline-flex ${level.earlyAccess ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-gray-700 border border-white/5'}`}>
-                                                    <CheckCircle className="w-4 h-4" />
+                                            <td className="px-8 py-6 text-center hidden lg:table-cell">
+                                                <div className={`p-1.5 rounded-lg inline-flex ${level.customThemes ? 'bg-purple-500/20 text-purple-400' : 'bg-white/5 text-gray-800'}`}>
+                                                    <LayoutGrid className="w-3.5 h-3.5" />
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 hidden xl:table-cell text-center">
-                                                <div className={`p-2 rounded-xl inline-flex ${level.customThemes ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-white/5 text-gray-700 border border-white/5'}`}>
-                                                    <CheckCircle className="w-4 h-4" />
+                                            <td className="px-8 py-6 text-center hidden xl:table-cell">
+                                                <div className={`p-1.5 rounded-lg inline-flex ${level.id === '6' ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-gray-800'}`}>
+                                                    <Settings className="w-3.5 h-3.5" />
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6 text-right">
-                                                <button
-                                                    onClick={() => handleConfigureTier({ name: level.name, color: level.color })}
-                                                    className="px-6 py-3 rounded-xl bg-white/5 hover:bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 transition-all shadow-lg active:scale-95 group/btn"
-                                                >
-                                                    <span className="flex items-center gap-2">
-                                                        Configurar
-                                                        <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" strokeWidth={3} />
-                                                    </span>
-                                                </button>
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 flex items-center justify-end gap-1.5">
+                                                    <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                                                    Activo
+                                                </span>
                                             </td>
                                         </tr>
                                     ))}

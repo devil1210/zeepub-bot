@@ -288,74 +288,61 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                     </div>
                 )}
 
-                {/* Header with Selector */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-5">
-                        <button
-                            onClick={onBack}
-                            className="flex items-center justify-center size-12 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
-                        >
-                            <ArrowLeft className="w-6 h-6 text-gray-400 group-hover:text-white" />
-                        </button>
+                {/* Header with Selector & Save */}
+                <div className="flex flex-col gap-10">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex flex-col">
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-white text-4xl font-black leading-tight tracking-tighter uppercase">
-                                    Configurar Nivel
-                                </h1>
-                                <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">
-                                    Live Editor
-                                </div>
+                            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-2 px-1">Editar Nivel</h2>
+                            <div className="flex items-center gap-3 bg-white/5 p-2 rounded-[2.5rem] border border-white/5 overflow-x-auto no-scrollbar shadow-inner max-w-full">
+                                {allLevels.map(lvl => (
+                                    <button
+                                        key={lvl.id}
+                                        onClick={() => setSelectedTierName(lvl.name)}
+                                        className={`
+                                            flex items-center gap-3 px-6 py-4 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap
+                                            ${selectedTierName === lvl.name
+                                                ? 'bg-primary text-white shadow-2xl shadow-primary/40 scale-100 ring-[6px] ring-primary/10'
+                                                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5 scale-95 opacity-60'}
+                                        `}
+                                    >
+                                        <div
+                                            className="w-2.5 h-2.5 rounded-full shadow-[0_0_12px_currentColor]"
+                                            style={{ backgroundColor: lvl.color, color: lvl.color }}
+                                        />
+                                        {lvl.name}
+                                    </button>
+                                ))}
                             </div>
-                            <p className="text-gray-400 text-sm font-medium mt-1">Personaliza la experiencia global para este rango.</p>
                         </div>
-                    </div>
 
-                    {/* Warning Banner for Global */}
-                    {selectedTierName === 'Global' && (
-                        <div className="flex-1 max-w-xl">
-                            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs flex items-start gap-3">
-                                <Info className="w-5 h-5 shrink-0" />
-                                <div>
-                                    <p className="font-bold uppercase tracking-wider mb-1">Configuración Maestra</p>
-                                    <p className="opacity-80">Los cambios realizados aquí se aplicarán a todos los usuarios como valores por defecto, a menos que su nivel tenga una personalización específica.</p>
-                                </div>
+                        {/* Summary Stats / Status */}
+                        <div className="hidden xl:flex items-center gap-6">
+                            <div className="flex flex-col items-end">
+                                <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Estado Global</span>
+                                <span className="text-emerald-500 font-black flex items-center gap-2 mt-1">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    SINCRONIZADO
+                                </span>
                             </div>
-                        </div>
-                    )}
-
-                    {/* Level Selector - Premium Horizontal List */}
-                    <div className="flex flex-col gap-4 w-full md:w-auto">
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 ml-2">Editar Nivel</span>
-                        <div className="flex items-center gap-2 bg-white/5 p-2 rounded-[2rem] border border-white/5 overflow-x-auto no-scrollbar shadow-inner max-w-[80vw] md:max-w-none">
-                            {allLevels.map(lvl => (
-                                <button
-                                    key={lvl.id}
-                                    onClick={() => setSelectedTierName(lvl.name)}
-                                    className={`
-                                        flex items-center gap-3 px-6 py-4 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap
-                                        ${selectedTierName === lvl.name
-                                            ? 'bg-primary text-white shadow-2xl shadow-primary/40 scale-100 ring-4 ring-primary/10'
-                                            : 'text-gray-500 hover:text-gray-300 hover:bg-white/5 scale-95 opacity-70'}
-                                    `}
-                                >
-                                    <div
-                                        className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]"
-                                        style={{ backgroundColor: lvl.color, color: lvl.color }}
-                                    />
-                                    {lvl.name}
-                                </button>
-                            ))}
+                            <div className="w-px h-10 bg-white/5" />
+                            <div className="flex flex-col items-end">
+                                <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Configuraci&oacute;n</span>
+                                <span className="text-white font-black mt-1 uppercase tracking-tighter">Producci&oacute;n</span>
+                            </div>
                         </div>
                     </div>
 
                     <button
                         onClick={handleSave}
                         disabled={saving || (JSON.stringify(config) === JSON.stringify(originalConfig))}
-                        className="h-[64px] px-10 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] flex items-center gap-4 transition-all
-                        bg-primary text-white shadow-2xl shadow-primary/30 hover:scale-[1.05] active:scale-[0.95] disabled:opacity-30 disabled:grayscale disabled:scale-100 mt-auto"
+                        className="w-full h-[84px] rounded-[2.5rem] font-black text-sm uppercase tracking-[0.4em] flex items-center justify-center gap-5 transition-all
+                        bg-white/5 text-gray-400 border-2 border-white/5 hover:bg-primary hover:text-white hover:border-primary shadow-2xl active:scale-[0.98] disabled:opacity-20 disabled:grayscale disabled:scale-100 group overflow-hidden relative"
                     >
-                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                        GUARDAR CAMBIOS
+                        <div className="flex items-center gap-4 relative z-10">
+                            {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6 group-hover:scale-110 transition-transform" />}
+                            GUARDAR CAMBIOS
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-white/5 to-primary/0 -translate-x-full group-hover:animate-shimmer" />
                     </button>
                 </div>
 

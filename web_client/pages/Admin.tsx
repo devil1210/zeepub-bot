@@ -13,9 +13,13 @@ import {
   Palette,
   FileWarning,
   LayoutGrid,
-  UploadCloud
+  UploadCloud,
+  ChevronDown,
+  Layers,
+  Zap
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { api } from '../src/services/api';
 import { MonitorDashboard } from './MonitorDashboard';
 import { SystemDashboard } from './SystemDashboard';
 import { AccessDashboard } from './AccessDashboard';
@@ -46,6 +50,17 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
   const undoRef = React.useRef<(() => void) | null>(null);
   const saveRef = React.useRef<(() => void) | null>(null);
+  const [levels, setLevels] = useState<{ id: string, name: string, color: string }[]>([]);
+
+  useEffect(() => {
+    const fetchLevels = async () => {
+      try {
+        const res = await api.getAdminTiers();
+        if (res.levels) setLevels(res.levels);
+      } catch (err) { }
+    };
+    fetchLevels();
+  }, []);
 
   const viewOptions = useMemo(() => [
     { id: 'monitor', label: 'Monitor', icon: BarChart3 },
@@ -182,40 +197,79 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-lg z-50 flex flex-col gap-3">
 
           {/* View Selection Overlay (Menu) */}
-          {isViewSelectorOpen && !isDetailView && (
+          {isViewSelectorOpen && (
             <div
-              className="glass-panel rounded-3xl p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 overflow-hidden"
+              className="glass-panel rounded-[2.5rem] p-4 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 overflow-hidden"
               style={{
                 background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
                 backdropFilter: `blur(${settings.glassBlur}px)`,
                 WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
               }}
             >
-              <div className="grid grid-cols-2 gap-2">
-                {viewOptions.map((option) => {
-                  const isActive = currentView === option.id;
-                  return (
+              {configuringTier || currentView === 'access' ? (
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between px-2">
+                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Cambiar Nivel a Editar</span>
+                    <Layers className="w-3.5 h-3.5 text-primary opacity-50" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {levels.map((lvl) => (
+                      <button
+                        key={lvl.id}
+                        onClick={() => {
+                          setConfiguringTier({ name: lvl.name, color: lvl.color });
+                          setIsViewSelectorOpen(false);
+                          if (currentView !== 'access') setCurrentView('access');
+                        }}
+                        className={`flex items-center gap-3 px-4 py-4 rounded-2xl transition-all border ${configuringTier?.name === lvl.name
+                          ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                          : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
+                          }`}
+                      >
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: lvl.color }} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{lvl.name}</span>
+                      </button>
+                    ))}
                     <button
-                      key={option.id}
-                      onClick={() => setCurrentView(option.id)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all border ${isActive
-                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                        : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
-                        }`}
+                      onClick={() => {
+                        setConfiguringTier(null);
+                        setSelectedUserId(null);
+                        setIsViewSelectorOpen(false);
+                      }}
+                      className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 text-gray-400 border border-transparent hover:bg-white/10 hover:text-white transition-all font-bold text-[10px] uppercase tracking-wider"
                     >
-                      <option.icon className="w-4 h-4" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">{option.label}</span>
+                      <ChevronLeft className="w-4 h-4" />
+                      Resumen
                     </button>
-                  );
-                })}
-                <button
-                  onClick={() => handleBack()}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 text-gray-400 border border-transparent hover:bg-red-500/20 hover:text-red-400 transition-all font-bold text-[10px] uppercase tracking-wider"
-                >
-                  <Home className="w-4 h-4" />
-                  Salir
-                </button>
-              </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {viewOptions.map((option) => {
+                    const isActive = currentView === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => setCurrentView(option.id)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all border ${isActive
+                          ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                          : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
+                          }`}
+                      >
+                        <option.icon className="w-4 h-4" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{option.label}</span>
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => handleBack()}
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 text-gray-400 border border-transparent hover:bg-red-500/20 hover:text-red-400 transition-all font-bold text-[10px] uppercase tracking-wider mt-2"
+                  >
+                    <Home className="w-4 h-4" />
+                    Salir Panel
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -243,17 +297,25 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
             {/* View Context / Selector Toggle */}
             <button
-              onClick={() => !isDetailView && setIsViewSelectorOpen(!isViewSelectorOpen)}
-              disabled={isDetailView}
-              className={`flex-[2] flex items-center justify-center gap-2 px-4 py-2 rounded-2xl transition-all ${isViewSelectorOpen ? 'text-primary' : 'text-gray-300'} ${isDetailView ? 'opacity-80' : 'hover:bg-white/5 cursor-pointer'}`}
+              onClick={() => setIsViewSelectorOpen(!isViewSelectorOpen)}
+              className={`flex-[2] flex items-center justify-center gap-2 px-4 py-2 rounded-2xl transition-all ${isViewSelectorOpen ? 'text-primary' : 'text-gray-300'} hover:bg-white/5 cursor-pointer`}
             >
               <div className="flex flex-col items-center min-w-0">
                 <div className="flex items-center gap-2">
-                  {!isDetailView && <LayoutGrid className="w-3.5 h-3.5 opacity-50" />}
-                  <span className="text-[10px] font-black uppercase tracking-[0.15em] truncate">
-                    {isDetailView ? (configuringTier ? 'Ajustes' : 'Usuario') : currentViewLabel}
-                  </span>
-                  {!isDetailView && <ChevronUp className={`w-3.5 h-3.5 transition-transform duration-300 ${isViewSelectorOpen ? 'rotate-180' : ''}`} />}
+                  {configuringTier ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: configuringTier.color, color: configuringTier.color }} />
+                      <span className="text-[10px] font-black uppercase tracking-[0.15em] truncate">{configuringTier.name}</span>
+                    </div>
+                  ) : (
+                    <>
+                      {!isDetailView && <LayoutGrid className="w-3.5 h-3.5 opacity-50" />}
+                      <span className="text-[10px] font-black uppercase tracking-[0.15em] truncate">
+                        {selectedUserId ? 'Perfil Usuario' : currentViewLabel}
+                      </span>
+                    </>
+                  )}
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isViewSelectorOpen ? 'rotate-180' : ''}`} />
                 </div>
               </div>
             </button>
