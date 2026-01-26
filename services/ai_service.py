@@ -68,8 +68,13 @@ class AIService:
         1. **Volume (CRÍTICO)**: Extrae el número de volumen con total precisión.
            - Si el archivo no especifica volumen, es un tomo único, o el volumen es 0, pon 0.0.
         2. **Group & Siglas**: Identifica el grupo y su sigla (ej. [GET]).
-        3. **Suggested Filename**: Genera el nombre EXACTO: "{{Series Spanish}} - {{Volumen}} [{{Siglas}}].epub".
-           - Si el volumen es 0.0, usa "Volumen Único".
+        3. **Suggested Filename**: Genera el nombre EXACTO: "{{Prefix}}{{Series Spanish}} - {{Volumen}} [{{Siglas}}].epub".
+           - **Prefix (CRÍTICO)**:
+             - Si el libro tiene "Ilustraciones a Color" en sus géneros: usa `[Color]`.
+             - Si el libro tiene "Sin Censura" en sus géneros: usa `[SC]`.
+             - Si tiene AMBOS: usa `[Color-SC]`.
+             - De lo contrario, no pongas nada delante.
+           - Si el volumen es 0.0, usa "Volumen Único" para la parte de {{Volumen}}.
            - Si el volumen es > 0, usa "V{{XX}}" (ej: V01, V08.5).
         
         SEGURIDAD DE ARCHIVOS:
@@ -248,10 +253,20 @@ class AIService:
                         vol_str += f".{str(vol_val).split('.')[1]}"
                     vol_part = f"V{vol_str}"
                 
+                # Determinar prefijos por rasgos (Color/SC)
+                tags = book.get("tags") or []
+                is_color = any("Color" in str(t) for t in tags)
+                is_sc = any("Sin Censura" in str(t) or "Uncensored" in str(t) for t in tags) or book.get("is_uncensored")
+                
+                prefix = ""
+                if is_color and is_sc: prefix = "[Color-SC]"
+                elif is_color: prefix = "[Color]"
+                elif is_sc: prefix = "[SC]"
+                
                 # Generar nuevo nombre de archivo usando el nombre en ESPAÑOL y las SIGLAS
                 spanish_name = proposal["proposed_spanish"] or proposal["proposed_series"]
                 siglas = proposal["group_siglas"] or "Unknown"
-                raw_filename = f"{spanish_name} - {vol_part} [{siglas}].epub"
+                raw_filename = f"{prefix}{spanish_name} - {vol_part} [{siglas}].epub"
                 new_filename = AIService.sanitize_filename(raw_filename)
                 
                 if book.get("filename") != new_filename:
