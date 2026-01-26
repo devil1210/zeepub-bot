@@ -2677,6 +2677,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
         import os
         import shutil
+        from sqlalchemy import select
 
         # 1. Update Series Metadata (Global)
         if apply_meta and proposed_series:
