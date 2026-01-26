@@ -259,7 +259,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
 
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/20 rounded-2xl border border-primary/20 shrink-0">
+                        <div className="p-3 bg-primary/20 rounded-premium-sm border border-primary/20 shrink-0">
                             <Palette className="w-8 h-8 text-primary" />
                         </div>
                         <div>
@@ -269,14 +269,14 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-3 bg-primary/5 p-1.5 rounded-2xl border border-primary/10">
+                        <div className="flex items-center gap-3 bg-primary/5 p-1.5 rounded-premium-sm border border-primary/10">
                             <label className="text-[9px] font-black text-primary/60 uppercase tracking-[0.2em] pl-3 hidden sm:block">PLANTILLAS:</label>
                             <select
                                 onChange={(e) => {
                                     const theme = availableThemes.find(t => String(t.id) === e.target.value);
                                     if (theme) handleApplyTheme(theme);
                                 }}
-                                className="bg-primary/10 border-none rounded-xl px-4 py-2 text-[10px] font-black uppercase text-primary tracking-widest focus:ring-0 transition-all cursor-pointer min-w-[160px] hover:bg-primary/20"
+                                className="bg-primary/10 border-none rounded-premium-sm px-4 py-2 text-[10px] font-black uppercase text-primary tracking-widest focus:ring-0 transition-all cursor-pointer min-w-[160px] hover:bg-primary/20"
                                 style={{ outline: 'none' }}
                                 defaultValue=""
                             >
@@ -290,7 +290,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setLivePreview(!livePreview)}
-                                className={`flex items-center gap-2 px-5 py-3 rounded-xl border text-[10px] font-black uppercase transition-all ${livePreview ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
+                                className={`flex items-center gap-2 px-5 py-3 rounded-premium-sm border text-[10px] font-black uppercase transition-all ${livePreview ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
                             >
                                 <Eye className="w-4 h-4" />
                                 {livePreview ? 'Live: ON' : 'Vista Previa'}
@@ -298,7 +298,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
 
                             <button
                                 onClick={() => setShowSaveThemeModal(true)}
-                                className="flex items-center gap-2 px-5 py-3 bg-purple-600/20 border border-purple-500/30 text-purple-400 rounded-xl text-[10px] font-black uppercase hover:bg-purple-600/30 transition-all"
+                                className="flex items-center gap-2 px-5 py-3 bg-purple-600/20 border border-purple-500/30 text-purple-400 rounded-premium-sm text-[10px] font-black uppercase hover:bg-purple-600/30 transition-all"
                             >
                                 <Save className="w-4 h-4" />
                                 <span className="hidden sm:inline">Guardar Tema</span>
@@ -316,7 +316,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                         {/* Global Selector */}
                         <button
                             onClick={() => loadLevelConfig('global')}
-                            className={`px-5 py-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all ${selectedLevelId === 'global'
+                            className={`px-5 py-3 rounded-premium-sm border-2 text-[10px] font-black uppercase tracking-widest transition-all ${selectedLevelId === 'global'
                                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-600/20 scale-105 z-10'
                                 : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/20'
                                 }`}
@@ -330,7 +330,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                 <button
                                     key={t.id}
                                     onClick={() => loadLevelConfig(String(t.id))}
-                                    className={`px-5 py-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all ${isSelected
+                                    className={`px-5 py-3 rounded-premium-sm border-2 text-[10px] font-black uppercase tracking-widest transition-all ${isSelected
                                         ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-105 z-10'
                                         : 'bg-white/5 border-white/5 text-gray-500 hover:border-white/20 hover:text-gray-300'
                                         }`}
@@ -345,7 +345,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
 
             {/* Alert Message */}
             {message && (
-                <div className={`p-4 rounded-2xl border flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 ${message.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                <div className={`p-4 rounded-premium-sm border flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 ${message.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
                     {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
                     <span className="text-sm font-bold">{message.text}</span>
                 </div>
@@ -375,7 +375,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                         <button
                                             key={t.id}
                                             onClick={() => setConfig({ ...config, theme: t.id as any })}
-                                            className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all group ${config.theme === t.id
+                                            className={`flex flex-col items-center gap-3 p-4 rounded-premium-sm border-2 transition-all group ${config.theme === t.id
                                                 ? 'bg-primary/10 border-primary text-primary shadow-lg shadow-primary/10 scale-105'
                                                 : 'bg-black/20 border-white/5 text-gray-400 hover:border-white/10'
                                                 }`}
@@ -390,19 +390,19 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                             {/* Accent Color Selection */}
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Color de Énfasis (Primario)</label>
-                                <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-2xl">
+                                <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-premium-sm">
                                     {['#FB7185', '#38BDF8', '#4ADE80', '#FBBF24', '#818CF8', '#F472B6', '#A78BFA'].map((color) => (
                                         <button
                                             key={color}
                                             onClick={() => handleColorChange(color)}
-                                            className={`w-10 h-10 rounded-xl transition-all border-2 flex items-center justify-center group ${config.primaryColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
+                                            className={`w-10 h-10 rounded-premium-sm transition-all border-2 flex items-center justify-center group ${config.primaryColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
                                             style={{ backgroundColor: color }}
                                         >
                                             {config.primaryColor === color && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-lg" />}
                                         </button>
                                     ))}
                                     <div className="w-px h-8 bg-white/5 mx-1" />
-                                    <label className="w-10 h-10 rounded-xl bg-gradient-to-tr from-gray-700 to-gray-500 flex items-center justify-center cursor-pointer hover:scale-105 transition-all relative overflow-hidden">
+                                    <label className="w-10 h-10 rounded-premium-sm bg-gradient-to-tr from-gray-700 to-gray-500 flex items-center justify-center cursor-pointer hover:scale-105 transition-all relative overflow-hidden">
                                         <Palette className="w-4 h-4 text-white" />
                                         <input
                                             type="color"
@@ -417,19 +417,19 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                             {/* Background Color Selection */}
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Color de Fondo</label>
-                                <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-2xl">
+                                <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-premium-sm">
                                     {['#0f172a', '#1e293b', '#111827', '#18181b', '#0c0a09'].map((color) => (
                                         <button
                                             key={color}
                                             onClick={() => setConfig({ ...config, backgroundColor: color })}
-                                            className={`w-10 h-10 rounded-xl transition-all border-2 flex items-center justify-center group ${config.backgroundColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
+                                            className={`w-10 h-10 rounded-premium-sm transition-all border-2 flex items-center justify-center group ${config.backgroundColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
                                             style={{ backgroundColor: color }}
                                         >
                                             {config.backgroundColor === color && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-lg" />}
                                         </button>
                                     ))}
                                     <div className="w-px h-8 bg-white/5 mx-1" />
-                                    <label className="w-10 h-10 rounded-xl bg-gradient-to-tr from-gray-900 to-gray-700 flex items-center justify-center cursor-pointer hover:scale-105 transition-all relative overflow-hidden">
+                                    <label className="w-10 h-10 rounded-premium-sm bg-gradient-to-tr from-gray-900 to-gray-700 flex items-center justify-center cursor-pointer hover:scale-105 transition-all relative overflow-hidden">
                                         <Palette className="w-4 h-4 text-white" />
                                         <input
                                             type="color"
@@ -444,19 +444,19 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                             {/* Card Color Selection */}
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Color de Tarjetas</label>
-                                <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-2xl">
+                                <div className="flex flex-wrap gap-4 p-4 bg-black/20 border border-white/5 rounded-premium-sm">
                                     {['#1e293b', '#334155', '#1f2937', '#27272a', '#292524'].map((color) => (
                                         <button
                                             key={color}
                                             onClick={() => setConfig({ ...config, cardColor: color })}
-                                            className={`w-10 h-10 rounded-xl transition-all border-2 flex items-center justify-center group ${config.cardColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
+                                            className={`w-10 h-10 rounded-premium-sm transition-all border-2 flex items-center justify-center group ${config.cardColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
                                             style={{ backgroundColor: color }}
                                         >
                                             {config.cardColor === color && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-lg" />}
                                         </button>
                                     ))}
                                     <div className="w-px h-8 bg-white/5 mx-1" />
-                                    <label className="w-10 h-10 rounded-xl bg-gradient-to-tr from-gray-700 to-gray-500 flex items-center justify-center cursor-pointer hover:scale-105 transition-all relative overflow-hidden">
+                                    <label className="w-10 h-10 rounded-premium-sm bg-gradient-to-tr from-gray-700 to-gray-500 flex items-center justify-center cursor-pointer hover:scale-105 transition-all relative overflow-hidden">
                                         <Palette className="w-4 h-4 text-white" />
                                         <input
                                             type="color"
@@ -473,7 +473,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 inline-block">Efectos de Transparencia</label>
                                 <div className="space-y-6">
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-premium-sm border border-white/5">
                                             <span className="text-xs font-bold text-gray-300">Intensidad del Desenfoque (Blur)</span>
                                             <span className="text-sm font-black text-primary font-mono">{config.glassBlur}px</span>
                                         </div>
@@ -487,7 +487,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                         />
                                     </div>
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-premium-sm border border-white/5">
                                             <span className="text-xs font-bold text-gray-300">Opacidad de Paneles (Alpha)</span>
                                             <span className="text-sm font-black text-primary font-mono">{Math.round(config.glassOpacity * 100)}%</span>
                                         </div>
@@ -508,7 +508,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 inline-block">Proporciones y Opacidad</label>
                                 <div className="space-y-6">
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-premium-sm border border-white/5">
                                             <span className="text-xs font-bold text-gray-300">Ancho de Portadas</span>
                                             <span className="text-sm font-black text-primary font-mono">{config.coverWidth}px</span>
                                         </div>
@@ -522,7 +522,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                         />
                                     </div>
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-premium-sm border border-white/5">
                                             <span className="text-xs font-bold text-gray-300">Resplandor de Tarjetas (Glow)</span>
                                             <span className="text-sm font-black text-primary font-mono">{Math.round(config.cardGlowIntensity * 100)}%</span>
                                         </div>
@@ -536,7 +536,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                         />
                                     </div>
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-premium-sm border border-white/5">
                                             <span className="text-xs font-bold text-gray-300">Opacidad Navegación</span>
                                             <span className="text-sm font-black text-primary font-mono">{Math.round(config.navOpacity * 100)}%</span>
                                         </div>
@@ -550,7 +550,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                         />
                                     </div>
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-premium-sm border border-white/5">
                                             <span className="text-xs font-bold text-gray-300">Opacidad Acento</span>
                                             <span className="text-sm font-black text-primary font-mono">{Math.round(config.accentOpacity * 100)}%</span>
                                         </div>
@@ -570,7 +570,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                         {/* Global Specifics (Offset Banner) */}
                         {selectedLevelId === 'global' && (
                             <div className="border-t border-white/5 pt-8">
-                                <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10">
+                                <div className="p-6 rounded-premium-sm bg-amber-500/5 border border-amber-500/10">
                                     <div className="flex justify-between items-center mb-3">
                                         <div className="flex items-center gap-2">
                                             <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Offset Banner Serie (PX)</label>
@@ -616,13 +616,13 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                     <div
                                         key={opt.key}
                                         onClick={() => toggleExported(opt.key)}
-                                        className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group ${isChecked
+                                        className={`flex items-center justify-between p-4 rounded-premium-sm border transition-all cursor-pointer group ${isChecked
                                             ? 'bg-primary/20 border-primary/40 shadow-inner'
                                             : 'bg-black/20 border-white/5 hover:border-white/10'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-xl border transition-all ${isChecked ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white/5 text-gray-500 border-white/5'}`}>
+                                            <div className={`p-2 rounded-premium-sm border transition-all ${isChecked ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white/5 text-gray-500 border-white/5'}`}>
                                                 <opt.icon className="w-4 h-4" />
                                             </div>
                                             <span className={`text-xs font-black uppercase tracking-tight transition-colors ${isChecked ? 'text-white' : 'text-gray-500'}`}>{opt.label}</span>
@@ -638,7 +638,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                         <div className="space-y-4 pt-4 border-t border-white/5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 mb-2 inline-block">Permisos Especiales</label>
 
-                            <label className="flex items-center justify-between p-4 rounded-xl bg-black/40 border border-white/5 cursor-pointer group hover:border-primary/30 transition-all">
+                            <label className="flex items-center justify-between p-4 rounded-premium-sm bg-black/40 border border-white/5 cursor-pointer group hover:border-primary/30 transition-all">
                                 <div className="flex flex-col gap-1">
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-primary transition-colors">Selección de Temas</span>
                                     <span className="text-[9px] text-gray-500 font-bold uppercase leading-relaxed">Permite al usuario elegir plantillas</span>
@@ -655,7 +655,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                 </div>
                             </label>
 
-                            <div className="p-4 rounded-xl bg-black/40 border border-white/5">
+                            <div className="p-4 rounded-premium-sm bg-black/40 border border-white/5">
                                 <div className="flex items-center gap-3 mb-2">
                                     <RotateCcw className="w-4 h-4 text-gray-500" />
                                     <span className="text-[10px] font-black text-gray-400 uppercase">Forzar Aplicación</span>
@@ -676,7 +676,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-primary/20 transition-all active:scale-95 overflow-hidden group relative"
+                            className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black uppercase tracking-widest py-4 rounded-premium-sm flex items-center justify-center gap-3 shadow-xl shadow-primary/20 transition-all active:scale-95 overflow-hidden group relative"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
@@ -705,7 +705,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="bg-[#121212] border border-white/10 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl space-y-6">
                         <div className="flex items-center gap-3">
-                            <div className="p-3 bg-purple-500/20 rounded-2xl border border-purple-500/20">
+                            <div className="p-3 bg-purple-500/20 rounded-premium-sm border border-purple-500/20">
                                 <Palette className="w-6 h-6 text-purple-400" />
                             </div>
                             <h3 className="text-xl font-black text-white uppercase tracking-tight">Nuevo Tema de Plantilla</h3>
@@ -722,7 +722,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                 value={newThemeName}
                                 onChange={(e) => setNewThemeName(e.target.value)}
                                 placeholder="Ej: Ocean Blue, Cyberpunk..."
-                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all"
+                                className="w-full bg-white/5 border border-white/10 rounded-premium-sm px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all"
                                 autoFocus
                             />
                         </div>
@@ -730,14 +730,14 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                         <div className="flex gap-3 pt-4">
                             <button
                                 onClick={() => setShowSaveThemeModal(false)}
-                                className="flex-1 px-6 py-4 rounded-2xl border border-white/10 text-[10px] font-black uppercase text-gray-400 hover:bg-white/5"
+                                className="flex-1 px-6 py-4 rounded-premium-sm border border-white/10 text-[10px] font-black uppercase text-gray-400 hover:bg-white/5"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleSaveAsTheme}
                                 disabled={saving || !newThemeName.trim()}
-                                className="flex-1 px-6 py-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-2xl text-[10px] font-black uppercase text-white shadow-lg shadow-purple-600/20 transition-all"
+                                className="flex-1 px-6 py-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-premium-sm text-[10px] font-black uppercase text-white shadow-lg shadow-purple-600/20 transition-all"
                             >
                                 {saving ? 'Guardando...' : 'Crear Tema'}
                             </button>
@@ -748,4 +748,5 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
         </div>
     );
 };
+
 

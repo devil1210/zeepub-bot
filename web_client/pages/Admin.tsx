@@ -163,7 +163,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
         {/* Desktop Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-primary/20 rounded-2xl border border-primary/20">
+            <div className="p-2.5 bg-primary/20 rounded-premium-sm border border-primary/20">
               <ShieldCheck className="text-primary w-8 h-8 md:w-10 md:h-10" />
             </div>
             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight">
@@ -171,12 +171,12 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             </h1>
           </div>
 
-          <div className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1.5 rounded-2xl border border-white/5 backdrop-blur-md">
+          <div className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1.5 rounded-premium-sm border border-white/5 backdrop-blur-md">
             {viewOptions.map((option) => (
               <button
                 key={option.id}
                 onClick={() => setCurrentView(option.id)}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentView === option.id
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all ${currentView === option.id
                   ? 'bg-primary/90 text-white shadow-lg shadow-primary/20 scale-[1.02]'
                   : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
                   }`}
@@ -221,7 +221,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                           setIsViewSelectorOpen(false);
                           if (currentView !== 'access') setCurrentView('access');
                         }}
-                        className={`flex items-center gap-3 px-4 py-4 rounded-2xl transition-all border ${configuringTier?.name === lvl.name
+                        className={`flex items-center gap-3 px-4 py-4 rounded-premium-sm transition-all border ${configuringTier?.name === lvl.name
                           ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
                           : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
                           }`}
@@ -236,7 +236,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                         setSelectedUserId(null);
                         setIsViewSelectorOpen(false);
                       }}
-                      className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 text-gray-400 border border-transparent hover:bg-white/10 hover:text-white transition-all font-bold text-[10px] uppercase tracking-wider"
+                      className="flex items-center gap-3 px-4 py-4 rounded-premium-sm bg-white/5 text-gray-400 border border-transparent hover:bg-white/10 hover:text-white transition-all font-bold text-[10px] uppercase tracking-wider"
                     >
                       <ChevronLeft className="w-4 h-4" />
                       Resumen
@@ -251,7 +251,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                       <button
                         key={option.id}
                         onClick={() => setCurrentView(option.id)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all border ${isActive
+                        className={`flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all border ${isActive
                           ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
                           : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
                           }`}
@@ -263,7 +263,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                   })}
                   <button
                     onClick={() => handleBack()}
-                    className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 text-gray-400 border border-transparent hover:bg-red-500/20 hover:text-red-400 transition-all font-bold text-[10px] uppercase tracking-wider mt-2"
+                    className="flex items-center gap-3 px-4 py-3 rounded-premium-sm bg-white/5 text-gray-400 border border-transparent hover:bg-red-500/20 hover:text-red-400 transition-all font-bold text-[10px] uppercase tracking-wider mt-2"
                   >
                     <Home className="w-4 h-4" />
                     Salir Panel
@@ -275,7 +275,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
           {/* Main Navigation Bar */}
           <div
-            className="glass-panel rounded-3xl p-1.5 border border-white/10 shadow-2xl flex items-center justify-between"
+            className="glass-panel rounded-premium p-1.5 border border-white/10 shadow-2xl flex items-center justify-between"
             style={{
               background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
               backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -285,7 +285,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             {/* Contextual Back Button */}
             <button
               onClick={handleBack}
-              className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl text-gray-400 hover:text-white transition-all group"
+              className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm text-gray-400 hover:text-white transition-all group"
             >
               <div className="p-1.5 rounded-full group-hover:bg-white/5 transition-colors">
                 <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
@@ -298,7 +298,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             {/* View Context / Selector Toggle */}
             <button
               onClick={() => setIsViewSelectorOpen(!isViewSelectorOpen)}
-              className={`flex-[2] flex items-center justify-center gap-2 px-4 py-2 rounded-2xl transition-all ${isViewSelectorOpen ? 'text-primary' : 'text-gray-300'} hover:bg-white/5 cursor-pointer`}
+              className={`flex-[2] flex items-center justify-center gap-2 px-4 py-2 rounded-premium-sm transition-all ${isViewSelectorOpen ? 'text-primary' : 'text-gray-300'} hover:bg-white/5 cursor-pointer`}
             >
               <div className="flex flex-col items-center min-w-0">
                 <div className="flex items-center gap-2">
@@ -328,14 +328,14 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 <button
                   onClick={() => undoRef.current?.()}
                   disabled={!canUndo}
-                  className="p-2.5 rounded-xl text-gray-500 hover:text-white disabled:opacity-20 transition-all"
+                  className="p-2.5 rounded-premium-sm text-gray-500 hover:text-white disabled:opacity-20 transition-all"
                 >
                   <RotateCcw className="w-4.5 h-4.5" />
                 </button>
                 <button
                   onClick={() => saveRef.current?.()}
                   disabled={saving || !canSave}
-                  className="p-2.5 bg-primary rounded-xl text-white shadow-lg shadow-primary/30 active:scale-90 disabled:opacity-30 disabled:grayscale transition-all"
+                  className="p-2.5 bg-primary rounded-premium-sm text-white shadow-lg shadow-primary/30 active:scale-90 disabled:opacity-30 disabled:grayscale transition-all"
                 >
                   {saving ? <RefreshCw className="w-4.5 h-4.5 animate-spin" /> : <Save className="w-4.5 h-4.5" />}
                 </button>
@@ -343,7 +343,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             ) : (
               <button
                 onClick={() => window.location.reload()}
-                className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl text-gray-400 hover:text-white transition-all group"
+                className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm text-gray-400 hover:text-white transition-all group"
               >
                 <div className="p-1.5 rounded-full group-hover:bg-white/5 transition-colors">
                   <RefreshCw className="w-4.5 h-4.5" />
@@ -357,3 +357,4 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     </div>
   );
 };
+

@@ -74,7 +74,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                 "font_size": "fontSize",
                 "cover_width": "coverWidth",
                 "theme_type": "theme",
-                "title_language": "titleLanguage"
+                "title_language": "titleLanguage",
+                "border_radius": "borderRadius",
+                "border_width": "borderWidth"
             }
             for col, key in mapping.items():
                 val = getattr(ui, col, None)
@@ -441,7 +443,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                     "accentOpacity": "ui_accent_opacity",
                     "backgroundColor": "background_color",
                     "cardColor": "card_color",
-                    "forceSettings": "force_settings"
+                    "forceSettings": "force_settings",
+                    "borderRadius": "border_radius",
+                    "borderWidth": "border_width"
                 }
                 
                 for key, col in mapping.items():
@@ -511,7 +515,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                 "fontSize": "font_size",
                 "coverWidth": "cover_width",
                 "showRecommendations": "show_recommendations",
-                "titleLanguage": "title_language"
+                "titleLanguage": "title_language",
+                "borderRadius": "border_radius",
+                "borderWidth": "border_width"
             }
             
             db_settings = {}

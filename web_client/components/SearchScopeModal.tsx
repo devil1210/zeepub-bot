@@ -71,7 +71,7 @@ export const SearchScopeModal: React.FC<SearchScopeModalProps> = ({
                     onSelectScope(scope.id);
                     onClose();
                   }}
-                  className={`w-full flex items-center justify-between p-4.5 rounded-2xl transition-all duration-500 relative group overflow-hidden ${isSelected
+                  className={`w-full flex items-center justify-between p-4.5 rounded-premium-sm transition-all duration-500 relative group overflow-hidden ${isSelected
                     ? 'bg-primary/20 border-primary/30 text-white shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.2)]'
                     : 'bg-white/[0.03] border-white/5 text-gray-500 hover:bg-white/[0.08] hover:text-white'
                     }`}
@@ -79,7 +79,7 @@ export const SearchScopeModal: React.FC<SearchScopeModalProps> = ({
                   {isSelected && <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent"></div>}
 
                   <div className="flex items-center gap-5 relative z-10">
-                    <div className={`p-3 rounded-xl ${isSelected ? 'bg-primary text-white shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)]' : 'bg-white/5 text-gray-600 group-hover:text-gray-300'} transition-all duration-500`}>
+                    <div className={`p-3 rounded-premium-sm ${isSelected ? 'bg-primary text-white shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)]' : 'bg-white/5 text-gray-600 group-hover:text-gray-300'} transition-all duration-500`}>
                       <scope.icon className="w-5 h-5" strokeWidth={2.5} />
                     </div>
                     <span className={`text-[13px] uppercase tracking-[0.15em] transition-all duration-500 ${isSelected ? 'font-black scale-105' : 'font-bold opacity-60 group-hover:opacity-100'}`}>{scope.label}</span>

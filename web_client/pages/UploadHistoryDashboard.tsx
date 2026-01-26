@@ -70,7 +70,7 @@ export const UploadHistoryDashboard: React.FC = () => {
             {/* Header / Stats could go here later */}
 
             {/* History Table */}
-            <div className="glass-panel border border-white/5 rounded-3xl p-8 shadow-sm flex flex-col">
+            <div className="glass-panel border border-white/5 rounded-premium p-8 shadow-sm flex flex-col">
                 <div className="flex items-center justify-between mb-8">
                     <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
                         <Clock className="text-blue-500 w-5 h-5" />
@@ -147,3 +147,4 @@ export const UploadHistoryDashboard: React.FC = () => {
         </div>
     );
 };
+

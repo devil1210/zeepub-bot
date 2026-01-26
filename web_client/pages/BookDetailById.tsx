@@ -91,7 +91,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
                 <p className="text-red-400 text-lg">{error || 'Libro no encontrado'}</p>
                 <button
                     onClick={onBack}
-                    className="px-6 py-2 bg-primary text-white rounded-xl font-bold"
+                    className="px-6 py-2 bg-primary text-white rounded-premium-sm font-bold"
                 >
                     Volver
                 </button>
@@ -114,7 +114,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
             <div className="flex flex-col md:flex-row gap-8 mb-8">
                 {/* Cover */}
                 <div className="w-48 md:w-64 flex-shrink-0 mx-auto md:mx-0">
-                    <div className="aspect-[2/3] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+                    <div className="aspect-[2/3] rounded-premium-sm overflow-hidden border border-white/10 shadow-2xl">
                         <img
                             src={book.cover || '/api/library/covers/' + bookId.replace('local_', '')}
                             alt={book.title}
@@ -174,7 +174,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
                     <button
                         onClick={handleDownload}
                         disabled={downloading}
-                        className="w-full md:w-auto px-8 py-4 bg-primary hover:bg-primary-dark text-white font-black uppercase tracking-wider rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-primary/30 disabled:opacity-50"
+                        className="w-full md:w-auto px-8 py-4 bg-primary hover:bg-primary-dark text-white font-black uppercase tracking-wider rounded-premium-sm flex items-center justify-center gap-3 transition-all shadow-lg shadow-primary/30 disabled:opacity-50"
                     >
                         {downloading ? (
                             <>
@@ -193,7 +193,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
 
             {/* Description */}
             {book.description && (
-                <div className="glass-panel rounded-2xl p-6 border border-white/5">
+                <div className="glass-panel rounded-premium-sm p-6 border border-white/5">
                     <h3 className="text-sm font-black text-gray-500 uppercase tracking-wider mb-4">
                         Sinopsis
                     </h3>
@@ -206,31 +206,31 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
             {/* Metadata Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                 {book.translator && (
-                    <div className="glass-panel p-4 rounded-xl border border-white/5">
+                    <div className="glass-panel p-4 rounded-premium-sm border border-white/5">
                         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Traductor</p>
                         <p className="text-white font-bold text-sm truncate">{book.translator}</p>
                     </div>
                 )}
                 {book.publisher && (
-                    <div className="glass-panel p-4 rounded-xl border border-white/5">
+                    <div className="glass-panel p-4 rounded-premium-sm border border-white/5">
                         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Editorial</p>
                         <p className="text-white font-bold text-sm truncate">{book.publisher}</p>
                     </div>
                 )}
                 {book.publishedAt && (
-                    <div className="glass-panel p-4 rounded-xl border border-white/5">
+                    <div className="glass-panel p-4 rounded-premium-sm border border-white/5">
                         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Publicado</p>
                         <p className="text-white font-bold text-sm">{book.publishedAt}</p>
                     </div>
                 )}
                 {book.isbn && (
-                    <div className="glass-panel p-4 rounded-xl border border-white/5">
+                    <div className="glass-panel p-4 rounded-premium-sm border border-white/5">
                         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">ISBN</p>
                         <p className="text-white font-bold text-sm truncate">{book.isbn}</p>
                     </div>
                 )}
                 {(book.modifiedAtOpf || book.modifiedAt) && (
-                    <div className="glass-panel p-4 rounded-xl border border-white/5">
+                    <div className="glass-panel p-4 rounded-premium-sm border border-white/5">
                         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Actualizado</p>
                         <p className="text-white font-bold text-sm truncate">
                             {new Date(book.modifiedAtOpf || book.modifiedAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -241,3 +241,4 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
         </div>
     );
 };
+

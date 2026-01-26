@@ -282,7 +282,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                 className="group flex gap-5 p-4 rounded-[2rem] glass-panel hover:bg-white/[0.07] hover:border-white/20 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] transition-all duration-500 cursor-pointer relative overflow-hidden mb-4"
               >
                 {/* Left: Cover Image */}
-                <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] shadow-2xl rounded-2xl overflow-hidden bg-white/5 border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
+                <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] shadow-2xl rounded-premium-sm overflow-hidden bg-white/5 border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
                   <img
                     alt={series.title}
                     className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
@@ -300,7 +300,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                     </h3>
                     <button
                       onClick={(e) => { e.stopPropagation(); /* Add logic */ }}
-                      className="p-2.5 rounded-xl bg-white/5 hover:bg-primary text-gray-400 hover:text-white transition-all duration-300 transform group-hover:scale-110 shadow-lg active:scale-90 shrink-0"
+                      className="p-2.5 rounded-premium-sm bg-white/5 hover:bg-primary text-gray-400 hover:text-white transition-all duration-300 transform group-hover:scale-110 shadow-lg active:scale-90 shrink-0"
                     >
                       <PlusCircle className="w-4 h-4" />
                     </button>

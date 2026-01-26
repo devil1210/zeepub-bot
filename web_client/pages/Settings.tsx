@@ -53,7 +53,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const [availableLevels, setAvailableLevels] = useState<Array<{ id: number, name: string, color: string }>>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  const [selectedElement, setSelectedElement] = useState<'nav' | 'searchbar' | 'header'>('nav');
+  const [selectedElement, setSelectedElement] = useState<'nav' | 'searchbar' | 'header' | 'glass'>('nav');
   const [availableThemes, setAvailableThemes] = useState<any[]>([]);
   const { allowThemeTemplates } = useTelegram();
 
@@ -143,10 +143,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
       {/* Admin Level Simulation Banner */}
       {isRealAdmin && (
-        <div className="glass-panel p-4 rounded-2xl border border-purple-500/30 bg-purple-500/10 mb-6 animate-in slide-in-from-top-4 duration-300">
+        <div className="glass-panel p-4 rounded-premium-sm border border-purple-500/30 bg-purple-500/10 mb-6 animate-in slide-in-from-top-4 duration-300">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/20">
+              <div className="p-2 rounded-premium-sm bg-purple-500/20 text-purple-400 border border-purple-500/20">
                 <Eye className="w-5 h-5" />
               </div>
               <div>
@@ -158,7 +158,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
               <select
                 value={simulatedLevel === 0 ? '0' : (simulatedLevel || '')}
                 onChange={(e) => setSimulatedLevel(e.target.value === '' ? null : parseInt(e.target.value))}
-                className="px-4 py-2 text-sm font-medium border border-white/10 bg-black/20 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 rounded-xl appearance-none min-w-[160px]"
+                className="px-4 py-2 text-sm font-medium border border-white/10 bg-black/20 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 rounded-premium-sm appearance-none min-w-[160px]"
               >
                 <option value="">Sin simulación</option>
                 {availableLevels.map(level => (
@@ -182,7 +182,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
       {/* Save Message Notification */}
       {saveMessage && (
-        <div className={`fixed top-20 right-4 z-[100] p-4 rounded-xl border animate-in slide-in-from-right-4 duration-300 ${saveMessage.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
+        <div className={`fixed top-20 right-4 z-[100] p-4 rounded-premium-sm border animate-in slide-in-from-right-4 duration-300 ${saveMessage.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
           }`}>
           <div className="flex items-center gap-2">
             <div className={`p-1.5 rounded-lg ${saveMessage.type === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
@@ -201,8 +201,8 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
           {/* Profile Card (Premium) */}
           {/* Profile Card (Pro Max) */}
           <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-purple-600/50 rounded-[3rem] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
-            <div className="glass-panel p-10 rounded-[3rem] relative overflow-hidden shadow-premium border-white/10">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-purple-600/50 rounded-premium-lg blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
+            <div className="glass-panel p-10 rounded-premium-lg relative overflow-hidden shadow-premium border-white/10">
               <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-primary/40 via-purple-600/20 to-transparent"></div>
               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-1000">
                 <Palette className="w-24 h-24" />
@@ -219,7 +219,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     />
                     <div className="absolute inset-0 rounded-full border border-white/20 z-20 pointer-events-none"></div>
                   </div>
-                  <button className="absolute bottom-1 right-1 z-30 p-2.5 bg-primary rounded-2xl text-white shadow-2xl border-4 border-[#0a0a0c] hover:scale-110 active:scale-90 transition-all">
+                  <button className="absolute bottom-1 right-1 z-30 p-2.5 bg-primary rounded-premium-sm text-white shadow-2xl border-4 border-[#0a0a0c] hover:scale-110 active:scale-90 transition-all">
                     <PenTool className="w-4 h-4" />
                   </button>
                 </div>
@@ -255,7 +255,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
           {/* Navigation / Links (Premium List) */}
           {/* Navigation / Links (Premium List) */}
-          <div className="glass-panel rounded-[3rem] overflow-hidden shadow-2xl border-white/5">
+          <div className="glass-panel rounded-premium-lg overflow-hidden shadow-2xl border-white/5">
             <div className="p-8 border-b border-white/5 flex items-center justify-between">
               <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.4em]">Panel de Control</h3>
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
@@ -271,10 +271,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 <button
                   key={item.id}
                   onClick={() => item.action ? item.action() : onNavigate && onNavigate(item.id)}
-                  className="w-full flex items-center justify-between p-5 rounded-[2.5rem] hover:bg-white/[0.04] transition-all duration-500 group"
+                  className="w-full flex items-center justify-between p-5 rounded-premium text-gray-400 hover:bg-white/[0.04] transition-all duration-500 group"
                 >
                   <div className="flex items-center gap-5">
-                    <div className={`p-3.5 rounded-2xl ${item.bg} ${item.color} border border-white/10 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+                    <div className={`p-3.5 rounded-premium-sm ${item.bg} ${item.color} border border-white/10 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
                       <item.icon className="w-5 h-5" strokeWidth={2.5} />
                     </div>
                     <div className="text-left">
@@ -293,13 +293,13 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         <div className="lg:col-span-8 space-y-6">
 
           {/* Reading and System Settings */}
-          <div className="glass-panel p-10 rounded-[2.5rem] shadow-2xl border-white/5 relative overflow-hidden group">
+          <div className="glass-panel p-10 rounded-premium-lg shadow-2xl border-white/5 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-1000">
               <Wrench className="w-32 h-32" />
             </div>
 
             <h3 className="text-xl font-black text-white flex items-center gap-4 mb-10 uppercase tracking-tighter">
-              <div className="p-2 rounded-xl bg-primary/20 text-primary border border-primary/20">
+              <div className="p-2 rounded-premium-sm bg-primary/20 text-primary border border-primary/20">
                 <Palette className="w-5 h-5" />
               </div>
               Sistema e Interfaz
@@ -312,7 +312,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Escala de Texto</label>
                     <span className="text-[11px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-lg font-mono">{settings.fontSize}px</span>
                   </div>
-                  <div className="flex items-center gap-4 bg-white/[0.03] p-4 rounded-2xl border border-white/5 group/slider hover:bg-white/[0.05] transition-all">
+                  <div className="flex items-center gap-4 bg-white/[0.03] p-4 rounded-premium-sm border border-white/5 group/slider hover:bg-white/[0.05] transition-all">
                     <span className="text-[10px] text-gray-600 font-black">A</span>
                     <input
                       type="range"
@@ -329,7 +329,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 <div className="space-y-4">
                   <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Localización</label>
                   <div className="relative group/select">
-                    <select className="block w-full px-5 py-4 text-[13px] font-black border border-white/5 bg-white/[0.03] text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl appearance-none group-hover/select:bg-white/[0.05] transition-all uppercase tracking-widest">
+                    <select className="block w-full px-5 py-4 text-[13px] font-black border border-white/5 bg-white/[0.03] text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary rounded-premium-sm appearance-none group-hover/select:bg-white/[0.05] transition-all uppercase tracking-widest">
                       <option>English (US)</option>
                       <option selected>Español</option>
                       <option>Français</option>
@@ -361,7 +361,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                         checked={(settings as any).coverQuality === q.id}
                         onChange={() => updateSettings({ coverQuality: q.id as any } as any)}
                       />
-                      <div className="p-4 rounded-[1.5rem] border border-white/5 bg-white/[0.03] flex flex-col items-center justify-center text-center peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.2)] transition-all hover:bg-white/[0.06]">
+                      <div className="p-4 rounded-premium-sm border border-white/5 bg-white/[0.03] flex flex-col items-center justify-center text-center peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.2)] transition-all hover:bg-white/[0.06]">
                         <span className="text-[11px] font-black text-white uppercase tracking-widest transition-colors peer-checked:text-primary">{q.label}</span>
                         <span className="text-[8px] text-gray-500 font-black uppercase tracking-widest mt-1 opacity-50">{q.desc}</span>
                       </div>
@@ -374,7 +374,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
           {/* User Specific UI Personalization */}
           {hasPersonalization && (
-            <div className="glass-panel p-10 rounded-[2.5rem] flex flex-col gap-12 border border-white/5 shadow-2xl relative overflow-hidden group">
+            <div className="glass-panel p-10 rounded-premium-lg flex flex-col gap-12 border border-white/5 shadow-2xl relative overflow-hidden group">
               <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-primary/20 transition-all duration-1000"></div>
 
               <div className="flex border-b border-white/5 pb-8">
@@ -463,7 +463,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                             : 'bg-white/[0.03] border-white/5 text-gray-500 hover:border-white/20'
                             }`}
                         >
-                          <div className={`p-3 rounded-2xl transition-all duration-500 ${settings.theme === t.id ? 'bg-primary text-white shadow-lg' : 'bg-white/5 text-gray-600 group-hover/item:text-gray-300'}`}>
+                          <div className={`p-3 rounded-premium-sm transition-all duration-500 ${settings.theme === t.id ? 'bg-primary text-white shadow-lg' : 'bg-white/5 text-gray-600 group-hover/item:text-gray-300'}`}>
                             <t.icon className="w-5 h-5" strokeWidth={2.5} />
                           </div>
                           <div className="text-left">
@@ -487,7 +487,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                           <button
                             key={color}
                             onClick={() => handleColorChange(color)}
-                            className={`w-10 h-10 rounded-2xl transition-all duration-500 border-4 flex items-center justify-center relative overflow-hidden ${settings.primaryColor === color ? 'border-primary scale-110 shadow-2xl' : 'border-white/5 hover:scale-105'}`}
+                            className={`w-10 h-10 rounded-premium-sm transition-all duration-500 border-4 flex items-center justify-center relative overflow-hidden ${settings.primaryColor === color ? 'border-primary scale-110 shadow-2xl' : 'border-white/5 hover:scale-105'}`}
                             style={{ backgroundColor: color }}
                           >
                             {settings.primaryColor === color && <div className="absolute inset-0 bg-white/20 animate-pulse" />}
@@ -495,11 +495,11 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                         ))}
                       </div>
                       <div className="flex items-center gap-4 pt-6 border-t border-white/5">
-                        <div className="p-2.5 rounded-xl bg-white/5 text-gray-500"><PenTool className="w-4 h-4" /></div>
+                        <div className="p-2.5 rounded-premium-sm bg-white/5 text-gray-500"><PenTool className="w-4 h-4" /></div>
                         <div className="flex-1 text-[11px] font-black text-gray-500 uppercase tracking-widest">Personalizar Tono</div>
                         <label className="relative flex items-center gap-3 cursor-pointer group/native">
-                          <div className="w-12 h-12 rounded-2xl border-2 border-white/10 group-hover/native:border-primary transition-all p-1">
-                            <div className="w-full h-full rounded-xl shadow-inner border border-white/10" style={{ backgroundColor: settings.primaryColor }}></div>
+                          <div className="w-12 h-12 rounded-premium-sm border-2 border-white/10 group-hover/native:border-primary transition-all p-1">
+                            <div className="w-full h-full rounded-premium-sm shadow-inner border border-white/10" style={{ backgroundColor: settings.primaryColor }}></div>
                           </div>
                           <input
                             type="color"
@@ -524,7 +524,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                             <span className="text-[11px] font-black text-white uppercase tracking-widest">Difusión (Gaussian Blur)</span>
                             <span className="text-[11px] font-black text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-lg">{settings.glassBlur}px</span>
                           </div>
-                          <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/5">
+                          <div className="bg-white/[0.03] p-5 rounded-premium-sm border border-white/5">
                             <input
                               type="range"
                               min="0"
@@ -537,23 +537,112 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                         </div>
                       )}
                       {isVisible('glassOpacity') && (
-                        <div className="space-y-5">
-                          <div className="flex justify-between items-center px-1">
-                            <span className="text-[11px] font-black text-white uppercase tracking-widest">Densidad de Capa</span>
-                            <span className="text-[11px] font-black text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-lg">{Math.round(settings.glassOpacity * 100)}%</span>
+                        <div className="space-y-6 col-span-full">
+                          <div className="flex items-center justify-between px-1">
+                            <span className="text-[11px] font-black text-white uppercase tracking-widest">Opacidad por Elemento</span>
+                            <div className="flex items-center gap-2 p-1 bg-white/5 rounded-xl border border-white/5">
+                              {[
+                                { id: 'glass', label: 'Paneles' },
+                                { id: 'nav', label: 'Menú' },
+                                { id: 'header', label: 'Cabecera' },
+                                { id: 'searchbar', label: 'Buscador' }
+                              ].map(elem => (
+                                <button
+                                  key={elem.id}
+                                  onClick={() => setSelectedElement(elem.id as any)}
+                                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${selectedElement === elem.id ? 'bg-primary text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                >
+                                  {elem.label}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/5">
+
+                          <div className="bg-white/[0.03] p-6 rounded-premium border border-white/5 space-y-6">
+                            <div className="flex justify-between items-center">
+                              <div className="flex flex-col">
+                                <span className="text-[13px] font-black text-white uppercase tracking-tight">
+                                  {selectedElement === 'glass' && 'Cristal de Paneles'}
+                                  {selectedElement === 'nav' && 'Transparencia del Menú'}
+                                  {selectedElement === 'header' && 'Transparencia de Cabecera'}
+                                  {selectedElement === 'searchbar' && 'Barra de Búsqueda'}
+                                </span>
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">Control de densidad alpha</span>
+                              </div>
+                              <span className="text-[12px] font-black text-primary font-mono bg-primary/10 px-3 py-1 rounded-lg">
+                                {Math.round((
+                                  selectedElement === 'glass' ? settings.glassOpacity :
+                                    selectedElement === 'nav' ? settings.navOpacity :
+                                      selectedElement === 'header' ? settings.headerOpacity :
+                                        settings.searchBarOpacity
+                                ) * 100)}%
+                              </span>
+                            </div>
+
                             <input
                               type="range"
                               min="0"
                               max="100"
-                              value={settings.glassOpacity * 100}
-                              onChange={(e) => updateSettings({ glassOpacity: parseInt(e.target.value) / 100 })}
+                              value={(
+                                selectedElement === 'glass' ? settings.glassOpacity :
+                                  selectedElement === 'nav' ? settings.navOpacity :
+                                    selectedElement === 'header' ? settings.headerOpacity :
+                                      settings.searchBarOpacity
+                              ) * 100}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) / 100;
+                                if (selectedElement === 'glass') updateSettings({ glassOpacity: val });
+                                else if (selectedElement === 'nav') updateSettings({ navOpacity: val });
+                                else if (selectedElement === 'header') updateSettings({ headerOpacity: val });
+                                else updateSettings({ searchBarOpacity: val });
+                              }}
                               className="w-full accent-primary h-1 bg-gray-800 rounded-full appearance-none cursor-pointer"
                             />
+
+                            <p className="text-[10px] text-gray-600 font-medium leading-relaxed italic">
+                              * Ajusta qué tan translúcido se verán los elementos de cristal {selectedElement === 'glass' ? 'en toda la interfaz' : 'específicos'}. El modo AMOLED fuerza opacidad 100%.
+                            </p>
                           </div>
                         </div>
                       )}
+                    </div>
+
+                    {/* NEW: Structural Aesthetic Controls */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-12 pt-12 border-t border-white/5">
+                      <div className="space-y-5">
+                        <div className="flex justify-between items-center px-1">
+                          <span className="text-[11px] font-black text-white uppercase tracking-widest">Curvatura (Border Radius)</span>
+                          <span className="text-[11px] font-black text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-lg">{settings.borderRadius}px</span>
+                        </div>
+                        <div className="bg-white/[0.03] p-5 rounded-premium-sm border border-white/5">
+                          <input
+                            type="range"
+                            min="0"
+                            max="48"
+                            value={settings.borderRadius}
+                            onChange={(e) => updateSettings({ borderRadius: parseInt(e.target.value) })}
+                            className="w-full accent-primary h-1 bg-gray-800 rounded-full appearance-none cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-5">
+                        <div className="flex justify-between items-center px-1">
+                          <span className="text-[11px] font-black text-white uppercase tracking-widest">Grosor de Línea (Border)</span>
+                          <span className="text-[11px] font-black text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-lg">{settings.borderWidth}px</span>
+                        </div>
+                        <div className="bg-white/[0.03] p-5 rounded-premium-sm border border-white/5">
+                          <input
+                            type="range"
+                            min="0"
+                            max="4"
+                            step="1"
+                            value={settings.borderWidth}
+                            onChange={(e) => updateSettings({ borderWidth: parseInt(e.target.value) })}
+                            className="w-full accent-primary h-1 bg-gray-800 rounded-full appearance-none cursor-pointer"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -581,12 +670,12 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
           )}
 
           {/* Troubleshooting */}
-          <div className="glass-panel p-6 rounded-2xl border border-white/5">
+          <div className="glass-panel p-6 rounded-premium-sm border border-white/5">
             <h3 className="text-lg font-black text-white flex items-center gap-2 mb-4 uppercase tracking-tight">
               <Wrench className="text-red-400 w-5 h-5" />
               Solución de Problemas
             </h3>
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 bg-red-900/10 border border-red-900/30 rounded-xl">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 bg-red-900/10 border border-red-900/30 rounded-premium-sm">
               <div>
                 <p className="text-sm font-bold text-red-200">Almacenamiento de Caché Local</p>
                 <p className="text-xs text-red-400 mt-1">Si notas comportamientos extraños, limpia la caché.</p>
@@ -606,7 +695,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
       {/* Mobile Bottom Floating Action Bar */}
       <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300">
         <div
-          className="glass-panel rounded-3xl p-1 border border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+          className="glass-panel rounded-premium p-1 border border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
             background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -615,7 +704,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         >
           <button
             onClick={() => onNavigate && onNavigate('dashboard')}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-400 hover:text-black dark:hover:text-white"
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-400 hover:text-black dark:hover:text-white"
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
               <Home className="w-4 h-4" strokeWidth={2} />
@@ -627,7 +716,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
           <button
             onClick={resetSettings}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-400 hover:text-black dark:hover:text-white"
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-400 hover:text-black dark:hover:text-white"
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
               <RotateCcw className="w-4 h-4" strokeWidth={2} />
@@ -640,7 +729,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-[var(--color-primary)] disabled:opacity-50"
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-[var(--color-primary)] disabled:opacity-50"
           >
             <div className="p-1.5 rounded-full bg-[var(--color-primary)] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]">
               {isSaving ? <RotateCcw className="w-4 h-4 text-white animate-spin" strokeWidth={2.5} /> : <Save className="w-4 h-4 text-white" strokeWidth={2.5} />}

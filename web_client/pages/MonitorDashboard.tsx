@@ -155,7 +155,7 @@ export const MonitorDashboard: React.FC = () => {
 
             {/* Metric Cards - Enhanced style */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
+                <div className="glass-panel p-6 rounded-premium flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Active Users</p>
                         <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
@@ -166,7 +166,7 @@ export const MonitorDashboard: React.FC = () => {
                             {loading ? '...' : `+${stats?.users7d || 0} nuevos esta semana`}
                         </div>
                     </div>
-                    <div className="p-4 bg-blue-500/20 rounded-2xl text-blue-400 border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)] relative z-10">
+                    <div className="p-4 bg-blue-500/20 rounded-premium-sm text-blue-400 border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)] relative z-10">
                         <Users className="w-6 h-6" />
                     </div>
                     {/* Background Glow */}
@@ -176,7 +176,7 @@ export const MonitorDashboard: React.FC = () => {
                     ></div>
                 </div>
 
-                <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
+                <div className="glass-panel p-6 rounded-premium flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Library Index</p>
                         <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
@@ -187,7 +187,7 @@ export const MonitorDashboard: React.FC = () => {
                             {loading ? '...' : `${stats?.storageUsedGB || 0} GB en uso`}
                         </div>
                     </div>
-                    <div className="p-4 bg-purple-500/20 rounded-2xl text-purple-400 border border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.1)] relative z-10">
+                    <div className="p-4 bg-purple-500/20 rounded-premium-sm text-purple-400 border border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.1)] relative z-10">
                         <Library className="w-6 h-6" />
                     </div>
                     {/* Background Glow */}
@@ -197,7 +197,7 @@ export const MonitorDashboard: React.FC = () => {
                     ></div>
                 </div>
 
-                <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
+                <div className="glass-panel p-6 rounded-premium flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Downloads (24h)</p>
                         <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
@@ -208,7 +208,7 @@ export const MonitorDashboard: React.FC = () => {
                             {loading ? '...' : `${stats?.downloads24h || 0} vs ${stats?.downloadsPrev24h || 0} ayer`}
                         </div>
                     </div>
-                    <div className="p-4 bg-emerald-500/20 rounded-2xl text-emerald-400 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)] relative z-10">
+                    <div className="p-4 bg-emerald-500/20 rounded-premium-sm text-emerald-400 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)] relative z-10">
                         <CloudDownload className="w-6 h-6" />
                     </div>
                     {/* Background Glow */}
@@ -218,7 +218,7 @@ export const MonitorDashboard: React.FC = () => {
                     ></div>
                 </div>
 
-                <div className="glass-panel p-6 rounded-3xl flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
+                <div className="glass-panel p-6 rounded-premium flex items-start justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                     <div className="relative z-10">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">System Uptime</p>
                         <h3 className="text-4xl font-bold text-white mt-1 tracking-tight">
@@ -229,7 +229,7 @@ export const MonitorDashboard: React.FC = () => {
                             {loading ? '...' : `${stats?.activeSessions || 0} sesiones activas`}
                         </div>
                     </div>
-                    <div className="p-4 bg-amber-500/20 rounded-2xl text-amber-400 border border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.1)] relative z-10">
+                    <div className="p-4 bg-amber-500/20 rounded-premium-sm text-amber-400 border border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.1)] relative z-10">
                         <Cpu className="w-6 h-6" />
                     </div>
                     {/* Background Glow */}
@@ -238,7 +238,7 @@ export const MonitorDashboard: React.FC = () => {
             </div>
 
             {/* Recent Activity Table - Image 3 style */}
-            <div className="glass-panel border border-white/5 rounded-3xl p-8 shadow-sm flex flex-col">
+            <div className="glass-panel border border-white/5 rounded-premium p-8 shadow-sm flex flex-col">
                 <div className="flex items-center justify-between mb-8">
                     <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
                         <Activity className="text-purple-500 w-5 h-5" />
@@ -325,7 +325,7 @@ export const MonitorDashboard: React.FC = () => {
             </div>
 
             {/* Live System Logs - Bottom section */}
-            <div className="glass-panel rounded-3xl p-0 overflow-hidden flex flex-col h-[600px] border border-white/5 bg-black/20">
+            <div className="glass-panel rounded-premium p-0 overflow-hidden flex flex-col h-[600px] border border-white/5 bg-black/20">
                 <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center flex-wrap gap-4">
                     <div className="flex items-center gap-4">
                         <h3 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
@@ -426,3 +426,4 @@ export const MonitorDashboard: React.FC = () => {
         </div>
     );
 };
+

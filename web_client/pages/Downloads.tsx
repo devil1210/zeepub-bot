@@ -63,7 +63,7 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
                     {downloadHistory.map((item) => (
                         <div
                             key={item.id}
-                            className="glass-panel group rounded-3xl overflow-hidden border border-white/5 hover:border-primary/30 transition-all duration-300 flex flex-col"
+                            className="glass-panel group rounded-premium overflow-hidden border border-white/5 hover:border-primary/30 transition-all duration-300 flex flex-col"
                             style={{
                                 background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
                                 backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -102,12 +102,12 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
                                 <div className="mt-auto pt-4 border-t border-white/5 flex gap-2">
                                     <button
                                         onClick={() => onBookClick && onBookClick(item.book)}
-                                        className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                                        className="flex-1 py-2.5 rounded-premium-sm bg-primary hover:bg-primary-dark text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                                     >
                                         <BookOpen className="w-4 h-4" />
                                         Leer
                                     </button>
-                                    <button className="p-2.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-white/5 transition-all">
+                                    <button className="p-2.5 rounded-premium-sm bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-white/5 transition-all">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
@@ -116,7 +116,7 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
                     ))}
                 </div>
             ) : (
-                <div className="glass-panel rounded-3xl p-12 text-center border border-white/5 flex flex-col items-center justify-center gap-6">
+                <div className="glass-panel rounded-premium p-12 text-center border border-white/5 flex flex-col items-center justify-center gap-6">
                     <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-gray-500">
                         <Download className="w-10 h-10" />
                     </div>
@@ -126,7 +126,7 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
                     </div>
                     <button
                         onClick={() => onNavigate && onNavigate('search')}
-                        className="px-8 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
+                        className="px-8 py-3 bg-primary hover:bg-primary-dark text-white rounded-premium-sm text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
                     >
                         <Search className="w-4 h-4" />
                         Explorar Catálogo
@@ -136,3 +136,4 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
         </div>
     );
 };
+

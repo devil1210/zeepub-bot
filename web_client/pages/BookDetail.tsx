@@ -267,7 +267,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   if (!curVolume || !curSeries) return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
       <p className="text-red-400 font-bold mb-4">No se pudo cargar la información del libro</p>
-      <button onClick={onBack} className="px-6 py-2 bg-primary text-white rounded-xl">Volver</button>
+      <button onClick={onBack} className="px-6 py-2 bg-primary text-white rounded-premium-sm">Volver</button>
     </div>
   );
 
@@ -412,7 +412,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
                   {/* Format Badge */}
                   <div className="absolute bottom-6 left-6">
-                    <span className="bg-primary text-white text-[10px] font-black px-4 py-2 rounded-xl uppercase tracking-[0.2em] shadow-2xl">
+                    <span className="bg-primary text-white text-[10px] font-black px-4 py-2 rounded-premium-sm uppercase tracking-[0.2em] shadow-2xl">
                       {displayData.format}
                     </span>
                   </div>
@@ -457,7 +457,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
 
               {/* Extra Info visible in sidebar (Desktop) */}
-              <div className="hidden md:block glass-panel p-4 rounded-xl border border-black/5 dark:border-white/5 space-y-4">
+              <div className="hidden md:block glass-panel p-4 rounded-premium-sm border border-black/5 dark:border-white/5 space-y-4">
 
                 {/* Rating Block */}
                 <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
@@ -598,7 +598,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               </div>
 
               {/* Synopsis */}
-              <div className="glass-panel border border-black/5 dark:border-white/5 rounded-2xl p-6 lg:p-8 shadow-sm dark:shadow-xl">
+              <div className="glass-panel border border-black/5 dark:border-white/5 rounded-premium-sm p-6 lg:p-8 shadow-sm dark:shadow-xl">
                 <div className="flex items-center gap-2 mb-4 text-primary">
                   <FileText className="w-5 h-5" />
                   <h3 className="text-xs font-black uppercase tracking-widest">Sinopsis</h3>
@@ -611,7 +611,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               {/* Two Column Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Book Details */}
-                <div className="glass-panel border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-sm dark:shadow-xl h-full">
+                <div className="glass-panel border border-black/5 dark:border-white/5 rounded-premium-sm p-6 shadow-sm dark:shadow-xl h-full">
                   <div className="flex items-center gap-2 mb-6 text-primary">
                     <Library className="w-5 h-5" />
                     <h3 className="text-xs font-black uppercase tracking-widest">Detalles del Libro</h3>
@@ -648,7 +648,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                 </div>
 
                 {/* Tech Specs */}
-                <div className="glass-panel border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-sm dark:shadow-xl h-full">
+                <div className="glass-panel border border-black/5 dark:border-white/5 rounded-premium-sm p-6 shadow-sm dark:shadow-xl h-full">
                   <div className="flex items-center gap-2 mb-6 text-primary">
                     <Database className="w-5 h-5" />
                     <h3 className="text-xs font-black uppercase tracking-widest">Ficha Técnica</h3>
@@ -693,7 +693,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       {/* Floating Bottom Navigation */}
       <div className="md:hidden fixed bottom-6 left-8 right-8 z-40 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
         <div
-          className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+          className="glass-panel rounded-premium p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
             background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -703,7 +703,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
           {/* Back */}
           <button
             onClick={onBack}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
           >
             <div className="p-1.5">
               <Reply className="w-4 h-4" strokeWidth={2} />
@@ -716,7 +716,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
           {/* Home */}
           <button
             onClick={() => onNavigate && onNavigate('dashboard')}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
+            className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
           >
             <div className="p-1.5">
               <Home className="w-4 h-4" strokeWidth={2} />
@@ -732,7 +732,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               {/* 
               <button
                 onClick={() => onNavigate && onNavigate('reader')}
-                className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-indigo-500 hover:text-indigo-600 active:scale-95"
+                className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-indigo-500 hover:text-indigo-600 active:scale-95"
               >
                 <div className="p-1.5">
                   <BookOpen className="w-4 h-4" strokeWidth={2} />
@@ -744,7 +744,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
               <button
                 onClick={() => setIsRatingModalOpen(true)}
-                className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-yellow-500 hover:text-yellow-600 active:scale-95"
+                className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-yellow-500 hover:text-yellow-600 active:scale-95"
               >
                 <div className="p-1.5">
                   <Star className="w-4 h-4 fill-current" strokeWidth={2} />
@@ -758,7 +758,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
           {/* Download */}
           <button
             onClick={handleDownload}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${hasDownloaded ? 'text-green-600 dark:text-green-500' : 'text-primary'}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 ${hasDownloaded ? 'text-green-600 dark:text-green-500' : 'text-primary'}`}
           >
             <div className={`p-1.5 rounded-full transition-all duration-300 ${!hasDownloaded ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
               {hasDownloaded ? <Check className="w-4 h-4" strokeWidth={2.5} /> : <Download className="w-4 h-4 text-white" strokeWidth={2.5} />}
@@ -772,3 +772,4 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     </div>
   );
 };
+

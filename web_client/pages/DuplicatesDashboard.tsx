@@ -76,8 +76,8 @@ export const DuplicatesDashboard: React.FC = () => {
         <div className="flex flex-col gap-8 animate-in fade-in duration-500 pt-4">
             {/* Header Info */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 glass-panel p-8 rounded-3xl border border-white/5 flex items-center gap-6">
-                    <div className="p-4 bg-amber-500/20 rounded-2xl text-amber-500 border border-amber-500/20">
+                <div className="lg:col-span-2 glass-panel p-8 rounded-premium border border-white/5 flex items-center gap-6">
+                    <div className="p-4 bg-amber-500/20 rounded-premium-sm text-amber-500 border border-amber-500/20">
                         <FileWarning className="w-8 h-8" />
                     </div>
                     <div>
@@ -89,13 +89,13 @@ export const DuplicatesDashboard: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="glass-panel p-8 rounded-3xl border border-white/5 flex flex-col justify-center items-center text-center">
+                <div className="glass-panel p-8 rounded-premium border border-white/5 flex flex-col justify-center items-center text-center">
                     <div className="text-4xl font-black text-primary mb-1">{duplicates.length}</div>
                     <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">Registros Totales</div>
                     <button
                         onClick={handleClear}
                         disabled={clearing || duplicates.length === 0}
-                        className="mt-4 flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
+                        className="mt-4 flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
                     >
                         <Trash2 className="w-3 h-3" />
                         Limpiar Historial
@@ -104,7 +104,7 @@ export const DuplicatesDashboard: React.FC = () => {
             </div>
 
             {/* Content Table */}
-            <div className="glass-panel rounded-3xl border border-white/5 overflow-hidden flex flex-col">
+            <div className="glass-panel rounded-premium border border-white/5 overflow-hidden flex flex-col">
                 {/* Table Controls */}
                 <div className="p-6 border-b border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="relative w-full sm:w-80 group">
@@ -114,12 +114,12 @@ export const DuplicatesDashboard: React.FC = () => {
                             placeholder="Buscar por título, autor o ruta..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-premium-sm text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all"
                         />
                     </div>
                     <button
                         onClick={fetchDuplicates}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                        className="flex items-center gap-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
                     >
                         <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                         Refrescar
@@ -202,7 +202,7 @@ export const DuplicatesDashboard: React.FC = () => {
                         {/* Detail Header */}
                         <div className="p-8 border-b border-white/5 flex items-start justify-between">
                             <div className="flex items-center gap-6">
-                                <div className="p-4 bg-amber-500/20 rounded-2xl text-amber-500 border border-amber-500/20">
+                                <div className="p-4 bg-amber-500/20 rounded-premium-sm text-amber-500 border border-amber-500/20">
                                     <Copy className="w-8 h-8" />
                                 </div>
                                 <div>
@@ -212,7 +212,7 @@ export const DuplicatesDashboard: React.FC = () => {
                             </div>
                             <button
                                 onClick={() => setSelectedDuplicate(null)}
-                                className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-gray-400 hover:text-white transition-all"
+                                className="p-3 bg-white/5 hover:bg-white/10 rounded-premium-sm text-gray-400 hover:text-white transition-all"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -225,7 +225,7 @@ export const DuplicatesDashboard: React.FC = () => {
                                 <div className="space-y-6">
                                     <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-4">Conflicto de Contenido</h4>
 
-                                    <div className="p-6 bg-green-500/5 border border-green-500/10 rounded-2xl space-y-2">
+                                    <div className="p-6 bg-green-500/5 border border-green-500/10 rounded-premium-sm space-y-2">
                                         <div className="flex items-center gap-2 text-green-500 mb-2">
                                             <CheckCircle className="w-4 h-4" />
                                             <span className="text-[10px] font-black uppercase tracking-wider">Libro en Biblioteca (Original)</span>
@@ -234,7 +234,7 @@ export const DuplicatesDashboard: React.FC = () => {
                                         <p className="text-[10px] text-gray-400 font-mono break-all leading-relaxed">{selectedDuplicate.original}</p>
                                     </div>
 
-                                    <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-2">
+                                    <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-premium-sm space-y-2">
                                         <div className="flex items-center gap-2 text-red-500 mb-2">
                                             <AlertTriangle className="w-4 h-4" />
                                             <span className="text-[10px] font-black uppercase tracking-wider">Copia Rechazada (Nuevo)</span>
@@ -248,7 +248,7 @@ export const DuplicatesDashboard: React.FC = () => {
                                 <div className="space-y-6">
                                     <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-4">Resolución Recomendada</h4>
 
-                                    <div className="p-8 bg-blue-500/5 border border-blue-500/10 rounded-3xl">
+                                    <div className="p-8 bg-blue-500/5 border border-blue-500/10 rounded-premium">
                                         <p className="text-sm text-gray-300 leading-relaxed mb-6">
                                             El sistema ha detectado que estos archivos son <span className="text-white font-bold">binariamente idénticos</span>. Si deseas que ambos convivan como registros separados, debes editarlos para que sus metadatos internos sean lo suficientemente distintos.
                                         </p>
@@ -270,7 +270,7 @@ export const DuplicatesDashboard: React.FC = () => {
                                             </ul>
                                         </div>
 
-                                        <div className="mt-10 p-4 bg-white/5 rounded-2xl border border-white/5">
+                                        <div className="mt-10 p-4 bg-white/5 rounded-premium-sm border border-white/5">
                                             <p className="text-[9px] text-gray-500 italic leading-relaxed">
                                                 Una vez editado el archivo físico, el escáner le asignará un nuevo hash y podrá indexarlo sin conflictos.
                                             </p>
@@ -284,12 +284,12 @@ export const DuplicatesDashboard: React.FC = () => {
                         <div className="p-8 bg-white/[0.02] border-t border-white/5 flex justify-end gap-3">
                             <button
                                 onClick={() => setSelectedDuplicate(null)}
-                                className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all"
                             >
                                 Entendido
                             </button>
                             <button
-                                className="px-8 py-3 bg-primary hover:brightness-110 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20"
+                                className="px-8 py-3 bg-primary hover:brightness-110 text-white rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20"
                                 onClick={() => {
                                     alert("Funcionalidad de borrado físico no disponible por seguridad. Por favor, elimina el archivo manualmente en el servidor.");
                                 }}
@@ -302,7 +302,7 @@ export const DuplicatesDashboard: React.FC = () => {
             )}
 
             {/* Help Card */}
-            <div className="p-8 rounded-3xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-6">
+            <div className="p-8 rounded-premium bg-blue-500/5 border border-blue-500/10 flex items-start gap-6">
                 <Info className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />
                 <div>
                     <h4 className="text-sm font-black text-blue-400 mb-2 uppercase tracking-wide">¿Por qué veo estos archivos?</h4>
@@ -316,3 +316,4 @@ export const DuplicatesDashboard: React.FC = () => {
         </div>
     );
 };
+

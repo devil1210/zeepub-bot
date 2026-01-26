@@ -113,6 +113,8 @@ class UserLevel(Base):
     background_color = Column(String(20), default="#0f172a")
     card_color = Column(String(20), default="#1e293b")
     banner_content_offset = Column(Integer, default=0)
+    border_radius = Column(Integer, default=24)
+    border_width = Column(Integer, default=1)
     force_settings = Column(Boolean, default=False)
     
     # Características / Pricing
@@ -153,6 +155,9 @@ class UserUISettings(Base):
     nav_opacity = Column(Integer)
     accent_opacity = Column(Integer)
     card_glow_intensity = Column(Integer)
+    glass_blur = Column(Integer)
+    border_radius = Column(Integer)
+    border_width = Column(Integer)
     show_recommendations = Column(Boolean)
     title_language = Column(String(20), default="romaji")
     
@@ -181,6 +186,8 @@ class AppTheme(Base):
     accent_opacity = Column(Integer)
     glass_blur = Column(Integer)
     card_glow_intensity = Column(Integer)
+    border_radius = Column(Integer, default=24)
+    border_width = Column(Integer, default=1)
     
     # Layout
     font_size = Column(Integer)

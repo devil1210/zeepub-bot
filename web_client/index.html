@@ -26,6 +26,11 @@
             display: ['Space Grotesk', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
           },
+          borderRadius: {
+            'premium': 'var(--radius-premium)',
+            'premium-lg': 'calc(var(--radius-premium) * 1.5)',
+            'premium-sm': 'calc(var(--radius-premium) * 0.7)',
+          },
           colors: {
             primary: 'var(--color-primary)',
             'primary-dark': 'var(--color-primary-dark)',
@@ -107,7 +112,8 @@
       --bg-color: #101622;
       --card-color: rgba(30, 35, 45, 0.6);
 
-      /* Thematic Panel Variables (Defaults) */
+      --radius-premium: 24px;
+      --border-width-premium: 1px;
       --panel-bg: var(--card-color);
       --panel-bg-subtle: rgba(var(--glass-rgb), 0.4);
       --panel-border: rgba(255, 255, 255, var(--glass-border-opacity));
@@ -168,12 +174,15 @@
       /* Base background using thematic panel variable */
       background: var(--panel-bg);
 
+      /* Radius and Border from Theme */
+      border-radius: var(--radius-premium);
+
       /* Blur effect */
       backdrop-filter: blur(var(--glass-blur));
       -webkit-backdrop-filter: blur(var(--glass-blur));
 
       /* Border handling using thematic border variable */
-      border: 1px solid var(--panel-border);
+      border: var(--border-width-premium) solid var(--panel-border);
 
       /* Shadows */
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);

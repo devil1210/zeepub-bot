@@ -184,10 +184,10 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
             {!loading && (
                 <>
                     {/* Tier Summary Table */}
-                    <div className="glass-panel border border-white/5 rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-700">
+                    <div className="glass-panel border border-white/5 rounded-premium overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-700">
                         <div className="p-8 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                                <div className="p-3 bg-primary/10 rounded-premium-sm border border-primary/20">
                                     <ShieldCheck className="w-6 h-6 text-primary" />
                                 </div>
                                 <div>
@@ -198,7 +198,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
 
                             <button
                                 onClick={() => handleConfigureTier({ name: levels[0]?.name || 'Global', color: levels[0]?.color || '#ffffff' })}
-                                className="px-8 py-3.5 rounded-2xl bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                                className="px-8 py-3.5 rounded-premium-sm bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                             >
                                 <Settings className="w-3.5 h-3.5" />
                                 Gestionar Niveles
@@ -224,7 +224,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-4">
                                                     <div
-                                                        className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner group-hover:scale-110 transition-transform duration-500"
+                                                        className="w-10 h-10 rounded-premium-sm flex items-center justify-center border shadow-inner group-hover:scale-110 transition-transform duration-500"
                                                         style={{
                                                             backgroundColor: `${level.color}15`,
                                                             color: level.color,
@@ -280,7 +280,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                     </div>
 
                     {/* Users List - Dynamic Grid (Square Cards on Mobile) */}
-                    <div className="glass-panel border border-white/5 rounded-3xl p-6 sm:p-8">
+                    <div className="glass-panel border border-white/5 rounded-premium p-6 sm:p-8">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
                             <div className="flex items-center gap-3">
                                 <Users className="text-primary w-5 h-5" />
@@ -294,7 +294,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                     placeholder="Buscar por ID o Username..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-10 pr-4 py-2.5 bg-black/20 border border-white/10 rounded-2xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/50 w-full sm:w-80"
+                                    className="pl-10 pr-4 py-2.5 bg-black/20 border border-white/10 rounded-premium-sm text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/50 w-full sm:w-80"
                                 />
                             </div>
                         </div>
@@ -308,11 +308,11 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                     <div
                                         key={user.id}
                                         onClick={() => handleSelectUser(user.id)}
-                                        className="group bg-white/[0.01] hover:bg-white/[0.04] border border-white/5 hover:border-primary/20 rounded-3xl p-5 transition-all duration-300 flex flex-col lg:flex-row lg:items-center gap-6 cursor-pointer relative overflow-hidden"
+                                        className="group bg-white/[0.01] hover:bg-white/[0.04] border border-white/5 hover:border-primary/20 rounded-premium p-5 transition-all duration-300 flex flex-col lg:flex-row lg:items-center gap-6 cursor-pointer relative overflow-hidden"
                                     >
                                         {/* User Info Block */}
                                         <div className="flex items-center gap-5 lg:min-w-[260px] relative z-10">
-                                            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-xl border border-primary/10 shadow-inner group-hover:scale-110 transition-transform duration-500 overflow-hidden relative">
+                                            <div className="w-16 h-16 rounded-premium-sm bg-primary/10 flex items-center justify-center text-primary font-black text-xl border border-primary/10 shadow-inner group-hover:scale-110 transition-transform duration-500 overflow-hidden relative">
                                                 {user.photo_url ? (
                                                     <img
                                                         src={user.photo_url}
@@ -358,7 +358,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                         {/* Level Badge */}
                                         <div className="lg:w-36 relative z-10">
                                             <span
-                                                className="px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border inline-block shadow-lg"
+                                                className="px-4 py-1.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest border inline-block shadow-lg"
                                                 style={{ backgroundColor: `${user.level.color}15`, color: user.level.color, borderColor: `${user.level.color}20` }}
                                             >
                                                 {user.level.name}
@@ -402,3 +402,4 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
         </div>
     );
 };
+

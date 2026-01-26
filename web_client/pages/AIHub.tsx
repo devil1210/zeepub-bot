@@ -193,7 +193,7 @@ export const AIHub: React.FC = () => {
 
             {/* Header */}
             <div className="flex items-center gap-4 mb-10">
-                <div className="p-4 bg-purple-500/10 rounded-3xl border border-purple-500/20">
+                <div className="p-4 bg-purple-500/10 rounded-premium border border-purple-500/20">
                     <BrainCircuit className="w-10 h-10 text-purple-400" />
                 </div>
                 <div>
@@ -283,7 +283,7 @@ export const AIHub: React.FC = () => {
                                     <Activity className="w-8 h-8 text-primary" />
                                     <span className="uppercase tracking-[0.3em] text-lg">Escaner Inteligente</span>
                                 </h3>
-                                <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
+                                <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-premium-sm border border-white/10">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Modelo:</span>
                                     <span className="text-[10px] font-black uppercase tracking-widest text-primary">Gemini 3 Flash</span>
                                 </div>
@@ -301,7 +301,7 @@ export const AIHub: React.FC = () => {
                                     />
                                     <button
                                         onClick={() => setShowSearch(true)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] border border-white/5 active:scale-95"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 px-6 py-3 rounded-premium-sm bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] border border-white/5 active:scale-95"
                                     >
                                         BUSCAR
                                     </button>
@@ -381,7 +381,7 @@ export const AIHub: React.FC = () => {
                                         { color: 'bg-amber-500', text: 'Los límites de la API (Gemini Flash) se gestionan dinámicamente.', icon: Activity }
                                     ].map((note, i) => (
                                         <li key={i} className="flex gap-4 group">
-                                            <div className={`w-10 h-10 rounded-2xl ${note.color}/10 flex items-center justify-center shrink-0 border border-white/5 group-hover:scale-110 transition-transform`}>
+                                            <div className={`w-10 h-10 rounded-premium-sm ${note.color}/10 flex items-center justify-center shrink-0 border border-white/5 group-hover:scale-110 transition-transform`}>
                                                 <note.icon className={`w-5 h-5 ${note.color.replace('bg-', 'text-')}`} />
                                             </div>
                                             <p className="text-sm text-gray-400 font-medium leading-relaxed group-hover:text-gray-300 transition-colors pt-1">
@@ -396,11 +396,11 @@ export const AIHub: React.FC = () => {
                             <div className="mt-12 pt-8 border-t border-white/5">
                                 <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] mb-4">Núcleo del Sistema</p>
                                 <div className="flex flex-col gap-2">
-                                    <div className="flex items-center justify-between text-[11px] font-mono bg-black/40 p-4 rounded-2xl border border-white/5">
+                                    <div className="flex items-center justify-between text-[11px] font-mono bg-black/40 p-4 rounded-premium-sm border border-white/5">
                                         <span className="text-gray-500 uppercase">API Context:</span>
                                         <span className={aiActive ? "text-primary font-bold" : "text-red-500/50"}>{aiKeyMasked}</span>
                                     </div>
-                                    <div className="flex items-center justify-between text-[11px] font-mono bg-black/40 p-4 rounded-2xl border border-white/5">
+                                    <div className="flex items-center justify-between text-[11px] font-mono bg-black/40 p-4 rounded-premium-sm border border-white/5">
                                         <span className="text-gray-500 uppercase">Status:</span>
                                         <span className={aiActive ? "text-emerald-400 font-bold" : "text-red-500/50"}>{aiActive ? 'READY' : 'OFFLINE'}</span>
                                     </div>
@@ -437,10 +437,10 @@ export const AIHub: React.FC = () => {
                                             <p className="text-[10px] text-gray-500 font-mono tracking-widest opacity-60 truncate uppercase">{item.series_hash}</p>
                                         </div>
                                         <div className="flex items-center justify-between mt-auto">
-                                            <div className="px-4 py-2 bg-black/40 text-[10px] font-black text-primary rounded-2xl border border-primary/20 shadow-inner">
+                                            <div className="px-4 py-2 bg-black/40 text-[10px] font-black text-primary rounded-premium-sm border border-primary/20 shadow-inner">
                                                 {item.books_count} VOLÚMENES
                                             </div>
-                                            <div className="w-10 h-10 bg-white/5 rounded-2xl flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all group-hover:scale-110 active:scale-95">
+                                            <div className="w-10 h-10 bg-white/5 rounded-premium-sm flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all group-hover:scale-110 active:scale-95">
                                                 <ArrowRight className="w-5 h-5" />
                                             </div>
                                         </div>
@@ -499,13 +499,13 @@ export const AIHub: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="text-right flex flex-col items-end gap-3 lg:border-l border-white/5 lg:pl-8">
-                                                <div className="flex items-center gap-3 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] bg-black/40 px-4 py-2 rounded-2xl border border-white/5 ring-4 ring-white/5">
+                                                <div className="flex items-center gap-3 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] bg-black/40 px-4 py-2 rounded-premium-sm border border-white/5 ring-4 ring-white/5">
                                                     <Clock className="w-4 h-4 text-primary" />
                                                     {new Date(item.reviewed_at).toLocaleDateString()}
                                                     <span className="text-primary opacity-40 mx-1">|</span>
                                                     {new Date(item.reviewed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
-                                                <div className="px-5 py-2 bg-primary/10 text-[10px] font-black text-primary rounded-2xl border border-primary/20 uppercase tracking-[0.2em] shadow-sm">
+                                                <div className="px-5 py-2 bg-primary/10 text-[10px] font-black text-primary rounded-premium-sm border border-primary/20 uppercase tracking-[0.2em] shadow-sm">
                                                     {item.books_count} VOLÚMENES ACTUALIZADOS
                                                 </div>
                                             </div>
@@ -530,7 +530,7 @@ export const AIHub: React.FC = () => {
             {/* Proposal Modal (New) */}
             {showProposal && proposal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-4xl bg-[#0a0a0c] border border-white/10 rounded-3xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl">
+                    <div className="w-full max-w-4xl bg-[#0a0a0c] border border-white/10 rounded-premium overflow-hidden flex flex-col max-h-[90vh] shadow-2xl">
                         {/* Modal Header */}
                         <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
                             <div>
@@ -570,7 +570,7 @@ export const AIHub: React.FC = () => {
                                 <div className="grid grid-cols-1 gap-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Current Name Card */}
-                                        <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/10">
+                                        <div className="p-5 rounded-premium-sm bg-red-500/5 border border-red-500/10">
                                             <p className="text-[10px] text-red-400 font-black uppercase mb-3 tracking-widest">Estado Actual en DB</p>
                                             <p className="text-lg font-medium text-white break-words leading-relaxed whitespace-pre-wrap">
                                                 {proposal.current_series}
@@ -578,7 +578,7 @@ export const AIHub: React.FC = () => {
                                         </div>
 
                                         {/* Proposed Name Card */}
-                                        <div className="p-5 rounded-2xl bg-green-500/5 border border-green-500/10 relative group">
+                                        <div className="p-5 rounded-premium-sm bg-green-500/5 border border-green-500/10 relative group">
                                             <ArrowRight className="absolute -left-6 top-1/2 -translate-y-1/2 w-8 h-8 text-white/10 hidden md:block" />
                                             <div className="flex justify-between items-start mb-3">
                                                 <p className="text-[10px] text-green-400 font-black uppercase tracking-widest text-glow-green">Propuesta IA</p>
@@ -638,7 +638,7 @@ export const AIHub: React.FC = () => {
                                                         )}
                                                     </div>
                                                     {proposal.reason && (
-                                                        <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                                        <div className="bg-white/5 p-3 rounded-premium-sm border border-white/5">
                                                             <p className="text-xs text-gray-400 leading-relaxed italic">
                                                                 "{proposal.reason}"
                                                             </p>
@@ -693,7 +693,7 @@ export const AIHub: React.FC = () => {
                                         return (
                                             <div
                                                 key={change.book_id}
-                                                className={`p-3 rounded-2xl border flex items-center gap-4 text-sm transition-all group ${isSelected && applyRenames
+                                                className={`p-3 rounded-premium-sm border flex items-center gap-4 text-sm transition-all group ${isSelected && applyRenames
                                                     ? 'bg-white/5 border-white/10 opacity-100'
                                                     : 'bg-black/20 border-white/5 opacity-40 grayscale'
                                                     }`}
@@ -728,14 +728,14 @@ export const AIHub: React.FC = () => {
                         <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
                             <button
                                 onClick={() => setShowProposal(false)}
-                                className="px-6 py-3 rounded-xl font-bold text-gray-400 hover:bg-white/5 transition-all"
+                                className="px-6 py-3 rounded-premium-sm font-bold text-gray-400 hover:bg-white/5 transition-all"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleApplyChanges}
                                 disabled={processingProposal}
-                                className="px-8 py-3 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white flex items-center gap-2 transition-all shadow-lg shadow-primary/20"
+                                className="px-8 py-3 rounded-premium-sm font-bold bg-primary hover:bg-primary/90 text-white flex items-center gap-2 transition-all shadow-lg shadow-primary/20"
                             >
                                 {processingProposal ? (
                                     <>
@@ -757,7 +757,7 @@ export const AIHub: React.FC = () => {
             {/* Search Modal */}
             {showSearch && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-2xl bg-[#0a0a0c] border border-white/10 rounded-3xl p-6 shadow-2xl relative">
+                    <div className="w-full max-w-2xl bg-[#0a0a0c] border border-white/10 rounded-premium p-6 shadow-2xl relative">
                         <button
                             onClick={() => setShowSearch(false)}
                             className="absolute top-4 right-4 text-gray-500 hover:text-white"
@@ -774,13 +774,13 @@ export const AIHub: React.FC = () => {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-                                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary"
+                                className="flex-1 bg-white/5 border border-white/10 rounded-premium-sm px-4 py-3 text-white focus:outline-none focus:border-primary"
                                 autoFocus
                             />
                             <button
                                 onClick={runSearch}
                                 disabled={searching}
-                                className="bg-primary hover:bg-primary/90 text-white px-6 rounded-xl font-bold transition-all"
+                                className="bg-primary hover:bg-primary/90 text-white px-6 rounded-premium-sm font-bold transition-all"
                             >
                                 {searching ? "..." : "Buscar"}
                             </button>
@@ -791,7 +791,7 @@ export const AIHub: React.FC = () => {
                                 <div
                                     key={idx}
                                     onClick={() => selectSeries(s)}
-                                    className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex items-center gap-4 transition-all"
+                                    className="p-3 rounded-premium-sm bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex items-center gap-4 transition-all"
                                 >
                                     {s.cover ? (
                                         <img src={s.cover} className="w-10 h-14 object-cover rounded-md" alt="" />
@@ -878,7 +878,7 @@ const StatCard = ({ label, value, icon: Icon, color, bg, delta }: any) => (
                     </p>
                 )}
             </div>
-            <div className={`p-4 rounded-2xl ${bg} ${color} border border-white/5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg`}>
+            <div className={`p-4 rounded-premium-sm ${bg} ${color} border border-white/5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg`}>
                 <Icon className="w-6 h-6" />
             </div>
         </div>
@@ -887,3 +887,4 @@ const StatCard = ({ label, value, icon: Icon, color, bg, delta }: any) => (
         <div className={`absolute -right-4 -bottom-4 w-24 h-24 blur-3xl opacity-10 rounded-full ${bg}`}></div>
     </div>
 );
+

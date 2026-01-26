@@ -76,7 +76,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         {/* Logo Area */}
         <div className="p-8 pb-4">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20">
+            <div className="w-10 h-10 rounded-premium-sm bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20">
               <BookOpen className="text-white w-6 h-6" />
             </div>
             <div>
@@ -97,7 +97,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive
+                className={`w-full flex items-center gap-4 px-4 py-4 rounded-premium-sm transition-all duration-500 group relative overflow-hidden ${isActive
                   ? 'bg-white/[0.08] text-white shadow-premium'
                   : 'text-gray-500 hover:text-white hover:bg-white/5'
                   }`}
@@ -120,7 +120,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
               <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Administración</p>
               <button
                 onClick={() => onTabChange('admin')}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${activeTab === 'admin'
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-premium-sm transition-all duration-200 group ${activeTab === 'admin'
                   ? 'bg-primary/20 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-[var(--panel-bg-subtle)]'
                   }`}
@@ -136,7 +136,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         <div className="p-6 mt-auto">
           <div
             onClick={() => onTabChange('settings')}
-            className="glass-panel p-4 rounded-[1.75rem] border border-white/5 flex items-center gap-4 hover:border-primary/40 hover:bg-white/[0.05] transition-all duration-500 cursor-pointer group shadow-2xl"
+            className="glass-panel p-4 rounded-premium border border-white/5 flex items-center gap-4 hover:border-primary/40 hover:bg-white/[0.05] transition-all duration-500 cursor-pointer group shadow-2xl"
           >
             <div className="relative group/avatar">
               <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-purple-600 rounded-full blur opacity-20 group-hover/avatar:opacity-60 transition duration-500"></div>

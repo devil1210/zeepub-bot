@@ -269,7 +269,7 @@ export const InfrastructureDashboard: React.FC = () => {
 
                 {/* Metric Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="glass-panel p-5 rounded-xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
+                    <div className="glass-panel p-5 rounded-premium-sm border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
                         <div className="relative z-10">
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Active Users</p>
                             <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
@@ -286,7 +286,7 @@ export const InfrastructureDashboard: React.FC = () => {
                         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition-all duration-500"></div>
                     </div>
 
-                    <div className="glass-panel p-5 rounded-xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
+                    <div className="glass-panel p-5 rounded-premium-sm border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
                         <div className="relative z-10">
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Library Index</p>
                             <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
@@ -303,7 +303,7 @@ export const InfrastructureDashboard: React.FC = () => {
                         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/20 transition-all duration-500"></div>
                     </div>
 
-                    <div className="glass-panel p-5 rounded-xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
+                    <div className="glass-panel p-5 rounded-premium-sm border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
                         <div className="relative z-10">
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Downloads (24h)</p>
                             <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
@@ -320,7 +320,7 @@ export const InfrastructureDashboard: React.FC = () => {
                         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all duration-500"></div>
                     </div>
 
-                    <div className="glass-panel p-5 rounded-xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
+                    <div className="glass-panel p-5 rounded-premium-sm border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md flex items-start justify-between relative overflow-hidden group shadow-sm">
                         <div className="relative z-10">
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">System Uptime</p>
                             <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
@@ -339,7 +339,7 @@ export const InfrastructureDashboard: React.FC = () => {
                 </div>
 
                 {/* Synchronization Summary Table */}
-                <div className="glass-panel mb-8 p-6 rounded-xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md shadow-sm">
+                <div className="glass-panel mb-8 p-6 rounded-premium-sm border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
                         <Database className="w-5 h-5 text-blue-500" />
                         <h3 className="font-bold text-slate-900 dark:text-white">Synchronization Strategy</h3>
@@ -398,7 +398,7 @@ export const InfrastructureDashboard: React.FC = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Maintenance Section */}
-                    <div className="lg:col-span-1 glass-panel border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-xl p-6 flex flex-col shadow-sm">
+                    <div className="lg:col-span-1 glass-panel border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-premium-sm p-6 flex flex-col shadow-sm">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 <Settings className="text-[#0d93f2] w-5 h-5" />
@@ -508,7 +508,7 @@ export const InfrastructureDashboard: React.FC = () => {
                     </div>
 
                     {/* Recent Activity Section */}
-                    <div className="lg:col-span-2 glass-panel border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-xl p-6 shadow-sm flex flex-col min-h-[400px]">
+                    <div className="lg:col-span-2 glass-panel border border-white/50 dark:border-white/10 bg-white/70 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-premium-sm p-6 shadow-sm flex flex-col min-h-[400px]">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 <Activity className="text-purple-500 w-5 h-5" />
@@ -578,7 +578,7 @@ export const InfrastructureDashboard: React.FC = () => {
                     </div>
 
                     {/* System Logs Section */}
-                    <div className="lg:col-span-1 glass-panel border border-white/50 dark:border-white/10 bg-white/30 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-xl p-0 overflow-hidden flex flex-col h-[600px] lg:h-auto shadow-sm">
+                    <div className="lg:col-span-1 glass-panel border border-white/50 dark:border-white/10 bg-white/30 dark:bg-[#1e293b]/60 backdrop-blur-md rounded-premium-sm p-0 overflow-hidden flex flex-col h-[600px] lg:h-auto shadow-sm">
                         <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 flex flex-col gap-3">
                             <div className="flex justify-between items-center">
                                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
@@ -675,3 +675,4 @@ export const InfrastructureDashboard: React.FC = () => {
         </div>
     );
 };
+

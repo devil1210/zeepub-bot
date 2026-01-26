@@ -153,7 +153,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   {extendedInfo.insignias.map((badge, idx) => (
                     <div
                       key={idx}
-                      className="px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-white/5 text-gray-300 border border-white/10 hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all duration-500 cursor-default flex items-center gap-2 group/badge"
+                      className="px-5 py-2 rounded-premium-sm text-[10px] font-black uppercase tracking-widest bg-white/5 text-gray-300 border border-white/10 hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all duration-500 cursor-default flex items-center gap-2 group/badge"
                     >
                       <div className="w-2 h-2 rounded-full bg-primary group-hover:scale-125 transition-transform shadow-[0_0_8px_rgba(var(--color-primary-rgb),0.5)]"></div>
                       {badge}
@@ -180,7 +180,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               />
               <button
                 onClick={() => onNavigate && onNavigate('search')}
-                className="hidden sm:flex bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all shadow-[0_10px_25px_-5px_rgba(var(--color-primary-rgb),0.4)] active:scale-95 mr-2 group/btn relative overflow-hidden"
+                className="hidden sm:flex bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-premium-sm text-xs font-black uppercase tracking-[0.2em] transition-all shadow-[0_10px_25px_-5px_rgba(var(--color-primary-rgb),0.4)] active:scale-95 mr-2 group/btn relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-shimmer"></div>
                 Buscar
@@ -248,7 +248,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
                 <button
                   onClick={() => onNavigate && onNavigate('search')}
-                  className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-[var(--panel-bg-subtle)] hover:bg-[var(--panel-bg)] text-gray-300 transition-all border border-[var(--panel-border)] flex items-center gap-2 group"
+                  className="px-5 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest bg-[var(--panel-bg-subtle)] hover:bg-[var(--panel-bg)] text-gray-300 transition-all border border-[var(--panel-border)] flex items-center gap-2 group"
                 >
                   Explorar Todo <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -341,7 +341,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     >
                       <div className={`absolute inset-0 rounded-[2.2rem] bg-[var(--panel-bg)] border border-[var(--panel-border)] group-hover:bg-white/[0.05] group-hover:border-white/20 group-hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] transition-all duration-700`}></div>
 
-                      <div className={`relative z-10 p-4 rounded-2xl ${item.bg} ${item.color} border border-white/5 shadow-inner group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-700`}>
+                      <div className={`relative z-10 p-4 rounded-premium-sm ${item.bg} ${item.color} border border-white/5 shadow-inner group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-700`}>
                         <item.icon className="w-6 h-6" strokeWidth={2.5} />
                       </div>
 
@@ -370,7 +370,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
             <div className="flex items-center gap-6 mb-12 relative z-10">
               <div className="relative group/avatar">
-                <div className="absolute -inset-2 bg-gradient-to-tr from-primary via-purple-500 to-blue-400 rounded-3xl blur opacity-30 group-hover/avatar:opacity-80 transition duration-700 animate-pulse"></div>
+                <div className="absolute -inset-2 bg-gradient-to-tr from-primary via-purple-500 to-blue-400 rounded-premium blur opacity-30 group-hover/avatar:opacity-80 transition duration-700 animate-pulse"></div>
                 <div className="relative w-24 h-24 rounded-[2rem] p-[3px] bg-white/10 overflow-hidden shadow-2xl">
                   <div className="w-full h-full rounded-[1.85rem] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
                     <img
@@ -429,14 +429,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="glass-panel rounded-[2rem] p-6 border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-white/20 transition-all duration-700">
-                  <div className="p-4 bg-blue-500/10 rounded-2xl text-blue-400 mb-4 border border-blue-500/10 shadow-xl group-hover/stat:scale-110 group-hover/stat:rotate-3 transition-all duration-700">
+                  <div className="p-4 bg-blue-500/10 rounded-premium-sm text-blue-400 mb-4 border border-blue-500/10 shadow-xl group-hover/stat:scale-110 group-hover/stat:rotate-3 transition-all duration-700">
                     <TrendingUp className="w-6 h-6" strokeWidth={2.5} />
                   </div>
                   <span className="text-white font-black text-2xl tracking-tighter">Top 5%</span>
                   <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-2 opacity-50">Status Ranking</span>
                 </div>
                 <div className="glass-panel rounded-[2rem] p-6 border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-white/20 transition-all duration-700">
-                  <div className="p-4 bg-primary/10 rounded-2xl text-primary mb-4 border border-primary/10 shadow-xl group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-700">
+                  <div className="p-4 bg-primary/10 rounded-premium-sm text-primary mb-4 border border-primary/10 shadow-xl group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-700">
                     <Download className="w-6 h-6" strokeWidth={2.5} />
                   </div>
                   <span className="text-white font-black text-2xl tracking-tighter">{totalDownloads}</span>
@@ -458,7 +458,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 { action: 'Agregado', title: 'Mushoku Tensei Especial', time: 'Ayer', icon: Star, color: 'text-yellow-500' },
               ].map((act, i) => (
                 <div key={i} className="flex items-center gap-4 group/item">
-                  <div className={`p-2 rounded-xl bg-[var(--panel-bg-subtle)] ${act.color} group-hover/item:scale-110 transition-transform`}>
+                  <div className={`p-2 rounded-premium-sm bg-[var(--panel-bg-subtle)] ${act.color} group-hover/item:scale-110 transition-transform`}>
                     <act.icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">

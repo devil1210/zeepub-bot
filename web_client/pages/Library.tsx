@@ -140,7 +140,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
          <div className="md:hidden fixed bottom-6 left-8 right-8 z-40 animate-in slide-in-from-bottom-4 duration-300 flex flex-col gap-3 max-w-5xl mx-auto">
             {isSortMenuOpen && (
                <div
-                  className="glass-panel rounded-3xl p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
+                  className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
                   style={{
                      background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
                      backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -157,7 +157,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
                                  setActiveSort(option.id);
                                  setIsSortMenuOpen(false);
                               }}
-                              className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${isActive
+                              className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${isActive
                                  ? 'bg-primary text-white border-primary shadow-lg shadow-blue-500/20'
                                  : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
                                  }`}
@@ -172,7 +172,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
             )}
 
             <div
-               className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+               className="glass-panel rounded-premium p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
                style={{
                   background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
                   backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -182,7 +182,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
                {/* Home/Back */}
                <button
                   onClick={() => onNavigate && onNavigate('dashboard')}
-                  className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-500 hover:text-black dark:hover:text-white"
+                  className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-500 hover:text-black dark:hover:text-white"
                >
                   <div className="p-1.5 rounded-full transition-all duration-300">
                      <Home className="w-4 h-4" strokeWidth={2} />
@@ -195,7 +195,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
                {/* Sort Toggle */}
                <button
                   onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                  className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
+                  className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
                >
                   <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
                      <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'text-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
@@ -207,7 +207,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
 
                {/* Filter Toggle */}
                <button
-                  className="flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 text-gray-500 hover:text-black dark:hover:text-white"
+                  className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-500 hover:text-black dark:hover:text-white"
                >
                   <div className="p-1.5 rounded-full transition-all duration-300">
                      <Filter className="w-4 h-4" strokeWidth={2} />

@@ -27,7 +27,7 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
             />
 
             <div
-                className="glass-panel w-full max-w-2xl rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
+                className="glass-panel w-full max-w-2xl rounded-premium overflow-hidden border border-white/10 shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
                 style={{
                     background: `rgba(var(--glass-rgb), ${settings.interfaceOpacity})`,
                     backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -36,7 +36,7 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
                 {/* Header */}
                 <div className="p-6 border-b border-white/5 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/20">
+                        <div className="w-10 h-10 rounded-premium-sm bg-primary/20 flex items-center justify-center border border-primary/20">
                             <Sparkles className="text-primary w-5 h-5" />
                         </div>
                         <div>
@@ -65,7 +65,7 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
                                     Título del Libro <span className="text-red-500">*</span>
                                 </label>
                                 <input
-                                    className="w-full rounded-xl bg-black/40 border border-white/5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-600 py-3 px-4 transition-all text-sm"
+                                    className="w-full rounded-premium-sm bg-black/40 border border-white/5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-600 py-3 px-4 transition-all text-sm"
                                     placeholder="ej. Project Hail Mary"
                                     required
                                     type="text"
@@ -76,7 +76,7 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
                                     Nombre del Autor <span className="text-red-500">*</span>
                                 </label>
                                 <input
-                                    className="w-full rounded-xl bg-black/40 border border-white/5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-600 py-3 px-4 transition-all text-sm"
+                                    className="w-full rounded-premium-sm bg-black/40 border border-white/5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-600 py-3 px-4 transition-all text-sm"
                                     placeholder="ej. Andy Weir"
                                     required
                                     type="text"
@@ -87,16 +87,16 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
                                     ISBN (Opcional)
                                 </label>
                                 <input
-                                    className="w-full rounded-xl bg-black/40 border border-white/5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-600 py-3 px-4 transition-all text-sm"
+                                    className="w-full rounded-premium-sm bg-black/40 border border-white/5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-600 py-3 px-4 transition-all text-sm"
                                     placeholder="ej. 978-0593135204"
                                     type="text"
                                 />
                             </div>
                         </div>
 
-                        <div className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center justify-between group cursor-pointer hover:border-primary/50 transition-colors">
+                        <div className="bg-white/5 rounded-premium-sm p-4 border border-white/5 flex items-center justify-between group cursor-pointer hover:border-primary/50 transition-colors">
                             <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/10">
+                                <div className="p-2 rounded-premium-sm bg-primary/10 text-primary border border-primary/10">
                                     <Zap className="w-5 h-5" />
                                 </div>
                                 <div>
@@ -111,7 +111,7 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
                         </div>
 
                         <button
-                            className="w-full bg-primary hover:bg-primary-dark text-white font-black uppercase tracking-widest text-xs py-4 px-6 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
+                            className="w-full bg-primary hover:bg-primary-dark text-white font-black uppercase tracking-widest text-xs py-4 px-6 rounded-premium-sm shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
                             type="submit"
                         >
                             <span>Enviar Solicitud</span>
@@ -141,3 +141,4 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
         </div>
     );
 };
+

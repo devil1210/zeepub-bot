@@ -398,12 +398,12 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
       <div className="max-w-[1800px] mx-auto">
         {/* Error/Success Alerts */}
         {error && (
-          <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <div className="mb-4 p-4 rounded-premium-sm bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-4 p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+          <div className="mb-4 p-4 rounded-premium-sm bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
             ✓ Permisos guardados correctamente
           </div>
         )}
@@ -507,7 +507,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                   </div>
 
                   <div className="flex flex-col gap-3">
-                    <button className="px-8 py-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all border border-white/5 active:scale-95 shadow-xl flex items-center justify-center gap-2">
+                    <button className="px-8 py-3.5 rounded-premium-sm bg-white/[0.03] hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all border border-white/5 active:scale-95 shadow-xl flex items-center justify-center gap-2">
                       <MessageSquare className="w-4 h-4" />
                       Chat
                     </button>
@@ -515,7 +515,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="px-8 py-3.5 rounded-2xl bg-primary text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/30 active:scale-95 flex items-center justify-center gap-2"
+                        className="px-8 py-3.5 rounded-premium-sm bg-primary text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/30 active:scale-95 flex items-center justify-center gap-2"
                       >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         {saving ? 'Aplicando...' : 'Guardar'}
@@ -531,7 +531,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
               <button
                 onClick={handleUndo}
                 disabled={!initialPermissions || JSON.stringify(permissions) === JSON.stringify(initialPermissions)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all disabled:opacity-30 disabled:cursor-not-allowed text-gray-300"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-premium-sm border border-white/10 text-sm font-bold hover:bg-white/5 transition-all disabled:opacity-30 disabled:cursor-not-allowed text-gray-300"
               >
                 <Undo2 className="w-4 h-4" />
                 Restablecer
@@ -539,7 +539,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
               <button
                 onClick={handleSave}
                 disabled={saving || !initialPermissions || JSON.stringify(permissions) === JSON.stringify(initialPermissions)}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-premium-sm bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
               >
                 {saving ? (
                   <>
@@ -567,7 +567,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                   <h3 className="font-black text-white uppercase tracking-[0.4em] text-[11px]">Matriz de Privilegios</h3>
                   <p className="text-[10px] text-gray-500 mt-2 font-black uppercase tracking-widest opacity-60">Control de seguridad y accesos</p>
                 </div>
-                <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 text-primary">
+                <div className="p-3 bg-primary/10 rounded-premium-sm border border-primary/20 text-primary">
                   <Fingerprint className="w-5 h-5" strokeWidth={2.5} />
                 </div>
               </div>
@@ -576,7 +576,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 {/* Tier Selection - Redesigned */}
                 <div className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-6 rounded-[2.5rem] hover:bg-white/[0.03] transition-all group/item">
                   <div className="flex items-center gap-5">
-                    <div className="p-4 bg-indigo-500/10 rounded-2xl text-indigo-400 border border-indigo-500/10 group-hover/item:scale-110 group-hover/item:rotate-3 transition-all duration-500">
+                    <div className="p-4 bg-indigo-500/10 rounded-premium-sm text-indigo-400 border border-indigo-500/10 group-hover/item:scale-110 group-hover/item:rotate-3 transition-all duration-500">
                       <Layers className="w-6 h-6" strokeWidth={2.5} />
                     </div>
                     <div>
@@ -588,7 +588,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                     <select
                       value={permissions.levelId !== null && permissions.levelId !== undefined ? permissions.levelId : ''}
                       onChange={(e) => handleLevelChange(parseInt(e.target.value))}
-                      className="appearance-none bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl block w-full md:w-56 px-6 py-4 cursor-pointer focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all outline-none"
+                      className="appearance-none bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 text-white text-[11px] font-black uppercase tracking-widest rounded-premium-sm block w-full md:w-56 px-6 py-4 cursor-pointer focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all outline-none"
                     >
                       <option value="" disabled className="bg-[#121212]">Seleccionar...</option>
                       {allLevels.map((level) => (
@@ -622,7 +622,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                         }`}
                     >
                       <div className="flex items-center gap-4 relative z-10">
-                        <div className={`p-3 rounded-2xl transition-all duration-500 ${opt.bg} ${opt.color} border border-white/5 group-hover/toggle:scale-110 group-hover/toggle:rotate-3`}>
+                        <div className={`p-3 rounded-premium-sm transition-all duration-500 ${opt.bg} ${opt.color} border border-white/5 group-hover/toggle:scale-110 group-hover/toggle:rotate-3`}>
                           {opt.icon === Download ? <Download className="w-4.5 h-4.5" /> : opt.icon === History ? <History className="w-4.5 h-4.5" /> : <opt.icon className="w-4.5 h-4.5" />}
                         </div>
                         <div className="min-w-0">
@@ -714,7 +714,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                     type="text"
                     value={permissions.name}
                     readOnly
-                    className="w-full bg-white/[0.03] border border-white/5 rounded-xl p-3 text-sm text-gray-400 cursor-not-allowed italic"
+                    className="w-full bg-white/[0.03] border border-white/5 rounded-premium-sm p-3 text-sm text-gray-400 cursor-not-allowed italic"
                   />
                 </div>
 
@@ -725,7 +725,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                     type="text"
                     value={permissions.username}
                     readOnly
-                    className="w-full bg-white/[0.03] border border-white/5 rounded-xl p-3 text-sm text-gray-400 cursor-not-allowed italic"
+                    className="w-full bg-white/[0.03] border border-white/5 rounded-premium-sm p-3 text-sm text-gray-400 cursor-not-allowed italic"
                   />
                 </div>
 
@@ -794,7 +794,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                           }));
                         }
                       }}
-                      className="appearance-none w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:ring-primary focus:border-primary pr-10"
+                      className="appearance-none w-full bg-white/5 border border-white/10 rounded-premium-sm p-3 text-sm text-white focus:ring-primary focus:border-primary pr-10"
                       defaultValue=""
                     >
                       <option value="" disabled>Aplicar tema guardado...</option>
@@ -804,7 +804,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-xl">
+                  <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-premium-sm">
                     <div className="w-8 h-8 rounded-lg" style={{ backgroundColor: permissions.settings?.primaryColor || '#3b82f6' }}></div>
                     <div>
                       <p className="text-[9px] font-black text-primary uppercase tracking-widest">Color Activo</p>

@@ -283,7 +283,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
             <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-8 animate-in fade-in duration-300 px-1 pb-32">
                 {/* Error Alert */}
                 {error && (
-                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                    <div className="p-4 rounded-premium-sm bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                         {error}
                     </div>
                 )}
@@ -293,13 +293,13 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex flex-col">
                             <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-2 px-1">Editar Nivel</h2>
-                            <div className="flex items-center gap-3 bg-white/5 p-2 rounded-[2.5rem] border border-white/5 overflow-x-auto no-scrollbar shadow-inner max-w-full">
+                            <div className="flex items-center gap-3 bg-white/5 p-2 rounded-premium-lg border border-white/5 overflow-x-auto no-scrollbar shadow-inner max-w-full">
                                 {allLevels.map(lvl => (
                                     <button
                                         key={lvl.id}
                                         onClick={() => setSelectedTierName(lvl.name)}
                                         className={`
-                                            flex items-center gap-3 px-6 py-4 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap
+                                            flex items-center gap-3 px-6 py-4 rounded-premium text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap
                                             ${selectedTierName === lvl.name
                                                 ? 'bg-primary text-white shadow-2xl shadow-primary/40 scale-100 ring-[6px] ring-primary/10'
                                                 : 'text-gray-500 hover:text-gray-300 hover:bg-white/5 scale-95 opacity-60'}
@@ -335,7 +335,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                     <button
                         onClick={handleSave}
                         disabled={saving || (JSON.stringify(config) === JSON.stringify(originalConfig))}
-                        className="w-full h-[84px] rounded-[2.5rem] font-black text-sm uppercase tracking-[0.4em] flex items-center justify-center gap-5 transition-all
+                        className="w-full h-[84px] rounded-premium-lg font-black text-sm uppercase tracking-[0.4em] flex items-center justify-center gap-5 transition-all
                         bg-white/5 text-gray-400 border-2 border-white/5 hover:bg-primary hover:text-white hover:border-primary shadow-2xl active:scale-[0.98] disabled:opacity-20 disabled:grayscale disabled:scale-100 group overflow-hidden relative"
                     >
                         <div className="flex items-center gap-4 relative z-10">
@@ -352,7 +352,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                     {/* Left Side: General & Limits */}
                     <div className="lg:col-span-4 space-y-6">
                         {/* General Info */}
-                        <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg">
+                        <div className="glass-panel p-6 rounded-premium-sm flex flex-col gap-6 border border-white/5 shadow-lg">
                             <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                                 <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
                                     <Zap className="w-5 h-5" />
@@ -366,7 +366,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                         type="text"
                                         value={config.name}
                                         onChange={(e) => setConfig({ ...config, name: e.target.value })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                                        className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-4 py-3 text-sm text-white font-bold focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -376,12 +376,12 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                             type="text"
                                             value={config.icon}
                                             onChange={(e) => setConfig({ ...config, icon: e.target.value })}
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                                            className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-4 py-3 text-sm text-white font-mono focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Color Badge</label>
-                                        <div className="flex items-center gap-3 p-1.5 bg-black/40 border border-white/10 rounded-xl">
+                                        <div className="flex items-center gap-3 p-1.5 bg-black/40 border border-white/10 rounded-premium-sm">
                                             <input
                                                 type="color"
                                                 value={config.color}
@@ -396,7 +396,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         </div>
 
                         {/* Limits */}
-                        <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg">
+                        <div className="glass-panel p-6 rounded-premium-sm flex flex-col gap-6 border border-white/5 shadow-lg">
                             <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                                 <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
                                     <Gauge className="w-5 h-5" />
@@ -413,7 +413,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                         type="number"
                                         value={config.dailyDownloads}
                                         onChange={(e) => setConfig({ ...config, dailyDownloads: parseInt(e.target.value) || 0 })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                                        className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-4 py-3 text-sm text-white font-bold focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                                     />
                                     <p className="mt-2 text-[9px] text-gray-500 italic">Usa -1 para descargas ilimitadas.</p>
                                 </div>
@@ -441,7 +441,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                     {/* Right Side: Privileges & Appearance */}
                     <div className="lg:col-span-8 space-y-6">
                         {/* Privileges */}
-                        <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 border border-white/5 shadow-lg">
+                        <div className="glass-panel p-6 rounded-premium-sm flex flex-col gap-6 border border-white/5 shadow-lg">
                             <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                                 <div className="p-2 rounded-lg bg-yellow-500/10 text-yellow-500">
                                     <Stars className="w-5 h-5" />
@@ -510,6 +510,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                         label: 'Forzar Configuración',
                                         sub: 'Ignora ajustes del usuario',
                                         val: config.forceSettings,
+                                        key: 'forceSettings',
                                         icon: Shield
                                     },
                                     {
@@ -520,9 +521,9 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                         icon: Upload
                                     }
                                 ].map((p) => (
-                                    <div key={p.key} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                                    <div key={p.key} className="flex items-center justify-between p-4 rounded-premium-sm bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 rounded-xl bg-white/5 text-gray-400">
+                                            <div className="p-2 rounded-premium-sm bg-white/5 text-gray-400">
                                                 {/* @ts-ignore */}
                                                 <p.icon className="w-4 h-4" />
                                             </div>
@@ -542,11 +543,11 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
 
 
                         {/* Info Note about Interface section */}
-                        <div className="glass-panel p-8 rounded-2xl border border-primary/20 bg-primary/5 flex flex-col md:flex-row items-center gap-6 shadow-xl relative overflow-hidden group">
+                        <div className="glass-panel p-8 rounded-premium-sm border border-primary/20 bg-primary/5 flex flex-col md:flex-row items-center gap-6 shadow-xl relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
                                 <Palette className="w-16 h-16 text-primary" />
                             </div>
-                            <div className="p-4 rounded-2xl bg-primary/20 text-primary shrink-0">
+                            <div className="p-4 rounded-premium-sm bg-primary/20 text-primary shrink-0">
                                 <Palette className="w-8 h-8" />
                             </div>
                             <div className="flex-1">
@@ -558,7 +559,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                             </div>
                             <button
                                 onClick={() => onNavigate?.('interface')}
-                                className="px-6 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all whitespace-nowrap"
+                                className="px-6 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-premium-sm shadow-lg shadow-primary/20 hover:scale-105 transition-all whitespace-nowrap"
                             >
                                 Ir a Interfaz
                             </button>
@@ -569,3 +570,4 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         </>
     );
 };
+

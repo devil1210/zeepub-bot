@@ -374,7 +374,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               <ListOrdered className="w-5 h-5 text-primary" />
               Lista de Volúmenes
             </h2>
-            <div className="flex gap-2 glass-panel p-1 rounded-xl border border-white/10 shadow-lg">
+            <div className="flex gap-2 glass-panel p-1 rounded-premium-sm border border-white/10 shadow-lg">
               <button
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
@@ -402,7 +402,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                   <div className="absolute -inset-20 bg-primary/5 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
 
                   {/* Left Section: Image with Space-Saving Badges */}
-                  <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
+                  <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] rounded-premium-sm overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
                     <img
                       alt={vol.title}
                       className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
@@ -484,16 +484,16 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
                     {/* Floating Badges */}
                     <div className="absolute top-4 left-4 flex flex-col gap-2">
-                      <span className="bg-primary text-white text-[10px] font-black px-4 py-2 rounded-xl uppercase tracking-widest shadow-2xl border border-white/10">
+                      <span className="bg-primary text-white text-[10px] font-black px-4 py-2 rounded-premium-sm uppercase tracking-widest shadow-2xl border border-white/10">
                         Vol {vol.volumeNumber}
                       </span>
                       {vol.color_mode === 'color' && (
-                        <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-2xl border border-white/10">
+                        <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[9px] font-black px-3 py-1.5 rounded-premium-sm uppercase tracking-widest shadow-2xl border border-white/10">
                           Color
                         </span>
                       )}
                       {vol.is_uncensored && (
-                        <span className="bg-red-500 text-white text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-2xl border border-white/10">
+                        <span className="bg-red-500 text-white text-[9px] font-black px-3 py-1.5 rounded-premium-sm uppercase tracking-widest shadow-2xl border border-white/10">
                           N/C
                         </span>
                       )}
@@ -530,7 +530,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
       <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300 flex flex-col gap-3 max-w-5xl mx-auto">
         {isSortMenuOpen && (
           <div
-            className="glass-panel rounded-3xl p-4 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
+            className="glass-panel rounded-premium p-4 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
             style={{
               background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
               backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -550,7 +550,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                     setActiveSort(option.id);
                     setIsSortMenuOpen(false);
                   }}
-                  className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${activeSort === option.id ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white'}`}
+                  className={`flex items-center justify-center gap-2 px-3 py-3 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all border ${activeSort === option.id ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white'}`}
                 >
                   <option.icon className="w-3.5 h-3.5" />
                   {option.label}
@@ -561,7 +561,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         )}
 
         <div
-          className="glass-panel rounded-3xl p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+          className="glass-panel rounded-premium p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
           style={{
             background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
             backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -571,7 +571,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           <button
             onClick={handlePrevPage}
             disabled={currentPage === 1}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
               <ChevronLeft className="w-4 h-4" strokeWidth={2} />
@@ -583,7 +583,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
           <button
             onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
           >
             <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
               <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'text-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
@@ -595,7 +595,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
           <button
             onClick={onBack}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white`}
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
               <Reply className="w-4 h-4" strokeWidth={2} />
@@ -608,7 +608,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           <button
             onClick={handleNextPage}
             disabled={currentPage === totalPages}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : ''}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : ''}`}
           >
             <div className="p-1.5 rounded-full transition-all duration-300">
               <ChevronRight className="w-4 h-4" strokeWidth={2} />
@@ -622,7 +622,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
       {isSynopsisModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div
-            className="bg-[#0d1117] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            className="bg-[#0d1117] border border-white/10 rounded-premium-sm w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6 border-b border-white/5 flex items-center justify-between">

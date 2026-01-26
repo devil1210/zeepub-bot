@@ -125,6 +125,9 @@ async def get_effective_user(
 
     # Extract nickname if tg_user provided
     nickname_from_tg = None
+    name_from_tg = None
+    username_from_tg = None
+
     if tg_user:
         if isinstance(tg_user, dict):
             # From API/WebApp

@@ -27,7 +27,7 @@ export const RequestBook: React.FC<RequestBookProps> = ({ onNavigate }) => {
         </div>
 
         {/* Request Form */}
-        <div className="glass-panel rounded-2xl p-6 md:p-8 shadow-soft border border-white/10 mb-8 relative overflow-hidden">
+        <div className="glass-panel rounded-premium-sm p-6 md:p-8 shadow-soft border border-white/10 mb-8 relative overflow-hidden">
           <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
 
           <form className="space-y-6 relative z-10" onSubmit={(e) => e.preventDefault()}>
@@ -37,7 +37,7 @@ export const RequestBook: React.FC<RequestBookProps> = ({ onNavigate }) => {
                   Título del Libro <span className="text-red-500">*</span>
                 </label>
                 <input
-                  className="w-full rounded-xl bg-black/5 dark:bg-black/20 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-500 dark:placeholder-gray-600 py-3 px-4 transition-all"
+                  className="w-full rounded-premium-sm bg-black/5 dark:bg-black/20 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-500 dark:placeholder-gray-600 py-3 px-4 transition-all"
                   id="book-title"
                   placeholder="ej. Project Hail Mary"
                   required
@@ -49,7 +49,7 @@ export const RequestBook: React.FC<RequestBookProps> = ({ onNavigate }) => {
                   Nombre del Autor <span className="text-red-500">*</span>
                 </label>
                 <input
-                  className="w-full rounded-xl bg-black/5 dark:bg-black/20 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-500 dark:placeholder-gray-600 py-3 px-4 transition-all"
+                  className="w-full rounded-premium-sm bg-black/5 dark:bg-black/20 border border-black/10 dark:border-white/10 text-gray-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-500 dark:placeholder-gray-600 py-3 px-4 transition-all"
                   id="author"
                   placeholder="ej. Andy Weir"
                   required
@@ -61,7 +61,7 @@ export const RequestBook: React.FC<RequestBookProps> = ({ onNavigate }) => {
                   ISBN (Opcional)
                 </label>
                 <input
-                  className="w-full rounded-xl bg-black/20 border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-600 py-3 px-4 transition-all"
+                  className="w-full rounded-premium-sm bg-black/20 border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-600 py-3 px-4 transition-all"
                   id="isbn"
                   placeholder="ej. 978-0593135204"
                   type="text"
@@ -69,7 +69,7 @@ export const RequestBook: React.FC<RequestBookProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex items-center justify-between group cursor-pointer hover:border-primary/50 transition-colors">
+            <div className="bg-white/5 rounded-premium-sm p-4 border border-white/10 flex items-center justify-between group cursor-pointer hover:border-primary/50 transition-colors">
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <Zap className="w-5 h-5" />
@@ -86,7 +86,7 @@ export const RequestBook: React.FC<RequestBookProps> = ({ onNavigate }) => {
             </div>
 
             <div className="pt-2">
-              <button className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3.5 px-6 rounded-xl shadow-glow transition-all flex items-center justify-center gap-2" type="submit">
+              <button className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3.5 px-6 rounded-premium-sm shadow-glow transition-all flex items-center justify-center gap-2" type="submit">
                 <span>Enviar Solicitud</span>
                 <Send className="w-4 h-4" />
               </button>
@@ -95,7 +95,7 @@ export const RequestBook: React.FC<RequestBookProps> = ({ onNavigate }) => {
         </div>
 
         {/* Donation / Support Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-black border border-black/5 dark:border-gray-800 shadow-xl dark:shadow-2xl">
+        <div className="relative overflow-hidden rounded-premium-sm bg-white dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-black border border-black/5 dark:border-gray-800 shadow-xl dark:shadow-2xl">
           <div className="absolute top-0 left-1/4 w-64 h-64 bg-primary/10 dark:bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-yellow-500/10 rounded-full blur-[100px] pointer-events-none"></div>
 
@@ -126,20 +126,20 @@ export const RequestBook: React.FC<RequestBookProps> = ({ onNavigate }) => {
             </div>
 
             <div className="w-full md:w-auto flex flex-col gap-3 min-w-[260px]">
-              <button className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-yellow-600 to-yellow-500 p-[1px] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-gray-900">
+              <button className="group relative w-full overflow-hidden rounded-premium-sm bg-gradient-to-r from-yellow-600 to-yellow-500 p-[1px] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-gray-900">
                 <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2E8F0_0%,#500_50%,#E2E8F0_100%)] opacity-0 group-hover:opacity-20 transition-opacity"></span>
-                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-900 px-6 py-3.5 text-sm font-medium text-gray-900 dark:text-white backdrop-blur-3xl transition-all group-hover:bg-gray-200 dark:group-hover:bg-gray-800">
+                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-premium-sm bg-gray-100 dark:bg-gray-900 px-6 py-3.5 text-sm font-medium text-gray-900 dark:text-white backdrop-blur-3xl transition-all group-hover:bg-gray-200 dark:group-hover:bg-gray-800">
                   <Star className="w-4 h-4 text-yellow-500 dark:text-yellow-400 mr-2 animate-pulse-slow fill-current" />
                   Donar Telegram Stars
                 </span>
               </button>
 
               <div className="grid grid-cols-2 gap-3">
-                <button className="flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 transition-all">
+                <button className="flex items-center justify-center gap-2 rounded-premium-sm bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 transition-all">
                   <span className="font-bold text-telegram-ton text-sm">TON</span>
                   <span className="text-xs text-gray-400">Crypto</span>
                 </button>
-                <button className="flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 transition-all">
+                <button className="flex items-center justify-center gap-2 rounded-premium-sm bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 transition-all">
                   <span className="font-bold text-green-500 text-sm">USDT</span>
                   <span className="text-xs text-gray-400">TRC20</span>
                 </button>

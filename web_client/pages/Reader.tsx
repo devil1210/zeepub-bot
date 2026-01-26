@@ -38,7 +38,7 @@ export const Reader: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             He would place each cat inside a device known as a "puzzle box." The box was designed so that the cat could escape through a door by some simple act, such as pulling on a loop of cord, pressing a lever, or stepping on a platform. For example, one box contained a lever that, when pressed, would open the door on the side of the box. Once the door had been opened, the cat could dart out and run over to a bowl of food.
           </p>
 
-          <div className="my-8 p-6 bg-white/5 rounded-xl border-l-4 border-primary italic text-gray-400">
+          <div className="my-8 p-6 bg-white/5 rounded-premium-sm border-l-4 border-primary italic text-gray-400">
             "Habits are the compound interest of self-improvement."
           </div>
 

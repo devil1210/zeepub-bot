@@ -19,7 +19,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSub
     return (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div
-                className="glass-panel border border-white/10 rounded-3xl w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 bg-[#12171c]/95"
+                className="glass-panel border border-white/10 rounded-premium w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 bg-[#12171c]/95"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Handle for mobile bottom sheet look */}
@@ -54,7 +54,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSub
                         <button
                             onClick={() => rating > 0 && onSubmit(rating)}
                             disabled={rating === 0}
-                            className={`w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${rating > 0
+                            className={`w-full py-4 rounded-premium-sm text-sm font-black uppercase tracking-widest transition-all ${rating > 0
                                 ? 'bg-primary text-white shadow-lg shadow-primary/20 active:scale-[0.98]'
                                 : 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
                                 }`}
@@ -65,7 +65,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSub
                         {currentRating > 0 && onDelete && (
                             <button
                                 onClick={onDelete}
-                                className="w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-red-500/60 hover:text-red-500 hover:bg-red-500/5 transition-all text-center"
+                                className="w-full py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-[0.2em] text-red-500/60 hover:text-red-500 hover:bg-red-500/5 transition-all text-center"
                             >
                                 Borrar valoración
                             </button>
@@ -73,7 +73,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSub
 
                         <button
                             onClick={onClose}
-                            className="w-full py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                            className="w-full py-4 rounded-premium-sm text-xs font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/5 transition-all"
                         >
                             Cancelar
                         </button>
@@ -85,3 +85,4 @@ export const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSub
         </div>
     );
 };
+
