@@ -2596,20 +2596,34 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
                      "dry_run": True
                  }
 
-             # --- EXECUTE MODE (AUTO) ---
-             # Esto usa la lógica legacy del script (solo actualiza DB series_spanish)
-             group = {
-                 "hash": series_hash,
-                 "representative": rep_book,
-                 "count": count
-             }
+             # --- EXECUTE MODE (STAGING) ---
+             # Ya NO aplicamos cambios directamente. Guardamos como propuesta.
+             books_dicts = [b.to_dict() for b in books]
+             proposal = await AIService.analyze_series_for_updates(series_hash, current_name, books_dicts)
              
-             updated = await process_groups([group])
+             if not proposal or "error" in proposal:
+                  return {"success": False, "message": f"Error de IA: {proposal.get('error', 'Fallo desconocido')}"}
+             
+             from models.library_models import MetadataProposal
+             
+             # Verificar si ya existe una pendiente
+             existing = session.query(MetadataProposal).filter_by(series_hash=series_hash, status="pending").first()
+             if existing:
+                 existing.proposal_data = proposal
+                 existing.created_at = datetime.utcnow()
+             else:
+                 new_prop = MetadataProposal(
+                     series_hash=series_hash,
+                     proposal_data=proposal,
+                     status="pending"
+                 )
+                 session.add(new_prop)
+             
+             session.commit()
              
              return {
                  "success": True, 
-                 "message": f"Serie '{current_name}' optimizada automáticamente.",
-                 "updated_count": updated
+                 "message": f"Propuesta para '{current_name}' generada. Revisa la bandeja de entrada para aprobarla."
              }
              
     except Exception as e:
@@ -2623,10 +2637,24 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         return {"success": False, "message": "IA no configurada"}
 
     proposal = data.get("proposal")
-    if not proposal:
+    proposal_id = data.get("proposal_id")
+    
+    if not proposal and not proposal_id:
         raise HTTPException(status_code=400, detail="Faltan datos de la propuesta")
+ 
+    from models.library_models import LocalBook, SeriesMetadata, MetadataProposal
+    from utils.library_db import get_session
+ 
+    with get_session() as session:
+        # Si nos pasan un proposal_id, cargamos los datos y lo marcamos como aprobado al final
+        db_proposal = None
+        if proposal_id:
+            db_proposal = session.query(MetadataProposal).get(proposal_id)
+            if not db_proposal:
+                raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+            proposal = db_proposal.proposal_data
 
-    series_hash = proposal.get("series_hash")
+        series_hash = proposal.get("series_hash")
     # Changes is a list of approved changes: { "book_id": 123, "proposed_filename": "..." }
     approved_changes = data.get("approved_changes", []) 
     # Global series metadata overrides
@@ -2752,6 +2780,12 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             ai_reason=proposal.get("reason")
         )
 
+        # Si venía de una propuesta almacenada, marcarla como aprobada
+        if db_proposal:
+            db_proposal.status = "approved"
+            db_proposal.processed_at = datetime.utcnow()
+            session.commit()
+
     return {
         "success": True, 
         "message": f"Cambios aplicados. {updated_count} actualizaciones.",
@@ -2800,3 +2834,42 @@ async def handle_ai_generate_summary(data: dict[str, Any], user_data: dict[str, 
             }
         else:
             return {"success": False, "message": "Fallo al generar la sinopsis con IA."}
+
+async def handle_ai_get_proposals(data: dict[str, Any], user_data: dict[str, Any]):
+    """Devuelve la lista de propuestas de IA pendientes de revisión."""
+    from models.library_models import MetadataProposal
+    from utils.library_db import get_session
+    
+    with get_session() as session:
+        proposals = session.query(MetadataProposal).filter_by(status="pending").order_by(MetadataProposal.created_at.desc()).all()
+        return {
+            "success": True,
+            "proposals": [
+                {
+                    "id": p.id,
+                    "series_hash": p.series_hash,
+                    "proposal": p.proposal_data,
+                    "created_at": p.created_at.isoformat()
+                } for p in proposals
+            ]
+        }
+
+async def handle_ai_reject_proposal(data: dict[str, Any], user_data: dict[str, Any]):
+    """Rechaza una propuesta de IA."""
+    proposal_id = data.get("proposal_id")
+    if not proposal_id:
+        raise HTTPException(status_code=400, detail="Falta proposal_id")
+        
+    from models.library_models import MetadataProposal
+    from utils.library_db import get_session
+    from datetime import datetime
+    
+    with get_session() as session:
+        p = session.query(MetadataProposal).get(proposal_id)
+        if p:
+            p.status = "rejected"
+            p.processed_at = datetime.utcnow()
+            session.commit()
+            return {"success": True, "message": "Propuesta rechazada."}
+        else:
+            return {"success": False, "message": "Propuesta no encontrada."}

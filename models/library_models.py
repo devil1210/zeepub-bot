@@ -395,3 +395,20 @@ class AILearningFeedback(Base):
     ai_reason = Column(String)
     user_reason = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class MetadataProposal(Base):
+    """
+    Propuestas generadas por la IA en segundo plano que requieren aprobación admin.
+    """
+    __tablename__ = "metadata_proposals"
+
+    id = Column(Integer, primary_key=True)
+    series_hash = Column(String(64), index=True, nullable=False)
+    
+    # La propuesta completa en formato JSON (lo que devuelve AIService.analyze_series_for_updates)
+    proposal_data = Column(JSON, nullable=False)
+    
+    status = Column(String(20), default="pending", index=True) # pending, approved, rejected
+    created_at = Column(DateTime, default=datetime.utcnow)
+    processed_at = Column(DateTime)
