@@ -2575,7 +2575,6 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
         
     try:
         from models.library_models import LocalBook
-        from scripts.ai_library_gardener import process_groups
         from services.ai_service import AIService
         from utils.library_db import get_session
 
