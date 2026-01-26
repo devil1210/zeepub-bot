@@ -23,7 +23,11 @@ import {
   Bookmark,
   LayoutGrid,
   List,
-  RefreshCw
+  RefreshCw,
+  Users,
+  FileType,
+  Maximize2,
+  EyeOff
 } from 'lucide-react';
 import { useTelegram } from '../contexts/TelegramContext';
 import { Series, Volume } from '../types';
@@ -109,7 +113,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
               uploader: v.translator || 'ZeePub',
               downloadCount: v.download_count || 0,
               demography: v.demographics,
-              tags: v.tags,
+              tags: Array.isArray(v.tags) ? v.tags : (v.tags ? String(v.tags).split(',').map((t: string) => t.trim()) : []),
               // Metadata Enriquecida
               romajiTitle: v.romaji_title || v.romaji,
               englishTitle: v.english_title,
@@ -392,75 +396,129 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
                 <div
                   key={vol.id}
                   onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative flex gap-6 p-6 rounded-[2.5rem] glass-panel hover:bg-white/[0.08] hover:border-primary/40 hover:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.6)] transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl mb-2"
+                  className="group relative flex flex-col sm:flex-row gap-6 p-6 rounded-[2.5rem] glass-panel hover:bg-white/[0.08] hover:border-primary/40 hover:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] transition-all duration-700 cursor-pointer overflow-hidden shadow-2xl mb-4"
                 >
-                  {/* Backdrop Glow */}
-                  <div className="absolute -inset-20 bg-primary/5 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                  {/* Premium Backdrop Glow */}
+                  <div className="absolute -inset-20 bg-primary/5 blur-[120px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
 
-                  {/* Image */}
-                  <div className="relative shrink-0 aspect-[2/3] w-28 sm:w-36 rounded-2xl overflow-hidden shadow-2xl border border-white/10 group-hover:-translate-y-1 transition-transform duration-700">
-                    <img
-                      alt={vol.title}
-                      className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
-                      src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)}
-                    />
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent"></div>
+                  {/* Left Section: Image with Badges */}
+                  <div className="relative shrink-0 flex justify-center sm:block">
+                    <div className="relative aspect-[2/3] w-36 sm:w-44 rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 group-hover:-translate-y-2 transition-transform duration-700">
+                      <img
+                        alt={vol.title}
+                        className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
+                        src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)}
+                      />
+                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
 
-                    {/* Floating Badges on Image (Mobile) */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-1.5 sm:hidden">
-                      {vol.color_mode === 'color' && (
-                        <div className="bg-gradient-to-br from-orange-400 to-pink-500 p-1.5 rounded-lg shadow-2xl border border-white/20">
-                          <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                      {/* Floating Quality/Type Badges */}
+                      <div className="absolute top-4 left-4 flex flex-col gap-2">
+                        {vol.color_mode === 'color' && (
+                          <div className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[8px] font-black px-2.5 py-1.5 rounded-lg shadow-2xl border border-white/20 animate-pulse uppercase tracking-widest">
+                            Color
+                          </div>
+                        )}
+                        {vol.is_uncensored && (
+                          <div className="bg-red-600 text-white text-[8px] font-black px-2.5 py-1.5 rounded-lg shadow-2xl border border-white/20 uppercase tracking-widest flex items-center gap-1">
+                            <EyeOff className="w-2.5 h-2.5" /> N/C
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Floating Format Badge */}
+                      <div className="absolute bottom-4 right-4">
+                        <div className="bg-white/10 backdrop-blur-md text-white text-[8px] font-black px-2 py-1 rounded-md border border-white/10 uppercase tracking-widest">
+                          {vol.format}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Middle Section: Detailed Content */}
+                  <div className="flex-1 min-w-0 flex flex-col py-1 z-10">
+                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                      <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                        VOLUMEN {vol.volumeNumber}
+                      </div>
+                      {vol.group && (
+                        <div className="flex items-center gap-1.5 text-emerald-400 text-[9px] font-black uppercase tracking-widest bg-emerald-500/5 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                          <Users className="w-3 h-3" />
+                          {vol.group}
                         </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 flex flex-col py-2 z-10">
-                    <div className="mb-3">
-                      <div className="flex flex-wrap items-center gap-3 mb-2.5">
-                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.25em] group-hover:tracking-[0.35em] transition-all">Volumen {vol.volumeNumber}</span>
-                        <div className="flex gap-2">
-                          {vol.color_mode === 'color' && (
-                            <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg border border-white/10">
-                              Color
-                            </span>
-                          )}
-                          {vol.is_uncensored && (
-                            <span className="bg-red-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg border border-white/10">
-                              N/C
-                            </span>
-                          )}
-                        </div>
+                    <h3 className="text-white font-black text-2xl sm:text-3xl leading-tight line-clamp-2 tracking-tighter group-hover:text-primary transition-colors mb-1">
+                      {vol.cleanTitle || vol.title}
+                    </h3>
+
+                    {vol.romajiTitle && (
+                      <p className="text-gray-500 text-sm font-medium italic mb-4 line-clamp-1 opacity-80">
+                        {vol.romajiTitle}
+                      </p>
+                    )}
+
+                    {/* Author & Illustrator Info */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-gray-400 text-[11px] font-bold uppercase tracking-widest">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">Por</span>
+                        <span className="text-white/80 group-hover:text-white">{realSeries.author}</span>
                       </div>
-                      <h3 className="text-white font-black text-xl sm:text-2xl leading-tight line-clamp-2 tracking-tighter group-hover:text-primary transition-colors">
-                        {vol.cleanTitle || vol.title}
-                      </h3>
+                      {vol.illustrator && (
+                        <>
+                          <div className="w-1 h-1 rounded-full bg-white/10"></div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-600">Arte</span>
+                            <span className="text-white/80 group-hover:text-white">{vol.illustrator}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-6 mt-auto">
+                    <div className="flex flex-wrap gap-2 mb-8">
+                      {vol.tags && vol.tags.slice(0, 3).map((tag, i) => (
+                        <span key={i} className="px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/5 text-[9px] font-black text-gray-500 uppercase tracking-widest">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Metrics Footer */}
+                    <div className="mt-auto grid grid-cols-2 sm:flex sm:items-center gap-6 sm:gap-10 pt-4 border-t border-white/5">
                       <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-500 font-extrabold uppercase tracking-widest mb-1">Valoración</span>
-                        <div className="flex items-center gap-1.5 text-yellow-500">
-                          <Star className="w-5 h-5 fill-current" />
-                          <span className="text-base font-black text-gray-100">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
+                        <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mb-1.5">Aceptación</span>
+                        <div className="flex items-center gap-2 text-yellow-500">
+                          <Star className="w-4 h-4 fill-current drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]" />
+                          <span className="text-sm sm:text-lg font-black text-white">{vol.rating > 0 ? vol.rating.toFixed(1) : 'NEW'}</span>
                         </div>
                       </div>
-                      <div className="w-px h-8 bg-white/5"></div>
+
                       <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-500 font-extrabold uppercase tracking-widest mb-1">Lectores</span>
-                        <div className="flex items-center gap-1.5 text-primary">
-                          <Download className="w-5 h-5" />
-                          <span className="text-base font-black text-gray-100">{vol.downloadCount}</span>
+                        <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mb-1.5">Alcance</span>
+                        <div className="flex items-center gap-2 text-primary">
+                          <Download className="w-4 h-4" />
+                          <span className="text-sm sm:text-lg font-black text-white">{vol.downloadCount} <span className="text-[10px] opacity-40">lectores</span></span>
+                        </div>
+                      </div>
+
+                      <div className="hidden sm:flex flex-col">
+                        <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] mb-1.5">Peso Archivo</span>
+                        <div className="flex items-center gap-2 text-indigo-400">
+                          <Maximize2 className="w-4 h-4" />
+                          <span className="text-sm sm:text-lg font-black text-white">{vol.size}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-center pl-4">
-                    <div className="w-14 h-14 rounded-[1.5rem] bg-white/5 flex items-center justify-center text-gray-500 group-hover:bg-primary group-hover:text-white group-hover:scale-110 active:scale-95 transition-all duration-500 shadow-2xl border border-white/5 group-hover:border-white/20">
-                      <ChevronRight className="w-8 h-8" />
+                  {/* Right Section: Action Button */}
+                  <div className="flex items-center justify-center sm:pl-4">
+                    <div className="relative group/btn">
+                      <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-0 group-hover/btn:scale-150 transition-transform duration-700"></div>
+                      <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] bg-white/[0.03] border border-white/10 flex flex-col items-center justify-center gap-1 transition-all duration-700 hover:bg-primary hover:border-primary hover:scale-105 active:scale-95 shadow-2xl overflow-hidden group/inner">
+                        <ChevronRight className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-500" />
+                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 group-hover:text-white/80 transition-colors">Ver</span>
+                      </div>
                     </div>
                   </div>
                 </div>
