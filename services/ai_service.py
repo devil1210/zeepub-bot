@@ -73,8 +73,8 @@ class AIService:
            - Si el volumen es > 0, usa "V{{XX}}" (ej: V01, V08.5).
         
         SEGURIDAD DE ARCHIVOS:
-        - NUNCA uses caracteres Prohibidos: \ / : * ? " < > |
-        - Si el nombre oficial contiene ":", reemplázalo por "-" o espacio.
+        - El campo `suggested_filename` NUNCA debe incluir caracteres Prohibidos: \ / : * ? " < > |
+        - Los campos de metadata (`series_english`, `series_spanish`) SÍ pueden incluirlos (ej: "Serie: Subtítulo").
 
         Datos de Entrada:
         - Filename Original: "{filename}"
@@ -170,9 +170,8 @@ class AIService:
         4. **Volumes**: Para cada archivo, confirma su volumen real. Usa 0.0 si es Volumen Único.
         
         SEGURIDAD DE ARCHIVOS:
-        - NUNCA uses caracteres Prohibidos: \ / : * ? " < > |
-        - Si el nombre oficial contiene ":", reemplázalo por "-" o espacio.
-        - Ejemplo: si el nombre es "Serie: Subtitulo" conviértelo a "Serie - Subtitulo".
+        - La restricción de caracteres (\ / : * ? " < > |) SOLO aplica a nombres de archivo en disco.
+        - Los campos `proposed_english` y `proposed_spanish` PUEDEN contener ":" (ej: "Serie: Subtitulo").
         
         Responde SOLO con este JSON:
         {{
