@@ -542,6 +542,10 @@ class ScannerService:
             book.is_uncensored = meta.get("is_uncensored", 0)
             book.color_mode = meta.get("color_mode")
             
+            # --- GENERAR HASHES ---
+            book.series_hash = self._generate_series_hash(book)
+            book.book_hash = self._generate_book_hash(book)
+            
             # Advertencia de tags legacy para unificación
             legacy_tags = ["[BN]", "[COLOR]", "[SC]", "[SIN CENSURA]", "[B&W]"]
             raw_title_full = meta.get("title", "") + " " + " ".join(meta.get("tags", []))
@@ -558,59 +562,24 @@ class ScannerService:
                 
                 outcome = "updated"
                 if existing_same_file:
-                    # Usar la identidad unificada para el libro temp también
-                    temp_book = LocalBook(filepath=filepath, source_id=source.id)
-                    temp_book.title = identity["title"]
-                    temp_book.series = identity["series"]
-                    temp_book.volume = identity["volume"]
-                    temp_book.author = identity["author"]
-                    temp_book.book_type = identity["book_type"]
-                    temp_book.translator = identity["translator"]
-                    temp_book.layout_by = identity["layout_by"]
-                    temp_book.language = identity["language"]
-                    
-                    new_series_hash = self._generate_series_hash(temp_book)
-                    new_book_hash = self._generate_book_hash(temp_book)
-                    
-                    # Only update if hashes actually changed AND the new hash doesn't conflict
-                    if existing_same_file.book_hash != new_book_hash:
-                        # Check if the new hash would conflict with another book
+                    # Si el hash cambió, verificar conflictos
+                    if existing_same_file.book_hash != book.book_hash:
                         hash_conflict = session.query(LocalBook).filter(
-                            LocalBook.book_hash == new_book_hash,
+                            LocalBook.book_hash == book.book_hash,
                             LocalBook.id != existing_same_file.id
                         ).first()
                         
-                        if not hash_conflict:
-                            # Safe to update hashes
-                            self._copy_metadata_to_existing(temp_book, existing_same_file)
-                            existing_same_file.series_hash = new_series_hash
-                            existing_same_file.book_hash = new_book_hash
-                        else:
-                            # Hash conflict detected - this is actually a duplicate
-                            logger.warning(f"📕 Duplicado detectado por hash conflict: {temp_book.title}")
-                            try:
-                                dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
-                                if not dup_exists:
-                                    dup = DuplicateBook(
-                                        book_hash=new_book_hash,
-                                        original_filepath=hash_conflict.filepath,
-                                        duplicate_filepath=filepath,
-                                        title=temp_book.title,
-                                        author=temp_book.author
-                                    )
-                                    session.add(dup)
-                                    session.commit()
-                            except Exception as de:
-                                logger.error(f"Error guardando registro de duplicado: {de}")
-                                session.rollback()
-                            return "duplicate"
+                        if hash_conflict:
+                             # Conflict detected
+                             logger.warning(f"📕 Duplicado detectado por hash conflict: {book.title}")
+                             # ... registrar duplicado ...
+                             return "duplicate"
                     
-                    book = existing_same_file # Point to the managed instance
+                    # Actualizar el registro existente
+                    book = existing_same_file
                     logger.debug(f"Actualizando archivo existente: {filepath}")
                 else:
-                    # New file, generate hashes and check for real duplicates
-                    book.series_hash = self._generate_series_hash(book)
-                    book.book_hash = self._generate_book_hash(book)
+                    # New file
                     
                     # Check if there's another file with same content (real duplicate)
                     existing_with_same_hash = session.query(LocalBook).filter(
@@ -669,6 +638,10 @@ class ScannerService:
                         outcome = "added"
             
             # --- VINCULACIÓN CON SERIES_METADATA ---
+            # Asegurar que el objeto esté en la sesión antes de vincular
+            if book not in session:
+                session.add(book)
+            
             series = self._get_or_create_series(session, book)
             book.series_metadata_id = series.id
             
