@@ -621,7 +621,18 @@ export const AIHub: React.FC = () => {
                                                 {Array.isArray(s.categories) ? s.categories.join(', ') : s.categories}
                                             </p>
                                         )}
-                                        <p className="text-[10px] text-gray-600 font-mono mt-1">{s.series_hash}</p>
+                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                            {s.book_type && (
+                                                <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-white/5 text-gray-400 border border-white/10 uppercase">{s.book_type}</span>
+                                            )}
+                                            {s.color_mode === 'color' && (
+                                                <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase">Color</span>
+                                            )}
+                                            {s.is_uncensored && (
+                                                <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-red-500/10 text-red-500 border border-red-500/20 uppercase">N/C</span>
+                                            )}
+                                        </div>
+                                        <p className="text-[10px] text-gray-600 font-mono mt-2">{s.series_hash}</p>
                                     </div>
                                     <div className="ml-auto">
                                         <ArrowRight className="w-4 h-4 text-gray-600" />

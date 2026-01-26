@@ -337,6 +337,11 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
                   {/* Metadata Tags */}
                   <div className="flex flex-wrap items-center gap-2 mt-auto">
+                    {series.book_type && (
+                      <span className="px-3 py-1 rounded-lg text-[9px] font-black bg-white/5 text-gray-300 uppercase tracking-widest border border-white/10 group-hover:border-primary/30 group-hover:text-primary transition-all">
+                        {series.book_type}
+                      </span>
+                    )}
                     {series.format && (
                       <span className="px-3 py-1 rounded-lg text-[9px] font-black bg-emerald-500/10 text-emerald-400 uppercase tracking-widest border border-emerald-500/20">
                         {series.format}
@@ -378,6 +383,9 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                       <span className="bg-black/80 backdrop-blur-xl text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-[0.2em] border border-white/10">
                         {series.book_type?.split(' ')[0] || 'EPUB'}
                       </span>
+                      {series.color_mode === 'color' && (
+                        <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest shadow-xl">COLOR</span>
+                      )}
                       {series.is_uncensored && (
                         <span className="bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest shadow-xl">N/C</span>
                       )}
