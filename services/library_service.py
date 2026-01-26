@@ -174,51 +174,6 @@ class LibraryService:
                         "type": "series"
                     })
 
-                # Count total series
-                count_stmt = select(func.count()).select_from(stmt_hashes.subquery())
-                total_series = (await session.execute(count_stmt)).scalar() or 0
-
-                # Pagination
-                start = (page - 1) * items_per_page
-                stmt_hashes = stmt_hashes.offset(start).limit(items_per_page)
-                
-                res = await session.execute(stmt_hashes)
-                rows = res.fetchall()
-
-                results = []
-                for row in rows:
-                    s_hash = row[0]
-                    s_name = row[1] or "Sin Colección"
-                    
-                    results.append({
-                        "id": f"series_{s_hash}",
-                        "series_hash": s_hash,
-                        "title": s_name,
-                        "series": s_name,
-                        "author": row[2],
-                        "description": row[3],
-                        "cover": row[4],
-                        "cover_low": row[4],
-                        "cover_medium": row[5],
-                        "cover_high": row[6],
-                        "cover_original": row[7],
-                        "coverUrl": {
-                            "cover_low": row[4],
-                            "cover_medium": row[5],
-                            "cover_high": row[6],
-                            "cover_original": row[7],
-                            "cover": row[4]
-                        },
-                        "numBooks": row[8],
-                        "rating_average": round(float(row[9] or 0), 2),
-                        "rating_count": int(row[10] or 0),
-                        "book_type": row[11],
-                        "is_uncensored": bool(row[12]),
-                        "color_mode": row[13],
-                        "is_series": True,
-                        "type": "series"
-                    })
-
                 return {
                     "results": results,
                     "currentPage": page,

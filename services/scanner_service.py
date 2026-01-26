@@ -6,7 +6,7 @@ import os
 import re
 from datetime import datetime
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 from models.library_models import DuplicateBook, LibrarySource, LocalBook, SeriesMetadata
 from utils.epub_extractor import EpubMetadataExtractor
 from utils.helpers import (
