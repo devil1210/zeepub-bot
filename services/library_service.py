@@ -158,7 +158,8 @@ class LibraryService:
                     results.append({
                         "id": f"series_{s.series_hash}",
                         "series_hash": s.series_hash,
-                        "title": s.series_spanish or s.series_name,
+                        "title": s.series_name,
+                        "series_spanish": s.series_spanish,
                         "series": s.series_name,
                         "author": s.author,
                         "description": s.description,
@@ -418,7 +419,8 @@ class LibraryService:
                 for s in series_list:
                     items.append({
                         "id": f"series_{s.series_hash}",
-                        "title": s.series_spanish or s.series_name,
+                        "title": s.series_name,
+                        "series_spanish": s.series_spanish,
                         "is_folder": True,
                         "numBooks": s.book_count,
                         "cover": s.cover_url,

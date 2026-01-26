@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from sqlalchemy import desc, func, or_
 
 from config.config_settings import config
+from core.db_manager_pg import pg_manager
 from core.state_manager import state_manager
 from core.supabase_manager import supabase_manager
 from models.library_models import AILearningFeedback, DuplicateBook, LibrarySource, LocalBook, UploadBook
@@ -83,24 +84,32 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
         v_limit = data.get("limit", 100)
         v_offset = data.get("offset", 0)
         
+        # Obtener metadata oficial de la serie
+        from models.library_models import SeriesMetadata
+        from sqlalchemy import select
+        async with pg_manager.get_session() as session:
+            stmt_s = select(SeriesMetadata).where(SeriesMetadata.series_hash == s_hash)
+            res_s = await session.execute(stmt_s)
+            series = res_s.scalar_one_or_none()
+            
         volumes = await LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
-        if not volumes and v_offset == 0:
+        if not series and not volumes:
             raise HTTPException(status_code=404, detail="Serie no encontrada")
         
-        # Usar el primero como representante para la info general (solo si estamos en la primera página)
-        # O pedir info básica de la serie por separado si fuera necesario.
-        # Por ahora, asumimos que si hay volúmenes, el primero sirve de representante.
+        # Representative for fields not in SeriesMetadata or fallback
         rep = volumes[0] if volumes else {}
+        
         return {
             "id": book_id_raw,
             "series_hash": s_hash,
-            "title": rep.get("series_clean") or rep.get("series") or rep.get("title") if rep else "Serie",
-            "author": rep.get("author") if rep else "",
-            "summary": rep.get("description") if rep else "",
-            "cover": rep.get("cover") if rep else "",
-            "rating_average": rep.get("rating_average", 0) if rep else 0,
-            "rating_count": rep.get("rating_count", 0) if rep else 0,
-            "numBooks": len(volumes) if v_limit is None else None, 
+            "title": series.series_name if series else (rep.get("series") or rep.get("title")),
+            "series_spanish": series.series_spanish if series else None,
+            "author": series.author if series else rep.get("author"),
+            "summary": series.description if series else rep.get("description"),
+            "cover": series.cover_url if series else rep.get("cover"),
+            "rating_average": series.rating_average if series else 0,
+            "rating_count": (series.rating_count if series else 0) or 0,
+            "numBooks": series.book_count if series else len(volumes), 
             "is_uncensored": rep.get("is_uncensored", False) if rep else False,
             "color_mode": rep.get("color_mode") if rep else None,
             "is_series": True,
