@@ -122,6 +122,11 @@ async def process_groups(groups: list[dict]):
             await session.execute(stmt)
             await session.commit()
             
+            # Consolidar metadata (géneros, métricas, etc)
+            from services.scanner_service import ScannerService
+            ScannerService.sync_series_metadata(session, series_hash)
+            await session.commit()
+            
             updated_total += count
             console.print(f"  [bot]✅ Actualizados {count} libros en DB.[/bot]")
             

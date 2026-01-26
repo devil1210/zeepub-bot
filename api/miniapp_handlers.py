@@ -2657,10 +2657,14 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             if series:
                 series.series_name = proposed_series
                 series.series_spanish = proposed_spanish
-                if proposal.get("genres"):
-                    series.tags = proposal["genres"]
                 if proposal.get("description"):
                     series.description = proposal["description"]
+                
+                # Sincronizamos tags proactivamente si la IA propone nuevos géneros BASE
+                if proposal.get("genres"):
+                    current_tags = set(series.tags) if series.tags else set()
+                    new_base_tags = set(proposal["genres"])
+                    series.tags = list(current_tags | new_base_tags)
             else:
                 # Create if missing
                 series = SeriesMetadata(
@@ -2727,8 +2731,13 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                         errors.append(f"Error renombrando {book.filename}: {e}")
 
         session.commit()
+        
+        # 3. Consolidar metadata de serie tras los cambios
+        from services.scanner_service import ScannerService
+        ScannerService.sync_series_metadata(session, series_hash)
+        session.commit()
 
-        # 3. Log feedback for learning
+        # 4. Log feedback for learning
         from services.ai_service import AIService
         status = "accepted"
         if proposed_series != proposal.get("proposed_english"):

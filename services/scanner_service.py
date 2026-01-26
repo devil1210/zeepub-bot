@@ -25,6 +25,9 @@ class ScannerService:
 
     _scan_lock = asyncio.Lock()
     _is_scanning = False
+    
+    # Géneros que son "rasgos" de edición y deben bueblear a la serie si algún volumen los tiene
+    TRAIT_TAGS = {"Sin Censura", "Ilustraciones a Color", "Mature", "One-shot", "Spin-off", "Anthology"}
 
     def __init__(self, libraries_config_json: str):
         """
@@ -192,11 +195,14 @@ class ScannerService:
                 # Es un archivo individual
                 if abs_path.lower().endswith(".epub"):
                     results["total_scanned"] = 1
-                    res = self._process_book(abs_path, source, session, force_scan)
+                    res, s_hash = self._process_book_with_hash(abs_path, source, session, force_scan)
                     if res == "added": results["added"] = 1
                     elif res == "updated": results["updated"] = 1
                     elif res == "duplicate": results["duplicates"] = 1
                     elif res is False: results["failed"] = 1
+                    
+                    if s_hash:
+                        self.sync_series_metadata(session, s_hash)
             else:
                 # Es un directorio
                 source_results, _ = self._scan_directory(source, session, force_scan)
@@ -269,7 +275,7 @@ class ScannerService:
                             full_path = os.path.join(root, file)
                             
                             # Procesar el libro
-                            book_result = self._process_book(full_path, source, session, force_scan)
+                            book_result, s_hash = self._process_book_with_hash(full_path, source, session, force_scan)
                             
                             if book_result == "added":
                                 results["added"] += 1
@@ -280,6 +286,8 @@ class ScannerService:
                             elif book_result is False:
                                 results["failed"] += 1
 
+                # Re-sincronizar esta serie específicamente
+                self.sync_series_metadata(session, series_hash)
                 session.commit()
 
             logger.info(f"Sincronización de serie {series_hash} completada: {results}")
@@ -306,6 +314,7 @@ class ScannerService:
         }
         
         found_files = set()
+        touched_hashes = set()
         for root, _dirs, files in os.walk(source.path):
             for file in files:
                 if file.lower().endswith(".epub"):
@@ -313,15 +322,18 @@ class ScannerService:
                     full_path = os.path.join(root, file)
                     found_files.add(full_path)
                     
-                    book_result = self._process_book(full_path, source, session, force_scan)
+                    # El tercer valor retornado por _process_book será el series_hash si se procesó
+                    book_res, s_hash = self._process_book_with_hash(full_path, source, session, force_scan)
+                    if s_hash:
+                        touched_hashes.add(s_hash)
                     
-                    if book_result == "added":
+                    if book_res == "added":
                         results["added"] += 1
-                    elif book_result == "updated":
+                    elif book_res == "updated":
                         results["updated"] += 1
-                    elif book_result == "duplicate":
+                    elif book_res == "duplicate":
                         results["duplicates"] += 1
-                    elif book_result is False:
+                    elif book_res is False:
                         results["failed"] += 1
                     
                     # Batch commit para no bloquear DB mucho tiempo pero asegurar progreso
@@ -329,6 +341,11 @@ class ScannerService:
                         session.commit()
                         logger.info(f"Progreso de escaneo: {results['added'] + results['updated']} libros procesados en {source.name}")
         
+        # Sincronizar metadata de todas las series tocadas en esta fuente
+        for h in touched_hashes:
+            self.sync_series_metadata(session, h)
+        session.commit()
+
         return results, found_files
 
     def _get_or_create_series(self, session, book: LocalBook) -> SeriesMetadata:
@@ -346,7 +363,7 @@ class ScannerService:
                 author=book.author,
                 author_jap=book.author_jap,
                 description=book.description,
-                tags=book.tags,
+                tags=book.tags or [],
                 book_type=book.book_type,
                 publisher=book.publisher,
                 cover_url=book.cover_medium or book.cover_low,
@@ -359,7 +376,15 @@ class ScannerService:
             # Sincronizar campos si están vacíos en la serie pero presentes en el libro
             if not series.author and book.author: series.author = book.author
             if not series.description and book.description: series.description = book.description
-            if not series.tags and book.tags: series.tags = book.tags
+            
+            # UNIÓN DE TAGS: La serie tiene todos los géneros que tengan sus volúmenes
+            if book.tags:
+                existing_tags = set(series.tags) if series.tags else set()
+                new_tags = set(book.tags)
+                if not new_tags.issubset(existing_tags):
+                    series.tags = list(existing_tags | new_tags)
+                    logger.info(f"🏷️ Tags de serie actualizados (Unión): {series.series_name}")
+
             if not series.series_spanish and book.series_spanish: series.series_spanish = book.series_spanish
             if not series.book_type and book.book_type: series.book_type = book.book_type
             if not series.publisher and book.publisher: series.publisher = book.publisher
@@ -367,6 +392,16 @@ class ScannerService:
                 series.cover_url = book.cover_medium or book.cover_low
 
         return series
+
+    def _process_book_with_hash(self, filepath, source, session, force_scan=False):
+        """Wrapper de _process_book que también devuelve el hash de la serie."""
+        res = self._process_book(filepath, source, session, force_scan)
+        # Buscar el hash en la DB tras el procesamiento
+        if res in ("added", "updated"):
+            book = session.query(LocalBook).filter_by(filepath=filepath).first()
+            if book:
+                return res, book.series_hash
+        return res, None
 
     def _process_book(self, filepath, source, session, force_scan=False) -> bool:
         """
@@ -794,5 +829,54 @@ class ScannerService:
         target_book.series_spanish = source_book.series_spanish
         # Note: book_hash is handled separately to avoid constraint violations
         target_book.file_size = source_book.file_size
+
+    @staticmethod
+    def sync_series_metadata(session, series_hash: str):
+        """
+        Consolida la metadata de una serie basándose en todos sus volúmenes.
+        1. Une los géneros (si un volumen tiene 'Sin Censura', la serie lo tiene).
+        2. Recuenta volúmenes.
+        3. Promedia ratings.
+        """
+        from models.library_models import LocalBook, SeriesMetadata
+        
+        series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
+        if not series:
+            return
+            
+        books = session.query(LocalBook).filter_by(series_hash=series_hash).all()
+        if not books:
+            # Quizás la serie ya no tiene libros, podríamos borrarla o resetearla
+            series.book_count = 0
+            return
+
+        # 1. Consolidar Tags (Unión de todos los tags de todos los libros)
+        all_tags = set()
+        for b in books:
+            if b.tags:
+                all_tags.update(b.tags)
+        
+        # Mantener tags base que ya tuviera la serie (por si se agregaron manual)
+        if series.tags:
+            all_tags.update(series.tags)
+            
+        series.tags = list(all_tags)
+        
+        # 2. Otros campos (usar el primero que tenga info para los vacíos)
+        if not series.description:
+            for b in books:
+                if b.description:
+                    series.description = b.description
+                    break
+                    
+        # 3. Métricas
+        series.book_count = len(books)
+        
+        ratings = [b.rating_average for b in books if b.rating_count > 0]
+        if ratings:
+            series.rating_average = sum(ratings) / len(ratings)
+            series.rating_count = sum(b.rating_count for b in books)
+            
+        logger.info(f"🔄 Metadata de serie sincronizada: {series.series_name} ({len(books)} vols)")
 
 
