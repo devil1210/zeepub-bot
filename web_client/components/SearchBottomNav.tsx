@@ -44,7 +44,7 @@ export const SearchBottomNav: React.FC<SearchBottomNavProps> = ({
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
 
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[450px] px-0">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[600px] px-0">
             {isSortMenuOpen && (
                 <div
                     className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"

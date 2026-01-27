@@ -239,7 +239,7 @@ class ScannerService:
                             
                             series_books = session.query(LocalBook).filter_by(series_hash=s_hash).all()
                             if len(series_books) >= 3: # Solo para series con cierto volumen
-                                proposal = await AIService.analyze_series_for_updates(s_hash, current_name, [b.to_dict() for b in series_books])
+                                proposal = asyncio.run(AIService.analyze_series_for_updates(s_hash, current_name, [b.to_dict() for b in series_books]))
                                 if proposal:
                                     p_obj = MetadataProposal(
                                         series_hash=s_hash,
