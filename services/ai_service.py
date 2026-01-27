@@ -38,7 +38,7 @@ class AIService:
             }
 
             cls._model = genai.GenerativeModel(
-                model_name="gemini-3-flash-preview",
+                model_name="gemini-1.5-flash",
                 safety_settings=safety_settings,
                 generation_config={"response_mime_type": "application/json"}
             )
@@ -46,6 +46,36 @@ class AIService:
         except Exception as e:
             logger.error(f"Error inicializando Gemini: {e}")
             return None
+
+    @classmethod
+    async def _call_gemini_with_retry(cls, prompt: str, model=None, max_retries: int = 3):
+        """
+        Ejecuta una consulta a Gemini con reintentos para manejar límites de cuota (429).
+        """
+        import asyncio
+        import google.api_core.exceptions as google_exceptions
+        
+        active_model = model or cls._get_model()
+        if not active_model:
+            return None
+
+        delay = 2.0  # Delay inicial
+        for attempt in range(max_retries):
+            try:
+                return await active_model.generate_content_async(prompt)
+            except google_exceptions.ResourceExhausted as e:
+                # 429 Quota Exceeded
+                if attempt < max_retries - 1:
+                    logger.warning(f"⚠️ Cuota Gemini agotada. Reintentando en {delay}s... (Intento {attempt + 1}/{max_retries})")
+                    await asyncio.sleep(delay)
+                    delay *= 2  # Backoff exponencial
+                else:
+                    logger.error(f"❌ Gemini agotó la cuota definitivamente: {e}")
+                    raise e
+            except Exception as e:
+                logger.error(f"❌ Error inesperado en llamada a Gemini: {e}")
+                raise e
+        return None
 
     @staticmethod
     async def normalize_book_metadata(filename: str, raw_meta: dict[str, Any]) -> dict[str, Any] | None:
@@ -105,8 +135,10 @@ class AIService:
         """
 
         try:
-            # Ejecutar en threadpool para no bloquear el loop async
-            response = await model.generate_content_async(prompt)
+            # Ejecutar con reintentos para manejar 429
+            response = await AIService._call_gemini_with_retry(prompt, model)
+            if not response:
+                return None
             txt = AIService._extract_json_from_text(response.text)
             data = json.loads(txt)
             if data.get("suggested_filename"):
@@ -141,7 +173,9 @@ class AIService:
         """
         
         try:
-            response = await model.generate_content_async(prompt)
+            response = await AIService._call_gemini_with_retry(prompt, model)
+            if not response:
+                return {"proposed_english": current_name, "proposed_spanish": current_name}
             txt = AIService._extract_json_from_text(response.text)
             return json.loads(txt)
         except Exception:
@@ -233,7 +267,9 @@ class AIService:
 
         try:
             full_prompt = prompt + f"\n\nCONTEXTO ADICIONAL DE APRENDIZAJE:\n{learning_context}"
-            response = await model.generate_content_async(full_prompt)
+            response = await AIService._call_gemini_with_retry(full_prompt, model)
+            if not response:
+                return {"error": "AI failed or quota exceeded"}
             txt = AIService._extract_json_from_text(response.text)
             analysis = json.loads(txt)
             
@@ -357,7 +393,9 @@ class AIService:
         """
 
         try:
-            response = await model.generate_content_async(prompt)
+            response = await AIService._call_gemini_with_retry(prompt, model)
+            if not response:
+                return None
             txt = AIService._extract_json_from_text(response.text)
             res = json.loads(txt)
             if res.get("is_same") and res.get("confidence", 0) > 0.85:
@@ -429,8 +467,10 @@ class AIService:
 
         try:
             # Use basic model for text output
-            simple_model = genai.GenerativeModel("gemini-3-flash-preview")
-            response = await simple_model.generate_content_async(prompt)
+            simple_model = genai.GenerativeModel("gemini-1.5-flash")
+            response = await AIService._call_gemini_with_retry(prompt, simple_model)
+            if not response:
+                return None
             return response.text.strip()
         except Exception as e:
             logger.error(f"Error generando sinopsis: {e}")
