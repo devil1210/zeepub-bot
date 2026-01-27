@@ -409,36 +409,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
         </div>
       )}
 
-      {/* Navbar for Mobile */}
-      <header
-        className="md:hidden h-16 glass-panel border-b border-black/5 dark:border-white/10 flex items-center justify-between px-4 shrink-0 sticky top-0 z-40"
-        style={{
-          background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-          backdropFilter: `blur(${settings.glassBlur}px)`,
-          WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-        }}
-      >
-        <button onClick={onBack} className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <span className="font-bold text-sm text-gray-900 dark:text-gray-200 truncate max-w-[200px]">{displayData.displayTitle}</span>
-        <button onClick={() => setIsReportModalOpen(true)} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-          <Flag className="w-5 h-5" />
-        </button>
-      </header>
-
-      {/* Desktop Back Button */}
-      <div className="hidden md:flex pt-6 px-8 max-w-7xl mx-auto w-full">
-        <button onClick={onBack} className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors group">
-          <div className="p-2 rounded-full bg-black/5 dark:bg-white/5 group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </div>
-          <span className="text-sm font-bold uppercase tracking-widest">Volver</span>
-        </button>
-      </div>
-
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto pb-40 md:pb-12">
+      <div className="flex-1 overflow-y-auto pb-44 md:pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">

@@ -142,16 +142,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
     }
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Back Button */}
-            <button
-                onClick={onBack}
-                className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
-            >
-                <ArrowLeft className="w-5 h-5" />
-                <span className="text-sm font-bold uppercase tracking-wider">Volver</span>
-            </button>
-
+        <div className="max-w-4xl mx-auto px-4 py-6 pb-44 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Book Header */}
             <div className="flex flex-col md:flex-row gap-8 mb-8">
                 {/* Cover */}
