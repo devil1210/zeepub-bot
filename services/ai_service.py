@@ -18,7 +18,7 @@ class AIService:
     _exhausted_until = {} # Tracks when a model can be tried again
 
     @classmethod
-    def _get_model(cls, model_name: str = "gemini-3-flash"):
+    def _get_model(cls, model_name: str = "gemini-3-flash-preview"):
         """Inicializa un modelo Gemini específico con la configuración."""
         if model_name in cls._models_cache:
             return cls._models_cache[model_name]
@@ -59,7 +59,7 @@ class AIService:
         import google.api_core.exceptions as google_exceptions
         
         # Definir orden de preferencia
-        models_to_try = ["gemini-3-flash", "gemini-2.0-flash"]
+        models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash"]
         
         # Si se pasó un modelo específico (ej. para sinopsis sin JSON), solo intentamos ese
         if model:

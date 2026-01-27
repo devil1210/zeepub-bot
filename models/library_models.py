@@ -417,3 +417,49 @@ class MetadataProposal(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
     processed_at = Column(DateTime)
+
+
+class ArchivedSeries(Base):
+    """
+    Guarda la información de las series que han sido eliminadas físicamente del disco.
+    """
+    __tablename__ = "archived_series"
+
+    id = Column(Integer, primary_key=True)
+    series_name = Column(String(255), nullable=False)
+    series_spanish = Column(String(255))
+    series_hash = Column(String(64), unique=True, index=True, nullable=False)
+    
+    author = Column(String(255))
+    description = Column(String(5000))
+    tags = Column(JSON)
+    cover_url = Column(String(1024))
+    
+    book_type = Column(String(100))
+    publisher = Column(String(255))
+    
+    archived_at = Column(DateTime, default=datetime.utcnow)
+    original_series_id = Column(Integer) # ID original para referencia
+
+
+class ArchivedBook(Base):
+    """
+    Guarda la información de los libros que han sido eliminados físicamente del disco.
+    """
+    __tablename__ = "archived_books"
+
+    id = Column(Integer, primary_key=True)
+    series_hash = Column(String(64), index=True)
+    book_hash = Column(String(64), index=True)
+    
+    title = Column(String(512), nullable=False)
+    filename = Column(String(512))
+    last_filepath = Column(String(1024))
+    
+    volume = Column(Float)
+    author = Column(String(255))
+    book_type = Column(String(100))
+    
+    archived_at = Column(DateTime, default=datetime.utcnow)
+    original_book_id = Column(Integer) # ID original para referencia
+    reason = Column(String(255)) # Ej: "physically_deleted", "manual_archive"

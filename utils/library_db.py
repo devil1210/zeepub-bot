@@ -121,7 +121,50 @@ def check_migrations():
                 _log.warning(f"Error creating metadata_proposals table: {e}")
                 conn.rollback()
 
-            # 0.3 SeriesMetadata Migrations (Columns added later)
+            # 0.3 Tables for archiving deleted content
+            try:
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS archived_series (
+                        id SERIAL PRIMARY KEY,
+                        series_name VARCHAR(255) NOT NULL,
+                        series_spanish VARCHAR(255),
+                        series_hash VARCHAR(64) UNIQUE NOT NULL,
+                        author VARCHAR(255),
+                        description TEXT,
+                        tags JSONB,
+                        cover_url VARCHAR(1024),
+                        book_type VARCHAR(100),
+                        publisher VARCHAR(255),
+                        archived_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+                        original_series_id INTEGER
+                    );
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_archived_series_hash ON archived_series(series_hash);"))
+                
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS archived_books (
+                        id SERIAL PRIMARY KEY,
+                        series_hash VARCHAR(64),
+                        book_hash VARCHAR(64),
+                        title VARCHAR(512) NOT NULL,
+                        filename VARCHAR(512),
+                        last_filepath VARCHAR(1024),
+                        volume FLOAT,
+                        author VARCHAR(255),
+                        book_type VARCHAR(100),
+                        archived_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+                        original_book_id INTEGER,
+                        reason VARCHAR(255)
+                    );
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_archived_books_hash ON archived_books(book_hash);"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_archived_books_series ON archived_books(series_hash);"))
+                conn.commit()
+            except Exception as e:
+                _log.warning(f"Error creating archiving tables: {e}")
+                conn.rollback()
+
+            # 0.4 SeriesMetadata Migrations (Columns added later)
             if table_exists("series_metadata"):
                 try:
                     conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS series_spanish VARCHAR(255);"))

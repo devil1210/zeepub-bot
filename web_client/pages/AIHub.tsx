@@ -320,7 +320,7 @@ export const AIHub: React.FC = () => {
                                 </h3>
                                 <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-premium-sm border border-white/10">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Modelo:</span>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Gemini 3 Flash</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Gemini 3 Flash Preview</span>
                                 </div>
                             </div>
 
