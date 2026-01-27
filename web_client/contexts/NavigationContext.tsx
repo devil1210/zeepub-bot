@@ -62,7 +62,7 @@ interface NavigationContextType {
         onViewModeChange?: (mode: 'list' | 'grid') => void;
         onHome?: () => void;
         onBack?: () => void;
-    }) => void;
+    }) => () => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
@@ -142,6 +142,7 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
 
     const registerCallbacks = React.useCallback((cbs: any) => {
         setCallbacks(cbs);
+        return () => setCallbacks(null);
     }, []);
 
     const value = React.useMemo(() => ({

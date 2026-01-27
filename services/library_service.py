@@ -163,10 +163,13 @@ class LibraryService:
                         "series": s.series_name,
                         "author": s.author,
                         "description": s.description,
-                        "cover": s.cover_url, # Centralized cover
+                        "cover": s.cover_url, # Default (low)
                         "coverUrl": {
-                            "cover": s.cover_url,
-                            "cover_low": s.cover_url
+                            "cover_low": s.cover_url,
+                            "cover_medium": s.cover_url.replace("_low.jpg", "_medium.jpg") if s.cover_url else None,
+                            "cover_high": s.cover_url.replace("_low.jpg", "_high.jpg") if s.cover_url else None,
+                            "cover_original": s.cover_url.replace("_low.jpg", "_original.jpg") if s.cover_url else None,
+                            "cover": s.cover_url
                         },
                         "numBooks": s.book_count,
                         "rating_average": s.rating_average,

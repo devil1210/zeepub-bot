@@ -212,10 +212,11 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       buttons
     });
 
-    registerCallbacks({
+    const unregister = registerCallbacks({
       onBack: onBack
     });
     return () => {
+      unregister();
       setContextType('main');
     };
   }, [onBack, setContextType, setVisible, registerCallbacks, hasDownloaded, onNavigate, setCustomActions]);

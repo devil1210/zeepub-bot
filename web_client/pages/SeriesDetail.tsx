@@ -218,20 +218,29 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
     if (currentPage > 1) setCurrentPage(prev => prev - 1);
   };
 
+  const handlePrevPageLocal = () => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  };
+
+  const handleNextPageLocal = () => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  };
+
   useEffect(() => {
     setContextType('series');
     setVisible(true);
-    registerCallbacks({
-      onPrevPage: () => handlePrevPage(),
-      onNextPage: () => handleNextPage(),
+    const unregister = registerCallbacks({
+      onPrevPage: handlePrevPageLocal,
+      onNextPage: handleNextPageLocal,
       onSortChange: (sort: string) => setActiveSort(sort),
       onBack: onBack,
       onHome: () => onBack(), // Default home behavior is back to dashboard
     });
     return () => {
+      unregister();
       setContextType('main');
     };
-  }, [totalPages, onBack, registerCallbacks, setContextType, setVisible, handlePrevPage, handleNextPage]);
+  }, [totalPages, onBack, registerCallbacks, setContextType, setVisible]);
 
   const formatDescription = (desc: string) => {
     if (!desc) return null;

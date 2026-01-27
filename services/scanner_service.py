@@ -14,7 +14,9 @@ from models.library_models import (
     LibrarySource,
     LocalBook,
     SeriesMetadata,
+    MetadataProposal
 )
+from services.ai_service import AIService
 from services.hash_service import hash_service
 from utils.epub_extractor import EpubMetadataExtractor
 from utils.library_db import COVERS_DIR, get_session
@@ -223,9 +225,6 @@ class ScannerService:
             touched_hashes = results.get("touched_series_hashes", set())
             if touched_hashes:
                 try:
-                    from services.ai_service import AIService
-                    from models.library_models import MetadataProposal
-                    
                     logger.info(f"Generando propuestas IA para {len(touched_hashes)} series...")
                     for s_hash in touched_hashes:
                         # Solo si no tiene propuesta pendiente
@@ -250,7 +249,6 @@ class ScannerService:
 
             # --- FINAL CLEANUP: Remove/Archive empty series ---
             try:
-                from models.library_models import SeriesMetadata, ArchivedSeries
                 # FORCE REFRESH: Recalculate book_count for ALL non-archived series to fix stale data
                 logger.info("Sincronizando conteos de libros para todas las series...")
                 all_active_series = session.query(SeriesMetadata).all()

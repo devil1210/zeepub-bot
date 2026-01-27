@@ -46,10 +46,11 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
             buttons
         });
 
-        registerCallbacks({
+        const unregister = registerCallbacks({
             onBack: onBack
         });
         return () => {
+            unregister();
             setContextType('main');
         };
     }, [onBack, setContextType, setVisible, registerCallbacks, downloading, onNavigate, setCustomActions]);

@@ -101,16 +101,18 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
   // Register callbacks for header/nav buttons
   useEffect(() => {
-    registerCallbacks({
+    const unregister = registerCallbacks({
       onPrevPage: () => setCurrentPage(prev => Math.max(1, prev - 1)),
       onNextPage: () => setCurrentPage(prev => Math.min(totalPages, prev + 1)),
       onSortChange: (sort: string) => setActiveSort(sort),
       onSearchChange: (term: string) => setSearchTerm(term),
       onScopeClick: () => setIsScopeModalOpen(true),
       onViewModeChange: (mode: 'list' | 'grid') => setViewMode(mode),
-      onHome: () => onNavigate?.('dashboard')
     });
-  }, [totalPages, onNavigate]);
+    return () => {
+      unregister();
+    };
+  }, [totalPages, registerCallbacks]);
   // Perform Search
   const doSearch = async (query: string, page: number) => {
     setLoading(true);

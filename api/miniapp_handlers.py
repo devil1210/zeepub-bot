@@ -8,13 +8,13 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy import desc, func, or_
+from sqlalchemy import desc, func, or_, select
 
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.state_manager import state_manager
 from core.supabase_manager import supabase_manager
-from models.library_models import AILearningFeedback, DuplicateBook, LibrarySource, LocalBook, UploadBook
+from models.library_models import AILearningFeedback, DuplicateBook, LibrarySource, LocalBook, UploadBook, SeriesMetadata, MetadataProposal
 from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
 from services.library_service import LibraryService
@@ -84,8 +84,6 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
         v_offset = data.get("offset", 0)
         
         # Obtener metadata oficial de la serie
-        from models.library_models import SeriesMetadata
-        from sqlalchemy import select
         async with pg_manager.get_session() as session:
             stmt_s = select(SeriesMetadata).where(SeriesMetadata.series_hash == s_hash)
             res_s = await session.execute(stmt_s)
@@ -1049,51 +1047,38 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
         return {"success": False, "message": str(e)}
 
 async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[str, Any]):
-    """Sincroniza metadata de librerías, propuestas de IA y feedback de aprendizaje a Supabase."""
+    """Sincroniza metadatos de series, propuestas IA, feedback, fuentes y libros locales con Supabase."""
     check_staff(user_data)
     
     if not config.ENABLE_SUPABASE:
         return {"success": False, "message": "Supabase no está habilitado."}
 
+    client = supabase_manager.get_client()
+    if not client:
+        return {"success": False, "message": "Supabase no está configurado"}
+
+    stats = {"series": 0, "proposals": 0, "feedback": 0, "sources": 0, "books": 0}
     try:
-        from core.db_manager_pg import pg_manager
-        from core.supabase_manager import supabase_manager
-        from models.library_models import SeriesMetadata, AILearningFeedback, MetadataProposal
-        from sqlalchemy import select
-        
-        client = supabase_manager.get_client()
-        stats = {"series": 0, "feedback": 0, "proposals": 0}
-        
         async with pg_manager.get_session() as session:
-            # 1. Sync Series Metadata
+            # 1. Sync SeriesMetadata
             res_series = await session.execute(select(SeriesMetadata))
             all_series = res_series.scalars().all()
-            series_batch = []
             for s in all_series:
                 s_data = {
                     "series_hash": s.series_hash,
                     "series_name": s.series_name,
                     "series_spanish": s.series_spanish,
                     "author": s.author,
-                    "author_jap": s.author_jap,
-                    "illustrator": s.illustrator,
-                    "illustrator_jap": s.illustrator_jap,
                     "description": s.description,
                     "tags": s.tags,
                     "cover_url": s.cover_url,
-                    "book_count": s.book_count,
                     "book_type": s.book_type,
-                    "publisher": s.publisher,
-                    "rating_average": s.rating_average,
-                    "rating_count": s.rating_count
+                    "rating_average": float(s.rating_average) if s.rating_average is not None else 0.0,
+                    "rating_count": s.rating_count,
+                    "book_count": s.book_count
                 }
-                series_batch.append(s_data)
-            
-            if series_batch:
-                for i in range(0, len(series_batch), 50):
-                    batch = series_batch[i:i+50]
-                    client.table("series_metadata").upsert(batch, on_conflict="series_hash").execute()
-                    stats["series"] += len(batch)
+                client.table("series_metadata").upsert(s_data, on_conflict="series_hash").execute()
+                stats["series"] += 1
 
             # 2. Sync AI Learning Feedback
             res_feedback = await session.execute(select(AILearningFeedback))
@@ -1145,46 +1130,49 @@ async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[
             sources = res_sources.scalars().all()
             for s in sources:
                 s_data = {
-                    "id": s.id,
                     "name": s.name,
                     "path": s.path,
                     "last_scanned": s.last_scanned.isoformat() if s.last_scanned else None
                 }
                 client.table("library_sources").upsert(s_data, on_conflict="path").execute()
+                stats["sources"] += 1
 
             # 5. Sync Local Books
             res_books = await session.execute(select(LocalBook))
             books = res_books.scalars().all()
-            stats["books"] = 0
-            for i in range(0, len(books), 100):
-                batch = books[i:i+100]
-                books_data = []
-                for b in batch:
-                    books_data.append({
-                        "book_hash": b.book_hash,
-                        "series_hash": b.series_hash,
-                        "filepath": b.filepath,
-                        "filename": b.filename,
-                        "title": b.title,
-                        "volume": float(b.volume) if b.volume is not None else None,
-                        "author": b.author,
-                        "translator": b.translator,
-                        "layout_by": b.layout_by,
-                        "book_type": b.book_type,
-                        "language": b.language,
-                        "description": b.description,
-                        "tags": b.tags,
-                        "cover_low": b.cover_low,
-                        "rating_average": b.rating_average,
-                        "rating_count": b.rating_count,
-                        "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None
-                    })
-                client.table("local_books").upsert(books_data, on_conflict="book_hash").execute()
-                stats["books"] += len(batch)
+            if books:
+                for i in range(0, len(books), 100):
+                    batch = books[i:i+100]
+                    books_data = []
+                    for b in batch:
+                        b_dict = b.to_dict()
+                        # Ensure numeric types are JSON serializable and IDs are removed to avoid conflict
+                        clean_data = {
+                            "book_hash": b_dict.get("book_hash"),
+                            "series_hash": b_dict.get("series_hash"),
+                            "filepath": b_dict.get("filepath"),
+                            "filename": b_dict.get("filename"),
+                            "title": b_dict.get("title"),
+                            "volume": float(b_dict.get("volume")) if b_dict.get("volume") is not None else None,
+                            "author": b_dict.get("author"),
+                            "translator": b_dict.get("translator"),
+                            "layout_by": b_dict.get("layout_by"),
+                            "book_type": b_dict.get("book_type"),
+                            "language": b_dict.get("language"),
+                            "description": b_dict.get("description"),
+                            "tags": b_dict.get("tags"),
+                            "cover_low": b_dict.get("cover_low"),
+                            "rating_average": float(b_dict.get("rating_average")) if b_dict.get("rating_average") is not None else 0.0,
+                            "rating_count": b_dict.get("rating_count"),
+                            "indexed_at": b_dict.get("indexed_at")
+                        }
+                        books_data.append(clean_data)
+                    client.table("local_books").upsert(books_data, on_conflict="book_hash").execute()
+                    stats["books"] += len(batch)
 
         return {
             "success": True, 
-            "message": f"Sincronización de librería completada: {stats['series']} series, {stats['books']} libros, {stats['proposals']} propuestas.",
+            "message": f"Sincronización completada: {stats['series']} series, {stats['books']} libros, {stats['proposals']} propuestas.",
             "stats": stats
         }
     except Exception as e:
