@@ -341,31 +341,19 @@ def generate_book_hash(
     Genera un hash estable basado exclusivamente en: series + author + book_type + volume + translator + layout_by.
     NO usar title.
     """
-    s_norm = norm_string(series, lowercase=True)
-    a_norm = norm_string(author, lowercase=True)
-    t_norm = norm_string(book_type, lowercase=True)
-    
-    # Normalización estricta de volumen para estabilidad del hash
-    v_norm = ""
-    if volume is not None:
-        try:
-            v_val = float(volume)
-            if v_val == int(v_val):
-                v_norm = str(int(v_val))
-            else:
-                v_norm = str(v_val)
-        except (ValueError, TypeError):
-            v_norm = norm_string(volume, lowercase=True)
-    
-    tr_norm = norm_string(translator, lowercase=True)
-    l_norm = norm_string(layout_by, lowercase=True)
-    lang_norm = norm_string(language or "es", lowercase=True)
-    ed_norm = norm_string(edition, lowercase=True)
-
-    # Cadena de identidad determinista según especificación estricta del usuario
-    identity = f"series:{s_norm}|author:{a_norm}|type:{t_norm}|vol:{v_norm}|trans:{tr_norm}|layout:{l_norm}|lang:{lang_norm}|edition:{ed_norm}|uncensored:{is_uncensored}|color:{color_mode}"
-
-    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    from services.hash_service import hash_service
+    return hash_service.generate_book_hash(
+        series=series,
+        author=author,
+        book_type=book_type,
+        volume=volume,
+        translator=translator,
+        layout_by=layout_by,
+        language=language,
+        edition=edition,
+        is_uncensored=is_uncensored,
+        color_mode=color_mode
+    )
 
 
 def generate_series_hash(
@@ -374,16 +362,14 @@ def generate_series_hash(
     book_type: str | None = None
 ) -> str:
     """
-    Genera un hash estable para la serie basado exclusivamente en: series + book_type.
-    NO usar author para evitar duplicados cuando la metadata es inconsistente (algunos libros con autor, otros sin).
+    Genera un hash estable para la serie basado en: series + author + book_type.
     """
-    s_norm = norm_string(series, lowercase=True)
-    # a_norm = norm_string(author, lowercase=True) # Excluido intencionalmente para evitar fragmentación
-    t_norm = norm_string(book_type, lowercase=True)
-
-    identity = f"series:{s_norm}|type:{t_norm}"
-
-    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    from services.hash_service import hash_service
+    return hash_service.generate_series_hash(
+        series=series,
+        author=author,
+        book_type=book_type
+    )
 
 
 def limpiar_html_basico(texto_html: str) -> str:

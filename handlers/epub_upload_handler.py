@@ -313,8 +313,9 @@ class EPUBUploader:
             metadata["author"] = identity.get("author")
             metadata["volume"] = identity.get("volume")
                 
-            # Generar hash final usando utils.helpers (idéntico a ScannerService)
-            book_hash = generate_book_hash(
+            # Generar hash final usando HashService (idéntico a ScannerService)
+            from services.hash_service import hash_service
+            book_hash = hash_service.generate_book_hash(
                 series=identity["series"],
                 author=identity["author"],
                 book_type=identity["book_type"],
@@ -327,7 +328,11 @@ class EPUBUploader:
             )
             
             # Actualizar campos en el metadata para el frontend y persistencia
-            series_hash = self._generate_series_hash_like_scanner(metadata)
+            series_hash = hash_service.generate_series_hash(
+                series=identity.get("series"),
+                author=identity.get("author"),
+                book_type=identity.get("book_type")
+            )
             metadata["book_hash"] = book_hash
             metadata["series_hash"] = series_hash
             metadata["series"] = identity["series"]
@@ -553,15 +558,6 @@ class EPUBUploader:
         except Exception:
             pass
         return None
-    
-    def _generate_series_hash_like_scanner(self, metadata):
-        """Generate series hash like scanner service does."""
-        from utils.helpers import generate_series_hash
-        return generate_series_hash(
-            series=metadata.get("series"),
-            author=metadata.get("author"),
-            book_type=metadata.get("book_type") or metadata.get("category")
-        )
     
     def generate_path(self, metadata: dict[str, Any]) -> str:
         """DEPRECATED: Use _get_smart_destination instead."""

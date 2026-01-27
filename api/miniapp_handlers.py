@@ -60,7 +60,6 @@ async def handle_search(data: dict[str, Any], user_data: dict[str, Any]):
     is_local_search = True # Always enforced for web interface
     
     if is_local_search:
-        logger.info(f"[search] Using LibraryService for grouped series search. Query: '{query or ''}' Type: '{search_type}' Sort: '{sort}'")
         return await LibraryService.search_series(
             query or "", page=page, search_type=search_type, sort_by=sort
         )
@@ -1141,9 +1140,51 @@ async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[
                     client.table("metadata_proposals").upsert(batch).execute()
                     stats["proposals"] += len(batch)
 
+            # 4. Sync Library Sources
+            res_sources = await session.execute(select(LibrarySource))
+            sources = res_sources.scalars().all()
+            for s in sources:
+                s_data = {
+                    "id": s.id,
+                    "name": s.name,
+                    "path": s.path,
+                    "last_scanned": s.last_scanned.isoformat() if s.last_scanned else None
+                }
+                client.table("library_sources").upsert(s_data, on_conflict="path").execute()
+
+            # 5. Sync Local Books
+            res_books = await session.execute(select(LocalBook))
+            books = res_books.scalars().all()
+            stats["books"] = 0
+            for i in range(0, len(books), 100):
+                batch = books[i:i+100]
+                books_data = []
+                for b in batch:
+                    books_data.append({
+                        "book_hash": b.book_hash,
+                        "series_hash": b.series_hash,
+                        "filepath": b.filepath,
+                        "filename": b.filename,
+                        "title": b.title,
+                        "volume": float(b.volume) if b.volume is not None else None,
+                        "author": b.author,
+                        "translator": b.translator,
+                        "layout_by": b.layout_by,
+                        "book_type": b.book_type,
+                        "language": b.language,
+                        "description": b.description,
+                        "tags": b.tags,
+                        "cover_low": b.cover_low,
+                        "rating_average": b.rating_average,
+                        "rating_count": b.rating_count,
+                        "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None
+                    })
+                client.table("local_books").upsert(books_data, on_conflict="book_hash").execute()
+                stats["books"] += len(batch)
+
         return {
             "success": True, 
-            "message": f"Sincronización de librería completada: {stats['series']} series, {stats['feedback']} items de feedback, {stats['proposals']} propuestas.",
+            "message": f"Sincronización de librería completada: {stats['series']} series, {stats['books']} libros, {stats['proposals']} propuestas.",
             "stats": stats
         }
     except Exception as e:
@@ -1285,9 +1326,14 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
                 # Order of deletion matters due to FKs
                 conn.execute(sa.text("DELETE FROM user_ratings"))
                 conn.execute(sa.text("DELETE FROM user_downloads"))
+                conn.execute(sa.text("DELETE FROM metadata_proposals"))
+                conn.execute(sa.text("DELETE FROM ai_learning_feedback"))
                 conn.execute(sa.text("DELETE FROM local_books"))
+                conn.execute(sa.text("DELETE FROM series_metadata"))
                 conn.execute(sa.text("DELETE FROM library_sources"))
-            items_deleted.append("Tablas de PostgreSQL limpiadas (local_books, sources, ratings, downloads)")
+                conn.execute(sa.text("DELETE FROM duplicate_books"))
+                conn.execute(sa.text("DELETE FROM upload_books"))
+            items_deleted.append("Tablas de PostgreSQL limpiadas (series_metadata, local_books, sources, ratings, downloads, proposals, feedback)")
         except Exception as e:
             logger.error(f"Error clearing Postgres tables: {e}")
             return {"success": False, "message": f"Error limpiando tablas Postgres: {e}"}

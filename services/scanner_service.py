@@ -15,11 +15,8 @@ from models.library_models import (
     LocalBook,
     SeriesMetadata,
 )
+from services.hash_service import hash_service
 from utils.epub_extractor import EpubMetadataExtractor
-from utils.helpers import (
-    generate_book_hash,
-    generate_series_hash,
-)
 from utils.library_db import COVERS_DIR, get_session
 
 logger = logging.getLogger(__name__)
@@ -595,7 +592,7 @@ class ScannerService:
                 and book.author
                 and book.volume is not None
                 # FORCE UPDATE IF SERIES HASH LOGIC CHANGED (Migration Fix)
-                and book.series_hash == generate_series_hash(book.series, book.author, book.book_type)
+                and book.series_hash == hash_service.generate_series_hash(book.series, book.author, book.book_type)
             ):
                 return "skipped"
 
@@ -824,8 +821,7 @@ class ScannerService:
         """
         Genera un hash estable basado en: series + author + book_type + volume + translator + layout_by.
         """
-        # NO usar book.title aquí
-        return generate_book_hash(
+        return hash_service.generate_book_hash(
             series=book.series,
             author=book.author,
             book_type=book.book_type,
@@ -842,8 +838,8 @@ class ScannerService:
         """
         Genera un hash estable para la serie basado en: series + author + book_type.
         """
-        return generate_series_hash(
-            series=book.series,
+        return hash_service.generate_series_hash(
+            series=book.series or book.title,
             author=book.author,
             book_type=book.book_type
         )
@@ -1032,6 +1028,7 @@ class ScannerService:
         series.rating_count = sum(b.rating_count for b in books)
         
         logger.info(f"🔄 Metadata de serie sincronizada: {series.series_name} ({len(books)} vols)")
+
 
     def _sync_translator_group(self, session, book):
         """
