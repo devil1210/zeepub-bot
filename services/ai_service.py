@@ -68,10 +68,10 @@ class AIService:
         1. **Volume (CRÍTICO)**: Extrae el número de volumen con total precisión.
            - Si el archivo no especifica volumen, es un tomo único, o el volumen es 0, pon 0.0.
         2. **Group & Siglas (REGLAS ESTRICTAS)**:
-           - Longitud Máxima: Las siglas NO deben superar los 5 caracteres.
+           - Longitud Máxima: Las siglas NO deben superar los 6 caracteres.
            - Unicidad: Cada grupo debe tener una sigla única. 
            - Claridad Identificable: Si hay conflicto (mismas siglas), no uses números. Expande la sigla usando letras del nombre para que sea descriptiva (ej. Dark Translations = DARKT, Dragoon Translations = DRAGT).
-           - Nombres como Siglas: Si el nombre del grupo tiene una sola palabra de 5 letras o menos (ej. "MiraiK"), la sigla puede ser el mismo nombre.
+           - Nombres como Siglas: Si el nombre del grupo tiene una sola palabra de 6 letras o menos (ej. "MiraiK"), la sigla puede ser el mismo nombre.
            - Consistencia: Si el nombre del grupo es casi idéntico (variaciones de espacios o mayúsculas), asígnales la misma sigla.
         3. **Suggested Filename**: Genera el nombre EXACTO: "{{Prefix}}{{Series Spanish}} - {{Volumen}} [{{Siglas}}].epub".
            - **Prefix (CRÍTICO)**:
@@ -178,8 +178,8 @@ class AIService:
         2. **Proposed Spanish Name**: El nombre oficial en ESPAÑOL.
         3. **Group Siglas & Name (REGLAS ESTRICTAS)**:
            - **Group Full Name**: El nombre completo descriptivo del grupo.
-           - **Group Siglas**: Siglas de <= 5 caracteres. No uses números si hay conflicto. Expande usando letras descriptivas del nombre (ej: 'DARKT', 'DRAGT').
-           - Nombres como Siglas: Si es una palabra de <= 5 letras, úsala tal cual.
+           - **Group Siglas**: Siglas de <= 6 caracteres. No uses números si hay conflicto. Expande usando letras descriptivas del nombre (ej: 'DARKT', 'DRAGT').
+           - Nombres como Siglas: Si es una palabra de <= 6 letras, úsala tal cual.
            - Consistencia: Nombres casi idénticos = misma sigla.
         4. **Volumes**: Para cada archivo, confirma su volumen real. Usa 0.0 si es Volumen Único.
         
