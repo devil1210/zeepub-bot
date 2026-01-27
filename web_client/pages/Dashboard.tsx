@@ -88,6 +88,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           // Preload recommendation thumbnails for faster grid viewing
           const covers = recRes.results.map((r: any) => r.cover_thumb || r.cover || '');
           preloadImages(covers);
+        } else if (showRecommendations && recRes && Array.isArray(recRes.results) && recRes.results.length === 0 && historyRes && Array.isArray(historyRes.downloads) && historyRes.downloads.length === 0) {
+          // If server returns absolutely nothing for both history and recs, it's likely a purge
+          console.log("📊 Dashboard: Server is empty, clearing local cache.");
+          setRecommendations([]);
+          localStorage.removeItem('zeepub_daily_recs');
+          localStorage.removeItem('zeepub_recs_date');
         }
       } catch (error) {
         console.error("❌ Dashboard data fetch failed", error);

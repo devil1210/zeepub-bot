@@ -272,14 +272,14 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
 
             {isMenuOpen && (contextType === 'admin' || contextType === 'ai') && state.actionButtons && (
                 <div
-                    className="glass-panel rounded-premium p-2 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
                     style={{
                         background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
                         backdropFilter: `blur(${settings.glassBlur}px)`,
                         WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
                     }}
                 >
-                    <div className="flex flex-col gap-1">
+                    <div className="grid grid-cols-2 gap-2">
                         {state.actionButtons.map((btn) => (
                             <button
                                 key={btn.id}
@@ -288,13 +288,13 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                                     btn.onClick();
                                     setMenuOpen(false);
                                 }}
-                                className={`flex items-center gap-3 w-full px-4 py-3 rounded-premium-sm transition-all ${btn.highlight
-                                    ? 'bg-primary/20 text-primary border border-primary/20'
-                                    : 'hover:bg-white/5 text-gray-300'
+                                className={`flex items-center gap-3 px-3 py-3 rounded-premium-sm transition-all border ${btn.highlight
+                                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                                    : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
                                     }`}
                             >
-                                <btn.icon className="w-4 h-4" />
-                                <span className="text-[11px] font-black uppercase tracking-widest">{btn.label}</span>
+                                <btn.icon className="w-4 h-4 flex-shrink-0" />
+                                <span className="text-[9px] font-black uppercase tracking-widest leading-tight text-left">{btn.label}</span>
                             </button>
                         ))}
                     </div>

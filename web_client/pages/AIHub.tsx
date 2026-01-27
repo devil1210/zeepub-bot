@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     BrainCircuit,
     Sparkles,
@@ -26,6 +27,7 @@ import { getCoverUrl } from '../src/utils/imageUtils';
 export const AIHub: React.FC = () => {
     const { settings } = useTheme();
     const { webApp } = useTelegram();
+    const navigate = useNavigate();
     const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -84,8 +86,9 @@ export const AIHub: React.FC = () => {
 
         const views = [
             { id: 'control', label: 'Monitor', icon: Activity },
-            { id: 'pending', label: 'Propuestas Pendientes', icon: AlertTriangle },
-            { id: 'reviewed', label: 'Historial', icon: Clock }
+            { id: 'proposals', label: 'Propuestas AI', icon: Sparkles },
+            { id: 'pending', label: 'Cola Pendiente', icon: Clock },
+            { id: 'reviewed', label: 'Historial', icon: CheckCircle }
         ];
 
         setCustomActions({
@@ -97,17 +100,17 @@ export const AIHub: React.FC = () => {
                 onClick: () => setActiveTab(v.id),
                 highlight: activeTab === v.id
             })),
-            back: () => window.history.back()
+            back: () => navigate('/dashboard')
         });
 
         registerCallbacks({
-            onBack: () => window.history.back()
+            onBack: () => navigate('/dashboard')
         });
 
         return () => {
             setContextType('main');
         };
-    }, [setContextType, setVisible, setCustomActions, activeTab, registerCallbacks]);
+    }, [setContextType, setVisible, setCustomActions, activeTab, registerCallbacks, navigate]);
 
     const loadLists = async (type: 'pending' | 'reviewed') => {
         try {

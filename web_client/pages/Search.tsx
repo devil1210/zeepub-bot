@@ -111,7 +111,6 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       onHome: () => onNavigate?.('dashboard')
     });
   }, [totalPages, onNavigate]);
-
   // Perform Search
   const doSearch = async (query: string, page: number) => {
     setLoading(true);
@@ -121,7 +120,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       const searchScope = selectedScope === 'TODOS' ? '' : selectedScope.toLowerCase();
       const res = await api.searchBooks(query, page, searchScope, activeSort);
 
-      if (res && res.results) {
+      if (res && Array.isArray(res.results)) {
         // Map backend results to Series type
         const mapped: Series[] = res.results.map((item: any) => ({
           id: item.id || item.link,
@@ -185,6 +184,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         }
       } else {
         setSeries([]);
+        setTotalPages(1);
+        setTotalResults(0);
       }
     } catch (e) {
       console.error("Search error", e);
