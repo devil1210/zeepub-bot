@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { useSearchNav } from '../contexts/SearchNavContext';
+import { useNavigation } from '../contexts/NavigationContext';
 import {
   Search as SearchIcon,
   Filter,
@@ -36,6 +36,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const { settings } = useTheme();
   const {
     state: navState,
+    setContextType,
     setPageInfo,
     setActiveSort: setNavActiveSort,
     setVisible,
@@ -44,7 +45,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
     setViewMode: setNavViewMode,
     setLoading: setNavLoading,
     registerCallbacks
-  } = useSearchNav();
+  } = useNavigation();
 
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
   const [activeSort, setActiveSort] = useState(navState.activeSort || 'a-z');
@@ -90,8 +91,12 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
   // Make header/nav visible when this component mounts, hide on unmount
   useEffect(() => {
+    setContextType('search');
     setVisible(true);
-    return () => setVisible(false);
+    return () => {
+      setVisible(false);
+      setContextType('main');
+    };
   }, []);
 
   // Register callbacks for header/nav buttons
@@ -102,9 +107,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       onSortChange: (sort: string) => setActiveSort(sort),
       onSearchChange: (term: string) => setSearchTerm(term),
       onScopeClick: () => setIsScopeModalOpen(true),
-      onViewModeChange: (mode: 'list' | 'grid') => setViewMode(mode)
+      onViewModeChange: (mode: 'list' | 'grid') => setViewMode(mode),
+      onHome: () => onNavigate?.('dashboard')
     });
-  }, [totalPages]);
+  }, [totalPages, onNavigate]);
 
   // Perform Search
   const doSearch = async (query: string, page: number) => {

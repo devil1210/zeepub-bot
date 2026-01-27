@@ -6,19 +6,14 @@ import {
   Server,
   Home,
   ChevronLeft,
-  ChevronUp,
   RefreshCw,
-  RotateCcw,
-  Save,
   Palette,
   FileWarning,
-  LayoutGrid,
   UploadCloud,
-  ChevronDown,
-  Layers,
-  Zap
+  Layers
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNavigation } from '../contexts/NavigationContext';
 import { api } from '../src/services/api';
 import { MonitorDashboard } from './MonitorDashboard';
 import { SystemDashboard } from './SystemDashboard';
@@ -34,7 +29,10 @@ interface AdminProps {
 export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const { settings } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isViewSelectorOpen, setIsViewSelectorOpen] = useState(false);
+  const { state: navState, setContextType, setMenuOpen, setCustomActions, registerCallbacks, setVisible } = useNavigation();
+
+  const isViewSelectorOpen = navState.isMenuOpen;
+  const setIsViewSelectorOpen = setMenuOpen;
 
   // Derived state from URL
   const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads') || 'monitor';
@@ -60,6 +58,11 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       } catch (err) { }
     };
     fetchLevels();
+    setContextType('admin');
+    setVisible(true);
+    return () => {
+      setContextType('main');
+    };
   }, []);
 
   const viewOptions = useMemo(() => [
@@ -72,6 +75,28 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   ] as const, []);
 
   const currentViewLabel = viewOptions.find(v => v.id === currentView)?.label || 'Panel';
+
+  // Contextual back action
+  const handleBack = () => {
+    if (selectedUserId || configuringTier) {
+      // Step back from detail to list
+      setSelectedUserId(null);
+      setConfiguringTier(null);
+    } else {
+      // Exit admin to dashboard
+      onNavigate && onNavigate('dashboard');
+    }
+  };
+
+  useEffect(() => {
+    setCustomActions({
+      title: selectedUserId ? 'Perfil Usuario' : currentViewLabel,
+      back: handleBack
+    });
+    registerCallbacks({
+      onBack: handleBack
+    });
+  }, [selectedUserId, currentViewLabel]);
 
   const setCurrentView = (view: string) => {
     setSearchParams(prev => {
@@ -140,20 +165,6 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     }
   };
 
-  const isDetailView = !!selectedUserId || !!configuringTier;
-
-  // Contextual back action
-  const handleBack = () => {
-    if (isDetailView) {
-      // Step back from detail to list
-      setSelectedUserId(null);
-      setConfiguringTier(null);
-    } else {
-      // Exit admin to dashboard
-      onNavigate && onNavigate('dashboard');
-    }
-  };
-
   return (
     <div className="relative min-h-screen">
       <div className="fixed top-0 left-0 w-full h-[600px] bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none opacity-50 z-0"></div>
@@ -193,13 +204,13 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
           {renderView()}
         </div>
 
-        {/* --- ADAPTIVE CONTEXTUAL NAVIGATION (Mobile & Desktop Floating) --- */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-lg z-50 flex flex-col gap-3">
-
-          {/* View Selection Overlay (Menu) */}
-          {isViewSelectorOpen && (
+        {/* View Selection Overlay (Menu) - Managed by Universal Nav State */}
+        {isViewSelectorOpen && (
+          <div
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[90%] max-w-lg z-50 animate-in slide-in-from-bottom-4 fade-in duration-300"
+          >
             <div
-              className="glass-panel rounded-[2.5rem] p-4 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300 overflow-hidden"
+              className="glass-panel rounded-[2.5rem] p-4 border border-white/10 shadow-2xl overflow-hidden"
               style={{
                 background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
                 backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -271,90 +282,9 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
                 </div>
               )}
             </div>
-          )}
-
-          {/* Main Navigation Bar */}
-          <div
-            className="glass-panel rounded-premium p-1.5 border border-white/10 shadow-2xl flex items-center justify-between"
-            style={{
-              background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-              backdropFilter: `blur(${settings.glassBlur}px)`,
-              WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-            }}
-          >
-            {/* Contextual Back Button */}
-            <button
-              onClick={handleBack}
-              className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm text-gray-400 hover:text-white transition-all group"
-            >
-              <div className="p-1.5 rounded-full group-hover:bg-white/5 transition-colors">
-                <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
-              </div>
-              <span className="text-[9px] font-black uppercase tracking-widest mt-0.5">{isDetailView ? 'Atrás' : 'Salir'}</span>
-            </button>
-
-            <div className="w-px h-8 bg-white/10"></div>
-
-            {/* View Context / Selector Toggle */}
-            <button
-              onClick={() => setIsViewSelectorOpen(!isViewSelectorOpen)}
-              className={`flex-[2] flex items-center justify-center gap-2 px-4 py-2 rounded-premium-sm transition-all ${isViewSelectorOpen ? 'text-primary' : 'text-gray-300'} hover:bg-white/5 cursor-pointer`}
-            >
-              <div className="flex flex-col items-center min-w-0">
-                <div className="flex items-center gap-2">
-                  {configuringTier ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: configuringTier.color, color: configuringTier.color }} />
-                      <span className="text-[10px] font-black uppercase tracking-[0.15em] truncate">{configuringTier.name}</span>
-                    </div>
-                  ) : (
-                    <>
-                      {!isDetailView && <LayoutGrid className="w-3.5 h-3.5 opacity-50" />}
-                      <span className="text-[10px] font-black uppercase tracking-[0.15em] truncate">
-                        {selectedUserId ? 'Perfil Usuario' : currentViewLabel}
-                      </span>
-                    </>
-                  )}
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isViewSelectorOpen ? 'rotate-180' : ''}`} />
-                </div>
-              </div>
-            </button>
-
-            <div className="w-px h-8 bg-white/10"></div>
-
-            {/* Action Group: Save/Undo (Visible if Detail or Interface) */}
-            {(isDetailView || currentView === 'interface') ? (
-              <div className="flex-1 flex items-center justify-center gap-1 pr-1">
-                <button
-                  onClick={() => undoRef.current?.()}
-                  disabled={!canUndo}
-                  className="p-2.5 rounded-premium-sm text-gray-500 hover:text-white disabled:opacity-20 transition-all"
-                >
-                  <RotateCcw className="w-4.5 h-4.5" />
-                </button>
-                <button
-                  onClick={() => saveRef.current?.()}
-                  disabled={saving || !canSave}
-                  className="p-2.5 bg-primary rounded-premium-sm text-white shadow-lg shadow-primary/30 active:scale-90 disabled:opacity-30 disabled:grayscale transition-all"
-                >
-                  {saving ? <RefreshCw className="w-4.5 h-4.5 animate-spin" /> : <Save className="w-4.5 h-4.5" />}
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => window.location.reload()}
-                className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm text-gray-400 hover:text-white transition-all group"
-              >
-                <div className="p-1.5 rounded-full group-hover:bg-white/5 transition-colors">
-                  <RefreshCw className="w-4.5 h-4.5" />
-                </div>
-                <span className="text-[9px] font-black uppercase tracking-widest mt-0.5">Sync</span>
-              </button>
-            )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 };
-

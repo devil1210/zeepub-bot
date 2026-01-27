@@ -30,6 +30,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { useTelegram } from '../contexts/TelegramContext';
+import { useNavigation } from '../contexts/NavigationContext';
 import { Series, Volume } from '../types';
 import { preloadImages } from '../src/utils/imagePreloader';
 
@@ -42,6 +43,7 @@ interface SeriesDetailProps {
 
 export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSelectVolume, onSearch }) => {
   const { settings } = useTheme();
+  const { setContextType, registerCallbacks, setPageInfo, setVisible } = useNavigation();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -205,7 +207,21 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
   useEffect(() => {
     scrollToTop();
-  }, [currentPage]);
+    setPageInfo(currentPage, totalPages);
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setContextType('series');
+    setVisible(true);
+    registerCallbacks({
+      onPrevPage: () => handlePrevPage(),
+      onNextPage: () => handleNextPage(),
+      onBack: onBack,
+    });
+    return () => {
+      setContextType('main');
+    };
+  }, [totalPages, onBack]);
 
   const handleNextPage = () => {
     if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
@@ -526,97 +542,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
         </div>
       </div>
 
-      {/* Pagination Navigation (Mobile & Desktop) */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[600px] px-0">
-        {isSortMenuOpen && (
-          <div
-            className="glass-panel rounded-premium p-4 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
-            style={{
-              background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-              backdropFilter: `blur(${settings.glassBlur}px)`,
-              WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-            }}
-          >
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { id: 'num-asc', label: '1 - 9', icon: SortAsc },
-                { id: 'num-desc', label: '9 - 1', icon: SortAsc },
-                { id: 'date', label: 'FECHA', icon: Calendar },
-                { id: 'rating', label: 'VALORACIÓN', icon: Star },
-              ].map((option) => (
-                <button
-                  key={option.id}
-                  onClick={() => {
-                    setActiveSort(option.id);
-                    setIsSortMenuOpen(false);
-                  }}
-                  className={`flex items-center justify-center gap-2 px-3 py-3 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all border ${activeSort === option.id ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white'}`}
-                >
-                  <option.icon className="w-3.5 h-3.5" />
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div
-          className="glass-panel rounded-premium p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
-          style={{
-            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-            backdropFilter: `blur(${settings.glassBlur}px)`,
-            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-          }}
-        >
-          <button
-            onClick={handlePrevPage}
-            disabled={currentPage === 1}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
-          >
-            <div className="p-1.5 rounded-full transition-all duration-300">
-              <ChevronLeft className="w-4 h-4" strokeWidth={2} />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Anterior</span>
-          </button>
-
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-
-          <button
-            onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
-          >
-            <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
-              <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'text-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
-            </div>
-            <span className={`text-[9px] font-black uppercase tracking-widest mt-1`}>Ordenar</span>
-          </button>
-
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-
-          <button
-            onClick={onBack}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white`}
-          >
-            <div className="p-1.5 rounded-full transition-all duration-300">
-              <Reply className="w-4 h-4" strokeWidth={2} />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Volver</span>
-          </button>
-
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-
-          <button
-            onClick={handleNextPage}
-            disabled={currentPage === totalPages}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : ''}`}
-          >
-            <div className="p-1.5 rounded-full transition-all duration-300">
-              <ChevronRight className="w-4 h-4" strokeWidth={2} />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Siguiente</span>
-          </button>
-        </div>
-      </div>
+      {/* Navigation handled by Layout/UniversalFloatingNav */}
 
       {/* Synopsis Modal */}
       {isSynopsisModalOpen && (

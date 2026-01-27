@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { MemoryRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
-import { SearchNavProvider, useSearchNav } from './contexts/SearchNavContext';
+import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Dashboard } from './pages/Dashboard';
@@ -194,7 +194,7 @@ const BookDetailByIdWrapper = () => {
 const SeriesDetailWrapper = () => {
   const navigate = useNavigate();
   const onNavigate = useLegacyNavigation();
-  const { setSearchTerm } = useSearchNav();
+  const { setSearchTerm } = useNavigation();
   const location = useLocation();
   const series = location.state?.series as Series;
 
@@ -218,7 +218,7 @@ const SeriesDetailWrapper = () => {
 const BookDetailWrapper = () => {
   const navigate = useNavigate();
   const onNavigate = useLegacyNavigation();
-  const { setSearchTerm } = useSearchNav();
+  const { setSearchTerm } = useNavigation();
   const location = useLocation();
   const { series, volume } = location.state || {}; // Cast as needed
 
@@ -246,11 +246,11 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <ThemeProvider>
         <TelegramProvider>
-          <SearchNavProvider>
+          <NavigationProvider>
             <MemoryRouter>
               <AppContent />
             </MemoryRouter>
-          </SearchNavProvider>
+          </NavigationProvider>
         </TelegramProvider>
       </ThemeProvider>
     </ErrorBoundary>

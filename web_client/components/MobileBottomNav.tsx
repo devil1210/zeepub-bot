@@ -32,40 +32,38 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeTab, onT
 
     return (
         <div
-            className="md:hidden fixed bottom-0 left-0 right-0 z-[100] pb-[env(safe-area-inset-bottom)] pt-2 px-6 shadow-[0_-10px_40px_-5px_rgba(0,0,0,0.5)] border-t border-white/5 animate-in slide-in-from-bottom-full duration-500"
-            style={{
-                background: `rgba(var(--glass-rgb), ${settings.navOpacity || 0.95})`,
-                backdropFilter: `blur(${settings.glassBlur || 20}px)`,
-                WebkitBackdropFilter: `blur(${settings.glassBlur || 20}px)`
-            }}
+            className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-3 w-[90%] max-w-xl px-0 animate-in slide-in-from-bottom-full duration-500"
         >
-            <div className="flex items-center justify-between max-w-md mx-auto h-16">
-                {navItems.map((item) => {
+            <div
+                className="glass-panel rounded-premium p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+                style={{
+                    background: `rgba(var(--glass-rgb), ${settings.navOpacity || 0.8})`,
+                    backdropFilter: `blur(${settings.glassBlur || 12}px)`,
+                    WebkitBackdropFilter: `blur(${settings.glassBlur || 12}px)`
+                }}
+            >
+                {navItems.map((item, index) => {
                     const isActive = activeTab === item.id;
                     return (
-                        <button
-                            key={item.id}
-                            onClick={() => onTabChange(item.id)}
-                            className="relative group flex flex-col items-center justify-center gap-1 w-14 h-full"
-                        >
-                            {/* Active Indicator Light */}
-                            {isActive && (
-                                <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-b-full shadow-[0_2px_10px_rgba(var(--color-primary-rgb),0.8)] animate-in fade-in duration-300"></div>
+                        <React.Fragment key={item.id}>
+                            <button
+                                onClick={() => onTabChange(item.id)}
+                                className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 ${isActive ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
+                            >
+                                <div className={`p-1.5 rounded-full transition-all duration-300 ${isActive ? 'bg-[var(--color-primary)] shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
+                                    <item.icon
+                                        className={`w-4 h-4 transition-transform duration-300 ${isActive ? 'text-white' : ''}`}
+                                        strokeWidth={isActive ? 2.5 : 2}
+                                    />
+                                </div>
+                                <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${isActive ? 'opacity-100' : 'opacity-60'}`}>
+                                    {item.label}
+                                </span>
+                            </button>
+                            {index < navItems.length - 1 && (
+                                <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
                             )}
-
-                            {/* Icon Wrapper */}
-                            <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-white/10 text-primary -translate-y-1' : 'text-gray-400 group-hover:text-white'}`}>
-                                <item.icon
-                                    className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-active:scale-95'}`}
-                                    strokeWidth={isActive ? 2.5 : 2}
-                                />
-                            </div>
-
-                            {/* Label */}
-                            <span className={`text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${isActive ? 'text-white opacity-100 translate-y-0' : 'text-gray-500 opacity-60'}`}>
-                                {item.label}
-                            </span>
-                        </button>
+                        </React.Fragment>
                     );
                 })}
             </div>

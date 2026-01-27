@@ -13,9 +13,8 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTelegram } from '../contexts/TelegramContext';
-import { useSearchNav } from '../contexts/SearchNavContext';
-import { SearchBottomNav } from './SearchBottomNav';
-import { MobileBottomNav } from './MobileBottomNav';
+import { useNavigation } from '../contexts/NavigationContext';
+import { UniversalFloatingNav } from './UniversalFloatingNav';
 import { SearchHeader } from './SearchHeader';
 
 interface LayoutProps {
@@ -25,18 +24,14 @@ interface LayoutProps {
   showMobileBottomNav?: boolean;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, showMobileBottomNav = false }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
   const { settings } = useTheme();
   const { user: tgUser, status, isAdmin, botInfo, canUploadEpub } = useTelegram();
   const {
-    state: searchNavState,
-    handlePrevPage,
-    handleNextPage,
-    onSortChange,
+    state: navState,
     setSearchTerm,
-    setViewMode,
-    openScopeModal
-  } = useSearchNav();
+    handleScopeClick
+  } = useNavigation();
 
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Inicio' },
@@ -190,39 +185,24 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           }}
         >
           {/* Search Header - Sticky inside scroll area */}
-          {activeTab === 'search' && searchNavState.isVisible && (
+          {activeTab === 'search' && navState.isVisible && (
             <div className="sticky top-0 z-30 transition-all duration-300">
               <SearchHeader
-                searchTerm={searchNavState.searchTerm}
+                searchTerm={navState.searchTerm}
                 onSearchChange={setSearchTerm}
-                selectedScope={searchNavState.selectedScope}
-                onScopeClick={openScopeModal}
-                viewMode={searchNavState.viewMode}
-                onViewModeChange={setViewMode}
-                loading={searchNavState.loading}
+                selectedScope={navState.selectedScope}
+                onScopeClick={handleScopeClick}
+                viewMode={navState.viewMode}
+                onViewModeChange={(mode) => { }} // Handle inside context if needed
+                loading={navState.loading}
               />
             </div>
           )}
           {children}
         </main>
 
-        {/* Mobile Global Bottom Nav */}
-        <div className="md:hidden">
-          <MobileBottomNav activeTab={activeTab} onTabChange={onTabChange} />
-        </div>
-
-        {/* Search Bottom Nav - Rendered at Layout level for isolation (Desktop Only or Contextual) */}
-        {activeTab === 'search' && searchNavState.isVisible && (
-          <SearchBottomNav
-            currentPage={searchNavState.currentPage}
-            totalPages={searchNavState.totalPages}
-            onPrevPage={handlePrevPage}
-            onNextPage={handleNextPage}
-            onHome={() => onTabChange('dashboard')}
-            activeSort={searchNavState.activeSort}
-            onSortChange={onSortChange}
-          />
-        )}
+        {/* Universal Floating Navigation Bar */}
+        <UniversalFloatingNav activeTab={activeTab} onTabChange={onTabChange} />
       </div>
     </div>
   );

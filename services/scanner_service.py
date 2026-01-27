@@ -254,11 +254,13 @@ class ScannerService:
             # --- FINAL CLEANUP: Remove/Archive empty series ---
             try:
                 from models.library_models import SeriesMetadata, ArchivedSeries
-                # FORCE REFRESH: Re-sync metadata for all touched series to ensure book_count is 0 if no books left
-                for s_hash in touched_hashes:
-                    s_meta = session.query(SeriesMetadata).filter_by(series_hash=s_hash).first()
-                    if s_meta:
-                        self.sync_series_metadata(session, s_meta)
+                # FORCE REFRESH: Recalculate book_count for ALL non-archived series to fix stale data
+                logger.info("Sincronizando conteos de libros para todas las series...")
+                all_active_series = session.query(SeriesMetadata).all()
+                for s in all_active_series:
+                    actual_count = session.query(LocalBook).filter_by(series_hash=s.series_hash).count()
+                    if s.book_count != actual_count:
+                        s.book_count = actual_count
                 session.commit()
 
                 empty_series = session.query(SeriesMetadata).filter(SeriesMetadata.book_count == 0).all()
