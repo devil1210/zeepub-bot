@@ -50,9 +50,10 @@ class ZeePubBot:
 
         # Inicializar la aplicación con config de red optimizada pero segura
         # El default de 5s connect provoca Timeouts en redes lentas/VPN
+        # Aumentamos el pool size para evitar PoolTimeout en bots con mucha carga
         trequest = HTTPXRequest(
-            connection_pool_size=20,
-            connect_timeout=30.0,  # Aumentado de default 5.0s -> 30.0s
+            connection_pool_size=100,  # Aumentado de 20 -> 100
+            connect_timeout=30.0,      # Aumentado de default 5.0s -> 30.0s
             read_timeout=30.0,
             write_timeout=30.0,
             pool_timeout=30.0,
