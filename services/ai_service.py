@@ -38,7 +38,7 @@ class AIService:
             }
 
             cls._model = genai.GenerativeModel(
-                model_name="gemini-2.0-flash",
+                model_name="gemini-3-flash",
                 safety_settings=safety_settings,
                 generation_config={"response_mime_type": "application/json"}
             )
@@ -467,7 +467,7 @@ class AIService:
 
         try:
             # Use basic model for text output
-            simple_model = genai.GenerativeModel("gemini-2.0-flash")
+            simple_model = genai.GenerativeModel("gemini-3-flash")
             response = await AIService._call_gemini_with_retry(prompt, simple_model)
             if not response:
                 return None
