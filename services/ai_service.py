@@ -198,9 +198,14 @@ class AIService:
             "confidence": float,
             "reason": "string",
             "volumes": {{
-                "filename_original": float_volumen
+                "filename_original": {{
+                    "volume": float,
+                    "siglas": "string"
+                }}
             }}
         }}
+        
+        NOTA: Si detectas que los libros de la serie han sido traducidos por diferentes grupos, especifica la 'sigla' correcta para cada archivo dentro del objeto 'volumes'. Si no estás seguro o todos son iguales, usa el 'group_siglas' general de la serie como fallback.
         """
         
         # 0. Get Learning Context (RAG-lite)
@@ -251,11 +256,20 @@ class AIService:
             
             for book in books:
                 orig_name = book.get("filename") or book.get("title", "")
-                # Usar volumen detectado por IA si existe, sino el actual
-                current_vol = ai_volumes.get(orig_name, book.get("volume", 0))
+                
+                # Get specific data for this volume from IA response
+                vol_info = ai_volumes.get(orig_name)
+                
+                # Use IA volume if it's a dict or a plain number (backward compatibility)
+                if isinstance(vol_info, dict):
+                    current_vol = vol_info.get("volume", book.get("volume", 0))
+                    book_siglas = vol_info.get("siglas") or proposal["group_siglas"] or "Unknown"
+                else:
+                    current_vol = vol_info if vol_info is not None else book.get("volume", 0)
+                    book_siglas = proposal["group_siglas"] or "Unknown"
                 
                 # Handling volume string
-                if not current_vol or float(current_vol) == 0:
+                if current_vol is None or float(current_vol) == 0:
                     vol_part = "Volumen Único"
                 else:
                     vol_val = float(current_vol)
@@ -274,10 +288,9 @@ class AIService:
                 elif is_color: prefix = "[Color]"
                 elif is_sc: prefix = "[SC]"
                 
-                # Generar nuevo nombre de archivo usando el nombre en ESPAÑOL y las SIGLAS
+                # Generar nuevo nombre de archivo usando el nombre en ESPAÑOL y las SIGLAS INDIVIDUALES
                 spanish_name = proposal["proposed_spanish"] or proposal["proposed_series"]
-                siglas = proposal["group_siglas"] or "Unknown"
-                raw_filename = f"{prefix}{spanish_name} - {vol_part} [{siglas}].epub"
+                raw_filename = f"{prefix}{spanish_name} - {vol_part} [{book_siglas}].epub"
                 new_filename = AIService.sanitize_filename(raw_filename)
                 
                 if book.get("filename") != new_filename:
@@ -285,7 +298,8 @@ class AIService:
                         "book_id": book.get("id"),
                         "current_filename": book.get("filename") or book.get("filepath") or book.get("title"),
                         "proposed_filename": new_filename,
-                        "volume": current_vol
+                        "volume": current_vol,
+                        "siglas": book_siglas
                     })
 
             # Check if there is NO CHANGE at all (Series matches AND no files renamed)
