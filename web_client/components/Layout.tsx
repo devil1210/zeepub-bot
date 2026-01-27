@@ -15,6 +15,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useTelegram } from '../contexts/TelegramContext';
 import { useSearchNav } from '../contexts/SearchNavContext';
 import { SearchBottomNav } from './SearchBottomNav';
+import { MobileBottomNav } from './MobileBottomNav';
 import { SearchHeader } from './SearchHeader';
 
 interface LayoutProps {
@@ -205,7 +206,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           {children}
         </main>
 
-        {/* Search Bottom Nav - Rendered at Layout level for isolation */}
+        {/* Mobile Global Bottom Nav */}
+        <div className="md:hidden">
+          <MobileBottomNav activeTab={activeTab} onTabChange={onTabChange} />
+        </div>
+
+        {/* Search Bottom Nav - Rendered at Layout level for isolation (Desktop Only or Contextual) */}
         {activeTab === 'search' && searchNavState.isVisible && (
           <SearchBottomNav
             currentPage={searchNavState.currentPage}

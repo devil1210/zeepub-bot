@@ -101,9 +101,10 @@
       --color-primary: #2b6cee;
       --color-primary-dark: #1a4bb0;
 
-      /* Base Glass Settings (Default) */
+      /* Base Glass Settings (Default / Pro Max) */
       --glass-opacity: 0.6;
-      --glass-blur: 12px;
+      --glass-blur: 20px;
+      /* Increased from 12px for cleaner look */
       --glass-border-opacity: 0.08;
 
       /* Theme Defaults */
@@ -177,15 +178,17 @@
       /* Radius and Border from Theme */
       border-radius: var(--radius-premium);
 
-      /* Blur effect */
+      /* Blur effect (Pro Max) */
       backdrop-filter: blur(var(--glass-blur));
       -webkit-backdrop-filter: blur(var(--glass-blur));
 
-      /* Border handling using thematic border variable */
+      /* Border handling using thematic border variable with subtle gradient hint for depth */
       border: var(--border-width-premium) solid var(--panel-border);
+      border-top-color: rgba(255, 255, 255, 0.15);
+      /* Top highlight */
 
-      /* Shadows */
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      /* Shadows (Pro Max Soft) */
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
 
       /* Transition for smooth settings updates */
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
