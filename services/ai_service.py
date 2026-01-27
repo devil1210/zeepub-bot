@@ -67,7 +67,12 @@ class AIService:
         Reglas de Extracción:
         1. **Volume (CRÍTICO)**: Extrae el número de volumen con total precisión.
            - Si el archivo no especifica volumen, es un tomo único, o el volumen es 0, pon 0.0.
-        2. **Group & Siglas**: Identifica el grupo y su sigla (ej. [GET]).
+        2. **Group & Siglas (REGLAS ESTRICTAS)**:
+           - Longitud Máxima: Las siglas NO deben superar los 5 caracteres.
+           - Unicidad: Cada grupo debe tener una sigla única. 
+           - Claridad Identificable: Si hay conflicto (mismas siglas), no uses números. Expande la sigla usando letras del nombre para que sea descriptiva (ej. Dark Translations = DARKT, Dragoon Translations = DRAGT).
+           - Nombres como Siglas: Si el nombre del grupo tiene una sola palabra de 5 letras o menos (ej. "MiraiK"), la sigla puede ser el mismo nombre.
+           - Consistencia: Si el nombre del grupo es casi idéntico (variaciones de espacios o mayúsculas), asígnales la misma sigla.
         3. **Suggested Filename**: Genera el nombre EXACTO: "{{Prefix}}{{Series Spanish}} - {{Volumen}} [{{Siglas}}].epub".
            - **Prefix (CRÍTICO)**:
              - Si el libro tiene "Ilustraciones a Color" en sus géneros: usa `[Color]`.
@@ -171,7 +176,11 @@ class AIService:
         Tareas:
         1. **Proposed English Name**: El nombre canónico en INGLÉS/ROMAJI.
         2. **Proposed Spanish Name**: El nombre oficial en ESPAÑOL.
-        3. **Group Siglas**: Identifica la sigla del grupo (ej: 'GET', 'Tdx').
+        3. **Group Siglas & Name (REGLAS ESTRICTAS)**:
+           - **Group Full Name**: El nombre completo descriptivo del grupo.
+           - **Group Siglas**: Siglas de <= 5 caracteres. No uses números si hay conflicto. Expande usando letras descriptivas del nombre (ej: 'DARKT', 'DRAGT').
+           - Nombres como Siglas: Si es una palabra de <= 5 letras, úsala tal cual.
+           - Consistencia: Nombres casi idénticos = misma sigla.
         4. **Volumes**: Para cada archivo, confirma su volumen real. Usa 0.0 si es Volumen Único.
         
         SEGURIDAD DE ARCHIVOS:
@@ -182,6 +191,7 @@ class AIService:
         {{
             "proposed_english": "string",
             "proposed_spanish": "string",
+            "group_full": "string",
             "group_siglas": "string",
             "detected_tags": ["tag1", "tag2"],
             "is_uncensored_series": boolean,
@@ -228,6 +238,7 @@ class AIService:
                 "current_series": current_series_name,
                 "proposed_series": analysis.get("proposed_english"),
                 "proposed_spanish": analysis.get("proposed_spanish"),
+                "group_full": analysis.get("group_full", "Unknown"),
                 "group_siglas": analysis.get("group_siglas", "Unknown"),
                 "reason": analysis.get("reason"),
                 "confidence": analysis.get("confidence"),

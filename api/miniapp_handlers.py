@@ -2820,6 +2820,19 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 session.add(series)
                 session.flush()
 
+            # 1.1 Update Translator Group Metadata
+            group_full = proposal.get("group_full")
+            group_siglas = proposal.get("group_siglas")
+            if group_full and group_siglas and group_full != "Unknown":
+                from models.library_models import TranslatorsGroup
+                # Try to find by name (case insensitive)
+                existing_group = session.query(TranslatorsGroup).filter(func.lower(TranslatorsGroup.name) == func.lower(group_full)).first()
+                if existing_group:
+                    existing_group.siglas = group_siglas
+                else:
+                    new_group = TranslatorsGroup(name=group_full, siglas=group_siglas)
+                    session.add(new_group)
+
             # Cloud Sync immediately if enabled
             if config.ENABLE_SUPABASE:
                 try:

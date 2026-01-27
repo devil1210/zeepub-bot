@@ -646,6 +646,9 @@ class ScannerService:
             series = self._get_or_create_series(session, book)
             book.series_metadata_id = series.id
             
+            # --- VINCULACIÓN CON GRUPOS DE TRADUCCIÓN ---
+            self._sync_translator_group(session, book)
+            
             # Actualizar conteo de libros en la serie
             count_stmt = select(func.count(LocalBook.id)).where(LocalBook.series_hash == series.series_hash)
             series.book_count = session.execute(count_stmt).scalar() or 0
@@ -862,8 +865,43 @@ class ScannerService:
         ratings = [b.rating_average for b in books if b.rating_count > 0]
         if ratings:
             series.rating_average = sum(ratings) / len(ratings)
-            series.rating_count = sum(b.rating_count for b in books)
-            
+        
+        series.rating_count = sum(b.rating_count for b in books)
+        
         logger.info(f"🔄 Metadata de serie sincronizada: {series.series_name} ({len(books)} vols)")
+
+    def _sync_translator_group(self, session, book):
+        """
+        Extrae traductor/siglas y asegura que existan en la tabla translators_groups.
+        """
+        from models.library_models import TranslatorsGroup
+        
+        translator = book.translator
+        if not translator or translator == "Unknown":
+            return
+            
+        # Intentar extraer siglas del filename si no están explícitas
+        siglas = None
+        if book.filename and "[" in book.filename and "]" in book.filename:
+            matches = re.findall(r"\[(.*?)\]", book.filename)
+            if matches:
+                last_tag = matches[-1]
+                # Si el tag es corto, probablemente sea la sigla (e.g. [GET])
+                if 1 < len(last_tag) <= 10:
+                    siglas = last_tag
+        
+        # Lógica de Upsert
+        try:
+            from sqlalchemy import func
+            existing = session.query(TranslatorsGroup).filter(func.lower(TranslatorsGroup.name) == translator.lower()).first()
+            if existing:
+                # Si no tiene siglas o las actuales son más largas que las detectadas, actualizar
+                if siglas and (not existing.siglas or len(siglas) < len(existing.siglas or "")):
+                    existing.siglas = siglas
+            else:
+                new_group = TranslatorsGroup(name=translator, siglas=siglas)
+                session.add(new_group)
+        except Exception as e:
+            logger.warning(f"Error sincronizando grupo de traducción: {e}")
 
 
