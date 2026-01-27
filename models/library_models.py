@@ -171,6 +171,7 @@ class LocalBook(Base):
     series = Column(String(255))
     series_spanish = Column(String(255)) # New column for Spanish series name from filename
     volume = Column(Float)  # Soporta 1, 1.5, etc
+    edition = Column(String(255)) # Ej: "Honorificos", "Colector", etc.
 
     # Personas
     author = Column(String(255))
@@ -274,6 +275,7 @@ class LocalBook(Base):
             "illustrator": self.illustrator,
             "translator": self.translator,
             "layoutBy": self.layout_by,
+            "edition": self.edition,
             "publisher": self.publisher,
             "publishedAt": self.published_at,
             "modifiedAtOpf": self.modified_at_opf,

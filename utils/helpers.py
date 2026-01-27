@@ -318,6 +318,8 @@ def process_book_identity_comprehensive(
         "language": language,
         "series_spanish": series_spanish,
         "title": title,
+        "published_at": meta.get("published_at"),
+        "edition": meta.get("edition"),
         "is_uncensored": meta.get("is_uncensored", 0),
         "color_mode": meta.get("color_mode", "bw")
     }
@@ -331,6 +333,7 @@ def generate_book_hash(
     translator: str | None = None,
     layout_by: str | None = None,
     language: str | None = "es",
+    edition: str | None = None,
     is_uncensored: int = 0,
     color_mode: str = "bw"
 ) -> str:
@@ -357,9 +360,10 @@ def generate_book_hash(
     tr_norm = norm_string(translator, lowercase=True)
     l_norm = norm_string(layout_by, lowercase=True)
     lang_norm = norm_string(language or "es", lowercase=True)
+    ed_norm = norm_string(edition, lowercase=True)
 
     # Cadena de identidad determinista según especificación estricta del usuario
-    identity = f"series:{s_norm}|author:{a_norm}|type:{t_norm}|vol:{v_norm}|trans:{tr_norm}|layout:{l_norm}|lang:{lang_norm}|uncensored:{is_uncensored}|color:{color_mode}"
+    identity = f"series:{s_norm}|author:{a_norm}|type:{t_norm}|vol:{v_norm}|trans:{tr_norm}|layout:{l_norm}|lang:{lang_norm}|edition:{ed_norm}|uncensored:{is_uncensored}|color:{color_mode}"
 
     return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 

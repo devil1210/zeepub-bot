@@ -195,12 +195,24 @@ class EpubMetadataExtractor:
                     # Defaults
                     self.metadata["is_uncensored"] = 0
                     self.metadata["color_mode"] = "bw"
+                    self.metadata["edition"] = None
+
+                    # EPUB3 schema:bookEdition property
+                    for meta in meta_tags:
+                        if meta.get("property") == "schema:bookEdition":
+                            self.metadata["edition"] = meta.text.strip()
+                            break
 
                     # Option 1: Detection via tags/subjects
                     if any(x in all_tags_text for x in ["sin censura", "uncensored", "no censura"]):
                         self.metadata["is_uncensored"] = 1
                     
-                    if any(x in all_tags_text for x in ["ilustraciones a color", "color", "full color"]):
+                    # Also check in edition field if found
+                    edition_text = (self.metadata.get("edition") or "").lower()
+                    if any(x in edition_text for x in ["sin censura", "uncensored", "no censura"]):
+                        self.metadata["is_uncensored"] = 1
+
+                    if any(x in all_tags_text for x in ["ilustraciones a color", "color", "full color"]) or "color" in edition_text:
                         self.metadata["color_mode"] = "color"
                     elif any(x in all_tags_text for x in ["blanco y negro", "b&w", "grayscale", "b/n"]):
                         self.metadata["color_mode"] = "bw"
