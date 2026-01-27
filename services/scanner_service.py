@@ -66,7 +66,8 @@ class ScannerService:
                 "removed": 0,
                 "archived": 0,
                 "covers_created": 0,
-                "sources_scanned": len(self.libraries)
+                "sources_scanned": len(self.libraries),
+                "touched_series_hashes": set()
             }
 
             # Si self.libraries está vacío (caso común al iniciar sin config env),
@@ -94,7 +95,12 @@ class ScannerService:
                 
                 # Update global results
                 for k, v in source_results.items():
-                    results[k] += v
+                    if k == "touched_series_hashes":
+                        results[k].update(v)
+                    elif isinstance(v, (int, float)):
+                        results[k] = results.get(k, 0) + v
+                    else:
+                        results[k] = v
 
                 # --- PRUNING: Delete books in DB not found on disk ---
                 try:
