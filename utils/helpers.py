@@ -374,14 +374,14 @@ def generate_series_hash(
     book_type: str | None = None
 ) -> str:
     """
-    Genera un hash estable para la serie basado exclusivamente en: series + author + book_type.
-    NO usar title.
+    Genera un hash estable para la serie basado exclusivamente en: series + book_type.
+    NO usar author para evitar duplicados cuando la metadata es inconsistente (algunos libros con autor, otros sin).
     """
     s_norm = norm_string(series, lowercase=True)
-    a_norm = norm_string(author, lowercase=True)
+    # a_norm = norm_string(author, lowercase=True) # Excluido intencionalmente para evitar fragmentación
     t_norm = norm_string(book_type, lowercase=True)
 
-    identity = f"series:{s_norm}|author:{a_norm}|type:{t_norm}"
+    identity = f"series:{s_norm}|type:{t_norm}"
 
     return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 

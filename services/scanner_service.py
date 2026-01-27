@@ -582,6 +582,8 @@ class ScannerService:
                 and book.series
                 and book.author
                 and book.volume is not None
+                # FORCE UPDATE IF SERIES HASH LOGIC CHANGED (Migration Fix)
+                and book.series_hash == generate_series_hash(book.series, book.author, book.book_type)
             ):
                 return "skipped"
 
