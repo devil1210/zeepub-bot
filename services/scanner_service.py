@@ -210,12 +210,16 @@ class ScannerService:
                                 )
                                 session.add(dup)
                                 count_moved += 1
+                            
+                            # BORRAR de local_books siempre (quedará en ArchivedBook si queremos, o simplemente desaparece de la vista activa)
+                            session.delete(orphan)
                         
-                        if count_moved > 0:
+                        if count_moved > 0 or len(orphans_list) > 0:
                             session.commit()
                             
                         results["orphans_detected"] = len(orphans_list)
                         results["orphans_moved_to_duplicates"] = count_moved
+                        results["removed"] = results.get("removed", 0) + len(orphans_list)
 
             # --- AI PROPOSALS (Background Gardener) ---
             # Si hubo cambios o es un escaneo completo, generar propuestas para series 'tocadas'
@@ -243,6 +247,32 @@ class ScannerService:
                     session.commit()
                 except Exception as ae:
                     logger.warning(f"Error generando propuestas IA en segundo plano: {ae}")
+
+            # --- FINAL CLEANUP: Remove/Archive empty series ---
+            try:
+                from models.library_models import SeriesMetadata, ArchivedSeries
+                empty_series = session.query(SeriesMetadata).filter(SeriesMetadata.book_count == 0).all()
+                if empty_series:
+                    logger.info(f"Limpieza final: Archivando {len(empty_series)} series vacías...")
+                    for s in empty_series:
+                        archived_s = ArchivedSeries(
+                            series_name=s.series_name,
+                            series_spanish=s.series_spanish,
+                            series_hash=s.series_hash,
+                            author=s.author,
+                            description=s.description,
+                            tags=s.tags,
+                            cover_url=s.cover_url,
+                            book_type=s.book_type,
+                            publisher=s.publisher,
+                            original_series_id=s.id
+                        )
+                        session.add(archived_s)
+                        session.delete(s)
+                        results["archived"] = results.get("archived", 0) + 1
+                    session.commit()
+            except Exception as ce:
+                logger.warning(f"Error en limpieza final de series: {ce}")
 
             logger.info(f"Escaneo completado: {results}")
             return results
@@ -932,8 +962,24 @@ class ScannerService:
             
         books = session.query(LocalBook).filter_by(series_hash=series_hash).all()
         if not books:
-            # Quizás la serie ya no tiene libros, podríamos borrarla o resetearla
-            series.book_count = 0
+            # Archivar serie si ya no tiene libros
+            from models.library_models import ArchivedSeries
+            logger.info(f"Archivando serie vacía en sincronización de metadata: {series.series_name}")
+            archived_s = ArchivedSeries(
+                series_name=series.series_name,
+                series_spanish=series.series_spanish,
+                series_hash=series.series_hash,
+                author=series.author,
+                description=series.description,
+                tags=series.tags,
+                cover_url=series.cover_url,
+                book_type=series.book_type,
+                publisher=series.publisher,
+                original_series_id=series.id
+            )
+            session.add(archived_s)
+            session.delete(series)
+            session.commit()
             return
 
         # 1. Consolidar Tags (Unión de todos los tags de todos los libros)
