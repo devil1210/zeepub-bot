@@ -210,20 +210,6 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
     setPageInfo(currentPage, totalPages);
   }, [currentPage, totalPages]);
 
-  useEffect(() => {
-    setContextType('series');
-    setVisible(true);
-    registerCallbacks({
-      onPrevPage: () => handlePrevPage(),
-      onNextPage: () => handleNextPage(),
-      onBack: onBack,
-      onHome: () => onBack(), // Default home behavior is back to dashboard
-    });
-    return () => {
-      setContextType('main');
-    };
-  }, [totalPages, onBack]);
-
   const handleNextPage = () => {
     if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
   };
@@ -231,6 +217,21 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   const handlePrevPage = () => {
     if (currentPage > 1) setCurrentPage(prev => prev - 1);
   };
+
+  useEffect(() => {
+    setContextType('series');
+    setVisible(true);
+    registerCallbacks({
+      onPrevPage: () => handlePrevPage(),
+      onNextPage: () => handleNextPage(),
+      onSortChange: (sort: string) => setActiveSort(sort),
+      onBack: onBack,
+      onHome: () => onBack(), // Default home behavior is back to dashboard
+    });
+    return () => {
+      setContextType('main');
+    };
+  }, [totalPages, onBack, registerCallbacks, setContextType, setVisible, handlePrevPage, handleNextPage]);
 
   const formatDescription = (desc: string) => {
     if (!desc) return null;

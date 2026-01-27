@@ -105,27 +105,22 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                         />
                         <NavDivider />
                         <NavButton
-                            onClick={handleBack}
-                            icon={Reply}
-                            label="Volver"
-                        />
-                        <NavDivider />
-                        <NavButton
-                            onClick={handleHome}
-                            icon={Home}
-                            label="Inicio"
-                        />
-                        <NavDivider />
-                        <NavButton
                             onClick={handleNextPage}
                             disabled={currentPage === totalPages}
                             icon={ChevronRight}
                             label="Siguiente"
                         />
+                        <NavDivider />
+                        <NavButton
+                            onClick={handleBack}
+                            icon={Reply}
+                            label="Volver"
+                        />
                     </>
                 );
 
             case 'admin':
+            case 'ai':
                 return (
                     <>
                         <NavButton
@@ -141,16 +136,12 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                             <div className="flex flex-col items-center min-w-0">
                                 <div className="flex items-center gap-2">
                                     <span className="text-[10px] font-black uppercase tracking-[0.15em] truncate">
-                                        {state.customTitle || 'Admin'}
+                                        {state.customTitle || (contextType === 'ai' ? 'Monitor' : 'Admin')}
                                     </span>
                                     <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isMenuOpen ? 'rotate-180' : ''}`} />
                                 </div>
                             </div>
                         </button>
-                        <NavDivider />
-                        <div className="flex-1 flex items-center justify-center gap-1">
-                            <NavButton onClick={() => window.location.reload()} icon={RefreshCw} label="Sync" />
-                        </div>
                     </>
                 );
 
@@ -183,6 +174,30 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                                 label="Inicio"
                             />
                         )}
+                    </>
+                );
+
+            case 'settings':
+                return (
+                    <>
+                        <NavButton
+                            onClick={handleBack}
+                            icon={ChevronLeft}
+                            label="Volver"
+                        />
+                        <NavDivider />
+                        <NavButton
+                            onClick={() => state.actionButtons?.find(b => b.id === 'restore')?.onClick()}
+                            icon={RotateCcw}
+                            label="Restaurar"
+                        />
+                        <NavDivider />
+                        <NavButton
+                            onClick={() => state.actionButtons?.find(b => b.id === 'save')?.onClick()}
+                            icon={Save}
+                            label="Guardar"
+                            highlightOnActive
+                        />
                     </>
                 );
 
@@ -225,7 +240,7 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
     return (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[600px] px-0 animate-in slide-in-from-bottom-4 duration-300">
             {/* Contextual Menus */}
-            {isMenuOpen && contextType === 'search' && (
+            {isMenuOpen && (contextType === 'search' || contextType === 'series') && (
                 <div
                     className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
                     style={{
@@ -249,6 +264,37 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                             >
                                 <option.icon className={`w-4 h-4 ${option.id === 'z-a' ? 'rotate-180' : ''}`} />
                                 <span className="text-center leading-tight">{option.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {isMenuOpen && (contextType === 'admin' || contextType === 'ai') && state.actionButtons && (
+                <div
+                    className="glass-panel rounded-premium p-2 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{
+                        background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
+                        backdropFilter: `blur(${settings.glassBlur}px)`,
+                        WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+                    }}
+                >
+                    <div className="flex flex-col gap-1">
+                        {state.actionButtons.map((btn) => (
+                            <button
+                                key={btn.id}
+                                onClick={() => {
+                                    webApp?.HapticFeedback?.impactOccurred('light');
+                                    btn.onClick();
+                                    setMenuOpen(false);
+                                }}
+                                className={`flex items-center gap-3 w-full px-4 py-3 rounded-premium-sm transition-all ${btn.highlight
+                                    ? 'bg-primary/20 text-primary border border-primary/20'
+                                    : 'hover:bg-white/5 text-gray-300'
+                                    }`}
+                            >
+                                <btn.icon className="w-4 h-4" />
+                                <span className="text-[11px] font-black uppercase tracking-widest">{btn.label}</span>
                             </button>
                         ))}
                     </div>

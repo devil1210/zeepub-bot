@@ -60,26 +60,10 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       } catch (err) { }
     };
     fetchLevels();
-    setContextType('admin');
-    setVisible(true);
-    return () => {
-      setContextType('main');
-    };
-  }, [setContextType, setVisible]);
-
-  const viewOptions = useMemo(() => [
-    { id: 'monitor', label: 'Monitor', icon: BarChart3 },
-    { id: 'system', label: 'Sistema', icon: Server },
-    { id: 'interface', label: 'Interfaz', icon: Palette },
-    { id: 'access', label: 'Niveles y Acceso', icon: ShieldCheck },
-    { id: 'duplicates', label: 'Duplicados', icon: FileWarning },
-    { id: 'uploads', label: 'Subidas', icon: UploadCloud },
-  ] as const, []);
-
-  const currentViewLabel = viewOptions.find(v => v.id === currentView)?.label || 'Panel';
+  }, []);
 
   // Contextual back action
-  const handleBack = () => {
+  const handleBack = React.useCallback(() => {
     webApp?.HapticFeedback?.impactOccurred('light');
     if (selectedUserId || configuringTier) {
       // Step back from detail to list
@@ -94,17 +78,49 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       // Exit admin to dashboard
       onNavigate && onNavigate('dashboard');
     }
-  };
+  }, [webApp, selectedUserId, configuringTier, setSearchParams, onNavigate]);
 
   useEffect(() => {
+    setContextType('admin');
+    setVisible(true);
+
+    const views = [
+      { id: 'monitor', label: 'Monitor', icon: BarChart3 },
+      { id: 'system', label: 'Sistema', icon: Server },
+      { id: 'interface', label: 'Interfaz', icon: Palette },
+      { id: 'access', label: 'Acceso', icon: ShieldCheck },
+      { id: 'duplicates', label: 'Duplicados', icon: FileWarning },
+      { id: 'uploads', label: 'Subidas', icon: UploadCloud },
+    ];
+
     setCustomActions({
-      title: selectedUserId ? 'Perfil Usuario' : currentViewLabel,
-      back: handleBack
+      title: selectedUserId ? 'Perfil Usuario' : (views.find(v => v.id === currentView)?.label || 'Admin'),
+      buttons: views.map(v => ({
+        id: v.id,
+        label: v.label,
+        icon: v.icon,
+        onClick: () => {
+          setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('view', v.id);
+            newParams.delete('userId');
+            newParams.delete('tierName');
+            newParams.delete('tierColor');
+            return newParams;
+          });
+        },
+        highlight: currentView === v.id && !selectedUserId
+      }))
     });
+
     registerCallbacks({
       onBack: handleBack
     });
-  }, [selectedUserId, currentViewLabel, handleBack, setCustomActions, registerCallbacks]);
+
+    return () => {
+      setContextType('main');
+    };
+  }, [setContextType, setVisible, setCustomActions, registerCallbacks, currentView, selectedUserId, setSearchParams, handleBack]);
 
   const setCurrentView = (view: string) => {
     setSearchParams(prev => {
@@ -180,7 +196,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
       <div className="max-w-[1800px] mx-auto pb-32 md:pb-12 p-4 md:p-8 animate-in fade-in duration-700 font-sans relative z-10">
 
-        {/* Desktop Header */}
+        {/* Header Only (Internal Navigation is handled by Floating Nav) */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-4">
             <div className="p-2.5 bg-primary/20 rounded-premium-sm border border-primary/20">
@@ -190,109 +206,12 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
               Panel <span className="text-primary font-black">Admin</span>
             </h1>
           </div>
-
-          <div className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1.5 rounded-premium-sm border border-white/5 backdrop-blur-md">
-            {viewOptions.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => setCurrentView(option.id)}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all ${currentView === option.id
-                  ? 'bg-primary/90 text-white shadow-lg shadow-primary/20 scale-[1.02]'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-                  }`}
-              >
-                <option.icon className="w-3.5 h-3.5" />
-                {option.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* View Content */}
         <div className="min-h-[600px] mb-20">
           {renderView()}
         </div>
-
-        {/* View Selection Overlay (Menu) - Managed by Universal Nav State */}
-        {isViewSelectorOpen && (
-          <div
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[90%] max-w-lg z-50 animate-in slide-in-from-bottom-4 fade-in duration-300"
-          >
-            <div
-              className="glass-panel rounded-[2.5rem] p-4 border border-white/10 shadow-2xl overflow-hidden"
-              style={{
-                background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-                backdropFilter: `blur(${settings.glassBlur}px)`,
-                WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-              }}
-            >
-              {configuringTier || currentView === 'access' ? (
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between px-2">
-                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Cambiar Nivel a Editar</span>
-                    <Layers className="w-3.5 h-3.5 text-primary opacity-50" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {levels.map((lvl) => (
-                      <button
-                        key={lvl.id}
-                        onClick={() => {
-                          setConfiguringTier({ name: lvl.name, color: lvl.color });
-                          setIsViewSelectorOpen(false);
-                          if (currentView !== 'access') setCurrentView('access');
-                        }}
-                        className={`flex items-center gap-3 px-4 py-4 rounded-premium-sm transition-all border ${configuringTier?.name === lvl.name
-                          ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                          : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
-                          }`}
-                      >
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: lvl.color }} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">{lvl.name}</span>
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => {
-                        setConfiguringTier(null);
-                        setSelectedUserId(null);
-                        setIsViewSelectorOpen(false);
-                      }}
-                      className="flex items-center gap-3 px-4 py-4 rounded-premium-sm bg-white/5 text-gray-400 border border-transparent hover:bg-white/10 hover:text-white transition-all font-bold text-[10px] uppercase tracking-wider"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      Resumen
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {viewOptions.map((option) => {
-                    const isActive = currentView === option.id;
-                    return (
-                      <button
-                        key={option.id}
-                        onClick={() => setCurrentView(option.id)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all border ${isActive
-                          ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                          : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
-                          }`}
-                      >
-                        <option.icon className="w-4 h-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">{option.label}</span>
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => handleBack()}
-                    className="flex items-center gap-3 px-4 py-3 rounded-premium-sm bg-white/5 text-gray-400 border border-transparent hover:bg-red-500/20 hover:text-red-400 transition-all font-bold text-[10px] uppercase tracking-wider mt-2"
-                  >
-                    <Home className="w-4 h-4" />
-                    Salir Panel
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

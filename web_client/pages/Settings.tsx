@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme, adjustBrightness } from '../contexts/ThemeContext';
 import { useTelegram } from '../contexts/TelegramContext';
+import { useNavigation } from '../contexts/NavigationContext';
 import {
   LogOut,
   ChevronRight,
@@ -56,6 +57,24 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const [selectedElement, setSelectedElement] = useState<'nav' | 'searchbar' | 'header' | 'glass'>('nav');
   const [availableThemes, setAvailableThemes] = useState<any[]>([]);
   const { allowThemeTemplates } = useTelegram();
+  const { setContextType, setVisible, setCustomActions, registerCallbacks } = useNavigation();
+
+  useEffect(() => {
+    setContextType('settings');
+    setVisible(true);
+    setCustomActions({
+      buttons: [
+        { id: 'restore', label: 'Restaurar', icon: RotateCcw, onClick: resetSettings },
+        { id: 'save', label: 'Guardar', icon: Save, onClick: handleSave, highlight: true }
+      ]
+    });
+    registerCallbacks({
+      onBack: handleBack
+    });
+    return () => {
+      setContextType('main');
+    };
+  }, [setContextType, setVisible, setCustomActions, registerCallbacks]);
 
   const handleColorChange = (color: string) => {
     updateSettings({
@@ -692,52 +711,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Mobile Bottom Floating Action Bar */}
-      <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300">
-        <div
-          className="glass-panel rounded-premium p-1 border border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
-          style={{
-            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-            backdropFilter: `blur(${settings.glassBlur}px)`,
-            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-          }}
-        >
-          <button
-            onClick={() => onNavigate && onNavigate('dashboard')}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-400 hover:text-black dark:hover:text-white"
-          >
-            <div className="p-1.5 rounded-full transition-all duration-300">
-              <Home className="w-4 h-4" strokeWidth={2} />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Inicio</span>
-          </button>
 
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-
-          <button
-            onClick={resetSettings}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-400 hover:text-black dark:hover:text-white"
-          >
-            <div className="p-1.5 rounded-full transition-all duration-300">
-              <RotateCcw className="w-4 h-4" strokeWidth={2} />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Restaurar</span>
-          </button>
-
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-[var(--color-primary)] disabled:opacity-50"
-          >
-            <div className="p-1.5 rounded-full bg-[var(--color-primary)] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]">
-              {isSaving ? <RotateCcw className="w-4 h-4 text-white animate-spin" strokeWidth={2.5} /> : <Save className="w-4 h-4 text-white" strokeWidth={2.5} />}
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1 text-[var(--color-primary)]">{isSaving ? 'Guardando' : 'Guardar'}</span>
-          </button>
-        </div>
-      </div>
 
     </div >
   );

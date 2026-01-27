@@ -25,6 +25,7 @@ import { useTelegram } from '../contexts/TelegramContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { preloadImages } from '../src/utils/imagePreloader';
 import { getCoverUrl } from '../src/utils/imageUtils';
+import { useNavigation } from '../contexts/NavigationContext';
 
 interface DashboardProps {
   onNavigate?: (tab: string) => void;
@@ -33,9 +34,15 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user: tgUser, status, showRecommendations, extendedInfo, isAdmin } = useTelegram();
   const { settings } = useTheme();
+  const { setVisible } = useNavigation();
   const [history, setHistory] = useState<any[]>([]);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setVisible(false);
+    return () => setVisible(true);
+  }, [setVisible]);
 
   useEffect(() => {
     const fetchData = async () => {

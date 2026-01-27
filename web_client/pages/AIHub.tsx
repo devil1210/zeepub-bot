@@ -79,15 +79,35 @@ export const AIHub: React.FC = () => {
     };
 
     useEffect(() => {
-        setContextType('admin');
+        setContextType('ai');
         setVisible(true);
+
+        const views = [
+            { id: 'control', label: 'Monitor', icon: Activity },
+            { id: 'pending', label: 'Propuestas Pendientes', icon: AlertTriangle },
+            { id: 'reviewed', label: 'Historial', icon: Clock }
+        ];
+
         setCustomActions({
-            title: 'AI CEREBRO'
+            title: views.find(v => v.id === activeTab)?.label || 'AI CEREBRO',
+            buttons: views.map(v => ({
+                id: v.id,
+                label: v.label,
+                icon: v.icon,
+                onClick: () => setActiveTab(v.id),
+                highlight: activeTab === v.id
+            })),
+            back: () => window.history.back()
         });
+
+        registerCallbacks({
+            onBack: () => window.history.back()
+        });
+
         return () => {
             setContextType('main');
         };
-    }, [setContextType, setVisible, setCustomActions]);
+    }, [setContextType, setVisible, setCustomActions, activeTab, registerCallbacks]);
 
     const loadLists = async (type: 'pending' | 'reviewed') => {
         try {

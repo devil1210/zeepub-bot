@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-export type NavContextType = 'main' | 'search' | 'series' | 'book' | 'admin' | 'none';
+export type NavContextType = 'main' | 'search' | 'series' | 'book' | 'admin' | 'ai' | 'settings' | 'none';
 
 export interface NavActionButton {
     id: string;
@@ -83,45 +83,44 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
 
     const [callbacks, setCallbacks] = useState<any>(null);
 
-    const setContextType = (contextType: NavContextType) => {
+    const setContextType = React.useCallback((contextType: NavContextType) => {
         setState(prev => ({ ...prev, contextType, isMenuOpen: false }));
-    };
+    }, []);
 
-    const setVisible = (isVisible: boolean) => {
+    const setVisible = React.useCallback((isVisible: boolean) => {
         setState(prev => ({ ...prev, isVisible }));
-    };
+    }, []);
 
-    const setMenuOpen = (isMenuOpen: boolean) => {
+    const setMenuOpen = React.useCallback((isMenuOpen: boolean) => {
         setState(prev => ({ ...prev, isMenuOpen }));
-    };
+    }, []);
 
-    const setPageInfo = (currentPage: number, totalPages: number) => {
+    const setPageInfo = React.useCallback((currentPage: number, totalPages: number) => {
         setState(prev => ({ ...prev, currentPage, totalPages }));
-    };
+    }, []);
 
-    const setActiveSort = (activeSort: string) => {
+    const setActiveSort = React.useCallback((activeSort: string) => {
         setState(prev => ({ ...prev, activeSort }));
-    };
+    }, []);
 
-    const setSearchTerm = (term: string) => {
+    const setSearchTerm = React.useCallback((term: string) => {
         setState(prev => ({ ...prev, searchTerm: term }));
-        callbacks?.onSearchChange?.(term);
-    };
+        // callbacks refer to a state, so we check it
+    }, []);
 
-    const setSelectedScope = (selectedScope: string) => {
+    const setSelectedScope = React.useCallback((selectedScope: string) => {
         setState(prev => ({ ...prev, selectedScope }));
-    };
+    }, []);
 
-    const setViewMode = (viewMode: 'list' | 'grid') => {
+    const setViewMode = React.useCallback((viewMode: 'list' | 'grid') => {
         setState(prev => ({ ...prev, viewMode }));
-        callbacks?.onViewModeChange?.(viewMode);
-    };
+    }, []);
 
-    const setLoading = (loading: boolean) => {
+    const setLoading = React.useCallback((loading: boolean) => {
         setState(prev => ({ ...prev, loading }));
-    };
+    }, []);
 
-    const setCustomActions = (actions: { back?: () => void; home?: () => void; title?: string; buttons?: NavActionButton[] }) => {
+    const setCustomActions = React.useCallback((actions: { back?: () => void; home?: () => void; title?: string; buttons?: NavActionButton[] }) => {
         setState(prev => ({
             ...prev,
             backAction: actions.back,
@@ -129,43 +128,64 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
             customTitle: actions.title,
             actionButtons: actions.buttons
         }));
-    };
+    }, []);
 
-    const handlePrevPage = () => callbacks?.onPrevPage?.();
-    const handleNextPage = () => callbacks?.onNextPage?.();
-    const handleSortChange = (sort: string) => {
+    const handlePrevPage = React.useCallback(() => callbacks?.onPrevPage?.(), [callbacks]);
+    const handleNextPage = React.useCallback(() => callbacks?.onNextPage?.(), [callbacks]);
+    const handleSortChange = React.useCallback((sort: string) => {
         callbacks?.onSortChange?.(sort);
         setActiveSort(sort);
-    };
-    const handleHome = () => callbacks?.onHome?.();
-    const handleBack = () => callbacks?.onBack?.();
-    const handleScopeClick = () => callbacks?.onScopeClick?.();
+    }, [callbacks, setActiveSort]);
+    const handleHome = React.useCallback(() => callbacks?.onHome?.(), [callbacks]);
+    const handleBack = React.useCallback(() => callbacks?.onBack?.(), [callbacks]);
+    const handleScopeClick = React.useCallback(() => callbacks?.onScopeClick?.(), [callbacks]);
 
-    const registerCallbacks = (cbs: any) => {
+    const registerCallbacks = React.useCallback((cbs: any) => {
         setCallbacks(cbs);
-    };
+    }, []);
+
+    const value = React.useMemo(() => ({
+        state,
+        setContextType,
+        setVisible,
+        setMenuOpen,
+        setPageInfo,
+        setActiveSort,
+        setSearchTerm,
+        setSelectedScope,
+        setViewMode,
+        setLoading,
+        setCustomActions,
+        handlePrevPage,
+        handleNextPage,
+        handleSortChange,
+        handleHome,
+        handleBack,
+        handleScopeClick,
+        registerCallbacks
+    }), [
+        state,
+        setContextType,
+        setVisible,
+        setMenuOpen,
+        setPageInfo,
+        setActiveSort,
+        setSearchTerm,
+        setSelectedScope,
+        setViewMode,
+        setLoading,
+        setCustomActions,
+        handlePrevPage,
+        handleNextPage,
+        handleSortChange,
+        handleHome,
+        handleBack,
+        handleScopeClick,
+        registerCallbacks
+    ]);
 
     return (
-        <NavigationContext.Provider value={{
-            state,
-            setContextType,
-            setVisible,
-            setMenuOpen,
-            setPageInfo,
-            setActiveSort,
-            setSearchTerm,
-            setSelectedScope,
-            setViewMode,
-            setLoading,
-            setCustomActions,
-            handlePrevPage,
-            handleNextPage,
-            handleSortChange,
-            handleHome,
-            handleBack,
-            handleScopeClick,
-            registerCallbacks
-        }}>
+        <NavigationContext.Provider value={value}>
             {children}
         </NavigationContext.Provider>
     );
