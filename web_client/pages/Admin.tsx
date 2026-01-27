@@ -21,6 +21,7 @@ import { AccessDashboard } from './AccessDashboard';
 import { AppearanceDashboard } from './AppearanceDashboard';
 import { DuplicatesDashboard } from './DuplicatesDashboard';
 import { UploadHistoryDashboard } from './UploadHistoryDashboard';
+import { useTelegram } from '../contexts/TelegramContext';
 
 interface AdminProps {
   onNavigate?: (tab: string) => void;
@@ -28,6 +29,7 @@ interface AdminProps {
 
 export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const { settings } = useTheme();
+  const { webApp } = useTelegram();
   const [searchParams, setSearchParams] = useSearchParams();
   const { state: navState, setContextType, setMenuOpen, setCustomActions, registerCallbacks, setVisible } = useNavigation();
 
@@ -78,6 +80,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
   // Contextual back action
   const handleBack = () => {
+    webApp?.HapticFeedback?.impactOccurred('light');
     if (selectedUserId || configuringTier) {
       // Step back from detail to list
       setSearchParams(prev => {
@@ -112,6 +115,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       newParams.delete('tierColor');
       return newParams;
     });
+    webApp?.HapticFeedback?.impactOccurred('medium');
     setIsViewSelectorOpen(false);
   };
 

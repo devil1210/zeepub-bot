@@ -43,6 +43,7 @@ interface SeriesDetailProps {
 
 export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSelectVolume, onSearch }) => {
   const { settings } = useTheme();
+  const { webApp } = useTelegram();
   const { setContextType, registerCallbacks, setPageInfo, setVisible } = useNavigation();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -60,19 +61,18 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
     if (isSyncing || !realSeries.series_hash) return;
     setIsSyncing(true);
     try {
+      webApp?.HapticFeedback?.impactOccurred('medium');
       const res = await api.adminScanSeries(realSeries.series_hash, true);
       if (res.success) {
-        // Show success message (using native alert for now if no toast system)
-        if (typeof (window as any).Telegram?.WebApp?.showAlert === 'function') {
-          (window as any).Telegram.WebApp.showAlert(res.message || "Sincronización iniciada.");
-        } else {
-          alert(res.message || "Sincronización iniciada.");
-        }
+        webApp?.HapticFeedback?.notificationOccurred('success');
+        webApp?.showAlert?.(res.message || "Sincronización iniciada.");
       } else {
-        alert(res.error || "Error al iniciar sincronización.");
+        webApp?.HapticFeedback?.notificationOccurred('error');
+        webApp?.showAlert?.(res.error || "Error al iniciar sincronización.");
       }
     } catch (e: any) {
-      alert("Error: " + e.message);
+      webApp?.HapticFeedback?.notificationOccurred('error');
+      webApp?.showAlert?.("Error: " + e.message);
     } finally {
       setIsSyncing(false);
     }

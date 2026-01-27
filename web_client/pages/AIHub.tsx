@@ -20,10 +20,12 @@ import {
 import { api } from '../src/services/api';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigation } from '../contexts/NavigationContext';
+import { useTelegram } from '../contexts/TelegramContext';
 import { getCoverUrl } from '../src/utils/imageUtils';
 
 export const AIHub: React.FC = () => {
     const { settings } = useTheme();
+    const { webApp } = useTelegram();
     const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -123,10 +125,12 @@ export const AIHub: React.FC = () => {
         setProposal(null);
 
         try {
+            webApp?.HapticFeedback?.impactOccurred('medium');
             // ALWAYS use dry_run=true first for user safety
             const res = await api.scanSeriesAi(scanHash, true); // true = dry_run
 
             if (res.dry_run && res.proposal) {
+                webApp?.HapticFeedback?.notificationOccurred('success');
                 // Show interactive modal
                 setProposal(res.proposal);
                 setApprovedChanges(res.proposal?.changes || []);
@@ -139,6 +143,7 @@ export const AIHub: React.FC = () => {
                 setScanResult(res.result || res);
             }
         } catch (e: any) {
+            webApp?.HapticFeedback?.notificationOccurred('error');
             setScanResult({ success: false, message: e.message || "Error desconocido" });
         } finally {
             setScanning(false);
@@ -149,6 +154,7 @@ export const AIHub: React.FC = () => {
         if (!proposal) return;
         setProcessingProposal(true);
         try {
+            webApp?.HapticFeedback?.impactOccurred('heavy');
             const res = await api.applyAiChanges(
                 proposal,
                 approvedChanges,
@@ -157,13 +163,16 @@ export const AIHub: React.FC = () => {
                 editedSeries, // Pass edited name
                 editedSpanish // Pass edited spanish name
             );
+            webApp?.HapticFeedback?.notificationOccurred('success');
+            webApp?.showAlert?.("✅ Cambios aplicados con éxito.");
             setScanResult(res);
             setShowProposal(false);
             setProposal(null);
             loadStats(); // Refresh stats
             loadProposals(); // Refresh proposals list
         } catch (e: any) {
-            alert("Error aplicando cambios: " + e.message);
+            webApp?.HapticFeedback?.notificationOccurred('error');
+            webApp?.showAlert?.("Error aplicando cambios: " + e.message);
         } finally {
             setProcessingProposal(false);
         }

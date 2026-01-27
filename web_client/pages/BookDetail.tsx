@@ -34,6 +34,7 @@ import { ReportIssueModal } from '../components/ReportIssueModal';
 import { RatingModal } from '../components/RatingModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigation } from '../contexts/NavigationContext';
+import { useTelegram } from '../contexts/TelegramContext';
 
 interface BookDetailProps {
   volume?: Volume;
@@ -53,6 +54,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   onNavigate
 }) => {
   const { settings } = useTheme();
+  const { webApp } = useTelegram();
   const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
 
   // Data State
@@ -179,7 +181,10 @@ export const BookDetail: React.FC<BookDetailProps> = ({
         id: 'home',
         label: 'Inicio',
         icon: Home,
-        onClick: () => onNavigate && onNavigate('dashboard')
+        onClick: () => {
+          webApp?.HapticFeedback?.notificationOccurred('success');
+          onNavigate && onNavigate('dashboard');
+        }
       }
     ];
 
@@ -188,7 +193,10 @@ export const BookDetail: React.FC<BookDetailProps> = ({
         id: 'rate',
         label: 'Valorar',
         icon: Star,
-        onClick: () => setIsRatingModalOpen(true)
+        onClick: () => {
+          webApp?.HapticFeedback?.impactOccurred('medium');
+          setIsRatingModalOpen(true);
+        }
       });
     }
 
@@ -239,12 +247,16 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   const handleDownload = async () => {
     if (!curVolume) return;
     try {
+      webApp?.HapticFeedback?.impactOccurred('medium');
       await api.requestDownload(curVolume.id);
       setHasDownloaded(true);
       setLocalDownloadCount(prev => prev + 1);
+      webApp?.HapticFeedback?.notificationOccurred('success');
+      webApp?.showAlert?.("📚 ¡Libro enviado! Revisa tu chat privado con el bot.");
     } catch (err) {
       console.error("Error downloading book", err);
-      alert("Error al solicitar descarga: " + (err as Error).message);
+      webApp?.HapticFeedback?.notificationOccurred('error');
+      webApp?.showAlert?.("❌ Error: " + (err as Error).message);
     }
   };
 
@@ -258,10 +270,12 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       } else {
         setLocalRating(rating);
       }
+      webApp?.HapticFeedback?.notificationOccurred('success');
       setIsRatingModalOpen(false);
     } catch (err) {
       console.error("Error rating book", err);
-      alert("Error al enviar valoración: " + (err as Error).message);
+      webApp?.HapticFeedback?.notificationOccurred('error');
+      webApp?.showAlert?.("Error al enviar valoración: " + (err as Error).message);
     }
   };
 

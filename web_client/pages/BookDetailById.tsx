@@ -3,6 +3,7 @@ import { ArrowLeft, Download, Star, Book, User, Calendar, Hash, Loader2, Home } 
 import { api } from '../src/services/api';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigation } from '../contexts/NavigationContext';
+import { useTelegram } from '../contexts/TelegramContext';
 import { getCoverUrl } from '../src/utils/imageUtils';
 
 interface BookDetailByIdProps {
@@ -13,6 +14,7 @@ interface BookDetailByIdProps {
 
 export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, onNavigate }) => {
     const { settings } = useTheme();
+    const { webApp } = useTelegram();
     const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
     const [book, setBook] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -81,12 +83,14 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
     const handleDownload = async () => {
         if (!book) return;
         try {
+            webApp?.HapticFeedback?.impactOccurred('medium');
             setDownloading(true);
             await api.requestDownload(bookId, 'private');
-            // Show success feedback
-            alert('✅ Libro enviado a tu chat privado');
+            webApp?.HapticFeedback?.notificationOccurred('success');
+            webApp?.showAlert?.('✅ Libro enviado a tu chat privado');
         } catch (err: any) {
-            alert('❌ Error: ' + (err.message || 'No se pudo descargar'));
+            webApp?.HapticFeedback?.notificationOccurred('error');
+            webApp?.showAlert?.('❌ Error: ' + (err.message || 'No se pudo descargar'));
         } finally {
             setDownloading(false);
         }

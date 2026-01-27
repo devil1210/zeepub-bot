@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigation } from '../contexts/NavigationContext';
+import { useTelegram } from '../contexts/TelegramContext';
 import {
     ChevronLeft,
     ChevronRight,
@@ -34,6 +35,7 @@ const sortOptions = [
 
 export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: (tab: string) => void }> = ({ activeTab, onTabChange }) => {
     const { settings } = useTheme();
+    const { webApp } = useTelegram();
     const {
         state,
         handlePrevPage,
@@ -236,7 +238,10 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                         {sortOptions.map((option) => (
                             <button
                                 key={option.id}
-                                onClick={() => handleSortChange(option.id)}
+                                onClick={() => {
+                                    webApp?.HapticFeedback?.impactOccurred('light');
+                                    handleSortChange(option.id);
+                                }}
                                 className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${activeSort === option.id
                                     ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
                                     : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
@@ -272,20 +277,33 @@ const NavButton: React.FC<{
     icon: any;
     label: string;
     highlightOnActive?: boolean;
-}> = ({ onClick, isActive, disabled, icon: Icon, label, highlightOnActive }) => (
-    <button
-        onClick={onClick}
-        disabled={disabled}
-        className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 ${disabled ? 'opacity-30 cursor-not-allowed' : 'hover:text-black dark:hover:text-white'} ${isActive ? 'text-primary' : 'text-gray-500'}`}
-    >
-        <div className={`p-1.5 rounded-full transition-all duration-300 ${isActive && highlightOnActive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
-            <Icon className={`w-4 h-4 ${(isActive && highlightOnActive) ? 'text-white' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
-        </div>
-        <span className="text-[9px] font-black uppercase tracking-widest mt-1">{label}</span>
-        {isActive && !highlightOnActive && (
-            <div className="absolute bottom-1 w-1 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.8)]"></div>
-        )}
-    </button>
-);
+}> = ({ onClick, isActive, disabled, icon: Icon, label, highlightOnActive }) => {
+    const { webApp } = useTelegram();
+
+    const handleClick = () => {
+        if (disabled) return;
+        webApp?.HapticFeedback?.impactOccurred(isActive ? 'light' : 'medium');
+        onClick?.();
+    };
+
+    return (
+        <button
+            onClick={handleClick}
+            disabled={disabled}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-500 relative z-10 ${disabled ? 'opacity-30 cursor-not-allowed' : 'hover:scale-105 active:scale-90 hover:text-black dark:hover:text-white'} ${isActive ? 'text-primary' : 'text-gray-500'}`}
+        >
+            <div
+                key={label} // Trigger animation on label/button change
+                className={`p-1.5 rounded-full transition-all duration-500 animate-in zoom-in-75 fade-in duration-300 ${isActive && highlightOnActive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}
+            >
+                <Icon className={`w-4 h-4 ${(isActive && highlightOnActive) ? 'text-white' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-80 group-hover:opacity-100 transition-opacity">{label}</span>
+            {isActive && !highlightOnActive && (
+                <div className="absolute bottom-1 w-1 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.8)] animate-in fade-in zoom-in duration-500"></div>
+            )}
+        </button>
+    );
+};
 
 const NavDivider = () => <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>;
