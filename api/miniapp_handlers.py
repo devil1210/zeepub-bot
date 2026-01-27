@@ -1047,7 +1047,107 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
             
             return {"success": True, "message": f"Sincronización bidireccional completada. Pushed {len(users)} users, Local updated from Cloud."}
     except Exception as e:
-        logger.error(f"Error syncing users to Supabase: {e}")
+        return {"success": False, "message": str(e)}
+
+async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[str, Any]):
+    """Sincroniza metadata de librerías, propuestas de IA y feedback de aprendizaje a Supabase."""
+    check_staff(user_data)
+    
+    if not config.ENABLE_SUPABASE:
+        return {"success": False, "message": "Supabase no está habilitado."}
+
+    try:
+        from core.db_manager_pg import pg_manager
+        from core.supabase_manager import supabase_manager
+        from models.library_models import SeriesMetadata, AILearningFeedback, MetadataProposal
+        from sqlalchemy import select
+        
+        client = supabase_manager.get_client()
+        stats = {"series": 0, "feedback": 0, "proposals": 0}
+        
+        async with pg_manager.get_session() as session:
+            # 1. Sync Series Metadata
+            res_series = await session.execute(select(SeriesMetadata))
+            all_series = res_series.scalars().all()
+            series_batch = []
+            for s in all_series:
+                s_data = {
+                    "series_hash": s.series_hash,
+                    "series_name": s.series_name,
+                    "series_spanish": s.series_spanish,
+                    "author": s.author,
+                    "author_jap": s.author_jap,
+                    "illustrator": s.illustrator,
+                    "illustrator_jap": s.illustrator_jap,
+                    "description": s.description,
+                    "tags": s.tags,
+                    "cover_url": s.cover_url,
+                    "book_count": s.book_count,
+                    "book_type": s.book_type,
+                    "publisher": s.publisher,
+                    "rating_average": s.rating_average,
+                    "rating_count": s.rating_count
+                }
+                series_batch.append(s_data)
+            
+            if series_batch:
+                for i in range(0, len(series_batch), 50):
+                    batch = series_batch[i:i+50]
+                    client.table("series_metadata").upsert(batch, on_conflict="series_hash").execute()
+                    stats["series"] += len(batch)
+
+            # 2. Sync AI Learning Feedback
+            res_feedback = await session.execute(select(AILearningFeedback))
+            all_feedback = res_feedback.scalars().all()
+            feedback_batch = []
+            for f in all_feedback:
+                f_data = {
+                    "series_hash": f.series_hash,
+                    "original_name": f.original_name,
+                    "proposed_name": f.proposed_name,
+                    "final_name": f.final_name,
+                    "status": f.status,
+                    "ai_reason": f.ai_reason,
+                    "user_reason": f.user_reason,
+                    "created_at": f.created_at.isoformat() if f.created_at else None
+                }
+                feedback_batch.append(f_data)
+                
+            if feedback_batch:
+                for i in range(0, len(feedback_batch), 50):
+                    batch = feedback_batch[i:i+50]
+                    client.table("ai_learning_feedback").upsert(batch).execute()
+                    stats["feedback"] += len(batch)
+
+            # 3. Sync AI Proposals (MetadataProposals)
+            res_props = await session.execute(select(MetadataProposal))
+            all_props = res_props.scalars().all()
+            props_batch = []
+            for p in all_props:
+                p_data = {
+                    "series_hash": p.series_hash,
+                    "secondary_hash": p.secondary_hash,
+                    "type": p.type,
+                    "proposal_data": p.proposal_data,
+                    "status": p.status,
+                    "created_at": p.created_at.isoformat() if p.created_at else None,
+                    "processed_at": p.processed_at.isoformat() if p.processed_at else None
+                }
+                props_batch.append(p_data)
+
+            if props_batch:
+                for i in range(0, len(props_batch), 50):
+                    batch = props_batch[i:i+50]
+                    client.table("metadata_proposals").upsert(batch).execute()
+                    stats["proposals"] += len(batch)
+
+        return {
+            "success": True, 
+            "message": f"Sincronización de librería completada: {stats['series']} series, {stats['feedback']} items de feedback, {stats['proposals']} propuestas.",
+            "stats": stats
+        }
+    except Exception as e:
+        logger.error(f"Error syncing library to Supabase: {e}")
         return {"success": False, "message": str(e)}
 
 async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, Any]):
@@ -2676,6 +2776,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         approved_changes = data.get("approved_changes", []) 
         # Global series metadata overrides
         proposed_series = data.get("proposed_series")
+        proposed_spanish = data.get("proposed_spanish")
         
         # Optional flags
         apply_renames = data.get("apply_renames", True)
@@ -2692,11 +2793,13 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         if apply_meta and proposed_series:
             # Sync with SeriesMetadata table
             series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
-            proposed_spanish = proposal.get("proposed_spanish")
+            # If not in data, fallback to proposal
+            if not proposed_spanish:
+                proposed_spanish = proposal.get("proposed_spanish")
             
             if series:
                 series.series_name = proposed_series
-                series.series_spanish = proposed_spanish
+                series.series_spanish = proposed_spanish or proposed_series
                 if proposal.get("description"):
                     series.description = proposal["description"]
                 
@@ -2710,12 +2813,31 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 series = SeriesMetadata(
                     series_hash=series_hash,
                     series_name=proposed_series,
-                    series_spanish=proposed_spanish,
+                    series_spanish=proposed_spanish or proposed_series,
                     tags=proposal.get("genres"),
                     description=proposal.get("description")
                 )
                 session.add(series)
                 session.flush()
+
+            # Cloud Sync immediately if enabled
+            if config.ENABLE_SUPABASE:
+                try:
+                    from core.supabase_manager import supabase_manager
+                    client = supabase_manager.get_client()
+                    s_data = {
+                        "series_hash": series.series_hash,
+                        "series_name": series.series_name,
+                        "series_spanish": series.series_spanish,
+                        "description": series.description,
+                        "tags": series.tags,
+                        "author": series.author,
+                        "book_count": series.book_count,
+                        "rating_average": series.rating_average
+                    }
+                    client.table("series_metadata").upsert(s_data, on_conflict="series_hash").execute()
+                except Exception as cloud_e:
+                    logger.warning(f"Failed to sync series to cloud: {cloud_e}")
 
             # Update all books in this hash group to the new series name and link them
             stmt = select(LocalBook).where(LocalBook.series_hash == series_hash)
@@ -2724,8 +2846,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             for book in books:
                 book.series_metadata_id = series.id
                 book.series = proposed_series  # English
-                if proposed_spanish:
-                    book.series_spanish = proposed_spanish # Spanish
+                book.series_spanish = proposed_spanish or proposed_series # Spanish (Always set for consistency)
                 
                 book.is_uncensored = proposal.get("is_uncensored_series", False)
                 
@@ -2835,18 +2956,38 @@ async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any])
 
         # 2. Actualizar metadata de la serie A si el usuario aprobó un nombre específico
         main_name = proposal.get("suggested_main_name")
+        main_spanish = proposal.get("suggested_spanish_name")
         if main_name:
             series_a = session.query(SeriesMetadata).filter_by(series_hash=hash_a).first()
             if series_a:
                 series_a.series_name = main_name
-                # Podríamos también unificar tags aquí
+                if main_spanish:
+                    series_a.series_spanish = main_spanish
             
             # Sincronizar nombre en los libros movidos
             session.execute(
                 update(LocalBook)
                 .where(LocalBook.series_hash == hash_a)
-                .values(series=main_name)
+                .values(
+                    series=main_name,
+                    series_spanish=main_spanish or main_name
+                )
             )
+            
+            # Cloud Sync A
+            if config.ENABLE_SUPABASE:
+                try:
+                    from core.supabase_manager import supabase_manager
+                    client = supabase_manager.get_client()
+                    if series_a:
+                        client.table("series_metadata").upsert({
+                            "series_hash": series_a.series_hash,
+                            "series_name": series_a.series_name,
+                            "series_spanish": series_a.series_spanish
+                        }, on_conflict="series_hash").execute()
+                    # Delete B from cloud too
+                    client.table("series_metadata").delete().eq("series_hash", hash_b).execute()
+                except Exception: pass
 
         # 3. Eliminar la serie B nula
         session.query(SeriesMetadata).filter_by(series_hash=hash_b).delete()

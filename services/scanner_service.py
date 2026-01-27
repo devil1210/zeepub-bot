@@ -846,6 +846,13 @@ class ScannerService:
                     series.description = b.description
                     break
                     
+        # Prefer Spanish series name if available in any book
+        if not series.series_spanish:
+            for b in books:
+                if hasattr(b, 'series_spanish') and b.series_spanish:
+                    series.series_spanish = b.series_spanish
+                    break
+                    
         # 3. Métricas
         series.book_count = len(books)
         

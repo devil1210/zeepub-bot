@@ -474,11 +474,19 @@ export const InfrastructureDashboard: React.FC = () => {
                                     </button>
                                     <button
                                         disabled={!!actionLoading}
-                                        onClick={() => handleAction('Backup', api.adminBackupLibrary)}
-                                        className="py-2 text-[10px] font-black text-center bg-purple-500/10 hover:bg-purple-500 text-purple-600 hover:text-white border border-purple-500/20 rounded-lg transition-all uppercase tracking-widest flex items-center justify-center gap-1.5"
+                                        onClick={() => handleAction('Sync Library', api.adminSyncLibraryCloud)}
+                                        className="py-2 text-[10px] font-black text-center bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white border border-emerald-500/20 rounded-lg transition-all uppercase tracking-widest flex items-center justify-center gap-1.5"
                                     >
-                                        {actionLoading === 'Backup' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Library className="w-3 h-3" />}
+                                        {actionLoading === 'Sync Library' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Library className="w-3 h-3" />}
                                         Library
+                                    </button>
+                                    <button
+                                        disabled={!!actionLoading}
+                                        onClick={() => handleAction('Backup', api.adminBackupLibrary)}
+                                        className="col-span-2 py-2 text-[10px] font-black text-center bg-purple-500/10 hover:bg-purple-500 text-purple-600 hover:text-white border border-purple-500/20 rounded-lg transition-all uppercase tracking-widest flex items-center justify-center gap-1.5"
+                                    >
+                                        {actionLoading === 'Backup' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Database className="w-3 h-3" />}
+                                        Full Backup
                                     </button>
                                 </div>
                             </div>

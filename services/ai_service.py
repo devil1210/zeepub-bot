@@ -351,20 +351,33 @@ class AIService:
         try:
             from sqlalchemy import text
             from utils.library_db import get_session
+            from config.config_settings import config
+            
             with get_session() as session:
                 query = text("""
                     INSERT INTO ai_learning_feedback (series_hash, original_name, proposed_name, final_name, status, ai_reason)
                     VALUES (:h, :o, :p, :f, :s, :r)
                 """)
-                session.execute(query, {
+                params = {
                     "h": series_hash, 
                     "o": original or "Unknown", 
                     "p": proposed or final or original or "Unknown", 
                     "f": final or proposed or original or "Unknown", 
                     "s": status, 
                     "r": ai_reason
-                })
+                }
+                session.execute(query, params)
                 session.commit()
+            
+            # Simple Cloud Push
+            if config.ENABLE_SUPABASE:
+                try:
+                    from core.supabase_manager import supabase_manager
+                    client = supabase_manager.get_client()
+                    client.table("ai_learning_feedback").insert(params).execute()
+                except Exception as cloud_e:
+                    logger.warning(f"Failed to push feedback to cloud: {cloud_e}")
+
         except Exception as e:
             logger.error(f"Error logging AI feedback: {e}")
 

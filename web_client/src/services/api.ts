@@ -133,6 +133,7 @@ export const api = {
         rpc('admin_set_user_level', { userId, levelId }),
     adminBackupLibrary: () => rpc('admin_backup_library'),
     adminSyncUsersCloud: () => rpc('admin_sync_users_cloud'),
+    adminSyncLibraryCloud: () => rpc('admin_sync_library_cloud'),
     adminScanLibrary: (force: boolean = false) => rpc('admin_scan_library', { force }),
     adminScanSeries: (seriesHash: string, force: boolean = true) => rpc('admin_scan_series', { series_hash: seriesHash, force }),
     adminEnrichMetadata: () => rpc('admin_enrich_metadata'),
