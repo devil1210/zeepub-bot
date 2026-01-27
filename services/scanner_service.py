@@ -234,9 +234,12 @@ class ScannerService:
                         # Solo si no tiene propuesta pendiente
                         exists = session.query(MetadataProposal).filter_by(series_hash=s_hash, status="pending").first()
                         if not exists:
+                            current_s = session.query(SeriesMetadata).filter_by(series_hash=s_hash).first()
+                            current_name = current_s.series_name if current_s else "Serie Desconocida"
+                            
                             series_books = session.query(LocalBook).filter_by(series_hash=s_hash).all()
                             if len(series_books) >= 3: # Solo para series con cierto volumen
-                                proposal = AIService.analyze_series_for_updates([b.to_dict() for b in series_books])
+                                proposal = await AIService.analyze_series_for_updates(s_hash, current_name, [b.to_dict() for b in series_books])
                                 if proposal:
                                     p_obj = MetadataProposal(
                                         series_hash=s_hash,
@@ -251,6 +254,13 @@ class ScannerService:
             # --- FINAL CLEANUP: Remove/Archive empty series ---
             try:
                 from models.library_models import SeriesMetadata, ArchivedSeries
+                # FORCE REFRESH: Re-sync metadata for all touched series to ensure book_count is 0 if no books left
+                for s_hash in touched_hashes:
+                    s_meta = session.query(SeriesMetadata).filter_by(series_hash=s_hash).first()
+                    if s_meta:
+                        self.sync_series_metadata(session, s_meta)
+                session.commit()
+
                 empty_series = session.query(SeriesMetadata).filter(SeriesMetadata.book_count == 0).all()
                 if empty_series:
                     logger.info(f"Limpieza final: Archivando {len(empty_series)} series vacías...")
