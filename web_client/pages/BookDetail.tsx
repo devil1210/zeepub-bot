@@ -33,6 +33,7 @@ import { Volume, Series } from '../types';
 import { ReportIssueModal } from '../components/ReportIssueModal';
 import { RatingModal } from '../components/RatingModal';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNavigation } from '../contexts/NavigationContext';
 
 interface BookDetailProps {
   volume?: Volume;
@@ -52,6 +53,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   onNavigate
 }) => {
   const { settings } = useTheme();
+  const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
 
   // Data State
   const [curVolume, setCurVolume] = useState<Volume | null>(initialVolume || null);
@@ -167,6 +169,48 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     };
     fetchData();
   }, [bookId, initialVolume?.id]);
+
+  useEffect(() => {
+    setContextType('book');
+    setVisible(true);
+
+    const buttons: any[] = [
+      {
+        id: 'home',
+        label: 'Inicio',
+        icon: Home,
+        onClick: () => onNavigate && onNavigate('dashboard')
+      }
+    ];
+
+    if (hasDownloaded) {
+      buttons.push({
+        id: 'rate',
+        label: 'Valorar',
+        icon: Star,
+        onClick: () => setIsRatingModalOpen(true)
+      });
+    }
+
+    buttons.push({
+      id: 'download',
+      label: hasDownloaded ? 'Listo' : 'Descargar',
+      icon: hasDownloaded ? Check : Download,
+      onClick: handleDownload,
+      highlight: !hasDownloaded
+    });
+
+    setCustomActions({
+      buttons
+    });
+
+    registerCallbacks({
+      onBack: onBack
+    });
+    return () => {
+      setContextType('main');
+    };
+  }, [onBack, setContextType, setVisible, registerCallbacks, hasDownloaded, onNavigate, setCustomActions]);
 
 
   // Check persistent download status
@@ -683,87 +727,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Floating Bottom Navigation */}
-      <div className="md:hidden fixed bottom-6 left-8 right-8 z-40 animate-in slide-in-from-bottom-4 duration-300 max-w-7xl mx-auto">
-        <div
-          className="glass-panel rounded-premium p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
-          style={{
-            background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-            backdropFilter: `blur(${settings.glassBlur}px)`,
-            WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-          }}
-        >
-          {/* Back */}
-          <button
-            onClick={onBack}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
-          >
-            <div className="p-1.5">
-              <Reply className="w-4 h-4" strokeWidth={2} />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Volver</span>
-          </button>
-
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-
-          {/* Home */}
-          <button
-            onClick={() => onNavigate && onNavigate('dashboard')}
-            className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
-          >
-            <div className="p-1.5">
-              <Home className="w-4 h-4" strokeWidth={2} />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Inicio</span>
-          </button>
-
-          <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-
-          {/* Rate */}
-          {hasDownloaded && (
-            <>
-              {/* 
-              <button
-                onClick={() => onNavigate && onNavigate('reader')}
-                className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-indigo-500 hover:text-indigo-600 active:scale-95"
-              >
-                <div className="p-1.5">
-                  <BookOpen className="w-4 h-4" strokeWidth={2} />
-                </div>
-                <span className="text-[9px] font-black uppercase tracking-widest mt-1">Leer</span>
-              </button>
-              <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-              */}
-
-              <button
-                onClick={() => setIsRatingModalOpen(true)}
-                className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-yellow-500 hover:text-yellow-600 active:scale-95"
-              >
-                <div className="p-1.5">
-                  <Star className="w-4 h-4 fill-current" strokeWidth={2} />
-                </div>
-                <span className="text-[9px] font-black uppercase tracking-widest mt-1">Valorar</span>
-              </button>
-              <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
-            </>
-          )}
-
-          {/* Download */}
-          <button
-            onClick={handleDownload}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 ${hasDownloaded ? 'text-green-600 dark:text-green-500' : 'text-primary'}`}
-          >
-            <div className={`p-1.5 rounded-full transition-all duration-300 ${!hasDownloaded ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
-              {hasDownloaded ? <Check className="w-4 h-4" strokeWidth={2.5} /> : <Download className="w-4 h-4 text-white" strokeWidth={2.5} />}
-            </div>
-            <span className={`text-[9px] font-black uppercase tracking-widest mt-1 ${!hasDownloaded ? 'text-primary' : ''}`}>
-              {hasDownloaded ? 'Listo' : 'Descargar'}
-            </span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
-

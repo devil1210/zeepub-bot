@@ -2,6 +2,15 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export type NavContextType = 'main' | 'search' | 'series' | 'book' | 'admin' | 'none';
 
+export interface NavActionButton {
+    id: string;
+    label: string;
+    icon: any;
+    onClick: () => void;
+    highlight?: boolean;
+    disabled?: boolean;
+}
+
 export interface NavigationState {
     contextType: NavContextType;
     isVisible: boolean;
@@ -19,6 +28,7 @@ export interface NavigationState {
     customTitle?: string;
     backAction?: () => void;
     homeAction?: () => void;
+    actionButtons?: NavActionButton[];
 }
 
 interface NavigationContextType {
@@ -32,7 +42,7 @@ interface NavigationContextType {
     setSelectedScope: (scope: string) => void;
     setViewMode: (mode: 'list' | 'grid') => void;
     setLoading: (loading: boolean) => void;
-    setCustomActions: (actions: { back?: () => void; home?: () => void; title?: string }) => void;
+    setCustomActions: (actions: { back?: () => void; home?: () => void; title?: string; buttons?: NavActionButton[] }) => void;
 
     // Callbacks for the UI component to trigger
     handlePrevPage: () => void;
@@ -111,12 +121,13 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         setState(prev => ({ ...prev, loading }));
     };
 
-    const setCustomActions = (actions: { back?: () => void; home?: () => void; title?: string }) => {
+    const setCustomActions = (actions: { back?: () => void; home?: () => void; title?: string; buttons?: NavActionButton[] }) => {
         setState(prev => ({
             ...prev,
             backAction: actions.back,
             homeAction: actions.home,
-            customTitle: actions.title
+            customTitle: actions.title,
+            actionButtons: actions.buttons
         }));
     };
 

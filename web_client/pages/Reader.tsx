@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Settings, List, Search, Bookmark } from 'lucide-react';
+import { useNavigation } from '../contexts/NavigationContext';
 
 export const Reader: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { setContextType } = useNavigation();
   const [progress, setProgress] = useState(32);
+
+  useEffect(() => {
+    setContextType('none');
+    return () => setContextType('main');
+  }, [setContextType]);
 
   return (
     <div className="fixed inset-0 z-50 bg-background text-gray-300 flex flex-col font-serif">
@@ -18,10 +25,10 @@ export const Reader: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><List className="w-5 h-5"/></button>
-          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><Settings className="w-5 h-5"/></button>
-          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><Search className="w-5 h-5"/></button>
-          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><Bookmark className="w-5 h-5"/></button>
+          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><List className="w-5 h-5" /></button>
+          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><Settings className="w-5 h-5" /></button>
+          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><Search className="w-5 h-5" /></button>
+          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><Bookmark className="w-5 h-5" /></button>
         </div>
       </header>
 
@@ -29,11 +36,11 @@ export const Reader: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <main className="flex-1 overflow-y-auto w-full h-full pt-24 pb-24 px-4 sm:px-8 max-w-3xl mx-auto">
         <div className="prose prose-invert prose-lg max-w-none prose-p:text-gray-300 prose-headings:text-white">
           <h2 className="text-3xl font-bold text-white mb-8">How to Build Better Habits in 4 Simple Steps</h2>
-          
+
           <p className="mb-6 leading-loose text-lg">
             In 1898, a psychologist named Edward Thorndike conducted an experiment that would lay the foundation for our understanding of how habits form and the rules that guide our behavior. Thorndike was interested in the study of animal behavior, and he started by working with cats.
           </p>
-          
+
           <p className="mb-6 leading-loose text-lg">
             He would place each cat inside a device known as a "puzzle box." The box was designed so that the cat could escape through a door by some simple act, such as pulling on a loop of cord, pressing a lever, or stepping on a platform. For example, one box contained a lever that, when pressed, would open the door on the side of the box. Once the door had been opened, the cat could dart out and run over to a bowl of food.
           </p>
@@ -45,7 +52,7 @@ export const Reader: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <p className="mb-6 leading-loose text-lg">
             Thorndike tracked the behavior of each cat across many trials. In the beginning, the animals moved around the box at random. But as soon as the lever was pressed and the door opened, the process of learning began. Gradually, each cat learned to associate the action of pressing the lever with the reward of escaping the box and getting food.
           </p>
-          
+
           <p className="mb-6 leading-loose text-lg">
             From his studies, Thorndike described the learning process by stating, "behaviors followed by satisfying consequences tend to be repeated and those that produce unpleasant consequences are less likely to be repeated."
           </p>
@@ -59,11 +66,11 @@ export const Reader: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <span>0%</span>
             <div className="relative flex-1 h-1.5 bg-gray-700/50 rounded-full cursor-pointer group">
               <div className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }}></div>
-              <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                value={progress} 
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={progress}
                 onChange={(e) => setProgress(Number(e.target.value))}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />

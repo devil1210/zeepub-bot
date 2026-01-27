@@ -63,7 +63,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     return () => {
       setContextType('main');
     };
-  }, []);
+  }, [setContextType, setVisible]);
 
   const viewOptions = useMemo(() => [
     { id: 'monitor', label: 'Monitor', icon: BarChart3 },
@@ -80,8 +80,13 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const handleBack = () => {
     if (selectedUserId || configuringTier) {
       // Step back from detail to list
-      setSelectedUserId(null);
-      setConfiguringTier(null);
+      setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev);
+        newParams.delete('userId');
+        newParams.delete('tierName');
+        newParams.delete('tierColor');
+        return newParams;
+      });
     } else {
       // Exit admin to dashboard
       onNavigate && onNavigate('dashboard');
@@ -96,7 +101,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     registerCallbacks({
       onBack: handleBack
     });
-  }, [selectedUserId, currentViewLabel]);
+  }, [selectedUserId, currentViewLabel, handleBack, setCustomActions, registerCallbacks]);
 
   const setCurrentView = (view: string) => {
     setSearchParams(prev => {

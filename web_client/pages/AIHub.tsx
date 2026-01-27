@@ -19,10 +19,12 @@ import {
 } from 'lucide-react';
 import { api } from '../src/services/api';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNavigation } from '../contexts/NavigationContext';
 import { getCoverUrl } from '../src/utils/imageUtils';
 
 export const AIHub: React.FC = () => {
     const { settings } = useTheme();
+    const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [scanHash, setScanHash] = useState('');
@@ -73,6 +75,17 @@ export const AIHub: React.FC = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        setContextType('admin');
+        setVisible(true);
+        setCustomActions({
+            title: 'AI CEREBRO'
+        });
+        return () => {
+            setContextType('main');
+        };
+    }, [setContextType, setVisible, setCustomActions]);
 
     const loadLists = async (type: 'pending' | 'reviewed') => {
         try {

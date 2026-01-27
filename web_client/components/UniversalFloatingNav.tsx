@@ -109,6 +109,12 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                         />
                         <NavDivider />
                         <NavButton
+                            onClick={handleHome}
+                            icon={Home}
+                            label="Inicio"
+                        />
+                        <NavDivider />
+                        <NavButton
                             onClick={handleNextPage}
                             disabled={currentPage === totalPages}
                             icon={ChevronRight}
@@ -143,6 +149,38 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                         <div className="flex-1 flex items-center justify-center gap-1">
                             <NavButton onClick={() => window.location.reload()} icon={RefreshCw} label="Sync" />
                         </div>
+                    </>
+                );
+
+            case 'book':
+                return (
+                    <>
+                        <NavButton
+                            onClick={handleBack}
+                            icon={Reply}
+                            label="Volver"
+                        />
+                        <NavDivider />
+                        {state.actionButtons ? (
+                            state.actionButtons.map((btn, idx) => (
+                                <React.Fragment key={btn.id}>
+                                    <NavButton
+                                        onClick={btn.onClick}
+                                        disabled={btn.disabled}
+                                        icon={btn.icon}
+                                        label={btn.label}
+                                        highlightOnActive={btn.highlight}
+                                    />
+                                    {idx < (state.actionButtons?.length || 0) - 1 && <NavDivider />}
+                                </React.Fragment>
+                            ))
+                        ) : (
+                            <NavButton
+                                onClick={handleHome}
+                                icon={Home}
+                                label="Inicio"
+                            />
+                        )}
                     </>
                 );
 

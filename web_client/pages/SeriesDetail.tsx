@@ -217,6 +217,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
       onPrevPage: () => handlePrevPage(),
       onNextPage: () => handleNextPage(),
       onBack: onBack,
+      onHome: () => onBack(), // Default home behavior is back to dashboard
     });
     return () => {
       setContextType('main');

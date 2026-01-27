@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Star, Book, User, Calendar, Hash, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Star, Book, User, Calendar, Hash, Loader2, Home } from 'lucide-react';
 import { api } from '../src/services/api';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNavigation } from '../contexts/NavigationContext';
 import { getCoverUrl } from '../src/utils/imageUtils';
 
 interface BookDetailByIdProps {
@@ -12,10 +13,44 @@ interface BookDetailByIdProps {
 
 export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, onNavigate }) => {
     const { settings } = useTheme();
+    const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
     const [book, setBook] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [downloading, setDownloading] = useState(false);
+
+    useEffect(() => {
+        setContextType('book');
+        setVisible(true);
+
+        const buttons: any[] = [
+            {
+                id: 'home',
+                label: 'Inicio',
+                icon: Home,
+                onClick: () => onNavigate && onNavigate('dashboard')
+            },
+            {
+                id: 'download',
+                label: downloading ? 'Enviando...' : 'Descargar',
+                icon: downloading ? Loader2 : Download,
+                onClick: handleDownload,
+                highlight: !downloading,
+                disabled: downloading
+            }
+        ];
+
+        setCustomActions({
+            buttons
+        });
+
+        registerCallbacks({
+            onBack: onBack
+        });
+        return () => {
+            setContextType('main');
+        };
+    }, [onBack, setContextType, setVisible, registerCallbacks, downloading, onNavigate, setCustomActions]);
 
     useEffect(() => {
         const fetchBook = async () => {
