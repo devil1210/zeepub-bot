@@ -7,6 +7,7 @@ from sqlalchemy import String, cast, func, or_, select
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, SeriesMetadata, UserDownload
 from repositories.download_repository import download_repo
+from schemas.library_schemas import BookDTO, SeriesDTO, CoverUrlDTO
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,6 @@ class LibraryService:
         """
         async with pg_manager.get_session() as session:
             try:
-                from schemas.library_schemas import BookDTO
                 pattern = f"%{query}%"
                 
                 # Filtros base
@@ -130,7 +130,6 @@ class LibraryService:
         """
         async with pg_manager.get_session() as session:
             try:
-                from schemas.library_schemas import SeriesDTO, CoverUrlDTO
                 pattern = f"%{query}%"
                 
                 stmt = select(SeriesMetadata).where(
@@ -203,7 +202,6 @@ class LibraryService:
         """Retorna los volúmenes de una serie agrupada (Async). Validado con Pydantic."""
         async with pg_manager.get_session() as session:
             try:
-                from schemas.library_schemas import BookDTO
                 # Subquery for download count per volume
                 dl_subquery = select(func.count(UserDownload.id))\
                     .where(UserDownload.book_hash == LocalBook.book_hash)\
@@ -251,7 +249,6 @@ class LibraryService:
         """Busca un libro por su ID con validación Pydantic."""
         async with pg_manager.get_session() as session:
             try:
-                from schemas.library_schemas import BookDTO
                 # Subquery for DL count
                 dl_subquery = select(func.count(UserDownload.id))\
                     .where(UserDownload.book_hash == LocalBook.book_hash)\
