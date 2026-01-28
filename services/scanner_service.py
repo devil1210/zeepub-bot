@@ -144,6 +144,9 @@ class ScannerService:
                             # 2. Eliminar de la tabla principal
                             session.query(LocalBook).filter(LocalBook.filepath.in_(chunk)).delete(synchronize_session=False)
                             session.commit() # Commit chunks to keep memory clean
+                            
+                            # Ceder control
+                            await asyncio.sleep(0)
 
                         # 3. Verificar series huérfanas
                         for s_hash in affected_series_hashes:
@@ -484,6 +487,9 @@ class ScannerService:
                     if (results["added"] + results["updated"]) % 50 == 0 and (results["added"] + results["updated"]) > 0:
                         session.commit()
                         logger.info(f"Progreso de escaneo: {results['added'] + results['updated']} libros procesados en {source.name}")
+                    
+                    # Ceder el control al event loop para que el bot responda mensajes
+                    await asyncio.sleep(0)
         
         # Sincronizar metadata de todas las series tocadas en esta fuente
         for h in touched_hashes:
