@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useSearchNav } from '../../contexts/SearchNavContext';
 import {
     Search as SearchIcon,
     LayoutGrid,
