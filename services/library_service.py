@@ -235,7 +235,7 @@ class LibraryService:
                         download_count=dl_count,
                         cleanTitle=clean_title,
                         is_folder=False,
-                        coverUrl=b.cover_path
+                        coverUrl=b.cover_low
                     )
                     results.append(dto.model_dump())
                 
@@ -277,7 +277,7 @@ class LibraryService:
                     download_count=dl_count,
                     cleanTitle=clean_title,
                     is_folder=False,
-                    coverUrl=book.cover_path
+                    coverUrl=book.cover_low
                 )
                 return dto.model_dump()
             except Exception as e:
