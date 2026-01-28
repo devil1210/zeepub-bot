@@ -182,7 +182,7 @@ class LibraryService:
                         numBooks=s.book_count,
                         rating_average=s.rating_average,
                         rating_count=s.rating_count,
-                        lastUpdated=s.last_updated.isoformat() if s.last_updated else None
+                        lastUpdated=s.updated_at.isoformat() if s.updated_at else None
                     )
                     results.append(dto.model_dump())
 
