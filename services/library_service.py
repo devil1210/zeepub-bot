@@ -75,17 +75,12 @@ class LibraryService:
                     dl_count = row[1] or 0
                     
                     b_dict = b.to_dict()
-                    clean_title = (
-                        b.english_title
-                        or b.series
-                        or re.sub(r"\s*\[.*?\]\s*", " ", b.title).strip()
-                    )
                     
                     # Map to DTO
                     dto = BookDTO(
                         **b_dict,
                         download_count=dl_count,
-                        coverUrl=b.cover_low # Consistency
+                        coverUrl=b.cover_low
                     )
                     results.append(dto.model_dump())
 
@@ -221,11 +216,6 @@ class LibraryService:
                     dl_count = row[1] or 0
                     
                     b_dict = b.to_dict()
-                    clean_title = (
-                        b.english_title
-                        or b.series
-                        or re.sub(r"\s*\[.*?\]\s*", " ", b.title).strip()
-                    )
                     
                     dto = BookDTO(
                         **b_dict,
@@ -261,11 +251,6 @@ class LibraryService:
                 dl_count = row[1] or 0
                 
                 b_dict = book.to_dict()
-                clean_title = (
-                    book.english_title
-                    or book.series
-                    or re.sub(r"\s*\[.*?\]\s*", " ", book.title).strip()
-                )
                 
                 dto = BookDTO(
                     **b_dict,
@@ -346,8 +331,6 @@ class LibraryService:
                 books = result.scalars().all()
                 
                 # 2. Agrupamiento lógico simple en memoria (Python)
-                # Postgres tiene extensiones como pg_trgm para similitud, pero para simplificar
-                # y no depender de extensiones, hacemos un chequeo básico aquí.
                 from difflib import SequenceMatcher
                 
                 groups = []
@@ -408,6 +391,7 @@ class LibraryService:
             except Exception as e:
                 logger.error(f"Error fetching orphaned books: {e}")
                 return []
+
     @staticmethod
     async def get_catalog(
         source_id: int | None = None,

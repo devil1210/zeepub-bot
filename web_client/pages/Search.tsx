@@ -41,7 +41,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
   const [activeSort, setActiveSort] = useState(navState.activeSort || 'a-z');
   const [selectedScope, setSelectedScope] = useState(navState.selectedScope || 'TODOS');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>(navState.viewMode || 'list');
+  const viewMode = navState.viewMode;
   const [searchTerm, setSearchTerm] = useState(navState.searchTerm);
 
   // Data State
@@ -62,7 +62,6 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   useEffect(() => setNavActiveSort(activeSort), [activeSort]);
   useEffect(() => setNavSearchTerm(searchTerm), [searchTerm]);
   useEffect(() => setNavSelectedScope(selectedScope), [selectedScope]);
-  useEffect(() => setNavViewMode(viewMode), [viewMode]);
   useEffect(() => setNavLoading(loading), [loading]);
 
   useEffect(() => {
@@ -81,7 +80,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       onSortChange: (sort: string) => setActiveSort(sort),
       onSearchChange: (term: string) => setSearchTerm(term),
       onScopeClick: () => setIsScopeModalOpen(true),
-      onViewModeChange: (mode: 'list' | 'grid') => setViewMode(mode),
+      onViewModeChange: (mode: 'list' | 'grid') => setNavViewMode(mode),
     });
     return () => unregister();
   }, [totalPages, registerCallbacks]);

@@ -10,7 +10,7 @@ class CoverUrlDTO(BaseModel):
     cover: Optional[str] = None
 
 class BookDTO(BaseModel):
-    id: int
+    id: Any
     title: str
     cleanTitle: Optional[str] = None
     author: Optional[str] = None
