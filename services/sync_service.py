@@ -301,6 +301,24 @@ class SyncService:
                         "source_id": b.source_id,
                         "filepath": b.filepath,
                         "filename": b.filename,
+                        # Extra Metadata
+                        "isbn": b.isbn,
+                        "asin": b.asin,
+                        "word_count": b.word_count,
+                        "page_count": b.page_count,
+                        "reading_time": b.reading_time,
+                        "epub_version": b.epub_version,
+                        "modified_at_opf": b.modified_at_opf.isoformat()
+                        if b.modified_at_opf and hasattr(b.modified_at_opf, "isoformat")
+                        else b.modified_at_opf,
+                        "layout_by": b.layout_by,
+                        "translator": b.translator,
+                        "spanish_title": b.spanish_title,
+                        "romaji_title": b.romaji_title,
+                        "english_title": b.english_title,
+                        "is_uncensored": 1 if b.is_uncensored else 0,
+                        "color_mode": b.color_mode,
+                        "publisher": b.publisher,
                     }
                 )
 
