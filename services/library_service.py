@@ -85,10 +85,7 @@ class LibraryService:
                     dto = BookDTO(
                         **b_dict,
                         download_count=dl_count,
-                        cleanTitle=clean_title,
-                        book_hash=b.book_hash,
-                        is_folder=False,
-                        coverUrl=b.cover_path # Compatibility
+                        coverUrl=b.cover_low # Consistency
                     )
                     results.append(dto.model_dump())
 
@@ -233,7 +230,6 @@ class LibraryService:
                     dto = BookDTO(
                         **b_dict,
                         download_count=dl_count,
-                        is_folder=False,
                         coverUrl=b.cover_low
                     )
                     results.append(dto.model_dump())
@@ -274,7 +270,6 @@ class LibraryService:
                 dto = BookDTO(
                     **b_dict,
                     download_count=dl_count,
-                    is_folder=False,
                     coverUrl=book.cover_low
                 )
                 return dto.model_dump()

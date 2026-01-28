@@ -30,7 +30,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
   const {
     state: navState,
     setSearchTerm,
-    handleScopeClick
+    handleScopeClick,
+    setViewMode
   } = useNavigation();
 
   const navItems = [
@@ -193,7 +194,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
                 selectedScope={navState.selectedScope}
                 onScopeClick={handleScopeClick}
                 viewMode={navState.viewMode}
-                onViewModeChange={(mode) => { }} // Handle inside context if needed
+                onViewModeChange={setViewMode}
                 loading={navState.loading}
               />
             </div>
