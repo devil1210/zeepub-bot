@@ -49,9 +49,10 @@ Usa estos comandos para tareas repetitivas y asegurar la calidad:
 - **`/glass-check`**: Auditoría estética para asegurar cumplimiento de estándares Glassmorphism/Premium.
 - **`/push`**: Sincronizar cambios localmente y subir al repositorio remoto automáticamente.
 - **`/release`**: Flujo maestro de despliegue (Audit -> Sync -> Push).
+- **`/sync-skills`**: Descarga e instala las últimas capacidades desde el repositorio central de skills.
 
 ## 📡 Protocolo de Sincronización
-- **Skills**: Mantener sincronizado con el repositorio global (sickn33/antigravity-awesome-skills).
+- **Skills**: Mantener sincronizado con el repositorio global: https://github.com/sickn33/antigravity-awesome-skills
 - **Entorno**: Logs del VPS de pruebas son la fuente de verdad para errores de entorno.
 - **Hashes**: Hashes de libros y series deben ser consistentes; ignorar `title` en la generación de identidad para evitar duplicidad por typos.
 
