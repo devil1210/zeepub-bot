@@ -42,7 +42,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const [activeSort, setActiveSort] = useState(navState.activeSort || 'a-z');
   const [selectedScope, setSelectedScope] = useState(navState.selectedScope || 'TODOS');
   const viewMode = navState.viewMode;
-  const [searchTerm, setSearchTerm] = useState(navState.searchTerm);
+  const searchTerm = navState.searchTerm;
 
   // Data State
   const [series, setSeries] = useState<Series[]>([]);
@@ -52,6 +52,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const [currentPage, setCurrentPage] = useState(navState.currentPage || 1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+  const isFirstRender = useRef(true);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +61,6 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   }, [currentPage, totalPages]);
 
   useEffect(() => setNavActiveSort(activeSort), [activeSort]);
-  useEffect(() => setNavSearchTerm(searchTerm), [searchTerm]);
   useEffect(() => setNavSelectedScope(selectedScope), [selectedScope]);
   useEffect(() => setNavLoading(loading), [loading]);
 
@@ -78,7 +78,12 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       onPrevPage: () => setCurrentPage(prev => Math.max(1, prev - 1)),
       onNextPage: () => setCurrentPage(prev => Math.min(totalPages, prev + 1)),
       onSortChange: (sort: string) => setActiveSort(sort),
-      onSearchChange: (term: string) => setSearchTerm(term),
+      onSearchChange: (term: string) => {
+        // This is now redundant but kept for safety if needed
+      },
+      onSearchSubmit: () => {
+        doSearch(searchTerm, 1);
+      },
       onScopeClick: () => setIsScopeModalOpen(true),
       onViewModeChange: (mode: 'list' | 'grid') => setNavViewMode(mode),
     });
@@ -167,6 +172,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   };
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setCurrentPage(1);
   }, [searchTerm, selectedScope, activeSort]);
 

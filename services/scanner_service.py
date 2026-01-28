@@ -263,7 +263,13 @@ class ScannerService:
             # --- AI PROPOSALS (Background Gardener) ---
             # Si hubo cambios o es un escaneo completo, generar propuestas para series 'tocadas'
             touched_hashes = results.get("touched_series_hashes", set())
-            if touched_hashes:
+
+            # Check user setting
+            from services.settings_service import get_setting
+
+            bg_ai_enabled = get_setting("enable_background_ai_scan", "false").lower() == "true"
+
+            if touched_hashes and bg_ai_enabled:
                 try:
                     logger.info(f"Generando propuestas IA para {len(touched_hashes)} series...")
                     for s_hash in touched_hashes:
@@ -988,6 +994,12 @@ class ScannerService:
         """
         if ScannerService._is_scanning:
             logger.warning("No se puede enriquecer metadatos mientras hay un escaneo en curso.")
+            return False
+
+        from services.settings_service import get_setting
+
+        if get_setting("enable_background_ai_scan", "false").lower() != "true":
+            logger.info("🤖 AI Enrichment skipped (disabled by user setting).")
             return False
 
         ScannerService._is_scanning = True

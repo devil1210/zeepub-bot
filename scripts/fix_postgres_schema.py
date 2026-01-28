@@ -27,14 +27,42 @@ async def fix_postgres_schema():
         target_url = target_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
     # Logic for local development (outside docker)
+    potential_urls = [target_url]
     if "@db:" in target_url:
         logger.info(
-            "Detected '@db' host in URL, likely running outside Docker. Falling back to localhost..."
+            "Detected '@db' host in URL, likely running outside Docker. Adding localhost as fallback..."
         )
-        target_url = target_url.replace("@db:", "@localhost:", 1)
+        local_url = target_url.replace("@db:", "@localhost:", 1)
+        potential_urls.append(local_url)
+
+    engine = None
+    for url in potential_urls:
+        try:
+            # Mask password for logging
+            log_url = url
+            if "@" in log_url:
+                parts = log_url.split("@")
+                if ":" in parts[0]:
+                    user_pass = parts[0].split(":")
+                    log_url = f"{user_pass[0]}:***@{parts[1]}"
+            logger.info(f"Trying to connect to: {log_url}")
+
+            engine = create_async_engine(url, echo=False)
+            async with engine.begin() as conn:
+                await conn.execute(text("SELECT 1"))  # Test connection
+            logger.info("✅ Connection successful!")
+            break
+        except Exception as e:
+            logger.warning(
+                f"Could not connect to {url.split('@')[0]}:***@{url.split('@')[1] if '@' in url else url}: {e}"
+            )
+            engine = None
+
+    if not engine:
+        logger.error("❌ All connection attempts failed. Please ensure Postgres is running.")
+        return
 
     try:
-        engine = create_async_engine(target_url, echo=True)
         async with engine.begin() as conn:
             # Check if column exists
             logger.info("Checking for default_theme_id column in user_levels...")

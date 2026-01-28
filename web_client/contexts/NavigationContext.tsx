@@ -54,6 +54,8 @@ interface NavigationContextType {
     handlePrevPage: () => void;
     handleNextPage: () => void;
     handleSortChange: (sort: string) => void;
+    handleSearchChange: (term: string) => void;
+    handleSearchSubmit: () => void;
     handleHome: () => void;
     handleBack: () => void;
     handleScopeClick: () => void;
@@ -64,6 +66,7 @@ interface NavigationContextType {
         onNextPage?: () => void;
         onSortChange?: (sort: string) => void;
         onSearchChange?: (term: string) => void;
+        onSearchSubmit?: () => void;
         onScopeClick?: () => void;
         onViewModeChange?: (mode: 'list' | 'grid') => void;
         onHome?: () => void;
@@ -95,7 +98,7 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
             path,
             currentStack: state.historyStack
         });
-        
+
         setState(prev => {
             // Avoid dupes if just refreshing or same path
             if (prev.historyStack[prev.historyStack.length - 1] === path) {
@@ -115,7 +118,7 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         console.log('🔍 [DEBUG] NavigationContext.popHistory called', {
             currentStack: state.historyStack
         });
-        
+
         setState(prev => {
             if (prev.historyStack.length <= 1) {
                 console.log('🚫 [DEBUG] Cannot pop: stack length <= 1');
@@ -156,7 +159,6 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
 
     const setSearchTerm = React.useCallback((term: string) => {
         setState(prev => ({ ...prev, searchTerm: term }));
-        // callbacks refer to a state, so we check it
     }, []);
 
     const setSelectedScope = React.useCallback((selectedScope: string) => {
@@ -187,6 +189,17 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         callbacks?.onSortChange?.(sort);
         setActiveSort(sort);
     }, [callbacks, setActiveSort]);
+
+    const handleSearchChange = React.useCallback((term: string) => {
+        // Update search term AND reset page to 1
+        setState(prev => ({ ...prev, searchTerm: term, currentPage: 1 }));
+        callbacks?.onSearchChange?.(term);
+    }, [callbacks]);
+
+    const handleSearchSubmit = React.useCallback(() => {
+        callbacks?.onSearchSubmit?.();
+    }, [callbacks]);
+
     const handleHome = React.useCallback(() => callbacks?.onHome?.(), [callbacks]);
     const handleBack = React.useCallback(() => callbacks?.onBack?.(), [callbacks]);
     const handleScopeClick = React.useCallback(() => callbacks?.onScopeClick?.(), [callbacks]);
@@ -214,6 +227,8 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         handlePrevPage,
         handleNextPage,
         handleSortChange,
+        handleSearchChange,
+        handleSearchSubmit,
         handleHome,
         handleBack,
         handleScopeClick,
@@ -236,6 +251,8 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         handlePrevPage,
         handleNextPage,
         handleSortChange,
+        handleSearchChange,
+        handleSearchSubmit,
         handleHome,
         handleBack,
         handleScopeClick,

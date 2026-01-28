@@ -29,7 +29,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
   const { user: tgUser, status, isAdmin, botInfo, canUploadEpub } = useTelegram();
   const {
     state: navState,
-    setSearchTerm,
+    handleSearchChange,
+    handleSearchSubmit,
     handleScopeClick,
     setViewMode
   } = useNavigation();
@@ -190,7 +191,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             <div className="sticky top-0 z-30 transition-all duration-300">
               <SearchHeader
                 searchTerm={navState.searchTerm}
-                onSearchChange={setSearchTerm}
+                onSearchChange={handleSearchChange}
+                onSearchSubmit={handleSearchSubmit}
                 selectedScope={navState.selectedScope}
                 onScopeClick={handleScopeClick}
                 viewMode={navState.viewMode}

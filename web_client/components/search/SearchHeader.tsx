@@ -10,6 +10,7 @@ import {
 interface SearchHeaderProps {
     searchTerm: string;
     onSearchChange: (term: string) => void;
+    onSearchSubmit?: () => void;
     selectedScope: string;
     onScopeClick: () => void;
     viewMode: 'list' | 'grid';
@@ -20,6 +21,7 @@ interface SearchHeaderProps {
 export const SearchHeader: React.FC<SearchHeaderProps> = ({
     searchTerm,
     onSearchChange,
+    onSearchSubmit,
     selectedScope,
     onScopeClick,
     viewMode,
@@ -49,6 +51,11 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                             type="text"
                             value={searchTerm}
                             onChange={(e) => onSearchChange(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    onSearchSubmit?.();
+                                }
+                            }}
                         />
                         <div className="absolute inset-y-0 right-1.5 flex items-center">
                             <button
