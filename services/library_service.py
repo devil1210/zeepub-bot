@@ -233,7 +233,6 @@ class LibraryService:
                     dto = BookDTO(
                         **b_dict,
                         download_count=dl_count,
-                        cleanTitle=clean_title,
                         is_folder=False,
                         coverUrl=b.cover_low
                     )
@@ -275,7 +274,6 @@ class LibraryService:
                 dto = BookDTO(
                     **b_dict,
                     download_count=dl_count,
-                    cleanTitle=clean_title,
                     is_folder=False,
                     coverUrl=book.cover_low
                 )
