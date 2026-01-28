@@ -23,6 +23,7 @@ class BookDTO(BaseModel):
     coverUrl: str | None = None  # Simplified path for some views
     description: str | None = None
     tags: list[str] = Field(default_factory=list)
+    demographics: list[str] | None = None
     book_hash: str | None = None
     series_hash: str | None = None
     download_count: int = 0

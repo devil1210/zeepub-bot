@@ -251,6 +251,11 @@ def check_migrations():
                     )
                     conn.execute(
                         text(
+                            "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS demographics JSONB;"
+                        )
+                    )
+                    conn.execute(
+                        text(
                             "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"
                         )
                     )
