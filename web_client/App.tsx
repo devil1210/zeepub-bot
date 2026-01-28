@@ -59,25 +59,32 @@ const TelegramNavigationHandler: React.FC = () => {
   const { webApp } = useTelegram();
 
   useEffect(() => {
-    if (webApp?.BackButton) {
-      // Show back button if we are not at root tabs
-      const rootPaths = ['/', '/search', '/library', '/requests', '/settings', '/downloads', '/admin'];
-      const isRoot = rootPaths.includes(location.pathname);
+    if (!webApp?.BackButton) return;
 
-      if (!isRoot) {
-        webApp.BackButton.show();
-        webApp.BackButton.onClick(() => navigate(-1));
+    const handleBack = () => {
+      // Safe navigation check
+      if (window.history.state && window.history.state.idx > 0) {
+        navigate(-1);
       } else {
-        webApp.BackButton.hide();
+        // Fallback for direct entry or empty history
+        navigate('/');
       }
+    };
+
+    const rootPaths = ['/', '/search', '/library', '/requests', '/settings', '/downloads', '/admin'];
+    const isRoot = rootPaths.includes(location.pathname);
+
+    if (isRoot) {
+      webApp.BackButton.hide();
+    } else {
+      webApp.BackButton.show();
+      webApp.BackButton.onClick(handleBack);
     }
 
     return () => {
-      if (webApp?.BackButton) {
-        webApp.BackButton.offClick(() => navigate(-1));
-      }
+      webApp.BackButton.offClick(handleBack);
     };
-  }, [webApp, location, navigate]);
+  }, [webApp, location.pathname, navigate]);
 
   return null;
 };

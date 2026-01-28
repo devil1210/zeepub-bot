@@ -14,7 +14,7 @@ from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.state_manager import state_manager
 from core.supabase_manager import supabase_manager
-from models.library_models import AILearningFeedback, DuplicateBook, LibrarySource, LocalBook, UploadBook, SeriesMetadata, MetadataProposal
+from models.library_models import AILearningFeedback, DuplicateBook, LibrarySource, LocalBook, UploadBook, SeriesMetadata, MetadataProposal, TranslatorsGroup
 from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
 from services.library_service import LibraryService
@@ -1061,6 +1061,23 @@ async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[
                     stats["sources"] += len(sources_data)
                 except Exception as e:
                     logger.error(f"Error syncing Library Sources: {e}")
+
+            # 4.5 Sync Translators Groups
+            res_groups = await session.execute(select(TranslatorsGroup))
+            all_groups = res_groups.scalars().all()
+            if all_groups:
+                groups_data = [{
+                    "id": g.id,
+                    "name": g.name,
+                    "siglas": g.siglas,
+                    "type": g.type,
+                    "website": g.website
+                } for g in all_groups]
+                try:
+                    client.table("translators_groups").upsert(groups_data).execute()
+                    stats["groups"] = len(groups_data)
+                except Exception as e:
+                    logger.error(f"Error syncing Translators Groups: {e}")
 
             # 5. Sync Local Books
             res_books = await session.execute(select(LocalBook))

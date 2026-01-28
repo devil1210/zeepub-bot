@@ -43,7 +43,8 @@ class AIService:
                 safety_settings=safety_settings,
                 generation_config={"response_mime_type": "application/json"}
             )
-            cls._models_cache[model_name] = model
+            # Disable caching to prevent Event Loop issues in threaded context
+            # cls._models_cache[model_name] = model
             return model
         except Exception as e:
             logger.error(f"Error inicializando Gemini ({model_name}): {e}")
