@@ -28,7 +28,8 @@ export interface NavigationState {
     customTitle?: string;
     backAction?: () => void;
     homeAction?: () => void;
-    actionButtons?: NavActionButton[];
+    // History stack management
+    historyStack: string[];
 }
 
 interface NavigationContextType {
@@ -43,6 +44,11 @@ interface NavigationContextType {
     setViewMode: (mode: 'list' | 'grid') => void;
     setLoading: (loading: boolean) => void;
     setCustomActions: (actions: { back?: () => void; home?: () => void; title?: string; buttons?: NavActionButton[] }) => void;
+
+    // Stack management
+    pushHistory: (path: string) => void;
+    popHistory: () => void;
+    resetHistory: () => void;
 
     // Callbacks for the UI component to trigger
     handlePrevPage: () => void;
@@ -78,10 +84,30 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         searchTerm: '',
         selectedScope: 'TODOS',
         viewMode: 'list',
-        loading: false
+        loading: false,
+        historyStack: ['/'] // Initial root
     });
 
     const [callbacks, setCallbacks] = useState<any>(null);
+
+    const pushHistory = React.useCallback((path: string) => {
+        setState(prev => {
+            // Avoid dupes if just refreshing or same path
+            if (prev.historyStack[prev.historyStack.length - 1] === path) return prev;
+            return { ...prev, historyStack: [...prev.historyStack, path] };
+        });
+    }, []);
+
+    const popHistory = React.useCallback(() => {
+        setState(prev => {
+            if (prev.historyStack.length <= 1) return prev;
+            return { ...prev, historyStack: prev.historyStack.slice(0, -1) };
+        });
+    }, []);
+
+    const resetHistory = React.useCallback(() => {
+        setState(prev => ({ ...prev, historyStack: ['/'] }));
+    }, []);
 
     const setContextType = React.useCallback((contextType: NavContextType) => {
         setState(prev => ({ ...prev, contextType, isMenuOpen: false }));
@@ -157,6 +183,9 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         setViewMode,
         setLoading,
         setCustomActions,
+        pushHistory,
+        popHistory,
+        resetHistory,
         handlePrevPage,
         handleNextPage,
         handleSortChange,
@@ -176,6 +205,9 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         setViewMode,
         setLoading,
         setCustomActions,
+        pushHistory,
+        popHistory,
+        resetHistory,
         handlePrevPage,
         handleNextPage,
         handleSortChange,

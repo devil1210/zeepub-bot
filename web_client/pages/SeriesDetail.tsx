@@ -1,38 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCoverUrl } from '../src/utils/imageUtils';
 import { api } from '../src/services/api';
 import {
-  ArrowLeft,
-  Star,
-  Library,
-  Clock,
   ListOrdered,
-  SortAsc,
-  Filter,
-  Download,
-  BookOpen,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUp,
-  ArrowDownUp,
-  Calendar,
-  Reply,
-  BookmarkPlus,
-  Bookmark,
   LayoutGrid,
-  List,
-  RefreshCw,
-  Users,
-  FileType,
-  Maximize2,
-  EyeOff
+  List
 } from 'lucide-react';
 import { useTelegram } from '../contexts/TelegramContext';
 import { useNavigation } from '../contexts/NavigationContext';
 import { Series, Volume } from '../types';
 import { preloadImages } from '../src/utils/imagePreloader';
+import { SeriesHero } from '../components/book/SeriesHero';
+import { VolumeList } from '../components/book/VolumeList';
+import { SynopsisModal } from '../components/book/SynopsisModal';
+import { useSeriesDetails } from '../src/hooks/useSeriesDetails';
 
 interface SeriesDetailProps {
   series: Series;
@@ -45,125 +27,20 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   const { settings } = useTheme();
   const { webApp } = useTelegram();
   const { setContextType, registerCallbacks, setPageInfo, setVisible } = useNavigation();
+  const { isAdmin } = useTelegram();
+  const {
+    realSeries,
+    volumes,
+    loading,
+    isSyncing,
+    handleSyncSeries
+  } = useSeriesDetails(series, settings, webApp);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-  const [realSeries, setRealSeries] = useState<Series>(series);
-  const [volumes, setVolumes] = useState<Volume[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeSort, setActiveSort] = useState('num-asc');
   const [isSynopsisModalOpen, setIsSynopsisModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [isSyncing, setIsSyncing] = useState(false);
-  const { isAdmin } = useTelegram();
-
-  const handleSyncSeries = async () => {
-    if (isSyncing || !realSeries.series_hash) return;
-    setIsSyncing(true);
-    try {
-      webApp?.HapticFeedback?.impactOccurred('medium');
-      const res = await api.adminScanSeries(realSeries.series_hash, true);
-      if (res.success) {
-        webApp?.HapticFeedback?.notificationOccurred('success');
-        webApp?.showAlert?.(res.message || "Sincronización iniciada.");
-      } else {
-        webApp?.HapticFeedback?.notificationOccurred('error');
-        webApp?.showAlert?.(res.error || "Error al iniciar sincronización.");
-      }
-    } catch (e: any) {
-      webApp?.HapticFeedback?.notificationOccurred('error');
-      webApp?.showAlert?.("Error: " + e.message);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const data = await api.getBookDetail(series.id);
-        if (data) {
-          setRealSeries({
-            ...series, // Preserve existing data if needed
-            ...data,
-            coverUrl: data.coverUrl || data.cover || series.coverUrl,
-            description: (data.summary || data.description || series.description)?.replace(/<br\s*\/?>/gi, '\n'),
-            englishTitle: data.english_title,
-            spanishTitle: data.spanish_title,
-            romajiTitle: data.romaji_title || data.romaji
-          } as Series);
-          if (data.volumes) {
-            const mappedVols: Volume[] = data.volumes.map((v: any) => ({
-              id: v.id,
-              seriesId: data.id,
-              title: v.title,
-              volumeNumber: v.seriesIndex || 1,
-              coverUrl: {
-                cover_low: v.cover_low,
-                cover_medium: v.cover_medium,
-                cover_high: v.cover_high,
-                cover_original: v.cover_original,
-                cover: v.cover || data.cover
-              },
-              coverThumbUrl: v.cover_thumb || v.cover_low || v.cover || data.cover_thumb || data.cover,
-              publishedDate: v.publishedAt || 'N/A',
-              pages: v.pageCount || 0,
-              format: (v.bookType || 'EPUB').toUpperCase(),
-              rating: v.rating_average || 0,
-              description: v.summary || v.description,
-              uploader: v.translator || 'ZeePub',
-              downloadCount: v.download_count || 0,
-              demography: v.demographics,
-              tags: Array.isArray(v.tags) ? v.tags : (v.tags ? String(v.tags).split(',').map((t: string) => t.trim()) : []),
-              // Metadata Enriquecida
-              romajiTitle: v.romaji_title || v.romaji,
-              englishTitle: v.english_title,
-              spanishTitle: v.spanish_title,
-              illustrator: v.illustrator,
-              translator: v.translator,
-              typesetter: v.layoutBy,
-              group: v.publisher,
-              isbn: v.isbn,
-              asin: v.asin,
-              wordCount: v.wordCount,
-              readTime: v.readingTime ? `${v.readingTime} min` : 'N/A',
-              size: v.fileSize ? `${(v.fileSize / (1024 * 1024)).toFixed(2)} MB` : '0 MB',
-              language: v.language || 'Español',
-              epubVersion: v.epubVersion,
-              modifiedAt: v.modifiedAt,
-              modifiedAtOpf: v.modifiedAtOpf,
-              series: v.series,
-              cleanTitle: v.clean_title,
-              is_uncensored: v.is_uncensored,
-              color_mode: v.color_mode
-            }));
-            setVolumes(mappedVols);
-
-            // Preload volume thumbnails for faster grid/list viewing
-            const volCovers = mappedVols.map(v => getCoverUrl(v.coverUrl, v.coverThumbUrl, settings.coverQuality));
-            preloadImages(volCovers);
-
-            // Update synopsis from the first volume if available
-            if (mappedVols.length > 0) {
-              const firstVol = [...mappedVols].sort((a, b) => (a.volumeNumber || 0) - (b.volumeNumber || 0))[0];
-              if (firstVol.description) {
-                setRealSeries(prev => ({
-                  ...prev,
-                  description: firstVol.description
-                }));
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching series details", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [series.id]);
 
   const totalPages = Math.ceil(volumes.length / itemsPerPage);
 
@@ -210,20 +87,12 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
     setPageInfo(currentPage, totalPages);
   }, [currentPage, totalPages]);
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
-  };
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) setCurrentPage(prev => prev - 1);
+  const handleNextPageLocal = () => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
   };
 
   const handlePrevPageLocal = () => {
     setCurrentPage(prev => Math.max(1, prev - 1));
-  };
-
-  const handleNextPageLocal = () => {
-    setCurrentPage(prev => Math.min(totalPages, prev + 1));
   };
 
   useEffect(() => {
@@ -234,7 +103,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
       onNextPage: handleNextPageLocal,
       onSortChange: (sort: string) => setActiveSort(sort),
       onBack: onBack,
-      onHome: () => onBack(), // Default home behavior is back to dashboard
+      onHome: () => onBack(),
     });
     return () => {
       unregister();
@@ -242,151 +111,20 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
     };
   }, [totalPages, onBack, registerCallbacks, setContextType, setVisible]);
 
-  const formatDescription = (desc: string) => {
-    if (!desc) return null;
-
-    // Clean up <br/> tags first
-    const cleanDesc = desc.replace(/<br\s*\/?>/gi, '\n');
-
-    // Collapse double breaks and split by single breaks
-    const paragraphs = cleanDesc
-      .split(/\n\s*\n/)
-      .join('\n')
-      .split('\n')
-      .filter(p => p.trim() !== '');
-
-    return paragraphs.map((p, i) => (
-      <p key={i} className={i !== paragraphs.length - 1 ? "mb-3" : ""}>
-        {p}
-      </p>
-    ));
-  };
-
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-100">
 
-      <div className="relative w-full min-h-[480px] sm:min-h-[520px] shrink-0 overflow-hidden flex flex-col">
-        <div
-          className="absolute inset-0 bg-cover bg-center blur-sm scale-110 opacity-50"
-          style={{ backgroundImage: `url('${getCoverUrl(realSeries.coverUrl, realSeries.coverThumbUrl, settings.coverQuality)}')` }}
-        ></div>
-
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent"></div>
-
-        {/* Action Buttons Overlay - Desktop/Tablet */}
-        <div
-          className="relative z-30 flex items-center justify-between px-4 sm:px-6 lg:px-8"
-          style={{ paddingTop: '3rem' }}
-        >
-          <button
-            onClick={onBack}
-            className="p-3 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group"
-          >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-          </button>
-
-          <div className="flex items-center gap-3">
-            {isAdmin && realSeries.series_hash && (
-              <button
-                onClick={handleSyncSeries}
-                disabled={isSyncing}
-                className={`px-4 py-2.5 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                title="Sincronizar esta serie"
-              >
-                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
-                <span className="text-[10px] font-black uppercase tracking-widest sm:inline hidden">Sincronizar</span>
-              </button>
-            )}
-
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20 pointer-events-auto">
-              <BookOpen className="text-white w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
-        <div
-          className="relative w-full px-4 sm:px-6 lg:px-8 pb-6 z-20 flex-1"
-          style={{ paddingTop: '2rem' }}
-        >
-          <div className="max-w-[1800px] mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
-            <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 shadow-2xl rounded-lg overflow-hidden">
-              <img alt={`${realSeries.title} Cover`} className="w-full h-full object-cover" src={getCoverUrl(realSeries.coverUrl, realSeries.coverThumbUrl, settings.coverQuality)} />
-            </div>
-
-            <div className="flex-1 pb-4 w-full">
-              <div className="flex flex-wrap items-center gap-4 mb-4 animate-in fade-in slide-in-from-left duration-700">
-                <button
-                  onClick={() => onSearch?.(realSeries.genre || '')}
-                  className="px-4 py-1.5 rounded-full text-[10px] font-black bg-primary/20 text-primary border border-primary/30 uppercase tracking-[0.2em] hover:bg-primary/30 transition-all shadow-lg shadow-primary/10"
-                >
-                  {realSeries.genre || 'Fantasía'}
-                </button>
-                <div className="flex items-center gap-2 text-yellow-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 shadow-xl">
-                  <Star className="w-4 h-4 fill-current" />
-                  <span className="text-[13px] font-black">{realSeries.rating > 0 ? realSeries.rating.toFixed(1) : '—'}</span>
-                </div>
-              </div>
-
-              <h1 className="text-4xl sm:text-6xl font-black text-white mb-3 leading-[1.1] tracking-tighter drop-shadow-2xl animate-in fade-in slide-in-from-left duration-1000">
-                {realSeries.englishTitle || realSeries.title}
-              </h1>
-
-              {realSeries.romajiTitle && (
-                <h2 className="text-lg sm:text-2xl text-white/50 font-medium tracking-tight mb-6 leading-relaxed opacity-80 animate-in fade-in slide-in-from-left duration-1000 delay-100">
-                  {realSeries.romajiTitle}
-                </h2>
-              )}
-
-              <button
-                onClick={() => onSearch?.(realSeries.author || '')}
-                className="group flex items-center gap-3 text-white/70 text-sm font-bold uppercase tracking-[0.1em] mb-8 hover:text-primary transition-all duration-300"
-              >
-                <div className="w-1 h-4 bg-primary rounded-full group-hover:h-6 transition-all duration-300"></div>
-                Por <span className="text-white group-hover:text-primary">{realSeries.author}</span>
-              </button>
-
-              <div className="relative mb-6">
-                <div className="text-gray-200 text-xs sm:text-sm line-clamp-3 max-w-2xl leading-relaxed font-medium">
-                  {formatDescription(realSeries.description || "Sin descripción disponible.")}
-                </div>
-                {realSeries.description && realSeries.description.length > 150 && (
-                  <button
-                    onClick={() => setIsSynopsisModalOpen(true)}
-                    className="mt-2 text-primary text-xs font-bold hover:underline py-1"
-                  >
-                    Ver más...
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-gray-300 font-mono">
-                <span className="flex items-center gap-1.5"><Library className="w-4 h-4 text-primary" /> {volumes.length} Volúmenes</span>
-                <button
-                  onClick={() => onSearch?.(realSeries.status || 'Completado')}
-                  className="flex items-center gap-1.5 hover:text-primary transition-colors"
-                >
-                  <Clock className="w-4 h-4 text-primary" /> {realSeries.status || 'Completado'}
-                </button>
-                {realSeries.lastUpdated && (
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    Actualizado: {(() => {
-                      try {
-                        const d = new Date(realSeries.lastUpdated);
-                        if (isNaN(d.getTime())) return realSeries.lastUpdated; // Fallback if invalid
-                        return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                      } catch (e) {
-                        return realSeries.lastUpdated;
-                      }
-                    })()}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SeriesHero
+        series={realSeries}
+        volumesCount={volumes.length}
+        onBack={onBack}
+        onSearch={onSearch}
+        onOpenSynopsis={() => setIsSynopsisModalOpen(true)}
+        isAdmin={isAdmin}
+        isSyncing={isSyncing}
+        onSync={handleSyncSeries}
+        settings={settings}
+      />
 
       {loading && (
         <div className="flex-1 flex items-center justify-center">
@@ -417,181 +155,25 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             </div>
           </div>
 
-          <div className={viewMode === 'list' ? "flex flex-col gap-4" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6"}>
-            {currentVolumes.map((vol, index) => (
-              viewMode === 'list' ? (
-                <div
-                  key={vol.id}
-                  onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative flex gap-5 p-4 rounded-[2rem] glass-panel hover:bg-white/[0.07] hover:border-white/20 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] transition-all duration-500 cursor-pointer overflow-hidden mb-4"
-                >
-                  {/* Premium Backdrop Glow */}
-                  <div className="absolute -inset-20 bg-primary/5 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
+          <VolumeList
+            volumes={currentVolumes}
+            viewMode={viewMode}
+            onSelectVolume={onSelectVolume}
+            series={realSeries}
+            settings={settings}
+          />
 
-                  {/* Left Section: Image with Space-Saving Badges */}
-                  <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] rounded-premium-sm overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
-                    <img
-                      alt={vol.title}
-                      className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
-                      src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)}
-                    />
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent"></div>
-
-                    {/* Floating Quality Badges on Cover */}
-                    <div className="absolute bottom-2 right-2 flex flex-col items-end gap-1.5">
-                      {vol.color_mode === 'color' && (
-                        <div className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
-                          COLOR
-                        </div>
-                      )}
-                      {vol.is_uncensored && (
-                        <div className="bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
-                          S/C
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Middle Section: Detailed Content */}
-                  <div className="flex-1 min-w-0 flex flex-col py-1 z-10">
-                    {/* Clean Header Info */}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1 text-[10px] font-black uppercase tracking-widest">
-                      <span className="text-primary opacity-90">VOLUMEN {vol.volumeNumber}</span>
-                      {vol.group && (
-                        <>
-                          <span className="w-1 h-1 rounded-full bg-white/10"></span>
-                          <span className="text-emerald-400 opacity-80 truncate max-w-[150px]">{vol.group}</span>
-                        </>
-                      )}
-                    </div>
-
-                    <h3 className="text-white font-black text-base sm:text-lg leading-tight line-clamp-2 tracking-tight group-hover:text-primary transition-colors mb-1">
-                      {vol.cleanTitle || vol.title}
-                    </h3>
-
-                    {vol.romajiTitle && (
-                      <p className="text-gray-500 text-[10px] sm:text-xs font-medium italic mb-2 line-clamp-2 opacity-70">
-                        {vol.romajiTitle}
-                      </p>
-                    )}
-
-                    {/* Author Info */}
-                    <div className="flex items-center gap-2 mb-3 text-gray-400 text-[10px] font-bold uppercase tracking-widest">
-                      <span className="text-gray-600">Por</span>
-                      <span className="text-white/70 group-hover:text-white truncate">{realSeries.author}</span>
-                    </div>
-
-                    {/* Metrics Footer - Simplified */}
-                    <div className="mt-auto flex items-center gap-5 pt-3 border-t border-white/5">
-                      <div className="flex items-center gap-1.5 text-yellow-500">
-                        <Star className="w-3.5 h-3.5 fill-current" />
-                        <span className="text-[11px] font-black text-white">{vol.rating > 0 ? vol.rating.toFixed(1) : 'NEW'}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 text-primary">
-                        <Download className="w-3.5 h-3.5" />
-                        <span className="text-[11px] font-black text-white">{vol.downloadCount}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              ) : (
-                <div
-                  key={vol.id}
-                  onClick={() => onSelectVolume(vol, realSeries)}
-                  className="group relative glass-panel rounded-[2.5rem] overflow-hidden hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
-                >
-                  <div className="relative aspect-[2/3] w-full overflow-hidden bg-white/5 shadow-2xl">
-                    <img
-                      alt={vol.title}
-                      className="absolute inset-0 w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
-                      src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)}
-                    />
-
-                    {/* Floating Badges */}
-                    <div className="absolute top-4 left-4 flex flex-col gap-2">
-                      <span className="bg-primary text-white text-[10px] font-black px-4 py-2 rounded-premium-sm uppercase tracking-widest shadow-2xl border border-white/10">
-                        Vol {vol.volumeNumber}
-                      </span>
-                      {vol.color_mode === 'color' && (
-                        <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[9px] font-black px-3 py-1.5 rounded-premium-sm uppercase tracking-widest shadow-2xl border border-white/10">
-                          Color
-                        </span>
-                      )}
-                      {vol.is_uncensored && (
-                        <span className="bg-red-500 text-white text-[9px] font-black px-3 py-1.5 rounded-premium-sm uppercase tracking-widest shadow-2xl border border-white/10">
-                          S/C
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black via-black/40 to-transparent">
-                      <div className="flex items-center gap-2 text-yellow-400 mb-2">
-                        <Star className="w-4 h-4 fill-current" />
-                        <span className="text-[12px] font-black">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
-                      </div>
-                      <h3 className="text-white font-black text-sm sm:text-lg leading-tight line-clamp-2 drop-shadow-2xl group-hover:text-primary transition-colors tracking-tight">
-                        {vol.cleanTitle || vol.title}
-                      </h3>
-                    </div>
-                  </div>
-
-                  {/* Hover Accent Glow */}
-                  <div className="absolute -inset-20 bg-primary/5 blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-                </div>
-
-              )
-            ))}
-
-
-            <div className="text-center py-4 text-xs text-gray-500 font-medium">
-              Página {currentPage} de {totalPages} • {volumes.length} Volúmenes
-            </div>
+          <div className="text-center py-4 text-xs text-gray-500 font-medium">
+            Página {currentPage} de {totalPages} • {volumes.length} Volúmenes
           </div>
         </div>
       </div>
 
-      {/* Navigation handled by Layout/UniversalFloatingNav */}
-
-      {/* Synopsis Modal */}
-      {isSynopsisModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div
-            className="bg-[#0d1117] border border-white/10 rounded-premium-sm w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 border-b border-white/5 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-primary" />
-                Sinopsis Completa
-              </h3>
-              <button
-                onClick={() => setIsSynopsisModalOpen(false)}
-                className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto custom-scrollbar">
-              <p className="text-gray-300 text-sm sm:text-base leading-relaxed whitespace-pre-line text-justify">
-                {realSeries.description}
-              </p>
-            </div>
-            <div className="p-4 bg-black/20 border-t border-white/5 flex justify-end">
-              <button
-                onClick={() => setIsSynopsisModalOpen(false)}
-                className="px-6 py-2 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-primary/80"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-          {/* Overlay to close */}
-          <div className="absolute inset-0 -z-10" onClick={() => setIsSynopsisModalOpen(false)}></div>
-        </div>
-      )}
+      <SynopsisModal
+        isOpen={isSynopsisModalOpen}
+        onClose={() => setIsSynopsisModalOpen(false)}
+        description={realSeries.description}
+      />
 
     </div>
   );

@@ -51,28 +51,39 @@ const useLegacyNavigation = () => {
 };
 
 /**
- * Handles Telegram Back Button integration with React Router
+ * Handles Telegram Back Button integration with internal history stack
  */
 const TelegramNavigationHandler: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { webApp } = useTelegram();
+  const { state: navState, popHistory } = useNavigation();
 
   useEffect(() => {
     if (!webApp?.BackButton) return;
 
     const handleBack = () => {
-      // Safe navigation check
-      if (window.history.state && window.history.state.idx > 0) {
+      // Check internal stack length
+      if (navState.historyStack.length > 1) {
         navigate(-1);
+        // popHistory is handled by the HistoryTracker via POP event, 
+        // but if we trigger it programmatically, we should ensure consistency.
+        // Actually, let HistoryTracker handle state updates based on location changes.
       } else {
-        // Fallback for direct entry or empty history
-        navigate('/');
+        // Fallback: If we are deep but stack is empty (reload), go home
+        if (location.pathname !== '/') {
+          navigate('/');
+        } else {
+          // Close app? Or do nothing?
+          // webApp.close(); 
+        }
       }
     };
 
     const rootPaths = ['/', '/search', '/library', '/requests', '/settings', '/downloads', '/admin'];
-    const isRoot = rootPaths.includes(location.pathname);
+    // We consider it "root" if stack is 1 AND we are at a known root path.
+    // Or if stack is > 1 we definitely show Back button.
+    const isRoot = navState.historyStack.length <= 1 && rootPaths.includes(location.pathname);
 
     if (isRoot) {
       webApp.BackButton.hide();
@@ -84,8 +95,33 @@ const TelegramNavigationHandler: React.FC = () => {
     return () => {
       webApp.BackButton.offClick(handleBack);
     };
-  }, [webApp, location.pathname, navigate]);
+  }, [webApp, location.pathname, navState.historyStack.length, navigate]);
 
+  return null;
+};
+
+import { NavigationType, useNavigationType } from 'react-router-dom';
+
+// Syncs MemoryRouter events with our internal stack context
+const HistoryTracker: React.FC = () => {
+  const location = useLocation();
+  const navType = useNavigationType();
+  const { pushHistory, popHistory, resetHistory } = useNavigation();
+
+  useEffect(() => {
+    if (navType === NavigationType.Push) {
+      pushHistory(location.pathname);
+    } else if (navType === NavigationType.Pop) {
+      popHistory();
+    } else if (navType === NavigationType.Replace) {
+      // Replace: usually swaps the current top. 
+      // We'll simplisticly pop then push, or just do nothing if it's strictly replacing content.
+      // For now, let's treat it as a no-op on stack size, but update top? 
+      // Simply: do nothing on stack size, assume same depth.
+    }
+  }, [location.pathname, navType]);
+
+  // Reset on mount if at root? No, context persists.
   return null;
 };
 
@@ -122,6 +158,7 @@ const AppContent: React.FC = () => {
   return (
     <>
       <ScrollToTop />
+      <HistoryTracker />
       <TelegramNavigationHandler />
       <Layout activeTab={getActiveTab(location.pathname)} onTabChange={onNavigate}>
         <Routes>

@@ -31,7 +31,7 @@ async def auto_scan_library():
         scanner = ScannerService("{}")
         logger.info("Starting automatic library scan (All DB Sources)...")
         
-        results = scanner.sync_all(force_scan=False)
+        results = await scanner.sync_all(force_scan=False)
         if results:
             logger.info(f"Auto scan completed: {results}")
 # Auto scan is now standard, no extra logs here unless needed

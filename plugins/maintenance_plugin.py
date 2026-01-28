@@ -195,7 +195,7 @@ class MaintenancePlugin(BasePlugin):
 
         msg = await update.message.reply_text("🔍 Escaneando...")
         scanner = ScannerService(libs_json)
-        results = await asyncio.to_thread(scanner.sync_all, force_scan=True)
+        results = await scanner.sync_all(force_scan=True)
         await msg.edit_text(f"✅ Escaneo completado: {results}")
 
     async def find_duplicates(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -15,7 +15,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useTelegram } from '../contexts/TelegramContext';
 import { useNavigation } from '../contexts/NavigationContext';
 import { UniversalFloatingNav } from './UniversalFloatingNav';
-import { SearchHeader } from './SearchHeader';
+import { SearchHeader } from './search/SearchHeader';
 
 interface LayoutProps {
   children: React.ReactNode;

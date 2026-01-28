@@ -97,7 +97,7 @@ async def upload_epubs(
                 
                 # Escanear inmediatamente en thread separado para no bloquear loop
                 # sync_path(self, path: str, source_id: int = 1, force_scan: bool = True)
-                await run_in_threadpool(scanner.sync_path, file_path, source.id, True)
+                await scanner.sync_path(file_path, source.id, True)
                 
                 saved_paths.append(safe_filename)
             except Exception as e:

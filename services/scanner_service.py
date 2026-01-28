@@ -45,7 +45,7 @@ class ScannerService:
             logger.error(f"Error parseando configuración de librerías: {e}")
             self.libraries = {}
 
-    def sync_all(self, force_scan=False):
+    async def sync_all(self, force_scan=False):
         """
         Sincroniza todas las fuentes configuradas.
         """
@@ -90,7 +90,7 @@ class ScannerService:
                     session.add(source)
                     session.commit()
 
-                source_results, found_files = self._scan_directory(source, session, force_scan)
+                source_results, found_files = await self._scan_directory(source, session, force_scan)
                 
                 # Update global results
                 for k, v in source_results.items():
@@ -235,7 +235,12 @@ class ScannerService:
                             
                             series_books = session.query(LocalBook).filter_by(series_hash=s_hash).all()
                             if len(series_books) >= 3: # Solo para series con cierto volumen
-                                proposal = asyncio.run(AIService.analyze_series_for_updates(s_hash, current_name, [b.to_dict() for b in series_books]))
+                                try:
+                                    proposal = await AIService.analyze_series_for_updates(s_hash, current_name, [b.to_dict() for b in series_books])
+                                except Exception as ae:
+                                    logger.warning(f"Error generando propuesta IA para {s_hash}: {ae}")
+                                    proposal = None
+                                
                                 if proposal:
                                     p_obj = MetadataProposal(
                                         series_hash=s_hash,
@@ -290,7 +295,7 @@ class ScannerService:
             session.close()
             ScannerService._is_scanning = False
 
-    def sync_path(self, path: str, source_id: int = 1, force_scan: bool = True):
+    async def sync_path(self, path: str, source_id: int = 1, force_scan: bool = True):
         """
         Sincroniza una ruta específica (archivo o directorio).
         Útil para procesar inmediatamente archivos recién subidos.
@@ -328,7 +333,7 @@ class ScannerService:
                 # Es un archivo individual
                 if abs_path.lower().endswith(".epub"):
                     results["total_scanned"] = 1
-                    res, s_hash = self._process_book_with_hash(abs_path, source, session, force_scan)
+                    res, s_hash = await self._process_book_with_hash(abs_path, source, session, force_scan)
                     if res == "added": results["added"] = 1
                     elif res == "updated": results["updated"] = 1
                     elif res == "duplicate": results["duplicates"] = 1
@@ -338,7 +343,7 @@ class ScannerService:
                         self.sync_series_metadata(session, s_hash)
             else:
                 # Es un directorio
-                source_results, _ = self._scan_directory(source, session, force_scan)
+                source_results, _ = await self._scan_directory(source, session, force_scan)
                 results.update(source_results)
 
             session.commit()
@@ -352,7 +357,7 @@ class ScannerService:
             session.close()
             ScannerService._is_scanning = False
 
-    def sync_series(self, series_hash, force_scan=False):
+    async def sync_series(self, series_hash, force_scan=False):
         """
         Sincroniza una serie específica basada en su hash.
         Busca los libros que pertenecen a esa serie y los re-procesa.
@@ -408,7 +413,7 @@ class ScannerService:
                             full_path = os.path.join(root, file)
                             
                             # Procesar el libro
-                            book_result, s_hash = self._process_book_with_hash(full_path, source, session, force_scan)
+                            book_result, s_hash = await self._process_book_with_hash(full_path, source, session, force_scan)
                             
                             if book_result == "added":
                                 results["added"] += 1
@@ -433,7 +438,7 @@ class ScannerService:
             session.close()
             ScannerService._is_scanning = False
 
-    def _scan_directory(self, source, session, force_scan=False):
+    async def _scan_directory(self, source, session, force_scan=False):
         """
         Recorre el directorio y procesa archivos nuevos o modificados.
         """
@@ -456,7 +461,7 @@ class ScannerService:
                     found_files.add(full_path)
                     
                     # El tercer valor retornado por _process_book será el series_hash si se procesó
-                    book_res, s_hash = self._process_book_with_hash(full_path, source, session, force_scan)
+                    book_res, s_hash = await self._process_book_with_hash(full_path, source, session, force_scan)
                     if s_hash:
                         touched_hashes.add(s_hash)
                     
@@ -532,9 +537,9 @@ class ScannerService:
 
         return series
 
-    def _process_book_with_hash(self, filepath, source, session, force_scan=False):
+    async def _process_book_with_hash(self, filepath, source, session, force_scan=False):
         """Wrapper de _process_book que también devuelve el hash de la serie."""
-        res = self._process_book(filepath, source, session, force_scan)
+        res = await self._process_book(filepath, source, session, force_scan)
         # Buscar el hash en la DB tras el procesamiento
         if res in ("added", "updated", "skipped"):
             book = session.query(LocalBook).filter_by(filepath=filepath).first()
@@ -542,7 +547,7 @@ class ScannerService:
                 return res, book.series_hash
         return res, None
 
-    def _process_book(self, filepath, source, session, force_scan=False) -> bool:
+    async def _process_book(self, filepath, source, session, force_scan=False) -> bool:
         """
         Procesa un archivo individual. Devuelve True si el libro fue procesado/actualizado.
         """

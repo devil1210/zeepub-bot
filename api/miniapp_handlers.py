@@ -959,221 +959,8 @@ async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[
     """Sincroniza metadatos de series, propuestas IA, feedback, fuentes y libros locales con Supabase."""
     check_staff(user_data)
     
-    if not config.ENABLE_SUPABASE:
-        return {"success": False, "message": "Supabase no está habilitado."}
-
-    client = supabase_manager.get_client()
-    if not client:
-        return {"success": False, "message": "Supabase no está configurado"}
-
-    from models.library_models import UserRating, UserDownload
-
-    stats = {"series": 0, "ai_proposals": 0, "ai_feedback": 0, "sources": 0, "books": 0, "ratings": 0, "downloads": 0}
-    try:
-        async with pg_manager.get_session() as session:
-            # 1. Sync SeriesMetadata
-            res_series = await session.execute(select(SeriesMetadata))
-            all_series = res_series.scalars().all()
-            logger.info(f"Syncing {len(all_series)} series to Supabase...")
-            for s in all_series:
-                try:
-                    s_data = {
-                        "series_hash": s.series_hash,
-                        "series_name": s.series_name,
-                        "series_spanish": s.series_spanish,
-                        "author": s.author,
-                        "description": s.description,
-                        "tags": s.tags,
-                        "cover_url": s.cover_url,
-                        "book_type": s.book_type,
-                        "publisher": s.publisher,
-                        "author_jap": s.author_jap,
-                        "rating_average": float(s.rating_average) if s.rating_average is not None else 0.0,
-                        "rating_count": s.rating_count,
-                        "book_count": s.book_count
-                    }
-                    client.table("series_metadata").upsert(s_data, on_conflict="series_hash").execute()
-                    stats["series"] += 1
-                except Exception as e:
-                    logger.error(f"Error syncing series {s.series_hash}: {e}")
-
-            # 2. Sync AI Learning Feedback
-            res_feedback = await session.execute(select(AILearningFeedback))
-            all_feedback = res_feedback.scalars().all()
-            if all_feedback:
-                feedback_batch = []
-                for f in all_feedback:
-                    feedback_batch.append({
-                        "series_hash": f.series_hash,
-                        "original_name": f.original_name,
-                        "proposed_name": f.proposed_name,
-                        "final_name": f.final_name,
-                        "status": f.status,
-                        "ai_reason": f.ai_reason,
-                        "user_reason": f.user_reason,
-                        "created_at": f.created_at.isoformat() if f.created_at else None
-                    })
-                
-                # Split in smaller batches for upsert
-                for i in range(0, len(feedback_batch), 50):
-                    batch = feedback_batch[i:i+50]
-                    try:
-                        client.table("ai_learning_feedback").upsert(batch).execute()
-                        stats["ai_feedback"] += len(batch)
-                    except Exception as e:
-                        logger.error(f"Error syncing AI feedback batch: {e}")
-
-            # 3. Sync AI Proposals
-            res_proposals = await session.execute(select(MetadataProposal))
-            all_proposals = res_proposals.scalars().all()
-            if all_proposals:
-                proposal_batch = []
-                for p in all_proposals:
-                    proposal_batch.append({
-                        "series_hash": p.series_hash,
-                        "proposal_data": p.proposal_data,
-                        "status": p.status,
-                        "type": p.type,
-                        "secondary_hash": p.secondary_hash,
-                        "created_at": p.created_at.isoformat() if p.created_at else None,
-                        "processed_at": p.processed_at.isoformat() if p.processed_at else None
-                    })
-                for i in range(0, len(proposal_batch), 50):
-                    batch = proposal_batch[i:i+50]
-                    try:
-                        client.table("metadata_proposals").upsert(batch).execute()
-                        stats["ai_proposals"] += len(batch)
-                    except Exception as e:
-                        logger.error(f"Error syncing Proposals batch: {e}")
-
-            # 4. Sync Library Sources
-            res_sources = await session.execute(select(LibrarySource))
-            sources = res_sources.scalars().all()
-            if sources:
-                sources_data = []
-                for src in sources:
-                    sources_data.append({
-                        "id": src.id,
-                        "name": src.name,
-                        "path": src.path,
-                        "last_scanned": src.last_scanned.isoformat() if src.last_scanned else None
-                    })
-                try:
-                    client.table("library_sources").upsert(sources_data).execute()
-                    stats["sources"] += len(sources_data)
-                except Exception as e:
-                    logger.error(f"Error syncing Library Sources: {e}")
-
-            # 4.5 Sync Translators Groups
-            res_groups = await session.execute(select(TranslatorsGroup))
-            all_groups = res_groups.scalars().all()
-            if all_groups:
-                groups_data = [{
-                    "id": g.id,
-                    "name": g.name,
-                    "siglas": g.siglas,
-                    "type": g.type,
-                    "website": g.website
-                } for g in all_groups]
-                try:
-                    client.table("translators_groups").upsert(groups_data).execute()
-                    stats["groups"] = len(groups_data)
-                except Exception as e:
-                    logger.error(f"Error syncing Translators Groups: {e}")
-
-            # 5. Sync Local Books
-            res_books = await session.execute(select(LocalBook))
-            books = res_books.scalars().all()
-            logger.info(f"Syncing {len(books)} books to Supabase...")
-            if books:
-                books_data = []
-                for b in books:
-                    # Clear the data for Supabase (remove prefixes and ensure types)
-                    # We use a subset of fields compatible with the cloud schema
-                    cloud_book = {
-                        "book_hash": b.book_hash,
-                        "series_hash": b.series_hash,
-                        "title": b.title,
-                        "author": b.author,
-                        "volume": float(b.volume) if b.volume is not None else 0.0,
-                        "book_type": b.book_type,
-                        "cover_low": b.cover_low,
-                        "cover_medium": b.cover_medium,
-                        "cover_high": b.cover_high,
-                        "cover_original": b.cover_original,
-                        "rating_average": float(b.rating_average) if b.rating_average is not None else 0.0,
-                        "rating_count": b.rating_count,
-                        "description": b.description,
-                        "tags": b.tags,
-                        "language": b.language,
-                        "file_size": b.file_size,
-                        "source_id": b.source_id,
-                        "filepath": b.filepath,
-                        "filename": b.filename
-                    }
-                    books_data.append(cloud_book)
-                
-                # Split in batches for upsert
-                for i in range(0, len(books_data), 50):
-                    batch = books_data[i:i+50]
-                    try:
-                        client.table("local_books").upsert(batch, on_conflict="book_hash").execute()
-                        stats["books"] += len(batch)
-                    except Exception as e:
-                        logger.error(f"Error syncing Books batch around index {i}: {e}")
-
-            # 6. Sync User Ratings
-            res_ratings = await session.execute(select(UserRating))
-            all_ratings = res_ratings.scalars().all()
-            if all_ratings:
-                ratings_batch = []
-                for r in all_ratings:
-                    ratings_batch.append({
-                        "user_id": r.user_id,
-                        "book_hash": r.book_hash,
-                        "rating": r.rating,
-                        "created_at": r.created_at.isoformat() if r.created_at else None
-                    })
-                for i in range(0, len(ratings_batch), 100):
-                    batch = ratings_batch[i:i+100]
-                    try:
-                        client.table("user_ratings").upsert(batch).execute()
-                        stats["ratings"] += len(batch)
-                    except Exception as e:
-                        logger.error(f"Error syncing Ratings batch: {e}")
-
-            # 7. Sync User Downloads
-            res_dls = await session.execute(select(UserDownload))
-            all_dls = res_dls.scalars().all()
-            if all_dls:
-                dls_batch = []
-                for d in all_dls:
-                    dls_batch.append({
-                        "user_id": d.user_id,
-                        "book_hash": d.book_hash,
-                        "series_hash": d.series_hash,
-                        "title": d.title,
-                        "downloaded_at": d.downloaded_at.isoformat() if d.downloaded_at else None
-                    })
-                for i in range(0, len(dls_batch), 100):
-                    batch = dls_batch[i:i+100]
-                    try:
-                        client.table("user_downloads").upsert(batch).execute()
-                        stats["downloads"] += len(batch)
-                    except Exception as e:
-                        logger.error(f"Error syncing Downloads batch: {e}")
-
-            # 8. Pull from Supabase to ensure Local is up to date (Bidirectional sync for stats/etc)
-            try:
-                from core.optimized_sync_engine import optimized_sync_engine
-                await optimized_sync_engine.force_sync_all()
-            except Exception as pull_e:
-                logger.error(f"Error during bidirectional PULL: {pull_e}")
-                
-        return {"success": True, "message": "Library (Books, Series, Ratings, Downloads) synced to Cloud.", "stats": stats}
-    except Exception as e:
-        logger.error(f"Error syncing library to Supabase: {e}")
-        return {"success": False, "message": str(e)}
+    from services.sync_service import SyncService
+    return await SyncService.sync_library_to_cloud()
 
 async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, Any]):
     """Activates forced library scan."""
@@ -1184,7 +971,7 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
     async def run_scan_in_background(scanner_obj, force_val):
         try:
             logger.info(f"Background scan started (Force: {force_val})")
-            await asyncio.to_thread(scanner_obj.sync_all, force_scan=force_val)
+            await scanner_obj.sync_all(force_scan=force_val)
             logger.info("Background scan completed successfully.")
         except Exception as e:
             logger.error(f"Background scan error: {e}")
@@ -1227,7 +1014,7 @@ async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, An
     async def run_sync_in_background(scanner_obj, s_hash, force_val):
         try:
             logger.info(f"Background series scan started (Hash: {s_hash}, Force: {force_val})")
-            await asyncio.to_thread(scanner_obj.sync_series, s_hash, force_scan=force_val)
+            await scanner_obj.sync_series(s_hash, force_scan=force_val)
             logger.info(f"Background series scan for {s_hash} completed successfully.")
         except Exception as e:
             logger.error(f"Background series scan error for {s_hash}: {e}")

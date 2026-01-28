@@ -46,9 +46,11 @@ class PostgresManager:
         try:
             self.engine = create_async_engine(
                 db_url,
-                echo=False,  # Set to True for SQL query logging
-                poolclass=NullPool,  # Better for serverless/Supabase direct connections
-                connect_args={"server_settings": {"jit": "off"}},  # Optimization for simple queries
+                echo=False,
+                pool_size=config.DB_POOL_SIZE,
+                max_overflow=config.DB_MAX_OVERFLOW,
+                pool_pre_ping=True,  # Check connection health before use
+                connect_args={"server_settings": {"jit": "off"}}, 
             )
             
             self.session_maker = async_sessionmaker(

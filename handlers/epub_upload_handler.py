@@ -973,7 +973,7 @@ class EPUBUploader:
             import asyncio
             await asyncio.sleep(0.5) # Breve respiro para el FS
             
-            scan_result = scanner.sync_path(str(full_path), force_scan=True)
+            scan_result = await scanner.sync_path(str(full_path), force_scan=True)
             
             if scan_result and (scan_result.get("added") or scan_result.get("updated")):
                 logger.info(f"✅ Libro indexado inmediatamente: {full_path}")

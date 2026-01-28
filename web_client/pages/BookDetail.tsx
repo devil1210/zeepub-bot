@@ -1,40 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../src/services/api';
-import { getCoverUrl } from '../src/utils/imageUtils';
 import {
-  ArrowLeft,
-  Share2,
-  Flag,
-  Calendar,
-  Hash,
-  User,
-  ArrowDownToLine,
-  Tag,
-  Info,
-  Library,
   FileText,
-  Clock,
-  Database,
-  PenTool,
-  Languages,
-  FileBox,
-  Layers,
-  BookOpen,
-  Globe,
+  Home,
   Star,
   Download,
-  Home,
-  Reply,
   Check,
-  X,
   Loader2
 } from 'lucide-react';
 import { Volume, Series } from '../types';
 import { ReportIssueModal } from '../components/ReportIssueModal';
-import { RatingModal } from '../components/RatingModal';
+import { RatingModal } from '../components/book/RatingModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigation } from '../contexts/NavigationContext';
 import { useTelegram } from '../contexts/TelegramContext';
+import { BookCover } from '../components/book/BookCover';
+import { BookActions } from '../components/book/BookActions';
+import { BookHeader } from '../components/book/BookHeader';
+import { BookSpecs } from '../components/book/BookSpecs';
 
 interface BookDetailProps {
   volume?: Volume;
@@ -65,7 +48,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   // UI State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
-  const [isFullscreenCover, setIsFullscreenCover] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [localRating, setLocalRating] = useState(initialVolume?.rating || 0);
   const [localDownloadCount, setLocalDownloadCount] = useState(initialVolume?.downloadCount || 0);
@@ -84,11 +66,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       try {
         setLoading(true);
         const res = await api.getBookDetail(idToFetch);
-        // The API might return { book: ... } or the object directly
         const bookData = res.book || (res.id ? res : null);
 
         if (bookData) {
-          // Map backend book to Volume
           const mappedVolume: Volume = {
             id: bookData.id,
             seriesId: bookData.seriesHash || 'unknown',
@@ -333,6 +313,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   const displayData = {
     ...curVolume,
     rating: localRating,
+    ratingCount: curVolume.ratingCount || 0,
     downloadCount: localDownloadCount,
     title: String(curVolume.title || ''),
     language: String(curVolume.language || 'Español'),
@@ -377,6 +358,30 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     ));
   };
 
+  const detailItems = [
+    { label: 'Serie', value: curSeries.title, highlight: true, clickable: true, type: 'series' },
+    { label: 'Volumen', value: curVolume.volumeNumber > 0 ? `${curVolume.volumeNumber}` : 'Único' },
+    { label: 'Tipo de libro', value: displayData.bookType },
+    { label: 'ISBN', value: displayData.isbn, highlight: true, font: 'mono' },
+    { label: 'ASIN', value: displayData.asin, highlight: true, font: 'mono' },
+    { label: 'Idioma', value: displayData.language, highlight: true },
+    { label: 'Group', value: displayData.group, color: 'text-primary', clickable: true, type: 'group' },
+    { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
+    { label: 'Fecha de publicación', value: displayData.publishedDate, highlight: true },
+  ];
+
+  const specItems = [
+    { label: 'Formato', value: 'EPUB', highlight: true },
+    { label: 'Versión Epub', value: `v${displayData.epubVersion}` },
+    { label: 'Palabras', value: displayData.wordCount?.toLocaleString() || 'N/A' },
+    { label: 'Páginas', value: displayData.pages || 'N/A' },
+    { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
+    { label: 'Lectura Aprox.', value: displayData.readTime },
+    { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
+    { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400' },
+    { label: 'Fecha de actualización', value: displayData.lastUpdated, highlight: true },
+  ];
+
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-900 dark:text-gray-100 bg-transparent">
       <ReportIssueModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
@@ -389,27 +394,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({
         currentRating={localRating}
       />
 
-      {/* Fullscreen Image Overlay */}
-      {isFullscreenCover && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 animate-in fade-in duration-300"
-          onClick={() => setIsFullscreenCover(false)}
-        >
-          <button
-            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-[101]"
-            onClick={(e) => { e.stopPropagation(); setIsFullscreenCover(false); }}
-          >
-            <X className="w-6 h-6 text-white" />
-          </button>
-          <img
-            src={getCoverUrl(displayData.coverUrl, displayData.coverThumbUrl, 'original')}
-            alt={displayData.title}
-            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
-
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto pb-44 md:pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -418,73 +402,23 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
             {/* LEFT COLUMN: Cover & Actions */}
             <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-8">
-              {/* Cover Wrapper (Pro Max) */}
-              <div
-                className="relative w-[85%] sm:w-[50%] lg:w-full mx-auto lg:mx-0 group cursor-pointer"
-                onClick={() => setIsFullscreenCover(true)}
-              >
-                {/* Outer Glow */}
-                <div className="absolute -inset-4 bg-primary/20 rounded-[2.5rem] blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+              <BookCover
+                title={displayData.title}
+                coverUrl={displayData.coverUrl}
+                coverThumbUrl={displayData.coverThumbUrl}
+                settings={settings}
+              />
 
-                <div className="relative aspect-[2/3] rounded-[2.2rem] overflow-hidden shadow-2xl border border-white/10 group-hover:-translate-y-2 transition-all duration-700 bg-white/5">
-                  <img
-                    src={getCoverUrl(displayData.coverUrl, displayData.coverThumbUrl, settings.coverQuality)}
-                    alt={displayData.title}
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+              <BookActions
+                hasDownloaded={hasDownloaded}
+                onDownload={handleDownload}
+                onOpenRating={() => setIsRatingModalOpen(true)}
+                onOpenReport={() => setIsReportModalOpen(true)}
+                rating={localRating}
+              />
 
-                  {/* Floating Zoom Badge */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/20">
-                    <div className="p-4 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-                      <BookOpen className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Actions (Premium Stack) */}
-              <div className="hidden md:flex flex-col gap-4">
-                <button
-                  onClick={handleDownload}
-                  className={`w-full py-5 rounded-[2rem] text-sm font-black uppercase tracking-[0.25em] flex items-center justify-center gap-4 transition-all duration-500 shadow-2xl active:scale-95 group overflow-hidden relative ${hasDownloaded
-                    ? 'bg-emerald-500 text-white shadow-emerald-500/30'
-                    : 'bg-primary text-white shadow-primary/30'
-                    }`}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
-                  {hasDownloaded ? <Check className="w-6 h-6" strokeWidth={3} /> : <ArrowDownToLine className="w-6 h-6" strokeWidth={3} />}
-                  {hasDownloaded ? 'En Biblioteca' : 'Descargar'}
-                </button>
-
-                <div className="grid grid-cols-1 gap-4">
-                  <button
-                    onClick={() => setIsRatingModalOpen(true)}
-                    className="w-full py-4 px-6 glass-panel rounded-[1.75rem] border border-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-all flex items-center justify-center gap-4 group/rate shadow-xl"
-                  >
-                    <Star className={`w-5 h-5 ${localRating > 0 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 group-hover/rate:text-yellow-400'} transition-colors`} />
-                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 group-hover/rate:text-white transition-colors">
-                      {localRating > 0 ? `Valoración: ${localRating.toFixed(1)}` : 'Valorar Libro'}
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setIsReportModalOpen(true)}
-                    className="w-full py-4 px-6 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/30 rounded-[1.75rem] flex items-center justify-center gap-4 transition-all group/report shadow-xl"
-                  >
-                    <Flag className="w-5 h-5 text-red-500/40 group-hover/report:text-red-500 transition-colors" />
-                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-red-500/60 group-hover/report:text-red-500 transition-colors">Reportar Error</span>
-                  </button>
-                </div>
-              </div>
-
-
-
-              {/* Extra Info visible in sidebar (Desktop) */}
+              {/* Stats Block (Sidebar - Desktop) */}
               <div className="hidden md:block glass-panel p-4 rounded-premium-sm border border-black/5 dark:border-white/5 space-y-4">
-
-                {/* Rating Block */}
                 <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Valoración</span>
                   <div className="flex flex-col items-end">
@@ -492,13 +426,12 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                       <Star className="w-4 h-4 fill-current" />
                       <span className="text-gray-900 dark:text-white font-bold">{displayData.rating > 0 ? displayData.rating.toFixed(1) : '—'}</span>
                     </div>
-                    {displayData.ratingCount !== undefined && displayData.ratingCount > 0 && (
+                    {displayData.ratingCount > 0 && (
                       <span className="text-[10px] text-gray-400 mt-1">{displayData.ratingCount} {displayData.ratingCount === 1 ? 'voto' : 'votos'}</span>
                     )}
                   </div>
                 </div>
 
-                {/* Download Block */}
                 <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Descargas Totales</span>
                   <div className="flex items-center gap-1.5 text-primary">
@@ -507,7 +440,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                   </div>
                 </div>
 
-                {/* Updated Block */}
                 <div className="flex items-center justify-between text-xs font-medium text-gray-500 dark:text-gray-400">
                   <span>Última Actualización</span>
                   <span className="text-gray-900 dark:text-white font-bold">{displayData.lastUpdated}</span>
@@ -518,91 +450,27 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             {/* RIGHT COLUMN: Content */}
             <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
 
-              {/* Header Info */}
-              <div>
-                {/* Group/Translator Badges - CLICKABLE */}
-                <div className="mb-4 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-wider">
-                  <button
-                    onClick={() => handleSearch(displayData.group, 'group')}
-                    className="bg-primary/10 text-primary border border-primary/20 px-2 py-1 rounded-md hover:bg-primary hover:text-white transition-colors cursor-pointer"
-                  >
-                    {displayData.group}
-                  </button>
-                  <span className="text-gray-400 dark:text-gray-600 px-1">/</span>
-                  <button
-                    onClick={() => handleSearch(displayData.translator, 'translator')}
-                    className="bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 px-2 py-1 rounded-md hover:bg-gray-200 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                  >
-                    {displayData.translator}
-                  </button>
-                  {displayData.color_mode === 'color' && (
-                    <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white px-2 py-1 rounded-md shadow-sm">
-                      A Color
-                    </span>
-                  )}
-                  {displayData.is_uncensored && (
-                    <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-2 py-1 rounded-md">
-                      Sin Censura
-                    </span>
-                  )}
-                </div>
+              <BookHeader
+                displayTitle={displayData.displayTitle}
+                romajiTitle={displayData.romajiTitle}
+                author={curSeries.author}
+                rating={displayData.rating}
+                ratingCount={displayData.ratingCount}
+                downloadCount={displayData.downloadCount}
+                illustrator={displayData.illustrator}
+                volumeNumber={curVolume.volumeNumber}
+                publishedDate={displayData.publishedDate}
+                translator={displayData.translator}
+                lastUpdated={displayData.lastUpdated}
+                group={displayData.group}
+                color_mode={displayData.color_mode}
+                is_uncensored={displayData.is_uncensored}
+                onSearch={handleSearch}
+              />
 
-                <h1 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold text-gray-900 dark:text-white leading-tight mb-2">
-                  {displayData.displayTitle}
-                </h1>
-                <h2 className="text-sm sm:text-lg text-gray-500 dark:text-gray-400 italic font-serif mb-6 leading-relaxed">
-                  {displayData.romajiTitle}
-                </h2>
-
-                {/* Author/Stats Row - CLICKABLE */}
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-600 dark:text-gray-400 border-b border-black/5 dark:border-white/5 pb-6 mb-2">
-                  <button onClick={() => handleSearch(curSeries.author, 'author')} className="flex items-center gap-2 text-gray-900 dark:text-white group">
-                    <User className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-                    <span className="font-bold group-hover:underline cursor-pointer group-hover:text-primary transition-colors">{curSeries.author}</span>
-                  </button>
-
-                  <div className="flex items-center gap-1.5 text-yellow-500">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="text-gray-900 dark:text-white font-bold">{displayData.rating > 0 ? displayData.rating.toFixed(1) : '—'}</span>
-                    {displayData.ratingCount !== undefined && displayData.ratingCount > 0 && (
-                      <span className="text-xs text-gray-400 font-medium">({displayData.ratingCount})</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-primary">
-                    <Download className="w-4 h-4" />
-                    <span className="text-gray-900 dark:text-white font-bold">{displayData.downloadCount}</span>
-                  </div>
-
-                  <button onClick={() => handleSearch(displayData.illustrator, 'illustrator')} className="flex items-center gap-2 group hover:text-black dark:hover:text-gray-200 transition-colors">
-                    <PenTool className="w-4 h-4" />
-                    <span>{displayData.illustrator}</span>
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <Hash className="w-4 h-4" />
-                    <span>{curVolume.volumeNumber > 0 ? `Volumen ${curVolume.volumeNumber}` : 'Volumen Único'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>{displayData.publishedDate}</span>
-                  </div>
-                  {displayData.translator && (
-                    <button onClick={() => handleSearch(displayData.translator, 'translator')} className="flex items-center gap-2 group hover:text-black dark:hover:text-gray-200 transition-colors">
-                      <Languages className="w-4 h-4 text-indigo-500" />
-                      <span className="font-bold group-hover:underline">{displayData.translator}</span>
-                    </button>
-                  )}
-                  {displayData.lastUpdated !== 'N/A' && (
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <Clock className="w-4 h-4" />
-                      <span className="font-bold">Actualizado: {displayData.lastUpdated}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Genres & Tags - CLICKABLE */}
+              {/* Genres & Tags */}
               <div className="flex flex-wrap gap-2">
-                {displayData.demography.map((tag) => (
+                {displayData.demography.map((tag: string) => (
                   <button
                     key={tag}
                     onClick={() => handleSearch(tag, 'demography')}
@@ -611,7 +479,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                     {tag}
                   </button>
                 ))}
-                {displayData.genres.map((genre) => (
+                {displayData.genres.map((genre: string) => (
                   <button
                     key={genre}
                     onClick={() => handleSearch(genre, 'genre')}
@@ -633,82 +501,12 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                 </div>
               </div>
 
-              {/* Two Column Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Book Details */}
-                <div className="glass-panel border border-black/5 dark:border-white/5 rounded-premium-sm p-6 shadow-sm dark:shadow-xl h-full">
-                  <div className="flex items-center gap-2 mb-6 text-primary">
-                    <Library className="w-5 h-5" />
-                    <h3 className="text-xs font-black uppercase tracking-widest">Detalles del Libro</h3>
-                  </div>
-                  <div className="space-y-0.5">
-                    {([
-                      { label: 'Serie', value: curSeries.title, highlight: true, clickable: true, type: 'series' },
-                      { label: 'Volumen', value: curVolume.volumeNumber > 0 ? `${curVolume.volumeNumber}` : 'Único' },
-                      { label: 'Tipo de libro', value: displayData.bookType },
-                      { label: 'ISBN', value: displayData.isbn, highlight: true, font: 'mono' },
-                      { label: 'ASIN', value: displayData.asin, highlight: true, font: 'mono' },
-                      { label: 'Idioma', value: displayData.language, highlight: true },
-                      { label: 'Group', value: displayData.group, color: 'text-primary', clickable: true, type: 'group' },
-                      { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
-                      { label: 'Fecha de publicación', value: displayData.publishedDate, highlight: true },
-                    ] as any[]).map((item, idx) => (
-                      <div key={idx} className="flex justify-between py-3 border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/[0.02] px-2 -mx-2 rounded transition-colors">
-                        <span className="text-sm text-gray-500 font-medium">{item.label}</span>
-                        {item.clickable ? (
-                          <button
-                            onClick={() => handleSearch(String(item.value), item.type)}
-                            className={`text-sm text-right ${item.color || (item.highlight ? 'text-gray-900 dark:text-gray-200 font-bold' : 'text-gray-600 dark:text-gray-400')} ${item.font === 'mono' ? 'font-mono' : ''} truncate max-w-[200px] hover:underline hover:text-primary transition-colors`}
-                          >
-                            {item.value}
-                          </button>
-                        ) : (
-                          <span className={`text-sm text-right ${item.color || (item.highlight ? 'text-gray-900 dark:text-gray-200 font-bold' : 'text-gray-600 dark:text-gray-400')} ${item.font === 'mono' ? 'font-mono' : ''} truncate max-w-[200px]`}>
-                            {item.value}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tech Specs */}
-                <div className="glass-panel border border-black/5 dark:border-white/5 rounded-premium-sm p-6 shadow-sm dark:shadow-xl h-full">
-                  <div className="flex items-center gap-2 mb-6 text-primary">
-                    <Database className="w-5 h-5" />
-                    <h3 className="text-xs font-black uppercase tracking-widest">Ficha Técnica</h3>
-                  </div>
-                  <div className="space-y-0.5">
-                    {([
-                      { label: 'Formato', value: 'EPUB', highlight: true },
-                      { label: 'Versión Epub', value: `v${displayData.epubVersion}` },
-                      { label: 'Palabras', value: displayData.wordCount?.toLocaleString() || 'N/A' },
-                      { label: 'Páginas', value: displayData.pages || 'N/A' },
-                      { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
-                      { label: 'Lectura Aprox.', value: displayData.readTime },
-                      { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
-                      { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400' },
-                      { label: 'Fecha de actualización', value: displayData.lastUpdated, highlight: true },
-                    ] as any[]).map((item, idx) => (
-                      <div key={idx} className="flex justify-between py-3 border-b border-black/5 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/[0.02] px-2 -mx-2 rounded transition-colors">
-                        <span className="text-sm text-gray-500 font-medium">{item.label}</span>
-                        {item.clickable ? (
-                          <button
-                            onClick={() => handleSearch(String(item.value), item.type)}
-                            className={`text-sm text-right ${item.color || (item.highlight ? 'text-gray-900 dark:text-gray-200 font-bold' : 'text-gray-600 dark:text-gray-400')} ${item.font === 'mono' ? 'font-mono' : ''} hover:underline hover:brightness-125 transition-all`}
-                          >
-                            {item.value}
-                          </button>
-                        ) : (
-                          <span className={`text-sm text-right ${item.color || (item.highlight ? 'text-gray-900 dark:text-gray-200 font-bold' : 'text-gray-600 dark:text-gray-400')} ${item.font === 'mono' ? 'font-mono' : ''}`}>
-                            {item.value}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              {/* Details and Specs Grids */}
+              <BookSpecs
+                details={detailItems as any}
+                specs={specItems as any}
+                onSearch={handleSearch}
+              />
 
             </div>
           </div>
@@ -717,3 +515,4 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     </div>
   );
 };
+

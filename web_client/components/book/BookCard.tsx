@@ -1,9 +1,9 @@
 import React from 'react';
 import { Download, Star } from 'lucide-react';
-import { Book } from '../types';
-import { ProgressiveImage } from './ProgressiveImage';
-import { useTheme } from '../contexts/ThemeContext';
-import { getCoverUrl } from '../src/utils/imageUtils';
+import { Book } from '../../types';
+import { ProgressiveImage } from '../ProgressiveImage';
+import { useTheme } from '../../contexts/ThemeContext';
+import { getCoverUrl } from '../../src/utils/imageUtils';
 
 interface BookCardProps {
   book: Book;

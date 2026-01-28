@@ -98,6 +98,8 @@ class BotConfig:
     MAX_IN_MEMORY_BYTES: int = int(os.getenv("MAX_IN_MEMORY_BYTES", "10485760"))
     DEFAULT_AIOHTTP_TIMEOUT: int = int(os.getenv("AIOHTTP_TIMEOUT", "60"))
     MAX_CONCURRENT_REQUESTS: int = int(os.getenv("MAX_CONCURRENT_REQUESTS", "20"))
+    DB_POOL_SIZE: int = int(os.getenv("DB_POOL_SIZE", "10"))
+    DB_MAX_OVERFLOW: int = int(os.getenv("DB_MAX_OVERFLOW", "20"))
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
     ENABLE_PLUGINS: bool = os.getenv("ENABLE_PLUGINS", "true").lower() == "true"
     PLUGIN_DIRECTORY: str = os.getenv("PLUGIN_DIRECTORY", "plugins")
