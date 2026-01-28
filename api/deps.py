@@ -58,7 +58,13 @@ async def get_current_user_data(
     Use this when you need UI settings or nickname.
     """
     if user_id == 0:
-        return {"user_id": 0, "level": "anonymous", "role": None, "has_mini_app_access": False, "permissions": []}
+        return {
+            "user_id": 0,
+            "level": "anonymous",
+            "role": None,
+            "has_mini_app_access": False,
+            "permissions": [],
+        }
 
     # Extract user metadata from initData to allow nickname sync
     init_data = x_telegram_init_data or x_telegram_data
@@ -112,13 +118,15 @@ async def require_admin(access_data: dict[str, Any] = Depends(get_current_user_p
 
 
 async def require_mini_app_access(
-    access_data: dict[str, Any] = Depends(get_current_user_permissions)
+    access_data: dict[str, Any] = Depends(get_current_user_permissions),
 ):
     """
     Enforces mini app access permission.
     """
     # Admins/Staff always have access, others check granular permission
-    if not access_data.get("isStaff") and Permission.ACCESS_MINI_APP.value not in access_data.get("permissions", []):
+    if not access_data.get("isStaff") and Permission.ACCESS_MINI_APP.value not in access_data.get(
+        "permissions", []
+    ):
         raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.",

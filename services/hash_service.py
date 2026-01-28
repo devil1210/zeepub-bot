@@ -4,6 +4,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
 class HashService:
     """
     Servicio centralizado para la generación de hashes de libros y series.
@@ -32,17 +33,17 @@ class HashService:
         language: str | None = "es",
         edition: str | None = None,
         is_uncensored: int = 0,
-        color_mode: str = "bw"
+        color_mode: str = "bw",
     ) -> str:
         """
-        Genera un hash estable basado exclusivamente en: 
+        Genera un hash estable basado exclusivamente en:
         series + author + book_type + volume + translator + layout_by + language + edition + traits.
         NO usar title.
         """
         s_norm = cls.norm_string(series)
         a_norm = cls.norm_string(author)
         t_norm = cls.norm_string(book_type)
-        
+
         # Normalización estricta de volumen para estabilidad del hash
         v_norm = ""
         if volume is not None:
@@ -54,7 +55,7 @@ class HashService:
                     v_norm = str(v_val)
             except (ValueError, TypeError):
                 v_norm = cls.norm_string(volume)
-        
+
         tr_norm = cls.norm_string(translator)
         l_norm = cls.norm_string(layout_by)
         lang_norm = cls.norm_string(language or "es")
@@ -72,10 +73,7 @@ class HashService:
 
     @classmethod
     def generate_series_hash(
-        cls,
-        series: str,
-        author: str | None = None,
-        book_type: str | None = None
+        cls, series: str, author: str | None = None, book_type: str | None = None
     ) -> str:
         """
         Genera un hash estable para la serie basado en: series + author + book_type.
@@ -87,5 +85,6 @@ class HashService:
         identity = f"series:{s_norm}|author:{a_norm}|type:{t_norm}"
 
         return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+
 
 hash_service = HashService()

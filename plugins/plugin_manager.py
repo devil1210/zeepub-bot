@@ -37,9 +37,7 @@ class PluginManager:
         try:
             spec = importlib.util.spec_from_file_location(plugin_path.stem, plugin_path)
             if not spec or not spec.loader:
-                logging.error(
-                    f"No se pudo obtener spec para el plugin {plugin_path.name}"
-                )
+                logging.error(f"No se pudo obtener spec para el plugin {plugin_path.name}")
                 return
 
             module = importlib.util.module_from_spec(spec)
@@ -62,18 +60,14 @@ class PluginManager:
 
             if initialized:
                 self.plugins[plugin_instance.name] = plugin_instance
-                logging.info(
-                    f"Plugin cargado: {plugin_instance.name} v{plugin_instance.version}"
-                )
+                logging.info(f"Plugin cargado: {plugin_instance.name} v{plugin_instance.version}")
             else:
                 logging.debug(
                     f"Plugin {plugin_instance.name} no se inicializó (deshabilitado o error)."
                 )
 
         except Exception as e:
-            logging.error(
-                f"Error cargando plugin {plugin_path.name}: {e}", exc_info=True
-            )
+            logging.error(f"Error cargando plugin {plugin_path.name}: {e}", exc_info=True)
 
     def get_plugin(self, name: str) -> BasePlugin:
         return self.plugins.get(name)

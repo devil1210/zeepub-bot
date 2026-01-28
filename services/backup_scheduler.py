@@ -37,7 +37,7 @@ async def send_daily_backups(bot):
                         document=f,
                         filename=os.path.basename(db_file),
                         caption=f"📦 <b>Backup Diario Unificado (PG)</b>\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                        parse_mode="HTML"
+                        parse_mode="HTML",
                     )
 
                 sent_count += 1

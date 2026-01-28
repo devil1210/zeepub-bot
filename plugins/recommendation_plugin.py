@@ -11,6 +11,7 @@ from services.user_service import get_user_settings, update_user_setting
 
 logger = logging.getLogger(__name__)
 
+
 class RecommendationPlugin(BasePlugin):
     @property
     def name(self) -> str:
@@ -26,7 +27,9 @@ class RecommendationPlugin(BasePlugin):
 
     async def initialize(self, bot_instance) -> bool:
         self.bot_instance = bot_instance
-        self.plugin_manager = bot_instance.plugin_manager # Plugin manager is attached to app/bot in bot.py
+        self.plugin_manager = (
+            bot_instance.plugin_manager
+        )  # Plugin manager is attached to app/bot in bot.py
 
         # Register handlers directly to the application
         # Note: bot_instance is actually the 'application' object in bot.py logic
@@ -45,21 +48,26 @@ class RecommendationPlugin(BasePlugin):
         """Genera recomendaciones inmediatas."""
         uid = update.effective_user.id
         from services.user_service import get_effective_user
+
         user_info = await get_effective_user(uid)
 
         if user_info.get("role") not in ("admin", "staff"):
-             await update.message.reply_text("⛔ Esta función está en Beta exclusiva para Staff.")
-             return
+            await update.message.reply_text("⛔ Esta función está en Beta exclusiva para Staff.")
+            return
 
         await update.message.reply_text("🤔 Analizando tus gustos...")
 
         recs = await RecommendationService.get_recommendations(uid, limit=3)
 
         if not recs:
-            await update.message.reply_text("😢 No encontré recomendaciones obvias. ¡Sigue leyendo para que aprenda más de ti!")
+            await update.message.reply_text(
+                "😢 No encontré recomendaciones obvias. ¡Sigue leyendo para que aprenda más de ti!"
+            )
             return
 
-        await update.message.reply_text("💡 <b>Tengo estas sugerencias para ti:</b>", parse_mode="HTML")
+        await update.message.reply_text(
+            "💡 <b>Tengo estas sugerencias para ti:</b>", parse_mode="HTML"
+        )
 
         # Enviar fichas simplificadas
         for book in recs:
@@ -80,23 +88,29 @@ class RecommendationPlugin(BasePlugin):
             # Enviar portada si hay path
             sent = False
             if book.get("cover_path") and book["cover_path"].startswith("/"):
-                 try:
-                     # Check file existence to avoid errors
-                     import os
-                     if os.path.exists(book["cover_path"]):
-                         await context.bot.send_photo(
-                             chat_id=uid,
-                             photo=open(book["cover_path"], "rb"),
-                             caption=caption,
-                             parse_mode="HTML",
-                             reply_markup=InlineKeyboardMarkup(kb)
-                         )
-                         sent = True
-                 except Exception:
-                     pass
+                try:
+                    # Check file existence to avoid errors
+                    import os
+
+                    if os.path.exists(book["cover_path"]):
+                        await context.bot.send_photo(
+                            chat_id=uid,
+                            photo=open(book["cover_path"], "rb"),
+                            caption=caption,
+                            parse_mode="HTML",
+                            reply_markup=InlineKeyboardMarkup(kb),
+                        )
+                        sent = True
+                except Exception:
+                    pass
 
             if not sent:
-                 await context.bot.send_message(chat_id=uid, text=caption, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
+                await context.bot.send_message(
+                    chat_id=uid,
+                    text=caption,
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup(kb),
+                )
 
     async def command_settings(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Menú de configuración de usuario."""
@@ -108,16 +122,20 @@ class RecommendationPlugin(BasePlugin):
         status_icon = "✅" if recomm_enabled else "❌"
         action = "enable" if not recomm_enabled else "disable"
 
-        text = (
-            "⚙️ <b>Configuración Personal</b>\n\n"
-            "Aquí puedes gestionar tus preferencias."
-        )
+        text = "⚙️ <b>Configuración Personal</b>\n\nAquí puedes gestionar tus preferencias."
 
         keyboard = [
-            [InlineKeyboardButton(f"{status_icon} Recomendaciones Semanales", callback_data=f"settings_toggle_recomm|{action}")]
+            [
+                InlineKeyboardButton(
+                    f"{status_icon} Recomendaciones Semanales",
+                    callback_data=f"settings_toggle_recomm|{action}",
+                )
+            ]
         ]
 
-        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+        await update.message.reply_text(
+            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+        )
 
     async def handle_settings_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
@@ -126,7 +144,7 @@ class RecommendationPlugin(BasePlugin):
 
         if data.startswith("settings_toggle_recomm|"):
             action = data.split("|")[1]
-            new_state = (action == "enable")
+            new_state = action == "enable"
 
             await update_user_setting(uid, "recommendations_enabled", new_state)
 
@@ -137,12 +155,17 @@ class RecommendationPlugin(BasePlugin):
             next_action = "disable" if recomm_enabled else "enable"
 
             keyboard = [
-                [InlineKeyboardButton(f"{status_icon} Recomendaciones Semanales", callback_data=f"settings_toggle_recomm|{next_action}")]
+                [
+                    InlineKeyboardButton(
+                        f"{status_icon} Recomendaciones Semanales",
+                        callback_data=f"settings_toggle_recomm|{next_action}",
+                    )
+                ]
             ]
 
             try:
                 await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(keyboard))
             except Exception:
-                pass # Identical content
+                pass  # Identical content
 
             await query.answer(f"Configuración guardada: {status_icon}")

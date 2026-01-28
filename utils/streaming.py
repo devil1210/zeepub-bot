@@ -12,7 +12,7 @@ async def send_message_draft(
     chat_id: int,
     text: str,
     message_thread_id: int | None = None,
-    parse_mode: str | None = "HTML"
+    parse_mode: str | None = "HTML",
 ):
     """
     Usa el método sendMessageDraft (API 9.3) para enviar un borrador de mensaje.
@@ -32,10 +32,7 @@ async def send_message_draft(
         # En PTB v20+, bot.request.post es la forma de hacer peticiones raw
         # Dependiendo de la versión exacta de PTB, esto puede variar.
         # Probamos con el método genérico si existe.
-        return await bot.do_api_request(
-            "sendMessageDraft",
-            payload
-        )
+        return await bot.do_api_request("sendMessageDraft", payload)
     except Exception as e:
         logger.error(f"Error en sendMessageDraft: {e}")
         return None

@@ -1,9 +1,7 @@
 import logging
-import asyncio
-from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
@@ -18,10 +16,12 @@ from models.library_models import (
     UserDownload,
     UserRating,
 )
+
 # Optional: imports for specific bidirectional sync logic
 # from core.optimized_sync_engine import optimized_sync_engine
 
 logger = logging.getLogger(__name__)
+
 
 class SyncService:
     """
@@ -41,16 +41,21 @@ class SyncService:
             return {"success": False, "message": "Cliente de Supabase no disponible."}
 
         stats = {
-            "series": 0, "ai_proposals": 0, "ai_feedback": 0, 
-            "sources": 0, "books": 0, "ratings": 0, 
-            "downloads": 0, "groups": 0
+            "series": 0,
+            "ai_proposals": 0,
+            "ai_feedback": 0,
+            "sources": 0,
+            "books": 0,
+            "ratings": 0,
+            "downloads": 0,
+            "groups": 0,
         }
 
         try:
             async with pg_manager.get_session() as session:
                 # 1. Sync SeriesMetadata
                 await SyncService._sync_series(session, client, stats)
-                
+
                 # 2. Sync AI Learning Feedback
                 await SyncService._sync_feedback(session, client, stats)
 
@@ -76,9 +81,9 @@ class SyncService:
                 await SyncService._pull_updates(session)
 
             return {
-                "success": True, 
-                "message": "Sincronización con la nube completada exitosamente.", 
-                "stats": stats
+                "success": True,
+                "message": "Sincronización con la nube completada exitosamente.",
+                "stats": stats,
             }
 
         except Exception as e:
@@ -92,33 +97,40 @@ class SyncService:
         try:
             res = await session.execute(select(SeriesMetadata))
             series_list = res.scalars().all()
-            if not series_list: return
+            if not series_list:
+                return
 
             logger.info(f"Sincronizando {len(series_list)} series a Supabase...")
-            
+
             # Upsert in small batches to avoid payload limits
             batch_size = 50
             for i in range(0, len(series_list), batch_size):
-                chunk = series_list[i:i+batch_size]
+                chunk = series_list[i : i + batch_size]
                 data = []
                 for s in chunk:
-                    data.append({
-                        "series_hash": s.series_hash,
-                        "series_name": s.series_name,
-                        "series_spanish": s.series_spanish,
-                        "author": s.author,
-                        "description": s.description,
-                        "tags": s.tags,
-                        "cover_url": s.cover_url,
-                        "book_type": s.book_type,
-                        "publisher": s.publisher,
-                        "author_jap": s.author_jap,
-                        "rating_average": float(s.rating_average) if s.rating_average is not None else 0.0,
-                        "rating_count": s.rating_count,
-                        "book_count": s.book_count
-                    })
+                    data.append(
+                        {
+                            "series_hash": s.series_hash,
+                            "series_name": s.series_name,
+                            "series_spanish": s.series_spanish,
+                            "author": s.author,
+                            "description": s.description,
+                            "tags": s.tags,
+                            "cover_url": s.cover_url,
+                            "book_type": s.book_type,
+                            "publisher": s.publisher,
+                            "author_jap": s.author_jap,
+                            "rating_average": float(s.rating_average)
+                            if s.rating_average is not None
+                            else 0.0,
+                            "rating_count": s.rating_count,
+                            "book_count": s.book_count,
+                        }
+                    )
                 try:
-                    client.table("series_metadata").upsert(data, on_conflict="series_hash").execute()
+                    client.table("series_metadata").upsert(
+                        data, on_conflict="series_hash"
+                    ).execute()
                     stats["series"] += len(data)
                 except Exception as ex:
                     logger.error(f"Error syncing series batch {i}: {ex}")
@@ -131,21 +143,25 @@ class SyncService:
         try:
             res = await session.execute(select(AILearningFeedback))
             feedback_list = res.scalars().all()
-            if not feedback_list: return
+            if not feedback_list:
+                return
 
-            data = [{
-                "series_hash": f.series_hash,
-                "original_name": f.original_name,
-                "proposed_name": f.proposed_name,
-                "final_name": f.final_name,
-                "status": f.status,
-                "ai_reason": f.ai_reason,
-                "user_reason": f.user_reason,
-                "created_at": f.created_at.isoformat() if f.created_at else None
-            } for f in feedback_list]
+            data = [
+                {
+                    "series_hash": f.series_hash,
+                    "original_name": f.original_name,
+                    "proposed_name": f.proposed_name,
+                    "final_name": f.final_name,
+                    "status": f.status,
+                    "ai_reason": f.ai_reason,
+                    "user_reason": f.user_reason,
+                    "created_at": f.created_at.isoformat() if f.created_at else None,
+                }
+                for f in feedback_list
+            ]
 
             for i in range(0, len(data), 50):
-                batch = data[i:i+50]
+                batch = data[i : i + 50]
                 try:
                     client.table("ai_learning_feedback").upsert(batch).execute()
                     stats["ai_feedback"] += len(batch)
@@ -159,20 +175,24 @@ class SyncService:
         try:
             res = await session.execute(select(MetadataProposal))
             proposals = res.scalars().all()
-            if not proposals: return
+            if not proposals:
+                return
 
-            data = [{
-                "series_hash": p.series_hash,
-                "proposal_data": p.proposal_data,
-                "status": p.status,
-                "type": p.type,
-                "secondary_hash": p.secondary_hash,
-                "created_at": p.created_at.isoformat() if p.created_at else None,
-                "processed_at": p.processed_at.isoformat() if p.processed_at else None
-            } for p in proposals]
+            data = [
+                {
+                    "series_hash": p.series_hash,
+                    "proposal_data": p.proposal_data,
+                    "status": p.status,
+                    "type": p.type,
+                    "secondary_hash": p.secondary_hash,
+                    "created_at": p.created_at.isoformat() if p.created_at else None,
+                    "processed_at": p.processed_at.isoformat() if p.processed_at else None,
+                }
+                for p in proposals
+            ]
 
             for i in range(0, len(data), 50):
-                batch = data[i:i+50]
+                batch = data[i : i + 50]
                 try:
                     client.table("metadata_proposals").upsert(batch).execute()
                     stats["ai_proposals"] += len(batch)
@@ -186,15 +206,19 @@ class SyncService:
         try:
             res = await session.execute(select(LibrarySource))
             sources = res.scalars().all()
-            if not sources: return
+            if not sources:
+                return
 
-            data = [{
-                "id": src.id,
-                "name": src.name,
-                "path": src.path,
-                "last_scanned": src.last_scanned.isoformat() if src.last_scanned else None
-            } for src in sources]
-            
+            data = [
+                {
+                    "id": src.id,
+                    "name": src.name,
+                    "path": src.path,
+                    "last_scanned": src.last_scanned.isoformat() if src.last_scanned else None,
+                }
+                for src in sources
+            ]
+
             try:
                 client.table("library_sources").upsert(data).execute()
                 stats["sources"] += len(data)
@@ -208,15 +232,19 @@ class SyncService:
         try:
             res = await session.execute(select(TranslatorsGroup))
             groups = res.scalars().all()
-            if not groups: return
+            if not groups:
+                return
 
-            data = [{
-                "id": g.id,
-                "name": g.name,
-                "siglas": g.siglas,
-                "type": getattr(g, "type", "fansub"), # Safe get
-                "website": getattr(g, "website", None)
-            } for g in groups]
+            data = [
+                {
+                    "id": g.id,
+                    "name": g.name,
+                    "siglas": g.siglas,
+                    "type": getattr(g, "type", "fansub"),  # Safe get
+                    "website": getattr(g, "website", None),
+                }
+                for g in groups
+            ]
 
             try:
                 # Groups table might be small enough for one batch
@@ -232,39 +260,44 @@ class SyncService:
         try:
             res = await session.execute(select(LocalBook))
             books = res.scalars().all()
-            if not books: return
-            
+            if not books:
+                return
+
             logger.info(f"Sincronizando {len(books)} libros...")
             data = []
             for b in books:
-                data.append({
-                    "book_hash": b.book_hash,
-                    "series_hash": b.series_hash,
-                    "title": b.title,
-                    "author": b.author,
-                    "volume": float(b.volume) if b.volume is not None else 0.0,
-                    "book_type": b.book_type,
-                    # UI fields
-                    "cover_low": b.cover_low,
-                    "cover_medium": b.cover_medium,
-                    "cover_high": b.cover_high,
-                    "cover_original": b.cover_original,
-                    # Metrics
-                    "rating_average": float(b.rating_average) if b.rating_average is not None else 0.0,
-                    "rating_count": b.rating_count,
-                    "file_size": b.file_size,
-                    # Metadata
-                    "description": b.description,
-                    "tags": b.tags,
-                    "language": b.language,
-                    # Tech
-                    "source_id": b.source_id,
-                    "filepath": b.filepath,
-                    "filename": b.filename
-                })
-            
+                data.append(
+                    {
+                        "book_hash": b.book_hash,
+                        "series_hash": b.series_hash,
+                        "title": b.title,
+                        "author": b.author,
+                        "volume": float(b.volume) if b.volume is not None else 0.0,
+                        "book_type": b.book_type,
+                        # UI fields
+                        "cover_low": b.cover_low,
+                        "cover_medium": b.cover_medium,
+                        "cover_high": b.cover_high,
+                        "cover_original": b.cover_original,
+                        # Metrics
+                        "rating_average": float(b.rating_average)
+                        if b.rating_average is not None
+                        else 0.0,
+                        "rating_count": b.rating_count,
+                        "file_size": b.file_size,
+                        # Metadata
+                        "description": b.description,
+                        "tags": b.tags,
+                        "language": b.language,
+                        # Tech
+                        "source_id": b.source_id,
+                        "filepath": b.filepath,
+                        "filename": b.filename,
+                    }
+                )
+
             for i in range(0, len(data), 50):
-                batch = data[i:i+50]
+                batch = data[i : i + 50]
                 try:
                     client.table("local_books").upsert(batch, on_conflict="book_hash").execute()
                     stats["books"] += len(batch)
@@ -279,17 +312,21 @@ class SyncService:
         try:
             res = await session.execute(select(UserRating))
             ratings = res.scalars().all()
-            if not ratings: return
+            if not ratings:
+                return
 
-            data = [{
-                "user_id": r.user_id,
-                "book_hash": r.book_hash,
-                "rating": r.rating,
-                "created_at": r.created_at.isoformat() if r.created_at else None
-            } for r in ratings]
+            data = [
+                {
+                    "user_id": r.user_id,
+                    "book_hash": r.book_hash,
+                    "rating": r.rating,
+                    "created_at": r.created_at.isoformat() if r.created_at else None,
+                }
+                for r in ratings
+            ]
 
             for i in range(0, len(data), 100):
-                batch = data[i:i+100]
+                batch = data[i : i + 100]
                 try:
                     client.table("user_ratings").upsert(batch).execute()
                     stats["ratings"] += len(batch)
@@ -303,18 +340,22 @@ class SyncService:
         try:
             res = await session.execute(select(UserDownload))
             dls = res.scalars().all()
-            if not dls: return
+            if not dls:
+                return
 
-            data = [{
-                "user_id": d.user_id,
-                "book_hash": d.book_hash,
-                "series_hash": d.series_hash,
-                "title": d.title,
-                "downloaded_at": d.downloaded_at.isoformat() if d.downloaded_at else None
-            } for d in dls]
+            data = [
+                {
+                    "user_id": d.user_id,
+                    "book_hash": d.book_hash,
+                    "series_hash": d.series_hash,
+                    "title": d.title,
+                    "downloaded_at": d.downloaded_at.isoformat() if d.downloaded_at else None,
+                }
+                for d in dls
+            ]
 
             for i in range(0, len(data), 100):
-                batch = data[i:i+100]
+                batch = data[i : i + 100]
                 try:
                     client.table("user_downloads").upsert(batch).execute()
                     stats["downloads"] += len(batch)
@@ -327,6 +368,7 @@ class SyncService:
     async def _pull_updates(session):
         try:
             from core.optimized_sync_engine import optimized_sync_engine
+
             logger.info("Iniciando Pull Bidireccional (Nube -> Local)...")
             # This triggers the existing optimized engine for the reverse sync
             # Note: Ensure this doesn't cause infinite loops or locks

@@ -11,7 +11,7 @@ if not url or not key:
     print("Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY")
     exit(1)
 
-# Supabase management API for SQL is restricted. 
+# Supabase management API for SQL is restricted.
 # But we can try to use a function or just hope the columns are added.
 # Usually, people use migrations.
 

@@ -35,7 +35,7 @@ async def migrate_local_books():
             layout_by=book.layout_by,
             language=book.language,
             is_uncensored=book.is_uncensored or 0,
-            color_mode=book.color_mode or "bw"
+            color_mode=book.color_mode or "bw",
         )
         book.book_hash = bh
 
@@ -47,9 +47,7 @@ async def migrate_local_books():
         )
         book.series_hash = sh
 
-        logger.debug(
-            f"Poblando hashes para: {book.title} -> Book:{bh[:8]}, Series:{sh[:8]}"
-        )
+        logger.debug(f"Poblando hashes para: {book.title} -> Book:{bh[:8]}, Series:{sh[:8]}")
 
     session.commit()
     session.close()
@@ -60,7 +58,9 @@ async def migrate_download_history():
     logger.info("Migrando DownloadHistory hashes (v2) en Postgres...")
     async with pg_manager.get_session() as session:
         result = await session.execute(
-            text("SELECT id, title, author, series, volume, clean_title, translator FROM download_history")
+            text(
+                "SELECT id, title, author, series, volume, clean_title, translator FROM download_history"
+            )
         )
         rows = result.fetchall()
         logger.info(f"Procesando {len(rows)} registros de descarga.")
@@ -73,11 +73,11 @@ async def migrate_download_history():
                 author=author,
                 volume=volume,
                 translator=translator,
-                language="es"
+                language="es",
             )
             await session.execute(
                 text("UPDATE download_history SET book_hash = :hash WHERE id = :id"),
-                {"hash": bh, "id": rid}
+                {"hash": bh, "id": rid},
             )
 
         await session.commit()

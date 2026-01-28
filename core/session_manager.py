@@ -17,9 +17,7 @@ class SessionManager:
     def get_session(self) -> aiohttp.ClientSession:
         """Devuelve un único ClientSession, creándolo si es necesario."""
         if self._session is None:
-            self._session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=None)
-            )
+            self._session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=None))
             self.logger.debug("Sesión HTTP creada.")
         return self._session
 

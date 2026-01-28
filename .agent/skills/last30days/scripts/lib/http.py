@@ -6,8 +6,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from typing import Any, Dict, Optional
-from urllib.parse import urlencode
+from typing import Any
 
 DEFAULT_TIMEOUT = 30
 DEBUG = os.environ.get("LAST30DAYS_DEBUG", "").lower() in ("1", "true", "yes")
@@ -18,6 +17,8 @@ def log(msg: str):
     if DEBUG:
         sys.stderr.write(f"[DEBUG] {msg}\n")
         sys.stderr.flush()
+
+
 MAX_RETRIES = 3
 RETRY_DELAY = 1.0
 USER_AGENT = "last30days-skill/1.0 (Claude Code Skill)"
@@ -25,7 +26,8 @@ USER_AGENT = "last30days-skill/1.0 (Claude Code Skill)"
 
 class HTTPError(Exception):
     """HTTP request error with status code."""
-    def __init__(self, message: str, status_code: Optional[int] = None, body: Optional[str] = None):
+
+    def __init__(self, message: str, status_code: int | None = None, body: str | None = None):
         super().__init__(message)
         self.status_code = status_code
         self.body = body
@@ -34,11 +36,11 @@ class HTTPError(Exception):
 def request(
     method: str,
     url: str,
-    headers: Optional[Dict[str, str]] = None,
-    json_data: Optional[Dict[str, Any]] = None,
+    headers: dict[str, str] | None = None,
+    json_data: dict[str, Any] | None = None,
     timeout: int = DEFAULT_TIMEOUT,
     retries: int = MAX_RETRIES,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Make an HTTP request and return JSON response.
 
     Args:
@@ -60,7 +62,7 @@ def request(
 
     data = None
     if json_data is not None:
-        data = json.dumps(json_data).encode('utf-8')
+        data = json.dumps(json_data).encode("utf-8")
         headers.setdefault("Content-Type", "application/json")
 
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
@@ -73,13 +75,13 @@ def request(
     for attempt in range(retries):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as response:
-                body = response.read().decode('utf-8')
+                body = response.read().decode("utf-8")
                 log(f"Response: {response.status} ({len(body)} bytes)")
                 return json.loads(body) if body else {}
         except urllib.error.HTTPError as e:
             body = None
             try:
-                body = e.read().decode('utf-8')
+                body = e.read().decode("utf-8")
             except:
                 pass
             log(f"HTTP Error {e.code}: {e.reason}")
@@ -114,17 +116,19 @@ def request(
     raise HTTPError("Request failed with no error details")
 
 
-def get(url: str, headers: Optional[Dict[str, str]] = None, **kwargs) -> Dict[str, Any]:
+def get(url: str, headers: dict[str, str] | None = None, **kwargs) -> dict[str, Any]:
     """Make a GET request."""
     return request("GET", url, headers=headers, **kwargs)
 
 
-def post(url: str, json_data: Dict[str, Any], headers: Optional[Dict[str, str]] = None, **kwargs) -> Dict[str, Any]:
+def post(
+    url: str, json_data: dict[str, Any], headers: dict[str, str] | None = None, **kwargs
+) -> dict[str, Any]:
     """Make a POST request with JSON body."""
     return request("POST", url, headers=headers, json_data=json_data, **kwargs)
 
 
-def get_reddit_json(path: str) -> Dict[str, Any]:
+def get_reddit_json(path: str) -> dict[str, Any]:
     """Fetch Reddit thread JSON.
 
     Args:
@@ -134,13 +138,13 @@ def get_reddit_json(path: str) -> Dict[str, Any]:
         Parsed JSON response
     """
     # Ensure path starts with /
-    if not path.startswith('/'):
-        path = '/' + path
+    if not path.startswith("/"):
+        path = "/" + path
 
     # Remove trailing slash and add .json
-    path = path.rstrip('/')
-    if not path.endswith('.json'):
-        path = path + '.json'
+    path = path.rstrip("/")
+    if not path.endswith(".json"):
+        path = path + ".json"
 
     url = f"https://www.reddit.com{path}?raw_json=1"
 

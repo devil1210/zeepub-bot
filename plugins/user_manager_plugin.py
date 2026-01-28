@@ -189,9 +189,7 @@ class UserManagerPlugin(BasePlugin):
         else:
             msg += " (Permanente/Hasta cancelación)."
 
-        await update.message.reply_text(
-            msg, parse_mode="HTML", message_thread_id=thread_id
-        )
+        await update.message.reply_text(msg, parse_mode="HTML", message_thread_id=thread_id)
 
     async def remove_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -212,9 +210,7 @@ class UserManagerPlugin(BasePlugin):
 
         target_id_str = context.args[0]
         if not target_id_str.isdigit():
-            await update.message.reply_text(
-                "❌ ID inválido.", message_thread_id=thread_id
-            )
+            await update.message.reply_text("❌ ID inválido.", message_thread_id=thread_id)
             return
         target_id = int(target_id_str)
 
@@ -257,9 +253,7 @@ class UserManagerPlugin(BasePlugin):
             # First arg was consumed as ID
             args_start_idx = 1
             if len(context.args) < 2:
-                await msg.reply_text(
-                    "❌ Indica el rol/label.", message_thread_id=thread_id
-                )
+                await msg.reply_text("❌ Indica el rol/label.", message_thread_id=thread_id)
                 return
         else:
             if len(context.args) < 1:
@@ -401,9 +395,7 @@ class UserManagerPlugin(BasePlugin):
 
         if not context.args or len(context.args) != 1:
             await update.message.reply_text(
-                "❌ Uso incorrecto.\n"
-                "Uso: /reset <user_id>\n"
-                "Ejemplo: /reset 123456789",
+                "❌ Uso incorrecto.\nUso: /reset <user_id>\nEjemplo: /reset 123456789",
                 message_thread_id=thread_id,
             )
             return
@@ -422,9 +414,7 @@ class UserManagerPlugin(BasePlugin):
 
         save_download(target_uid, 0)
 
-        logger.info(
-            f"Admin {uid} reseteó descargas de usuario {target_uid} (antes: {old_count})"
-        )
+        logger.info(f"Admin {uid} reseteó descargas de usuario {target_uid} (antes: {old_count})")
 
         await update.message.reply_text(
             f"✅ Contador de descargas reseteado para el usuario {target_uid}.\n"
@@ -432,9 +422,7 @@ class UserManagerPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def approve_donation(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def approve_donation(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /approve_donation <id> <rol> [meses]
         Aprueba una donación, actualiza el nivel del usuario y le notifica.
@@ -509,14 +497,10 @@ class UserManagerPlugin(BasePlugin):
         text = base_text
 
         if cms and cms.enabled:
-            text = await cms.get_text(
-                "donation_approved", Nivel=nivel_text, Duración=duracion_text
-            )
+            text = await cms.get_text("donation_approved", Nivel=nivel_text, Duración=duracion_text)
 
         try:
-            await context.bot.send_message(
-                chat_id=target_id, text=text, parse_mode="HTML"
-            )
+            await context.bot.send_message(chat_id=target_id, text=text, parse_mode="HTML")
         except Exception as e:
             logger.warning(f"No se pudo notificar al usuario {target_id}: {e}")
 
@@ -558,9 +542,7 @@ class UserManagerPlugin(BasePlugin):
             text = await cms.get_text("donation_rejected")
 
         try:
-            await context.bot.send_message(
-                chat_id=target_id, text=text, parse_mode="HTML"
-            )
+            await context.bot.send_message(chat_id=target_id, text=text, parse_mode="HTML")
         except Exception as e:
             logger.warning(f"No se pudo notificar al usuario {target_id}: {e}")
 
@@ -573,9 +555,7 @@ class UserManagerPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def refresh_user_command(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def refresh_user_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /refresh_user <id>
         Limpia el caché del bot para un usuario específico.

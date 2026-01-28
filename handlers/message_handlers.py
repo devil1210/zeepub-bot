@@ -42,7 +42,9 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cms = context.application.plugin_manager.get_plugin("custom_messages")
 
             exp_str = expires_at.strftime("%Y-%m-%d %H:%B") if expires_at else None
-            default_msg_template = "⛔ Estás <b>baneado</b> del bot.{{if Fecha}} Hasta: <b>[Fecha]</b>{{endif}}"
+            default_msg_template = (
+                "⛔ Estás <b>baneado</b> del bot.{{if Fecha}} Hasta: <b>[Fecha]</b>{{endif}}"
+            )
 
             if cms and cms.enabled:
                 msg = await cms.get_text(
@@ -77,25 +79,29 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         base_text = f"💬 Respuesta a tu Sugerencia\n\n{custom_response}"
         response_text = base_text
         if cms and cms.enabled:
-            response_text = await cms.get_text("suggestion_custom_response", Respuesta=custom_response)
+            response_text = await cms.get_text(
+                "suggestion_custom_response", Respuesta=custom_response
+            )
 
         try:
             await context.bot.send_message(
-                chat_id=target_user_id,
-                text=response_text,
-                parse_mode="HTML"
+                chat_id=target_user_id, text=response_text, parse_mode="HTML"
             )
 
             # Update original message
             if original_msg_id and original_chat_id and original_text:
                 try:
                     # Truncate if too long
-                    response_preview = custom_response[:100] + "..." if len(custom_response) > 100 else custom_response
+                    response_preview = (
+                        custom_response[:100] + "..."
+                        if len(custom_response) > 100
+                        else custom_response
+                    )
                     await context.bot.edit_message_text(
                         chat_id=original_chat_id,
                         message_id=original_msg_id,
                         text=original_text + f"\n\n💬 <b>Respuesta enviada:</b> {response_preview}",
-                        parse_mode="HTML"
+                        parse_mode="HTML",
                     )
                 except Exception as e:
                     logger.warning(f"No se pudo actualizar mensaje original: {e}")
@@ -117,11 +123,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if text == config.get_six_hour_password():
             keyboard = [
                 [InlineKeyboardButton("📍 Aquí", callback_data="destino|aqui")],
-                [
-                    InlineKeyboardButton(
-                        "📢 BotTest", callback_data="destino|@ZeePubBotTest"
-                    )
-                ],
+                [InlineKeyboardButton("📢 BotTest", callback_data="destino|@ZeePubBotTest")],
                 [InlineKeyboardButton("📢 ZeePubs", callback_data="destino|@ZeePubs")],
                 [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
             ]
@@ -130,9 +132,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_text = "✅ Contraseña correcta. Elige destino:"
             text_success = (
-                cms.get_text("evil_password_success")
-                if (cms and cms.enabled)
-                else base_text
+                cms.get_text("evil_password_success") if (cms and cms.enabled) else base_text
             )
 
             # Editar el prompt original si se guardó
@@ -165,11 +165,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_fail = "❌ Contraseña incorrecta."
-            text_fail = (
-                cms.get_text("evil_password_fail")
-                if (cms and cms.enabled)
-                else base_fail
-            )
+            text_fail = cms.get_text("evil_password_fail") if (cms and cms.enabled) else base_fail
 
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -183,9 +179,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if st.get("esperando_destino_manual"):
         st["esperando_destino_manual"] = False
         st["destino"] = text
-        await mostrar_colecciones(
-            update, context, st["opds_root"], from_collection=False
-        )
+        await mostrar_colecciones(update, context, st["opds_root"], from_collection=False)
         return
 
     # 3) Búsqueda de EPUB
@@ -197,6 +191,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         effective_thread_id = thread_id
         if chat_type == "private":
             from services.topic_service import topic_service
+
             t_id = await topic_service.get_topic_id(uid, "busquedas")
             if t_id:
                 effective_thread_id = t_id
@@ -205,6 +200,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # API 9.3: Streaming feedback
         from utils.streaming import send_message_draft
+
         cms = context.application.plugin_manager.get_plugin("custom_messages")
 
         draft_text = f"🔎 Buscando en catálogos: <i>{html.escape(text)}</i>..."
@@ -212,10 +208,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             draft_text = await cms.get_text("search_streaming_feedback", Termino=html.escape(text))
 
         draft_id = await send_message_draft(
-            context.bot,
-            update.effective_chat.id,
-            draft_text,
-            message_thread_id=effective_thread_id
+            context.bot, update.effective_chat.id, draft_text, message_thread_id=effective_thread_id
         )
 
         search_url = build_search_url(text, uid)
@@ -225,18 +218,16 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Finalize draft by deleting it (or resolving it)
         if draft_id:
             try:
-                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=draft_id)
+                await context.bot.delete_message(
+                    chat_id=update.effective_chat.id, message_id=draft_id
+                )
             except Exception:
                 pass
 
         if not feed or not getattr(feed, "entries", []):
             keyboard = [
                 [InlineKeyboardButton("🔄 Volver a buscar", callback_data="buscar")],
-                [
-                    InlineKeyboardButton(
-                        "📚 Ir a colecciones", callback_data="volver_colecciones"
-                    )
-                ],
+                [InlineKeyboardButton("📚 Ir a colecciones", callback_data="volver_colecciones")],
             ]
 
             # Template System
@@ -263,9 +254,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         else:
             logger.debug(f"Encontrados {len(feed.entries)} resultados")
-            await mostrar_colecciones(
-                update, context, search_url, from_collection=False
-            )
+            await mostrar_colecciones(update, context, search_url, from_collection=False)
         return
 
     # 4) Cualquier otro texto - solo responder en chats privados
@@ -293,9 +282,7 @@ async def handle_json_upload(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return
 
     # Verificar nombre de archivo
-    if not (
-        document.file_name == "result.json" or document.mime_type == "application/json"
-    ):
+    if not (document.file_name == "result.json" or document.mime_type == "application/json"):
         return
 
     # Verificar admin (opcional, pero recomendado)
@@ -312,9 +299,7 @@ async def handle_json_upload(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Limpiar estado
     st["waiting_for_history_json"] = False
 
-    status_msg = await update.message.reply_text(
-        "⏳ Procesando archivo de historial..."
-    )
+    status_msg = await update.message.reply_text("⏳ Procesando archivo de historial...")
 
     try:
         # Descargar archivo
@@ -428,7 +413,7 @@ async def handle_donation_proof(update: Update, context: ContextTypes.DEFAULT_TY
                 from_chat_id=update.effective_chat.id,
                 message_id=update.message.message_id,
                 caption=admin_caption,
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
         except Exception as e:
             logger.error(f"Error forwarding proof to admin {admin_id}: {e}")

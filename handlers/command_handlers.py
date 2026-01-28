@@ -42,16 +42,17 @@ class CommandHandlers:
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
 
         uid = update.effective_user.id
-        
+
         # Auto-sincronizar desde ENV (ADMIN_USERS, VIP_LIST, etc.)
         from services.user_service import sync_user_from_env
+
         try:
             synced = await sync_user_from_env(uid, tg_user=update.effective_user)
             if synced:
                 logger.info(f"User {uid} auto-synced from ENV: level={synced.get('level')}")
         except Exception as e:
             logger.error(f"Error syncing user {uid} from ENV: {e}")
-        
+
         left = await downloads_left(uid, tg_user=update.effective_user)
 
         first_name = update.effective_user.first_name
@@ -89,6 +90,7 @@ class CommandHandlers:
 
         if has_topics:
             from services.topic_service import topic_service
+
             # Asegurar que los tópicos existan y obtener el ID del tópico "Sistema" para la bienvenida
             topic_ids = await topic_service.ensure_topics(context.bot, uid)
             if topic_ids:
@@ -123,7 +125,7 @@ class CommandHandlers:
         level_start = user_data_start.get("level", "free")
         role_start = user_data_start.get("role")
 
-        is_publisher = (level_start == "staff" and role_start == "Publicador")
+        is_publisher = level_start == "staff" and role_start == "Publicador"
 
         # Legacy fallback or Override: Check config list too?
         # User said "para esta nueva combinacion es...", implying strict definition.
@@ -146,18 +148,12 @@ class CommandHandlers:
                         callback_data="set_publish_temp|facebook",
                     )
                 ],
-                [
-                    InlineKeyboardButton(
-                        "⛔ Omitir", callback_data="set_publish_temp|none"
-                    )
-                ],
+                [InlineKeyboardButton("⛔ Omitir", callback_data="set_publish_temp|none")],
             ]
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_txt = "🔧 Eres publisher — ¿dónde quieres publicar la próxima vez que selecciones un libro?"
             text_pub = (
-                await cms.get_text("publisher_target_prompt")
-                if (cms and cms.enabled)
-                else base_txt
+                await cms.get_text("publisher_target_prompt") if (cms and cms.enabled) else base_txt
             )
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -187,11 +183,7 @@ class CommandHandlers:
             # Mostrar opciones de destino
             keyboard = [
                 [InlineKeyboardButton("📍 Aquí", callback_data="destino|aqui")],
-                [
-                    InlineKeyboardButton(
-                        "📣 BotTest", callback_data="destino|@ZeePubBotTest"
-                    )
-                ],
+                [InlineKeyboardButton("📣 BotTest", callback_data="destino|@ZeePubBotTest")],
                 [InlineKeyboardButton("📣 ZeePubs", callback_data="destino|@ZeePubs")],
                 [InlineKeyboardButton("📚 Mi Catálogo", callback_data="ver_catalogo_normal")],
                 [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
@@ -220,9 +212,7 @@ class CommandHandlers:
         st["opds_root_base"] = root
         st["historial"] = []
         st["ultima_pagina"] = root
-        await mostrar_colecciones(
-            update, context, root, from_collection=False, new_message=True
-        )
+        await mostrar_colecciones(update, context, root, from_collection=False, new_message=True)
 
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /status: informa estado interno, nivel de usuario y descargas restantes."""
@@ -285,21 +275,17 @@ class CommandHandlers:
                 left_text = "✅ Descargas ilimitadas"
         else:
             remaining = max_dl - used
-            left_text = f"⚡️ Te quedan {remaining if remaining>0 else 0} descargas por día (de {max_dl}) [Usadas: {used}]"
+            left_text = f"⚡️ Te quedan {remaining if remaining > 0 else 0} descargas por día (de {max_dl}) [Usadas: {used}]"
 
         # Calcular tiempo para próximo reset
 
         now = datetime.now()
-        next_midnight = (now + timedelta(days=1)).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        next_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         time_left = next_midnight - now
         hours, remainder = divmod(int(time_left.total_seconds()), 3600)
         minutes, _ = divmod(remainder, 60)
 
-        update.effective_user.first_name.replace("<", "&lt;").replace(
-            ">", "&gt;"
-        )
+        update.effective_user.first_name.replace("<", "&lt;").replace(">", "&gt;")
 
         from utils.helpers import get_version_string
 
@@ -446,9 +432,7 @@ class CommandHandlers:
 
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_pwd = "🔒 Modo Privado. Por favor, ingresa la contraseña:"
-        text_pwd = (
-            cms.get_text("evil_password_prompt") if (cms and cms.enabled) else base_pwd
-        )
+        text_pwd = cms.get_text("evil_password_prompt") if (cms and cms.enabled) else base_pwd
 
         message = await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -485,11 +469,7 @@ class CommandHandlers:
 
             msg = default_msg
             if cms and cms.enabled:
-                exp_str = (
-                    expires_at.strftime("%Y-%m-%d %H:%M")
-                    if expires_at
-                    else "Indefinido"
-                )
+                exp_str = expires_at.strftime("%Y-%m-%d %H:%M") if expires_at else "Indefinido"
                 msg = cms.get_text("banned_message", Fecha=exp_str)
 
             await context.bot.send_message(
@@ -512,11 +492,7 @@ class CommandHandlers:
 
             if not feed or not getattr(feed, "entries", []):
                 keyboard = [
-                    [
-                        InlineKeyboardButton(
-                            "🔄 Volver a buscar", callback_data="buscar"
-                        )
-                    ],
+                    [InlineKeyboardButton("🔄 Volver a buscar", callback_data="buscar")],
                     [
                         InlineKeyboardButton(
                             "📚 Ir a colecciones", callback_data="volver_colecciones"
@@ -555,9 +531,7 @@ class CommandHandlers:
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_search = "🔍 ¿Qué libro buscas? Escribe el título o autor:"
             text_search = (
-                await cms.get_text("search_prompt")
-                if (cms and cms.enabled)
-                else base_search
+                await cms.get_text("search_prompt") if (cms and cms.enabled) else base_search
             )
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -569,7 +543,7 @@ class CommandHandlers:
         """Handle /changeweb: Cambia entre la interfaz nueva (web_client) y la antigua (zeepub-web)."""
         uid = update.effective_user.id
         thread_id = get_thread_id(update)
-        
+
         # Verificar permisos de admin
         if uid not in config.ADMIN_USERS:
             return  # Silencioso para no admins
@@ -577,6 +551,7 @@ class CommandHandlers:
         if not context.args:
             current = "Desconocido"
             import os
+
             # Intentar leer del .env directamente para mostrar lo real
             try:
                 with open(".env") as f:
@@ -601,24 +576,25 @@ class CommandHandlers:
         elif target in ["old", "viejo", "legacy"]:
             new_val = "zeepub-web"
         else:
-             await context.bot.send_message(
+            await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text="❌ Opción no válida. Usa 'new' o 'old'.",
                 message_thread_id=thread_id,
             )
-             return
+            return
 
         # Actualizar .env
         import os
+
         env_path = ".env"
         lines = []
         updated = False
-        
+
         try:
             if os.path.exists(env_path):
                 with open(env_path) as f:
                     lines = f.readlines()
-                
+
                 with open(env_path, "w") as f:
                     for line in lines:
                         if line.startswith("WEB_CLIENT_DIR="):
@@ -630,7 +606,7 @@ class CommandHandlers:
                         f.write(f"\nWEB_CLIENT_DIR={new_val}\n")
             else:
                 with open(env_path, "w") as f:
-                     f.write(f"WEB_CLIENT_DIR={new_val}\n")
+                    f.write(f"WEB_CLIENT_DIR={new_val}\n")
 
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -638,11 +614,12 @@ class CommandHandlers:
                 parse_mode="HTML",
                 message_thread_id=thread_id,
             )
-            
+
             # Reiniciar proceso (Docker debería reiniciarlo)
             import sys
             import time
-            time.sleep(1) # Dar tiempo a que salga el mensaje
+
+            time.sleep(1)  # Dar tiempo a que salga el mensaje
             sys.exit(0)
 
         except Exception as e:

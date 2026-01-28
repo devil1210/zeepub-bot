@@ -1,4 +1,3 @@
-
 import logging
 
 from supabase import Client, create_client
@@ -6,6 +5,7 @@ from supabase import Client, create_client
 from config.config_settings import config
 
 logger = logging.getLogger(__name__)
+
 
 class SupabaseManager:
     """Gestión de conexión y operaciones con Supabase."""
@@ -35,10 +35,10 @@ class SupabaseManager:
         """Helper para ejecutar queries con reintento automático para errores 5xx."""
         if not self.is_active:
             return None
-        
+
         max_retries = 3
-        retry_delay = 1.0 # segundos
-        
+        retry_delay = 1.0  # segundos
+
         for attempt in range(max_retries):
             try:
                 query = self.client.table(table)
@@ -47,9 +47,17 @@ class SupabaseManager:
                 elif query_type == "insert":
                     res = query.insert(kwargs.get("data")).execute()
                 elif query_type == "update":
-                    res = query.update(kwargs.get("data")).eq(kwargs.get("match_col"), kwargs.get("match_val")).execute()
+                    res = (
+                        query.update(kwargs.get("data"))
+                        .eq(kwargs.get("match_col"), kwargs.get("match_val"))
+                        .execute()
+                    )
                 elif query_type == "delete":
-                    res = query.delete().eq(kwargs.get("match_col"), kwargs.get("match_val")).execute()
+                    res = (
+                        query.delete()
+                        .eq(kwargs.get("match_col"), kwargs.get("match_val"))
+                        .execute()
+                    )
                 else:
                     logger.error(f"Unsupported query type: {query_type}")
                     return None
@@ -57,16 +65,23 @@ class SupabaseManager:
             except Exception as e:
                 # Si es un error 502/503/504 o similar de red
                 error_str = str(e)
-                if any(err in error_str for err in ["500", "502", "503", "504", "Bad Gateway", "Service Unavailable"]):
+                if any(
+                    err in error_str
+                    for err in ["500", "502", "503", "504", "Bad Gateway", "Service Unavailable"]
+                ):
                     if attempt < max_retries - 1:
-                        logger.warning(f"Supabase transient error ({error_str}). Retrying {attempt + 1}/{max_retries} in {retry_delay}s...")
+                        logger.warning(
+                            f"Supabase transient error ({error_str}). Retrying {attempt + 1}/{max_retries} in {retry_delay}s..."
+                        )
                         import asyncio
+
                         await asyncio.sleep(retry_delay)
-                        retry_delay *= 2 # Backoff exponencial
+                        retry_delay *= 2  # Backoff exponencial
                         continue
-                
+
                 logger.error(f"Supabase RPC Error [{table}.{query_type}]: {e}")
                 return None
         return None
+
 
 supabase_manager = SupabaseManager()

@@ -92,37 +92,40 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       const res = await api.searchBooks(query, page, searchScope, activeSort);
 
       if (res && Array.isArray(res.results)) {
-        const mapped: Series[] = res.results.map((item: any) => ({
-          id: item.id || item.link,
-          series_hash: item.series_hash,
-          title: item.title,
-          author: item.author,
-          coverUrl: item.coverUrl || {
-            cover_low: item.cover_low,
-            cover_medium: item.cover_medium,
-            cover_high: item.cover_high,
-            cover_original: item.cover_original,
-            cover: item.cover || ''
-          },
-          coverThumbUrl: item.cover_thumb || item.cover_low || item.cover || '',
-          description: item.summary,
-          genre: item.categories ? item.categories.join(', ') : '',
-          format: item.fileType ? item.fileType.replace('application/', '').toUpperCase() : 'EPUB',
-          rating: item.rating_average || 0,
-          voteCount: item.rating_count || 0,
-          downloadCount: item.download_count || 0,
-          volumesCount: item.numBooks || 1,
-          status: 'Completed',
-          lastUpdated: item.updatedDate || 'Reciente',
-          illustrator: item.illustrator,
-          translator: item.translator,
-          typesetter: item.typesetter,
-          group: item.group,
-          book_type: item.book_type || 'Novela Ligera',
-          is_uncensored: item.is_uncensored,
-          color_mode: item.color_mode,
-          volumes: []
-        }));
+        const mapped: Series[] = res.results.map((item: any) => {
+          const seriesId = item.series_hash ? `series_${item.series_hash}` : (item.id || item.link);
+          return {
+            id: seriesId,
+            series_hash: item.series_hash,
+            title: item.title,
+            author: item.author,
+            coverUrl: item.coverUrl || {
+              cover_low: item.cover_low,
+              cover_medium: item.cover_medium,
+              cover_high: item.cover_high,
+              cover_original: item.cover_original,
+              cover: item.cover || ''
+            },
+            coverThumbUrl: item.cover_thumb || item.cover_low || item.cover || '',
+            description: item.summary,
+            genre: item.categories ? item.categories.join(', ') : '',
+            format: item.fileType ? item.fileType.replace('application/', '').toUpperCase() : 'EPUB',
+            rating: item.rating_average || 0,
+            voteCount: item.rating_count || 0,
+            downloadCount: item.download_count || 0,
+            volumesCount: item.numBooks || 1,
+            status: 'Completed',
+            lastUpdated: item.updatedDate || 'Reciente',
+            illustrator: item.illustrator,
+            translator: item.translator,
+            typesetter: item.typesetter,
+            group: item.group,
+            book_type: item.book_type || 'Novela Ligera',
+            is_uncensored: item.is_uncensored,
+            color_mode: item.color_mode,
+            volumes: []
+          };
+        });
 
         setSeries(mapped);
         setTotalPages(res.totalPages || 1);

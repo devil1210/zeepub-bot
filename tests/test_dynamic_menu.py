@@ -22,10 +22,10 @@ async def test_add_menu_cmd_success():
         context.args = ["search"]
         context.bot = AsyncMock()
 
-        with patch("plugins.help_plugin.get_setting", return_value=""), patch(
-            "plugins.help_plugin.set_setting"
-        ) as mock_set:
-
+        with (
+            patch("plugins.help_plugin.get_setting", return_value=""),
+            patch("plugins.help_plugin.set_setting") as mock_set,
+        ):
             await plugin.add_menu_cmd(update, context)
 
             mock_set.assert_called_with("menu_public_commands", "search")
@@ -47,10 +47,10 @@ async def test_del_menu_cmd_success():
         context.args = ["search"]
         context.bot = AsyncMock()
 
-        with patch(
-            "plugins.help_plugin.get_setting", return_value="start,search"
-        ), patch("plugins.help_plugin.set_setting") as mock_set:
-
+        with (
+            patch("plugins.help_plugin.get_setting", return_value="start,search"),
+            patch("plugins.help_plugin.set_setting") as mock_set,
+        ):
             await plugin.del_menu_cmd(update, context)
 
             mock_set.assert_called_with("menu_public_commands", "start")
@@ -87,10 +87,10 @@ async def test_move_menu_cmd_success():
         context.args = ["search", "1"]
         context.bot = AsyncMock()
 
-        with patch(
-            "plugins.help_plugin.get_setting", return_value="start,help,search"
-        ), patch("plugins.help_plugin.set_setting") as mock_set:
-
+        with (
+            patch("plugins.help_plugin.get_setting", return_value="start,help,search"),
+            patch("plugins.help_plugin.set_setting") as mock_set,
+        ):
             await plugin.move_menu_cmd(update, context)
 
             # search should be at index 0 now (pos 1)

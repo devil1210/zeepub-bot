@@ -89,9 +89,7 @@ async def mostrar_colecciones(
         elif rel == "next":
             st["nav"]["next"] = href
 
-    logger.debug(
-        f"Final nav state - prev: {st['nav']['prev']}, next: {st['nav']['next']}"
-    )
+    logger.debug(f"Final nav state - prev: {st['nav']['prev']}, next: {st['nav']['next']}")
 
     # NO sobrescribas el prev del feed con el historial
     # El historial se usa solo para "Subir nivel", no para paginación
@@ -166,11 +164,7 @@ async def mostrar_colecciones(
             p0_clean = clean_title_part(parts[0])
             feed_clean = clean_title_part(clean_feed_title_part)
 
-            if (
-                p0_clean == feed_clean
-                or p0_clean in feed_clean
-                or feed_clean in p0_clean
-            ):
+            if p0_clean == feed_clean or p0_clean in feed_clean or feed_clean in p0_clean:
                 known_romaji = parts[1].strip()
                 known_english = re.sub(r"^[^\w\(\)]+", "", parts[0]).strip()
 
@@ -186,12 +180,19 @@ async def mostrar_colecciones(
     keyboard = [[InlineKeyboardButton("🔍 Buscar EPUB", callback_data="buscar")]]
 
     # Botón Recomendaciones (v6.1.0) - Solo en raíz o menú principal y solo para Admin/Staff
-    if not st.get("historial") or title in ("📚 Categorías", "📁 Biblioteca ZeePubs", "📁 ZeePubs [ES]"):
+    if not st.get("historial") or title in (
+        "📚 Categorías",
+        "📁 Biblioteca ZeePubs",
+        "📁 ZeePubs [ES]",
+    ):
         try:
             from services.user_service import get_effective_user
+
             user_info = await get_effective_user(uid, tg_user=update.effective_user)
             if user_info.get("role") in ("admin", "staff"):
-                keyboard.append([InlineKeyboardButton("💡 Para ti (Beta)", callback_data="rec|ver")])
+                keyboard.append(
+                    [InlineKeyboardButton("💡 Para ti (Beta)", callback_data="rec|ver")]
+                )
         except Exception as e:
             logger.error(f"Error checking role for recommendations: {e}")
 
@@ -200,14 +201,10 @@ async def mostrar_colecciones(
             st["colecciones"][i] = col
             titulo_boton = col["titulo"]
 
-            if (
-                col["titulo"] == "Todas las bibliotecas"
-            ):
+            if col["titulo"] == "Todas las bibliotecas":
                 titulo_boton = "📚 Mi Catálogo"
 
-            keyboard.append(
-                [InlineKeyboardButton(titulo_boton, callback_data=f"col|{i}")]
-            )
+            keyboard.append([InlineKeyboardButton(titulo_boton, callback_data=f"col|{i}")])
     else:
         for b in libros:
             key = uuid.uuid4().hex[:8]
@@ -261,11 +258,7 @@ async def mostrar_colecciones(
 
                     # 3. Last chance: check if the full original title contains the Romaji name
                     # (Useful if tag parsing failed)
-                    if (
-                        not is_redundant
-                        and s_romaji
-                        and s_romaji in simplify(b["titulo"])
-                    ):
+                    if not is_redundant and s_romaji and s_romaji in simplify(b["titulo"]):
                         is_redundant = True
 
             if is_redundant:
@@ -279,22 +272,16 @@ async def mostrar_colecciones(
                     s_name = s_name[:27] + "..."
                 display_title = f"{s_name}{tags_str}"
 
-            keyboard.append(
-                [InlineKeyboardButton(display_title, callback_data=f"lib|{key}")]
-            )
+            keyboard.append([InlineKeyboardButton(display_title, callback_data=f"lib|{key}")])
 
     # 3. Botones de navegación (Subir nivel, Anterior, Siguiente)
     nav_buttons = []
     if st["historial"]:
-        nav_buttons.append(
-            InlineKeyboardButton("⬆️ Subir nivel", callback_data="subir_nivel")
-        )
+        nav_buttons.append(InlineKeyboardButton("⬆️ Subir nivel", callback_data="subir_nivel"))
     if st["nav"]["prev"]:
         nav_buttons.append(InlineKeyboardButton("⬅️ Anterior", callback_data="nav|prev"))
     if st["nav"]["next"]:
-        nav_buttons.append(
-            InlineKeyboardButton("➡️ Siguiente", callback_data="nav|next")
-        )
+        nav_buttons.append(InlineKeyboardButton("➡️ Siguiente", callback_data="nav|next"))
 
     if nav_buttons:
         keyboard.append(nav_buttons)
@@ -414,7 +401,7 @@ async def mostrar_recomendaciones(update: Update, context: ContextTypes.DEFAULT_
             "href": book.get("filepath") or book.get("download_url", ""),  # Local path
             "descarga": book.get("filepath"),
             "portada": book.get("cover") or book.get("cover_low"),
-            "rating_average": book.get("rating_average")
+            "rating_average": book.get("rating_average"),
         }
         st["libros"][key] = b_state
 
@@ -431,6 +418,8 @@ async def mostrar_recomendaciones(update: Update, context: ContextTypes.DEFAULT_
     text = "💡 <b>Basado en tus lecturas recientes:</b>"
 
     if hasattr(update, "callback_query"):
-        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode="HTML")
+        await update.callback_query.edit_message_text(
+            text, reply_markup=reply_markup, parse_mode="HTML"
+        )
     else:
         await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="HTML")

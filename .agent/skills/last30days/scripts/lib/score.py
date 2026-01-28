@@ -1,7 +1,6 @@
 """Popularity-aware scoring for last30days skill."""
 
 import math
-from typing import List, Optional, Union
 
 from . import dates, schema
 
@@ -16,7 +15,7 @@ WEBSEARCH_WEIGHT_RECENCY = 0.45
 WEBSEARCH_SOURCE_PENALTY = 15  # Points deducted for lacking engagement
 
 # WebSearch date confidence adjustments
-WEBSEARCH_VERIFIED_BONUS = 10   # Bonus for URL-verified recent date (high confidence)
+WEBSEARCH_VERIFIED_BONUS = 10  # Bonus for URL-verified recent date (high confidence)
 WEBSEARCH_NO_DATE_PENALTY = 20  # Heavy penalty for no date signals (low confidence)
 
 # Default engagement score for unknown
@@ -24,14 +23,14 @@ DEFAULT_ENGAGEMENT = 35
 UNKNOWN_ENGAGEMENT_PENALTY = 10
 
 
-def log1p_safe(x: Optional[int]) -> float:
+def log1p_safe(x: int | None) -> float:
     """Safe log1p that handles None and negative values."""
     if x is None or x < 0:
         return 0.0
     return math.log1p(x)
 
 
-def compute_reddit_engagement_raw(engagement: Optional[schema.Engagement]) -> Optional[float]:
+def compute_reddit_engagement_raw(engagement: schema.Engagement | None) -> float | None:
     """Compute raw engagement score for Reddit item.
 
     Formula: 0.55*log1p(score) + 0.40*log1p(num_comments) + 0.05*(upvote_ratio*10)
@@ -49,7 +48,7 @@ def compute_reddit_engagement_raw(engagement: Optional[schema.Engagement]) -> Op
     return 0.55 * score + 0.40 * comments + 0.05 * ratio
 
 
-def compute_x_engagement_raw(engagement: Optional[schema.Engagement]) -> Optional[float]:
+def compute_x_engagement_raw(engagement: schema.Engagement | None) -> float | None:
     """Compute raw engagement score for X item.
 
     Formula: 0.55*log1p(likes) + 0.25*log1p(reposts) + 0.15*log1p(replies) + 0.05*log1p(quotes)
@@ -68,7 +67,7 @@ def compute_x_engagement_raw(engagement: Optional[schema.Engagement]) -> Optiona
     return 0.55 * likes + 0.25 * reposts + 0.15 * replies + 0.05 * quotes
 
 
-def normalize_to_100(values: List[float], default: float = 50) -> List[float]:
+def normalize_to_100(values: list[float], default: float = 50) -> list[float]:
     """Normalize a list of values to 0-100 scale.
 
     Args:
@@ -101,7 +100,7 @@ def normalize_to_100(values: List[float], default: float = 50) -> List[float]:
     return result
 
 
-def score_reddit_items(items: List[schema.RedditItem]) -> List[schema.RedditItem]:
+def score_reddit_items(items: list[schema.RedditItem]) -> list[schema.RedditItem]:
     """Compute scores for Reddit items.
 
     Args:
@@ -141,9 +140,9 @@ def score_reddit_items(items: List[schema.RedditItem]) -> List[schema.RedditItem
 
         # Compute overall score
         overall = (
-            WEIGHT_RELEVANCE * rel_score +
-            WEIGHT_RECENCY * rec_score +
-            WEIGHT_ENGAGEMENT * eng_score
+            WEIGHT_RELEVANCE * rel_score
+            + WEIGHT_RECENCY * rec_score
+            + WEIGHT_ENGAGEMENT * eng_score
         )
 
         # Apply penalty for unknown engagement
@@ -161,7 +160,7 @@ def score_reddit_items(items: List[schema.RedditItem]) -> List[schema.RedditItem
     return items
 
 
-def score_x_items(items: List[schema.XItem]) -> List[schema.XItem]:
+def score_x_items(items: list[schema.XItem]) -> list[schema.XItem]:
     """Compute scores for X items.
 
     Args:
@@ -201,9 +200,9 @@ def score_x_items(items: List[schema.XItem]) -> List[schema.XItem]:
 
         # Compute overall score
         overall = (
-            WEIGHT_RELEVANCE * rel_score +
-            WEIGHT_RECENCY * rec_score +
-            WEIGHT_ENGAGEMENT * eng_score
+            WEIGHT_RELEVANCE * rel_score
+            + WEIGHT_RECENCY * rec_score
+            + WEIGHT_ENGAGEMENT * eng_score
         )
 
         # Apply penalty for unknown engagement
@@ -221,7 +220,7 @@ def score_x_items(items: List[schema.XItem]) -> List[schema.XItem]:
     return items
 
 
-def score_websearch_items(items: List[schema.WebSearchItem]) -> List[schema.WebSearchItem]:
+def score_websearch_items(items: list[schema.WebSearchItem]) -> list[schema.WebSearchItem]:
     """Compute scores for WebSearch items WITHOUT engagement metrics.
 
     Uses reweighted formula: 55% relevance + 45% recency - 15pt source penalty.
@@ -256,10 +255,7 @@ def score_websearch_items(items: List[schema.WebSearchItem]) -> List[schema.WebS
         )
 
         # Compute overall score using WebSearch weights
-        overall = (
-            WEBSEARCH_WEIGHT_RELEVANCE * rel_score +
-            WEBSEARCH_WEIGHT_RECENCY * rec_score
-        )
+        overall = WEBSEARCH_WEIGHT_RELEVANCE * rel_score + WEBSEARCH_WEIGHT_RECENCY * rec_score
 
         # Apply source penalty (WebSearch < Reddit/X for same relevance/recency)
         overall -= WEBSEARCH_SOURCE_PENALTY
@@ -278,7 +274,7 @@ def score_websearch_items(items: List[schema.WebSearchItem]) -> List[schema.WebS
     return items
 
 
-def sort_items(items: List[Union[schema.RedditItem, schema.XItem, schema.WebSearchItem]]) -> List:
+def sort_items(items: list[schema.RedditItem | schema.XItem | schema.WebSearchItem]) -> list:
     """Sort items by score (descending), then date, then source priority.
 
     Args:
@@ -287,6 +283,7 @@ def sort_items(items: List[Union[schema.RedditItem, schema.XItem, schema.WebSear
     Returns:
         Sorted items
     """
+
     def sort_key(item):
         # Primary: score descending (negate for descending)
         score = -item.score

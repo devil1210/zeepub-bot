@@ -1,4 +1,3 @@
-import hashlib
 import html
 import os
 import re
@@ -50,9 +49,7 @@ def extract_author(entry, is_folder=False) -> str:
 
     # Fallback legacy logic
     author = None
-    single_author = (
-        entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
-    )
+    single_author = entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
     if hasattr(single_author, "name"):
         author = single_author.name
     elif isinstance(single_author, dict):
@@ -67,19 +64,13 @@ def extract_author(entry, is_folder=False) -> str:
             else getattr(entry, "author_detail", None)
         )
         if detail:
-            author = (
-                detail.get("name")
-                if hasattr(detail, "get")
-                else getattr(detail, "name", None)
-            )
+            author = detail.get("name") if hasattr(detail, "get") else getattr(detail, "name", None)
 
     if not author:
         if hasattr(entry, "get"):
             author = entry.get("dc_creator") or entry.get("dcterms_creator")
         else:
-            author = getattr(entry, "dc_creator", None) or getattr(
-                entry, "dcterms_creator", None
-            )
+            author = getattr(entry, "dc_creator", None) or getattr(entry, "dcterms_creator", None)
 
     if not author:
         author = "Colección" if is_folder else "Desconocido"
@@ -136,9 +127,7 @@ def is_command_for_bot(update, bot_username: str) -> bool:
     for entity in update.message.entities:
         if entity.type == "bot_command":
             # Extraer el texto del comando
-            command_text = update.message.text[
-                entity.offset : entity.offset + entity.length
-            ]
+            command_text = update.message.text[entity.offset : entity.offset + entity.length]
 
             # Si el comando tiene @botusername, verificar que sea este bot
             if "@" in command_text:
@@ -180,9 +169,18 @@ def normalize_author_name(name: str) -> str:
 
     # 1. Limpieza inicial SIN forzar minúsculas
     clean_name = norm_string(name, lowercase=False)
-    
+
     # 2. Eliminar roles que a veces vienen sin paréntesis
-    roles_to_remove = ["autor", "writer", "escritor", "story", "ilustrador", "illustrator", "art", "dibujo"]
+    roles_to_remove = [
+        "autor",
+        "writer",
+        "escritor",
+        "story",
+        "ilustrador",
+        "illustrator",
+        "art",
+        "dibujo",
+    ]
     for role in roles_to_remove:
         clean_name = re.sub(rf"\b{role}\b", "", clean_name, flags=re.IGNORECASE)
 
@@ -191,14 +189,14 @@ def normalize_author_name(name: str) -> str:
         parts = [p.strip() for p in clean_name.split(",")]
         if len(parts) == 2:
             clean_name = f"{parts[1]} {parts[0]}"
-    
+
     # 4. Limpieza final de espacios múltiples
     clean_name = " ".join(clean_name.split()).strip()
-    
+
     # 5. Si el nombre viene totalmente en minúsculas, aplicar Title Case
     if clean_name and clean_name.islower():
         clean_name = clean_name.title()
-        
+
     return clean_name
 
 
@@ -209,23 +207,23 @@ def extract_spanish_series_from_filename(filename: str) -> str:
     """
     if not filename:
         return ""
-    
+
     # 1. Quitar extensión
     name = filename.rsplit(".", 1)[0]
-    
+
     # 2. Quitar tags entre corchetes [TAG]
     name = re.sub(r"\[.*?\]", "", name)
-    
+
     # 3. Quitar patrón de volumen - VXX, VXX, etc.
     vol_pattern = r"(?:\s*[\-\–\—\−]?\s*(?:Volumen|Vol\.?|Tomo|v\.?|V)\s*\d+(?:\.\d+)?.*)"
     name = re.sub(vol_pattern, "", name, flags=re.IGNORECASE).strip()
-    
+
     # 4. Quitar guiones y símbolos al final que puedan haber quedado
     name = re.sub(r"[\-\–\—\−\―\:\.\s]+$", "", name).strip()
-    
+
     # 5. Limpiar espacios múltiples
     name = re.sub(r"\s+", " ", name).strip()
-    
+
     return name
 
 
@@ -251,7 +249,7 @@ def process_book_identity_comprehensive(
     translator = meta.get("translator")
     layout_by = meta.get("layout_by")
     language = meta.get("language") or "es"
-    
+
     # Extraer nombre de serie en español desde el nombre de archivo (Uploader o Scanner)
     series_spanish = ""
     if original_filename:
@@ -293,19 +291,26 @@ def process_book_identity_comprehensive(
     filename_to_check = original_filename or (os.path.basename(epub_path) if epub_path else "")
     if filename_to_check:
         fname_lower = filename_to_check.lower()
-        
+
         # 1. Color Mode detection
-        if meta.get("color_mode", "bw") == "bw": # Default in extractor is "bw", check if filename says otherwise
-             if any(x in fname_lower for x in ["[color]", "(color)", "[full color]", "color version"]):
-                 meta["color_mode"] = "color"
-        
+        if (
+            meta.get("color_mode", "bw") == "bw"
+        ):  # Default in extractor is "bw", check if filename says otherwise
+            if any(
+                x in fname_lower for x in ["[color]", "(color)", "[full color]", "color version"]
+            ):
+                meta["color_mode"] = "color"
+
         # If explicitly marked as B&W in filename, ensure it stays B&W (redundant but safe)
         if any(x in fname_lower for x in ["[b&n]", "[b&w]", "(b&n)", "(b&w)"]):
-             meta["color_mode"] = "bw"
+            meta["color_mode"] = "bw"
 
         # 2. Uncensored detection
         if not meta.get("is_uncensored"):
-            if any(x in fname_lower for x in ["[sin censura]", "[uncensored]", "[no censura]", "(uncensored)"]):
+            if any(
+                x in fname_lower
+                for x in ["[sin censura]", "[uncensored]", "[no censura]", "(uncensored)"]
+            ):
                 meta["is_uncensored"] = 1
 
     return {
@@ -321,7 +326,7 @@ def process_book_identity_comprehensive(
         "published_at": meta.get("published_at"),
         "edition": meta.get("edition"),
         "is_uncensored": meta.get("is_uncensored", 0),
-        "color_mode": meta.get("color_mode", "bw")
+        "color_mode": meta.get("color_mode", "bw"),
     }
 
 
@@ -335,13 +340,14 @@ def generate_book_hash(
     language: str | None = "es",
     edition: str | None = None,
     is_uncensored: int = 0,
-    color_mode: str = "bw"
+    color_mode: str = "bw",
 ) -> str:
     """
     Genera un hash estable basado exclusivamente en: series + author + book_type + volume + translator + layout_by.
     NO usar title.
     """
     from services.hash_service import hash_service
+
     return hash_service.generate_book_hash(
         series=series,
         author=author,
@@ -352,24 +358,19 @@ def generate_book_hash(
         language=language,
         edition=edition,
         is_uncensored=is_uncensored,
-        color_mode=color_mode
+        color_mode=color_mode,
     )
 
 
 def generate_series_hash(
-    series: str,
-    author: str | None = None,
-    book_type: str | None = None
+    series: str, author: str | None = None, book_type: str | None = None
 ) -> str:
     """
     Genera un hash estable para la serie basado en: series + author + book_type.
     """
     from services.hash_service import hash_service
-    return hash_service.generate_series_hash(
-        series=series,
-        author=author,
-        book_type=book_type
-    )
+
+    return hash_service.generate_series_hash(series=series, author=author, book_type=book_type)
 
 
 def limpiar_html_basico(texto_html: str) -> str:
@@ -377,13 +378,10 @@ def limpiar_html_basico(texto_html: str) -> str:
         return ""
     texto_html = texto_html.replace("<br>", "\n").replace("<br/>", "\n")
     texto_limpio = re.sub(r"<.*?>", "", texto_html)
-    return "\n".join(
-        [ln.rstrip() for ln in texto_limpio.strip().splitlines() if ln.strip()]
-    )
+    return "\n".join([ln.rstrip() for ln in texto_limpio.strip().splitlines() if ln.strip()])
 
 
 def build_search_url(query: str, uid: int = None, role: str = None) -> str:
-
     # Default to START
     root = config.OPDS_ROOT_START
 
@@ -436,11 +434,7 @@ def find_zeepubs_destino(feed, prefer_libraries: bool = False):
             if rel == "subsection" and href:
                 full = abs_url(config.BASE_URL, href)
                 candidatos.append((title, full))
-                if (
-                    "zeepub" in tnorm
-                    or "zeepubs" in tnorm
-                    or tnorm == norm("ZeePubs [ES]")
-                ):
+                if "zeepub" in tnorm or "zeepubs" in tnorm or tnorm == norm("ZeePubs [ES]"):
                     logging.debug(
                         "find_zeepubs_destino: título coincide con 'zeepub(s)': %r -> %s",
                         title,
@@ -466,9 +460,7 @@ def find_zeepubs_destino(feed, prefer_libraries: bool = False):
                 )
                 return href
     if len(candidatos) == 1:
-        logging.debug(
-            "find_zeepubs_destino: unique candidate, returning %s", candidatos[0][1]
-        )
+        logging.debug("find_zeepubs_destino: unique candidate, returning %s", candidatos[0][1])
         return candidatos[0][1]
     logging.debug(
         "find_zeepubs_destino: no destination found (candidates=%s)",
@@ -549,7 +541,9 @@ def parse_metadata_from_title(title_str: str) -> dict:
         full_vol_str = match.group(0)
         # Remove " - Volumen XX" or " Volumen XX" from the string to get the base title
         # regex handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus)
-        clean_no_vol = re.sub(rf"\s*[\-\–\—\−]?\s*{re.escape(full_vol_str)}.*", "", clean, flags=re.IGNORECASE).strip()
+        clean_no_vol = re.sub(
+            rf"\s*[\-\–\—\−]?\s*{re.escape(full_vol_str)}.*", "", clean, flags=re.IGNORECASE
+        ).strip()
 
     # 3. Split parts by various hyphen types, colons, or dots to find English vs Romaji
     # re handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus), ― (horizontal bar)
@@ -701,17 +695,13 @@ def formatear_mensaje_portada(meta: dict, include_slug: bool = True) -> str:
     categoria = meta.get("categoria") or "Desconocida"
     generos = ", ".join(meta.get("generos") or []) or "Desconocido"
     demografia = ", ".join(meta.get("demografia") or []) or "Desconocida"
-    autor = meta.get("autor") or (
-        meta.get("autores")[0] if meta.get("autores") else "Desconocido"
-    )
+    autor = meta.get("autor") or (meta.get("autores")[0] if meta.get("autores") else "Desconocido")
     ilustrador = meta.get("ilustrador") or "Desconocido"
     maqus = meta.get("maquetadores") or []
     if not maqus:
         maqu_line = "<b>Maquetado por:</b>  #ZeePub"
     else:
-        maqu_line = "<b>Maquetado por:</b> " + " ".join(
-            f"#{m.replace(' ', '')}" for m in maqus
-        )
+        maqu_line = "<b>Maquetado por:</b> " + " ".join(f"#{m.replace(' ', '')}" for m in maqus)
 
     traduccion_parts = []
     if meta.get("traductor"):
@@ -769,9 +759,7 @@ def formatear_titulo_fb(meta: dict) -> str:
         if not series:
             series = full_title
 
-        lines.extend(
-            [f"Epub de: {series} ║ {collection_title} ║ {internal_title}", volume]
-        )
+        lines.extend([f"Epub de: {series} ║ {collection_title} ║ {internal_title}", volume])
     else:
         # Lógica antigua (fallback)
         titulo_vol = meta.get("titulo_volumen") or ""
@@ -789,18 +777,14 @@ def formatear_metadata_fb(meta: dict) -> str:
     categoria = meta.get("categoria") or "Desconocida"
     generos = ", ".join(meta.get("generos") or []) or "Desconocido"
     demografia = ", ".join(meta.get("demografia") or []) or "Desconocida"
-    autor = meta.get("autor") or (
-        meta.get("autores")[0] if meta.get("autores") else "Desconocido"
-    )
+    autor = meta.get("autor") or (meta.get("autores")[0] if meta.get("autores") else "Desconocido")
     ilustrador = meta.get("ilustrador") or "Desconocido"
     maqus = meta.get("maquetadores") or []
 
     if not maqus:
         maqu_line = "<b>Maquetado por:</b>  #ZeePub"
     else:
-        maqu_line = "<b>Maquetado por:</b> " + " ".join(
-            f"#{m.replace(' ', '')}" for m in maqus
-        )
+        maqu_line = "<b>Maquetado por:</b> " + " ".join(f"#{m.replace(' ', '')}" for m in maqus)
 
     traduccion_parts = []
     if meta.get("traductor"):
@@ -878,6 +862,7 @@ def get_commit_hash() -> str:
     # 1. Try file (Watchtower/Production)
     try:
         import os
+
         if os.path.exists("version_hash.txt"):
             with open("version_hash.txt") as f:
                 return f.read().strip()[:7]
@@ -887,6 +872,7 @@ def get_commit_hash() -> str:
     # 2. Try Git
     try:
         import subprocess
+
         result = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
             capture_output=True,

@@ -18,7 +18,7 @@ class DownloadHistory(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
-    
+
     # Relaciones
     user = relationship("User", backref="download_history")
     title = Column(String(512), nullable=False)

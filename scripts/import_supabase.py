@@ -16,10 +16,11 @@ from models.user_models import AppTheme, User, UserLevel
 # Force load .env
 load_dotenv()
 
+
 async def get_local_session():
     # Use config.DATABASE_URL but ensure async driver if needed
     db_url = os.getenv("DATABASE_URL")
-    
+
     if not db_url:
         print("❌ DATABASE_URL missing. Postgres is required.")
         sys.exit(1)
@@ -29,15 +30,16 @@ async def get_local_session():
         # Standardize prefix if needed
         db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
         if "postgres://" in db_url:
-             db_url = db_url.replace("postgres://", "postgresql+asyncpg://")
-    
+            db_url = db_url.replace("postgres://", "postgresql+asyncpg://")
+
     print(f"🔌 Using Postgres: {db_url}")
 
     engine = create_async_engine(db_url, echo=False)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     return sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)()
+
 
 def get_supabase():
     url = os.getenv("SUPABASE_URL")
@@ -47,12 +49,13 @@ def get_supabase():
         sys.exit(1)
     return create_client(url, key)
 
+
 async def import_data():
     print("🚀 Starting Data Import from Supabase...")
-    
+
     supabase = get_supabase()
     session = await get_local_session()
-    
+
     try:
         # 1. Import User Levels
         print("\n📥 Importing User Levels...")
@@ -87,7 +90,7 @@ async def import_data():
                 early_access=item.get("early_access", False),
                 custom_themes=item.get("custom_themes", False),
                 allow_theme_templates=item.get("allow_theme_templates", False),
-                show_recommendations=item.get("show_recommendations", True)
+                show_recommendations=item.get("show_recommendations", True),
             )
             await session.merge(level)
         print(f"✅ Synced {len(levels_data)} levels.")
@@ -100,6 +103,7 @@ async def import_data():
             themes_data = res.data
             for item in themes_data:
                 from dateutil import parser
+
                 theme = AppTheme(
                     id=item.get("id"),
                     name=item.get("name"),
@@ -116,19 +120,26 @@ async def import_data():
                     font_size=item.get("font_size"),
                     cover_width=item.get("cover_width"),
                     banner_content_offset=item.get("banner_content_offset"),
-                    created_at=parser.parse(item.get("created_at")) if item.get("created_at") else None,
-                    updated_at=parser.parse(item.get("updated_at")) if item.get("updated_at") else None
+                    created_at=parser.parse(item.get("created_at"))
+                    if item.get("created_at")
+                    else None,
+                    updated_at=parser.parse(item.get("updated_at"))
+                    if item.get("updated_at")
+                    else None,
                 )
                 await session.merge(theme)
             print(f"✅ Synced {len(themes_data)} themes.")
         except Exception as e:
             import traceback
+
             traceback.print_exc()
             print(f"⚠️ Could not sync themes: {e}")
 
         # 3. Import Users (Optional - Just Admin)
         print("\n📥 Importing Admin Users...")
-        admin_ids = [int(uid.strip()) for uid in os.getenv("ADMIN_USERS", "").split(",") if uid.strip()]
+        admin_ids = [
+            int(uid.strip()) for uid in os.getenv("ADMIN_USERS", "").split(",") if uid.strip()
+        ]
         if admin_ids:
             res = supabase.table("users").select("*").in_("telegram_id", admin_ids).execute()
             users_data = res.data
@@ -147,19 +158,20 @@ async def import_data():
                     total_downloads=item.get("total_downloads"),
                     insignias=item.get("insignias"),
                     settings=item.get("settings"),
-                    expires_at=item.get("expires_at")
+                    expires_at=item.get("expires_at"),
                 )
                 await session.merge(user)
             print(f"✅ Synced {len(users_data)} admin users.")
-        
+
         await session.commit()
         print("\n🎉 Import Completed Successfully!")
-        
+
     except Exception as e:
         print(f"\n❌ Error during import: {e}")
         await session.rollback()
     finally:
         await session.close()
+
 
 if __name__ == "__main__":
     try:

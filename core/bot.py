@@ -53,7 +53,7 @@ class ZeePubBot:
         # Aumentamos el pool size para evitar PoolTimeout en bots con mucha carga
         trequest = HTTPXRequest(
             connection_pool_size=100,  # Aumentado de 20 -> 100
-            connect_timeout=30.0,      # Aumentado de default 5.0s -> 30.0s
+            connect_timeout=30.0,  # Aumentado de default 5.0s -> 30.0s
             read_timeout=30.0,
             write_timeout=30.0,
             pool_timeout=30.0,
@@ -89,28 +89,23 @@ class ZeePubBot:
         self.app.add_handler(CallbackQueryHandler(button_handler), group=1)
 
         # Mensajes de texto
-        self.app.add_handler(
-            MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto)
-        )
+        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto))
 
         # JSON Upload Handler
         from handlers.message_handlers import handle_donation_proof, handle_json_upload
 
         self.app.add_handler(
-            MessageHandler(
-                filters.Document.MimeType("application/json"), handle_json_upload
-            )
+            MessageHandler(filters.Document.MimeType("application/json"), handle_json_upload)
         )
         # Donation Proof Handler (Photo or Document)
         self.app.add_handler(
-            MessageHandler(
-                filters.PHOTO | filters.Document.ALL, handle_donation_proof
-            )
+            MessageHandler(filters.PHOTO | filters.Document.ALL, handle_donation_proof)
         )
-        
+
         # EPUB Upload Handler
         try:
             from handlers.epub_upload_handler import setup_upload_handlers
+
             setup_upload_handlers(self.app)
             logger.info("EPUB upload handler registered successfully")
         except Exception as e:
@@ -135,6 +130,7 @@ class ZeePubBot:
         """Inicializa la aplicación (para uso con API)."""
         # 0. Inicializar Base de Datos primero (PostgreSQL)
         from core.schema_orchestrator import schema_orchestrator
+
         try:
             # Initialize Postgres Schema (Orchestrator)
             await schema_orchestrator.initialize_schema()
@@ -147,22 +143,20 @@ class ZeePubBot:
         bot_initialized = False
         for attempt in range(max_retries):
             try:
-                logger.info(
-                    f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})..."
-                )
+                logger.info(f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})...")
                 await self.app.initialize()
 
                 # Verify bot is actually ready by accessing bot.id
                 try:
                     _ = self.app.bot.id
-                    logger.info(
-                        f"Bot inicializado exitosamente (ID: {self.app.bot.id})."
-                    )
+                    logger.info(f"Bot inicializado exitosamente (ID: {self.app.bot.id}).")
                     bot_initialized = True
                     break
                 except RuntimeError as e:
                     if "not properly initialized" in str(e):
-                        logger.warning("Bot marcado como initialized pero ExtBot no está listo. Reintentando...")
+                        logger.warning(
+                            "Bot marcado como initialized pero ExtBot no está listo. Reintentando..."
+                        )
                         # Force a new initialization attempt
                         await asyncio.sleep(retry_delay)
                         continue
@@ -179,16 +173,22 @@ class ZeePubBot:
                         bot_initialized = True
                         break
                     except RuntimeError:
-                        logger.warning("Bot marcado como initialized pero ExtBot no está listo. Continuando con error original...")
+                        logger.warning(
+                            "Bot marcado como initialized pero ExtBot no está listo. Continuando con error original..."
+                        )
                         # Can't reinitialize, but bot isn't ready
                         pass
 
                 if attempt < max_retries - 1:
                     wait = retry_delay * (attempt + 1)
-                    logger.warning(f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s...")
+                    logger.warning(
+                        f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s..."
+                    )
                     await asyncio.sleep(wait)
                 else:
-                    logger.error(f"Error crítico: No se pudo inicializar el bot tras {max_retries} intentos: {e}")
+                    logger.error(
+                        f"Error crítico: No se pudo inicializar el bot tras {max_retries} intentos: {e}"
+                    )
                     self._initialized = False
                     return
 
@@ -216,17 +216,23 @@ class ZeePubBot:
                     await context.bot.send_message(
                         chat_id=update.effective_chat.id,
                         text="⚠️ <b>MODO SEGURO ACTIVADO</b>\n\nEl sistema de plugins falló al iniciar. Intentando actualización de emergencia...",
-                        parse_mode="HTML"
+                        parse_mode="HTML",
                     )
 
                     try:
                         from services.maintenance_service import (
                             trigger_watchtower_update,
                         )
+
                         success, msg = await trigger_watchtower_update()
-                        await context.bot.send_message(chat_id=update.effective_chat.id, text=msg, parse_mode="HTML")
+                        await context.bot.send_message(
+                            chat_id=update.effective_chat.id, text=msg, parse_mode="HTML"
+                        )
                     except Exception as ex:
-                        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Error crítico en update: {ex}")
+                        await context.bot.send_message(
+                            chat_id=update.effective_chat.id,
+                            text=f"❌ Error crítico en update: {ex}",
+                        )
 
                 self.app.add_handler(CommandHandler("update_system", emergency_update_handler))
 
@@ -236,14 +242,14 @@ class ZeePubBot:
                         await self.app.bot.send_message(
                             chat_id=admin_id,
                             text=f"🚨 <b>ALERTA CRÍTICA</b>\nEl bot inició en <b>MODO SEGURO</b> debido a un error en los plugins:\n\n<pre>{str(e)}</pre>\n\nUsa /update_system para intentar reparar.",
-                            parse_mode="HTML"
+                            parse_mode="HTML",
                         )
                     except Exception as ex:
                         logger.warning(f"Could not notify admin {admin_id} of safe mode: {ex}")
             except Exception as e2:
                 logger.error(f"FATAL: Could not register emergency handler: {e2}")
 
-        # Legacy Sync Engine disabled to minimize requests. 
+        # Legacy Sync Engine disabled to minimize requests.
         # OptimizedSyncEngine is now used instead (triggered or long-interval).
         # from core.sync_engine import sync_engine
         # await sync_engine.start()
@@ -282,15 +288,9 @@ class ZeePubBot:
         await session_manager.close()
         logger.info("Bot detenido (API).")
 
-    async def _metrics_middleware(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def _metrics_middleware(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Middleware para recolectar métricas básicas."""
-        if (
-            update.message
-            and update.message.text
-            and update.message.text.startswith("/")
-        ):
+        if update.message and update.message.text and update.message.text.startswith("/"):
             try:
                 cmd = update.message.text.split()[0].split("@")[0]
                 metrics.inc_command(cmd)

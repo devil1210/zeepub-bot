@@ -9,7 +9,7 @@ from utils.helpers import parse_metadata_from_title
 titles = [
     "⭘ Alya Sometimes Hides Her Feelings in Russian [NL] - Tokidoki Bosotto Russiago de Dereru Tonari no Arya-san - Volumen 01 [Vlady]",
     "⭘ 86 - EIGHTY-SIX [NL] - 86 ―Eitishikkusu― - Volumen 01 [TFP]",
-    "⭘ Sword Art Online [NL] - Volumen 01"
+    "⭘ Sword Art Online [NL] - Volumen 01",
 ]
 
 for t in titles:

@@ -88,9 +88,13 @@ class StatsPlugin(BasePlugin):
                 return
 
             cms = context.application.plugin_manager.get_plugin("custom_messages")
-            base_header = f"📋 <b>Usuarios con nivel: {target_level.capitalize()}</b> ({len(users_list)})\n\n"
+            base_header = (
+                f"📋 <b>Usuarios con nivel: {target_level.capitalize()}</b> ({len(users_list)})\n\n"
+            )
             msg = (
-                await cms.get_text("stats_list_header", Rol=target_level.capitalize(), Cantidad=len(users_list))
+                await cms.get_text(
+                    "stats_list_header", Rol=target_level.capitalize(), Cantidad=len(users_list)
+                )
                 if (cms and cms.enabled)
                 else base_header
             )
@@ -154,16 +158,13 @@ class StatsPlugin(BasePlugin):
             f"{e_dl} Descargas: {stats_day['total_downloads']}\n"
             f"{e_us} Activos: {stats_day['unique_users']}\n"
             f"{e_new} Nuevos: {stats_day['new_users']}\n\n"
-
             "<b>Este Mes:</b>\n"
             f"{e_dl} Descargas: {stats_month['total_downloads']}\n"
             f"{e_us} Activos: {stats_month['unique_users']}\n"
             f"{e_new} Nuevos: {stats_month['new_users']}\n\n"
-
             "<b>Este Año:</b>\n"
             f"{e_dl} Descargas: {stats_year['total_downloads']}\n"
             f"{e_us} Activos: {stats_year['unique_users']}\n\n"
-
             "<b>Histórico Total:</b>\n"
             f"{e_dl} Descargas: {stats_all['total_downloads']}\n"
             f"{e_new} Usuarios Totales: {stats_all['new_users']}\n"
@@ -172,9 +173,9 @@ class StatsPlugin(BasePlugin):
         # Intentar usar template si existe (opcional)
         text = base_summary
         if cms and cms.enabled:
-             # Check if template exists before trying to use it to avoid errors if user hasn't added it yet
-             # For now, we stick to the hardcoded enhanced format or update template later
-             pass
+            # Check if template exists before trying to use it to avoid errors if user hasn't added it yet
+            # For now, we stick to the hardcoded enhanced format or update template later
+            pass
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,

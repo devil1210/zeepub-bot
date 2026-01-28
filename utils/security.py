@@ -38,9 +38,7 @@ def validate_telegram_data(
 
     # Calcular HMAC-SHA256
     secret_key = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
-    calculated_hash = hmac.new(
-        secret_key, data_check_string.encode(), hashlib.sha256
-    ).hexdigest()
+    calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
 
     if calculated_hash != received_hash:
         return None
@@ -62,7 +60,7 @@ def validate_telegram_data(
 
 
 async def verify_telegram_user(
-    x_telegram_init_data: str = Header(..., alias="x-telegram-init-data")
+    x_telegram_init_data: str = Header(..., alias="x-telegram-init-data"),
 ):
     """
     FastAPI Dependency to verify Telegram WebApp data.

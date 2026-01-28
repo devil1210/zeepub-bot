@@ -1,15 +1,14 @@
 import logging
-import re
 from typing import Any
 
 from sqlalchemy import String, cast, func, or_, select
 
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, SeriesMetadata, UserDownload
-from repositories.download_repository import download_repo
-from schemas.library_schemas import BookDTO, SeriesDTO, CoverUrlDTO
+from schemas.library_schemas import BookDTO, CoverUrlDTO, SeriesDTO
 
 logger = logging.getLogger(__name__)
+
 
 class LibraryService:
     @staticmethod
@@ -27,7 +26,7 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             try:
                 pattern = f"%{query}%"
-                
+
                 # Filtros base
                 filters = [
                     LocalBook.title.ilike(pattern),
@@ -35,53 +34,51 @@ class LibraryService:
                     LocalBook.series.ilike(pattern),
                     LocalBook.series_spanish.ilike(pattern),
                     LocalBook.romaji_title.ilike(pattern),
-                    LocalBook.english_title.ilike(pattern)
+                    LocalBook.english_title.ilike(pattern),
                 ]
-                
+
                 if search_type in ("all", "todos", "genres", "géneros", "tags"):
-                     filters.append(cast(LocalBook.tags, String).ilike(pattern))
+                    filters.append(cast(LocalBook.tags, String).ilike(pattern))
                 if search_type in ("all", "todos", "translator", "traductor"):
-                     filters.append(LocalBook.translator.ilike(pattern))
+                    filters.append(LocalBook.translator.ilike(pattern))
                 if search_type in ("all", "todos", "illustrator", "ilustrador"):
-                     filters.append(LocalBook.illustrator.ilike(pattern))
+                    filters.append(LocalBook.illustrator.ilike(pattern))
                 if search_type in ("all", "todos", "layout", "maquetador"):
                     filters.append(LocalBook.layout_by.ilike(pattern))
 
                 # Subquery for download count
-                dl_subquery = select(func.count(UserDownload.id))\
-                    .where(UserDownload.book_hash == LocalBook.book_hash)\
-                    .correlate(LocalBook)\
+                dl_subquery = (
+                    select(func.count(UserDownload.id))
+                    .where(UserDownload.book_hash == LocalBook.book_hash)
+                    .correlate(LocalBook)
                     .scalar_subquery()
+                )
 
                 stmt = select(LocalBook, dl_subquery.label("download_count")).where(or_(*filters))
-                
+
                 if source_id:
                     stmt = stmt.where(LocalBook.source_id == source_id)
-                
+
                 # Count total
                 count_stmt = select(func.count()).select_from(stmt.subquery())
                 total_items = (await session.execute(count_stmt)).scalar() or 0
-                
+
                 # Pagination
                 start = (page - 1) * items_per_page
                 stmt = stmt.order_by(LocalBook.title.asc()).offset(start).limit(items_per_page)
-                
+
                 result = await session.execute(stmt)
-                rows = result.all() # [(book, dl_count), ...]
+                rows = result.all()  # [(book, dl_count), ...]
 
                 results = []
                 for row in rows:
                     b = row[0]
                     dl_count = row[1] or 0
-                    
+
                     b_dict = b.to_dict()
-                    
+
                     # Map to DTO
-                    dto = BookDTO(
-                        **b_dict,
-                        download_count=dl_count,
-                        coverUrl=b.cover_low
-                    )
+                    dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=b.cover_low)
                     results.append(dto.model_dump())
 
                 total_pages = (total_items + items_per_page - 1) // items_per_page
@@ -114,7 +111,7 @@ class LibraryService:
         items_per_page: int = 20,
         source_id: int | None = None,
         search_type: str = "todos",
-        sort_by: str = "a-z"
+        sort_by: str = "a-z",
     ) -> dict[str, Any]:
         """
         Búsqueda agrupada por series_hash. Retorna un objeto similar a Series
@@ -123,13 +120,13 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             try:
                 pattern = f"%{query}%"
-                
+
                 stmt = select(SeriesMetadata).where(
                     or_(
                         SeriesMetadata.series_name.ilike(pattern),
                         SeriesMetadata.series_spanish.ilike(pattern),
                         SeriesMetadata.author.ilike(pattern),
-                        cast(SeriesMetadata.tags, String).ilike(pattern)
+                        cast(SeriesMetadata.tags, String).ilike(pattern),
                     )
                 )
 
@@ -140,7 +137,7 @@ class LibraryService:
                     stmt = stmt.order_by(SeriesMetadata.id.desc())
                 elif sort_by == "popular":
                     stmt = stmt.order_by(SeriesMetadata.rating_count.desc())
-                else: 
+                else:
                     stmt = stmt.order_by(SeriesMetadata.series_name.asc())
 
                 count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -148,7 +145,7 @@ class LibraryService:
 
                 start = (page - 1) * items_per_page
                 stmt = stmt.offset(start).limit(items_per_page)
-                
+
                 res = await session.execute(stmt)
                 series_list = res.scalars().all()
 
@@ -166,15 +163,21 @@ class LibraryService:
                         cover=s.cover_url,
                         coverUrl=CoverUrlDTO(
                             cover_low=s.cover_url,
-                            cover_medium=s.cover_url.replace("_low.jpg", "_medium.jpg") if s.cover_url else None,
-                            cover_high=s.cover_url.replace("_low.jpg", "_high.jpg") if s.cover_url else None,
-                            cover_original=s.cover_url.replace("_low.jpg", "_original.jpg") if s.cover_url else None,
-                            cover=s.cover_url
+                            cover_medium=s.cover_url.replace("_low.jpg", "_medium.jpg")
+                            if s.cover_url
+                            else None,
+                            cover_high=s.cover_url.replace("_low.jpg", "_high.jpg")
+                            if s.cover_url
+                            else None,
+                            cover_original=s.cover_url.replace("_low.jpg", "_original.jpg")
+                            if s.cover_url
+                            else None,
+                            cover=s.cover_url,
                         ),
                         numBooks=s.book_count,
                         rating_average=s.rating_average,
                         rating_count=s.rating_count,
-                        lastUpdated=s.updated_at.isoformat() if s.updated_at else None
+                        lastUpdated=s.updated_at.isoformat() if s.updated_at else None,
                     )
                     results.append(dto.model_dump())
 
@@ -182,7 +185,7 @@ class LibraryService:
                     "results": results,
                     "currentPage": page,
                     "totalPages": (total_series + items_per_page - 1) // items_per_page,
-                    "totalItems": total_series
+                    "totalItems": total_series,
                 }
 
             except Exception as e:
@@ -190,40 +193,42 @@ class LibraryService:
                 return {"results": [], "totalItems": 0}
 
     @staticmethod
-    async def get_series_volumes(series_hash: str, limit: int | None = None, offset: int = 0) -> list[dict[str, Any]]:
+    async def get_series_volumes(
+        series_hash: str, limit: int | None = None, offset: int = 0
+    ) -> list[dict[str, Any]]:
         """Retorna los volúmenes de una serie agrupada (Async). Validado con Pydantic."""
         async with pg_manager.get_session() as session:
             try:
                 # Subquery for download count per volume
-                dl_subquery = select(func.count(UserDownload.id))\
-                    .where(UserDownload.book_hash == LocalBook.book_hash)\
-                    .correlate(LocalBook)\
+                dl_subquery = (
+                    select(func.count(UserDownload.id))
+                    .where(UserDownload.book_hash == LocalBook.book_hash)
+                    .correlate(LocalBook)
                     .scalar_subquery()
+                )
 
-                stmt = select(LocalBook, dl_subquery.label("download_count"))\
-                    .where(LocalBook.series_hash == series_hash)\
+                stmt = (
+                    select(LocalBook, dl_subquery.label("download_count"))
+                    .where(LocalBook.series_hash == series_hash)
                     .order_by(LocalBook.volume.asc())
-                
+                )
+
                 if limit:
                     stmt = stmt.offset(offset).limit(limit)
-                
+
                 res = await session.execute(stmt)
                 rows = res.all()
-                
+
                 results = []
                 for row in rows:
                     b = row[0]
                     dl_count = row[1] or 0
-                    
+
                     b_dict = b.to_dict()
-                    
-                    dto = BookDTO(
-                        **b_dict,
-                        download_count=dl_count,
-                        coverUrl=b.cover_low
-                    )
+
+                    dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=b.cover_low)
                     results.append(dto.model_dump())
-                
+
                 return results
             except Exception as e:
                 logger.error(f"[LibraryService.get_series_volumes] Error: {e}")
@@ -235,28 +240,28 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             try:
                 # Subquery for DL count
-                dl_subquery = select(func.count(UserDownload.id))\
-                    .where(UserDownload.book_hash == LocalBook.book_hash)\
-                    .correlate(LocalBook)\
+                dl_subquery = (
+                    select(func.count(UserDownload.id))
+                    .where(UserDownload.book_hash == LocalBook.book_hash)
+                    .correlate(LocalBook)
                     .scalar_subquery()
+                )
 
-                stmt = select(LocalBook, dl_subquery.label("download_count")).where(LocalBook.id == book_id)
+                stmt = select(LocalBook, dl_subquery.label("download_count")).where(
+                    LocalBook.id == book_id
+                )
                 res = await session.execute(stmt)
                 row = res.one_or_none()
-                
+
                 if not row:
                     return None
-                
+
                 book = row[0]
                 dl_count = row[1] or 0
-                
+
                 b_dict = book.to_dict()
-                
-                dto = BookDTO(
-                    **b_dict,
-                    download_count=dl_count,
-                    coverUrl=book.cover_low
-                )
+
+                dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=book.cover_low)
                 return dto.model_dump()
             except Exception as e:
                 logger.error(f"[LibraryService.get_book_by_id] Error: {e}")
@@ -270,10 +275,10 @@ class LibraryService:
                 stmt = select(LocalBook).where(LocalBook.id == book_id)
                 result = await session.execute(stmt)
                 book = result.scalar_one_or_none()
-                
+
                 if not book:
                     return False
-                    
+
                 # Update allowed fields
                 if "title" in updates:
                     book.title = updates["title"]
@@ -296,22 +301,20 @@ class LibraryService:
                     book.tags = updates["tags"]
                 if "demographics" in updates:
                     book.demographics = updates["demographics"]
-                
+
                 # Recalculate Series Hash to regroup
                 from utils.helpers import generate_series_hash
+
                 series_name = book.series or book.english_title or book.title
                 book.series_hash = generate_series_hash(
-                    series=series_name,
-                    author=book.author,
-                    book_type=book.book_type
+                    series=series_name, author=book.author, book_type=book.book_type
                 )
-                
+
                 await session.commit()
                 return True
             except Exception as e:
                 logger.error(f"[LibraryService.update_book_metadata] Error: {e}")
                 return False
-
 
     @staticmethod
     async def get_regroup_suggestions(threshold: float = 0.8) -> list[dict[str, Any]]:
@@ -323,32 +326,38 @@ class LibraryService:
             try:
                 # 1. Obtener libros sospechosos (sin series o series con 1 solo volumen)
                 # Esta consulta simplificada obtiene libros sin serie asignda explícitamente
-                stmt = select(LocalBook).where(
-                    or_(LocalBook.series.is_(None), LocalBook.series == "")
-                ).order_by(LocalBook.author, LocalBook.title)
-                
+                stmt = (
+                    select(LocalBook)
+                    .where(or_(LocalBook.series.is_(None), LocalBook.series == ""))
+                    .order_by(LocalBook.author, LocalBook.title)
+                )
+
                 result = await session.execute(stmt)
                 books = result.scalars().all()
-                
+
                 # 2. Agrupamiento lógico simple en memoria (Python)
                 from difflib import SequenceMatcher
-                
+
                 groups = []
                 used_ids = set()
 
                 for i, book_a in enumerate(books):
                     if book_a.id in used_ids:
                         continue
-                        
+
                     current_group = [book_a]
                     used_ids.add(book_a.id)
-                    
-                    for _j, book_b in enumerate(books[i+1:], start=i+1):
+
+                    for _j, book_b in enumerate(books[i + 1 :], start=i + 1):
                         if book_b.id in used_ids:
                             continue
-                            
+
                         # Mismo autor es un requisito fuerte
-                        if book_a.author and book_b.author and book_a.author.lower() != book_b.author.lower():
+                        if (
+                            book_a.author
+                            and book_b.author
+                            and book_a.author.lower() != book_b.author.lower()
+                        ):
                             continue
 
                         # Similitud de título
@@ -356,19 +365,29 @@ class LibraryService:
                         if similarity >= threshold:
                             current_group.append(book_b)
                             used_ids.add(book_b.id)
-                    
+
                     if len(current_group) > 1:
                         # Sugerencia encontrada
                         common_title = current_group[0].title
                         # Intentar extraer parte común
-                        match = SequenceMatcher(None, current_group[0].title, current_group[1].title).find_longest_match(0, len(current_group[0].title), 0, len(current_group[1].title))
-                        suggested_name = current_group[0].title[match.a: match.a + match.size].strip(" -:volume")
+                        match = SequenceMatcher(
+                            None, current_group[0].title, current_group[1].title
+                        ).find_longest_match(
+                            0, len(current_group[0].title), 0, len(current_group[1].title)
+                        )
+                        suggested_name = (
+                            current_group[0]
+                            .title[match.a : match.a + match.size]
+                            .strip(" -:volume")
+                        )
 
-                        groups.append({
-                            "suggested_series": suggested_name or common_title,
-                            "confidence": "high",
-                            "books": [b.to_dict() for b in current_group]
-                        })
+                        groups.append(
+                            {
+                                "suggested_series": suggested_name or common_title,
+                                "confidence": "high",
+                                "books": [b.to_dict() for b in current_group],
+                            }
+                        )
 
                 return groups
             except Exception as e:
@@ -380,11 +399,13 @@ class LibraryService:
         """Retorna una lista simple de libros que no tienen serie asignada."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(LocalBook)\
-                    .where(or_(LocalBook.series.is_(None), LocalBook.series == ""))\
-                    .order_by(LocalBook.indexed_at.desc())\
+                stmt = (
+                    select(LocalBook)
+                    .where(or_(LocalBook.series.is_(None), LocalBook.series == ""))
+                    .order_by(LocalBook.indexed_at.desc())
                     .limit(limit)
-                
+                )
+
                 result = await session.execute(stmt)
                 books = result.scalars().all()
                 return [b.to_dict() for b in books]
@@ -409,51 +430,53 @@ class LibraryService:
             try:
                 if series_hash:
                     # List volumes of a specific series
-                    stmt = select(LocalBook).where(LocalBook.series_hash == series_hash).order_by(LocalBook.volume.asc())
+                    stmt = (
+                        select(LocalBook)
+                        .where(LocalBook.series_hash == series_hash)
+                        .order_by(LocalBook.volume.asc())
+                    )
                     res = await session.execute(stmt)
                     books = res.scalars().all()
                     items = [b.to_dict() for b in books]
-                    return {
-                        "items": items,
-                        "total": len(items),
-                        "type": "volumes"
-                    }
+                    return {"items": items, "total": len(items), "type": "volumes"}
 
                 # Root or folder navigation: Use SeriesMetadata
                 stmt = select(SeriesMetadata)
-                
+
                 if source_id:
                     stmt = stmt.join(LocalBook).where(LocalBook.source_id == source_id).distinct()
 
                 stmt = stmt.order_by(SeriesMetadata.series_name.asc())
-                
+
                 count_stmt = select(func.count()).select_from(stmt.subquery())
                 total_items = (await session.execute(count_stmt)).scalar() or 0
 
                 start = (page - 1) * page_size
                 stmt = stmt.offset(start).limit(page_size)
-                
+
                 res = await session.execute(stmt)
                 series_list = res.scalars().all()
 
                 items = []
                 for s in series_list:
-                    items.append({
-                        "id": f"series_{s.series_hash}",
-                        "title": s.series_name,
-                        "series_spanish": s.series_spanish,
-                        "is_folder": True,
-                        "numBooks": s.book_count,
-                        "cover": s.cover_url,
-                        "series_hash": s.series_hash
-                    })
+                    items.append(
+                        {
+                            "id": f"series_{s.series_hash}",
+                            "title": s.series_name,
+                            "series_spanish": s.series_spanish,
+                            "is_folder": True,
+                            "numBooks": s.book_count,
+                            "cover": s.cover_url,
+                            "series_hash": s.series_hash,
+                        }
+                    )
 
                 return {
                     "items": items,
                     "total": total_items,
                     "page": page,
                     "totalPages": (total_items + page_size - 1) // page_size,
-                    "type": "series"
+                    "type": "series",
                 }
 
             except Exception as e:

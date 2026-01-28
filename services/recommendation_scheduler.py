@@ -22,7 +22,7 @@ async def job_weekly_recommendations(context: ContextTypes.DEFAULT_TYPE):
     # pero JSON en texto es frágil. Mejor iterar en Python o añadir columna dedicada si escala.
     try:
         from repositories.user_repository import user_repo
-        
+
         # Recuperamos IDs y settings desde repo
         rows = await user_repo.get_all_user_ids_and_settings()
 
@@ -32,7 +32,7 @@ async def job_weekly_recommendations(context: ContextTypes.DEFAULT_TYPE):
                 # settings is already a dict from PG JSON column or Repo mapping
                 if isinstance(settings, str):
                     settings = json.loads(settings)
-                
+
                 settings = settings or {}
                 if settings.get("recommendations_enabled", False):
                     # Generar y enviar
@@ -94,6 +94,7 @@ def start_recommendations_scheduler(application):
 
     # ... rest of the logic ...
     import datetime
+
     time_to_run = datetime.time(hour=17, minute=00)  # 5 PM
 
     # Check if job exists named 'weekly_recs'
@@ -104,6 +105,6 @@ def start_recommendations_scheduler(application):
             job_weekly_recommendations,
             time=time_to_run,
             days=(4,),  # 0=Monday, 4=Friday
-            name="weekly_recs"
+            name="weekly_recs",
         )
         logger.info("Scheduler de recomendaciones (Viernes 17:00) configurado.")

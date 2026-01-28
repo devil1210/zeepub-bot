@@ -2,7 +2,6 @@
 
 import json
 from pathlib import Path
-from typing import List, Optional
 
 from . import schema
 
@@ -55,8 +54,12 @@ def render_compact(report: schema.Report, limit: int = 15, missing_keys: str = "
     freshness = _assess_data_freshness(report)
     if freshness["is_sparse"]:
         lines.append("**⚠️ LIMITED RECENT DATA** - Few discussions from the last 30 days.")
-        lines.append(f"Only {freshness['total_recent']} item(s) confirmed from {report.range_from} to {report.range_to}.")
-        lines.append("Results below may include older/evergreen content. Be transparent with the user about this.")
+        lines.append(
+            f"Only {freshness['total_recent']} item(s) confirmed from {report.range_from} to {report.range_to}."
+        )
+        lines.append(
+            "Results below may include older/evergreen content. Be transparent with the user about this."
+        )
         lines.append("")
 
     # Web-only mode banner (when no API keys)
@@ -122,14 +125,16 @@ def render_compact(report: schema.Report, limit: int = 15, missing_keys: str = "
             date_str = f" ({item.date})" if item.date else " (date unknown)"
             conf_str = f" [date:{item.date_confidence}]" if item.date_confidence != "high" else ""
 
-            lines.append(f"**{item.id}** (score:{item.score}) r/{item.subreddit}{date_str}{conf_str}{eng_str}")
+            lines.append(
+                f"**{item.id}** (score:{item.score}) r/{item.subreddit}{date_str}{conf_str}{eng_str}"
+            )
             lines.append(f"  {item.title}")
             lines.append(f"  {item.url}")
             lines.append(f"  *{item.why_relevant}*")
 
             # Top comment insights
             if item.comment_insights:
-                lines.append(f"  Insights:")
+                lines.append("  Insights:")
                 for insight in item.comment_insights[:3]:
                     lines.append(f"    - {insight}")
 
@@ -164,7 +169,9 @@ def render_compact(report: schema.Report, limit: int = 15, missing_keys: str = "
             date_str = f" ({item.date})" if item.date else " (date unknown)"
             conf_str = f" [date:{item.date_confidence}]" if item.date_confidence != "high" else ""
 
-            lines.append(f"**{item.id}** (score:{item.score}) @{item.author_handle}{date_str}{conf_str}{eng_str}")
+            lines.append(
+                f"**{item.id}** (score:{item.score}) @{item.author_handle}{date_str}{conf_str}{eng_str}"
+            )
             lines.append(f"  {item.text[:200]}...")
             lines.append(f"  {item.url}")
             lines.append(f"  *{item.why_relevant}*")
@@ -183,7 +190,9 @@ def render_compact(report: schema.Report, limit: int = 15, missing_keys: str = "
             date_str = f" ({item.date})" if item.date else " (date unknown)"
             conf_str = f" [date:{item.date_confidence}]" if item.date_confidence != "high" else ""
 
-            lines.append(f"**{item.id}** [WEB] (score:{item.score}) {item.source_domain}{date_str}{conf_str}")
+            lines.append(
+                f"**{item.id}** [WEB] (score:{item.score}) {item.source_domain}{date_str}{conf_str}"
+            )
             lines.append(f"  {item.title}")
             lines.append(f"  {item.url}")
             lines.append(f"  {item.snippet[:150]}...")
@@ -270,13 +279,17 @@ def render_full_report(report: schema.Report) -> str:
             lines.append("")
             lines.append(f"- **Subreddit:** r/{item.subreddit}")
             lines.append(f"- **URL:** {item.url}")
-            lines.append(f"- **Date:** {item.date or 'Unknown'} (confidence: {item.date_confidence})")
+            lines.append(
+                f"- **Date:** {item.date or 'Unknown'} (confidence: {item.date_confidence})"
+            )
             lines.append(f"- **Score:** {item.score}/100")
             lines.append(f"- **Relevance:** {item.why_relevant}")
 
             if item.engagement:
                 eng = item.engagement
-                lines.append(f"- **Engagement:** {eng.score or '?'} points, {eng.num_comments or '?'} comments")
+                lines.append(
+                    f"- **Engagement:** {eng.score or '?'} points, {eng.num_comments or '?'} comments"
+                )
 
             if item.comment_insights:
                 lines.append("")
@@ -294,13 +307,17 @@ def render_full_report(report: schema.Report) -> str:
             lines.append(f"### {item.id}: @{item.author_handle}")
             lines.append("")
             lines.append(f"- **URL:** {item.url}")
-            lines.append(f"- **Date:** {item.date or 'Unknown'} (confidence: {item.date_confidence})")
+            lines.append(
+                f"- **Date:** {item.date or 'Unknown'} (confidence: {item.date_confidence})"
+            )
             lines.append(f"- **Score:** {item.score}/100")
             lines.append(f"- **Relevance:** {item.why_relevant}")
 
             if item.engagement:
                 eng = item.engagement
-                lines.append(f"- **Engagement:** {eng.likes or '?'} likes, {eng.reposts or '?'} reposts")
+                lines.append(
+                    f"- **Engagement:** {eng.likes or '?'} likes, {eng.reposts or '?'} reposts"
+                )
 
             lines.append("")
             lines.append(f"> {item.text}")
@@ -315,7 +332,9 @@ def render_full_report(report: schema.Report) -> str:
             lines.append("")
             lines.append(f"- **Source:** {item.source_domain}")
             lines.append(f"- **URL:** {item.url}")
-            lines.append(f"- **Date:** {item.date or 'Unknown'} (confidence: {item.date_confidence})")
+            lines.append(
+                f"- **Date:** {item.date or 'Unknown'} (confidence: {item.date_confidence})"
+            )
             lines.append(f"- **Score:** {item.score}/100")
             lines.append(f"- **Relevance:** {item.why_relevant}")
             lines.append("")
@@ -338,9 +357,9 @@ def render_full_report(report: schema.Report) -> str:
 
 def write_outputs(
     report: schema.Report,
-    raw_openai: Optional[dict] = None,
-    raw_xai: Optional[dict] = None,
-    raw_reddit_enriched: Optional[list] = None,
+    raw_openai: dict | None = None,
+    raw_xai: dict | None = None,
+    raw_reddit_enriched: list | None = None,
 ):
     """Write all output files.
 
@@ -353,28 +372,28 @@ def write_outputs(
     ensure_output_dir()
 
     # report.json
-    with open(OUTPUT_DIR / "report.json", 'w') as f:
+    with open(OUTPUT_DIR / "report.json", "w") as f:
         json.dump(report.to_dict(), f, indent=2)
 
     # report.md
-    with open(OUTPUT_DIR / "report.md", 'w') as f:
+    with open(OUTPUT_DIR / "report.md", "w") as f:
         f.write(render_full_report(report))
 
     # last30days.context.md
-    with open(OUTPUT_DIR / "last30days.context.md", 'w') as f:
+    with open(OUTPUT_DIR / "last30days.context.md", "w") as f:
         f.write(render_context_snippet(report))
 
     # Raw responses
     if raw_openai:
-        with open(OUTPUT_DIR / "raw_openai.json", 'w') as f:
+        with open(OUTPUT_DIR / "raw_openai.json", "w") as f:
             json.dump(raw_openai, f, indent=2)
 
     if raw_xai:
-        with open(OUTPUT_DIR / "raw_xai.json", 'w') as f:
+        with open(OUTPUT_DIR / "raw_xai.json", "w") as f:
             json.dump(raw_xai, f, indent=2)
 
     if raw_reddit_enriched:
-        with open(OUTPUT_DIR / "raw_reddit_threads_enriched.json", 'w') as f:
+        with open(OUTPUT_DIR / "raw_reddit_threads_enriched.json", "w") as f:
             json.dump(raw_reddit_enriched, f, indent=2)
 
 

@@ -20,8 +20,8 @@ class TestGetDateRange(unittest.TestCase):
     def test_date_format(self):
         from_date, to_date = dates.get_date_range(30)
         # Should be YYYY-MM-DD format
-        self.assertRegex(from_date, r'^\d{4}-\d{2}-\d{2}$')
-        self.assertRegex(to_date, r'^\d{4}-\d{2}-\d{2}$')
+        self.assertRegex(from_date, r"^\d{4}-\d{2}-\d{2}$")
+        self.assertRegex(to_date, r"^\d{4}-\d{2}-\d{2}$")
 
     def test_range_is_correct_days(self):
         from_date, to_date = dates.get_date_range(30)

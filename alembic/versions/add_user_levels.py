@@ -5,6 +5,7 @@ Revises: 58670adf5f59
 Create Date: 2026-01-08 20:10:00.000000
 
 """
+
 import sqlalchemy as sa
 
 from alembic import op
@@ -24,10 +25,16 @@ def upgrade():
         sa.Column("name", sa.String(50), nullable=False),
         sa.Column("priority", sa.Integer(), nullable=False),
         sa.Column("color", sa.String(20), nullable=True),
-        sa.Column("has_mini_app_access", sa.Boolean(), nullable=False, server_default=sa.text("false")),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
-        sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
-        sa.PrimaryKeyConstraint("id")
+        sa.Column(
+            "has_mini_app_access", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")
+        ),
+        sa.PrimaryKeyConstraint("id"),
     )
 
     # Insert default levels
@@ -64,8 +71,10 @@ def upgrade():
         "admins",
         sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("granted_by", sa.BigInteger(), nullable=True),
-        sa.Column("granted_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
-        sa.PrimaryKeyConstraint("user_id")
+        sa.Column(
+            "granted_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")
+        ),
+        sa.PrimaryKeyConstraint("user_id"),
     )
 
     # Add settings and total_downloads columns if they don't exist
@@ -77,9 +86,7 @@ def upgrade():
     try:
         op.add_column(
             "users",
-            sa.Column(
-                "total_downloads", sa.Integer(), nullable=False, server_default="0"
-            ),
+            sa.Column("total_downloads", sa.Integer(), nullable=False, server_default="0"),
         )
     except Exception:
         pass  # Column might already exist

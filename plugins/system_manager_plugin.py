@@ -43,22 +43,16 @@ class SystemManagerPlugin(BasePlugin):
             app = bot_instance
             # Admin commands
             app.add_handler(CommandHandler("update_system", self.update_system))
-            app.add_handler(
-                CommandHandler("set_auto_delete_time", self.set_auto_delete_time)
-            )
+            app.add_handler(CommandHandler("set_auto_delete_time", self.set_auto_delete_time))
             app.add_handler(CommandHandler("setlog", self.setlog))
             app.add_handler(CommandHandler("set_version", self.set_version))
 
             # Callback Handlers
-            app.add_handler(
-                CallbackQueryHandler(self.set_log_level_callback, pattern=r"^setlog\|")
-            )
+            app.add_handler(CallbackQueryHandler(self.set_log_level_callback, pattern=r"^setlog\|"))
 
             # Auto-update check job (Every 6 hours = 21600 seconds)
             if app.job_queue:
-                app.job_queue.run_repeating(
-                    self.check_for_updates_job, interval=21600, first=60
-                )
+                app.job_queue.run_repeating(self.check_for_updates_job, interval=21600, first=60)
                 logger.info("SystemManager: Auto-update check scheduled (every 6h).")
 
             logger.info("Plugin SystemManager: Handlers registrados.")
@@ -96,9 +90,7 @@ class SystemManagerPlugin(BasePlugin):
                             chat_id=admin_id, text=msg, parse_mode="HTML"
                         )
                     except Exception as e:
-                        logger.warning(
-                            f"Could not notify admin {admin_id} about update: {e}"
-                        )
+                        logger.warning(f"Could not notify admin {admin_id} about update: {e}")
         except Exception as e:
             logger.error(f"Error in check_for_updates_job: {e}")
 
@@ -174,9 +166,7 @@ class SystemManagerPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def set_log_level_callback(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def set_log_level_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Callback para botones de /setlog."""
         query = update.callback_query
         uid = update.effective_user.id
@@ -266,9 +256,7 @@ class SystemManagerPlugin(BasePlugin):
             logger.error(f"Error en set_log_level_callback: {e}", exc_info=True)
             await query.answer("Error al cambiar nivel")
 
-    async def set_auto_delete_time(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def set_auto_delete_time(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /set_auto_delete_time <minutos>
         Configura el tiempo de auto-borrado para descargas de admins en grupos.
@@ -344,9 +332,7 @@ class SystemManagerPlugin(BasePlugin):
             if force_update:
                 msg_text += "⚠️ <b>Actualización Forzada.</b> Reinstalando sistema...\n"
             else:
-                msg_text += (
-                    "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
-                )
+                msg_text += "🚀 <b>Nueva versión detectada.</b> Iniciando actualización...\n"
 
             await status_msg.edit_text(msg_text, parse_mode="HTML")
 
@@ -387,12 +373,12 @@ class SystemManagerPlugin(BasePlugin):
                 # Watchtower will detect the new image and restart the container automatically
                 # Waiting a bit to let Watchtower do its job
                 import asyncio
+
                 await asyncio.sleep(10)
 
         else:
             await status_msg.edit_text(
-                f"✅ <b>Sistema actualizado.</b>\n"
-                f"Versión: <code>{local_hash}</code>",
+                f"✅ <b>Sistema actualizado.</b>\nVersión: <code>{local_hash}</code>",
                 parse_mode="HTML",
             )
 
@@ -464,9 +450,7 @@ class SystemManagerPlugin(BasePlugin):
                 parse_mode="HTML",
                 message_thread_id=thread_id,
             )
-            logger.info(
-                f"Admin {uid} cambió la versión en docker-compose.yml a: {new_tag}"
-            )
+            logger.info(f"Admin {uid} cambió la versión en docker-compose.yml a: {new_tag}")
         except Exception as e:
             logger.error(f"Error en set_version: {e}")
             await context.bot.send_message(

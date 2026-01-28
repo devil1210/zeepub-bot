@@ -26,9 +26,7 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
             init_data_str = data["initData"]
             user_data = validate_telegram_data(init_data_str, config.TELEGRAM_TOKEN)
             if not user_data:
-                logger.warning(
-                    f"⚠️ Invalid initData received from user {update.effective_user.id}"
-                )
+                logger.warning(f"⚠️ Invalid initData received from user {update.effective_user.id}")
                 cms = context.application.plugin_manager.get_plugin("custom_messages")
                 base_text = "❌ Datos de autenticación inválidos."
                 text = base_text
@@ -50,9 +48,7 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
             cover_url = data.get("cover_url", "")
 
             if not download_url:
-                await update.message.reply_text(
-                    "❌ No se encontró el enlace de descarga."
-                )
+                await update.message.reply_text("❌ No se encontró el enlace de descarga.")
                 return
 
             # Send "Preparing..." message
@@ -77,9 +73,7 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     except json.JSONDecodeError as e:
         logger.error(f"Error parsing Mini App data: {e}")
-        await update.message.reply_text(
-            "❌ Error al procesar los datos de la Mini App."
-        )
+        await update.message.reply_text("❌ Error al procesar los datos de la Mini App.")
     except Exception as e:
         logger.error(f"Error handling Mini App data: {e}", exc_info=True)
         await update.message.reply_text(f"❌ Error: {str(e)}")
@@ -87,6 +81,4 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 def register_handlers(app):
     """Register Mini App handlers"""
-    app.add_handler(
-        MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data)
-    )
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))

@@ -5,6 +5,7 @@ Revises: 0001_create_url_mappings
 Create Date: 2025-12-01 22:20:00.000000
 
 """
+
 import sqlalchemy as sa
 
 from alembic import op

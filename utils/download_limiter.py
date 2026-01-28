@@ -111,6 +111,7 @@ async def downloads_left(uid: int, tg_user: Any | None = None) -> int | str:
     used = st.get("downloads_used", 0)
 
     from services.user_service import get_effective_user
+
     user_data = await get_effective_user(uid, tg_user=tg_user)
     role = user_data.get("role", "free")
 

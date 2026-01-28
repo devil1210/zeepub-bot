@@ -71,18 +71,22 @@ class EpubMetadataExtractor:
                     # 3.1 Mapear Roles de Creadores y Contribuidores
                     # Guardamos IDs de creadores para asociar roles refinados
                     creators = {}  # id -> text
-                    creators_jap = {} # id -> jap_text
+                    creators_jap = {}  # id -> jap_text
                     for node in metadata_node.findall("dc:creator", self.NAMESPACE):
-                        creators[node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")] = node.text
+                        creators[
+                            node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")
+                        ] = node.text
 
                     contributors = {}  # id -> text
                     for node in metadata_node.findall("dc:contributor", self.NAMESPACE):
-                        contributors[node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")] = node.text
+                        contributors[
+                            node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")
+                        ] = node.text
 
                     # Roles y Scripts Alternativos
                     meta_tags = metadata_node.findall("opf:meta", self.NAMESPACE)
                     role_map = {}  # id -> role (aut, ill, trl, mrk)
-                    
+
                     for meta in meta_tags:
                         refines = meta.get("refines")
                         prop = meta.get("property")
@@ -90,11 +94,17 @@ class EpubMetadataExtractor:
                             cid = refines.replace("#", "")
                             if prop == "role":
                                 role_map[cid] = meta.text
-                            elif prop == "alternate-script" and meta.get("{http://www.w3.org/XML/1998/namespace}lang") == "ja" or meta.get("xml:lang") == "ja":
+                            elif (
+                                prop == "alternate-script"
+                                and meta.get("{http://www.w3.org/XML/1998/namespace}lang") == "ja"
+                                or meta.get("xml:lang") == "ja"
+                            ):
                                 creators_jap[cid] = meta.text
 
                     # Asignar personas
-                    self.metadata["author"] = self._get_dc_value(metadata_node, "creator")  # Fallback
+                    self.metadata["author"] = self._get_dc_value(
+                        metadata_node, "creator"
+                    )  # Fallback
                     self.metadata["author_jap"] = None
                     self.metadata["illustrator"] = None
                     self.metadata["illustrator_jap"] = None
@@ -102,7 +112,7 @@ class EpubMetadataExtractor:
                     for cid, text in creators.items():
                         role = role_map.get(cid, "aut")
                         jap_name = creators_jap.get(cid)
-                        
+
                         if role == "aut":
                             self.metadata["author"] = text
                             self.metadata["author_jap"] = jap_name
@@ -127,8 +137,10 @@ class EpubMetadataExtractor:
                     for ident in metadata_node.findall("dc:identifier", self.NAMESPACE):
                         id_text = ident.text or ""
                         # Limpiar prefijos comunes como urn:isbn:, urn:amazon:, urn:uri:
-                        clean_id = re.sub(r"^urn:(isbn|amazon|uri|uuid|asin):", "", id_text, flags=re.IGNORECASE).strip()
-                        
+                        clean_id = re.sub(
+                            r"^urn:(isbn|amazon|uri|uuid|asin):", "", id_text, flags=re.IGNORECASE
+                        ).strip()
+
                         lower_id = id_text.lower()
                         if "isbn:978" in lower_id or "isbn" in lower_id:
                             # Preferir ISBN13 si es posible
@@ -150,7 +162,7 @@ class EpubMetadataExtractor:
                     self.metadata["tags"] = tags
 
                     # 3.4 Series y Volumen (Calibre / EPUB3 metadata)
-                    collection_ids = {} # id -> title
+                    collection_ids = {}  # id -> title
                     # First pass: collect IDs
                     for meta in meta_tags:
                         prop = meta.get("property")
@@ -167,15 +179,17 @@ class EpubMetadataExtractor:
 
                         if name == "calibre:series" and not self.metadata.get("series"):
                             self.metadata["series"] = clean_metadata_tags(meta.get("content"))
-                        
+
                         # CALIBRE INDEX (Base priority)
                         elif name == "calibre:series_index":
-                            if not self.metadata.get("volume"): # Keep if already set by group-position
+                            if not self.metadata.get(
+                                "volume"
+                            ):  # Keep if already set by group-position
                                 try:
                                     self.metadata["volume"] = float(meta.get("content"))
                                 except Exception:
                                     pass
-                        
+
                         # EPUB3 GROUP POSITION (High priority / Overwrites Calibre)
                         elif prop == "group-position":
                             ref = meta.get("refines", "").replace("#", "")
@@ -191,7 +205,7 @@ class EpubMetadataExtractor:
 
                     # 3.4.1 Detección automática de características de edición
                     all_tags_text = " ".join(tags).lower()
-                    
+
                     # Defaults
                     self.metadata["is_uncensored"] = 0
                     self.metadata["color_mode"] = "bw"
@@ -206,15 +220,23 @@ class EpubMetadataExtractor:
                     # Option 1: Detection via tags/subjects
                     if any(x in all_tags_text for x in ["sin censura", "uncensored", "no censura"]):
                         self.metadata["is_uncensored"] = 1
-                    
+
                     # Also check in edition field if found
                     edition_text = (self.metadata.get("edition") or "").lower()
                     if any(x in edition_text for x in ["sin censura", "uncensored", "no censura"]):
                         self.metadata["is_uncensored"] = 1
 
-                    if any(x in all_tags_text for x in ["ilustraciones a color", "color", "full color"]) or "color" in edition_text:
+                    if (
+                        any(
+                            x in all_tags_text
+                            for x in ["ilustraciones a color", "color", "full color"]
+                        )
+                        or "color" in edition_text
+                    ):
                         self.metadata["color_mode"] = "color"
-                    elif any(x in all_tags_text for x in ["blanco y negro", "b&w", "grayscale", "b/n"]):
+                    elif any(
+                        x in all_tags_text for x in ["blanco y negro", "b&w", "grayscale", "b/n"]
+                    ):
                         self.metadata["color_mode"] = "bw"
 
                     # Option 3: Detection via custom meta properties (Zeepub extensions)
@@ -222,17 +244,17 @@ class EpubMetadataExtractor:
                         name = meta.get("name")
                         prop = meta.get("property")
                         content = meta.get("content")
-                        
+
                         # Uncensored check
-                        if (name == "zeepub:uncensored" or prop == "zeepub:uncensored"):
+                        if name == "zeepub:uncensored" or prop == "zeepub:uncensored":
                             val = (content or meta.text or "").lower().strip()
                             if val in ["true", "1", "yes"]:
                                 self.metadata["is_uncensored"] = 1
                             elif val in ["false", "0", "no"]:
                                 self.metadata["is_uncensored"] = 0
-                                
+
                         # Color mode check
-                        if (name == "zeepub:color_mode" or prop == "zeepub:color_mode"):
+                        if name == "zeepub:color_mode" or prop == "zeepub:color_mode":
                             val = (content or meta.text or "").lower().strip()
                             if val in ["color", "full-color", "c"]:
                                 self.metadata["color_mode"] = "color"
@@ -280,13 +302,16 @@ class EpubMetadataExtractor:
                 idref = itemref.get("idref")
                 href = item_map.get(idref)
 
-                if href and any(href.lower().endswith(ext) for ext in [".xhtml", ".html", ".htm", ".xml", ".txt"]):
+                if href and any(
+                    href.lower().endswith(ext)
+                    for ext in [".xhtml", ".html", ".htm", ".xml", ".txt"]
+                ):
                     try:
                         raw_path = os.path.join(base_dir, href)
                         full_href = os.path.normpath(raw_path).replace("\\", "/")
                         if full_href.startswith("/"):
                             full_href = full_href[1:]
-                            
+
                         content = z.read(full_href).decode("utf-8", errors="ignore")
 
                         # Limpiar HTML básico y contar palabras
@@ -313,13 +338,13 @@ class EpubMetadataExtractor:
         try:
             metadata_node = opf_root.find("opf:metadata", self.NAMESPACE)
             cover_id = None
-            
+
             # 1. Buscar en <meta name="cover" content="id_imagen">
             # Intentamos buscar con y sin prefijo opf: por compatibilidad
             meta_tags = metadata_node.findall("opf:meta", self.NAMESPACE)
             if not meta_tags:
                 meta_tags = metadata_node.findall("meta")
-            
+
             for meta in meta_tags:
                 if meta.get("name") == "cover":
                     cover_id = meta.get("content")
@@ -359,11 +384,11 @@ class EpubMetadataExtractor:
                 # ZipFile no resuelve '..' automáticamente.
                 raw_path = os.path.join(base_dir, cover_href)
                 full_href = os.path.normpath(raw_path).replace("\\", "/")
-                
+
                 # Asegurarse de que no empiece por '/' (algunas veces normpath lo hace si base_dir es vacío)
                 if full_href.startswith("/"):
                     full_href = full_href[1:]
-                
+
                 self.cover_data = z.read(full_href)
                 self.cover_extension = os.path.splitext(cover_href)[1]
         except Exception:
@@ -377,7 +402,7 @@ class EpubMetadataExtractor:
         2. High: 800px, quality 85%
         3. Medium: 400px, quality 80%
         4. Low: 200px, quality 70% (default para UI - carga ultra rápida)
-        
+
         Returns dict with paths for all versions
         """
         if self.cover_data and self.cover_extension:
@@ -390,7 +415,7 @@ class EpubMetadataExtractor:
                 # 1. VERSION ORIGINAL (sin modificar, full quality)
                 original_path = output_path.replace(".jpg", "_original.jpg")
                 img.save(original_path, "JPEG", quality=95, optimize=True)
-                
+
                 # 2. VERSION HIGH (800px, quality 85)
                 high_path = output_path.replace(".jpg", "_high.jpg")
                 high_img = img.copy()
@@ -399,7 +424,7 @@ class EpubMetadataExtractor:
                     height = int(float(high_img.height) * float(ratio))
                     high_img = high_img.resize((800, height), Image.LANCZOS)
                 high_img.save(high_path, "JPEG", quality=85, optimize=True)
-                
+
                 # 3. VERSION MEDIUM (400px, quality 80)
                 medium_path = output_path.replace(".jpg", "_medium.jpg")
                 medium_img = img.copy()
@@ -408,7 +433,7 @@ class EpubMetadataExtractor:
                     height = int(float(medium_img.height) * float(ratio))
                     medium_img = medium_img.resize((400, height), Image.LANCZOS)
                 medium_img.save(medium_path, "JPEG", quality=80, optimize=True)
-                
+
                 # 4. VERSION LOW (200px, quality 70) - DEFAULT PARA UI
                 low_path = output_path.replace(".jpg", "_low.jpg")
                 low_img = img.copy()
@@ -417,12 +442,12 @@ class EpubMetadataExtractor:
                     height = int(float(low_img.height) * float(ratio))
                     low_img = low_img.resize((200, height), Image.LANCZOS)
                 low_img.save(low_path, "JPEG", quality=70, optimize=True, progressive=True)
-                
+
                 return {
                     "original": original_path,
                     "high": high_path,
                     "medium": medium_path,
-                    "low": low_path
+                    "low": low_path,
                 }
             except Exception as e:
                 print(f"Error guardando portada: {e}")

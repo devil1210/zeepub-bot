@@ -24,9 +24,7 @@ def test_postgres_plugin_enabled():
     cfg = BotConfig(ENABLE_POSTGRES_PLUGIN=True)
     cfg.__post_init__()
 
-    print(
-        f"Enabled -> DATABASE_URL: '{cfg.DATABASE_URL}' (Expected: 'postgresql://...')"
-    )
+    print(f"Enabled -> DATABASE_URL: '{cfg.DATABASE_URL}' (Expected: 'postgresql://...')")
     assert cfg.DATABASE_URL == "postgresql://user:pass@localhost/db"
 
 

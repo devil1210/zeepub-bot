@@ -13,10 +13,11 @@ from config.config_settings import config
 
 logger = logging.getLogger(__name__)
 
+
 def _get_sa_engine():
     if not config.DATABASE_URL:
         raise RuntimeError("DATABASE_URL not configured. PostgreSQL is mandatory.")
-    
+
     # Force synchronous driver for this module
     db_url = config.DATABASE_URL
     if "postgresql" in db_url or "postgres" in db_url:
@@ -26,7 +27,7 @@ def _get_sa_engine():
         # Force psycopg2
         if "+psycopg2" not in db_url:
             db_url = db_url.replace("postgresql://", "postgresql+psycopg2://")
-    
+
     return sa.create_engine(db_url, future=True, pool_pre_ping=True)
 
 
@@ -69,15 +70,11 @@ def set_setting(key: str, value: str):
         settings = Table("bot_settings", metadata, autoload_with=engine)
         with engine.begin() as conn:
             # Upsert logic for Postgres (INSERT ... ON CONFLICT DO UPDATE)
-            # Using generic select check for cross-compatibility if engine varies, 
+            # Using generic select check for cross-compatibility if engine varies,
             # but here specifically for standard SQL logic.
             sel = sa.select(settings.c.key).where(settings.c.key == key)
             if conn.execute(sel).first():
-                upd = (
-                    settings.update()
-                    .where(settings.c.key == key)
-                    .values(value=str(value))
-                )
+                upd = settings.update().where(settings.c.key == key).values(value=str(value))
                 conn.execute(upd)
             else:
                 ins = settings.insert().values(key=key, value=str(value))
@@ -98,8 +95,10 @@ class SettingsService:
 
     async def set_setting(self, key: str, value: str):
         import asyncio
+
         return await asyncio.to_thread(set_setting, key, value)
 
     async def get_setting(self, key: str, default: str = None) -> str | None:
         import asyncio
+
         return await asyncio.to_thread(get_setting, key, default)

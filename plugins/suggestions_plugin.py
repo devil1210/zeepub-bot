@@ -27,14 +27,9 @@ class SuggestionsPlugin(BasePlugin):
         try:
             from telegram.ext import CallbackQueryHandler
 
+            bot_instance.add_handler(CommandHandler("sugerencia", self.sugerencia_command))
             bot_instance.add_handler(
-                CommandHandler("sugerencia", self.sugerencia_command)
-            )
-            bot_instance.add_handler(
-                CallbackQueryHandler(
-                    self.suggestion_callback,
-                    pattern="^suggestion\\|"
-                )
+                CallbackQueryHandler(self.suggestion_callback, pattern="^suggestion\\|")
             )
             logger.info("Plugin Sugerencias: Handler /sugerencia registrado.")
             return True
@@ -45,9 +40,7 @@ class SuggestionsPlugin(BasePlugin):
     async def cleanup(self) -> None:
         pass
 
-    async def sugerencia_command(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def sugerencia_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid = update.effective_user.id
         thread_id = get_thread_id(update)
 
@@ -77,11 +70,13 @@ class SuggestionsPlugin(BasePlugin):
         keyboard = [
             [
                 InlineKeyboardButton("✅ Aceptar", callback_data=f"suggestion|accept|{uid}"),
-                InlineKeyboardButton("❌ Rechazar", callback_data=f"suggestion|reject|{uid}")
+                InlineKeyboardButton("❌ Rechazar", callback_data=f"suggestion|reject|{uid}"),
             ],
             [
-                InlineKeyboardButton("💬 Respuesta Personalizada", callback_data=f"suggestion|custom|{uid}")
-            ]
+                InlineKeyboardButton(
+                    "💬 Respuesta Personalizada", callback_data=f"suggestion|custom|{uid}"
+                )
+            ],
         ]
 
         for admin_id in config.ADMIN_USERS:
@@ -90,7 +85,7 @@ class SuggestionsPlugin(BasePlugin):
                     chat_id=admin_id,
                     text=admin_msg,
                     parse_mode="HTML",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                    reply_markup=InlineKeyboardMarkup(keyboard),
                 )
             except Exception as e:
                 logger.warning(f"No se pudo enviar sugerencia al admin {admin_id}: {e}")
@@ -119,19 +114,14 @@ class SuggestionsPlugin(BasePlugin):
                 text = await cms.get_text("suggestion_accepted")
 
             try:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text=text,
-                    parse_mode="HTML"
-                )
+                await context.bot.send_message(chat_id=user_id, text=text, parse_mode="HTML")
                 await query.edit_message_text(
                     text=query.message.text + "\n\n✅ <b>Aceptada y notificada</b>",
-                    parse_mode="HTML"
+                    parse_mode="HTML",
                 )
             except Exception as e:
                 await query.edit_message_text(
-                    text=query.message.text + f"\n\n❌ Error: {e}",
-                    parse_mode="HTML"
+                    text=query.message.text + f"\n\n❌ Error: {e}", parse_mode="HTML"
                 )
 
         elif action == "reject":
@@ -141,24 +131,20 @@ class SuggestionsPlugin(BasePlugin):
                 text = await cms.get_text("suggestion_rejected")
 
             try:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text=text,
-                    parse_mode="HTML"
-                )
+                await context.bot.send_message(chat_id=user_id, text=text, parse_mode="HTML")
                 await query.edit_message_text(
                     text=query.message.text + "\n\n❌ <b>Rechazada y notificada</b>",
-                    parse_mode="HTML"
+                    parse_mode="HTML",
                 )
             except Exception as e:
                 await query.edit_message_text(
-                    text=query.message.text + f"\n\n❌ Error: {e}",
-                    parse_mode="HTML"
+                    text=query.message.text + f"\n\n❌ Error: {e}", parse_mode="HTML"
                 )
 
         elif action == "custom":
             # Activate custom response mode
             from core.state_manager import state_manager
+
             st = state_manager.get_user_state(update.effective_user.id)
             st["waiting_for_suggestion_response"] = user_id
             st["suggestion_original_message_id"] = query.message.message_id
@@ -168,5 +154,5 @@ class SuggestionsPlugin(BasePlugin):
             await query.edit_message_reply_markup(reply_markup=None)
             await context.bot.send_message(
                 chat_id=update.effective_user.id,
-                text="✍️ Escribe tu respuesta personalizada (envía tu mensaje):"
+                text="✍️ Escribe tu respuesta personalizada (envía tu mensaje):",
             )

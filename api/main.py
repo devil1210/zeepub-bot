@@ -45,10 +45,12 @@ async def lifespan(app: FastAPI):
 
     # Pre-cargar temas en caché de forma asíncrona
     from services.theme_service import theme_service
+
     asyncio.create_task(theme_service.get_all_themes())
-    
+
     # Run DB migrations/checks
     from utils.library_db import check_migrations
+
     try:
         check_migrations()
     except Exception as e:
@@ -65,9 +67,7 @@ async def lifespan(app: FastAPI):
         if bot._initialized:
             await bot.start_async()
         else:
-            logger.error(
-                "Bot no se pudo inicializar correctamente. El bot NO estará disponible."
-            )
+            logger.error("Bot no se pudo inicializar correctamente. El bot NO estará disponible.")
     except Exception as e:
         logger.error(f"Fallo crítico al iniciar el bot: {e}", exc_info=True)
         # No relanzamos para que la API pueda al menos responder con su estado de error
@@ -140,7 +140,7 @@ if enable_miniapp:
             StaticFiles(directory=COVERS_DIR),
             name="library_covers",
         )
-    
+
     if os.path.exists(PROFILES_DIR):
         app.mount(
             "/api/profiles",
@@ -151,9 +151,7 @@ if enable_miniapp:
     # Ruta al directorio de build del frontend (Configurable)
     # Permite cambiar entre 'web_client' (nuevo) y 'zeepub-web' (anterior)
     web_client_dir = os.getenv("WEB_CLIENT_DIR", "web_client")
-    frontend_dist = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), web_client_dir, "dist"
-    )
+    frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), web_client_dir, "dist")
 
     if os.path.exists(frontend_dist):
         # Mount assets folder if it exists (for compatibility)
@@ -201,9 +199,7 @@ if enable_miniapp:
             return {"error": "Frontend not built"}
 
     else:
-        logger.warning(
-            f"No se encontró el directorio {frontend_dist}. El frontend no se servirá."
-        )
+        logger.warning(f"No se encontró el directorio {frontend_dist}. El frontend no se servirá.")
 
 else:
     logger.info("Mini App desactivada por configuración (ENABLE_MINI_APP=False).")

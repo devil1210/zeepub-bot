@@ -57,13 +57,10 @@ async def test_get_feed_access_control():
 @pytest.mark.asyncio
 async def test_get_feed_renaming_logic():
     # Test "Todas las bibliotecas" renaming for non-admin
-    with patch(
-        "api.routes.get_cached_feed", new_callable=AsyncMock
-    ) as mock_get_feed, patch(
-        "api.routes.find_zeepubs_destino"
-    ) as mock_find_zeepubs:
-
-
+    with (
+        patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed,
+        patch("api.routes.find_zeepubs_destino") as mock_find_zeepubs,
+    ):
         # Setup mock feed with "Todas las bibliotecas"
         entries = [
             MockEntry(
@@ -77,9 +74,7 @@ async def test_get_feed_renaming_logic():
                 [
                     MockEntry(
                         "ZeePubs ES",
-                        links=[
-                            {"rel": "subsection", "href": "http://direct-zeepubs-es"}
-                        ],
+                        links=[{"rel": "subsection", "href": "http://direct-zeepubs-es"}],
                     )
                 ]
             ),  # 2. libraries listing
@@ -108,11 +103,7 @@ async def test_get_feed_renaming_logic():
 @pytest.mark.asyncio
 async def test_get_feed_no_renaming_for_admin():
     # Test NO renaming for admin
-    with patch(
-        "api.routes.get_cached_feed", new_callable=AsyncMock
-    ) as mock_get_feed:
-
-
+    with patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed:
         entries = [
             MockEntry(
                 "Todas las bibliotecas",
@@ -132,17 +123,12 @@ async def test_get_feed_no_renaming_for_admin():
 @pytest.mark.asyncio
 async def test_get_feed_evil_url_protection():
     # Test that non-admin requesting Evil URL gets content from Start URL (or redirected logic)
-    with patch(
-        "api.routes.get_cached_feed", new_callable=AsyncMock
-    ) as mock_get_feed, patch(
-        "config.config_settings.config.OPDS_SERVER_URL", "http://root"
-    ), patch(
-        "config.config_settings.config.OPDS_ROOT_EVIL_SUFFIX", "/evil"
-    ), patch(
-        "config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"
+    with (
+        patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed,
+        patch("config.config_settings.config.OPDS_SERVER_URL", "http://root"),
+        patch("config.config_settings.config.OPDS_ROOT_EVIL_SUFFIX", "/evil"),
+        patch("config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"),
     ):
-
-
         # Determine behavior: logic calls get_cached_feed with the TARGET url.
         # We expect TARGET to be switched to START because we passed an evil-ish URL
         mock_get_feed.return_value = MockFeed([])
@@ -165,10 +151,7 @@ async def test_get_feed_evil_url_protection():
 @pytest.mark.asyncio
 async def test_get_feed_admin_default_start(monkeypatch):
     # Test that Admin defaults to Start URL if no URL provided (Admin Mode Switch dependent)
-    with patch(
-        "api.routes.get_cached_feed", new_callable=AsyncMock
-    ) as mock_get_feed:
-
+    with patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed:
         from api.routes import config
 
         monkeypatch.setattr(config, "OPDS_SERVER_URL", "http://root")
@@ -177,9 +160,7 @@ async def test_get_feed_admin_default_start(monkeypatch):
         mock_get_feed.return_value = MockFeed([])
 
         # Calling without URL should default to START, not EVIL
-        await get_feed(
-            url=None, user_data={"role": "admin", "has_mini_app_access": True}
-        )
+        await get_feed(url=None, user_data={"role": "admin", "has_mini_app_access": True})
 
         # Verify it fetched START
         args, _ = mock_get_feed.call_args
@@ -189,14 +170,11 @@ async def test_get_feed_admin_default_start(monkeypatch):
 @pytest.mark.asyncio
 async def test_get_feed_staff_evil_access():
     # Test that Staff CAN access Evil URL explicitly
-    with patch(
-        "api.routes.get_cached_feed", new_callable=AsyncMock
-    ) as mock_get_feed, patch(
-        "config.config_settings.config.OPDS_SERVER_URL", "http://root"
-    ), patch(
-        "config.config_settings.config.OPDS_ROOT_EVIL_SUFFIX", "/evil"
+    with (
+        patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed,
+        patch("config.config_settings.config.OPDS_SERVER_URL", "http://root"),
+        patch("config.config_settings.config.OPDS_ROOT_EVIL_SUFFIX", "/evil"),
     ):
-
         await get_feed(
             url="http://root/evil",
             user_data={"role": "staff", "has_mini_app_access": True},
@@ -211,15 +189,11 @@ async def test_get_feed_staff_evil_access():
 async def test_tunnel_opds_slash_url_defaults():
     # Test that /api/tunnel/opds?url=/ triggers default Start Catalog
 
-    with patch(
-        "api.routes.httpx.AsyncClient"
-    ) as mock_client_class, patch(
-        "config.config_settings.config.OPDS_SERVER_URL", "http://root"
-    ), patch(
-        "config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"
+    with (
+        patch("api.routes.httpx.AsyncClient") as mock_client_class,
+        patch("config.config_settings.config.OPDS_SERVER_URL", "http://root"),
+        patch("config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"),
     ):
-
-
         # Mock httpx client
         mock_client = AsyncMock()
         mock_client_class.return_value = mock_client
@@ -254,14 +228,11 @@ async def test_tunnel_opds_slash_url_defaults():
 @pytest.mark.asyncio
 async def test_get_feed_slash_url_defaults():
     # Test that url="/" triggers default Start Catalog
-    with patch(
-        "api.routes.get_cached_feed", new_callable=AsyncMock
-    ) as mock_get_feed, patch(
-        "config.config_settings.config.OPDS_SERVER_URL", "http://root"
-    ), patch(
-        "config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"
+    with (
+        patch("api.routes.get_cached_feed", new_callable=AsyncMock) as mock_get_feed,
+        patch("config.config_settings.config.OPDS_SERVER_URL", "http://root"),
+        patch("config.config_settings.config.OPDS_ROOT_START_SUFFIX", "/start"),
     ):
-
         mock_get_feed.return_value = MockFeed([])
 
         # Calling with url="/"

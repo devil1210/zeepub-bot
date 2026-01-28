@@ -7,11 +7,13 @@ from core.db_manager_pg import pg_manager
 
 logger = logging.getLogger(__name__)
 
+
 class MetricsRepository:
     """Repositorio centralizado para descargas y valoraciones basadas en PostgreSQL."""
 
     def __init__(self, db_manager=None):
         from core.supabase_manager import supabase_manager
+
         self.supabase = supabase_manager
 
     async def add_download(
@@ -23,15 +25,31 @@ class MetricsRepository:
     ):
         try:
             async with pg_manager.get_session() as session:
-                query = text("INSERT INTO user_downloads (user_id, book_hash, series_hash, title, downloaded_at) VALUES (:user_id, :book_hash, :series_hash, :title, CURRENT_TIMESTAMP)")
-                await session.execute(query, {"user_id": user_id, "book_hash": book_hash, "series_hash": series_hash, "title": title})
+                query = text(
+                    "INSERT INTO user_downloads (user_id, book_hash, series_hash, title, downloaded_at) VALUES (:user_id, :book_hash, :series_hash, :title, CURRENT_TIMESTAMP)"
+                )
+                await session.execute(
+                    query,
+                    {
+                        "user_id": user_id,
+                        "book_hash": book_hash,
+                        "series_hash": series_hash,
+                        "title": title,
+                    },
+                )
                 await session.commit()
-            
+
             if self.supabase.is_active:
                 try:
-                    data = {"user_id": user_id, "book_hash": book_hash, "series_hash": series_hash, "title": title}
+                    data = {
+                        "user_id": user_id,
+                        "book_hash": book_hash,
+                        "series_hash": series_hash,
+                        "title": title,
+                    }
                     self.supabase.get_client().table("user_downloads").insert(data).execute()
-                except: pass
+                except:
+                    pass
         except Exception as e:
             logger.error(f"Postgres metrics add_download error: {e}")
 
@@ -40,7 +58,9 @@ class MetricsRepository:
             return False
         try:
             async with pg_manager.get_session() as session:
-                query = text("SELECT 1 FROM user_downloads WHERE user_id = :user_id AND book_hash = :book_hash LIMIT 1")
+                query = text(
+                    "SELECT 1 FROM user_downloads WHERE user_id = :user_id AND book_hash = :book_hash LIMIT 1"
+                )
                 result = await session.execute(query, {"user_id": user_id, "book_hash": book_hash})
                 return result.fetchone() is not None
         except Exception as e:
@@ -76,7 +96,9 @@ class MetricsRepository:
             return 0
         try:
             placeholders = ",".join([f":h{i}" for i in range(len(hashes))])
-            query = text(f"SELECT COUNT(*) FROM user_downloads WHERE series_hash IN ({placeholders}) OR book_hash IN ({placeholders})")
+            query = text(
+                f"SELECT COUNT(*) FROM user_downloads WHERE series_hash IN ({placeholders}) OR book_hash IN ({placeholders})"
+            )
             params = {f"h{i}": h for i, h in enumerate(hashes)}
             async with pg_manager.get_session() as session:
                 result = await session.execute(query, params)
@@ -95,14 +117,17 @@ class MetricsRepository:
                         rating = EXCLUDED.rating,
                         rated_at = CURRENT_TIMESTAMP
                 """)
-                await session.execute(query, {"user_id": user_id, "book_hash": book_hash, "rating": rating})
+                await session.execute(
+                    query, {"user_id": user_id, "book_hash": book_hash, "rating": rating}
+                )
                 await session.commit()
-            
+
             if self.supabase.is_active:
                 try:
                     data = {"user_id": user_id, "book_hash": book_hash, "rating": rating}
                     self.supabase.get_client().table("user_ratings").upsert(data).execute()
-                except: pass
+                except:
+                    pass
         except Exception as e:
             logger.error(f"Postgres metrics add_rating error: {e}")
 
@@ -111,7 +136,9 @@ class MetricsRepository:
             return {"average": 0.0, "count": 0}
         try:
             async with pg_manager.get_session() as session:
-                query = text("SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE book_hash = :book_hash")
+                query = text(
+                    "SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE book_hash = :book_hash"
+                )
                 result = await session.execute(query, {"book_hash": book_hash})
                 row = result.fetchone()
                 return {
@@ -121,5 +148,6 @@ class MetricsRepository:
         except Exception as e:
             logger.error(f"Postgres metrics get_rating_stats error: {e}")
             return {"average": 0.0, "count": 0}
+
 
 metrics_repo = MetricsRepository(None)

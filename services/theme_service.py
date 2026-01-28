@@ -1,23 +1,25 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from repositories.theme_repository import theme_repo
 from services.cache_service import AsyncTTLCache
 
 logger = logging.getLogger(__name__)
+
 
 class ThemeService:
     """
     Service for managing application themes with a high-performance caching layer.
     Optimizes performance for the Mini App and Bot interactions.
     """
-    
+
     def __init__(self):
         # Cache for all themes list (1 hour)
         self.all_themes_cache = AsyncTTLCache(ttl_seconds=3600)
         # Cache for individual themes (30 minutes)
         self.theme_cache = AsyncTTLCache(ttl_seconds=1800)
 
-    async def get_all_themes(self, use_cache: bool = True) -> List[Dict[str, Any]]:
+    async def get_all_themes(self, use_cache: bool = True) -> list[dict[str, Any]]:
         """Returns all available theme templates, with caching."""
         cache_key = "all_themes_list"
         if use_cache:
@@ -29,7 +31,7 @@ class ThemeService:
         await self.all_themes_cache.set(cache_key, themes)
         return themes
 
-    async def get_theme_by_id(self, theme_id: int) -> Optional[Dict[str, Any]]:
+    async def get_theme_by_id(self, theme_id: int) -> dict[str, Any] | None:
         """Gets a specific theme by ID with caching."""
         cache_key = f"theme:id:{theme_id}"
         cached = await self.theme_cache.get(cache_key)
@@ -41,7 +43,7 @@ class ThemeService:
             await self.theme_cache.set(cache_key, theme)
         return theme
 
-    async def save_theme(self, theme_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def save_theme(self, theme_data: dict[str, Any]) -> dict[str, Any]:
         """Saves or updates a theme and invalidates relevant caches."""
         result = await theme_repo.upsert(theme_data)
         if result:
@@ -62,8 +64,9 @@ class ThemeService:
     async def invalidate_caches(self):
         """Clears all theme-related caches."""
         await self.all_themes_cache.invalidate("all_themes_list")
-        # Note: We can't easily clear all individual theme caches without scanning, 
+        # Note: We can't easily clear all individual theme caches without scanning,
         # but the master list invalidation is usually enough for UI refreshes.
         logger.info("Theme caches invalidated")
+
 
 theme_service = ThemeService()

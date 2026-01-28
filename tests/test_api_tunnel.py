@@ -22,8 +22,6 @@ async def test_tunnel_opds_access():
 async def test_tunnel_opds_streaming():
     # Test functionality
     with patch("httpx.AsyncClient") as mock_client_cls:
-
-
         # Mock Client and Response
         mock_client = AsyncMock()
         mock_client.__aenter__.return_value = mock_client

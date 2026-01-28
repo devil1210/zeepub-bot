@@ -43,9 +43,7 @@ async def set_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if uid not in config.ADMIN_USERS:
             await buscar_zeepubs_directo(update, context, uid)
         else:
-            await mostrar_colecciones(
-                update, context, st["opds_root"], from_collection=False
-            )
+            await mostrar_colecciones(update, context, st["opds_root"], from_collection=False)
         return
 
     # Destino manual
@@ -112,9 +110,7 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_search = "🔍 Escribe parte del título del EPUB:"
         text_search = (
-            await cms.get_text("search_prompt_inline")
-            if (cms and cms.enabled)
-            else base_search
+            await cms.get_text("search_prompt_inline") if (cms and cms.enabled) else base_search
         )
         await query.edit_message_text(text_search)
         return
@@ -132,9 +128,7 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_search = "🔍 Escribe parte del título del EPUB:"
         text_search = (
-            await cms.get_text("search_prompt_inline")
-            if (cms and cms.enabled)
-            else base_search
+            await cms.get_text("search_prompt_inline") if (cms and cms.enabled) else base_search
         )
         await query.edit_message_text(text_search)
     else:
@@ -148,9 +142,7 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         text_instr = base_instr
         if cms and cms.enabled:
-            text_instr = await cms.get_text(
-                "search_instructions_legacy"
-            )
+            text_instr = await cms.get_text("search_instructions_legacy")
 
         await query.edit_message_text(
             text_instr,
@@ -193,6 +185,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Check ban status
     from services.user_service import get_effective_user
+
     user_info = await get_effective_user(uid)
     if user_info.get("role") == "banned":
         expires_at = user_info.get("expires_at")
@@ -208,7 +201,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if user_info.get("role") in ("admin", "staff"):
             await mostrar_recomendaciones(update, context)
         else:
-            await query.answer("⛔ Esta función está en Beta exclusiva para Staff.", show_alert=True)
+            await query.answer(
+                "⛔ Esta función está en Beta exclusiva para Staff.", show_alert=True
+            )
         return
 
     # Selección de colección
@@ -231,9 +226,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 st["titulo"] = "📁 Biblioteca ZeePubs"
 
                 zeepubs_first_url = await get_zeepubs_first_library(st.get("opds_root"))
-                await mostrar_colecciones(
-                    update, context, zeepubs_first_url, from_collection=True
-                )
+                await mostrar_colecciones(update, context, zeepubs_first_url, from_collection=True)
             else:
                 # Navegar normalmente a la colección (para admins o colecciones que no sean "Todas las bibliotecas")
                 current_page = {
@@ -247,9 +240,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 st["titulo"] = f"📁 {col['titulo']}"
                 st["url"] = col["href"]
-                await mostrar_colecciones(
-                    update, context, col["href"], from_collection=True
-                )
+                await mostrar_colecciones(update, context, col["href"], from_collection=True)
         return
 
     # Selección de libro
@@ -319,7 +310,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception:
                 logger.debug("No se pudo borrar menú")
             try:
-
                 thread_id = st.get("message_thread_id")  # Usar el guardado
                 prep = await context.bot.send_message(
                     chat_id=chat_origen,
@@ -523,16 +513,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 keyboard = [
                     [InlineKeyboardButton("📍 Aquí", callback_data="destino|aqui")],
-                    [
-                        InlineKeyboardButton(
-                            "📣 BotTest", callback_data="destino|@ZeePubBotTest"
-                        )
-                    ],
-                    [
-                        InlineKeyboardButton(
-                            "📣 ZeePubs", callback_data="destino|@ZeePubs"
-                        )
-                    ],
+                    [InlineKeyboardButton("📣 BotTest", callback_data="destino|@ZeePubBotTest")],
+                    [InlineKeyboardButton("📣 ZeePubs", callback_data="destino|@ZeePubs")],
                     [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
                 ]
                 try:
@@ -581,7 +563,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except Exception:
                     try:
                         cms = context.application.plugin_manager.get_plugin("custom_messages")
-                        base_evil_fb = "🔧 Publicación temporal en Facebook seleccionada — entrando a Evil"
+                        base_evil_fb = (
+                            "🔧 Publicación temporal en Facebook seleccionada — entrando a Evil"
+                        )
                         text_evil_fb = (
                             await cms.get_text("evil_facebook_selected")
                             if (cms and cms.enabled)
@@ -591,9 +575,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     except Exception:
                         pass
                 # show evil collections directly
-                await mostrar_colecciones(
-                    update, context, st["opds_root"], from_collection=False
-                )
+                await mostrar_colecciones(update, context, st["opds_root"], from_collection=False)
                 return
         try:
             await query.edit_message_text(text)
@@ -614,9 +596,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if last_page and last_page.get("url"):
                 st["titulo"] = last_page["titulo"]
                 st["url"] = last_page["url"]
-                await mostrar_colecciones(
-                    update, context, last_page["url"], from_collection=True
-                )
+                await mostrar_colecciones(update, context, last_page["url"], from_collection=True)
             else:
                 root = st.get("opds_root_base") or st.get("opds_root")
                 st["titulo"] = "📚 Categorías"
@@ -723,9 +703,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.debug("Could not answer callback for descargar_epub: %s", e)
         from services.telegram_service import descargar_epub_pendiente
 
-        await descargar_epub_pendiente(
-            update, context, uid, job_queue=context.job_queue
-        )
+        await descargar_epub_pendiente(update, context, uid, job_queue=context.job_queue)
         return
 
         return
@@ -747,6 +725,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 rating_val = int(parts[2])
                 import services.rating_service as rs
+
                 # Strip prefix "local_" if present, though IDs should be int usually
                 # but local_books use int IDs.
                 # If ID comes as "local_123", strip "local_"
@@ -786,13 +765,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("4 ⭐", callback_data=f"rate_book|{book_id}|4"),
                 InlineKeyboardButton("5 ⭐", callback_data=f"rate_book|{book_id}|5"),
             ],
-            [InlineKeyboardButton("❌ Cancelar", callback_data=f"rate_book|{book_id}|cancel")]
+            [InlineKeyboardButton("❌ Cancelar", callback_data=f"rate_book|{book_id}|cancel")],
         ]
 
         await query.message.reply_text(
             "⭐ <b>Califica este libro:</b>\n¿Qué te pareció?",
             reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         await query.answer()
         return
@@ -895,15 +874,21 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             logger.warning(f"Could not get bot username for URL button: {e}")
 
                     # URL simple sin parámetros (no muestra /start en el chat)
-                    url_button = f"https://t.me/{bot_username}" if bot_username else "https://t.me/ZeePubBot"
+                    url_button = (
+                        f"https://t.me/{bot_username}" if bot_username else "https://t.me/ZeePubBot"
+                    )
 
-                    keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", url=url_button)]]
+                    keyboard = [
+                        [InlineKeyboardButton("📩 Enviar comprobante aquí", url=url_button)]
+                    ]
 
                     # Obtener mensaje desde template
                     base_redirect = f"👋 Hola {update.effective_user.mention_html()},\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo."
                     text_redirect = base_redirect
                     if cms and cms.enabled:
-                        text_redirect = await cms.get_text("donation_redirect_prompt", user=update.effective_user)
+                        text_redirect = await cms.get_text(
+                            "donation_redirect_prompt", user=update.effective_user
+                        )
 
                     base_text = "✅ Solicitud registrada."
                     text_answer = base_text
@@ -915,13 +900,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         text=text_redirect,
                         reply_markup=InlineKeyboardMarkup(keyboard),
                         parse_mode="HTML",
-                        message_thread_id=update.effective_message.message_thread_id if update.effective_message.is_topic_message else None
+                        message_thread_id=update.effective_message.message_thread_id
+                        if update.effective_message.is_topic_message
+                        else None,
                     )
 
                     # Enviar instrucciones proactivamente al chat privado
                     timeout_min = 10
                     # Botones: Cancelar
-                    keyboard_cancel = [[InlineKeyboardButton("❌ Cancelar Registro", callback_data=f"cancelar_donacion|{user_to_update}")]]
+                    keyboard_cancel = [
+                        [
+                            InlineKeyboardButton(
+                                "❌ Cancelar Registro",
+                                callback_data=f"cancelar_donacion|{user_to_update}",
+                            )
+                        ]
+                    ]
 
                     base_request = (
                         "🧾 <b>Comprobante Requerido</b>\n\n"
@@ -931,19 +925,23 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                     text_request = base_request
                     if cms and cms.enabled:
-                        text_request = await cms.get_text("donation_proof_request", user=update.effective_user, Tiempo=timeout_min)
+                        text_request = await cms.get_text(
+                            "donation_proof_request", user=update.effective_user, Tiempo=timeout_min
+                        )
 
                     try:
                         prompt_private = await context.bot.send_message(
                             chat_id=user_to_update,
                             text=text_request,
                             reply_markup=InlineKeyboardMarkup(keyboard_cancel),
-                            parse_mode="HTML"
+                            parse_mode="HTML",
                         )
 
                         # Programar timeout para el mensaje privado proactivo
                         if context.job_queue:
-                            job_name_p = f"donation_timeout_{user_to_update}_{prompt_private.message_id}"
+                            job_name_p = (
+                                f"donation_timeout_{user_to_update}_{prompt_private.message_id}"
+                            )
                             st["donation_timeout_job_name"] = job_name_p
                             context.job_queue.run_once(
                                 donation_timeout_job,
@@ -951,9 +949,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                 data={
                                     "uid": user_to_update,
                                     "msg_id": prompt_private.message_id,
-                                    "user": update.effective_user
+                                    "user": update.effective_user,
                                 },
-                                name=job_name_p
+                                name=job_name_p,
                             )
                     except Exception as e:
                         logger.warning(f"No se pudo enviar mensaje al privado: {e}")
@@ -963,8 +961,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         context.job_queue.run_once(
                             delete_message_job,
                             120,
-                            data={"chat_id": update.effective_chat.id, "message_id": prompt_msg.message_id},
-                            name=f"del_donation_prompt_{prompt_msg.message_id}"
+                            data={
+                                "chat_id": update.effective_chat.id,
+                                "message_id": prompt_msg.message_id,
+                            },
+                            name=f"del_donation_prompt_{prompt_msg.message_id}",
                         )
 
                 except Exception as e:
@@ -976,7 +977,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             timeout_min = 10
 
             # Botones: Cancelar
-            keyboard = [[InlineKeyboardButton("❌ Cancelar Registro", callback_data=f"cancelar_donacion|{user_to_update}")]]
+            keyboard = [
+                [
+                    InlineKeyboardButton(
+                        "❌ Cancelar Registro", callback_data=f"cancelar_donacion|{user_to_update}"
+                    )
+                ]
+            ]
 
             base_request = (
                 "🧾 <b>Comprobante Requerido</b>\n\n"
@@ -986,14 +993,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             text_request = base_request
             if cms and cms.enabled:
-                text_request = await cms.get_text("donation_proof_request", user=update.effective_user, Tiempo=timeout_min)
+                text_request = await cms.get_text(
+                    "donation_proof_request", user=update.effective_user, Tiempo=timeout_min
+                )
 
             await query.answer()
             prompt_msg = await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=text_request,
                 reply_markup=InlineKeyboardMarkup(keyboard),
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
 
             # Programar timeout
@@ -1006,9 +1015,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     data={
                         "uid": user_to_update,
                         "msg_id": prompt_msg.message_id,
-                        "user": update.effective_user
+                        "user": update.effective_user,
                     },
-                    name=job_name
+                    name=job_name,
                 )
 
         except Exception as e:
@@ -1085,12 +1094,18 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             text_request = base_request
             if cms and cms.enabled:
-                text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
+                text_request = await cms.get_text(
+                    "donation_proof_request", user=update.effective_user
+                )
 
             try:
-                await context.bot.send_message(chat_id=target_uid, text=text_request, parse_mode="HTML")
+                await context.bot.send_message(
+                    chat_id=target_uid, text=text_request, parse_mode="HTML"
+                )
             except Exception as e:
-                logger.warning(f"No se pudo enviar mensaje al privado (usuario no ha iniciado bot?): {e}")
+                logger.warning(
+                    f"No se pudo enviar mensaje al privado (usuario no ha iniciado bot?): {e}"
+                )
 
             if bot_username:
                 # Sanitizar username
@@ -1113,9 +1128,7 @@ async def delete_message_job(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
     data = job.data
     try:
-        await context.bot.delete_message(
-            chat_id=data["chat_id"], message_id=data["message_id"]
-        )
+        await context.bot.delete_message(chat_id=data["chat_id"], message_id=data["message_id"])
     except Exception as e:
         logger.debug(f"Error deleting message in job: {e}")
 
@@ -1216,7 +1229,5 @@ def register_handlers(app):
         )
     )
     # Texto libre handlers
-    app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_manual_destino)
-    )
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_manual_destino))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))

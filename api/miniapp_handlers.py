@@ -14,7 +14,13 @@ from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.state_manager import state_manager
 from core.supabase_manager import supabase_manager
-from models.library_models import AILearningFeedback, DuplicateBook, LibrarySource, LocalBook, UploadBook, SeriesMetadata, MetadataProposal, TranslatorsGroup
+from models.library_models import (
+    AILearningFeedback,
+    DuplicateBook,
+    LocalBook,
+    MetadataProposal,
+    SeriesMetadata,
+)
 from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
 from services.library_service import LibraryService
@@ -22,9 +28,7 @@ from services.opds_service import get_cached_feed
 from services.rating_service import RatingService
 from services.rbac_service import rbac_service
 from services.settings_service import get_setting, set_setting
-from services.telegram_service import enviar_libro_directo
 from utils.helpers import (
-    limpiar_html_basico,
     parse_metadata_from_title,
 )
 from utils.library_db import get_session
@@ -36,14 +40,19 @@ def check_admin(user_data: dict[str, Any]):
     uid = user_data.get("user_id") or user_data.get("telegram_id")
     if not rbac_service.is_admin(user_data):
         logger.warning(f"Admin Access Denied for user {uid} (Level: {user_data.get('level')})")
-        raise HTTPException(status_code=403, detail="Acceso denegado: Se requieren permisos de Administrador")
+        raise HTTPException(
+            status_code=403, detail="Acceso denegado: Se requieren permisos de Administrador"
+        )
 
 
 def check_staff(user_data: dict[str, Any]):
     uid = user_data.get("user_id") or user_data.get("telegram_id")
     if not rbac_service.is_staff(user_data):
         logger.warning(f"Staff Access Denied for user {uid} (Level: {user_data.get('level')})")
-        raise HTTPException(status_code=403, detail="Acceso denegado: Se requieren permisos de Staff")
+        raise HTTPException(
+            status_code=403, detail="Acceso denegado: Se requieren permisos de Staff"
+        )
+
 
 # --- Handlers ---
 
@@ -57,8 +66,8 @@ async def handle_search(data: dict[str, Any], user_data: dict[str, Any]):
     search_type = data.get("type", "todos")
     sort = data.get("sort", "a-z")
 
-    is_local_search = True # Always enforced for web interface
-    
+    is_local_search = True  # Always enforced for web interface
+
     if is_local_search:
         return await LibraryService.search_series(
             query or "", page=page, search_type=search_type, sort_by=sort
@@ -93,20 +102,20 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
     if is_series_request and s_hash:
         v_limit = data.get("limit", 100)
         v_offset = data.get("offset", 0)
-        
+
         # Obtener metadata oficial de la serie
         async with pg_manager.get_session() as session:
             stmt_s = select(SeriesMetadata).where(SeriesMetadata.series_hash == s_hash)
             res_s = await session.execute(stmt_s)
             series = res_s.scalar_one_or_none()
-            
+
         volumes = await LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
         if not series and not volumes:
             raise HTTPException(status_code=404, detail="Serie no encontrada")
-        
+
         # Representative for fields not in SeriesMetadata or fallback
         rep = volumes[0] if volumes else {}
-        
+
         return {
             "id": f"series_{s_hash}",
             "series_hash": s_hash,
@@ -117,31 +126,46 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
             "cover": series.cover_url if series else rep.get("cover"),
             "coverUrl": {
                 "cover_low": series.cover_url if series else rep.get("cover_low"),
-                "cover_medium": (series.cover_url if series else rep.get("cover_low")).replace("_low.jpg", "_medium.jpg") if (series.cover_url if series else rep.get("cover_low")) else None,
-                "cover_high": (series.cover_url if series else rep.get("cover_low")).replace("_low.jpg", "_high.jpg") if (series.cover_url if series else rep.get("cover_low")) else None,
-                "cover_original": (series.cover_url if series else rep.get("cover_low")).replace("_low.jpg", "_original.jpg") if (series.cover_url if series else rep.get("cover_low")) else None,
-            } if (series and series.cover_url) or (rep and rep.get("cover_low")) else None,
+                "cover_medium": (series.cover_url if series else rep.get("cover_low")).replace(
+                    "_low.jpg", "_medium.jpg"
+                )
+                if (series.cover_url if series else rep.get("cover_low"))
+                else None,
+                "cover_high": (series.cover_url if series else rep.get("cover_low")).replace(
+                    "_low.jpg", "_high.jpg"
+                )
+                if (series.cover_url if series else rep.get("cover_low"))
+                else None,
+                "cover_original": (series.cover_url if series else rep.get("cover_low")).replace(
+                    "_low.jpg", "_original.jpg"
+                )
+                if (series.cover_url if series else rep.get("cover_low"))
+                else None,
+            }
+            if (series and series.cover_url) or (rep and rep.get("cover_low"))
+            else None,
             "rating_average": series.rating_average if series else 0,
             "rating_count": (series.rating_count if series else 0) or 0,
-            "numBooks": series.book_count if series else len(volumes), 
+            "numBooks": series.book_count if series else len(volumes),
             "is_uncensored": rep.get("is_uncensored", False) if rep else False,
             "color_mode": rep.get("color_mode") if rep else None,
             "is_series": True,
-            "volumes": volumes 
+            "volumes": volumes,
         }
 
     # 2. Local Book Handling
     if isinstance(book_id_raw, str) and (
-        book_id_raw.isdigit() or (book_id_raw.startswith("local_") and not book_id_raw.startswith("series_"))
+        book_id_raw.isdigit()
+        or (book_id_raw.startswith("local_") and not book_id_raw.startswith("series_"))
     ):
         clean_id = int(str(book_id_raw).replace("local_", ""))
         local_book = await LibraryService.get_book_by_id(clean_id)
-        
+
         if local_book:
             logger.info(
                 f"[book-detail] Found local book: {local_book['title']} (series_hash: {local_book.get('series_hash')})"
             )
-            
+
             # Enrich with download info
             local_book["is_downloaded"] = await download_repo.has_user_downloaded(
                 user_id,
@@ -154,25 +178,28 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
                 local_book.get("cleanTitle"),
                 local_book.get("book_hash"),
             )
-            
+
             # If part of a series, ALWAYS include volumes to avoid "empty volumes list" in frontend
             s_hash = local_book.get("series_hash")
             if s_hash:
                 v_limit = data.get("limit", 100)
                 v_offset = data.get("offset", 0)
-                volumes = await LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
+                volumes = await LibraryService.get_series_volumes(
+                    s_hash, limit=v_limit, offset=v_offset
+                )
                 local_book["volumes"] = volumes
-                local_book["is_series"] = True # Treat as series for UI consistency if requested from series detail
                 local_book["series_hash"] = s_hash
             else:
                 local_book["volumes"] = [local_book]
-                local_book["is_series"] = False
-                
+
+            # Crucial: if it was explicitly a book_id (starts with local_ or digit), it's NOT a series view
+            local_book["is_series"] = False
+
             return local_book
-    
+
     # OPDS fallback removed
     raise HTTPException(status_code=404, detail="Book not found in local library")
-    
+
     # OPDS fallback removed
     raise HTTPException(status_code=404, detail="Book not found in local library")
 
@@ -198,7 +225,7 @@ async def handle_bot_info(data: dict[str, Any], user_data: dict[str, Any]):
         ui_defaults = json.loads(ui_defaults_raw)
     except:
         ui_defaults = {}
-        
+
     # Robust Defaults if DB is empty
     if not ui_defaults:
         ui_defaults = {
@@ -210,7 +237,7 @@ async def handle_bot_info(data: dict[str, Any], user_data: dict[str, Any]):
             "glassBlur": 12,
             "backgroundColor": "#0f172a",
             "cardColor": "#1e293b",
-            "glassOpacity": 0.6
+            "glassOpacity": 0.6,
         }
 
     return {
@@ -241,7 +268,7 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
 
     # Prioritize label from user_data (which comes from get_effective_user)
     system_role_text = user_data.get("status_label") or roles_display.get(level_key, "Lector")
-    
+
     # Determine max downloads
     if level_key in ("admin", "staff", "premium", "banned"):
         max_dl = None
@@ -256,32 +283,35 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
 
     # Calculate time until next reset (midnight)
     now = datetime.now()
-    next_midnight = (now + timedelta(days=1)).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    next_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     time_left = next_midnight - now
     hours, remainder = divmod(int(time_left.total_seconds()), 3600)
     minutes, _ = divmod(remainder, 60)
 
     level_info = user_data.get("level_info") or {}
-    
+
     return {
         "user": {
             "id": user_id,
             "username": user_data.get("nickname") or user_data.get("name") or f"User_{user_id}",
             "level": level_key or "free",
-            "role": user_data.get("role") or "", 
+            "role": user_data.get("role") or "",
             "status_label": system_role_text or "Lector",
-            "has_library_access": bool((user_data.get("has_library_access", True) is not False) and (level_info.get("hasLibraryAccess", True) is not False)),
-            "can_request_books": bool((user_data.get("can_request_books", True) is not False) and (level_info.get("canRequestBooks", True) is not False)),
+            "has_library_access": bool(
+                (user_data.get("has_library_access", True) is not False)
+                and (level_info.get("hasLibraryAccess", True) is not False)
+            ),
+            "can_request_books": bool(
+                (user_data.get("can_request_books", True) is not False)
+                and (level_info.get("canRequestBooks", True) is not False)
+            ),
             "can_download": bool(level_info.get("canDownload", True) is not False),
             "can_read": bool(level_info.get("canRead", True) is not False),
-            "can_upload_epub": bool(user_data.get("can_upload_epub", False) or level_info.get("canUploadEpub", False)),
+            "can_upload_epub": bool(
+                user_data.get("can_upload_epub", False) or level_info.get("canUploadEpub", False)
+            ),
             "is_real_admin": user_data.get("is_real_admin", False),
-            "downloads": {
-                "used": int(used or 0),
-                "limit": max_dl if max_dl is not None else 999
-            }
+            "downloads": {"used": int(used or 0), "limit": max_dl if max_dl is not None else 999},
         },
         "timeUntilReset": f"{hours}h {minutes}m",
         "hasUnlimitedDownloads": max_dl is None and level_key != "banned",
@@ -290,9 +320,7 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
     }
 
 
-async def handle_user_downloads_history(
-    data: dict[str, Any], user_data: dict[str, Any]
-):
+async def handle_user_downloads_history(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve el historial reciente de descargas del usuario."""
     user_id = user_data.get("user_id")
     try:
@@ -309,12 +337,12 @@ async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]
 
     user_id = user_data.get("user_id")
     settings = user_data.get("settings", {})
-    
+
     # Check both camelCase and snake_case for backward compatibility
     show_recs = settings.get("showRecommendations")
     if show_recs is None:
         show_recs = settings.get("show_recommendations", True)
-    
+
     if not show_recs:
         logger.info(f"Recommendations skipped for user {user_id} (disabled in settings)")
         return {"results": []}
@@ -331,10 +359,10 @@ async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]
         else:
             # LocalBook object from SQLAlchemy
             book_data = r.to_dict()
-        
+
         # Ensure we use the correct cover paths from DB
         numeric_id = book_data.get("id", "").replace("local_", "")
-        
+
         results.append(
             {
                 "id": f"local_{numeric_id}",
@@ -346,7 +374,9 @@ async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]
                 "is_folder": False,
                 "series": book_data.get("series"),
                 "seriesIndex": book_data.get("seriesIndex"),
-                "cleanTitle": book_data.get("clean_title") or book_data.get("series") or book_data.get("title"),
+                "cleanTitle": book_data.get("clean_title")
+                or book_data.get("series")
+                or book_data.get("title"),
                 "rating_average": book_data.get("rating_average", 0),
                 "book_type": book_data.get("book_type"),
             }
@@ -366,9 +396,7 @@ async def handle_rate_book(data: dict[str, Any], user_data: dict[str, Any]):
     try:
         book_id = int(str(book_id_raw).replace("local_", ""))
     except ValueError:
-        raise HTTPException(
-            status_code=400, detail="ID de libro inválido para votación"
-        )
+        raise HTTPException(status_code=400, detail="ID de libro inválido para votación")
 
     return await RatingService.rate_book(user_id, book_id, rating)
 
@@ -407,9 +435,9 @@ async def handle_save_badge_config(data: dict[str, Any], user_data: dict[str, An
 
 async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
     """Envía el archivo del libro directamente a través del bot."""
+    from services.delivery.delivery_service import delivery_service
     from services.identity.identity_service import identity_service
     from services.metadata_orchestrator.metadata_service import metadata_orchestrator
-    from services.delivery.delivery_service import delivery_service
 
     user_id = user_data.get("user_id")
     book_id = data.get("bookId")
@@ -424,12 +452,14 @@ async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
     # 1. Resolve Target Chat and Thread
     target_chat_id = user_id
     message_thread_id = None
-    
+
     if identity_service.is_admin(user_data):
         if target == "channel":
             target_chat_id = target_id_override or get_setting("mini_app_channel_id", "@ZeePubs")
         elif target == "group":
-            target_chat_id = target_id_override or get_setting("mini_app_group_id", "@ZeePubBotTest")
+            target_chat_id = target_id_override or get_setting(
+                "mini_app_group_id", "@ZeePubBotTest"
+            )
             message_thread_id = thread_id_override
 
     # 2. Get/Resolve Metadata
@@ -448,10 +478,10 @@ async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
         options={
             "target_chat_id": target_chat_id,
             "message_thread_id": message_thread_id,
-            "title_override": title
-        }
+            "title_override": title,
+        },
     )
-    
+
     return {"success": success}
 
 
@@ -464,9 +494,9 @@ async def handle_ui_settings(data: dict[str, Any], user_data: dict[str, Any]):
     if sub_action == "get":
         # We can mostly rely on user_data["settings"] which is pre-calculated by get_effective_user
         # but we also add the badge settings which are not in the main settings blob yet.
-        
+
         final_settings = user_data.get("settings", {}).copy()
-        
+
         # Add badge config (stored as separate settings)
         try:
             final_settings.update(
@@ -503,12 +533,16 @@ async def handle_ui_settings(data: dict[str, Any], user_data: dict[str, Any]):
                 settings_obj["last_seen_version"] = 0
 
             await user_repo.update_user_settings(user_id, settings_obj)
-            
+
             # Bidirectional Sync Trigger (Local -> Cloud -> Local)
             from core.optimized_sync_engine import optimized_sync_engine
+
             await optimized_sync_engine.force_sync_all()
-            
-            return {"success": True, "message": "Configuración personal guardada y sincronizada con la nube"}
+
+            return {
+                "success": True,
+                "message": "Configuración personal guardada y sincronizada con la nube",
+            }
         else:
             if user_level not in ["admin", "staff"]:
                 raise HTTPException(
@@ -552,9 +586,7 @@ async def handle_create_stars_invoice(data: dict[str, Any], user_data: dict[str,
     title = f"Nivel {tier.capitalize()}"
     desc = f"Suscripción al nivel {tier.capitalize()}"
     if cms_plugin:
-        desc = await cms_plugin.get_text(
-            "star_payment_invoice_desc", Nivel=tier.capitalize()
-        )
+        desc = await cms_plugin.get_text("star_payment_invoice_desc", Nivel=tier.capitalize())
 
     invoice_link = await stars_plugin.create_stars_invoice_link(
         title=title, description=desc, payload=f"upgrade_{tier}", amount=amount
@@ -591,9 +623,7 @@ async def handle_get_download_count(data: dict[str, Any], user_data: dict[str, A
             if feed:
                 entries = getattr(feed, "entries", [])
                 entry = (
-                    entries[0]
-                    if entries
-                    else (feed.feed if getattr(feed, "feed", None) else None)
+                    entries[0] if entries else (feed.feed if getattr(feed, "feed", None) else None)
                 )
                 if entry:
                     title_for_query = entry.get("title")
@@ -613,9 +643,7 @@ async def handle_get_download_count(data: dict[str, Any], user_data: dict[str, A
     from repositories.metrics_repository import metrics_repo
 
     count = (
-        await metrics_repo.get_total_downloads(book_hash_for_query)
-        if book_hash_for_query
-        else 0
+        await metrics_repo.get_total_downloads(book_hash_for_query) if book_hash_for_query else 0
     )
     return {"count": count}
 
@@ -641,8 +669,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
     from sqlalchemy import select, text
 
     from core.db_manager_pg import pg_manager
-    from models.library_models import LocalBook
-    
+
     total_users = 0
     total_books = 0
     dls_24h = 0
@@ -650,30 +677,50 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
     users_7d = 0
     storage_gb = 0
     total_revenue = 0.0
-    
+
     try:
         async with pg_manager.get_session() as session:
             # 1. Users Metrics
             total_users = (await session.execute(text("SELECT COUNT(*) FROM users"))).scalar() or 0
-            users_7d = (await session.execute(text("SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '7 days'"))).scalar() or 0
-            
+            users_7d = (
+                await session.execute(
+                    text("SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '7 days'")
+                )
+            ).scalar() or 0
+
             # 2. Book Metrics
             total_books = (await session.execute(select(func.count(LocalBook.id)))).scalar() or 0
-            storage_bytes = (await session.execute(select(func.sum(LocalBook.file_size)))).scalar() or 0
+            storage_bytes = (
+                await session.execute(select(func.sum(LocalBook.file_size)))
+            ).scalar() or 0
             storage_gb = round(storage_bytes / (1024**3), 2) if storage_bytes else 0.0
-            
+
             # 3. Download Metrics
             # Use a more explicit comparison for 24h
-            dls_24h = (await session.execute(text("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= (CURRENT_TIMESTAMP - INTERVAL '1 day')"))).scalar() or 0
-            dls_prev_24h = (await session.execute(text("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= (CURRENT_TIMESTAMP - INTERVAL '2 days') AND downloaded_at < (CURRENT_TIMESTAMP - INTERVAL '1 day')"))).scalar() or 0
-            
+            dls_24h = (
+                await session.execute(
+                    text(
+                        "SELECT COUNT(*) FROM download_history WHERE downloaded_at >= (CURRENT_TIMESTAMP - INTERVAL '1 day')"
+                    )
+                )
+            ).scalar() or 0
+            dls_prev_24h = (
+                await session.execute(
+                    text(
+                        "SELECT COUNT(*) FROM download_history WHERE downloaded_at >= (CURRENT_TIMESTAMP - INTERVAL '2 days') AND downloaded_at < (CURRENT_TIMESTAMP - INTERVAL '1 day')"
+                    )
+                )
+            ).scalar() or 0
+
             # 4. Revenue Estimation (Real from levels)
-            cursor = await session.execute(text("""
+            cursor = await session.execute(
+                text("""
                 SELECT ul.price, COUNT(u.telegram_id) 
                 FROM user_levels ul
                 LEFT JOIN users u ON u.level_id = ul.id
                 GROUP BY ul.id, ul.price
-            """))
+            """)
+            )
             tier_revenue = cursor.fetchall()
             total_revenue = sum((price or 0.0) * count for price, count in tier_revenue)
     except Exception as e:
@@ -683,6 +730,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
     import time
 
     from api.main import app_state
+
     start_time = app_state.get("start_time", time.time())
     uptime_seconds = int(time.time() - start_time)
     days, remainder = divmod(uptime_seconds, 86400)
@@ -697,23 +745,27 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
     popular_book = None
     try:
         async with pg_manager.get_session() as session:
-            cursor = await session.execute(text("""
+            cursor = await session.execute(
+                text("""
                 SELECT title, clean_title, book_hash, COUNT(*) as dls
                 FROM download_history 
                 WHERE downloaded_at >= NOW() - INTERVAL '30 days'
                 GROUP BY book_hash, title, clean_title
                 ORDER BY dls DESC
                 LIMIT 1
-            """))
+            """)
+            )
             row = cursor.fetchone()
             if row:
                 p_title, p_clean_title, p_book_hash, p_dls = row
                 popular_book = {
                     "title": p_clean_title or p_title,
                     "downloads": p_dls,
-                    "author": "N/A"
+                    "author": "N/A",
                 }
-                stmt_lb = select(LocalBook).where(or_(LocalBook.book_hash == p_book_hash, LocalBook.title == p_title))
+                stmt_lb = select(LocalBook).where(
+                    or_(LocalBook.book_hash == p_book_hash, LocalBook.title == p_title)
+                )
                 lb_res = await session.execute(stmt_lb)
                 lb = lb_res.scalar_one_or_none()
                 if lb:
@@ -726,26 +778,27 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
         "revenue": round(total_revenue, 2),
         "activeSessions": active_sessions,
         "storageUsedGB": storage_gb,
-        "storageTotalGB": 1000, 
+        "storageTotalGB": 1000,
         "popularBook": popular_book,
         "growthTrend": [
             {"date": "Semana 1", "users": total_users - users_7d, "downloads": dls_prev_24h},
-            {"date": "Semana 2", "users": total_users, "downloads": dls_24h}
+            {"date": "Semana 2", "users": total_users, "downloads": dls_24h},
         ],
         "totalUsers": total_users,
         "users7d": users_7d,
         "totalBooks": total_books,
         "downloads24h": dls_24h,
         "downloadsPrev24h": dls_prev_24h,
-        "uptime": uptime_text
+        "uptime": uptime_text,
     }
 
 
 async def handle_admin_get_tiers(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene todos los niveles y su configuración."""
     check_staff(user_data)
-    
+
     from services.tier_service import tier_service
+
     levels = await tier_service.get_all_tiers()
     logger.info(f"ADMIN: handle_admin_get_tiers found {len(levels)} levels")
     return {"success": True, "levels": levels, "tiers": levels}
@@ -754,12 +807,13 @@ async def handle_admin_get_tiers(data: dict[str, Any], user_data: dict[str, Any]
 async def handle_admin_save_tier(data: dict[str, Any], user_data: dict[str, Any]):
     """Guarda cambios en un nivel."""
     check_staff(user_data)
-    
+
     level_id = data.get("id")
     if not level_id:
         raise HTTPException(status_code=400, detail="Falta level_id")
-    
+
     from services.tier_service import tier_service
+
     await tier_service.update_tier(int(level_id), data)
     return {"success": True}
 
@@ -767,26 +821,28 @@ async def handle_admin_save_tier(data: dict[str, Any], user_data: dict[str, Any]
 async def handle_admin_get_users(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene la lista paginada de usuarios para el panel admin."""
     check_staff(user_data)
-    
+
     limit = data.get("limit", 20)
     offset = data.get("offset", 0)
     search = data.get("search")
-    
+
     users = await user_repo.list_users(limit=limit, offset=offset, search=search)
-    logger.info(f"ADMIN: handle_admin_get_users found {len(users)} users (limit={limit}, offset={offset}, search={search})")
+    logger.info(
+        f"ADMIN: handle_admin_get_users found {len(users)} users (limit={limit}, offset={offset}, search={search})"
+    )
     return {"users": users}
 
 
 async def handle_admin_set_user_level(data: dict[str, Any], user_data: dict[str, Any]):
     """Cambia el nivel de un usuario específico."""
     check_staff(user_data)
-    
+
     target_id = data.get("userId")
     level_id = data.get("levelId")
-    
+
     if not target_id or not level_id:
         raise HTTPException(status_code=400, detail="Faltan parámetros userId o levelId")
-    
+
     await user_repo.update_user_level(int(target_id), int(level_id))
     return {"success": True}
 
@@ -794,31 +850,34 @@ async def handle_admin_set_user_level(data: dict[str, Any], user_data: dict[str,
 async def handle_admin_scan_user(data: dict[str, Any], user_data: dict[str, Any], request=None):
     """Sincroniza la foto de perfil de un usuario desde Telegram."""
     check_staff(user_data)
-    
+
     target_id = data.get("userId")
     if not target_id:
         raise HTTPException(status_code=400, detail="Falta parámetro userId")
-    
+
     # Obtener bot del app state
     if not request or not hasattr(request.app.state, "bot_instance"):
         return {"success": False, "message": "Bot instance no disponible"}
-    
+
     bot = request.app.state.bot_instance.app.bot
-    
+
     from services.user_service import sync_user_profile_photo
+
     photo_url = await sync_user_profile_photo(int(target_id), bot)
-    
+
     if photo_url:
         return {"success": True, "photo_url": photo_url}
     else:
-        return {"success": False, "message": "No se pudo sincronizar la foto de perfil (el usuario puede no tener una o tenerla privada)."}
-
+        return {
+            "success": False,
+            "message": "No se pudo sincronizar la foto de perfil (el usuario puede no tener una o tenerla privada).",
+        }
 
 
 async def handle_admin_backup_library(data: dict[str, Any], user_data: dict[str, Any]):
     """Syncs everything (Users, Levels, and Library) to Supabase - Full Backup."""
     check_staff(user_data)
-    
+
     if not config.ENABLE_SUPABASE:
         return {"success": False, "message": "Supabase no está habilitado."}
 
@@ -827,21 +886,18 @@ async def handle_admin_backup_library(data: dict[str, Any], user_data: dict[str,
         return {"success": False, "message": "Supabase no está configurado"}
 
     logger.info("ADMIN: Starting FULL BACKUP to Supabase...")
-    
+
     # 1. Sync Levels and Users (using specialized handler logic)
     res_users = await handle_admin_sync_users_cloud({}, user_data)
-    
+
     # 2. Sync Library (Series, Books, Proposals, etc.)
     res_library = await handle_admin_sync_library_cloud({}, user_data)
-    
+
     if res_users.get("success") and res_library.get("success"):
         return {
-            "success": True, 
+            "success": True,
             "message": "Respaldo completo realizado con éxito en Supabase.",
-            "details": {
-                "users": res_users.get("stats"),
-                "library": res_library.get("stats")
-            }
+            "details": {"users": res_users.get("stats"), "library": res_library.get("stats")},
         }
     else:
         return {
@@ -849,33 +905,32 @@ async def handle_admin_backup_library(data: dict[str, Any], user_data: dict[str,
             "message": "El respaldo se realizó parcialmente con errores.",
             "errors": {
                 "users": res_users.get("message") if not res_users.get("success") else "OK",
-                "library": res_library.get("message") if not res_library.get("success") else "OK"
-            }
+                "library": res_library.get("message") if not res_library.get("success") else "OK",
+            },
         }
 
 
 async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[str, Any]):
     """Sincroniza usuarios y niveles locales (Postgres) a Supabase."""
     check_staff(user_data)
-    
+
     if not config.ENABLE_SUPABASE:
         return {"success": False, "message": "Supabase no está habilitado."}
 
     try:
-
         from sqlalchemy import select
 
         from core.db_manager_pg import pg_manager
         from core.supabase_manager import supabase_manager
         from models.user_models import User, UserLevel
-        
+
         client = supabase_manager.get_client()
-        
+
         async with pg_manager.get_session() as session:
             # 1. Sync User Levels
             res_levels = await session.execute(select(UserLevel))
             levels = res_levels.scalars().all()
-            
+
             for lvl in levels:
                 lvl_data = {
                     "id": lvl.id,
@@ -906,7 +961,7 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
                     "custom_themes": lvl.custom_themes,
                     "allow_theme_templates": lvl.allow_theme_templates,
                     "show_recommendations": lvl.show_recommendations,
-                    "default_theme_id": lvl.default_theme_id
+                    "default_theme_id": lvl.default_theme_id,
                 }
                 try:
                     client.table("user_levels").upsert(lvl_data).execute()
@@ -916,7 +971,7 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
             # 2. Sync Users
             res_users = await session.execute(select(User))
             users = res_users.scalars().all()
-            
+
             user_batch = []
             for u in users:
                 u_data = {
@@ -938,23 +993,27 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
                     # Remove created_at/updated_at as they are managed by DB or might not exist in schema cache
                 }
                 user_batch.append(u_data)
-            
+
             if user_batch:
                 # Chunked upsert to avoid request limits
                 for i in range(0, len(user_batch), 50):
-                    batch = user_batch[i:i+50]
+                    batch = user_batch[i : i + 50]
                     try:
                         client.table("users").upsert(batch).execute()
                     except Exception as upsert_e:
-                        logger.error(f"Supabase PUSH error for user batch (indices {i}-{i+len(batch)-1}): {upsert_e}")
+                        logger.error(
+                            f"Supabase PUSH error for user batch (indices {i}-{i + len(batch) - 1}): {upsert_e}"
+                        )
 
             # 3. Pull from Supabase to ensure Local is up to date (Bidirectional)
-            logger.info("ADMIN: Triggering immediate PULL from Supabase to Local to sync missing data")
+            logger.info(
+                "ADMIN: Triggering immediate PULL from Supabase to Local to sync missing data"
+            )
             from core.optimized_sync_engine import optimized_sync_engine
-            
+
             # Force status to pending and reset timestamps to ensure everything is pulled
             await optimized_sync_engine.force_sync_all()
-            
+
             # Execute immediate sync for users and levels
             try:
                 # We call the internal methods directly for immediate response
@@ -963,25 +1022,35 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
                 await optimized_sync_engine._sync_admins_optimized()
             except Exception as pull_e:
                 logger.error(f"Error during bidirectional PULL: {pull_e}")
-                return {"success": True, "message": f"Push completado ({len(users)} users), pero el Pull falló: {pull_e}"}
-            
-            return {"success": True, "message": f"Sincronización bidireccional completada. Pushed {len(users)} users, Local updated from Cloud.", "stats": {"users_pushed": len(users), "levels_pushed": len(levels)}}
+                return {
+                    "success": True,
+                    "message": f"Push completado ({len(users)} users), pero el Pull falló: {pull_e}",
+                }
+
+            return {
+                "success": True,
+                "message": f"Sincronización bidireccional completada. Pushed {len(users)} users, Local updated from Cloud.",
+                "stats": {"users_pushed": len(users), "levels_pushed": len(levels)},
+            }
     except Exception as e:
         return {"success": False, "message": str(e)}
+
 
 async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[str, Any]):
     """Sincroniza metadatos de series, propuestas IA, feedback, fuentes y libros locales con Supabase."""
     check_staff(user_data)
-    
+
     from services.sync_service import SyncService
+
     return await SyncService.sync_library_to_cloud()
+
 
 async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, Any]):
     """Activates forced library scan."""
     check_staff(user_data)
-    
+
     force = data.get("force", False)
-    
+
     async def run_scan_in_background(scanner_obj, force_val):
         try:
             logger.info(f"Background scan started (Force: {force_val})")
@@ -992,23 +1061,23 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
 
     try:
         from services.scanner_service import ScannerService
-        
+
         if ScannerService._is_scanning:
             return {"success": False, "message": "⚠️ Ya hay un escaneo de librería en progreso."}
 
         libs_json = os.getenv("LOCAL_LIBRARIES")
         if not libs_json:
             return {"success": False, "message": "LOCAL_LIBRARIES no configurada."}
-            
+
         scanner = ScannerService(libs_json)
-        
+
         # Start the intensive task in background and return immediately
         # to avoid Cloudflare 524 (Timeout) errors
         asyncio.create_task(run_scan_in_background(scanner, force))
-        
+
         return {
-            "success": True, 
-            "message": "Escaneo iniciado en segundo plano. Esto puede tardar varios minutos dependiendo del tamaño de la librería."
+            "success": True,
+            "message": "Escaneo iniciado en segundo plano. Esto puede tardar varios minutos dependiendo del tamaño de la librería.",
         }
     except Exception as e:
         logger.error(f"Error starting background scan: {e}")
@@ -1018,13 +1087,13 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
 async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, Any]):
     """Activates forced scan for a specific series."""
     check_staff(user_data)
-    
+
     series_hash = data.get("series_hash")
-    force = data.get("force", True) # Default to True for series sync
-    
+    force = data.get("force", True)  # Default to True for series sync
+
     if not series_hash:
         return {"success": False, "message": "series_hash es requerido."}
-    
+
     async def run_sync_in_background(scanner_obj, s_hash, force_val):
         try:
             logger.info(f"Background series scan started (Hash: {s_hash}, Force: {force_val})")
@@ -1035,23 +1104,20 @@ async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, An
 
     try:
         from services.scanner_service import ScannerService
-        
+
         if ScannerService._is_scanning:
             return {"success": False, "message": "⚠️ Ya hay un escaneo de librería en progreso."}
 
         libs_json = os.getenv("LOCAL_LIBRARIES")
         if not libs_json:
             return {"success": False, "message": "LOCAL_LIBRARIES no configurada."}
-            
+
         scanner = ScannerService(libs_json)
-        
+
         # Start the intensive task in background
         asyncio.create_task(run_sync_in_background(scanner, series_hash, force))
-        
-        return {
-            "success": True, 
-            "message": "Sincronización de serie iniciada en segundo plano."
-        }
+
+        return {"success": True, "message": "Sincronización de serie iniciada en segundo plano."}
     except Exception as e:
         logger.error(f"Error starting background series scan: {e}")
         return {"success": False, "message": str(e)}
@@ -1060,7 +1126,7 @@ async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, An
 async def handle_admin_enrich_metadata(data: dict[str, Any], user_data: dict[str, Any]):
     """Activates manual enrichment of metadata from online sources."""
     check_staff(user_data)
-    
+
     async def run_enrichment_in_background(scanner_obj):
         try:
             logger.info("Background metadata enrichment started")
@@ -1071,14 +1137,15 @@ async def handle_admin_enrich_metadata(data: dict[str, Any], user_data: dict[str
 
     try:
         from services.scanner_service import ScannerService
+
         libs_json = os.getenv("LOCAL_LIBRARIES")
         scanner = ScannerService(libs_json or "{}")
-        
+
         asyncio.create_task(run_enrichment_in_background(scanner))
-        
+
         return {
-            "success": True, 
-            "message": "Enriquecimiento de metadatos iniciado en segundo plano. Se procesarán libros con ISBN que no tengan título en español o descripción."
+            "success": True,
+            "message": "Enriquecimiento de metadatos iniciado en segundo plano. Se procesarán libros con ISBN que no tengan título en español o descripción.",
         }
     except Exception as e:
         logger.error(f"Error starting enrichment task: {e}")
@@ -1088,24 +1155,24 @@ async def handle_admin_enrich_metadata(data: dict[str, Any], user_data: dict[str
 async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, Any]):
     """Reset complete library database (admin only, requires confirmation)."""
     check_staff(user_data)
-    
+
     # Require explicit confirmation
     confirmed = data.get("confirmed", False)
     if not confirmed:
         return {
-            "success": False, 
+            "success": False,
             "message": "Confirmación requerida para eliminar la base de datos.",
-            "requireConfirmation": True
+            "requireConfirmation": True,
         }
-    
+
     try:
         import sqlalchemy as sa
 
         from utils.library_db import COVERS_DIR, engine
-        
+
         items_deleted = []
         cover_count = 0
-        
+
         try:
             with engine.begin() as conn:
                 # Order of deletion matters due to FKs
@@ -1118,7 +1185,9 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
                 conn.execute(sa.text("DELETE FROM library_sources"))
                 conn.execute(sa.text("DELETE FROM duplicate_books"))
                 conn.execute(sa.text("DELETE FROM upload_books"))
-            items_deleted.append("Tablas de PostgreSQL limpiadas (series_metadata, local_books, sources, ratings, downloads, proposals, feedback)")
+            items_deleted.append(
+                "Tablas de PostgreSQL limpiadas (series_metadata, local_books, sources, ratings, downloads, proposals, feedback)"
+            )
         except Exception as e:
             logger.error(f"Error clearing Postgres tables: {e}")
             return {"success": False, "message": f"Error limpiando tablas Postgres: {e}"}
@@ -1126,7 +1195,13 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
         # 2. Delete covers directory
         if os.path.exists(COVERS_DIR):
             try:
-                cover_count = len([f for f in os.listdir(COVERS_DIR) if os.path.isfile(os.path.join(COVERS_DIR, f))])
+                cover_count = len(
+                    [
+                        f
+                        for f in os.listdir(COVERS_DIR)
+                        if os.path.isfile(os.path.join(COVERS_DIR, f))
+                    ]
+                )
                 shutil.rmtree(COVERS_DIR)
                 items_deleted.append(f"{cover_count} portadas eliminadas")
             except Exception as e:
@@ -1134,7 +1209,7 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
                 items_deleted.append(f"Error eliminando portadas: {e}")
         else:
             items_deleted.append("Directorio de portadas no existía")
-        
+
         # 3. Recreate covers directory
         try:
             os.makedirs(COVERS_DIR, exist_ok=True)
@@ -1142,25 +1217,27 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
         except Exception as e:
             logger.error(f"Error recreating covers dir: {e}")
             items_deleted.append(f"Error recreando directorio: {e}")
-        
+
         # 4. Recreate database with proper schema to avoid readonly issues
         try:
             from utils.library_db import init_library_db
-            
+
             # Initialize database with all tables
             init_library_db()
             items_deleted.append("Base de datos recreada con esquema correcto")
         except Exception as e:
             logger.error(f"Error recreating database schema: {e}")
             items_deleted.append(f"Advertencia recreando esquema: {e}")
-        
-        logger.info(f"Admin {user_data.get('telegram_id')} reset library database. {cover_count} covers deleted.")
-        
+
+        logger.info(
+            f"Admin {user_data.get('telegram_id')} reset library database. {cover_count} covers deleted."
+        )
+
         return {
-            "success": True, 
+            "success": True,
             "message": "Base de datos local reseteada exitosamente.",
             "details": items_deleted,
-            "coversDeleted": cover_count
+            "coversDeleted": cover_count,
         }
     except Exception as e:
         logger.error(f"Error en handle_admin_reset_library: {e}")
@@ -1170,29 +1247,33 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
 async def handle_admin_restart_docker(data: dict[str, Any], user_data: dict[str, Any]):
     """Restart Docker container (admin only)."""
     check_staff(user_data)
-    
+
     try:
         import subprocess
-        
+
         # Get container name from environment
         container_name = os.getenv("CONTAINER_NAME", "zeepub-bot")
-        
-        logger.info(f"Admin {user_data.get('telegram_id')} requesting Docker restart for container: {container_name}")
-        
+
+        logger.info(
+            f"Admin {user_data.get('telegram_id')} requesting Docker restart for container: {container_name}"
+        )
+
         async def do_restart():
             try:
                 # Execute docker restart command in thread
-                await asyncio.to_thread(subprocess.run, ["docker", "restart", container_name], timeout=30)
+                await asyncio.to_thread(
+                    subprocess.run, ["docker", "restart", container_name], timeout=30
+                )
             except Exception as e:
                 logger.error(f"Error in background docker restart: {e}")
 
         # Start in background
         asyncio.create_task(do_restart())
-        
+
         return {
             "success": True,
             "message": f"Contenedor {container_name} reiniciándose...",
-            "restarting": True
+            "restarting": True,
         }
     except subprocess.TimeoutExpired:
         return {"success": False, "message": "Timeout al ejecutar comando docker"}
@@ -1206,19 +1287,19 @@ async def handle_admin_restart_docker(data: dict[str, Any], user_data: dict[str,
 async def handle_admin_update_system(data: dict[str, Any], user_data: dict[str, Any]):
     """Trigger system update (git pull + restart) using existing bot infrastructure."""
     check_staff(user_data)
-    
+
     try:
         from services.maintenance_service import trigger_watchtower_update
-        
+
         logger.info(f"Admin {user_data.get('telegram_id')} requesting system update via Watchtower")
-        
+
         # Ejecutar en segundo plano para evitar 502/504 de Nginx/Cloudflare
         asyncio.create_task(trigger_watchtower_update())
-        
+
         return {
             "success": True,
             "message": "Actualización solicitada. El bot contactará con Watchtower para buscar nuevas versiones y se reiniciará si es necesario.",
-            "restarting": True
+            "restarting": True,
         }
     except Exception as e:
         logger.error(f"Error en handle_admin_update_system: {e}")
@@ -1228,12 +1309,16 @@ async def handle_admin_update_system(data: dict[str, Any], user_data: dict[str, 
 async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[str, Any]):
     """Guarda la configuración completa de un nivel/tier."""
     check_staff(user_data)
-    
+
     tier_name = data.get("name")
     level_id = data.get("level_id") or data.get("id")
-    
+
     try:
-        is_global = (level_id == "global" or tier_name == "Global" or (tier_name and "Global" in str(tier_name)))
+        is_global = (
+            level_id == "global"
+            or tier_name == "Global"
+            or (tier_name and "Global" in str(tier_name))
+        )
         if is_global:
             # Global settings are stored in bot_settings table
             # Filter out non-UI fields for global UI defaults
@@ -1257,25 +1342,30 @@ async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[st
                 "cardColor": "cardColor",
                 "forceSettings": "forceSettings",
                 "cardGlowIntensity": "cardGlowIntensity",
-                "allowThemeTemplates": "allowThemeTemplates"
+                "allowThemeTemplates": "allowThemeTemplates",
             }
-            
+
             for frontend_key, setting_key in field_mapping.items():
                 if frontend_key in data:
                     val = data[frontend_key]
-                    if frontend_key == "glassOpacity" or frontend_key == "navOpacity" or frontend_key == "accentOpacity":
+                    if (
+                        frontend_key == "glassOpacity"
+                        or frontend_key == "navOpacity"
+                        or frontend_key == "accentOpacity"
+                    ):
                         # If value is > 1, it's likely a percentage (0-100)
                         if isinstance(val, (int, float)) and val > 1:
                             val = val / 100.0
                     ui_settings[setting_key] = val
-            
+
             # Additional fields that might be in data but not in mapping
-            if "name" in data: ui_settings["name"] = data["name"]
-            
+            if "name" in data:
+                ui_settings["name"] = data["name"]
+
             current_global = json.loads(get_setting("ui_defaults_global", "{}"))
             current_global.update(ui_settings)
             set_setting("ui_defaults_global", json.dumps(current_global))
-            
+
             # Record change for audit if needed (can be added later)
             logger.info("ADMIN: Saved GLOBAL tier config locally and to Supabase (if active)")
             return {"success": True, "tierId": "global"}
@@ -1291,10 +1381,10 @@ async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[st
             if not result.data:
                 raise HTTPException(status_code=404, detail=f"Tier '{tier_name}' no encontrado")
             tier_id = result.data[0]["id"]
-        
+
         # Build update data
         update_data = {}
-        
+
         # Map frontend fields to database columns
         field_mapping = {
             "name": "name",
@@ -1326,9 +1416,9 @@ async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[st
             "cardGlowIntensity": "ui_glow_intensity",
             "ui_exported_settings": "ui_exported_settings",
             "allowThemeTemplates": "allow_theme_templates",
-            "defaultThemeId": "default_theme_id"
+            "defaultThemeId": "default_theme_id",
         }
-        
+
         for frontend_key, db_key in field_mapping.items():
             if frontend_key in data and data[frontend_key] is not None:
                 val = data[frontend_key]
@@ -1337,39 +1427,53 @@ async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[st
                     try:
                         val = int(float(val) * 100)
                     except (ValueError, TypeError):
-                        val = 70 # Fallback default
-                
+                        val = 70  # Fallback default
+
                 update_data[db_key] = val
-        
+
         # Update tier in Supabase
         try:
             client.table("user_levels").update(update_data).eq("id", tier_id).execute()
         except Exception as e:
             msg = str(e)
             if "Could not find the" in msg and "column" in msg:
-                logger.warning(f"Supabase schema missing columns. Retrying with basic fields only. Error: {msg}")
+                logger.warning(
+                    f"Supabase schema missing columns. Retrying with basic fields only. Error: {msg}"
+                )
                 # Retry with only core fields that surely exist
                 core_fields = ["name", "icon", "color", "daily_downloads", "priority_requests"]
                 safe_data = {k: v for k, v in update_data.items() if k in core_fields}
                 if safe_data:
                     client.table("user_levels").update(safe_data).eq("id", tier_id).execute()
-                    return {"success": True, "tierId": tier_id, "warning": "Partial save: Schema update required"}
+                    return {
+                        "success": True,
+                        "tierId": tier_id,
+                        "warning": "Partial save: Schema update required",
+                    }
             raise e
-        
+
         # Update tier locally (SQLite)
         try:
             from repositories.user_repository import user_repo
+
             await user_repo.update_level(tier_id, data)
         except Exception as e:
             logger.error(f"Error updating tier locally: {e}")
             # Non-fatal, we continue since Supabase was updated
-        
+
         # Trigger bidirectional sync to ensure everything is in sync after manual update
         from core.optimized_sync_engine import optimized_sync_engine
+
         await optimized_sync_engine.force_sync_all()
 
-        logger.info(f"ADMIN: Saved tier config for '{tier_name}' (ID: {tier_id}) in Cloud and Local (Bidirectional Sync triggered)")
-        return {"success": True, "tierId": tier_id, "message": "Configuración guardada y sincronizada bidireccionalmente."}
+        logger.info(
+            f"ADMIN: Saved tier config for '{tier_name}' (ID: {tier_id}) in Cloud and Local (Bidirectional Sync triggered)"
+        )
+        return {
+            "success": True,
+            "tierId": tier_id,
+            "message": "Configuración guardada y sincronizada bidireccionalmente.",
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -1380,10 +1484,10 @@ async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[st
 async def handle_admin_get_tier_config(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene la configuración completa de un nivel/tier."""
     check_staff(user_data)
-    
+
     tier_name = data.get("name")
     tier_id = data.get("id")
-    
+
     try:
         # Check if it's the global tier (case-insensitive)
         is_global = False
@@ -1422,13 +1526,9 @@ async def handle_admin_get_tier_config(data: dict[str, Any], user_data: dict[str
                 "backgroundColor": g.get("backgroundColor", "#0f172a"),
                 "cardColor": g.get("cardColor", "#1e293b"),
                 "bannerContentOffset": g.get("bannerContentOffset", 0),
-                "allowThemeTemplates": g.get("allowThemeTemplates", False)
+                "allowThemeTemplates": g.get("allowThemeTemplates", False),
             }
-            return {
-                "success": True,
-                "config": global_config,
-                "tier": global_config
-            }
+            return {"success": True, "config": global_config, "tier": global_config}
 
         # Use cached repo method instead of direct Supabase call
         tier = None
@@ -1441,16 +1541,14 @@ async def handle_admin_get_tier_config(data: dict[str, Any], user_data: dict[str
             # Fallback to fetching all and finding by name if no ID
             all_lvls = await user_repo.get_all_levels()
             tier = next((l for l in all_lvls if l["name"].lower() == tier_name.lower()), None)
-        
+
         if not tier:
-            raise HTTPException(status_code=404, detail=f"Tier '{tier_name or tier_id}' no encontrado")
-        
+            raise HTTPException(
+                status_code=404, detail=f"Tier '{tier_name or tier_id}' no encontrado"
+            )
+
         # Maps keys (note: user_repo.get_level_by_id already does most of this mapping)
-        return {
-            "success": True,
-            "config": tier,
-            "tier": tier
-        }
+        return {"success": True, "config": tier, "tier": tier}
     except HTTPException:
         raise
     except Exception as e:
@@ -1458,14 +1556,14 @@ async def handle_admin_get_tier_config(data: dict[str, Any], user_data: dict[str
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
 async def handle_admin_get_themes(data: dict[str, Any], user_data: dict[str, Any]):
     """Retorna la lista de plantillas de temas disponibles."""
     # Relaxed permission: Allow all authorized mini-app users to view themes (controlled by UI)
     # if user_data.get("level") != "admin":
     #    raise HTTPException(status_code=403, detail="No tienes permisos")
-    
+
     from services.theme_service import theme_service
+
     try:
         themes = await theme_service.get_all_themes()
         logger.info(f"Returning {len(themes)} themes to frontend")
@@ -1474,13 +1572,14 @@ async def handle_admin_get_themes(data: dict[str, Any], user_data: dict[str, Any
         logger.error(f"Error fetching themes: {e}")
         return {"success": False, "message": str(e)}
 
+
 async def handle_admin_sync_themes(data: dict[str, Any], user_data: dict[str, Any]):
     """Ejecuta sincronización manual de temas."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
-    
+
     from services.theme_sync_service import theme_sync_service
-    
+
     try:
         result = await theme_sync_service.manual_sync()
         return {"success": True, "result": result}
@@ -1488,34 +1587,32 @@ async def handle_admin_sync_themes(data: dict[str, Any], user_data: dict[str, An
         logger.error(f"Error in manual theme sync: {e}")
         return {"success": False, "message": str(e)}
 
+
 async def handle_admin_get_sync_status(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene estado del motor de sincronización optimizado."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
-    
+
     from core.optimized_sync_engine import optimized_sync_engine
     from services.cache_service import cache_manager
-    
+
     try:
         sync_status = await optimized_sync_engine.get_sync_status()
         cache_stats = await cache_manager.get_stats()
-        
-        return {
-            "success": True, 
-            "sync_status": sync_status,
-            "cache_stats": cache_stats
-        }
+
+        return {"success": True, "sync_status": sync_status, "cache_stats": cache_stats}
     except Exception as e:
         logger.error(f"Error getting sync status: {e}")
         return {"success": False, "message": str(e)}
+
 
 async def handle_admin_force_sync(data: dict[str, Any], user_data: dict[str, Any]):
     """Fuerza sincronización completa de todas las tablas."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
-    
+
     from core.optimized_sync_engine import optimized_sync_engine
-    
+
     try:
         await optimized_sync_engine.force_sync_all()
         return {"success": True, "message": "Sincronización forzada iniciada"}
@@ -1523,23 +1620,24 @@ async def handle_admin_force_sync(data: dict[str, Any], user_data: dict[str, Any
         logger.error(f"Error forcing sync: {e}")
         return {"success": False, "message": str(e)}
 
+
 async def handle_admin_rename_themes(data: dict[str, Any], user_data: dict[str, Any]):
     """Renombra temas duplicados con nombres únicos usando detección mejorada."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
-    
+
     from sqlalchemy import text
-    
+
     try:
         from core.db_manager_pg import pg_manager
-        
+
         async with pg_manager.get_session() as session:
             # 1. Obtener TODOS los temas existentes
             result = await session.execute(text("SELECT id, name FROM app_themes ORDER BY name"))
             all_themes = result.fetchall()
-            
+
             logger.info(f"Found {len(all_themes)} total themes")
-            
+
             # 2. Encontrar temas que terminan con " 2" o contienen "2"
             themes_to_rename = []
             for theme in all_themes:
@@ -1550,30 +1648,32 @@ async def handle_admin_rename_themes(data: dict[str, Any], user_data: dict[str, 
                         themes_to_rename.append(theme)
                         logger.info(f"Found theme ending with '2': ID {theme[0]}, Name: '{name}'")
                     else:
-                        logger.info(f"Theme containing '2' (not ending): ID {theme[0]}, Name: '{name}'")
-            
+                        logger.info(
+                            f"Theme containing '2' (not ending): ID {theme[0]}, Name: '{name}'"
+                        )
+
             if not themes_to_rename:
                 logger.info("No themes found ending with '2'")
                 return {
-                    "success": True, 
+                    "success": True,
                     "message": "No se encontraron temas que terminen en '2' para renombrar",
-                    "renamed_count": 0
+                    "renamed_count": 0,
                 }
-            
+
             logger.info(f"Found {len(themes_to_rename)} themes to rename")
-            
+
             # 3. Renombrar con nombres únicos generados automáticamente
             renamed_count = 0
             import time
-            
+
             for theme_id, old_name in themes_to_rename:
                 # Extraer el nombre base
                 base_name = old_name.replace(" 2", "").replace("2", "").strip()
-                
+
                 # Generar nombres únicos
                 name_variants = [
                     f"{base_name} Pro",
-                    f"{base_name} Plus", 
+                    f"{base_name} Plus",
                     f"{base_name} Advanced",
                     f"{base_name} Premium",
                     f"{base_name} Elite",
@@ -1590,57 +1690,64 @@ async def handle_admin_rename_themes(data: dict[str, Any], user_data: dict[str, 
                     f"Light {base_name}",
                     f"Deep {base_name}",
                     f"Soft {base_name}",
-                    f"Neo {base_name}"
+                    f"Neo {base_name}",
                 ]
-                
+
                 # Buscar nombre único
                 new_name = None
                 for candidate in name_variants:
-                    result = await session.execute(text("SELECT id FROM app_themes WHERE name = :candidate"), {"candidate": candidate})
+                    result = await session.execute(
+                        text("SELECT id FROM app_themes WHERE name = :candidate"),
+                        {"candidate": candidate},
+                    )
                     existing = result.fetchone()
-                    
+
                     if not existing:
                         new_name = candidate
                         break
-                
+
                 if not new_name:
                     # Último recurso: timestamp
                     new_name = f"{base_name} ({int(time.time())})"
-                
+
                 # Realizar renombrado
                 await session.execute(
-                    text("UPDATE app_themes SET name = :new_name, updated_at = CURRENT_TIMESTAMP WHERE id = :theme_id"),
-                    {"new_name": new_name, "theme_id": theme_id}
+                    text(
+                        "UPDATE app_themes SET name = :new_name, updated_at = CURRENT_TIMESTAMP WHERE id = :theme_id"
+                    ),
+                    {"new_name": new_name, "theme_id": theme_id},
                 )
-                
+
                 logger.info(f"Renamed theme ID {theme_id}: '{old_name}' → '{new_name}'")
                 renamed_count += 1
-            
+
             await session.commit()
-            
+
             # Invalidate cache after bulk rename
             from services.theme_service import theme_service
+
             await theme_service.invalidate_caches()
-            
+
             logger.info(f"Enhanced theme renaming completed. {renamed_count} themes renamed.")
-            
+
             return {
-                "success": True, 
+                "success": True,
                 "message": f"Se renombraron {renamed_count} temas exitosamente",
-                "renamed_count": renamed_count
+                "renamed_count": renamed_count,
             }
-            
+
     except Exception as e:
         logger.error(f"Error in enhanced theme renaming: {e}")
         return {"success": False, "message": str(e)}
+
 
 async def handle_admin_get_theme_sync_logs(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene historial de sincronizaciones de temas."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
-    
+
     from services.theme_sync_service import theme_sync_service
-    
+
     try:
         logs = await theme_sync_service.get_sync_logs(limit=50)
         return {"success": True, "logs": logs}
@@ -1648,25 +1755,27 @@ async def handle_admin_get_theme_sync_logs(data: dict[str, Any], user_data: dict
         logger.error(f"Error getting theme sync logs: {e}")
         return {"success": False, "message": str(e)}
 
+
 async def handle_admin_save_theme(data: dict[str, Any], user_data: dict[str, Any]):
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
-    
+
     theme_name = data.get("name")
     if not theme_name:
         return {"success": False, "message": "El tema necesita un nombre"}
-    
+
     import re
+
     # Clean name: remove trailing numbers that look like " 2", " 3"
     theme_name = re.sub(r"\s+\d+$", "", theme_name).strip()
-    
+
     from services.theme_service import theme_service
-    
+
     # Ensure name uniqueness if it's a new theme request
     if data.get("is_new"):
         existing_themes = await theme_service.get_all_themes()
         existing_names = [t["name"] for t in existing_themes]
-        
+
         if theme_name in existing_names:
             # Avoid ending in " 2"
             suffixes = ["(Nuevo)", "(Alt)", "(Pro)", "(Custom)", "(Modern)", "(Premium)"]
@@ -1677,9 +1786,10 @@ async def handle_admin_save_theme(data: dict[str, Any], user_data: dict[str, Any
                     theme_name = candidate
                     unique_found = True
                     break
-            
+
             if not unique_found:
                 import time
+
                 theme_name = f"{theme_name} ({int(time.time() % 1000)})"
 
     # Map frontend keys to DB columns
@@ -1697,16 +1807,16 @@ async def handle_admin_save_theme(data: dict[str, Any], user_data: dict[str, Any
         "theme": data.get("theme"),
         "fontSize": data.get("fontSize"),
         "coverWidth": data.get("coverWidth"),
-        "bannerContentOffset": data.get("bannerContentOffset")
+        "bannerContentOffset": data.get("bannerContentOffset"),
     }
-    
+
     # Remove None values
     insert_data = {k: v for k, v in insert_data.items() if v is not None}
-    
+
     try:
         res = await theme_service.save_theme(insert_data)
         if not res:
-             return {"success": False, "message": "No se pudo guardar el tema"}
+            return {"success": False, "message": "No se pudo guardar el tema"}
         return {"success": True, "theme": res}
     except Exception as e:
         logger.error(f"Error saving theme: {e}")
@@ -1717,60 +1827,61 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
     """Guarda los permisos de un usuario específico."""
     logger.info(f"ADMIN: Save permissions request for data: {data}")
     check_staff(user_data)
-    
+
     user_id = data.get("userId")
     if not user_id:
         raise HTTPException(status_code=400, detail="Falta userId")
-    
+
     try:
         import asyncio
 
         from repositories.user_repository import user_repo
         from services.user_audit_service import UserAuditService
         from services.user_service import invalidate_user_cache
-        
+
         # Get existing user to preserve values if not provided
         existing = await user_repo.get_by_id(int(user_id))
         if not existing:
-             # Create minimal user if not exists
-             await user_repo.create_minimal_user(int(user_id))
-             existing = await user_repo.get_by_id(int(user_id))
+            # Create minimal user if not exists
+            await user_repo.create_minimal_user(int(user_id))
+            existing = await user_repo.get_by_id(int(user_id))
 
         # Parse expires_at if provided
         expires_at = None
         if data.get("expiresAt"):
             try:
                 from dateutil import parser
+
                 expires_at = parser.parse(data["expiresAt"])
             except Exception:
                 pass
-        
+
         # Build upsert arguments
         # Map frontend 'role' and 'levelId'
         level_id = data.get("levelId", existing.get("level_id", 6))
         role = data.get("role", existing.get("role", "free"))
-        
+
         # Admin safety
         if data.get("isAdmin"):
             role = "admin"
             level_id = 1
-        
+
         # Track changes for audit log
         changes = {}
-        
+
         # Check level change
         old_level_id = int(existing.get("level_id") or 6)
         if int(level_id) != old_level_id:
             changes["level"] = {
                 "old": {"id": old_level_id, "name": existing.get("level")},
-                "new": {"id": int(level_id), "name": data.get("levelName", "Unknown")}
+                "new": {"id": int(level_id), "name": data.get("levelName", "Unknown")},
             }
-        
+
         # Check role change
         old_role = existing.get("role")
         if role != old_role:
             changes["role"] = {"old": old_role, "new": role}
-        
+
         # Check other permission changes
         fields_to_track = {
             "role": "role",
@@ -1783,9 +1894,9 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
             "hasLibraryAccess": "has_library_access",
             "canUploadEpub": "can_upload_epub",
             "settings": "settings",
-            "allowThemeTemplates": "allow_theme_templates"
+            "allowThemeTemplates": "allow_theme_templates",
         }
-        
+
         for frontend_key, db_key in fields_to_track.items():
             if frontend_key in data:
                 old_val = existing.get(db_key)
@@ -1793,20 +1904,22 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
                 if frontend_key == "expiresAt":
                     new_val = expires_at.isoformat() if expires_at else None
                     old_val = existing.get(db_key).isoformat() if existing.get(db_key) else None
-                
+
                 if old_val != new_val:
                     changes[db_key] = {"old": old_val, "new": new_val}
-        
+
         # Check insignias changes
         old_insignias = existing.get("insignias", [])
         new_insignias = data.get("insignias", existing.get("insignias", []))
         if set(old_insignias or []) != set(new_insignias or []):
             changes["insignias"] = {"old": old_insignias, "new": new_insignias}
-        
+
         # Save to database
         await user_repo.upsert(
             telegram_id=int(user_id),
-            level=data.get("level", "free"), # Assuming level is passed or use role if it means tier
+            level=data.get(
+                "level", "free"
+            ),  # Assuming level is passed or use role if it means tier
             expires_at=expires_at or existing.get("expires_at"),
             role=data.get("role", existing.get("role")),
             nickname=data.get("nickname", existing.get("nickname")),
@@ -1820,12 +1933,14 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
             can_upload_epub=data.get("canUploadEpub"),
             level_id=level_id,
             settings=data.get("settings"),
-            allow_theme_templates=data.get("allowThemeTemplates")
+            allow_theme_templates=data.get("allowThemeTemplates"),
         )
-        
+
         # betaTester is handled separately if needed, or we could add it to upsert too
         if config.ENABLE_SUPABASE and "betaTester" in data:
-            supabase_manager.get_client().table("users").update({"beta_tester": data["betaTester"]}).eq("telegram_id", int(user_id)).execute()
+            supabase_manager.get_client().table("users").update(
+                {"beta_tester": data["betaTester"]}
+            ).eq("telegram_id", int(user_id)).execute()
 
         # Log changes to audit log if there were any
         if changes:
@@ -1835,7 +1950,7 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
                     username=data.get("username") or existing.get("username") or f"User_{user_id}",
                     changes=changes,
                     changed_by_id=str(user_data.get("telegram_id", 0)),
-                    changed_by_username=user_data.get("username", "Admin")
+                    changed_by_username=user_data.get("username", "Admin"),
                 )
                 logger.info(f"[Audit] Logged {len(changes)} changes for user {user_id}")
             except Exception as audit_error:
@@ -1844,7 +1959,7 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
 
         # Invalidate cache
         asyncio.create_task(invalidate_user_cache(int(user_id)))
-        
+
         logger.info(f"ADMIN: Saved user permissions for user {user_id}")
         return {"success": True, "changes_logged": len(changes)}
     except Exception as e:
@@ -1855,22 +1970,22 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
 async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene los permisos de un usuario específico."""
     check_staff(user_data)
-    
+
     user_id = data.get("userId")
     if not user_id:
         raise HTTPException(status_code=400, detail="Falta userId")
-    
+
     try:
         from repositories.user_repository import user_repo
-        
+
         # Get extended info joining with levels
         access_info = await user_repo.get_access_info(int(user_id))
         # Get raw user info for fields not in access_info
         raw_user = await user_repo.get_by_id(int(user_id))
-        
+
         if not access_info or not raw_user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         return {
             "success": True,
             "user": {
@@ -1884,17 +1999,23 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
                 "levelName": access_info["level"]["name"],
                 "levelColor": access_info["level"].get("color", "#3b82f6"),
                 "role": raw_user.get("role"),
-                "expiresAt": raw_user["expires_at"].isoformat() if raw_user.get("expires_at") and hasattr(raw_user["expires_at"], "isoformat") else None,
+                "expiresAt": raw_user["expires_at"].isoformat()
+                if raw_user.get("expires_at") and hasattr(raw_user["expires_at"], "isoformat")
+                else None,
                 "isAdmin": access_info["isAdmin"],
                 "betaTester": raw_user.get("beta_tester", access_info["isBetaTester"]),
                 "hasLibraryAccess": raw_user.get("has_library_access", True),
                 "canRequestBooks": raw_user.get("can_request_books", True),
-                "canUploadEpub": raw_user.get("can_upload_epub", access_info["level"].get("canUploadEpub", False)),
-                "allowThemeTemplates": raw_user.get("allow_theme_templates", access_info["level"].get("allowThemeTemplates", False)),
+                "canUploadEpub": raw_user.get(
+                    "can_upload_epub", access_info["level"].get("canUploadEpub", False)
+                ),
+                "allowThemeTemplates": raw_user.get(
+                    "allow_theme_templates", access_info["level"].get("allowThemeTemplates", False)
+                ),
                 "insignias": raw_user.get("insignias") or [],
                 "settings": raw_user.get("settings") or {},
-                "photo_url": access_info.get("photo_url") or raw_user.get("photo_url")
-            }
+                "photo_url": access_info.get("photo_url") or raw_user.get("photo_url"),
+            },
         }
     except HTTPException:
         raise
@@ -1909,53 +2030,51 @@ async def handle_admin_find_duplicates(data: dict[str, Any], user_data: dict[str
     Returns duplicate groups with file info and statistics.
     """
     check_staff(user_data)
-    
+
     try:
         from sqlalchemy import func
 
         from models.library_models import LocalBook
         from utils.library_db import get_session
-        
+
         session = get_session()
-        
+
         # Query to find duplicates
-        duplicate_hashes = session.query(
-            LocalBook.book_hash,
-            func.count().label("count")
-        ).filter(
-            LocalBook.book_hash.isnot(None)
-        ).group_by(
-            LocalBook.book_hash
-        ).having(
-            func.count() > 1
-        ).all()
-        
+        duplicate_hashes = (
+            session.query(LocalBook.book_hash, func.count().label("count"))
+            .filter(LocalBook.book_hash.isnot(None))
+            .group_by(LocalBook.book_hash)
+            .having(func.count() > 1)
+            .all()
+        )
+
         duplicate_groups = []
         total_wasted_space = 0
         total_duplicates = 0
-        
+
         for hash_row in duplicate_hashes:
             content_hash = hash_row[0]
-            
+
             # Get all books with this hash
-            books = session.query(LocalBook).filter(
-                LocalBook.book_hash == content_hash
-            ).order_by(
-                LocalBook.indexed_at.asc()
-            ).all()
-            
+            books = (
+                session.query(LocalBook)
+                .filter(LocalBook.book_hash == content_hash)
+                .order_by(LocalBook.indexed_at.asc())
+                .all()
+            )
+
             if len(books) <= 1:
                 continue
-            
+
             # Calculate stats
             file_sizes = [book.file_size or 0 for book in books]
             total_size = sum(file_sizes)
             min_size = min(file_sizes) if file_sizes else 0
             wasted_space = total_size - min_size
-            
+
             total_wasted_space += wasted_space
             total_duplicates += len(books) - 1
-            
+
             group = {
                 "book_hash": content_hash,
                 "title": books[0].title,
@@ -1973,17 +2092,17 @@ async def handle_admin_find_duplicates(data: dict[str, Any], user_data: dict[str
                         "file_size": book.file_size or 0,
                         "indexed_at": book.indexed_at.isoformat() if book.indexed_at else None,
                         "is_oldest": book.id == books[0].id,
-                        "is_newest": book.id == books[-1].id
+                        "is_newest": book.id == books[-1].id,
                     }
                     for book in books
-                ]
+                ],
             }
-            
+
             duplicate_groups.append(group)
-        
+
         duplicate_groups.sort(key=lambda x: x["wasted_space"], reverse=True)
         session.close()
-        
+
         return {
             "success": True,
             "duplicate_groups": duplicate_groups,
@@ -1991,10 +2110,10 @@ async def handle_admin_find_duplicates(data: dict[str, Any], user_data: dict[str
                 "total_duplicates": total_duplicates,
                 "duplicate_groups_count": len(duplicate_groups),
                 "wasted_space_bytes": total_wasted_space,
-                "wasted_space_mb": round(total_wasted_space / (1024 * 1024), 2)
-            }
+                "wasted_space_mb": round(total_wasted_space / (1024 * 1024), 2),
+            },
         }
-        
+
     except Exception as e:
         logger.error(f"Error finding duplicates: {e}")
         return {"success": False, "message": str(e)}
@@ -2003,11 +2122,11 @@ async def handle_admin_find_duplicates(data: dict[str, Any], user_data: dict[str
 async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[str, Any]):
     """Delete duplicate books safely, ensuring at least one copy remains."""
     check_staff(user_data)
-    
+
     book_ids = data.get("book_ids", [])
     if not book_ids:
         return {"success": False, "message": "No se especificaron libros"}
-    
+
     try:
         import os
         from collections import defaultdict
@@ -2016,42 +2135,42 @@ async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[st
 
         from models.library_models import LocalBook
         from utils.library_db import COVERS_DIR, get_session
-        
+
         session = get_session()
-        
-        books_to_delete = session.query(LocalBook).filter(
-            LocalBook.id.in_(book_ids)
-        ).all()
-        
+
+        books_to_delete = session.query(LocalBook).filter(LocalBook.id.in_(book_ids)).all()
+
         if not books_to_delete:
             return {"success": False, "message": "No se encontraron libros"}
-        
+
         # Group by book_hash
         by_hash = defaultdict(list)
         for book in books_to_delete:
             by_hash[book.book_hash].append(book)
-        
+
         deleted_count = 0
         deleted_size = 0
         errors = []
-        
+
         for content_hash, books in by_hash.items():
             # Count total books with this hash
-            total_with_hash = session.query(func.count(LocalBook.id)).filter(
-                LocalBook.book_hash == content_hash
-            ).scalar()
-            
+            total_with_hash = (
+                session.query(func.count(LocalBook.id))
+                .filter(LocalBook.book_hash == content_hash)
+                .scalar()
+            )
+
             # Can't delete all copies
             if len(books) >= total_with_hash:
                 errors.append(f"No se puede eliminar todas las copias de {books[0].title}")
                 continue
-            
+
             # Delete files
             for book in books:
                 try:
                     if book.filepath and os.path.exists(book.filepath):
                         os.remove(book.filepath)
-                    
+
                     if book.cover_path:
                         cover_file = book.cover_path.replace("/api/library/covers/", "")
                         cover_path = os.path.join(COVERS_DIR, cover_file)
@@ -2060,29 +2179,29 @@ async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[st
                         thumb_path = cover_path.replace(".jpg", "_thumb.jpg")
                         if os.path.exists(thumb_path):
                             os.remove(thumb_path)
-                    
+
                     deleted_size += book.file_size or 0
                     session.delete(book)
                     deleted_count += 1
-                    
+
                 except Exception as e:
                     logger.error(f"Error deleting book {book.id}: {e}")
                     errors.append(f"Error: {book.filename}")
-        
+
         session.commit()
         session.close()
-        
+
         result = {
             "success": True,
             "deleted_count": deleted_count,
-            "freed_space_mb": round(deleted_size / (1024 * 1024), 2)
+            "freed_space_mb": round(deleted_size / (1024 * 1024), 2),
         }
-        
+
         if errors:
             result["errors"] = errors
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"Error deleting duplicates: {e}")
         session.rollback()
@@ -2093,15 +2212,15 @@ async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[st
 async def handle_update_user_setting(data: dict[str, Any], user_data: dict[str, Any]):
     """Actualiza una o múltiples configuraciones del usuario."""
     from services.user_service import update_user_setting
-    
+
     user_id = user_data.get("user_id")
-    
+
     # Support two modes:
     # 1. Single setting: { "key": "show_recommendations", "value": true }
     # 2. Bulk settings: { "settings": { "primaryColor": "#xxx", "theme": "dark", ... } }
-    
+
     settings_obj = data.get("settings")
-    
+
     if settings_obj:
         # Bulk update mode
         try:
@@ -2115,10 +2234,10 @@ async def handle_update_user_setting(data: dict[str, Any], user_data: dict[str, 
         # Single setting mode (legacy)
         key = data.get("key")
         value = data.get("value")
-        
+
         if not key:
             raise HTTPException(status_code=400, detail="Missing 'key' or 'settings' parameter")
-        
+
         try:
             logger.info(f"User {user_id} updating setting: {key} = {value}")
             result = await update_user_setting(user_id, key, value)
@@ -2131,53 +2250,40 @@ async def handle_update_user_setting(data: dict[str, Any], user_data: dict[str, 
 async def handle_get_user_audit_history(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene el historial de cambios de un usuario."""
     check_staff(user_data)
-    
+
     user_id = data.get("userId")
     if not user_id:
         raise HTTPException(status_code=400, detail="Falta userId")
-    
+
     try:
         from services.user_audit_service import UserAuditService
-        
+
         limit = data.get("limit", 50)
         offset = data.get("offset", 0)
-        
+
         history = UserAuditService.get_user_history(
-            user_id=str(user_id),
-            limit=limit,
-            offset=offset
+            user_id=str(user_id), limit=limit, offset=offset
         )
-        
-        return {
-            "success": True,
-            "history": history,
-            "count": len(history)
-        }
+
+        return {"success": True, "history": history, "count": len(history)}
     except Exception as e:
         logger.error(f"Error getting user audit history: {e}")
         return {"success": False, "message": str(e)}
-        
-        
+
+
 async def handle_admin_get_recent_audit_logs(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene los cambios recientes en el sistema."""
     check_staff(user_data)
-    
+
     try:
         from services.user_audit_service import UserAuditService
-        
+
         limit = data.get("limit", 100)
         offset = data.get("offset", 0)
-        
-        recent = UserAuditService.get_recent_changes(
-            limit=limit,
-            offset=offset
-        )
-        
-        return {
-            "success": True,
-            "logs": recent,
-            "count": len(recent)
-        }
+
+        recent = UserAuditService.get_recent_changes(limit=limit, offset=offset)
+
+        return {"success": True, "logs": recent, "count": len(recent)}
     except Exception as e:
         logger.error(f"Error getting recent audit logs: {e}")
         return {"success": False, "message": str(e)}
@@ -2187,23 +2293,25 @@ async def handle_admin_get_duplicates(data: dict[str, Any], user_data: dict[str,
     """Retorna la lista de archivos duplicados detectados."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
-    
+
     session = get_session()
     try:
         dups = session.query(DuplicateBook).order_by(desc(DuplicateBook.detected_at)).all()
-        
+
         result = []
         for d in dups:
-            result.append({
-                "id": d.id,
-                "title": d.title,
-                "author": d.author,
-                "hash": d.book_hash,
-                "original": d.original_filepath,
-                "duplicate": d.duplicate_filepath,
-                "detectedAt": d.detected_at.isoformat() if d.detected_at else None
-            })
-            
+            result.append(
+                {
+                    "id": d.id,
+                    "title": d.title,
+                    "author": d.author,
+                    "hash": d.book_hash,
+                    "original": d.original_filepath,
+                    "duplicate": d.duplicate_filepath,
+                    "detectedAt": d.detected_at.isoformat() if d.detected_at else None,
+                }
+            )
+
         return {"success": True, "duplicates": result}
     except Exception as e:
         logger.error(f"Error fetching duplicates: {e}")
@@ -2211,11 +2319,12 @@ async def handle_admin_get_duplicates(data: dict[str, Any], user_data: dict[str,
     finally:
         session.close()
 
+
 async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
     """Limpia la tabla de registros de duplicados."""
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
-    
+
     session = get_session()
     try:
         session.query(DuplicateBook).delete()
@@ -2227,26 +2336,28 @@ async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[st
     finally:
         session.close()
 
+
 async def handle_admin_get_system_logs(data: dict[str, Any], user_data: dict[str, Any]):
     """Retorna los últimos logs capturados en memoria con opción de filtrado."""
     check_staff(user_data)
-    
+
     try:
         from utils.log_manager import log_buffer_handler
-        
+
         level = data.get("level", "INFO")
-        hours = data.get("hours") # None for all in buffer
-        
+        hours = data.get("hours")  # None for all in buffer
+
         logs = log_buffer_handler.get_logs(level=level, last_hours=hours)
         return {"success": True, "logs": logs}
     except Exception as e:
         logger.error(f"Error fetching system logs: {e}")
         return {"success": False, "message": str(e)}
 
+
 async def handle_admin_send_logs_telegram(data: dict[str, Any], user_data: dict[str, Any]):
     """Envía los logs capturados directamente al chat de Telegram del usuario."""
     check_staff(user_data)
-    
+
     try:
         import io
         from datetime import datetime
@@ -2254,76 +2365,79 @@ async def handle_admin_send_logs_telegram(data: dict[str, Any], user_data: dict[
         from api.main import bot as bot_instance
         from utils.log_manager import log_buffer_handler
 
-        level = data.get("level", "DEBUG") 
+        level = data.get("level", "DEBUG")
         hours = data.get("hours")
-        
+
         logs = log_buffer_handler.get_logs(level=level, last_hours=hours)
         if not logs:
             return {"success": False, "message": "No hay logs disponibles para enviar."}
-            
+
         # Format logs
         log_text = "\n".join([f"[{l['time']}] {l['level']}: {l['msg']}" for l in logs])
-        
+
         # Create file
         file_obj = io.BytesIO(log_text.encode("utf-8"))
-        
+
         # Filename with range
         first_t = logs[0]["timestamp"]
         last_t = logs[-1]["timestamp"]
+
         def fmt(t):
             return datetime.fromtimestamp(t).strftime("%Y%m%d_%H%M")
+
         filename = f"logs_{fmt(first_t)}_{fmt(last_t)}.txt"
         file_obj.name = filename
-        
+
         user_id = user_data.get("user_id")
-        
+
         # Send via Telegram
         await bot_instance.app.bot.send_document(
             chat_id=user_id,
             document=file_obj,
             caption=f"📄 <b>Logs del Sistema</b>\nFiltro: {level}\nPeriodo: {fmt(first_t)} a {fmt(last_t)}",
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
-        
+
         return {"success": True, "message": "Logs enviados a tu Telegram correctamente."}
     except Exception as e:
         logger.error(f"Error sending logs to Telegram: {e}")
         return {"success": False, "message": f"Error: {str(e)}"}
 
+
 async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict[str, Any]):
     """Confirma y finaliza múltiples subidas de EPUB."""
     selected_ids = data.get("selected_ids", [])
     discarded_ids = data.get("discarded_ids", [])
-    
+
     # Si no vienen selected_ids, probamos con upload_ids (compatibilidad)
     if not selected_ids:
         selected_ids = data.get("upload_ids", [])
-        
+
     if not selected_ids and not discarded_ids:
         raise HTTPException(status_code=400, detail="No selected or discarded IDs provided")
-    
+
     from pathlib import Path
 
     from handlers.epub_upload_handler import epub_uploader, pending_uploads
-    
+
     # 1. Manejar descartados (limpieza)
     for disc_id in discarded_ids:
         if disc_id in pending_uploads:
             info = pending_uploads[disc_id]
             epub_uploader.cleanup_upload(disc_id, Path(info["file_path"]))
-            
+
     # 2. Manejar seleccionados (procesamiento)
     results = []
     for upload_id in selected_ids:
         if upload_id not in pending_uploads:
             results.append({"upload_id": upload_id, "success": False, "error": "No encontrado"})
             continue
-            
+
         upload_info = pending_uploads[upload_id]
         file_path = Path(upload_info["file_path"])
         metadata = upload_info["metadata"]
         suggested_path = metadata.get("suggested_path")
-        
+
         try:
             success = await epub_uploader.add_to_library(file_path, suggested_path, metadata)
             if success:
@@ -2332,7 +2446,7 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
                     filename=upload_info["original_filename"],
                     book_hash=metadata.get("book_hash"),
                     status="success",
-                    final_path=suggested_path
+                    final_path=suggested_path,
                 )
                 epub_uploader.cleanup_upload(upload_id, file_path)
                 results.append({"upload_id": upload_id, "success": True})
@@ -2342,12 +2456,14 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
                     filename=upload_info["original_filename"],
                     book_hash=metadata.get("book_hash"),
                     status="error",
-                    error_message="Failed to move file to library"
+                    error_message="Failed to move file to library",
                 )
-                results.append({"upload_id": upload_id, "success": False, "error": "Error al mover a librería"})
+                results.append(
+                    {"upload_id": upload_id, "success": False, "error": "Error al mover a librería"}
+                )
         except Exception as e:
             results.append({"upload_id": upload_id, "success": False, "error": str(e)})
-            
+
     return {"success": True, "results": results}
 
 
@@ -2366,16 +2482,18 @@ async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> list[d
 
             history_list = []
             for item in results:
-                history_list.append({
-                    "id": item.id,
-                    "user_id": item.user_id,
-                    "filename": item.filename,
-                    "book_hash": item.book_hash,
-                    "status": item.status,
-                    "final_path": item.final_path,
-                    "error_message": item.error_message,
-                    "created_at": item.created_at.isoformat() if item.created_at else None
-                })
+                history_list.append(
+                    {
+                        "id": item.id,
+                        "user_id": item.user_id,
+                        "filename": item.filename,
+                        "book_hash": item.book_hash,
+                        "status": item.status,
+                        "final_path": item.final_path,
+                        "error_message": item.error_message,
+                        "created_at": item.created_at.isoformat() if item.created_at else None,
+                    }
+                )
             return history_list
     except Exception as e:
         logger.error(f"Error fetching upload history: {e}")
@@ -2385,7 +2503,7 @@ async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> list[d
 async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve estadísticas sobre el uso de la IA."""
     from sqlalchemy import func
-    from models.library_models import LocalBook, AILearningFeedback
+
     from utils.library_db import get_session
 
     try:
@@ -2396,13 +2514,16 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
             # 2. Libros en series YA revisadas (que están en ai_learning_feedback)
             # Usamos una subquery para mayor eficiencia
             reviewed_hashes = session.query(AILearningFeedback.series_hash).distinct()
-            total_processed = session.query(func.count(LocalBook.id)).filter(
-                LocalBook.series_hash.in_(reviewed_hashes)
-            ).scalar() or 0
-            
+            total_processed = (
+                session.query(func.count(LocalBook.id))
+                .filter(LocalBook.series_hash.in_(reviewed_hashes))
+                .scalar()
+                or 0
+            )
+
             # 3. Libros pendientes de estandarización
             pending = total_books - total_processed if total_books > total_processed else 0
-            
+
             # 4. Eficiencia (Estimado)
             # Asumimos que cada renombrado manual toma 30 segundos
             time_saved_minutes = total_processed * 0.5
@@ -2413,14 +2534,20 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
                 "pending_optimization": pending,
                 "time_saved_hours": round(time_saved_minutes / 60, 1),
                 "ai_active": bool(config.GEMINI_API_KEY),
-                "background_scan_enabled": get_setting("enable_background_ai_scan", "false").lower() == "true",
-                "ai_key_masked": f"{config.GEMINI_API_KEY[:4]}...{config.GEMINI_API_KEY[-4:]}" if config.GEMINI_API_KEY else "NONE"
+                "background_scan_enabled": get_setting("enable_background_ai_scan", "false").lower()
+                == "true",
+                "ai_key_masked": f"{config.GEMINI_API_KEY[:4]}...{config.GEMINI_API_KEY[-4:]}"
+                if config.GEMINI_API_KEY
+                else "NONE",
             }
-            logger.info(f"📊 AI Stats requested. Active: {res['ai_active']}, Key Masked: {res['ai_key_masked']}")
+            logger.info(
+                f"📊 AI Stats requested. Active: {res['ai_active']}, Key Masked: {res['ai_key_masked']}"
+            )
             return {"result": res}
     except Exception as e:
         logger.error(f"Error getting AI stats: {e}")
         return {"error": str(e)}
+
 
 async def handle_ai_toggle_background_scan(data: dict[str, Any], user_data: dict[str, Any]):
     """Activa o desactiva el escaneo con IA en segundo plano."""
@@ -2431,12 +2558,11 @@ async def handle_ai_toggle_background_scan(data: dict[str, Any], user_data: dict
 
 async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve listados de series pendientes y revisadas por la IA."""
-    from sqlalchemy import func, text
+    from sqlalchemy import text
 
     from core.db_manager_pg import pg_manager
-    from models.library_models import LocalBook, SeriesMetadata
-    
-    list_type = data.get("type", "pending") # 'pending' or 'reviewed'
+
+    list_type = data.get("type", "pending")  # 'pending' or 'reviewed'
     limit = data.get("limit", 100)
     offset = data.get("offset", 0)
 
@@ -2459,17 +2585,19 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
                 res = await session.execute(query, {"limit": limit, "offset": offset})
                 items = []
                 for row in res:
-                    items.append({
-                        "series_hash": row.series_hash,
-                        "original_name": row.original_name,
-                        "proposed_name": row.proposed_name,
-                        "final_name": row.final_name,
-                        "status": row.status,
-                        "reviewed_at": row.created_at.isoformat() if row.created_at else None,
-                        "books_count": row.books_count
-                    })
+                    items.append(
+                        {
+                            "series_hash": row.series_hash,
+                            "original_name": row.original_name,
+                            "proposed_name": row.proposed_name,
+                            "final_name": row.final_name,
+                            "status": row.status,
+                            "reviewed_at": row.created_at.isoformat() if row.created_at else None,
+                            "books_count": row.books_count,
+                        }
+                    )
                 return {"success": True, "items": items}
-            
+
             else:
                 # Pendientes: Series en local_books que NO están en ai_learning_feedback
                 # Y que no tengan series_spanish (opcional, pero mejor ser estrictos con la tabla de feedback)
@@ -2484,11 +2612,13 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
                 res = await session.execute(query, {"limit": limit, "offset": offset})
                 items = []
                 for row in res:
-                    items.append({
-                        "series_hash": row.series_hash,
-                        "name": row.name,
-                        "books_count": row.books_count
-                    })
+                    items.append(
+                        {
+                            "series_hash": row.series_hash,
+                            "name": row.name,
+                            "books_count": row.books_count,
+                        }
+                    )
                 return {"success": True, "items": items}
 
     except Exception as e:
@@ -2499,73 +2629,78 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
 async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any]):
     """Dispara un escaneo on-demand de una serie específica."""
     series_hash = data.get("series_hash")
-    series_name = data.get("series_name") # Optional fallback
+    series_name = data.get("series_name")  # Optional fallback
     dry_run = data.get("dry_run", False)
-    
+
     if not config.GEMINI_API_KEY:
         return {"success": False, "message": "IA no configurada (Falta API Key)"}
-        
+
     try:
         from models.library_models import LocalBook
         from services.ai_service import AIService
         from utils.library_db import get_session
 
         with get_session() as session:
-             # Buscar libros de esa serie
-             query = session.query(LocalBook).filter(LocalBook.series_hash == series_hash)
-             books = query.order_by(LocalBook.volume.asc()).all()
-             
-             if not books:
-                  return {"success": False, "message": "Serie no encontrada"}
+            # Buscar libros de esa serie
+            query = session.query(LocalBook).filter(LocalBook.series_hash == series_hash)
+            books = query.order_by(LocalBook.volume.asc()).all()
 
-             count = len(books)
-             rep_book = books[0] # Usar cualquiera como representante base
-             current_name = rep_book.series or series_name or rep_book.title
+            if not books:
+                return {"success": False, "message": "Serie no encontrada"}
 
-             # --- DRY RUN MODE (PROPOSAL) ---
-             if dry_run:
-                 books_dicts = [b.to_dict() for b in books]
-                 proposal = await AIService.analyze_series_for_updates(series_hash, current_name, books_dicts)
-                 
-                 if "error" in proposal:
-                      return {"success": False, "message": f"Error de IA: {proposal['error']}"}
+            count = len(books)
+            rep_book = books[0]  # Usar cualquiera como representante base
+            current_name = rep_book.series or series_name or rep_book.title
 
-                 return {
-                     "success": True,
-                     "proposal": proposal,
-                     "dry_run": True
-                 }
+            # --- DRY RUN MODE (PROPOSAL) ---
+            if dry_run:
+                books_dicts = [b.to_dict() for b in books]
+                proposal = await AIService.analyze_series_for_updates(
+                    series_hash, current_name, books_dicts
+                )
 
-             # --- EXECUTE MODE (STAGING) ---
-             # Ya NO aplicamos cambios directamente. Guardamos como propuesta.
-             books_dicts = [b.to_dict() for b in books]
-             proposal = await AIService.analyze_series_for_updates(series_hash, current_name, books_dicts)
-             
-             if not proposal or "error" in proposal:
-                  return {"success": False, "message": f"Error de IA: {proposal.get('error', 'Fallo desconocido')}"}
-             
-             from models.library_models import MetadataProposal
-             
-             # Verificar si ya existe una pendiente
-             existing = session.query(MetadataProposal).filter_by(series_hash=series_hash, status="pending").first()
-             if existing:
-                 existing.proposal_data = proposal
-                 existing.created_at = datetime.utcnow()
-             else:
-                 new_prop = MetadataProposal(
-                     series_hash=series_hash,
-                     proposal_data=proposal,
-                     status="pending"
-                 )
-                 session.add(new_prop)
-             
-             session.commit()
-             
-             return {
-                 "success": True, 
-                 "message": f"Propuesta para '{current_name}' generada. Revisa la bandeja de entrada para aprobarla."
-             }
-             
+                if "error" in proposal:
+                    return {"success": False, "message": f"Error de IA: {proposal['error']}"}
+
+                return {"success": True, "proposal": proposal, "dry_run": True}
+
+            # --- EXECUTE MODE (STAGING) ---
+            # Ya NO aplicamos cambios directamente. Guardamos como propuesta.
+            books_dicts = [b.to_dict() for b in books]
+            proposal = await AIService.analyze_series_for_updates(
+                series_hash, current_name, books_dicts
+            )
+
+            if not proposal or "error" in proposal:
+                return {
+                    "success": False,
+                    "message": f"Error de IA: {proposal.get('error', 'Fallo desconocido')}",
+                }
+
+            from models.library_models import MetadataProposal
+
+            # Verificar si ya existe una pendiente
+            existing = (
+                session.query(MetadataProposal)
+                .filter_by(series_hash=series_hash, status="pending")
+                .first()
+            )
+            if existing:
+                existing.proposal_data = proposal
+                existing.created_at = datetime.utcnow()
+            else:
+                new_prop = MetadataProposal(
+                    series_hash=series_hash, proposal_data=proposal, status="pending"
+                )
+                session.add(new_prop)
+
+            session.commit()
+
+            return {
+                "success": True,
+                "message": f"Propuesta para '{current_name}' generada. Revisa la bandeja de entrada para aprobarla.",
+            }
+
     except Exception as e:
         logger.error(f"Error in AI scan series: {e}")
         return {"success": False, "message": str(e)}
@@ -2578,13 +2713,13 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
     proposal = data.get("proposal")
     proposal_id = data.get("proposal_id")
-    
+
     if not proposal and not proposal_id:
         raise HTTPException(status_code=400, detail="Faltan datos de la propuesta")
- 
-    from models.library_models import LocalBook, SeriesMetadata, MetadataProposal
+
+    from models.library_models import SeriesMetadata
     from utils.library_db import get_session
- 
+
     with get_session() as session:
         # Si nos pasan un proposal_id, cargamos los datos y lo marcamos como aprobado al final
         db_proposal = None
@@ -2598,17 +2733,19 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             # (Por si el usuario triggeró el escaneo manualmente pero ya había una pendiente)
             series_hash_raw = proposal.get("series_hash")
             if series_hash_raw:
-                db_proposal = session.query(MetadataProposal).filter_by(
-                    series_hash=series_hash_raw, status="pending"
-                ).first()
+                db_proposal = (
+                    session.query(MetadataProposal)
+                    .filter_by(series_hash=series_hash_raw, status="pending")
+                    .first()
+                )
 
         series_hash = proposal.get("series_hash")
         # Changes is a list of approved changes: { "book_id": 123, "proposed_filename": "..." }
-        approved_changes = data.get("approved_changes", []) 
+        approved_changes = data.get("approved_changes", [])
         # Global series metadata overrides
         proposed_series = data.get("proposed_series")
         proposed_spanish = data.get("proposed_spanish")
-        
+
         # Optional flags
         apply_renames = data.get("apply_renames", True)
         apply_meta = data.get("apply_meta", True)
@@ -2618,6 +2755,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
         import os
         import shutil
+
         from sqlalchemy import select
 
         # 1. Update Series Metadata (Global)
@@ -2627,13 +2765,13 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             # If not in data, fallback to proposal
             if not proposed_spanish:
                 proposed_spanish = proposal.get("proposed_spanish")
-            
+
             if series:
                 series.series_name = proposed_series
                 series.series_spanish = proposed_spanish or proposed_series
                 if proposal.get("description"):
                     series.description = proposal["description"]
-                
+
                 # Sincronizamos tags proactivamente si la IA propone nuevos géneros BASE
                 if proposal.get("genres"):
                     current_tags = set(series.tags) if series.tags else set()
@@ -2646,7 +2784,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                     series_name=proposed_series,
                     series_spanish=proposed_spanish or proposed_series,
                     tags=proposal.get("genres"),
-                    description=proposal.get("description")
+                    description=proposal.get("description"),
                 )
                 session.add(series)
                 session.flush()
@@ -2656,8 +2794,13 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             group_siglas = proposal.get("group_siglas")
             if group_full and group_siglas and group_full != "Unknown":
                 from models.library_models import TranslatorsGroup
+
                 # Try to find by name (case insensitive)
-                existing_group = session.query(TranslatorsGroup).filter(func.lower(TranslatorsGroup.name) == func.lower(group_full)).first()
+                existing_group = (
+                    session.query(TranslatorsGroup)
+                    .filter(func.lower(TranslatorsGroup.name) == func.lower(group_full))
+                    .first()
+                )
                 if existing_group:
                     existing_group.siglas = group_siglas
                 else:
@@ -2668,6 +2811,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             if config.ENABLE_SUPABASE:
                 try:
                     from core.supabase_manager import supabase_manager
+
                     client = supabase_manager.get_client()
                     s_data = {
                         "series_hash": series.series_hash,
@@ -2677,84 +2821,90 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                         "tags": series.tags,
                         "author": series.author,
                         "book_count": series.book_count,
-                        "rating_average": series.rating_average
+                        "rating_average": series.rating_average,
                     }
-                    client.table("series_metadata").upsert(s_data, on_conflict="series_hash").execute()
+                    client.table("series_metadata").upsert(
+                        s_data, on_conflict="series_hash"
+                    ).execute()
                 except Exception as cloud_e:
                     logger.warning(f"Failed to sync series to cloud: {cloud_e}")
 
             # Update all books in this hash group to the new series name and link them
             stmt = select(LocalBook).where(LocalBook.series_hash == series_hash)
             books = session.execute(stmt).scalars().all()
-            
+
             for book in books:
                 book.series_metadata_id = series.id
                 book.series = proposed_series  # English
-                book.series_spanish = proposed_spanish or proposed_series # Spanish (Always set for consistency)
-                
+                book.series_spanish = (
+                    proposed_spanish or proposed_series
+                )  # Spanish (Always set for consistency)
+
                 book.is_uncensored = proposal.get("is_uncensored_series", False)
-                
+
                 # Aprovechar y actualizar volumen si está en la propuesta
                 orig_filename = book.filename or book.title
                 if proposal.get("volumes") and orig_filename in proposal["volumes"]:
                     book.volume = proposal["volumes"][orig_filename]
-            
+
             updated_count += len(books)
 
         # 2. Apply File Renames
         if apply_renames and approved_changes:
-             for change in approved_changes:
-                 book_id_raw = change.get("book_id")
-                 proposed_filename = change.get("proposed_filename")
-                 
-                 if not book_id_raw or not proposed_filename:
-                     continue
+            for change in approved_changes:
+                book_id_raw = change.get("book_id")
+                proposed_filename = change.get("proposed_filename")
 
-                 try:
+                if not book_id_raw or not proposed_filename:
+                    continue
+
+                try:
                     book_id = int(str(book_id_raw).replace("local_", ""))
-                 except ValueError:
+                except ValueError:
                     errors.append(f"ID de libro inválido: {book_id_raw}")
                     continue
 
-                 book = session.query(LocalBook).filter(LocalBook.id == book_id).scalar()
-                 if not book or not book.filepath or not os.path.exists(book.filepath):
-                     errors.append(f"Libro {book_id} no encontrado en disco")
-                     continue
+                book = session.query(LocalBook).filter(LocalBook.id == book_id).scalar()
+                if not book or not book.filepath or not os.path.exists(book.filepath):
+                    errors.append(f"Libro {book_id} no encontrado en disco")
+                    continue
 
-                 old_path = book.filepath
-                 dir_name = os.path.dirname(old_path)
-                 new_path = os.path.join(dir_name, proposed_filename)
-                 
-                 if old_path != new_path:
-                     try:
+                old_path = book.filepath
+                dir_name = os.path.dirname(old_path)
+                new_path = os.path.join(dir_name, proposed_filename)
+
+                if old_path != new_path:
+                    try:
                         shutil.move(old_path, new_path)
                         book.filepath = new_path
                         book.filename = proposed_filename
                         # Update database record
                         updated_count += 1
-                     except Exception as e:
+                    except Exception as e:
                         errors.append(f"Error renombrando {book.filename}: {e}")
 
         session.commit()
-        
+
         # 3. Consolidar metadata de serie tras los cambios
         from services.scanner_service import ScannerService
+
         ScannerService.sync_series_metadata(session, series_hash)
         session.commit()
 
         # 4. Log feedback for learning
         from services.ai_service import AIService
+
         status = "accepted"
         if proposed_series != proposal.get("proposed_series"):
             status = "edited"
-            
+
         await AIService.log_feedback(
             series_hash=series_hash,
             original=proposal.get("current_series"),
             proposed=proposal.get("proposed_series"),
             final=proposed_series,
             status=status,
-            ai_reason=proposal.get("reason")
+            ai_reason=proposal.get("reason"),
         )
 
         # Si venía de una propuesta almacenada, marcarla como aprobada
@@ -2764,9 +2914,9 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             session.commit()
 
     return {
-        "success": True, 
+        "success": True,
         "message": f"Cambios aplicados. {updated_count} actualizaciones.",
-        "errors": errors
+        "errors": errors,
     }
 
 
@@ -2776,9 +2926,9 @@ async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any])
     if not proposal_id:
         raise HTTPException(status_code=400, detail="Falta proposal_id")
 
-    from models.library_models import LocalBook, SeriesMetadata, MetadataProposal
-    from utils.library_db import get_session
+    from models.library_models import SeriesMetadata
     from services.scanner_service import ScannerService
+    from utils.library_db import get_session
 
     with get_session() as session:
         db_proposal = session.query(MetadataProposal).get(proposal_id)
@@ -2788,13 +2938,12 @@ async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any])
         hash_a = db_proposal.series_hash
         hash_b = db_proposal.secondary_hash
         proposal = db_proposal.proposal_data
-        
+
         # 1. Mover todos los libros de B a A
         from sqlalchemy import update
+
         res = session.execute(
-            update(LocalBook)
-            .where(LocalBook.series_hash == hash_b)
-            .values(series_hash=hash_a)
+            update(LocalBook).where(LocalBook.series_hash == hash_b).values(series_hash=hash_a)
         )
         moved_count = res.rowcount
 
@@ -2807,31 +2956,33 @@ async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any])
                 series_a.series_name = main_name
                 if main_spanish:
                     series_a.series_spanish = main_spanish
-            
+
             # Sincronizar nombre en los libros movidos
             session.execute(
                 update(LocalBook)
                 .where(LocalBook.series_hash == hash_a)
-                .values(
-                    series=main_name,
-                    series_spanish=main_spanish or main_name
-                )
+                .values(series=main_name, series_spanish=main_spanish or main_name)
             )
-            
+
             # Cloud Sync A
             if config.ENABLE_SUPABASE:
                 try:
                     from core.supabase_manager import supabase_manager
+
                     client = supabase_manager.get_client()
                     if series_a:
-                        client.table("series_metadata").upsert({
-                            "series_hash": series_a.series_hash,
-                            "series_name": series_a.series_name,
-                            "series_spanish": series_a.series_spanish
-                        }, on_conflict="series_hash").execute()
+                        client.table("series_metadata").upsert(
+                            {
+                                "series_hash": series_a.series_hash,
+                                "series_name": series_a.series_name,
+                                "series_spanish": series_a.series_spanish,
+                            },
+                            on_conflict="series_hash",
+                        ).execute()
                     # Delete B from cloud too
                     client.table("series_metadata").delete().eq("series_hash", hash_b).execute()
-                except Exception: pass
+                except Exception:
+                    pass
 
         # 3. Eliminar la serie B nula
         session.query(SeriesMetadata).filter_by(series_hash=hash_b).delete()
@@ -2839,17 +2990,18 @@ async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any])
         # 4. Marcar como procesada
         db_proposal.status = "approved"
         db_proposal.processed_at = datetime.utcnow()
-        
+
         session.commit()
-        
+
         # 5. Volver a sincronizar metadata para consolidar conteos, etc.
         ScannerService.sync_series_metadata(session, hash_a)
         session.commit()
 
         return {
             "success": True,
-            "message": f"Fusión completada. {moved_count} libros movidos a la serie principal."
+            "message": f"Fusión completada. {moved_count} libros movidos a la serie principal.",
         }
+
 
 async def handle_ai_generate_summary(data: dict[str, Any], user_data: dict[str, Any]):
     """
@@ -2858,7 +3010,6 @@ async def handle_ai_generate_summary(data: dict[str, Any], user_data: dict[str, 
     from sqlalchemy import select
 
     from core.db_manager_pg import pg_manager
-    from models.library_models import LocalBook
     from services.ai_service import AIService
 
     book_id_raw = data.get("bookId")
@@ -2879,28 +3030,32 @@ async def handle_ai_generate_summary(data: dict[str, Any], user_data: dict[str, 
             raise HTTPException(status_code=404, detail="Libro no encontrado")
 
         if not book.description:
-            return {"success": False, "message": "El libro no tiene una descripción base para resumir."}
+            return {
+                "success": False,
+                "message": "El libro no tiene una descripción base para resumir.",
+            }
 
         # Generar sinopsis
         summary = await AIService.generate_synopsis(book.title, book.description)
         if summary:
             book.summary = summary
             await session.commit()
-            return {
-                "success": True, 
-                "summary": summary,
-                "message": "Sinopsis generada y guardada."
-            }
+            return {"success": True, "summary": summary, "message": "Sinopsis generada y guardada."}
         else:
             return {"success": False, "message": "Fallo al generar la sinopsis con IA."}
 
+
 async def handle_ai_get_proposals(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve la lista de propuestas de IA pendientes de revisión."""
-    from models.library_models import MetadataProposal
     from utils.library_db import get_session
-    
+
     with get_session() as session:
-        proposals = session.query(MetadataProposal).filter_by(status="pending").order_by(MetadataProposal.created_at.desc()).all()
+        proposals = (
+            session.query(MetadataProposal)
+            .filter_by(status="pending")
+            .order_by(MetadataProposal.created_at.desc())
+            .all()
+        )
         return {
             "success": True,
             "proposals": [
@@ -2910,21 +3065,23 @@ async def handle_ai_get_proposals(data: dict[str, Any], user_data: dict[str, Any
                     "secondary_hash": p.secondary_hash,
                     "type": p.type,
                     "proposal": p.proposal_data,
-                    "created_at": p.created_at.isoformat()
-                } for p in proposals
-            ]
+                    "created_at": p.created_at.isoformat(),
+                }
+                for p in proposals
+            ],
         }
+
 
 async def handle_ai_reject_proposal(data: dict[str, Any], user_data: dict[str, Any]):
     """Rechaza una propuesta de IA."""
     proposal_id = data.get("proposal_id")
     if not proposal_id:
         raise HTTPException(status_code=400, detail="Falta proposal_id")
-        
-    from models.library_models import MetadataProposal
-    from utils.library_db import get_session
+
     from datetime import datetime
-    
+
+    from utils.library_db import get_session
+
     with get_session() as session:
         p = session.query(MetadataProposal).get(proposal_id)
         if p:
@@ -2935,16 +3092,18 @@ async def handle_ai_reject_proposal(data: dict[str, Any], user_data: dict[str, A
         else:
             return {"success": False, "message": "Propuesta no encontrada."}
 
+
 async def handle_ai_reset_series(data: dict[str, Any], user_data: dict[str, Any]):
     """Limpia los metadatos de una serie para que la IA la vuelva a analizar."""
     series_hash = data.get("series_hash")
     if not series_hash:
         raise HTTPException(status_code=400, detail="Falta series_hash")
-        
-    from models.library_models import LocalBook, SeriesMetadata, MetadataProposal
-    from utils.library_db import get_session
+
     from sqlalchemy import update
-    
+
+    from models.library_models import SeriesMetadata
+    from utils.library_db import get_session
+
     with get_session() as session:
         # 1. Resetear libros
         session.execute(
@@ -2952,14 +3111,17 @@ async def handle_ai_reset_series(data: dict[str, Any], user_data: dict[str, Any]
             .where(LocalBook.series_hash == series_hash)
             .values(series_spanish=None)
         )
-        
+
         # 2. Resetear Serie
         series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
         if series:
             series.series_spanish = None
-            
+
         # 3. Eliminar propuestas pendientes/anteriores
         session.query(MetadataProposal).filter_by(series_hash=series_hash).delete()
-        
+
         session.commit()
-        return {"success": True, "message": "Metadatos de la serie reseteados. El Jardinero IA la procesará en breve."}
+        return {
+            "success": True,
+            "message": "Metadatos de la serie reseteados. El Jardinero IA la procesará en breve.",
+        }

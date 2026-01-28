@@ -15,10 +15,11 @@ from models.base import Base
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 async def init_db():
     load_dotenv()
     db_url = os.getenv("DATABASE_URL")
-    
+
     if not db_url:
         logger.error("No DATABASE_URL found.")
         return
@@ -26,7 +27,7 @@ async def init_db():
     # Ensure async driver for Postgres
     if "postgresql" in db_url and "+asyncpg" not in db_url:
         db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
-    
+
     # Validar que no sea SQLite
     if "sqlite" in db_url:
         logger.error("SQLite not supported in this environment. Use PostgreSQL.")
@@ -35,7 +36,7 @@ async def init_db():
     logger.info(f"Connecting to database (driver): {db_url.split(':')[0]}")
 
     engine = create_async_engine(db_url, echo=True)
-    
+
     try:
         async with engine.begin() as conn:
             logger.info("Creating tables if not exist (app_themes)...")
@@ -45,6 +46,7 @@ async def init_db():
         logger.error(f"Error creating tables: {e}")
     finally:
         await engine.dispose()
+
 
 if __name__ == "__main__":
     asyncio.run(init_db())

@@ -78,13 +78,9 @@ class ExamplePlugin(BasePlugin):
         self, user_id: int, epub_url: str, metadata: dict[str, Any]
     ) -> dict[str, Any] | None:
         self.download_count += 1
-        logging.info(
-            f"Plugin {self.name}: Descarga #{self.download_count} por usuario {user_id}"
-        )
+        logging.info(f"Plugin {self.name}: Descarga #{self.download_count} por usuario {user_id}")
         return {"plugin_download_id": self.download_count, "tracked_by": self.name}
 
-    async def on_download_complete(
-        self, user_id: int, epub_url: str, success: bool
-    ) -> None:
+    async def on_download_complete(self, user_id: int, epub_url: str, success: bool) -> None:
         status = "exitosa" if success else "fallida"
         logging.info(f"Plugin {self.name}: Descarga {status} para usuario {user_id}")

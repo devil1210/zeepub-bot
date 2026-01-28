@@ -31,7 +31,7 @@ def confirm_reset():
     print("")
     print("   Necesitarás volver a escanear tu biblioteca después de esto.")
     print("")
-    
+
     response = input("¿Estás seguro de que quieres continuar? (escribe 'SI' para confirmar): ")
     return response.strip().upper() == "SI"
 
@@ -39,7 +39,7 @@ def confirm_reset():
 def reset_database():
     """Eliminar la base de datos y portadas"""
     items_deleted = []
-    
+
     # 1. Eliminar base de datos
     if os.path.exists(DB_PATH):
         try:
@@ -50,13 +50,15 @@ def reset_database():
             return False
     else:
         items_deleted.append(f"ℹ️  Base de datos no existía: {DB_PATH}")
-    
+
     # 2. Eliminar directorio de portadas
     if os.path.exists(COVERS_DIR):
         try:
             # Contar archivos antes de eliminar
-            cover_count = len([f for f in os.listdir(COVERS_DIR) if os.path.isfile(os.path.join(COVERS_DIR, f))])
-            
+            cover_count = len(
+                [f for f in os.listdir(COVERS_DIR) if os.path.isfile(os.path.join(COVERS_DIR, f))]
+            )
+
             shutil.rmtree(COVERS_DIR)
             items_deleted.append(f"✅ {cover_count} portadas eliminadas")
         except Exception as e:
@@ -64,7 +66,7 @@ def reset_database():
             return False
     else:
         items_deleted.append("ℹ️  Directorio de portadas no existía")
-    
+
     # 3. Recrear directorio de portadas vacío
     try:
         os.makedirs(COVERS_DIR, exist_ok=True)
@@ -72,33 +74,33 @@ def reset_database():
     except Exception as e:
         print(f"❌ Error recreando directorio: {e}")
         return False
-    
+
     # Mostrar resumen
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("RESUMEN DE RESET:")
-    print("="*60)
+    print("=" * 60)
     for item in items_deleted:
         print(item)
-    print("="*60)
+    print("=" * 60)
     print("\n✨ Base de datos reseteada exitosamente!")
     print("\n📝 Próximo paso: Ejecuta el escaneo de biblioteca para reindexar tus libros.")
-    
+
     return True
 
 
 def main():
     print("")
-    print("="*60)
+    print("=" * 60)
     print("🗑️  RESET DE BASE DE DATOS LOCAL - ZEEPUB-BOT")
-    print("="*60)
+    print("=" * 60)
     print("")
-    
+
     if not confirm_reset():
         print("\n❌ Operación cancelada por el usuario.")
         return
-    
+
     print("\n🔄 Iniciando reset de base de datos...")
-    
+
     if reset_database():
         print("\n✅ ¡Reset completado con éxito!")
         sys.exit(0)

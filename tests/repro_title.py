@@ -14,12 +14,8 @@ def extract_title_logic(content):
         print(f"Found fulltitle inner: {inner_html.strip()}")
 
         # Try to find title and subtitle specifically
-        title_pat = re.compile(
-            r'epub:type="title"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL
-        )
-        subtitle_pat = re.compile(
-            r'epub:type="subtitle"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL
-        )
+        title_pat = re.compile(r'epub:type="title"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
+        subtitle_pat = re.compile(r'epub:type="subtitle"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
 
         t_match = title_pat.search(inner_html)
         s_match = subtitle_pat.search(inner_html)

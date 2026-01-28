@@ -54,10 +54,7 @@ class VerificationPlugin(BasePlugin):
 
             # API 9.3: verifyUser (nuevo método)
             # Como PTB podría no tenerlo aún, usamos raw request
-            payload = {
-                "user_id": target_id,
-                "is_verified": verify
-            }
+            payload = {"user_id": target_id, "is_verified": verify}
 
             # Intentamos usar el método si existe o raw
             try:

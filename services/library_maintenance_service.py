@@ -9,6 +9,7 @@ from utils.library_db import COVERS_DIR, engine, get_session
 
 logger = logging.getLogger(__name__)
 
+
 class LibraryMaintenanceService:
     """
     Servicio para mantenimiento y optimización de la biblioteca local (PostgreSQL).
@@ -27,7 +28,7 @@ class LibraryMaintenanceService:
                 # pero SQLAlchemy engine.connect() suele estar en modo autocommit si se configura.
                 # Para simplificar, usamos una ejecución directa.
                 conn.execution_options(isolation_level="AUTOCOMMIT").execute(text("VACUUM ANALYZE"))
-            
+
             success = True
             error = None
         except Exception as e:
@@ -41,7 +42,9 @@ class LibraryMaintenanceService:
             "success": success,
             "error": error,
             "duration_seconds": round(duration, 2),
-            "message": "VACUUM ANALYZE completado en PostgreSQL" if success else "Falló el mantenimiento"
+            "message": "VACUUM ANALYZE completado en PostgreSQL"
+            if success
+            else "Falló el mantenimiento",
         }
 
     @staticmethod
@@ -76,9 +79,7 @@ class LibraryMaintenanceService:
             for cover_file in covers_dir.iterdir():
                 if cover_file.is_file() and cover_file.name not in covers_in_use:
                     file_size = cover_file.stat().st_size
-                    orphaned_files.append(
-                        {"filename": cover_file.name, "size_bytes": file_size}
-                    )
+                    orphaned_files.append({"filename": cover_file.name, "size_bytes": file_size})
                     total_size += file_size
                     cover_file.unlink()
 
@@ -102,12 +103,8 @@ class LibraryMaintenanceService:
             total_books = session.query(LocalBook).count()
             total_sources = session.query(LibrarySource).count()
 
-            unique_series = session.query(
-                func.count(func.distinct(LocalBook.series))
-            ).scalar()
-            unique_authors = session.query(
-                func.count(func.distinct(LocalBook.author))
-            ).scalar()
+            unique_series = session.query(func.count(func.distinct(LocalBook.series))).scalar()
+            unique_authors = session.query(func.count(func.distinct(LocalBook.author))).scalar()
 
             book_types = (
                 session.query(LocalBook.book_type, func.count(LocalBook.id))
@@ -120,18 +117,16 @@ class LibraryMaintenanceService:
             books_with_covers = (
                 session.query(LocalBook)
                 .filter(
-                    (LocalBook.cover_low.isnot(None)) |
-                    (LocalBook.cover_medium.isnot(None)) |
-                    (LocalBook.cover_high.isnot(None)) |
-                    (LocalBook.cover_original.isnot(None))
+                    (LocalBook.cover_low.isnot(None))
+                    | (LocalBook.cover_medium.isnot(None))
+                    | (LocalBook.cover_high.isnot(None))
+                    | (LocalBook.cover_original.isnot(None))
                 )
                 .count()
             )
 
             covers_size = (
-                sum(
-                    f.stat().st_size for f in Path(COVERS_DIR).rglob("*") if f.is_file()
-                )
+                sum(f.stat().st_size for f in Path(COVERS_DIR).rglob("*") if f.is_file())
                 if Path(COVERS_DIR).exists()
                 else 0
             )
@@ -146,9 +141,7 @@ class LibraryMaintenanceService:
                 "total_file_size_gb": round(total_file_size / (1024**3), 2),
                 "books_with_covers": books_with_covers,
                 "cover_percentage": (
-                    round((books_with_covers / total_books * 100), 1)
-                    if total_books > 0
-                    else 0
+                    round((books_with_covers / total_books * 100), 1) if total_books > 0 else 0
                 ),
                 "covers_dir_size_bytes": covers_size,
                 "covers_dir_size_mb": round(covers_size / (1024 * 1024), 2),

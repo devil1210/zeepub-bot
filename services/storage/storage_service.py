@@ -1,17 +1,18 @@
-import os
 import logging
+import os
 from abc import ABC, abstractmethod
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 
 logger = logging.getLogger(__name__)
 
+
 class StorageProvider(ABC):
     @abstractmethod
-    async def get_file_content(self, path: str) -> Optional[bytes]:
+    async def get_file_content(self, path: str) -> bytes | None:
         pass
 
     @abstractmethod
-    async def get_file_stream(self, path: str) -> Optional[BinaryIO]:
+    async def get_file_stream(self, path: str) -> BinaryIO | None:
         pass
 
     @abstractmethod
@@ -22,8 +23,9 @@ class StorageProvider(ABC):
     async def exists(self, path: str) -> bool:
         pass
 
+
 class LocalStorageProvider(StorageProvider):
-    async def get_file_content(self, path: str) -> Optional[bytes]:
+    async def get_file_content(self, path: str) -> bytes | None:
         try:
             if not os.path.exists(path):
                 return None
@@ -33,7 +35,7 @@ class LocalStorageProvider(StorageProvider):
             logger.error(f"LocalStorage error reading {path}: {e}")
             return None
 
-    async def get_file_stream(self, path: str) -> Optional[BinaryIO]:
+    async def get_file_stream(self, path: str) -> BinaryIO | None:
         try:
             if not os.path.exists(path):
                 return None
@@ -55,14 +57,15 @@ class LocalStorageProvider(StorageProvider):
     async def exists(self, path: str) -> bool:
         return os.path.exists(path)
 
+
 class StorageService:
     def __init__(self, provider: StorageProvider = None):
         self.provider = provider or LocalStorageProvider()
 
-    async def get_content(self, path: str) -> Optional[bytes]:
+    async def get_content(self, path: str) -> bytes | None:
         return await self.provider.get_file_content(path)
 
-    async def get_stream(self, path: str) -> Optional[BinaryIO]:
+    async def get_stream(self, path: str) -> BinaryIO | None:
         return await self.provider.get_file_stream(path)
 
     async def save(self, path: str, content: bytes) -> bool:
@@ -70,5 +73,6 @@ class StorageService:
 
     async def exists(self, path: str) -> bool:
         return await self.provider.exists(path)
+
 
 storage_service = StorageService()

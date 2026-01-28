@@ -167,34 +167,8 @@ const AppContent: React.FC = () => {
           <Route path="/library" element={
             <Library
               onNavigate={onNavigate}
-              onSelectBook={(title, author, cover) => {
-                // Mock conversion for library click
-                // In real app, maybe Library should return Series object?
-                const mockSeries: Series = {
-                  id: 'lib-series-1',
-                  title: title,
-                  author: author,
-                  coverUrl: cover,
-                  description: 'Description loaded from library...',
-                  genre: 'Fantasy',
-                  rating: 0,
-                  volumesCount: 1,
-                  status: 'Ongoing',
-                  lastUpdated: 'Hoy',
-                  volumes: []
-                };
-                const mockVolume: Volume = {
-                  id: 'lib-vol-1',
-                  seriesId: 'lib-series-1',
-                  title: title,
-                  volumeNumber: 1,
-                  coverUrl: cover,
-                  publishedDate: '2023',
-                  pages: 300,
-                  format: 'EPUB',
-                  rating: 0
-                };
-                onNavigate('search', mockSeries, mockVolume);
+              onSelectBook={(bookId) => {
+                onNavigate(`book:${bookId}`);
               }}
             />
           } />
@@ -214,10 +188,10 @@ const AppContent: React.FC = () => {
             isAdmin ? <PageWrapper Component={Admin} /> : <Navigate to="/" replace />
           } />
 
-          {/* Details Routes */}
-          <Route path="/book/:bookId" element={<BookDetailByIdWrapper />} />
-          <Route path="/series/:seriesId" element={<SeriesDetailWrapper />} />
-          <Route path="/read/:seriesId/:volumeId" element={<BookDetailWrapper />} />
+          {/* Details Routes - All consolidated to use IDs from URL */}
+          <Route path="/book/:bookId" element={<UniversalDetailWrapper />} />
+          <Route path="/series/:seriesId" element={<UniversalDetailWrapper />} />
+          <Route path="/read/:seriesId/:volumeId" element={<UniversalDetailWrapper />} />
           <Route path="/reader" element={<Reader onClose={() => onNavigate('dashboard')} />} />
         </Routes>
       </Layout>
@@ -225,108 +199,20 @@ const AppContent: React.FC = () => {
   );
 };
 
-// Wrappers to handle params and state
-const BookDetailByIdWrapper = () => {
+// Universal wrapper for any type of detail (Book or Series)
+const UniversalDetailWrapper = () => {
   const navigate = useNavigate();
   const onNavigate = useLegacyNavigation();
   const { pathname } = useLocation();
-  const bookId = pathname.split('/')[2];
 
-  return <BookDetailById bookId={bookId} onBack={() => navigate(-1)} onNavigate={onNavigate} />;
-};
-
-const SeriesDetailWrapper = () => {
-  const navigate = useNavigate();
-  const onNavigate = useLegacyNavigation();
-  const { setSearchTerm, state: navState } = useNavigation();
-  const location = useLocation();
-  const pathname = location.pathname;
-  const series = location.state?.series as Series;
-
-  // Extract ID if missing state
-  const seriesId = series?._id || series?.id || pathname.split('/')[2];
-
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    onNavigate('search');
-  };
-
-  const handleBack = () => {
-    if (navState.historyStack.length > 1) {
-      navigate(-1);
-      return;
-    }
-
-    navigate('/search');
-  };
-
-  const handleSelectVolume = (vol: Volume, selectedSeries?: Series) => {
-    const targetSeries = selectedSeries || series || ({ id: seriesId } as Series);
-    const targetSeriesId = targetSeries?.id || seriesId;
-
-    if (!targetSeriesId || !vol?.id) {
-      return;
-    }
-
-    const route = `/read/${targetSeriesId}/${vol.id}`;
-    navigate(route, {
-      state: { series: targetSeries, volume: vol }
-    });
-  };
-
-  return (
-    <SeriesDetail
-      series={series || ({ id: seriesId } as any)}
-      onBack={handleBack}
-      onSelectVolume={handleSelectVolume}
-      onSearch={handleSearch}
-    />
-  );
-};
-
-const BookDetailWrapper = () => {
-  const navigate = useNavigate();
-  const onNavigate = useLegacyNavigation();
-  const { setSearchTerm, state: navState } = useNavigation();
-  const location = useLocation();
-  const pathname = location.pathname;
-  const { series, volume } = location.state || {}; // Cast as needed
-
-  // Extract IDs from pathname if state is missing
+  // Extract ID: 
+  // /book/ID -> parts[2]
+  // /series/ID -> parts[2]
+  // /read/SID/VID -> parts[3] (prefer volume ID for fetching)
   const parts = pathname.split('/');
-  const volumeId = volume?.id || parts[3];
+  const id = parts[parts.length - 1]; // Current logic: take the last part as primary ID
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    onNavigate('search');
-  };
-
-  const seriesId = series?.id || parts[2];
-
-  const handleBack = () => {
-    if (navState.historyStack.length > 1) {
-      navigate(-1);
-      return;
-    }
-
-    if (seriesId) {
-      navigate(`/series/${seriesId}`, { state: { series } });
-      return;
-    }
-
-    navigate('/search');
-  };
-
-  return (
-    <BookDetail
-      series={series}
-      volume={volume}
-      bookId={volumeId}
-      onBack={handleBack}
-      onSearch={handleSearch}
-      onNavigate={onNavigate}
-    />
-  );
+  return <BookDetailById bookId={id} onBack={() => navigate(-1)} onNavigate={onNavigate} />;
 };
 
 const App: React.FC = () => {

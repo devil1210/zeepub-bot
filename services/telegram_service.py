@@ -6,7 +6,7 @@ from typing import Any
 from urllib.parse import unquote, urlparse
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Update
-from telegram.error import BadRequest, Forbidden
+from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
 # from core.state_manager import state_manager (Moved to local scope)
@@ -56,10 +56,7 @@ async def send_photo_bytes(
                     message_thread_id=message_thread_id,
                 )
             except BadRequest as e:
-                if (
-                    "Message thread not found" in str(e)
-                    and message_thread_id is not None
-                ):
+                if "Message thread not found" in str(e) and message_thread_id is not None:
                     # Retry without thread_id (send to General/Main)
                     bio.seek(0)
                     return await bot.send_photo(
@@ -95,10 +92,7 @@ async def send_photo_bytes(
                             message_thread_id=message_thread_id,
                         )
                     except BadRequest as e:
-                        if (
-                            "Message thread not found" in str(e)
-                            and message_thread_id is not None
-                        ):
+                        if "Message thread not found" in str(e) and message_thread_id is not None:
                             bio.seek(0)
                             return await bot.send_photo(
                                 chat_id=chat_id,
@@ -121,10 +115,7 @@ async def send_photo_bytes(
                             message_thread_id=message_thread_id,
                         )
                     except BadRequest as e:
-                        if (
-                            "Message thread not found" in str(e)
-                            and message_thread_id is not None
-                        ):
+                        if "Message thread not found" in str(e) and message_thread_id is not None:
                             f.seek(0)
                             return await bot.send_photo(
                                 chat_id=chat_id,
@@ -166,10 +157,7 @@ async def send_doc_bytes(
                     message_thread_id=message_thread_id,
                 )
             except BadRequest as e:
-                if (
-                    "Message thread not found" in str(e)
-                    and message_thread_id is not None
-                ):
+                if "Message thread not found" in str(e) and message_thread_id is not None:
                     bio.seek(0)
                     return await bot.send_document(
                         chat_id=chat_id,
@@ -208,10 +196,7 @@ async def send_doc_bytes(
                             message_thread_id=message_thread_id,
                         )
                     except BadRequest as e:
-                        if (
-                            "Message thread not found" in str(e)
-                            and message_thread_id is not None
-                        ):
+                        if "Message thread not found" in str(e) and message_thread_id is not None:
                             bio.seek(0)
                             return await bot.send_document(
                                 chat_id=chat_id,
@@ -236,10 +221,7 @@ async def send_doc_bytes(
                         message_thread_id=message_thread_id,
                     )
                 except BadRequest as e:
-                    if (
-                        "Message thread not found" in str(e)
-                        and message_thread_id is not None
-                    ):
+                    if "Message thread not found" in str(e) and message_thread_id is not None:
                         f.seek(0)
                         return await bot.send_document(
                             chat_id=chat_id,
@@ -264,10 +246,10 @@ async def publicar_libro(
     menu_prep: tuple = None,
 ):
     """Descarga EPUB para metadatos, muestra portada, sinopsis y botones."""
-    from services.publisher.publisher_service import publisher_service
-    from services.metadata_orchestrator.metadata_service import metadata_orchestrator
-    from core.state_manager import state_manager
     from core.session_manager import session_manager
+    from core.state_manager import state_manager
+    from services.metadata_orchestrator.metadata_service import metadata_orchestrator
+    from services.publisher.publisher_service import publisher_service
     from utils.helpers import get_thread_id
 
     user_state = state_manager.get_user_state(uid)
@@ -285,6 +267,7 @@ async def publicar_libro(
         thread_id_destino = thread_id_origen if destino == chat_origen else None
         if uid == destino:
             from services.topic_service import topic_service
+
             topic_id = await topic_service.get_topic_id(uid, "catalogo")
             if topic_id:
                 thread_id_destino = topic_id
@@ -301,25 +284,29 @@ async def publicar_libro(
         # 2. Metadata Gathering and Enrichment
         # Start with OPDS metadata
         meta = await obtener_metadatos_opds(series_id, volume_id)
-        
+
         epub_downloaded = None
         if epub_url:
             import aiohttp
-            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+
+            auth = (
+                aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+                if config.OPDS_AUTH
+                else None
+            )
             epub_downloaded = await fetch_bytes(epub_url, timeout=120, auth=auth)
-            
+
             if epub_downloaded:
                 # Use orchestrator for enrichment
                 meta = await metadata_orchestrator.get_enriched_metadata(
-                    book_id=epub_url, 
-                    epub_bytes=epub_downloaded
+                    book_id=epub_url, epub_bytes=epub_downloaded
                 )
-                
+
                 # Maintain state for subsequent download click
                 user_state["epub_buffer"] = epub_downloaded
                 user_state["epub_url"] = epub_url
                 user_state["meta_pendiente"] = meta
-                
+
                 # Calculate size for display
                 if isinstance(epub_downloaded, (bytes, bytearray)):
                     meta["size_mb"] = len(epub_downloaded) / (1024 * 1024)
@@ -327,30 +314,28 @@ async def publicar_libro(
                     meta["size_mb"] = os.path.getsize(epub_downloaded) / (1024 * 1024)
 
         # Fallback for cover and title
-        if not meta.get("cover"): meta["cover"] = portada_url
-        if not meta.get("title"): meta["title"] = titulo
+        if not meta.get("cover"):
+            meta["cover"] = portada_url
+        if not meta.get("title"):
+            meta["title"] = titulo
 
         # 3. Cleanup "Preparing" message
         if menu_prep:
             try:
                 await context.bot.delete_message(chat_id=menu_prep[0], message_id=menu_prep[1])
-            except: pass
+            except:
+                pass
 
         # 4. Announce Book using PublisherService
         await publisher_service.announce(
             platform="telegram",
             target_id=destino,
             book_data=meta,
-            options={
-                "message_thread_id": thread_id_destino,
-                "state": user_state
-            }
+            options={"message_thread_id": thread_id_destino, "state": user_state},
         )
 
         user_state["portada_pendiente"] = portada_url
         user_state["titulo_pendiente"] = titulo
-
-
 
 
 async def descargar_epub_pendiente(
@@ -365,9 +350,7 @@ async def descargar_epub_pendiente(
 
     bot = context.bot
 
-    thread_id_origen = user_state.get(
-        "message_thread_id"
-    )  # Usar el guardado en el estado
+    thread_id_origen = user_state.get("message_thread_id")  # Usar el guardado en el estado
 
     epub_buffer = user_state.pop("epub_buffer", None)
     epub_url = user_state.pop("epub_url", "")
@@ -449,6 +432,7 @@ async def descargar_epub_pendiente(
     delete_seconds = 0
     if is_group and is_privileged and str(destino) == str(update.effective_chat.id):
         from services.settings_service import get_setting
+
         try:
             delete_minutes_str = get_setting("auto_delete_time", "2")
             delete_minutes = int(delete_minutes_str)
@@ -463,37 +447,39 @@ async def descargar_epub_pendiente(
     # Preparar datos
     book_data = {
         "title": titulo,
-        "epub_buffer": epub_buffer, # Bytes or Path
+        "epub_buffer": epub_buffer,  # Bytes or Path
         "url": epub_url,
-        **meta # Include all metadata
+        **meta,  # Include all metadata
     }
 
     # Intentar enviar
     success = await delivery_service.deliver(
         platform="telegram",
-        target_id=uid, # User ID for quota checks
+        target_id=uid,  # User ID for quota checks
         book_data=book_data,
         options={
-            "target_chat_id": destino, # Where to send the file
+            "target_chat_id": destino,  # Where to send the file
             "message_thread_id": thread_id_destino,
             "job_queue": job_queue,
-            "auto_delete_seconds": delete_seconds
-        }
+            "auto_delete_seconds": delete_seconds,
+        },
     )
 
     if success:
         # Gamificación: Hitos (No incluido en DeliveryService aún)
         from services.user_service import check_milestones
+
         milestone_msg = await check_milestones(uid, context)
         if milestone_msg:
-             try:
+            try:
                 await bot.send_message(
                     chat_id=destino,
                     text=milestone_msg,
                     parse_mode="HTML",
                     message_thread_id=thread_id_destino,
                 )
-             except Exception: pass
+            except Exception:
+                pass
 
     cleanup_tmp(epub_buffer)
 
@@ -501,30 +487,38 @@ async def descargar_epub_pendiente(
         # --- Interactive Feedback (v6.1.0) ---
         # Mostrar botón de calificar si tenemos book_id local
         if epub_url and ("local_library" in epub_url or os.path.exists(epub_url)):
-             try:
+            try:
                 from models.library_models import LocalBook
                 from utils.library_db import get_session
 
-                # Simple path matching. 
+                # Simple path matching.
                 # Note: This session is sync, so we wrap or just use it quickly.
                 session = get_session()
                 book_db = session.query(LocalBook).filter_by(filepath=epub_url).first()
                 if book_db:
-                    kb_rate = [[InlineKeyboardButton("⭐ Calificar Libro", callback_data=f"prompt_rate|{book_db.id}")]]
+                    kb_rate = [
+                        [
+                            InlineKeyboardButton(
+                                "⭐ Calificar Libro", callback_data=f"prompt_rate|{book_db.id}"
+                            )
+                        ]
+                    ]
                     try:
                         await bot.send_message(
                             chat_id=destino,
                             text="¿Qué te pareció este libro?",
                             reply_markup=InlineKeyboardMarkup(kb_rate),
-                            message_thread_id=thread_id_destino
+                            message_thread_id=thread_id_destino,
                         )
-                    except Exception: pass
+                    except Exception:
+                        pass
                 session.close()
-             except Exception as e:
+            except Exception as e:
                 logger.error(f"Error finding local book for rating: {e}")
         # -------------------------------------
 
     from utils.download_limiter import downloads_left
+
     restantes = await downloads_left(uid)
 
     # Mostrar descargas restantes (excepto Premium)
@@ -537,16 +531,8 @@ async def descargar_epub_pendiente(
 
     # Mostrar opciones finales
     keyboard = [
-        [
-            InlineKeyboardButton(
-                "📚 Volver a categorías", callback_data="volver_colecciones"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "↩️ Volver a la página anterior", callback_data="volver_ultima"
-            )
-        ],
+        [InlineKeyboardButton("📚 Volver a categorías", callback_data="volver_colecciones")],
+        [InlineKeyboardButton("↩️ Volver a la página anterior", callback_data="volver_ultima")],
         [InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")],
     ]
     await bot.send_message(
@@ -568,7 +554,7 @@ async def enviar_libro_directo(
     message_thread_id: int = None,
     metadata_override: dict[str, Any] | None = None,
     explicit_file_buffer: bytes | str | None = None,
-    job_queue = None,
+    job_queue=None,
     auto_delete_seconds: int = 0,
 ):
     """
@@ -588,9 +574,7 @@ async def enviar_libro_directo(
         # 2. Mensaje de preparación (siempre al usuario que interactúa)
         prep_msg = None
         try:
-            prep_msg = await bot.send_message(
-                chat_id=user_id, text=f"⏳ Procesando: {title}..."
-            )
+            prep_msg = await bot.send_message(chat_id=user_id, text=f"⏳ Procesando: {title}...")
         except Exception as e:
             logger.warning(f"No se pudo enviar mensaje de preparación: {e}")
 
@@ -604,7 +588,12 @@ async def enviar_libro_directo(
             logger.info(f"Usando buffer explícito para: {title}")
             epub_bytes = explicit_file_buffer
         # Detectar si es ruta local absoluta (Compatible con Windows C:/ y Linux /)
-        elif download_url and not download_url.startswith("http") and os.path.isabs(download_url) and os.path.exists(download_url):
+        elif (
+            download_url
+            and not download_url.startswith("http")
+            and os.path.isabs(download_url)
+            and os.path.exists(download_url)
+        ):
             logger.info(f"Usando archivo local: {download_url}")
             epub_bytes = download_url  # send_doc_bytes acepta rutas
         elif download_url:
@@ -618,7 +607,9 @@ async def enviar_libro_directo(
             epub_bytes = await fetch_bytes(download_url, timeout=120, auth=auth)
 
         if not epub_bytes:
-            error_msg = "❌ Error al obtener el archivo. No se encontró en el disco o la descarga falló."
+            error_msg = (
+                "❌ Error al obtener el archivo. No se encontró en el disco o la descarga falló."
+            )
             logger.error(f"EPUB acquisition failed for: {download_url}")
             await bot.send_message(
                 chat_id=user_id,
@@ -693,17 +684,13 @@ async def enviar_libro_directo(
             elif isinstance(epub_bytes, str) and await asyncio.to_thread(
                 os.path.exists, epub_bytes
             ):
-                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (
-                    1024 * 1024
-                )
+                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
             else:
                 size_mb = 0.0
 
             fecha_mod = meta.get("fecha_modificacion", "Desconocida")
 
-            epub_info_block = (
-                f"📅 Actualizado: {fecha_mod}\n" f"📦 Tamaño: {size_mb:.2f} MB"
-            )
+            epub_info_block = f"📅 Actualizado: {fecha_mod}\n📦 Tamaño: {size_mb:.2f} MB"
 
             # 4. Metadatos
             metadata_block = formatear_metadata_fb(meta)
@@ -738,9 +725,7 @@ async def enviar_libro_directo(
                     # Pero para FB preview, mejor todo en uno si cabe, o separado.
                     # Telegram caption limit is 1024 chars. FB posts can be longer.
                     # Vamos a intentar enviar Foto sin caption (o titulo) y luego el texto completo.
-                    await send_photo_bytes(
-                        bot, user_id, None, portada_data, filename="cover.jpg"
-                    )
+                    await send_photo_bytes(bot, user_id, None, portada_data, filename="cover.jpg")
 
                 await bot.send_message(
                     chat_id=user_id,
@@ -756,9 +741,7 @@ async def enviar_libro_directo(
                 is_valid, error_msg = validate_facebook_credentials(config)
 
                 if not is_valid:
-                    await bot.send_message(
-                        chat_id=user_id, text=error_msg, parse_mode="HTML"
-                    )
+                    await bot.send_message(chat_id=user_id, text=error_msg, parse_mode="HTML")
                     return False
 
                 import httpx
@@ -792,9 +775,7 @@ async def enviar_libro_directo(
                 url = f"https://graph.facebook.com/{config.FACEBOOK_GROUP_ID}/photos"
                 params = {
                     "url": fb_cover_url,
-                    "caption": fb_caption.replace("<b>", "").replace(
-                        "</b>", ""
-                    ),  # Strip HTML
+                    "caption": fb_caption.replace("<b>", "").replace("</b>", ""),  # Strip HTML
                     "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
                 }
 
@@ -847,9 +828,7 @@ async def enviar_libro_directo(
             elif isinstance(epub_bytes, str) and await asyncio.to_thread(
                 os.path.exists, epub_bytes
             ):
-                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (
-                    1024 * 1024
-                )
+                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
             else:
                 size_mb = 0.0
             version = meta.get("epub_version", "2.0")
@@ -872,9 +851,7 @@ async def enviar_libro_directo(
                 caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
 
             # Nombre de archivo desde URL
-            fname = (
-                unquote(urlparse(download_url).path.split("/")[-1]) or "archivo.epub"
-            )
+            fname = unquote(urlparse(download_url).path.split("/")[-1]) or "archivo.epub"
 
             sent_doc = await send_doc_bytes(
                 bot,
@@ -913,15 +890,11 @@ async def enviar_libro_directo(
                         file_info=file_info,
                     )
                 except Exception as e:
-                    logger.error(
-                        f"Failed to log book history in enviar_libro_directo: {e}"
-                    )
+                    logger.error(f"Failed to log book history in enviar_libro_directo: {e}")
 
             # 8. Registrar descarga y notificar
             record_download(user_id)
-            logger.info(
-                f"[enviar_libro_directo] Descarga registrada para user {user_id}"
-            )
+            logger.info(f"[enviar_libro_directo] Descarga registrada para user {user_id}")
 
             # Gamificación: Incrementar contador total
             from services.user_service import increment_download_count
@@ -932,9 +905,7 @@ async def enviar_libro_directo(
                     f"[enviar_libro_directo] Contador total incrementado para user {user_id}"
                 )
             except Exception as e:
-                logger.error(
-                    f"[enviar_libro_directo] Error incrementando contador total: {e}"
-                )
+                logger.error(f"[enviar_libro_directo] Error incrementando contador total: {e}")
 
             # Registrar en historial de descargas
             try:
@@ -950,9 +921,7 @@ async def enviar_libro_directo(
                 romaji = meta.get("romaji_title") or title_meta.get("romaji")
                 series = meta.get("titulo_serie") or title_meta.get("series")
                 volume = meta.get("series_index") or title_meta.get("volume")
-                clean_title = meta.get("internal_title") or title_meta.get(
-                    "clean_title"
-                )
+                clean_title = meta.get("internal_title") or title_meta.get("clean_title")
                 translator = meta.get("traductor") or meta.get("publisher")
 
                 # Generate stable hashes (only if not provided in override)
@@ -970,7 +939,7 @@ async def enviar_libro_directo(
                         volume=volume,
                         translator=translator,
                         layout_by=meta.get("maquetadores"),
-                        language=meta.get("language")
+                        language=meta.get("language"),
                     )
                     logger.warning(f"Generated new hash (should use library hash): {book_hash}")
 
@@ -990,19 +959,18 @@ async def enviar_libro_directo(
 
                 # Also record in centralized metrics DB
                 from repositories.metrics_repository import metrics_repo
+
                 series_hash = meta.get("series_hash") or (
                     generate_series_hash(
-                        series=series, 
-                        author=author, 
-                        book_type=meta.get("book_type") or meta.get("categoria")
+                        series=series,
+                        author=author,
+                        book_type=meta.get("book_type") or meta.get("categoria"),
                     )
-                    if series else None
+                    if series
+                    else None
                 )
                 await metrics_repo.add_download(
-                    user_id=user_id,
-                    book_hash=book_hash,
-                    series_hash=series_hash,
-                    title=titulo_vol
+                    user_id=user_id, book_hash=book_hash, series_hash=series_hash, title=titulo_vol
                 )
 
                 logger.info(
@@ -1036,9 +1004,7 @@ async def enviar_libro_directo(
 
     except Exception as e:
         logger.error(f"Error en enviar_libro_directo: {e}", exc_info=True)
-        await bot.send_message(
-            chat_id=user_id, text=f"❌ Ocurrió un error interno: {str(e)}"
-        )
+        await bot.send_message(chat_id=user_id, text=f"❌ Ocurrió un error interno: {str(e)}")
         return False
 
 
@@ -1090,12 +1056,8 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     if epub_buffer:
         if isinstance(epub_buffer, (bytes, bytearray)):
             size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and await asyncio.to_thread(
-            os.path.exists, epub_buffer
-        ):
-            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (
-                1024 * 1024
-            )
+        elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
+            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
         else:
             size_mb = 0.0
     else:
@@ -1103,7 +1065,7 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
 
     fecha_mod = meta.get("fecha_modificacion", "Desconocida")
 
-    epub_info_block = f"📅 Actualizado: {fecha_mod}\n" f"📦 Tamaño: {size_mb:.2f} MB"
+    epub_info_block = f"📅 Actualizado: {fecha_mod}\n📦 Tamaño: {size_mb:.2f} MB"
 
     # 4. Metadatos (Maquetado, Categoría, etc.)
     metadata_block = formatear_metadata_fb(meta)
@@ -1149,9 +1111,7 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
 
     # Enviar vista previa (caption)
     btns = []
-    btns.append(
-        [InlineKeyboardButton("🚀 Publicar ahora", callback_data="publicar_fb")]
-    )
+    btns.append([InlineKeyboardButton("🚀 Publicar ahora", callback_data="publicar_fb")])
 
     btns.append(
         [
@@ -1181,9 +1141,7 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     )
 
 
-async def _publish_choice_facebook(
-    update, context: ContextTypes.DEFAULT_TYPE, uid: int
-):
+async def _publish_choice_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid: int):
     """Flow when a publisher chooses to publish on Facebook: send cover alone then prepare preview."""
     bot = context.bot
 
@@ -1301,9 +1259,7 @@ async def _publish_choice_facebook(
     st.pop("publish_command_thread_id", None)
 
 
-async def _publish_choice_telegram(
-    update, context: ContextTypes.DEFAULT_TYPE, uid: int
-):
+async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, uid: int):
     """Continue publish flow for Telegram: send portada, sinopsis, info and buttons (omit FB post option)."""
     bot = context.bot
 
@@ -1340,19 +1296,11 @@ async def _publish_choice_telegram(
 
     import aiohttp
 
-    auth = (
-        aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
-        if config.OPDS_AUTH
-        else None
-    )
+    auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
     portada_data = (
         cover_bytes
         if cover_bytes
-        else (
-            await fetch_bytes(portada_url, timeout=15, auth=auth)
-            if portada_url
-            else None
-        )
+        else (await fetch_bytes(portada_url, timeout=15, auth=auth) if portada_url else None)
     )
 
     await send_photo_bytes(
@@ -1378,9 +1326,7 @@ async def _publish_choice_telegram(
             try:
                 sinopsis = await obtener_sinopsis_opds(series_id)
             except Exception as e:
-                logger.debug(
-                    "Error fetching sinopsis in publish_choice_telegram: %s", e
-                )
+                logger.debug("Error fetching sinopsis in publish_choice_telegram: %s", e)
 
     if sinopsis:
         sinopsis_esc = escapar_html(sinopsis)
@@ -1404,20 +1350,14 @@ async def _publish_choice_telegram(
                 raise e
     else:
         slug = generar_slug_from_meta(meta)
-        fallback = (
-            f"Sinopsis: (no disponible)\n#{slug}"
-            if slug
-            else "Sinopsis: (no disponible)"
-        )
+        fallback = f"Sinopsis: (no disponible)\n#{slug}" if slug else "Sinopsis: (no disponible)"
         try:
             await bot.send_message(
                 chat_id=destino, text=fallback, message_thread_id=thread_id_origen
             )
         except BadRequest as e:
             if "Message thread not found" in str(e) and thread_id_origen is not None:
-                await bot.send_message(
-                    chat_id=destino, text=fallback, message_thread_id=None
-                )
+                await bot.send_message(chat_id=destino, text=fallback, message_thread_id=None)
             else:
                 raise e
 
@@ -1425,20 +1365,14 @@ async def _publish_choice_telegram(
     if epub_buffer:
         if isinstance(epub_buffer, (bytes, bytearray)):
             size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and await asyncio.to_thread(
-            os.path.exists, epub_buffer
-        ):
-            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (
-                1024 * 1024
-            )
+        elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
+            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
         else:
             size_mb = 0.0
 
         version = meta.get("epub_version", "2.0")
         fecha = meta.get("fecha_modificacion", "Desconocida")
-        titulo_vol = meta.get("titulo_volumen") or st.get(
-            "titulo_pendiente", "Desconocido"
-        )
+        titulo_vol = meta.get("titulo_volumen") or st.get("titulo_pendiente", "Desconocido")
 
         info_text = (
             f"📂 <b>{titulo_vol}</b>\n"
@@ -1493,25 +1427,22 @@ async def _publish_choice_telegram(
     st["msg_botones_id"] = sent.message_id
 
 
-async def publicar_facebook_action(
-    update, context: ContextTypes.DEFAULT_TYPE, uid: int
-):
+async def publicar_facebook_action(update, context: ContextTypes.DEFAULT_TYPE, uid: int):
     """Publica el post en Facebook."""
     bot = context.bot
 
-    from services.publisher.publisher_service import publisher_service
     from core.state_manager import state_manager
+    from services.publisher.publisher_service import publisher_service
+
     user_state = state_manager.get_user_state(uid)
-    
+
     caption = user_state.get("fb_caption")
     if not caption:
         await bot.send_message(chat_id=uid, text="❌ No hay post preparado.")
         return
 
     # Send progress message
-    publish_chat = (
-        user_state.get("publish_command_origin") or update.effective_chat.id or uid
-    )
+    publish_chat = user_state.get("publish_command_origin") or update.effective_chat.id or uid
     publish_thread = user_state.get("publish_command_thread_id")
     try:
         await bot.send_message(
@@ -1527,25 +1458,24 @@ async def publicar_facebook_action(
                 text="⏳ Publicando en Facebook...",
                 message_thread_id=None,
             )
-        except: pass
+        except:
+            pass
 
     # Prepare data for publisher
     # Publisher needs cover_url and caption
     book_data = {
         "cover_url": user_state.get("portada_pendiente"),
-        "cover": user_state.get("portada_pendiente"), # Fallback key
+        "cover": user_state.get("portada_pendiente"),  # Fallback key
         # We pass other meta just in case, but caption is explict
     }
-    
-    options = {
-        "caption": caption
-    }
+
+    options = {"caption": caption}
 
     success = await publisher_service.announce(
         "facebook",
-        target_id=uid, # Not used by FB provider technically (it uses config Group ID), but required by interface
+        target_id=uid,  # Not used by FB provider technically (it uses config Group ID), but required by interface
         book_data=book_data,
-        options=options
+        options=options,
     )
 
     if success:

@@ -66,11 +66,7 @@ class StarsPaymentPlugin(BasePlugin):
             new_role = "patrocinador"
 
         # Actualizar en la DB
-        await user_repo.upsert(
-            telegram_id=user.id,
-            role=new_role,
-            nickname=user.first_name
-        )
+        await user_repo.upsert(telegram_id=user.id, role=new_role, nickname=user.first_name)
 
         # Limpiar caché del servicio de usuario
         await invalidate_user_cache(user.id)
@@ -78,22 +74,18 @@ class StarsPaymentPlugin(BasePlugin):
         # Enviar mensaje de éxito usando el sistema de plantillas
         if self.cms:
             text = await self.cms.get_text(
-                "star_payment_success",
-                user=user,
-                Nivel=new_role.capitalize()
+                "star_payment_success", user=user, Nivel=new_role.capitalize()
             )
         else:
             text = f"🌟 ¡Gracias {user.first_name}! Ahora eres nivel {new_role.capitalize()}."
 
-        await context.bot.send_message(
-            chat_id=user.id,
-            text=text,
-            parse_mode="HTML"
-        )
+        await context.bot.send_message(chat_id=user.id, text=text, parse_mode="HTML")
 
         logger.info(f"Usuario {user.id} mejorado a {new_role} vía Stars.")
 
-    async def create_stars_invoice_link(self, title: str, description: str, payload: str, amount: int) -> str:
+    async def create_stars_invoice_link(
+        self, title: str, description: str, payload: str, amount: int
+    ) -> str:
         """Genera un enlace de factura para Telegram Stars."""
         # "XTR" es el código de moneda para Telegram Stars
         prices = [LabeledPrice("Estrellas", amount)]
@@ -105,6 +97,6 @@ class StarsPaymentPlugin(BasePlugin):
             payload=payload,
             provider_token="",  # Vacío para Stars
             currency="XTR",
-            prices=prices
+            prices=prices,
         )
         return link

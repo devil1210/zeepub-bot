@@ -31,6 +31,7 @@ class TopicService:
         # Por ahora, simulamos el almacenamiento en el estado o DB.
 
         from repositories.user_repository import user_repo
+
         user_data = await user_repo.get_user_by_id(user_id)
         if not user_data:
             return {}
@@ -63,6 +64,7 @@ class TopicService:
     async def get_topic_id(self, user_id: int, slug: str) -> int | None:
         """Recupera el thread_id para un slug específico."""
         from repositories.user_repository import user_repo
+
         user_data = await user_repo.get_user_by_id(user_id)
         if not user_data:
             return None

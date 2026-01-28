@@ -1,4 +1,3 @@
-
 import json
 import logging
 from typing import Any
@@ -10,12 +9,14 @@ from config.config_settings import config
 
 logger = logging.getLogger(__name__)
 
+
 class AIService:
     """
     Gestiona la interacción con Google Gemini para análisis inteligente de libros.
     """
+
     _models_cache = {}
-    _exhausted_until = {} # Tracks when a model can be tried again
+    _exhausted_until = {}  # Tracks when a model can be tried again
 
     @classmethod
     def _get_model(cls, model_name: str = "gemini-3-flash-preview"):
@@ -29,7 +30,7 @@ class AIService:
 
         try:
             genai.configure(api_key=config.GEMINI_API_KEY)
-            
+
             # Configuración de seguridad permisiva para análisis de textos literarios
             safety_settings = {
                 HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
@@ -41,7 +42,7 @@ class AIService:
             model = genai.GenerativeModel(
                 model_name=model_name,
                 safety_settings=safety_settings,
-                generation_config={"response_mime_type": "application/json"}
+                generation_config={"response_mime_type": "application/json"},
             )
             # Disable caching to prevent Event Loop issues in threaded context
             # cls._models_cache[model_name] = model
@@ -57,11 +58,12 @@ class AIService:
         """
         import asyncio
         import time
+
         import google.api_core.exceptions as google_exceptions
-        
+
         # Definir orden de preferencia
         models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash"]
-        
+
         # Si se pasó un modelo específico (ej. para sinopsis sin JSON), solo intentamos ese
         if model:
             # Extraer el nombre del modelo del objeto model de genai si es posible
@@ -83,7 +85,7 @@ class AIService:
                 # Si el modelo principal está agotado, saltamos al siguiente
                 if len(models_to_try) > 1:
                     continue
-            
+
             active_model = cls._get_model(model_name)
             if not active_model:
                 continue
@@ -95,20 +97,24 @@ class AIService:
                 except google_exceptions.ResourceExhausted as e:
                     # 429 Quota Exceeded
                     if attempt < max_retries - 1:
-                        logger.warning(f"⚠️ Cuota de {model_name} agotada momentáneamente. Reintentando en {delay}s...")
+                        logger.warning(
+                            f"⚠️ Cuota de {model_name} agotada momentáneamente. Reintentando en {delay}s..."
+                        )
                         await asyncio.sleep(delay)
                         delay *= 2
                     else:
                         # Marcamos este modelo como agotado por 10 minutos
-                        logger.warning(f"🚨 Cuota de {model_name} AGOTADA. Iniciando cooldown de 10 min.")
-                        cls._exhausted_until[model_name] = now + 600 # 10 minutos
-                        
+                        logger.warning(
+                            f"🚨 Cuota de {model_name} AGOTADA. Iniciando cooldown de 10 min."
+                        )
+                        cls._exhausted_until[model_name] = now + 600  # 10 minutos
+
                         # Si hay más modelos en la lista, el loop exterior pasará al siguiente
                         if model_name != models_to_try[-1]:
-                            break 
+                            break
                         else:
                             # Era el último modelo disponible
-                            logger.error(f"❌ Todos los modelos agotaron su cuota definitivamente.")
+                            logger.error("❌ Todos los modelos agotaron su cuota definitivamente.")
                             raise e
                 except Exception as e:
                     logger.error(f"❌ Error inesperado en {model_name}: {e}")
@@ -116,7 +122,9 @@ class AIService:
         return None
 
     @staticmethod
-    async def normalize_book_metadata(filename: str, raw_meta: dict[str, Any]) -> dict[str, Any] | None:
+    async def normalize_book_metadata(
+        filename: str, raw_meta: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Analiza un libro y devuelve metadatos normalizados, priorizando la extracción de volumen desde metadatos internos.
         """
@@ -201,7 +209,7 @@ class AIService:
             "proposed_spanish": "string"
         }}
         """
-        
+
         try:
             response = await AIService._call_gemini_with_retry(prompt)
             if not response:
@@ -212,7 +220,9 @@ class AIService:
             return {"proposed_english": current_name, "proposed_spanish": current_name}
 
     @staticmethod
-    async def analyze_series_for_updates(series_hash: str, current_series_name: str, books: list[dict[str, Any]]) -> dict[str, Any]:
+    async def analyze_series_for_updates(
+        series_hash: str, current_series_name: str, books: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Analiza un grupo de libros y propone estandarización.
         Retorna un objeto 'proposal' con los cambios sugeridos.
@@ -223,7 +233,7 @@ class AIService:
         for b in books[:10]:
             name = b.get("filename") or b.get("spanish_title") or b.get("title", "")
             sample_titles.append(name)
-        
+
         prompt = f"""
         Actúa como un bibliotecario experto. Analiza este grupo de libros y propón una estandarización coherente.
         
@@ -267,27 +277,39 @@ class AIService:
         
         NOTA: Si detectas que los libros de la serie han sido traducidos por diferentes grupos, especifica la 'sigla' correcta para cada archivo dentro del objeto 'volumes'. Si no estás seguro o todos son iguales, usa el 'group_siglas' general de la serie como fallback.
         """
-        
+
         # 0. Get Learning Context (RAG-lite)
         learning_context = ""
         try:
             from sqlalchemy import text
+
             from utils.library_db import get_session
+
             with get_session() as session:
                 # Get valid siglas
-                res_siglas = session.execute(text("SELECT siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 100"))
+                res_siglas = session.execute(
+                    text("SELECT siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 100")
+                )
                 valid_siglas = [r[0] for r in res_siglas]
-                
+
                 # Get similar historical corrections
                 res_learning = session.execute(
-                    text("SELECT proposed_name, final_name FROM ai_learning_feedback WHERE status='edited' LIMIT 5")
+                    text(
+                        "SELECT proposed_name, final_name FROM ai_learning_feedback WHERE status='edited' LIMIT 5"
+                    )
                 )
-                corrections = [f"IA propuso '{r[0]}' pero el usuario corrigió a '{r[1]}'" for r in res_learning]
-                
+                corrections = [
+                    f"IA propuso '{r[0]}' pero el usuario corrigió a '{r[1]}'" for r in res_learning
+                ]
+
                 if valid_siglas:
-                    learning_context += f"\nSIGLAS VÁLIDAS CONOCIDAS (Úsalas si encajan): {', '.join(valid_siglas)}"
+                    learning_context += (
+                        f"\nSIGLAS VÁLIDAS CONOCIDAS (Úsalas si encajan): {', '.join(valid_siglas)}"
+                    )
                 if corrections:
-                    learning_context += f"\nAPRENDIZAJE DE CORRECCIONES PASADAS:\n" + "\n".join(corrections)
+                    learning_context += "\nAPRENDIZAJE DE CORRECCIONES PASADAS:\n" + "\n".join(
+                        corrections
+                    )
         except Exception as e:
             logger.warning(f"Failed to load learning context: {e}")
 
@@ -298,7 +320,7 @@ class AIService:
                 return {"error": "AI failed or quota exceeded"}
             txt = AIService._extract_json_from_text(response.text)
             analysis = json.loads(txt)
-            
+
             # Construir propuesta detallada
             proposal = {
                 "series_hash": series_hash,
@@ -310,18 +332,18 @@ class AIService:
                 "reason": analysis.get("reason"),
                 "confidence": analysis.get("confidence"),
                 "global_tags": analysis.get("detected_tags", []),
-                "changes": []
+                "changes": [],
             }
-            
+
             # Generar cambios individuales (Renombrado de archivos)
             ai_volumes = analysis.get("volumes", {})
-            
+
             for book in books:
                 orig_name = book.get("filename") or book.get("title", "")
-                
+
                 # Get specific data for this volume from IA response
                 vol_info = ai_volumes.get(orig_name)
-                
+
                 # Use IA volume if it's a dict or a plain number (backward compatibility)
                 if isinstance(vol_info, dict):
                     current_vol = vol_info.get("volume", book.get("volume", 0))
@@ -329,7 +351,7 @@ class AIService:
                 else:
                     current_vol = vol_info if vol_info is not None else book.get("volume", 0)
                     book_siglas = proposal["group_siglas"] or "Unknown"
-                
+
                 # Handling volume string
                 if current_vol is None or float(current_vol) == 0:
                     vol_part = "Volumen Único"
@@ -339,30 +361,39 @@ class AIService:
                     if vol_val % 1 != 0:
                         vol_str += f".{str(vol_val).split('.')[1]}"
                     vol_part = f"V{vol_str}"
-                
+
                 # Determinar prefijos por rasgos (Color/SC)
                 tags = book.get("tags") or []
                 is_color = any("Color" in str(t) for t in tags)
-                is_sc = any("Sin Censura" in str(t) or "Uncensored" in str(t) for t in tags) or book.get("is_uncensored")
-                
+                is_sc = any(
+                    "Sin Censura" in str(t) or "Uncensored" in str(t) for t in tags
+                ) or book.get("is_uncensored")
+
                 prefix = ""
-                if is_color and is_sc: prefix = "[Color-SC]"
-                elif is_color: prefix = "[Color]"
-                elif is_sc: prefix = "[SC]"
-                
+                if is_color and is_sc:
+                    prefix = "[Color-SC]"
+                elif is_color:
+                    prefix = "[Color]"
+                elif is_sc:
+                    prefix = "[SC]"
+
                 # Generar nuevo nombre de archivo usando el nombre en ESPAÑOL y las SIGLAS INDIVIDUALES
                 spanish_name = proposal["proposed_spanish"] or proposal["proposed_series"]
                 raw_filename = f"{prefix}{spanish_name} - {vol_part} [{book_siglas}].epub"
                 new_filename = AIService.sanitize_filename(raw_filename)
-                
+
                 if book.get("filename") != new_filename:
-                    proposal["changes"].append({
-                        "book_id": book.get("id"),
-                        "current_filename": book.get("filename") or book.get("filepath") or book.get("title"),
-                        "proposed_filename": new_filename,
-                        "volume": current_vol,
-                        "siglas": book_siglas
-                    })
+                    proposal["changes"].append(
+                        {
+                            "book_id": book.get("id"),
+                            "current_filename": book.get("filename")
+                            or book.get("filepath")
+                            or book.get("title"),
+                            "proposed_filename": new_filename,
+                            "volume": current_vol,
+                            "siglas": book_siglas,
+                        }
+                    )
 
             # Check if there is NO CHANGE at all (Series matches AND no files renamed)
             if proposal["proposed_series"] == current_series_name and not proposal["changes"]:
@@ -370,12 +401,14 @@ class AIService:
                 proposal["proposed_series"] = "sin propuesta"
                 proposal["proposed_spanish"] = "sin propuesta"
                 if not proposal["reason"]:
-                    proposal["reason"] = "El estado actual coincide perfectamente con la estandarización sugerida."
-            
+                    proposal["reason"] = (
+                        "El estado actual coincide perfectamente con la estandarización sugerida."
+                    )
+
             return proposal
-            
+
             return proposal
-            
+
         except Exception as e:
             logger.error(f"Error analyzing series: {e}")
             return {"error": str(e)}
@@ -390,14 +423,14 @@ class AIService:
         A veces se crean duplicados por pequeñas diferencias en el nombre o autor.
 
         SERIE A:
-        - Nombre: "{series_a.get('series_name')}"
-        - Autor: "{series_a.get('author')}"
-        - Libros: {series_a.get('book_count')}
+        - Nombre: "{series_a.get("series_name")}"
+        - Autor: "{series_a.get("author")}"
+        - Libros: {series_a.get("book_count")}
 
         SERIE B:
-        - Nombre: "{series_b.get('series_name')}"
-        - Autor: "{series_b.get('author')}"
-        - Libros: {series_b.get('book_count')}
+        - Nombre: "{series_b.get("series_name")}"
+        - Autor: "{series_b.get("author")}"
+        - Libros: {series_b.get("book_count")}
 
         REGLAS:
         1. Responde solo si la probabilidad de que sean la misma es > 85%.
@@ -431,33 +464,42 @@ class AIService:
             return None
 
     @staticmethod
-    async def log_feedback(series_hash: str, original: str, proposed: str, final: str, status: str, ai_reason: str = None):
+    async def log_feedback(
+        series_hash: str,
+        original: str,
+        proposed: str,
+        final: str,
+        status: str,
+        ai_reason: str = None,
+    ):
         """Guarda retroalimentación para el aprendizaje de la IA."""
         try:
             from sqlalchemy import text
-            from utils.library_db import get_session
+
             from config.config_settings import config
-            
+            from utils.library_db import get_session
+
             with get_session() as session:
                 query = text("""
                     INSERT INTO ai_learning_feedback (series_hash, original_name, proposed_name, final_name, status, ai_reason)
                     VALUES (:h, :o, :p, :f, :s, :r)
                 """)
                 params = {
-                    "h": series_hash, 
-                    "o": original or "Unknown", 
-                    "p": proposed or final or original or "Unknown", 
-                    "f": final or proposed or original or "Unknown", 
-                    "s": status, 
-                    "r": ai_reason
+                    "h": series_hash,
+                    "o": original or "Unknown",
+                    "p": proposed or final or original or "Unknown",
+                    "f": final or proposed or original or "Unknown",
+                    "s": status,
+                    "r": ai_reason,
                 }
                 session.execute(query, params)
                 session.commit()
-            
+
             # Simple Cloud Push
             if config.ENABLE_SUPABASE:
                 try:
                     from core.supabase_manager import supabase_manager
+
                     client = supabase_manager.get_client()
                     client.table("ai_learning_feedback").insert(params).execute()
                 except Exception as cloud_e:
@@ -477,7 +519,7 @@ class AIService:
         Actúa como un redactor creativo de una editorial de novelas ligeras. Tu tarea es escribir una sinopsis corta y atractiva para el siguiente libro.
         
         Título: "{title}"
-        Descripción Original: "{description[:2000] if description else 'Sin descripción'}" 
+        Descripción Original: "{description[:2000] if description else "Sin descripción"}" 
         
         Reglas:
         1. Idioma: Español.
@@ -518,8 +560,9 @@ class AIService:
         if not name:
             return ""
         import re
+
         # Reemplazar caracteres prohibidos por guiones
         forbidden = r'[\\/:*?"<>|]'
         clean = re.sub(forbidden, "-", name)
         # Limpiar espacios extra y puntos al final (prohibidos en Windows)
-        return clean.strip().strip('.')
+        return clean.strip().strip(".")

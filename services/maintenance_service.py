@@ -35,9 +35,7 @@ async def trigger_watchtower_update():
         potential_urls.insert(0, custom_url)
 
     headers = {"Authorization": f"Bearer {token}"}
-    timeout_config = httpx.Timeout(
-        15.0, connect=5.0
-    )  # Menor timeout para fail-fast entre URLs
+    timeout_config = httpx.Timeout(15.0, connect=5.0)  # Menor timeout para fail-fast entre URLs
 
     last_error = ""
 

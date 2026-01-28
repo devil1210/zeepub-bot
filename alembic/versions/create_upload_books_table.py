@@ -5,6 +5,7 @@ Revises: add_user_levels
 Create Date: 2026-01-23 06:20:00.000000
 
 """
+
 import sqlalchemy as sa
 
 from alembic import op
@@ -39,7 +40,7 @@ def upgrade():
         sa.Column("processed", sa.String(10), server_default="False"),
         sa.Column("upload_metadata", sa.JSON()),
         sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
-        sa.PrimaryKeyConstraint("id")
+        sa.PrimaryKeyConstraint("id"),
     )
 
     # Create indexes for performance

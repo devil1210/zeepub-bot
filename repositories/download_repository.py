@@ -9,6 +9,7 @@ from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
 
+
 class DownloadRepository(BaseRepository[dict[str, Any]]):
     """Repository for managing download history using PostgreSQL."""
 
@@ -40,7 +41,9 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
     async def delete(self, id: Any) -> bool:
         try:
             async with pg_manager.get_session() as session:
-                await session.execute(text("DELETE FROM download_history WHERE id = :id"), {"id": id})
+                await session.execute(
+                    text("DELETE FROM download_history WHERE id = :id"), {"id": id}
+                )
                 await session.commit()
                 return True
         except Exception as e:
@@ -61,7 +64,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
         clean_title: str | None = None,
         book_hash: str | None = None,
         is_uncensored: int = 0,
-        color_mode: str | None = None
+        color_mode: str | None = None,
     ) -> int:
         try:
             async with pg_manager.get_session() as session:
@@ -71,26 +74,43 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                     VALUES (:user_id, :title, :author, :download_url, :file_size, :romaji_title, :series, :volume, :translator, :clean_title, :book_hash, :iu, :cm, CURRENT_TIMESTAMP)
                     RETURNING id
                 """)
-                result = await session.execute(query, {
-                    "user_id": user_id, "title": title, "author": author, 
-                    "download_url": download_url, "file_size": file_size,
-                    "romaji_title": romaji_title, "series": series, "volume": volume,
-                    "translator": translator, "clean_title": clean_title, "book_hash": book_hash,
-                    "iu": is_uncensored, "cm": color_mode
-                })
+                result = await session.execute(
+                    query,
+                    {
+                        "user_id": user_id,
+                        "title": title,
+                        "author": author,
+                        "download_url": download_url,
+                        "file_size": file_size,
+                        "romaji_title": romaji_title,
+                        "series": series,
+                        "volume": volume,
+                        "translator": translator,
+                        "clean_title": clean_title,
+                        "book_hash": book_hash,
+                        "iu": is_uncensored,
+                        "cm": color_mode,
+                    },
+                )
                 new_id = result.scalar()
                 await session.commit()
-                
+
                 # Supabase Sync (Optional, if still needed for real-time)
                 if self.supabase.is_active:
-                     try:
-                         data = {
-                             "user_id": user_id, "title": title, "author": author, 
-                             "download_url": download_url, "file_size": file_size, "book_hash": book_hash,
-                             "is_uncensored": is_uncensored, "color_mode": color_mode
-                         }
-                         self.supabase.get_client().table("download_history").insert(data).execute()
-                     except: pass
+                    try:
+                        data = {
+                            "user_id": user_id,
+                            "title": title,
+                            "author": author,
+                            "download_url": download_url,
+                            "file_size": file_size,
+                            "book_hash": book_hash,
+                            "is_uncensored": is_uncensored,
+                            "color_mode": color_mode,
+                        }
+                        self.supabase.get_client().table("download_history").insert(data).execute()
+                    except:
+                        pass
 
                 return new_id
         except Exception as e:
@@ -101,7 +121,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
-                    SELECT id, title, author, file_size, downloaded_at, romaji_title, series, volume, translator, clean_title
+                    SELECT id, book_id, book_hash, title, author, file_size, downloaded_at, romaji_title, series, volume, translator, clean_title
                     FROM download_history
                     WHERE user_id = :user_id
                     ORDER BY downloaded_at DESC
@@ -125,27 +145,36 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
         try:
             async with pg_manager.get_session() as session:
                 if since:
-                    query = text("SELECT COUNT(*) FROM download_history WHERE user_id = :uid AND downloaded_at >= :since")
+                    query = text(
+                        "SELECT COUNT(*) FROM download_history WHERE user_id = :uid AND downloaded_at >= :since"
+                    )
                     params = {"uid": user_id, "since": since}
                 else:
                     query = text("SELECT COUNT(*) FROM download_history WHERE user_id = :uid")
                     params = {"uid": user_id}
-                
+
                 result = await session.execute(query, params)
                 return result.scalar() or 0
         except Exception as e:
             logger.error(f"Postgres get_download_count error: {e}")
             return 0
 
-    async def has_user_downloaded(self, user_id: int, title: str, clean_title: str | None = None, book_hash: str | None = None) -> bool:
+    async def has_user_downloaded(
+        self, user_id: int, title: str, clean_title: str | None = None, book_hash: str | None = None
+    ) -> bool:
         try:
             from utils.epub_extractor import clean_metadata_tags
+
             search_clean = clean_title or clean_metadata_tags(title)
-            
+
             async with pg_manager.get_session() as session:
                 if book_hash:
-                    query = text("SELECT 1 FROM download_history WHERE user_id = :uid AND book_hash = :hash LIMIT 1")
-                    if (await session.execute(query, {"uid": user_id, "hash": book_hash})).fetchone():
+                    query = text(
+                        "SELECT 1 FROM download_history WHERE user_id = :uid AND book_hash = :hash LIMIT 1"
+                    )
+                    if (
+                        await session.execute(query, {"uid": user_id, "hash": book_hash})
+                    ).fetchone():
                         return True
 
                 query = text("""
@@ -153,28 +182,39 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                     WHERE user_id = :uid AND (title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t)
                     LIMIT 1
                 """)
-                if (await session.execute(query, {"uid": user_id, "t": title, "ct": search_clean})).fetchone():
+                if (
+                    await session.execute(query, {"uid": user_id, "t": title, "ct": search_clean})
+                ).fetchone():
                     return True
             return False
         except Exception as e:
             logger.error(f"Postgres has_user_downloaded error: {e}")
             return False
 
-    async def get_total_download_count(self, title: str, clean_title: str | None = None, book_hash: str | None = None) -> int:
+    async def get_total_download_count(
+        self, title: str, clean_title: str | None = None, book_hash: str | None = None
+    ) -> int:
         try:
             from utils.epub_extractor import clean_metadata_tags
+
             search_clean = clean_title or clean_metadata_tags(title)
 
             async with pg_manager.get_session() as session:
                 if book_hash:
                     query = text("SELECT COUNT(*) FROM download_history WHERE book_hash = :hash")
                     count = (await session.execute(query, {"hash": book_hash})).scalar()
-                    if count > 0: return count
+                    if count > 0:
+                        return count
 
-                query = text("SELECT COUNT(*) FROM download_history WHERE title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t")
-                return (await session.execute(query, {"t": title, "ct": search_clean})).scalar() or 0
+                query = text(
+                    "SELECT COUNT(*) FROM download_history WHERE title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t"
+                )
+                return (
+                    await session.execute(query, {"t": title, "ct": search_clean})
+                ).scalar() or 0
         except Exception as e:
             logger.error(f"Postgres get_total_download_count error: {e}")
             return 0
+
 
 download_repo = DownloadRepository(None)

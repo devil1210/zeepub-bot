@@ -1,26 +1,25 @@
 """Terminal UI utilities for last30days skill."""
 
-import os
-import sys
-import time
-import threading
 import random
-from typing import Optional
+import sys
+import threading
+import time
 
 # Check if we're in a real terminal (not captured by Claude Code)
 IS_TTY = sys.stderr.isatty()
 
+
 # ANSI color codes
 class Colors:
-    PURPLE = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    DIM = '\033[2m'
-    RESET = '\033[0m'
+    PURPLE = "\033[95m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    RESET = "\033[0m"
 
 
 BANNER = f"""{Colors.PURPLE}{Colors.BOLD}
@@ -128,8 +127,8 @@ PROMO_SINGLE_KEY_PLAIN = {
 }
 
 # Spinner frames
-SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
-DOTS_FRAMES = ['   ', '.  ', '.. ', '...']
+SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+DOTS_FRAMES = ["   ", ".  ", ".. ", "..."]
 
 
 class Spinner:
@@ -139,7 +138,7 @@ class Spinner:
         self.message = message
         self.color = color
         self.running = False
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
         self.frame_idx = 0
         self.shown_static = False
 
@@ -188,7 +187,7 @@ class ProgressDisplay:
 
     def __init__(self, topic: str, show_banner: bool = True):
         self.topic = topic
-        self.spinner: Optional[Spinner] = None
+        self.spinner: Spinner | None = None
         self.start_time = time.time()
 
         if show_banner:
@@ -197,7 +196,9 @@ class ProgressDisplay:
     def _show_banner(self):
         if IS_TTY:
             sys.stderr.write(MINI_BANNER + "\n")
-            sys.stderr.write(f"{Colors.DIM}Topic: {Colors.RESET}{Colors.BOLD}{self.topic}{Colors.RESET}\n\n")
+            sys.stderr.write(
+                f"{Colors.DIM}Topic: {Colors.RESET}{Colors.BOLD}{self.topic}{Colors.RESET}\n\n"
+            )
         else:
             # Simple text for non-TTY
             sys.stderr.write(f"/last30days · researching: {self.topic}\n")
@@ -216,7 +217,9 @@ class ProgressDisplay:
         if self.spinner:
             self.spinner.stop()
         msg = random.choice(ENRICHING_MESSAGES)
-        self.spinner = Spinner(f"{Colors.YELLOW}Reddit{Colors.RESET} [{current}/{total}] {msg}", Colors.YELLOW)
+        self.spinner = Spinner(
+            f"{Colors.YELLOW}Reddit{Colors.RESET} [{current}/{total}] {msg}", Colors.YELLOW
+        )
         self.spinner.start()
 
     def update_reddit_enrich(self, current: int, total: int):
@@ -254,7 +257,9 @@ class ProgressDisplay:
             sys.stderr.write(f"  {Colors.YELLOW}Reddit:{Colors.RESET} {reddit_count} threads  ")
             sys.stderr.write(f"{Colors.CYAN}X:{Colors.RESET} {x_count} posts\n\n")
         else:
-            sys.stderr.write(f"✓ Research complete ({elapsed:.1f}s) - Reddit: {reddit_count} threads, X: {x_count} posts\n")
+            sys.stderr.write(
+                f"✓ Research complete ({elapsed:.1f}s) - Reddit: {reddit_count} threads, X: {x_count} posts\n"
+            )
         sys.stderr.flush()
 
     def show_cached(self, age_hours: float = None):
@@ -262,7 +267,9 @@ class ProgressDisplay:
             age_str = f" ({age_hours:.1f}h old)"
         else:
             age_str = ""
-        sys.stderr.write(f"{Colors.GREEN}⚡{Colors.RESET} {Colors.DIM}Using cached results{age_str} - use --refresh for fresh data{Colors.RESET}\n\n")
+        sys.stderr.write(
+            f"{Colors.GREEN}⚡{Colors.RESET} {Colors.DIM}Using cached results{age_str} - use --refresh for fresh data{Colors.RESET}\n\n"
+        )
         sys.stderr.flush()
 
     def show_error(self, message: str):
@@ -286,7 +293,9 @@ class ProgressDisplay:
         if IS_TTY:
             sys.stderr.write(f"\n{Colors.GREEN}{Colors.BOLD}✓ Ready for web search{Colors.RESET} ")
             sys.stderr.write(f"{Colors.DIM}({elapsed:.1f}s){Colors.RESET}\n")
-            sys.stderr.write(f"  {Colors.GREEN}Web:{Colors.RESET} Claude will search blogs, docs & news\n\n")
+            sys.stderr.write(
+                f"  {Colors.GREEN}Web:{Colors.RESET} Claude will search blogs, docs & news\n\n"
+            )
         else:
             sys.stderr.write(f"✓ Ready for web search ({elapsed:.1f}s)\n")
         sys.stderr.flush()

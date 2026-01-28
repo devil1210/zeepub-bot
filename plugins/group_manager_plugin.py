@@ -51,8 +51,8 @@ class GroupManagerPlugin(BasePlugin):
 
     def _get_sync_engine(self, db_url_in):
         if "sqlite" in db_url_in:
-             return sa.create_engine(db_url_in, future=True)
-        
+            return sa.create_engine(db_url_in, future=True)
+
         db_url = db_url_in
         if "postgresql" in db_url or "postgres" in db_url:
             db_url = db_url.replace("postgres://", "postgresql://")
@@ -85,15 +85,13 @@ class GroupManagerPlugin(BasePlugin):
             app.add_handler(CommandHandler("rules", self.reglas))
 
             # Events
-            app.add_handler(
-                ChatMemberHandler(self.track_chats, ChatMemberHandler.MY_CHAT_MEMBER)
-            )
-            app.add_handler(
-                ChatMemberHandler(self.welcome_member, ChatMemberHandler.CHAT_MEMBER)
-            )
+            app.add_handler(ChatMemberHandler(self.track_chats, ChatMemberHandler.MY_CHAT_MEMBER))
+            app.add_handler(ChatMemberHandler(self.welcome_member, ChatMemberHandler.CHAT_MEMBER))
             # Add MessageHandler for service messages (when bot is not admin or update is simple)
             app.add_handler(
-                MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, self.welcome_new_members_message)
+                MessageHandler(
+                    filters.StatusUpdate.NEW_CHAT_MEMBERS, self.welcome_new_members_message
+                )
             )
 
             logger.info("Plugin GroupManager: Handlers registrados.")
@@ -106,7 +104,9 @@ class GroupManagerPlugin(BasePlugin):
         # Determine DB URL (Shared Postgres)
         db_url = config.DATABASE_URL
         if not db_url:
-            logger.error("DATABASE_URL no está configurada. Postgres es mandatorio para GroupManager.")
+            logger.error(
+                "DATABASE_URL no está configurada. Postgres es mandatorio para GroupManager."
+            )
             return
 
         self.engine = self._get_sync_engine(db_url)
@@ -195,9 +195,7 @@ class GroupManagerPlugin(BasePlugin):
         finally:
             session.close()
 
-    async def set_group_welcome(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def set_group_welcome(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self._is_admin(update.effective_user.id):
             return
 
@@ -224,9 +222,7 @@ class GroupManagerPlugin(BasePlugin):
                 # Let's auto-create but warn if not authorized.
                 group = GroupSettings(chat_id=chat_id)
                 session.add(group)
-                msg_extra = (
-                    " (Nota: El grupo aún no está autorizado, usa /authorize_group)"
-                )
+                msg_extra = " (Nota: El grupo aún no está autorizado, usa /authorize_group)"
             else:
                 msg_extra = ""
 
@@ -281,11 +277,10 @@ class GroupManagerPlugin(BasePlugin):
             return False
 
         from plugins.custom_messages_plugin import StoredMessage
+
         session = self.CustomMsgSession()
         try:
-            exists = (
-                session.query(StoredMessage).filter_by(slug=slug).first() is not None
-            )
+            exists = session.query(StoredMessage).filter_by(slug=slug).first() is not None
             return exists
         except Exception as e:
             logger.error(f"Error checking slug: {e}")
@@ -298,15 +293,14 @@ class GroupManagerPlugin(BasePlugin):
             return None
 
         from plugins.custom_messages_plugin import StoredMessage
+
         session = self.CustomMsgSession()
         try:
             return session.query(StoredMessage).filter_by(slug=slug).first()
         finally:
             session.close()
 
-    async def track_chats(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def track_chats(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Track when bot is added/removed from groups and send introduction."""
         result = self._extract_status_change(update.my_chat_member)
         if result is None:
@@ -327,15 +321,13 @@ class GroupManagerPlugin(BasePlugin):
                 try:
                     if hasattr(msg_data, "text_content") and msg_data.text_content:
                         await context.bot.send_message(
-                            chat_id=chat_id,
-                            text=msg_data.text_content,
-                            parse_mode="HTML"
+                            chat_id=chat_id, text=msg_data.text_content, parse_mode="HTML"
                         )
                     else:
                         await context.bot.copy_message(
                             chat_id=chat_id,
                             from_chat_id=msg_data.source_chat_id,
-                            message_id=msg_data.source_message_id
+                            message_id=msg_data.source_message_id,
                         )
                 except Exception as e:
                     logger.error(f"Error sending custom introduction to {chat_id}: {e}")
@@ -356,9 +348,7 @@ class GroupManagerPlugin(BasePlugin):
 
                 try:
                     await context.bot.send_message(
-                        chat_id=chat_id,
-                        text=intro_message,
-                        parse_mode="HTML"
+                        chat_id=chat_id, text=intro_message, parse_mode="HTML"
                     )
                 except Exception as e:
                     logger.error(f"Error sending default introduction to {chat_id}: {e}")
@@ -367,9 +357,7 @@ class GroupManagerPlugin(BasePlugin):
         elif was_member and not is_member:
             logger.info(f"Bot removed from group {chat_id}")
 
-    async def welcome_member(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def welcome_member(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Greet new members in authorized groups."""
         result = self._extract_status_change(update.chat_member)
         if result is None:
@@ -464,7 +452,7 @@ class GroupManagerPlugin(BasePlugin):
                     chat_id=chat_id,
                     text=text_to_send,
                     parse_mode="HTML",
-                    reply_to_message_id=reply_to_message_id
+                    reply_to_message_id=reply_to_message_id,
                 )
                 return
             except Exception as e:
@@ -476,7 +464,7 @@ class GroupManagerPlugin(BasePlugin):
                 chat_id=chat_id,
                 from_chat_id=msg_data.source_chat_id,
                 message_id=msg_data.source_message_id,
-                reply_to_message_id=reply_to_message_id
+                reply_to_message_id=reply_to_message_id,
             )
         except Exception as e:
             logger.error(f"Error sending welcome copy: {e}")

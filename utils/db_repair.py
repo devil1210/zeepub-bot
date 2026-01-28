@@ -10,10 +10,11 @@ from models.user_models import UserLevel
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("DB_REPAIR")
 
+
 async def repair_database():
     logger.info("Starting Emergency Database Repair...")
     await pg_manager.initialize()
-    
+
     async with pg_manager.engine.begin() as conn:
         # 1. Ensure tables exist
         await conn.run_sync(Base.metadata.create_all)
@@ -29,16 +30,20 @@ async def repair_database():
             ("panel_transparency", "INTEGER DEFAULT 60"),
             ("price", "INTEGER DEFAULT 0"),
             ("early_access", "BOOLEAN DEFAULT FALSE"),
-            ("custom_themes", "BOOLEAN DEFAULT FALSE")
+            ("custom_themes", "BOOLEAN DEFAULT FALSE"),
         ]
-        
+
         for col_name, col_type in columns:
             try:
-                check_sql = text(f"SELECT column_name FROM information_schema.columns WHERE table_name='user_levels' AND column_name='{col_name}'")
+                check_sql = text(
+                    f"SELECT column_name FROM information_schema.columns WHERE table_name='user_levels' AND column_name='{col_name}'"
+                )
                 res = await session.execute(check_sql)
                 if not res.scalar():
                     logger.info(f"Adding column {col_name} to user_levels...")
-                    await session.execute(text(f"ALTER TABLE user_levels ADD COLUMN {col_name} {col_type}"))
+                    await session.execute(
+                        text(f"ALTER TABLE user_levels ADD COLUMN {col_name} {col_type}")
+                    )
             except Exception as e:
                 logger.error(f"Error adding column {col_name}: {e}")
 
@@ -47,21 +52,88 @@ async def repair_database():
         # 3. Force seed levels 1-6
         logger.info("Upserting mandatory user levels...")
         levels = [
-            UserLevel(id=1, name="Administrador", priority=100, color="#FF5252", price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme="dark"),
-            UserLevel(id=2, name="Staff", priority=90, color="#7C4DFF", price=0, daily_downloads=999, has_mini_app_access=True, early_access=True, custom_themes=True, ui_theme="dark"),
-            UserLevel(id=3, name="Premium", priority=50, color="#FFD740", price=499, daily_downloads=50, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme="dark"),
-            UserLevel(id=4, name="VIP", priority=40, color="#69F0AE", price=999, daily_downloads=20, has_mini_app_access=True, early_access=False, custom_themes=True, ui_theme="dark"),
-            UserLevel(id=5, name="Patrocinador", priority=20, color="#E0E0E0", price=0, daily_downloads=10, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme="dark"),
-            UserLevel(id=6, name="Lector", priority=10, color="#607D8B", price=0, daily_downloads=5, has_mini_app_access=True, early_access=False, custom_themes=False, ui_theme="dark"),
+            UserLevel(
+                id=1,
+                name="Administrador",
+                priority=100,
+                color="#FF5252",
+                price=0,
+                daily_downloads=999,
+                has_mini_app_access=True,
+                early_access=True,
+                custom_themes=True,
+                ui_theme="dark",
+            ),
+            UserLevel(
+                id=2,
+                name="Staff",
+                priority=90,
+                color="#7C4DFF",
+                price=0,
+                daily_downloads=999,
+                has_mini_app_access=True,
+                early_access=True,
+                custom_themes=True,
+                ui_theme="dark",
+            ),
+            UserLevel(
+                id=3,
+                name="Premium",
+                priority=50,
+                color="#FFD740",
+                price=499,
+                daily_downloads=50,
+                has_mini_app_access=True,
+                early_access=False,
+                custom_themes=True,
+                ui_theme="dark",
+            ),
+            UserLevel(
+                id=4,
+                name="VIP",
+                priority=40,
+                color="#69F0AE",
+                price=999,
+                daily_downloads=20,
+                has_mini_app_access=True,
+                early_access=False,
+                custom_themes=True,
+                ui_theme="dark",
+            ),
+            UserLevel(
+                id=5,
+                name="Patrocinador",
+                priority=20,
+                color="#E0E0E0",
+                price=0,
+                daily_downloads=10,
+                has_mini_app_access=True,
+                early_access=False,
+                custom_themes=False,
+                ui_theme="dark",
+            ),
+            UserLevel(
+                id=6,
+                name="Lector",
+                priority=10,
+                color="#607D8B",
+                price=0,
+                daily_downloads=5,
+                has_mini_app_access=True,
+                early_access=False,
+                custom_themes=False,
+                ui_theme="dark",
+            ),
         ]
-        
+
         for lvl in levels:
             await session.merge(lvl)
-        
+
         await session.commit()
-    
+
     logger.info("Database repair completed successfully!")
     await pg_manager.engine.dispose()
+
 
 if __name__ == "__main__":
     asyncio.run(repair_database())

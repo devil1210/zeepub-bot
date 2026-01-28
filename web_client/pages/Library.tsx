@@ -15,10 +15,9 @@ import { LibraryHeader } from '../components/library/LibraryHeader';
 import { LibraryCard } from '../components/library/LibraryCard';
 import { EmptyLibrary } from '../components/library/EmptyLibrary';
 import { LibrarySortBar } from '../components/library/LibrarySortBar';
-
 interface LibraryProps {
    onNavigate?: (tab: string) => void;
-   onSelectBook?: (title: string, author: string, cover: string) => void;
+   onSelectBook?: (bookId: string) => void;
 }
 
 export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) => {
@@ -43,12 +42,12 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
             const res = await api.getDownloadHistory();
             const history = res?.downloads || [];
             const books = history.map((item: any) => ({
-               id: item.id,
+               id: item.book_id ? `local_${item.book_id}` : (item.book_hash || item.id),
                title: item.title,
-               author: item.book?.author || item.volume?.author || 'Autor desconocido',
-               vol: item.volume?.volumeNumber || item.volume?.vol || '?',
+               author: item.author || 'Autor desconocido',
+               vol: item.volume || '?',
                time: item.timeAgo || 'Hace poco',
-               cover: item.book?.coverUrl || item.volume?.coverUrl || item.volume?.cover || '/api/library/covers/default.jpg',
+               cover: item.coverUrl || item.volume?.coverUrl || item.volume?.cover || `/api/library/covers/default.jpg`,
                isNew: false,
                updated: false
             }));
@@ -96,7 +95,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
                   <LibraryCard
                      key={book.id}
                      book={book}
-                     onClick={() => onSelectBook && onSelectBook(book.title, book.author, book.cover)}
+                     onClick={() => onSelectBook && onSelectBook(book.id)}
                   />
                ))}
             </div>

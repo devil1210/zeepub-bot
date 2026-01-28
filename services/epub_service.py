@@ -23,9 +23,7 @@ def extract_internal_title(data_or_path: bytes | str) -> str | None:
             zf = zipfile.ZipFile(data_or_path)
 
         # Buscar archivos candidatos
-        candidates = [
-            n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()
-        ]
+        candidates = [n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()]
 
         # Regex para fulltitle: <tag ... epub:type="fulltitle" ...> content </tag>
         fulltitle_pattern = re.compile(
@@ -34,12 +32,8 @@ def extract_internal_title(data_or_path: bytes | str) -> str | None:
         )
 
         # Regex para componentes internos
-        title_pat = re.compile(
-            r'epub:type="title"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL
-        )
-        subtitle_pat = re.compile(
-            r'epub:type="subtitle"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL
-        )
+        title_pat = re.compile(r'epub:type="title"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
+        subtitle_pat = re.compile(r'epub:type="subtitle"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
 
         # Regex legacy/fallback
         pattern_legacy = re.compile(
@@ -114,9 +108,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         try:
             container = z.read("META-INF/container.xml")
             tree = ET.fromstring(container)
-            for rf in tree.findall(
-                ".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile"
-            ):
+            for rf in tree.findall(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile"):
                 path = rf.attrib.get("full-path", "")
                 if path.lower().endswith(".opf"):
                     return z.read(path)
@@ -142,16 +134,16 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
             # Basic cleanup and separator normalization
             clean = raw_date.strip().replace("/", "-").split("T")[0]
             parts = clean.split("-")
-            
+
             y, m, d = 0, 0, 0
-            
+
             if len(parts) == 3:
                 p0, p1, p2 = parts[0], parts[1], parts[2]
-                
+
                 # Case 1: YYYY-MM-DD (e.g. 2022-07-01 or 2022-007-01)
                 if len(p0) == 4 and p0.isdigit():
                     y, m, d = int(p0), int(p1), int(p2)
-                    
+
                     # Fix: Handle YYYY-DD-MM (e.g. 2019-28-12)
                     # If month is obviously wrong (>12) and day looks like a month (<=12), swap them
                     if m > 12 >= d:
@@ -163,7 +155,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                 # Case 2: DD-MM-YYYY (e.g. 01-07-2022)
                 elif len(p2) == 4 and p2.isdigit():
                     y, m, d = int(p2), int(p1), int(p0)
-            
+
             # Case 3: YYYY Only
             elif len(parts) == 1 and len(parts[0]) == 4 and parts[0].isdigit():
                 y = int(parts[0])
@@ -172,11 +164,11 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
             # Validate and Format
             if 1900 <= y <= 2100 and 1 <= m <= 12 and 1 <= d <= 31:
                 return f"{y:04d}-{m:02d}-{d:02d}"
-                
+
         except Exception:
             pass
-            
-        return None # Return None on failure to avoid DB TypeErrors
+
+        return None  # Return None on failure to avoid DB TypeErrors
 
     def _parse_opf(data: bytes) -> dict[str, Any]:
         import logging
@@ -240,9 +232,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                 if el.text:
                     raw_date = el.text.strip()
                     # Si ya tenemos una fecha, solo sobrescribimos si el evento es 'publication'
-                    attribs = {
-                        local_name_attr(k).lower(): v for k, v in el.attrib.items()
-                    }
+                    attribs = {local_name_attr(k).lower(): v for k, v in el.attrib.items()}
                     event = attribs.get("event", "")
 
                     parsed = parse_date(raw_date)
@@ -263,12 +253,14 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                 break
 
         # Metadata extendida: Series y Volumen Index
-        collection_ids = {} # id -> title (para refines)
-        
+        collection_ids = {}  # id -> title (para refines)
+
         # Primera pasada: Recolectar Series ID si existen
         for el in root.iter():
-             if local_name(el).lower() == "meta":
-                prop = el.attrib.get("property", "") or el.attrib.get("{http://www.idpf.org/2007/opf}property", "")
+            if local_name(el).lower() == "meta":
+                prop = el.attrib.get("property", "") or el.attrib.get(
+                    "{http://www.idpf.org/2007/opf}property", ""
+                )
                 if prop == "belongs-to-collection" and el.text:
                     out["titulo_serie"] = el.text.strip()
                     if el.attrib.get("id"):
@@ -292,13 +284,13 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                 if prop == "group-position":
                     # Check refines match if strictly needed, or just take it if simple
                     refines = attribs.get("refines", "").replace("#", "")
-                    if not refines or refines in collection_ids or not collection_ids: 
+                    if not refines or refines in collection_ids or not collection_ids:
                         # Si no hay refines, o coincide con la serie detectada
                         try:
                             out["volume_index"] = float(text_val)
                         except:
                             pass
-                
+
                 # 2. calibre:series_index
                 elif name == "calibre:series_index":
                     try:
@@ -343,7 +335,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         all_subjects = " ".join(subjects).lower()
         if any(x in all_subjects for x in ["sin censura", "uncensored", "no censura"]):
             out["is_uncensored"] = 1
-        
+
         if any(x in all_subjects for x in ["ilustraciones a color", "color", "full color"]):
             out["color_mode"] = "color"
         elif any(x in all_subjects for x in ["blanco y negro", "b&w", "grayscale", "b/n"]):
@@ -356,7 +348,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                 prop = attribs.get("property", "").lower()
                 name = attribs.get("name", "").lower()
                 content = attribs.get("content", "")
-                
+
                 if "zeepub:uncensored" in prop or "zeepub:uncensored" in name:
                     val = (content or el.text or "").lower().strip()
                     if val in ["true", "1", "yes"]:
@@ -386,14 +378,12 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
             if local_name(el).lower() in ("publisher", "dc:publisher") and el.text:
                 out["publisher"] = el.text.strip()
 
-
-        
         # Identificadores: ISBN, ASIN (dc:identifier)
         for el in root.iter():
             if local_name(el).lower() in ("identifier", "dc:identifier") and el.text:
                 txt = el.text.strip()
                 lower_txt = txt.lower()
-                
+
                 # Limpieza básica
                 clean_val = txt
                 if lower_txt.startswith("urn:isbn:"):
@@ -403,7 +393,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                 elif lower_txt.startswith("urn:uuid:"):
                     # UUID no es ISBN
                     continue
-                
+
                 # Detectar explícitamente si es ISBN
                 is_isbn = False
                 if "isbn" in lower_txt:
@@ -413,15 +403,17 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                     for k, v in el.attrib.items():
                         attr_val = v.lower()
                         attr_name = local_name_attr(k).lower()
-                        if ("scheme" in attr_name and "isbn" in attr_val) or \
-                           ("id" in attr_name and "isbn" in attr_val):
+                        if ("scheme" in attr_name and "isbn" in attr_val) or (
+                            "id" in attr_name and "isbn" in attr_val
+                        ):
                             is_isbn = True
                             break
-                            
+
                 # Fallback: si es puramente numérico (o X) de 10/13 dígitos y no tenemos nada
                 import re
+
                 candidate = re.sub(r"[^0-9X]", "", clean_val.upper())
-                
+
                 if not is_isbn and len(candidate) in (10, 13) and not out["isbn"]:
                     # Asumimos que podría ser ISBN si no hay otro identifier mejor
                     # Pero es arriesgado sin etiqueta explícita.
@@ -429,24 +421,30 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
 
                 if is_isbn:
                     if len(candidate) in (10, 13):
-                         # Prioridad: Prefiere ISBN-13
-                         current = out.get("isbn")
-                         if not current:
-                             out["isbn"] = clean_val
-                         elif len(re.sub(r"[^0-9X]", "", current)) == 10 and len(candidate) == 13:
-                             out["isbn"] = clean_val
+                        # Prioridad: Prefiere ISBN-13
+                        current = out.get("isbn")
+                        if not current:
+                            out["isbn"] = clean_val
+                        elif len(re.sub(r"[^0-9X]", "", current)) == 10 and len(candidate) == 13:
+                            out["isbn"] = clean_val
 
         # Fallback: Buscar ISBN en dc:source o dc:relation si aun no tenemos
         if not out["isbn"]:
             for el in root.iter():
-                if local_name(el).lower() in ("source", "dc:source", "relation", "dc:relation") and el.text:
+                if (
+                    local_name(el).lower() in ("source", "dc:source", "relation", "dc:relation")
+                    and el.text
+                ):
                     txt = el.text.strip()
                     lower_txt = txt.lower()
                     if "isbn" in lower_txt:
                         # Extract potential ISBN part
                         # Simple regex for cleaner extraction from strings like "ISBN: 978..."
                         import re
-                        match = re.search(r"(?:ISBN(?:\-1[03])?:?\s*)?([0-9X\-]{10,17})", txt, re.IGNORECASE)
+
+                        match = re.search(
+                            r"(?:ISBN(?:\-1[03])?:?\s*)?([0-9X\-]{10,17})", txt, re.IGNORECASE
+                        )
                         if match:
                             candidate_raw = match.group(1)
                             clean_cand = re.sub(r"[^0-9X]", "", candidate_raw.upper())
@@ -655,9 +653,7 @@ async def enrich_metadata_from_epub(
                 if opf_meta.get(key):
                     meta[key] = opf_meta[key]
         else:
-            logger.warning(
-                "OPF metadata parsing returned None - no metadata extracted from OPF"
-            )
+            logger.warning("OPF metadata parsing returned None - no metadata extracted from OPF")
     except Exception as e:
         logger.error(f"enrich_metadata_from_epub: OPF parse failed: {e}", exc_info=True)
 
@@ -678,15 +674,11 @@ async def enrich_metadata_from_epub(
 
     # Extract filename title from URL
     try:
-        filename_title = unquote(urlparse(epub_url).path.split("/")[-1]).replace(
-            ".epub", ""
-        )
+        filename_title = unquote(urlparse(epub_url).path.split("/")[-1]).replace(".epub", "")
         meta["filename_title"] = filename_title
         logger.debug(f"Filename title extracted: {filename_title}")
     except Exception as e:
-        logger.error(
-            f"enrich_metadata_from_epub: filename extraction failed: {e}", exc_info=True
-        )
+        logger.error(f"enrich_metadata_from_epub: filename extraction failed: {e}", exc_info=True)
 
     # Extract publisher URL from HTML (prioritized over OPF)
     try:
@@ -697,9 +689,7 @@ async def enrich_metadata_from_epub(
                 f"enrich_metadata_from_epub: publisher_url updated from HTML: {html_publisher_url}"
             )
     except Exception as e:
-        logger.debug(
-            f"enrich_metadata_from_epub: HTML publisher URL extraction failed: {e}"
-        )
+        logger.debug(f"enrich_metadata_from_epub: HTML publisher URL extraction failed: {e}")
 
     logger.info(f"Metadata enrichment completed. Keys present: {list(meta.keys())}")
     return meta
@@ -719,9 +709,7 @@ def extract_publisher_url_from_html(data_or_path: bytes | str) -> str | None:
             zf = zipfile.ZipFile(data_or_path)
 
         # Buscar archivos candidatos
-        candidates = [
-            n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()
-        ]
+        candidates = [n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()]
 
         # Regex patterns
         # Busca el bloque de Página Web

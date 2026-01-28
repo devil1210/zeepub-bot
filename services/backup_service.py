@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 BACKUP_DIR = Path("backups/database")
 MAX_BACKUPS = 10
 
+
 class BackupService:
     @staticmethod
     async def generate_backup_file(compress: bool = True) -> str:
@@ -22,15 +23,17 @@ class BackupService:
         Returns the path to the generated file.
         """
         if not config.DATABASE_URL:
-            raise Exception("DATABASE_URL no está configurada. PostgreSQL es obligatorio para backups.")
+            raise Exception(
+                "DATABASE_URL no está configurada. PostgreSQL es obligatorio para backups."
+            )
 
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-        
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"backup_zeepub_{timestamp}.sql"
         if compress:
             filename += ".gz"
-        
+
         filepath = BACKUP_DIR / filename
 
         # Get credentials
@@ -61,7 +64,7 @@ class BackupService:
             # Pipe pg_dump to gzip
             cmd = f'pg_dump -h {pg_host} -U {pg_user} -d {pg_db} --clean --if-exists | gzip > "{filepath}"'
             logger.info(f"Iniciando backup DB (comprimido): {filepath}")
-            
+
             proc = await asyncio.create_subprocess_shell(
                 cmd,
                 env=env,
@@ -69,9 +72,21 @@ class BackupService:
                 stderr=asyncio.subprocess.PIPE,
             )
         else:
-            cmd = ["pg_dump", "-h", pg_host, "-U", pg_user, "-d", pg_db, "-f", str(filepath), "--clean", "--if-exists"]
+            cmd = [
+                "pg_dump",
+                "-h",
+                pg_host,
+                "-U",
+                pg_user,
+                "-d",
+                pg_db,
+                "-f",
+                str(filepath),
+                "--clean",
+                "--if-exists",
+            ]
             logger.info(f"Iniciando backup DB: {filepath}")
-            
+
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 env=env,
@@ -95,7 +110,7 @@ class BackupService:
             raise Exception("El archivo de backup se creó vacío o no existe.")
 
         logger.info(f"Backup creado: {filepath} ({filepath.stat().st_size} bytes)")
-        
+
         await BackupService.rotate_backups()
         return str(filepath)
 
@@ -116,17 +131,19 @@ class BackupService:
         backups = []
         if not BACKUP_DIR.exists():
             return []
-            
+
         for f in sorted(BACKUP_DIR.glob("backup_zeepub_*.sql*"), reverse=True):
             stat = f.stat()
-            backups.append({
-                "filename": f.name,
-                "path": str(f),
-                "size_bytes": stat.st_size,
-                "size_mb": round(stat.st_size / (1024 * 1024), 2),
-                "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                "compressed": f.suffix == ".gz"
-            })
+            backups.append(
+                {
+                    "filename": f.name,
+                    "path": str(f),
+                    "size_bytes": stat.st_size,
+                    "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                    "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                    "compressed": f.suffix == ".gz",
+                }
+            )
         return backups
 
     @staticmethod
@@ -147,5 +164,5 @@ class BackupService:
             "total_backups": len(backups),
             "total_size_bytes": total_size,
             "total_size_mb": round(total_size / (1024 * 1024), 2),
-            "max_backups": MAX_BACKUPS
+            "max_backups": MAX_BACKUPS,
         }

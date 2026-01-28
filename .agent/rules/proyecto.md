@@ -40,6 +40,16 @@ Estas skills deben ser priorizadas y aplicadas proactivamente según el contexto
 - **`telegram-mini-app`**: Integración nativa con Telegram API y Stars.
 - **`mobile-design`**: Enfoque Mobile-First (Viewport safety, Touch targets).
 
+## 🛠️ Workflows Automatizados
+
+Usa estos comandos para tareas repetitivas y asegurar la calidad:
+
+- **`/audit`**: Valida sintaxis, calidad de código (Linter/Formatter) y cumplimiento de estándares pre-vuelo.
+- **`/db-sync`**: Sincroniza y valida la integridad de los esquemas entre PostgreSQL Local y Supabase.
+- **`/glass-check`**: Auditoría estética para asegurar cumplimiento de estándares Glassmorphism/Premium.
+- **`/push`**: Sincronizar cambios localmente y subir al repositorio remoto automáticamente.
+- **`/release`**: Flujo maestro de despliegue (Audit -> Sync -> Push).
+
 ## 📡 Protocolo de Sincronización
 - **Skills**: Mantener sincronizado con el repositorio global (sickn33/antigravity-awesome-skills).
 - **Entorno**: Logs del VPS de pruebas son la fuente de verdad para errores de entorno.

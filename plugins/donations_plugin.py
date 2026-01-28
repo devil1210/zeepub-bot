@@ -59,7 +59,9 @@ class DonationsPlugin(BasePlugin):
     def _init_custom_msg_db(self):
         db_url = config.DATABASE_URL
         if not db_url:
-            logger.warning("DATABASE_URL no configurada. DonationsPlugin no puede conectar a CustomMessages DB.")
+            logger.warning(
+                "DATABASE_URL no configurada. DonationsPlugin no puede conectar a CustomMessages DB."
+            )
             return
 
         try:
@@ -130,7 +132,7 @@ class DonationsPlugin(BasePlugin):
                 self._delete_message_delayed,
                 120,
                 data={"chat_id": update.effective_chat.id, "message_id": msg.message_id},
-                name=f"del_donate_cmd_{msg.message_id}"
+                name=f"del_donate_cmd_{msg.message_id}",
             )
 
     async def _delete_message_delayed(self, context: ContextTypes.DEFAULT_TYPE):
@@ -234,9 +236,7 @@ class DonationsPlugin(BasePlugin):
         }
 
         if level not in key_map:
-            await update.message.reply_text(
-                "❌ Nivel inválido. Usa: white, vip, premium, meses"
-            )
+            await update.message.reply_text("❌ Nivel inválido. Usa: white, vip, premium, meses")
             return
 
         set_setting(key_map[level], amount)
@@ -244,8 +244,6 @@ class DonationsPlugin(BasePlugin):
         if level in ("meses", "duration"):
             msg_text = f"✅ Duración de beneficios actualizada a: <b>{amount} meses</b>"
         else:
-            msg_text = (
-                f"✅ Precio para <b>{level}</b> actualizado a: <b>${amount} USD</b>"
-            )
+            msg_text = f"✅ Precio para <b>{level}</b> actualizado a: <b>${amount} USD</b>"
 
         await update.message.reply_text(msg_text, parse_mode="HTML")
