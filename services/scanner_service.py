@@ -1119,12 +1119,15 @@ class ScannerService:
         target_book.title = source_book.title
         target_book.romaji_title = source_book.romaji_title
         target_book.english_title = source_book.english_title
+        target_book.spanish_title = source_book.spanish_title
         target_book.series = source_book.series
         target_book.volume = source_book.volume
         target_book.author = source_book.author
         target_book.author_jap = source_book.author_jap
         target_book.illustrator = source_book.illustrator
         target_book.illustrator_jap = source_book.illustrator_jap
+        target_book.translator = source_book.translator
+        target_book.layout_by = source_book.layout_by
         target_book.publisher = source_book.publisher
         target_book.description = source_book.description
         target_book.book_type = source_book.book_type
@@ -1135,7 +1138,13 @@ class ScannerService:
         target_book.color_mode = source_book.color_mode
         target_book.series_spanish = source_book.series_spanish
         target_book.edition = source_book.edition
-        # Note: book_hash is handled separately to avoid constraint violations
+        target_book.isbn = source_book.isbn
+        target_book.asin = source_book.asin
+        target_book.epub_version = source_book.epub_version
+        target_book.modified_at_opf = source_book.modified_at_opf
+        target_book.word_count = source_book.word_count
+        target_book.page_count = source_book.page_count
+        target_book.reading_time = source_book.reading_time
         target_book.file_size = source_book.file_size
 
     @staticmethod

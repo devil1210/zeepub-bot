@@ -97,7 +97,7 @@ export const BookHeader: React.FC<BookHeaderProps> = ({
                 </button>
                 <div className="flex items-center gap-2">
                     <Hash className="w-4 h-4" />
-                    <span>{`Volumen ${volumeNumber}`}</span>
+                    <span>{(!volumeNumber || volumeNumber === 0) ? 'Volumen Único' : `Volumen ${volumeNumber}`}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />

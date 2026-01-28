@@ -73,8 +73,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             id: bookData.id,
             seriesId: bookData.seriesHash || 'unknown',
             title: bookData.title,
-            volume: bookData.volume !== undefined ? bookData.volume : bookData.seriesIndex,
-            volumeNumber: bookData.seriesIndex || 0,
+            volume: (bookData.volume !== undefined && bookData.volume !== null) ? bookData.volume : (bookData.volumeNumber !== undefined ? bookData.volumeNumber : 0),
+            volumeNumber: (bookData.volume !== undefined && bookData.volume !== null) ? bookData.volume : (bookData.volumeNumber !== undefined ? bookData.volumeNumber : 0),
             coverUrl: {
               cover_low: bookData.cover_low,
               cover_medium: bookData.cover_medium,
@@ -348,7 +348,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     genres: Array.isArray(curVolume.tags) ? curVolume.tags : (Array.isArray(curVolume.genres) ? curVolume.genres : (Array.isArray(curSeries?.genres) ? curSeries.genres : [])),
     is_uncensored: curVolume.is_uncensored,
     color_mode: curVolume.color_mode,
-    volume: curVolume.volume !== undefined && curVolume.volume !== null ? curVolume.volume : (curVolume.volumeNumber !== undefined ? curVolume.volumeNumber : 0)
+    volume: curVolume.volume,
+    volumeDisplay: (!curVolume.volume || curVolume.volume === 0) ? 'Único' : `${curVolume.volume}`
   };
 
   const formatDescription = (desc: string) => {
@@ -369,22 +370,21 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
   const detailItems = [
     { label: 'Serie', value: displayData.displayTitle, highlight: true, clickable: true, type: 'series' },
-    { label: 'Volumen', value: `${displayData.volume}` },
+    { label: 'Volumen', value: displayData.volumeDisplay },
     { label: 'Tipo de libro', value: displayData.bookType },
     { label: 'ISBN', value: displayData.isbn, highlight: true, font: 'mono' },
     { label: 'ASIN', value: displayData.asin, highlight: true, font: 'mono' },
     { label: 'Idioma', value: displayData.language, highlight: true },
-    { label: 'Group', value: displayData.group, color: 'text-primary', clickable: true, type: 'group' },
     { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
-    { label: 'Grupo Traductor', value: displayData.publisher !== 'N/A' ? displayData.publisher : displayData.group, highlight: true },
+    { label: 'Grupo Traductor', value: displayData.publisher !== 'N/A' ? displayData.publisher : (displayData.group || 'ZeePub'), highlight: true },
     { label: 'Fecha de publicación', value: displayData.publishedDate, highlight: true },
   ];
 
   const specItems = [
     { label: 'Formato', value: 'EPUB', highlight: true },
     { label: 'Versión Epub', value: `v${displayData.epubVersion}` },
-    { label: 'Palabras', value: displayData.wordCount !== undefined && displayData.wordCount !== null ? displayData.wordCount.toLocaleString() : 'N/A' },
-    { label: 'Páginas', value: displayData.pages !== undefined && displayData.pages !== null && displayData.pages > 0 ? displayData.pages : 'N/A' },
+    { label: 'Palabras', value: (displayData.wordCount !== undefined && displayData.wordCount !== null) ? displayData.wordCount.toLocaleString() : 'N/A' },
+    { label: 'Páginas', value: (displayData.pages !== undefined && displayData.pages !== null) ? displayData.pages : 'N/A' },
     { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
     { label: 'Lectura Aprox.', value: displayData.readTime },
     { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
