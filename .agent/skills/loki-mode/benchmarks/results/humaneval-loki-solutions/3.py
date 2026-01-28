@@ -4,7 +4,6 @@
 # Passed: True
 
 
-
 def below_zero(operations: list[int]) -> bool:
     """You're given a list of deposit and withdrawal operations on a bank account that starts with
     zero balance. Your task is to detect if at any point the balance of account fallls below zero, and

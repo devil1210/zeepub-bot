@@ -41,6 +41,7 @@ class SeriesMetadata(Base):
     id = Column(Integer, primary_key=True)
     series_name = Column(String(255), nullable=False)
     series_spanish = Column(String(255))
+    spanish_title = Column(String(255))  # Para paridad con LocalBook
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
     author = Column(String(255))
@@ -436,6 +437,7 @@ class ArchivedSeries(Base):
     id = Column(Integer, primary_key=True)
     series_name = Column(String(255), nullable=False)
     series_spanish = Column(String(255))
+    spanish_title = Column(String(255))
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
     author = Column(String(255))

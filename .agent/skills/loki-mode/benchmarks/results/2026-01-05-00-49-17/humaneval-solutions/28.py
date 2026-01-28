@@ -1,5 +1,3 @@
-
-
 def concatenate(strings: list[str]) -> str:
     """Concatenate list of strings into a single string
     >>> concatenate([])

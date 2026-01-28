@@ -17,14 +17,24 @@ if "sqlite" in DATABASE_URL:
 
 
 async def fix_postgres_schema():
-    if not config.ENABLE_POSTGRES_PLUGIN:
-        logger.info("Postgres plugin not enabled. Skipping.")
-        return
+    logger.info("Connecting to Postgres to fix schema...")
 
-    logger.info(f"Connecting to Postgres to fix schema: {DATABASE_URL}")
+    # Ensure we use async driver
+    target_url = DATABASE_URL
+    if target_url.startswith("postgresql://"):
+        target_url = target_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif target_url.startswith("postgres://"):
+        target_url = target_url.replace("postgres://", "postgresql+asyncpg://", 1)
+
+    # Logic for local development (outside docker)
+    if "@db:" in target_url:
+        logger.info(
+            "Detected '@db' host in URL, likely running outside Docker. Falling back to localhost..."
+        )
+        target_url = target_url.replace("@db:", "@localhost:", 1)
 
     try:
-        engine = create_async_engine(DATABASE_URL, echo=True)
+        engine = create_async_engine(target_url, echo=True)
         async with engine.begin() as conn:
             # Check if column exists
             logger.info("Checking for default_theme_id column in user_levels...")
@@ -95,6 +105,22 @@ async def fix_postgres_schema():
                     "CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id ON local_books(series_metadata_id);"
                 )
             )
+
+            # 4. Spanish Title y Book ID (Fix Errors Section)
+            logger.info("Añadiendo columnas para corrección de errores de metadatos y descargas...")
+            await conn.execute(
+                text("""
+                ALTER TABLE series_metadata 
+                ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(255);
+            """)
+            )
+            await conn.execute(
+                text("""
+                ALTER TABLE download_history 
+                ADD COLUMN IF NOT EXISTS book_id INTEGER REFERENCES local_books(id);
+            """)
+            )
+            logger.info("Columnas spanish_title y book_id añadidas satisfactoriamente.")
 
         await engine.dispose()
         logger.info("Schema fix completed.")

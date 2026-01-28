@@ -4,7 +4,6 @@
 # Passed: True
 
 
-
 def parse_nested_parens(paren_string: str) -> list[int]:
     """Input to this function is a string represented multiple groups for nested parentheses separated by spaces.
     For each of the group, output the deepest level of nesting of parentheses.

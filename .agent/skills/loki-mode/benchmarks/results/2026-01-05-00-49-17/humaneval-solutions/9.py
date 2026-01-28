@@ -1,5 +1,3 @@
-
-
 def rolling_max(numbers: list[int]) -> list[int]:
     """From a given list of integers, generate a list of rolling maximum element found until given moment
     in the sequence.

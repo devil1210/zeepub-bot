@@ -618,7 +618,7 @@ class ScannerService:
                     series.tags = list(existing_tags | new_tags)
                     logger.info(f"🏷️ Tags de serie actualizados (Unión): {series.series_name}")
 
-            if book.series_spanish and series.spanish_title != book.series_spanish:
+            if book.series_spanish and series.series_spanish != book.series_spanish:
                 series.series_spanish = book.series_spanish
 
             if book.book_type and series.book_type != book.book_type:

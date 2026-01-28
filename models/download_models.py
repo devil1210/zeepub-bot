@@ -21,6 +21,9 @@ class DownloadHistory(Base):
 
     # Relaciones
     user = relationship("User", backref="download_history")
+    book_id = Column(
+        Integer, ForeignKey("local_books.id"), nullable=True
+    )  # Vinculación con libro local
     title = Column(String(512), nullable=False)
     author = Column(String(255))
     download_url = Column(String(1024))

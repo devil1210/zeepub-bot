@@ -65,13 +65,14 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
         book_hash: str | None = None,
         is_uncensored: int = 0,
         color_mode: str | None = None,
+        book_id: int | None = None,
     ) -> int:
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
                     INSERT INTO download_history
-                    (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash, is_uncensored, color_mode, downloaded_at)
-                    VALUES (:user_id, :title, :author, :download_url, :file_size, :romaji_title, :series, :volume, :translator, :clean_title, :book_hash, :iu, :cm, CURRENT_TIMESTAMP)
+                    (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash, is_uncensored, color_mode, downloaded_at, book_id)
+                    VALUES (:user_id, :title, :author, :download_url, :file_size, :romaji_title, :series, :volume, :translator, :clean_title, :book_hash, :iu, :cm, CURRENT_TIMESTAMP, :bid)
                     RETURNING id
                 """)
                 result = await session.execute(
@@ -90,6 +91,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                         "book_hash": book_hash,
                         "iu": is_uncensored,
                         "cm": color_mode,
+                        "bid": book_id,
                     },
                 )
                 new_id = result.scalar()
@@ -107,6 +109,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                             "book_hash": book_hash,
                             "is_uncensored": is_uncensored,
                             "color_mode": color_mode,
+                            "book_id": book_id,
                         }
                         self.supabase.get_client().table("download_history").insert(data).execute()
                     except:

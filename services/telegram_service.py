@@ -943,6 +943,19 @@ async def enviar_libro_directo(
                     )
                     logger.warning(f"Generated new hash (should use library hash): {book_hash}")
 
+                # ID extraction
+                book_id_raw = meta.get("id") or meta.get("book_id")
+                book_id_numeric = None
+                if isinstance(book_id_raw, str) and book_id_raw.startswith("local_"):
+                    try:
+                        book_id_numeric = int(book_id_raw.replace("local_", ""))
+                    except:
+                        pass
+                elif isinstance(book_id_raw, int):
+                    book_id_numeric = book_id_raw
+                elif isinstance(book_id_raw, str) and book_id_raw.isdigit():
+                    book_id_numeric = int(book_id_raw)
+
                 await download_repo.add_download(
                     user_id=user_id,
                     title=titulo_vol,
@@ -955,6 +968,7 @@ async def enviar_libro_directo(
                     translator=translator,
                     clean_title=clean_title,
                     book_hash=book_hash,
+                    book_id=book_id_numeric,
                 )
 
                 # Also record in centralized metrics DB

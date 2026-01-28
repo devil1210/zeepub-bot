@@ -4,7 +4,6 @@
 # Passed: True
 
 
-
 def separate_paren_groups(paren_string: str) -> list[str]:
     """Input to this function is a string containing multiple groups of nested parentheses. Your goal is to
     separate those group into separate strings and return the list of those.

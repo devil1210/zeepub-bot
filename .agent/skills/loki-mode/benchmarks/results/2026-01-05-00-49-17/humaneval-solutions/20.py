@@ -1,5 +1,3 @@
-
-
 def find_closest_elements(numbers: list[float]) -> tuple[float, float]:
     """From a supplied list of numbers (of length at least two) select and return two that are the closest to each
     other and return them in order (smaller number, larger number).

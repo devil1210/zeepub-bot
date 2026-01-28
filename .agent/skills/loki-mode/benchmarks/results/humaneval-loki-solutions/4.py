@@ -4,7 +4,6 @@
 # Passed: True
 
 
-
 def mean_absolute_deviation(numbers: list[float]) -> float:
     """For a given list of input numbers, calculate Mean Absolute Deviation
     around the mean of this dataset.
