@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Settings,
     Database,
@@ -22,6 +22,38 @@ export const SystemDashboard: React.FC = () => {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [scanStatus, setScanStatus] = useState<any>(null);
+
+    // Polling for scan status
+    useEffect(() => {
+        let interval: any;
+
+        const checkStatus = async () => {
+            try {
+                const res = await api.getAdminScanStatus();
+                if (res.success) {
+                    setScanStatus(res.progress);
+                    if (!res.is_scanning && res.progress?.status === 'completed') {
+                        // Keep success state for 5 seconds then clear
+                        setTimeout(() => setScanStatus(null), 5000);
+                        clearInterval(interval);
+                    }
+                }
+            } catch (err) {
+                console.error("Error polling scan status:", err);
+            }
+        };
+
+        // Start polling immediately if we just triggered a scan, or if one is already in progress
+        if (actionLoading === 'Escaneo' || (scanStatus?.status === 'scanning')) {
+            checkStatus();
+            interval = setInterval(checkStatus, 2000);
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [actionLoading, scanStatus?.status]);
 
     const handleAction = async (name: string, fn: () => Promise<any>) => {
         setActionLoading(name);
@@ -254,6 +286,59 @@ export const SystemDashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Scanning Progress Alert */}
+            {scanStatus && (
+                <div className={`glass-panel p-6 rounded-premium border ${scanStatus.status === 'completed' ? 'border-green-500/30' : 'border-primary/30'} animate-in slide-in-from-top duration-300`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${scanStatus.status === 'completed' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'}`}>
+                                <Activity className={`w-5 h-5 ${scanStatus.status === 'scanning' ? 'animate-pulse' : ''}`} />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-white uppercase tracking-widest">
+                                    {scanStatus.status === 'completed' ? 'Escaneo Completado' : 'Escaneando Biblioteca...'}
+                                </h4>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                                    {scanStatus.current_source || 'Inicializando tareas...'}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-xl font-black text-white">{scanStatus.scanned || 0}</span>
+                            <span className="text-[10px] text-gray-500 ml-2 font-black uppercase">Libros</span>
+                        </div>
+                    </div>
+
+                    <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5 mb-4">
+                        <div
+                            className={`h-full transition-all duration-500 ${scanStatus.status === 'completed' ? 'bg-green-500' : 'bg-primary animate-pulse'}`}
+                            style={{ width: scanStatus.status === 'completed' ? '100%' : '65%' }}
+                        ></div>
+                    </div>
+
+                    {scanStatus.status === 'completed' && scanStatus.results && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 border-t border-white/5">
+                            <div className="flex flex-col">
+                                <span className="text-[9px] text-gray-500 uppercase font-black">Nuevos</span>
+                                <span className="text-sm font-bold text-green-400">+{scanStatus.results.added || 0}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[9px] text-gray-500 uppercase font-black">Actualizados</span>
+                                <span className="text-sm font-bold text-blue-400">{scanStatus.results.updated || 0}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[9px] text-gray-500 uppercase font-black">Eliminados</span>
+                                <span className="text-sm font-bold text-red-400">-{scanStatus.results.removed || 0}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[9px] text-gray-500 uppercase font-black">Duplicados</span>
+                                <span className="text-sm font-bold text-amber-400">{scanStatus.results.duplicates || 0}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Maintenance Section - Refined layout */}
             <div className="glass-panel rounded-premium p-8 border border-white/5">

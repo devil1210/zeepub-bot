@@ -170,6 +170,7 @@ async def handle_bot_request(
             handle_admin_save_user_permissions,
             handle_admin_scan_library,
             handle_admin_scan_series,
+            handle_admin_scan_status,
             handle_admin_scan_user,
             handle_admin_send_logs_telegram,
             handle_admin_set_user_level,
@@ -266,6 +267,7 @@ async def handle_bot_request(
             "admin_clear_duplicates": handle_admin_clear_duplicates,
             "admin_scan_user": handle_admin_scan_user,
             "admin_scan_series": handle_admin_scan_series,
+            "admin_scan_status": handle_admin_scan_status,
             "admin_get_system_logs": handle_admin_get_system_logs,
             "admin_send_logs_telegram": handle_admin_send_logs_telegram,
         }

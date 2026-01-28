@@ -32,6 +32,14 @@ class ScannerService:
 
     _scan_lock = asyncio.Lock()
     _is_scanning = False
+    _current_progress = {
+        "status": "idle",
+        "scanned": 0,
+        "total": 0,
+        "current_source": "",
+        "results": {},
+        "start_time": None,
+    }
 
     # Géneros que son "rasgos" de edición y deben bueblear a la serie si algún volumen los tiene
     TRAIT_TAGS = {
@@ -62,6 +70,14 @@ class ScannerService:
             return False
 
         ScannerService._is_scanning = True
+        ScannerService._current_progress = {
+            "status": "scanning",
+            "scanned": 0,
+            "total": 0,
+            "current_source": "Iniciando...",
+            "results": {},
+            "start_time": datetime.utcnow().isoformat(),
+        }
         session = get_session()
         try:
             results = {
@@ -89,6 +105,7 @@ class ScannerService:
             results["sources_scanned"] = len(local_libs_map)
 
             for name, path in local_libs_map.items():
+                ScannerService._current_progress["current_source"] = name
                 logger.info(f"Iniciando escaneo de fuente: {name} ({path})")
 
                 # 1. Asegurar que la fuente existe en DB (si viene del JSON)
@@ -351,6 +368,8 @@ class ScannerService:
                 logger.warning(f"Error en limpieza final de series: {ce}")
 
             logger.info(f"Escaneo completado: {results}")
+            ScannerService._current_progress["status"] = "completed"
+            ScannerService._current_progress["results"] = results
             return results
         except Exception as e:
             logger.error(f"Error en sync_all: {e}")
@@ -358,6 +377,8 @@ class ScannerService:
         finally:
             session.close()
             ScannerService._is_scanning = False
+            if ScannerService._current_progress.get("status") == "scanning":
+                ScannerService._current_progress["status"] = "idle"
 
     async def sync_path(self, path: str, source_id: int = 1, force_scan: bool = True):
         """
@@ -569,6 +590,8 @@ class ScannerService:
                             f"Progreso de escaneo: {results['added'] + results['updated']} libros procesados en {source.name}"
                         )
 
+                # Update progress
+                ScannerService._current_progress["scanned"] = results["total_scanned"]
                 # Ceder el control al event loop en cada archivo (sea epub o no) para máxima respuesta
                 await asyncio.sleep(0)
 

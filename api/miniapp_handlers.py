@@ -1139,6 +1139,18 @@ async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, An
         return {"success": False, "message": str(e)}
 
 
+async def handle_admin_scan_status(data: dict[str, Any], user_data: dict[str, Any]):
+    """Returns current library scan progress."""
+    check_staff(user_data)
+    from services.scanner_service import ScannerService
+
+    return {
+        "success": True,
+        "is_scanning": ScannerService._is_scanning,
+        "progress": ScannerService._current_progress,
+    }
+
+
 async def handle_admin_enrich_metadata(data: dict[str, Any], user_data: dict[str, Any]):
     """Activates manual enrichment of metadata from online sources."""
     check_staff(user_data)

@@ -140,6 +140,7 @@ export const api = {
     adminResetLibrary: (confirmed: boolean) => rpc('admin_reset_library', { confirmed }),
     adminRestartDocker: () => rpc('admin_restart_docker'),
     adminUpdateSystem: () => rpc('admin_update_system'),
+    getAdminScanStatus: () => rpc('admin_scan_status'),
 
     // Tier Configuration
     getTierConfig: (name: string) => rpc('admin_get_tier_config', { name }),
