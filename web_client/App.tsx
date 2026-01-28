@@ -252,64 +252,23 @@ const SeriesDetailWrapper = () => {
   };
 
   const handleBack = () => {
-    const debugInfo = `🔍 Back: Path=${pathname} | Stack=${navState.historyStack.length} | Series=${seriesId}`;
-    console.log('🔍 [DEBUG] SeriesDetailWrapper.handleBack called', {
-      currentPath: pathname,
-      historyStackLength: navState.historyStack.length,
-      seriesId
-    });
-
-    alert(`DEBUG: ${debugInfo}`);
-
     if (navState.historyStack.length > 1) {
-      console.log('🚀 [DEBUG] Using navigate(-1) - history has entries');
-      alert('🚀 Using navigate(-1) - history has entries');
       navigate(-1);
       return;
     }
-    
-    console.log('🚀 [DEBUG] Fallback: navigating to /search');
-    alert('🚀 Fallback: navigating to /search');
+
     navigate('/search');
   };
 
   const handleSelectVolume = (vol: Volume, selectedSeries?: Series) => {
-    const debugInfo = `🔍 Volume: ${vol?.title} (${vol?.id}) | Series: ${series?.title} (${seriesId})`;
-    console.log('🔍 [DEBUG] SeriesDetailWrapper.handleSelectVolume called', {
-      volumeId: vol?.id,
-      volumeTitle: vol?.title,
-      selectedSeriesId: selectedSeries?.id,
-      currentSeriesId: series?.id,
-      urlSeriesId: seriesId
-    });
-
-    // Show debug info in UI
-    alert(`DEBUG: ${debugInfo}`);
-
     const targetSeries = selectedSeries || series || ({ id: seriesId } as Series);
     const targetSeriesId = targetSeries?.id || seriesId;
-    
+
     if (!targetSeriesId || !vol?.id) {
-      const errorMsg = `❌ Missing IDs - Series: ${targetSeriesId}, Volume: ${vol?.id}`;
-      console.error('❌ [DEBUG] Missing IDs for navigation', {
-        targetSeriesId,
-        volumeId: vol?.id
-      });
-      alert(errorMsg);
       return;
     }
 
     const route = `/read/${targetSeriesId}/${vol.id}`;
-    const navInfo = `🚀 Navigating to: ${route}`;
-    console.log('🚀 [DEBUG] Navigating to:', {
-      route,
-      targetSeriesId,
-      volumeId: vol.id,
-      state: { series: targetSeries, volume: vol }
-    });
-
-    alert(navInfo);
-
     navigate(route, {
       state: { series: targetSeries, volume: vol }
     });
@@ -345,32 +304,16 @@ const BookDetailWrapper = () => {
   const seriesId = series?.id || parts[2];
 
   const handleBack = () => {
-    const debugInfo = `🔍 Book Back: Path=${pathname} | Stack=${navState.historyStack.length} | Series=${seriesId} | Volume=${volumeId}`;
-    console.log('🔍 [DEBUG] BookDetailWrapper.handleBack called', {
-      currentPath: pathname,
-      historyStackLength: navState.historyStack.length,
-      seriesId,
-      volumeId
-    });
-
-    alert(`DEBUG: ${debugInfo}`);
-
     if (navState.historyStack.length > 1) {
-      console.log('🚀 [DEBUG] Using navigate(-1) - history has entries');
-      alert('🚀 Using navigate(-1) - history has entries');
       navigate(-1);
       return;
     }
-    
+
     if (seriesId) {
-      console.log('🚀 [DEBUG] Fallback: navigating to series', { seriesId });
-      alert(`🚀 Fallback: navigating to series ${seriesId}`);
       navigate(`/series/${seriesId}`, { state: { series } });
       return;
     }
-    
-    console.log('🚀 [DEBUG] Fallback: navigating to /search');
-    alert('🚀 Fallback: navigating to /search');
+
     navigate('/search');
   };
 

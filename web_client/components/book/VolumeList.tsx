@@ -19,12 +19,6 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                     <div
                         key={vol.id}
                         onClick={() => {
-                            console.log('🔍 [DEBUG] VolumeList: Volume clicked', {
-                                volumeId: vol.id,
-                                volumeTitle: vol.title,
-                                seriesId: series.id,
-                                seriesTitle: series.title
-                            });
                             onSelectVolume(vol, series);
                         }}
                         className="group relative flex gap-5 p-4 rounded-[2rem] glass-panel hover:bg-white/[0.07] hover:border-white/20 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] transition-all duration-500 cursor-pointer overflow-hidden mb-4"
@@ -103,12 +97,6 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                     <div
                         key={vol.id}
                         onClick={() => {
-                            console.log('🔍 [DEBUG] VolumeList: Volume clicked (grid view)', {
-                                volumeId: vol.id,
-                                volumeTitle: vol.title,
-                                seriesId: series.id,
-                                seriesTitle: series.title
-                            });
                             onSelectVolume(vol, series);
                         }}
                         className="group relative glass-panel rounded-[2.5rem] overflow-hidden hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"

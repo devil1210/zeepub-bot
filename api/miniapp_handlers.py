@@ -78,8 +78,19 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
         raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
 
     # 1. Series/Group Handling
-    if isinstance(book_id_raw, str) and book_id_raw.startswith("series_"):
-        s_hash = book_id_raw.replace("series_", "")
+    is_series_request = False
+    s_hash = None
+
+    if isinstance(book_id_raw, str):
+        if book_id_raw.startswith("series_"):
+            is_series_request = True
+            s_hash = book_id_raw.replace("series_", "")
+        elif not book_id_raw.isdigit() and not book_id_raw.startswith("local_"):
+            # Probable series_hash directo (desde URL o navegación profunda)
+            is_series_request = True
+            s_hash = book_id_raw
+
+    if is_series_request and s_hash:
         v_limit = data.get("limit", 100)
         v_offset = data.get("offset", 0)
         
@@ -97,7 +108,7 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
         rep = volumes[0] if volumes else {}
         
         return {
-            "id": book_id_raw,
+            "id": f"series_{s_hash}",
             "series_hash": s_hash,
             "title": series.series_name if series else (rep.get("series") or rep.get("title")),
             "series_spanish": series.series_spanish if series else None,
@@ -158,6 +169,9 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
                 local_book["is_series"] = False
                 
             return local_book
+    
+    # OPDS fallback removed
+    raise HTTPException(status_code=404, detail="Book not found in local library")
     
     # OPDS fallback removed
     raise HTTPException(status_code=404, detail="Book not found in local library")
