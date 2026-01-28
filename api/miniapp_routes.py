@@ -108,12 +108,22 @@ async def handle_bot_request(
     user_effective = user_data
 
     try:
-        body = await request.json()
+        raw_body = await request.body()
+        if not raw_body:
+            return {"success": False, "message": "Request body is empty"}
+        body = json.loads(raw_body)
     except Exception as e:
-        logger.error(f"Error parsing JSON: {e}")
-        body = {}
+        logger.error(f"Error parsing JSON from user {user_id}: {e}")
+        # Log a snippet of the raw body safely
+        safe_body = str(raw_body)[:200] if 'raw_body' in locals() else "unknown"
+        logger.debug(f"Raw body snippet: {safe_body}")
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
 
     action = body.get("action")
+    if not action:
+        logger.warning(f"No action provided in request from user {user_id}")
+        raise HTTPException(status_code=400, detail="Missing 'action' field")
+    
     data = body.get("data", {})
 
     # --- Role-Based Access Control ---
