@@ -102,6 +102,14 @@ class SyncService:
 
             logger.info(f"Sincronizando {len(series_list)} series a Supabase...")
 
+            # Force schema cache refresh to avoid stale column errors (PGRST204)
+            try:
+                client.rpc("reload_schema_cache").execute()
+            except Exception:
+                # Fallback: simple query to wake up connection or ignore if RPC not found
+                pass
+
+
             # Upsert in small batches to avoid payload limits
             batch_size = 50
             for i in range(0, len(series_list), batch_size):
