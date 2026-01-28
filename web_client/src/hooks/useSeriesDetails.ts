@@ -53,8 +53,8 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
                         const mappedVols: Volume[] = data.volumes.map((v: any) => {
                             console.log('🔍 [DEBUG] Processing volume:', v);
                             const mapped = {
-                                id: v.id,
-                                seriesId: data.id,
+                                id: v._id || v.id, // Use _id from API, fallback to id
+                                seriesId: data._id || data.id,
                                 title: v.title,
                                 volumeNumber: v.seriesIndex || 1,
                                 coverUrl: {
