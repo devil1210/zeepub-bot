@@ -87,7 +87,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
           setRealSeries({
             ...series, // Preserve existing data if needed
             ...data,
-            coverUrl: data.cover || series.coverUrl,
+            coverUrl: data.coverUrl || data.cover || series.coverUrl,
             description: (data.summary || data.description || series.description)?.replace(/<br\s*\/?>/gi, '\n'),
             englishTitle: data.english_title,
             spanishTitle: data.spanish_title,

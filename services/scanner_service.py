@@ -505,7 +505,7 @@ class ScannerService:
                 tags=book.tags or [],
                 book_type=book.book_type,
                 publisher=book.publisher,
-                cover_url=book.cover_medium or book.cover_low,
+                cover_url=book.cover_low or book.cover_medium,
                 book_count=0
             )
             session.add(series)
@@ -527,8 +527,8 @@ class ScannerService:
             if not series.series_spanish and book.series_spanish: series.series_spanish = book.series_spanish
             if not series.book_type and book.book_type: series.book_type = book.book_type
             if not series.publisher and book.publisher: series.publisher = book.publisher
-            if not series.cover_url and (book.cover_medium or book.cover_low):
-                series.cover_url = book.cover_medium or book.cover_low
+            if not series.cover_url and (book.cover_low or book.cover_medium):
+                series.cover_url = book.cover_low or book.cover_medium
 
         return series
 
@@ -1014,6 +1014,16 @@ class ScannerService:
             for b in books:
                 if hasattr(b, 'series_spanish') and b.series_spanish:
                     series.series_spanish = b.series_spanish
+                    break
+        
+        # 3. Synchronize Cover URL (Ensure it has one and it follows the new low-quality naming)
+        if not series.cover_url or "_low.jpg" not in series.cover_url:
+            for b in books:
+                if b.cover_low:
+                    series.cover_url = b.cover_low
+                    break
+                elif b.cover_medium:
+                    series.cover_url = b.cover_medium
                     break
                     
         # 3. Métricas
