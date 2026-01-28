@@ -238,7 +238,7 @@ const BookDetailByIdWrapper = () => {
 const SeriesDetailWrapper = () => {
   const navigate = useNavigate();
   const onNavigate = useLegacyNavigation();
-  const { setSearchTerm } = useNavigation();
+  const { setSearchTerm, state: navState } = useNavigation();
   const location = useLocation();
   const pathname = location.pathname;
   const series = location.state?.series as Series;
@@ -251,11 +251,28 @@ const SeriesDetailWrapper = () => {
     onNavigate('search');
   };
 
+  const handleBack = () => {
+    if (navState.historyStack.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate('/search');
+  };
+
+  const handleSelectVolume = (vol: Volume, selectedSeries?: Series) => {
+    const targetSeries = selectedSeries || series || ({ id: seriesId } as Series);
+    const targetSeriesId = targetSeries?.id || seriesId;
+    if (!targetSeriesId || !vol?.id) return;
+    navigate(`/read/${targetSeriesId}/${vol.id}`, {
+      state: { series: targetSeries, volume: vol }
+    });
+  };
+
   return (
     <SeriesDetail
-      series={series || { id: seriesId } as any}
-      onBack={() => navigate(-1)}
-      onSelectVolume={(vol, s) => onNavigate('search', s || series, vol)}
+      series={series || ({ id: seriesId } as any)}
+      onBack={handleBack}
+      onSelectVolume={handleSelectVolume}
       onSearch={handleSearch}
     />
   );
@@ -264,7 +281,7 @@ const SeriesDetailWrapper = () => {
 const BookDetailWrapper = () => {
   const navigate = useNavigate();
   const onNavigate = useLegacyNavigation();
-  const { setSearchTerm } = useNavigation();
+  const { setSearchTerm, state: navState } = useNavigation();
   const location = useLocation();
   const pathname = location.pathname;
   const { series, volume } = location.state || {}; // Cast as needed
@@ -278,12 +295,26 @@ const BookDetailWrapper = () => {
     onNavigate('search');
   };
 
+  const seriesId = series?.id || parts[2];
+
+  const handleBack = () => {
+    if (navState.historyStack.length > 1) {
+      navigate(-1);
+      return;
+    }
+    if (seriesId) {
+      navigate(`/series/${seriesId}`, { state: { series } });
+      return;
+    }
+    navigate('/search');
+  };
+
   return (
     <BookDetail
       series={series}
       volume={volume}
       bookId={volumeId}
-      onBack={() => navigate(-1)}
+      onBack={handleBack}
       onSearch={handleSearch}
       onNavigate={onNavigate}
     />
