@@ -986,6 +986,8 @@ async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[
                         "tags": s.tags,
                         "cover_url": s.cover_url,
                         "book_type": s.book_type,
+                        "publisher": s.publisher,
+                        "author_jap": s.author_jap,
                         "rating_average": float(s.rating_average) if s.rating_average is not None else 0.0,
                         "rating_count": s.rating_count,
                         "book_count": s.book_count
