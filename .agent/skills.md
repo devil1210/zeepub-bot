@@ -1,6 +1,6 @@
 # Zeepub-bot Active Skills & Implementation Manifesto
 
-Este archivo consolida las capacidades activas del proyecto y las reglas mandatorias de implementación, siguiendo los estándares globales de **v3.4.0**.
+Este archivo consolida las capacidades activas del proyecto y las reglas mandatorias de implementación, siguiendo los estándares globales de **v3.5.0 (Enterprise Edition)**.
 
 ## 🏗️ Protocolos de Mantenimiento y Drift
 1. **CI Drift Fix**: Ante discrepancias entre el código generado y el estado real del sistema (especialmente en bases de datos), seguir el protocolo de `docs/CI_DRIFT_FIX.md`.
@@ -14,17 +14,20 @@ Este archivo consolida las capacidades activas del proyecto y las reglas mandato
 ### Backend & Arquitectura
 - **python-patterns**: Código limpio, tipado y eficiente para FastAPI.
 - **backend-dev-guidelines**: Arquitectura en capas (Handler -> Service -> Repository). **Actualizado v3.2.0**.
-- **clean-code**: Prevención de deuda técnica.
+- **production-code-audit**: Auditoría profunda y transformación a grado corporativo. **Nuevo v3.5.0**.
+- **senior-architect**: Diseño de sistemas escalables y patrones de arquitectura avanzada. **Nuevo v3.5.0**.
+- **senior-fullstack**: Desarrollo integral React + FastAPI con estándares de elite. **Nuevo v3.5.0**.
 - **software-architecture**: Integridad estructural y patrones de diseño.
 - **postgres-best-practices**: Optimización para PostgreSQL 17 (JSONB, Indexing, ILIKE).
 
 ### IA & Automatización
 - **ai-agents-architect**: Flujos de trabajo de agentes autónomos para el mantenimiento de la librería.
 - **subagent-driven-development**: Implementación de features complejas mediante subagentes especializados.
+- **skill-developer**: Creación y mantenimiento de skills siguiendo estándares de Anthropic. **Nuevo v3.5.0**.
 - **rag-implementation**: Búsqueda semántica usando Gemini embeddings.
 - **epub-metadata-mastery**: Normalización de hashes y metadatos de libros.
-- **voice-ai-engine-development**: Construcción de agentes de voz en tiempo real (OpenAI/Vapi). **Nuevo v3.4.0**.
-- **last30days**: Investigación profunda de tendencias recientes. **Nuevo v3.3.0**.
+- **voice-ai-engine-development**: Construcción de agentes de voz en tiempo real (OpenAI/Vapi). **Actualizado v3.4.0**.
+- **last30days**: Investigación profunda de tendencias recientes. **Actualizado v3.3.0**.
 
 ### Frontend & UI/UX
 - **telegram-mini-app**: Integración nativa con la API de Telegram.
