@@ -42,6 +42,16 @@ class BookDTO(BaseModel):
     isbn: str | None = None
     modifiedAt: str | None = None
     published_at: str | None = None
+    asin: str | None = None
+    word_count: int | None = None
+    page_count: int | None = None
+    reading_time: int | None = None
+    file_size: int | None = None
+    size: str | None = None
+    epub_version: str | None = None
+    modified_at_opf: str | None = None
+    group: str | None = None
+    volumeNumber: float | None = None
 
     # Explicit compatibility fields
     is_uncensored: bool = False

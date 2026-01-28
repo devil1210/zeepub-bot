@@ -83,18 +83,18 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               cover: bookData.cover || ''
             },
             coverThumbUrl: bookData.cover_thumb || bookData.cover_low || bookData.cover || '',
-            published_at: bookData.publishedAt || bookData.published_at,
-            publishedAt: bookData.publishedAt,
-            pageCount: bookData.pageCount || 0,
-            pages: bookData.pageCount || 0,
-            format: (bookData.bookType || 'EPUB') as any,
+            published_at: bookData.published_at || bookData.publishedAt,
+            publishedAt: bookData.publishedAt || bookData.published_at,
+            pageCount: bookData.page_count || bookData.pageCount || 0,
+            pages: bookData.page_count || bookData.pageCount || 0,
+            format: (bookData.book_type || bookData.bookType || 'EPUB') as any,
             rating: bookData.rating_average || 0,
             description: bookData.description || bookData.summary,
             language: bookData.language || 'Español',
-            size: bookData.size || (bookData.fileSize ? `${(bookData.fileSize / 1024 / 1024).toFixed(2)} MB` : 'N/A'),
+            size: bookData.size || (bookData.file_size ? `${(bookData.file_size / 1024 / 1024).toFixed(2)} MB` : 'N/A'),
             uploader: 'ZeePub',
-            wordCount: bookData.wordCount,
-            readingTime: bookData.readingTime,
+            wordCount: bookData.word_count || bookData.wordCount || 0,
+            readingTime: bookData.reading_time || bookData.readingTime,
             tags: bookData.tags || [],
             demographics: bookData.demographics || bookData.demography || [],
             downloadCount: bookData.download_count || 0,
@@ -107,9 +107,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             publisher: bookData.publisher,
             isbn: bookData.isbn,
             asin: bookData.asin,
-            epubVersion: bookData.epubVersion,
-            modifiedAt: bookData.modifiedAt,
-            modifiedAtOpf: bookData.modifiedAtOpf,
+            epubVersion: bookData.epub_version || bookData.epubVersion,
+            modifiedAt: bookData.modifiedAt || bookData.modified_at,
+            modifiedAtOpf: bookData.modified_at_opf || bookData.modifiedAtOpf,
             english_title: bookData.english_title,
             spanish_title: bookData.spanish_title,
             romaji_title: bookData.romaji_title || bookData.romaji,
@@ -295,9 +295,10 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   };
 
   const formatReadingTime = (minutes?: number) => {
-    if (!minutes) return 'N/A';
-    const hours = (minutes / 60).toFixed(2);
-    return `${minutes} m / ${hours.replace('.', ',')} horas`;
+    if (!minutes || minutes <= 0) return 'N/A';
+    const hours = minutes / 60;
+    const hoursStr = hours % 1 === 0 ? hours.toString() : hours.toFixed(1);
+    return `${minutes} min/ ${hoursStr} horas`;
   };
 
   if (loading) {
@@ -375,15 +376,15 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     { label: 'Idioma', value: displayData.language, highlight: true },
     { label: 'Group', value: displayData.group, color: 'text-primary', clickable: true, type: 'group' },
     { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
-    { label: 'Editorial', value: displayData.publisher, highlight: true },
+    { label: 'Grupo Traductor', value: displayData.publisher !== 'N/A' ? displayData.publisher : displayData.group, highlight: true },
     { label: 'Fecha de publicación', value: displayData.publishedDate, highlight: true },
   ];
 
   const specItems = [
     { label: 'Formato', value: 'EPUB', highlight: true },
     { label: 'Versión Epub', value: `v${displayData.epubVersion}` },
-    { label: 'Palabras', value: displayData.wordCount?.toLocaleString() || 'N/A' },
-    { label: 'Páginas', value: displayData.pages || 'N/A' },
+    { label: 'Palabras', value: displayData.wordCount !== undefined && displayData.wordCount !== null ? displayData.wordCount.toLocaleString() : 'N/A' },
+    { label: 'Páginas', value: displayData.pages !== undefined && displayData.pages !== null && displayData.pages > 0 ? displayData.pages : 'N/A' },
     { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
     { label: 'Lectura Aprox.', value: displayData.readTime },
     { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
