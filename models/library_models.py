@@ -265,7 +265,11 @@ class LocalBook(Base):
             "summary": self.summary or limpiar_html_basico(self.description),
             "fileSize": self.file_size,
             "file_size": self.file_size,
-            "size": f"{round(self.file_size / (1024 * 1024), 2)} MB" if self.file_size and self.file_size > 0 else "0 MB",
+            "size": (
+                f"{round(self.file_size / (1024 * 1024), 2)} MB"
+                if self.file_size and self.file_size > 0
+                else "0 MB"
+            ),
             "modifiedAt": (self.file_modified_at.isoformat() if self.file_modified_at else None),
             "modified_at": (self.file_modified_at.isoformat() if self.file_modified_at else None),
             # Portadas
@@ -307,7 +311,6 @@ class LocalBook(Base):
             "language": self.language,
             "is_uncensored": self.is_uncensored == 1,
             "color_mode": self.color_mode,
-            "volume": self.volume,
             "volumeNumber": self.volume,
             "romaji_title": self.romaji_title,
             "english_title": self.english_title,
