@@ -28,6 +28,8 @@ Estas skills deben ser priorizadas y aplicadas proactivamente según el contexto
 - **`senior-architect`**: Diseño de sistemas escalables y patrones avanzados.
 - **`postgres-best-practices`**: Optimización de queries, índices y seguridad RLS.
 - **`backend-dev-guidelines`**: Estructura Handler -> Service -> Repository.
+- **`docker-expert`**: Optimización de contenedores, Dockerfiles y orquestación.
+- **`telegram-bot-builder`**: Patrones avanzados para bots de Telegram escalables.
 
 ### 🧠 IA y Automatización
 - **`ai-agents-architect`**: Mantenimiento autónomo de la librería.
@@ -39,6 +41,7 @@ Estas skills deben ser priorizadas y aplicadas proactivamente según el contexto
 - **`ui-ux-pro-max`**: Micro-animaciones, feedback táctil y estética Premium.
 - **`telegram-mini-app`**: Integración nativa con Telegram API y Stars.
 - **`mobile-design`**: Enfoque Mobile-First (Viewport safety, Touch targets).
+- **`typescript-expert`**: Tipado estricto, optimización y patrones avanzados TS.
 
 ## 🛠️ Workflows Automatizados
 
