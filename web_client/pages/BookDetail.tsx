@@ -73,6 +73,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             id: bookData.id,
             seriesId: bookData.seriesHash || 'unknown',
             title: bookData.title,
+            volume: bookData.volume !== undefined ? bookData.volume : bookData.seriesIndex,
             volumeNumber: bookData.seriesIndex || 0,
             coverUrl: {
               cover_low: bookData.cover_low,
@@ -82,34 +83,39 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               cover: bookData.cover || ''
             },
             coverThumbUrl: bookData.cover_thumb || bookData.cover_low || bookData.cover || '',
-            publishedDate: bookData.publishedAt || 'N/A',
+            published_at: bookData.publishedAt || bookData.published_at,
+            publishedAt: bookData.publishedAt,
+            pageCount: bookData.pageCount || 0,
             pages: bookData.pageCount || 0,
             format: (bookData.bookType || 'EPUB') as any,
             rating: bookData.rating_average || 0,
             description: bookData.description || bookData.summary,
             language: bookData.language || 'Español',
-            size: bookData.fileSize ? `${(bookData.fileSize / 1024 / 1024).toFixed(2)} MB` : 'N/A',
+            size: bookData.size || (bookData.fileSize ? `${(bookData.fileSize / 1024 / 1024).toFixed(2)} MB` : 'N/A'),
             uploader: 'ZeePub',
             wordCount: bookData.wordCount,
-            readTime: bookData.readingTime,
+            readingTime: bookData.readingTime,
             tags: bookData.tags || [],
-            demography: bookData.demographics || [],
+            demographics: bookData.demographics || bookData.demography || [],
             downloadCount: bookData.download_count || 0,
             ratingCount: bookData.rating_count || 0,
             illustrator: bookData.illustrator,
             translator: bookData.translator,
-            typesetter: bookData.layoutBy,
+            layout_by: bookData.layout_by || bookData.layoutBy,
+            layoutBy: bookData.layoutBy,
             group: bookData.group,
+            publisher: bookData.publisher,
             isbn: bookData.isbn,
             asin: bookData.asin,
             epubVersion: bookData.epubVersion,
             modifiedAt: bookData.modifiedAt,
             modifiedAtOpf: bookData.modifiedAtOpf,
-            englishTitle: bookData.english_title,
-            spanishTitle: bookData.spanish_title,
-            romajiTitle: bookData.romaji_title || bookData.romaji,
+            english_title: bookData.english_title,
+            spanish_title: bookData.spanish_title,
+            romaji_title: bookData.romaji_title || bookData.romaji,
+            book_type: bookData.book_type || bookData.bookType,
             bookType: bookData.bookType || bookData.categoria || 'Novela Ligera',
-            is_uncensored: bookData.is_uncensored,
+            is_uncensored: bookData.is_uncensored == 1 || bookData.is_uncensored === true,
             color_mode: bookData.color_mode
           };
 
@@ -319,27 +325,29 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     language: String(curVolume.language || 'Español'),
     size: String(curVolume.size || '0 MB'),
     format: 'EPUB',
-    bookType: String(curVolume.bookType || 'Novela Ligera'),
+    bookType: String(curVolume.book_type || curVolume.bookType || 'Novela Ligera'),
     epubVersion: String(curVolume.epubVersion || '3.0'),
     uploader: 'ZeePub',
     wordCount: curVolume.wordCount || 0,
-    pages: curVolume.pages || 0,
-    readTime: formatReadingTime(curVolume.wordCount ? Math.ceil(curVolume.wordCount / 200) : (typeof curVolume.readTime === 'number' ? curVolume.readTime : undefined)),
+    pages: curVolume.pageCount || curVolume.pages || 0,
+    readTime: formatReadingTime(curVolume.readingTime || (curVolume.wordCount ? Math.ceil(curVolume.wordCount / 200) : undefined)),
     lastUpdated: curVolume.modifiedAtOpf ? formatDate(String(curVolume.modifiedAtOpf)) : (curVolume.modifiedAt ? formatDate(String(curVolume.modifiedAt)) : 'N/A'),
-    publishedDate: formatDate(String(curVolume.publishedDate || '')),
+    publishedDate: formatDate(String(curVolume.published_at || curVolume.publishedAt || curVolume.publishedDate || '')),
     description: String(curVolume.description || 'Sin sinopsis disponible.'),
-    displayTitle: String(curSeries?.title || curVolume.englishTitle || curVolume.title || 'Libro sin título'),
-    romajiTitle: String(curVolume.romajiTitle || curSeries?.romajiTitle || ''),
+    displayTitle: String(curVolume.series || curSeries?.title || curVolume.english_title || curVolume.englishTitle || curVolume.title || 'Libro sin título'),
+    romajiTitle: String(curVolume.romaji_title || curVolume.romajiTitle || curSeries?.romajiTitle || ''),
     illustrator: String(curVolume.illustrator || 'N/A'),
     translator: String(curVolume.translator || 'ZeePub'),
-    group: String(curVolume.group || 'ZeePub'),
-    typesetter: String(curVolume.typesetter || 'N/A'),
+    group: String(curVolume.group || curVolume.publisher || curVolume.translator || 'ZeePub'),
+    publisher: String(curVolume.publisher || 'N/A'),
+    typesetter: String(curVolume.layout_by || curVolume.layoutBy || curVolume.typesetter || 'N/A'),
     isbn: String(curVolume.isbn || 'N/A'),
     asin: String(curVolume.asin || 'N/A'),
-    demography: Array.isArray(curVolume.demography) ? curVolume.demography : (Array.isArray((curVolume as any).demographics) ? (curVolume as any).demographics : []),
-    genres: Array.isArray((curVolume as any).genres) ? (curVolume as any).genres : (Array.isArray((curVolume as any).tags) ? (curVolume as any).tags : (Array.isArray(curSeries?.genres) ? curSeries.genres : [])),
+    demography: Array.isArray(curVolume.demographics) ? curVolume.demographics : (Array.isArray(curVolume.demography) ? curVolume.demography : []),
+    genres: Array.isArray(curVolume.tags) ? curVolume.tags : (Array.isArray(curVolume.genres) ? curVolume.genres : (Array.isArray(curSeries?.genres) ? curSeries.genres : [])),
     is_uncensored: curVolume.is_uncensored,
-    color_mode: curVolume.color_mode
+    color_mode: curVolume.color_mode,
+    volume: curVolume.volume !== undefined && curVolume.volume !== null ? curVolume.volume : (curVolume.volumeNumber !== undefined ? curVolume.volumeNumber : 0)
   };
 
   const formatDescription = (desc: string) => {
@@ -359,14 +367,15 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   };
 
   const detailItems = [
-    { label: 'Serie', value: curSeries.title, highlight: true, clickable: true, type: 'series' },
-    { label: 'Volumen', value: (curVolume.volumeNumber !== undefined && curVolume.volumeNumber !== null) ? `${curVolume.volumeNumber}` : '0' },
+    { label: 'Serie', value: displayData.displayTitle, highlight: true, clickable: true, type: 'series' },
+    { label: 'Volumen', value: `${displayData.volume}` },
     { label: 'Tipo de libro', value: displayData.bookType },
     { label: 'ISBN', value: displayData.isbn, highlight: true, font: 'mono' },
     { label: 'ASIN', value: displayData.asin, highlight: true, font: 'mono' },
     { label: 'Idioma', value: displayData.language, highlight: true },
     { label: 'Group', value: displayData.group, color: 'text-primary', clickable: true, type: 'group' },
     { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
+    { label: 'Editorial', value: displayData.publisher, highlight: true },
     { label: 'Fecha de publicación', value: displayData.publishedDate, highlight: true },
   ];
 
@@ -458,7 +467,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                 ratingCount={displayData.ratingCount}
                 downloadCount={displayData.downloadCount}
                 illustrator={displayData.illustrator}
-                volumeNumber={curVolume.volumeNumber}
+                volumeNumber={displayData.volume}
                 publishedDate={displayData.publishedDate}
                 translator={displayData.translator}
                 lastUpdated={displayData.lastUpdated}

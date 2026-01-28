@@ -41,6 +41,7 @@ class BookDTO(BaseModel):
     publisher: str | None = None
     isbn: str | None = None
     modifiedAt: str | None = None
+    published_at: str | None = None
 
     # Explicit compatibility fields
     is_uncensored: bool = False

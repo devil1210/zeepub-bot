@@ -255,69 +255,70 @@ class LocalBook(Base):
             "series": self.series,
             "seriesHash": self.series_hash,
             "seriesIndex": self.volume,
+            "volume": self.volume,
             "tags": self.tags,
             "demographics": self.demographics,
             "description": limpiar_html_basico(self.description),
             "description_clean": limpiar_html_basico(
                 self.description
             ),  # Alias for backward compatibility
-            "summary": self.summary
-            or limpiar_html_basico(self.description),  # Prefer AI summary if available
+            "summary": self.summary or limpiar_html_basico(self.description),
             "fileSize": self.file_size,
+            "size": f"{round(self.file_size / (1024 * 1024), 2)} MB"
+            if self.file_size and self.file_size > 0
+            else "0 MB",
             "modifiedAt": (self.file_modified_at.isoformat() if self.file_modified_at else None),
-            # Cover images - all quality levels
+            # Portadas
             "cover_original": self.cover_original,
             "cover_high": self.cover_high,
             "cover_medium": self.cover_medium,
             "cover_low": self.cover_low,
-            # Backward compatibility aliases
             "cover": self.cover_low or self.cover_medium or self.cover_high or self.cover_original,
             "cover_thumb": self.cover_low,
+            # Trazabilidad
             "filename": self.filename,
             "filepath": self.filepath,
-            "downloadUrl": self.filepath,  # Ruta local para enviar_libro_directo
             "is_folder": False,
-            # Enriched data
+            # Metadata enriquecida
             "illustrator": self.illustrator,
             "translator": self.translator,
+            "group": self.translator,
             "layoutBy": self.layout_by,
+            "layout_by": self.layout_by,
             "edition": self.edition,
             "publisher": self.publisher,
             "publishedAt": self.published_at,
+            "published_at": self.published_at,
             "modifiedAtOpf": self.modified_at_opf,
             "bookType": self.book_type,
+            "book_type": self.book_type,
             "isbn": self.isbn,
             "asin": self.asin,
             "uriId": self.uri_id,
             "epubVersion": self.epub_version,
             "wordCount": self.word_count,
             "pageCount": self.page_count,
-            "english_title": self.english_title,
-            "spanish_title": self.spanish_title,
-            "jap_title": self.jap_title,
-            "romaji_title": self.romaji_title,
             "author_jap": self.author_jap,
             "illustrator_jap": self.illustrator_jap,
-            "readingTime": self.reading_time,
-            "is_uncensored": bool(self.is_uncensored),
+            "language": self.language,
+            "is_uncensored": self.is_uncensored == 1,
             "color_mode": self.color_mode,
-            # Key mappings for consistency across services (Search, Telegram, Admin)
-            "titulo": self.title,
-            "autor": self.author,
-            "categoria": self.book_type,
-            "book_type": self.book_type,
+            "volume": self.volume,
+            "volumeNumber": self.volume,
+            "romaji_title": self.romaji_title,
+            "english_title": self.english_title,
+            "spanish_title": self.spanish_title,
+            "series_spanish": self.series_spanish,
+            "readingTime": self.reading_time,
             "book_hash": self.book_hash,
             "series_hash": self.series_hash,
-            "titulo_serie": self.series,
-            "series_spanish": self.series_spanish,
             "rating_average": self.rating_average,
             "rating_count": self.rating_count,
-            "votes": self.rating_count,  # Alias
-            # Frontend compatibility (CamelCase)
-            "cleanTitle": self.series
+            "votes": self.rating_count,
+            "clean_title": self.series
             or self.english_title
             or (re.sub(r"\[.*?\]", "", self.title).strip() if self.title else ""),
-            "clean_title": self.series
+            "cleanTitle": self.series
             or self.english_title
             or (re.sub(r"\[.*?\]", "", self.title).strip() if self.title else ""),
         }

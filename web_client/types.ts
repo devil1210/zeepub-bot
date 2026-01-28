@@ -23,47 +23,58 @@ export interface Book {
 
 export interface Volume {
   id: string;
-  _id?: string; // API sometimes returns _id instead of id
-  seriesId: string;
+  _id?: string;
+  seriesId?: string;
   title: string;
-  volumeNumber: number;
+  volumeNumber?: number;
+  volume?: number;
   coverUrl: string | CoverPaths;
   coverThumbUrl?: string;
-  publishedDate: string;
-  pages: number;
+  publishedDate?: string;
+  publishedAt?: string;
+  published_at?: string;
+  pages?: number;
+  pageCount?: number;
   format: 'EPUB' | 'PDF' | 'MOBI';
   rating: number;
   description?: string;
-  // Extended fields for Book Detail
   romajiTitle?: string;
+  romaji_title?: string;
   language?: string;
   size?: string;
   uploader?: string;
   wordCount?: number;
+  readingTime?: number;
   readTime?: string;
   tags?: string[];
+  genres?: string[];
   demography?: string[];
+  demographics?: string[];
   isVerified?: boolean;
   downloadCount?: number;
   ratingCount?: number;
-
-  // Staff & IDs
   illustrator?: string;
   translator?: string;
-  typesetter?: string; // Maquetador
-  group?: string; // Grupo Traductor
+  typesetter?: string;
+  layout_by?: string;
+  layoutBy?: string;
+  group?: string;
   isbn?: string;
   asin?: string;
   epubVersion?: string;
   modifiedAt?: string;
   modifiedAtOpf?: string;
   englishTitle?: string;
+  english_title?: string;
   spanishTitle?: string;
+  spanish_title?: string;
   bookType?: string;
+  book_type?: string;
   series?: string;
   cleanTitle?: string;
   is_uncensored?: boolean;
   color_mode?: string;
+  publisher?: string;
 }
 
 export interface Series {
@@ -79,6 +90,11 @@ export interface Series {
   genres?: string[]; // Full list
   format?: string; // e.g. "EPUB", "PDF"
   book_type?: string; // e.g. "NOVELA LIGERA", "WEB NOVEL"
+  series_spanish?: string;
+  spanish_title?: string;
+  rating_average?: number;
+  rating_count?: number;
+  book_count?: number;
   rating: number;
   voteCount?: number;
   downloadCount?: number;
