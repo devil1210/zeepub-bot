@@ -966,7 +966,8 @@ async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[
     if not client:
         return {"success": False, "message": "Supabase no está configurado"}
 
-    stats = {"series": 0, "proposals": 0, "feedback": 0, "sources": 0, "books": 0}
+    from models.library_models import UserRating, UserDownload
+
     stats = {"series": 0, "ai_proposals": 0, "ai_feedback": 0, "sources": 0, "books": 0, "ratings": 0, "downloads": 0}
     try:
         async with pg_manager.get_session() as session:
