@@ -19,13 +19,11 @@ export interface Book {
   tags: string[];
   series?: string;
   cleanTitle?: string;
-  bookType?: string;
-  is_uncensored?: boolean;
-  color_mode?: string;
 }
 
 export interface Volume {
   id: string;
+  _id?: string; // API sometimes returns _id instead of id
   seriesId: string;
   title: string;
   volumeNumber: number;
@@ -70,6 +68,7 @@ export interface Volume {
 
 export interface Series {
   id: string;
+  _id?: string; // API sometimes returns _id instead of id
   series_hash?: string;
   title: string;
   author: string;

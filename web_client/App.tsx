@@ -244,7 +244,7 @@ const SeriesDetailWrapper = () => {
   const series = location.state?.series as Series;
 
   // Extract ID if missing state
-  const seriesId = series?.id || pathname.split('/')[2];
+  const seriesId = series?._id || series?.id || pathname.split('/')[2];
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
