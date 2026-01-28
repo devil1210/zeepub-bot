@@ -240,9 +240,11 @@ const SeriesDetailWrapper = () => {
   const onNavigate = useLegacyNavigation();
   const { setSearchTerm } = useNavigation();
   const location = useLocation();
+  const pathname = location.pathname;
   const series = location.state?.series as Series;
 
-  if (!series) return <Navigate to="/" />; // Fallback if no state
+  // Extract ID if missing state
+  const seriesId = series?.id || pathname.split('/')[2];
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -251,9 +253,9 @@ const SeriesDetailWrapper = () => {
 
   return (
     <SeriesDetail
-      series={series}
+      series={series || { id: seriesId } as any}
       onBack={() => navigate(-1)}
-      onSelectVolume={(vol) => onNavigate('search', series, vol)}
+      onSelectVolume={(vol, s) => onNavigate('search', s || series, vol)}
       onSearch={handleSearch}
     />
   );
@@ -264,9 +266,12 @@ const BookDetailWrapper = () => {
   const onNavigate = useLegacyNavigation();
   const { setSearchTerm } = useNavigation();
   const location = useLocation();
+  const pathname = location.pathname;
   const { series, volume } = location.state || {}; // Cast as needed
 
-  if (!series || !volume) return <Navigate to="/" />;
+  // Extract IDs from pathname if state is missing
+  const parts = pathname.split('/');
+  const volumeId = volume?.id || parts[3];
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -277,6 +282,7 @@ const BookDetailWrapper = () => {
     <BookDetail
       series={series}
       volume={volume}
+      bookId={volumeId}
       onBack={() => navigate(-1)}
       onSearch={handleSearch}
       onNavigate={onNavigate}

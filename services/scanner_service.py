@@ -528,9 +528,12 @@ class ScannerService:
             session.flush() # Para obtener el ID
             logger.info(f"🆕 Nueva serie detectada: {series.series_name}")
         else:
-            # Sincronizar campos si están vacíos en la serie pero presentes en el libro
-            if not series.author and book.author: series.author = book.author
-            if not series.description and book.description: series.description = book.description
+            # Sincronizar campos: Actualizar si el libro tiene info y es distinta o la serie está vacía
+            if book.author and series.author != book.author: 
+                series.author = book.author
+            
+            if book.description and (not series.description or len(book.description) > len(series.description)):
+                 series.description = book.description
             
             # UNIÓN DE TAGS: La serie tiene todos los géneros que tengan sus volúmenes
             if book.tags:
@@ -540,11 +543,20 @@ class ScannerService:
                     series.tags = list(existing_tags | new_tags)
                     logger.info(f"🏷️ Tags de serie actualizados (Unión): {series.series_name}")
 
-            if not series.series_spanish and book.series_spanish: series.series_spanish = book.series_spanish
-            if not series.book_type and book.book_type: series.book_type = book.book_type
-            if not series.publisher and book.publisher: series.publisher = book.publisher
-            if not series.cover_url and (book.cover_low or book.cover_medium):
-                series.cover_url = book.cover_low or book.cover_medium
+            if book.series_spanish and series.spanish_title != book.series_spanish:
+                series.series_spanish = book.series_spanish
+            
+            if book.book_type and series.book_type != book.book_type:
+                series.book_type = book.book_type
+                
+            if book.publisher and series.publisher != book.publisher:
+                series.publisher = book.publisher
+
+            # PORTADA: Usar la del volumen 1 (o el más bajo disponible)
+            if (book.cover_low or book.cover_medium):
+                # Si es el volumen 1 o no tenemos portada aún, actualizarla
+                if book.volume == 1 or not series.cover_url:
+                    series.cover_url = book.cover_low or book.cover_medium
 
         return series
 
