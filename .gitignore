@@ -99,6 +99,9 @@ venv/
 !models/
 !models/**
 
+!schemas/
+!schemas/**
+
 !v0/
 !v0/**
 
