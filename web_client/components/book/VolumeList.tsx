@@ -64,7 +64,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                             </div>
 
                             <h3 className="text-white font-black text-base sm:text-lg leading-tight line-clamp-2 tracking-tight group-hover:text-primary transition-colors mb-1">
-                                {vol.cleanTitle || vol.title}
+                                {series.title || vol.cleanTitle || vol.title}
                             </h3>
 
                             {vol.romajiTitle && (
@@ -132,7 +132,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                                     <span className="text-[12px] font-black">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
                                 </div>
                                 <h3 className="text-white font-black text-sm sm:text-lg leading-tight line-clamp-2 drop-shadow-2xl group-hover:text-primary transition-colors tracking-tight">
-                                    {vol.cleanTitle || vol.title}
+                                    {series.title || vol.cleanTitle || vol.title}
                                 </h3>
                             </div>
                         </div>
