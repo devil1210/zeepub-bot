@@ -1,84 +1,61 @@
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
-    children: ReactNode;
+    children?: ReactNode;
 }
 
 interface State {
     hasError: boolean;
     error: Error | null;
+    errorInfo: ErrorInfo | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
     public state: State = {
         hasError: false,
-        error: null
+        error: null,
+        errorInfo: null
     };
 
-    constructor(props: Props) {
-        super(props);
-    }
-
     public static getDerivedStateFromError(error: Error): State {
-        // Actualiza el estado para que el siguiente renderizado muestre la interfaz de repuesto.
-        return { hasError: true, error };
+        return { hasError: true, error, errorInfo: null };
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        // También puedes registrar el error en un servicio de reporte de errores
-        console.error('🛑 Uncaught React Error:', error, errorInfo);
+        console.error("Uncaught error:", error, errorInfo);
+        this.setState({ error, errorInfo });
     }
 
     public render() {
         if (this.state.hasError) {
-            // Puedes renderizar cualquier interfaz de repuesto personalizada
             return (
                 <div style={{
+                    padding: '20px',
+                    color: '#ff4444',
+                    backgroundColor: '#1a1a1a',
                     height: '100vh',
-                    width: '100vw',
-                    backgroundColor: '#0f172a',
-                    color: '#ef4444',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '24px',
-                    fontFamily: 'sans-serif',
-                    textAlign: 'center'
+                    overflow: 'auto',
+                    fontFamily: 'monospace'
                 }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>Oops! Algo salió mal.</h1>
-                    <p style={{ color: '#94a3b8', marginBottom: '24px', maxWidth: '400px' }}>
-                        La aplicación ha encontrado un error inesperado durante el renderizado.
-                    </p>
-                    <div style={{
-                        backgroundColor: 'rgba(0,0,0,0.3)',
-                        padding: '16px',
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                        textAlign: 'left',
-                        maxHeight: '200px',
-                        overflow: 'auto',
-                        width: '100%',
-                        maxWidth: '600px',
-                        color: '#ef4444'
-                    }}>
-                        {this.state.error?.toString()}
-                    </div>
+                    <h1 style={{ fontSize: '20px', marginBottom: '10px' }}>⚠️ Application Crashed</h1>
+                    <h2 style={{ fontSize: '16px', color: '#fff' }}>{this.state.error?.message}</h2>
+                    <details style={{ whiteSpace: 'pre-wrap', marginTop: '10px', color: '#888' }}>
+                        {this.state.errorInfo?.componentStack}
+                    </details>
                     <button
-                        onClick={() => window.location.reload()}
+                        onClick={() => window.location.href = '/'}
                         style={{
-                            marginTop: '24px',
-                            padding: '12px 24px',
-                            backgroundColor: '#2b6cee',
+                            marginTop: '20px',
+                            padding: '10px 20px',
+                            backgroundColor: '#333',
                             color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            fontWeight: 'bold',
+                            border: '1px solid #555',
+                            borderRadius: '5px',
                             cursor: 'pointer'
                         }}
                     >
-                        Reintentar
+                        Reload Home
                     </button>
                 </div>
             );
@@ -87,4 +64,3 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.children;
     }
 }
-
