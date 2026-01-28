@@ -28,6 +28,7 @@ Estas skills deben ser priorizadas y aplicadas proactivamente según el contexto
 - **`senior-architect`**: Diseño de sistemas escalables y patrones avanzados.
 - **`postgres-best-practices`**: Optimización de queries, índices y seguridad RLS.
 - **`backend-dev-guidelines`**: Estructura Handler -> Service -> Repository.
+- **`api-documentation-generator`**: Generación automática de docs para endpoints internos.
 - **`docker-expert`**: Optimización de contenedores, Dockerfiles y orquestación.
 - **`telegram-bot-builder`**: Patrones avanzados para bots de Telegram escalables.
 
