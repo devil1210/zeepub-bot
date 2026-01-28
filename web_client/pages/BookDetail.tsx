@@ -360,7 +360,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
   const detailItems = [
     { label: 'Serie', value: curSeries.title, highlight: true, clickable: true, type: 'series' },
-    { label: 'Volumen', value: `${curVolume.volumeNumber}` },
+    { label: 'Volumen', value: (curVolume.volumeNumber !== undefined && curVolume.volumeNumber !== null) ? `${curVolume.volumeNumber}` : '0' },
     { label: 'Tipo de libro', value: displayData.bookType },
     { label: 'ISBN', value: displayData.isbn, highlight: true, font: 'mono' },
     { label: 'ASIN', value: displayData.asin, highlight: true, font: 'mono' },
