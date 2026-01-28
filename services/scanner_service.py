@@ -260,10 +260,12 @@ class ScannerService:
                 # FORCE REFRESH: Recalculate book_count for ALL non-archived series to fix stale data
                 logger.info("Sincronizando conteos de libros para todas las series...")
                 all_active_series = session.query(SeriesMetadata).all()
-                for s in all_active_series:
+                for i, s in enumerate(all_active_series):
                     actual_count = session.query(LocalBook).filter_by(series_hash=s.series_hash).count()
                     if s.book_count != actual_count:
                         s.book_count = actual_count
+                    if i % 20 == 0:
+                        await asyncio.sleep(0)
                 session.commit()
 
                 empty_series = session.query(SeriesMetadata).filter(SeriesMetadata.book_count == 0).all()
@@ -488,12 +490,15 @@ class ScannerService:
                         session.commit()
                         logger.info(f"Progreso de escaneo: {results['added'] + results['updated']} libros procesados en {source.name}")
                     
-                    # Ceder el control al event loop para que el bot responda mensajes
-                    await asyncio.sleep(0)
+                # Ceder el control al event loop en cada archivo (sea epub o no) para máxima respuesta
+                await asyncio.sleep(0)
         
         # Sincronizar metadata de todas las series tocadas en esta fuente
-        for h in touched_hashes:
+        for i, h in enumerate(touched_hashes):
             self.sync_series_metadata(session, h)
+            if i % 10 == 0:
+                await asyncio.sleep(0)
+        
         session.commit()
 
         return results, found_files
