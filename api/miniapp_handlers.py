@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import shutil
+import threading
 import time
 from datetime import datetime, timedelta
 from typing import Any
@@ -1052,13 +1053,18 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
 
     force = data.get("force", False)
 
-    async def run_scan_in_background(scanner_obj, force_val):
+    async def run_scan_in_thread(scanner_obj, force_val):
+        """Runs the scan in a separate thread with its own event loop."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            logger.info(f"Background scan started (Force: {force_val})")
-            await scanner_obj.sync_all(force_scan=force_val)
-            logger.info("Background scan completed successfully.")
+            logger.info(f"Background scan thread started (Force: {force_val})")
+            loop.run_until_complete(scanner_obj.sync_all(force_scan=force_val))
+            logger.info("Background scan thread completed successfully.")
         except Exception as e:
-            logger.error(f"Background scan error: {e}")
+            logger.error(f"Background scan thread error: {e}")
+        finally:
+            loop.close()
 
     try:
         from services.scanner_service import ScannerService
@@ -1072,13 +1078,13 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
 
         scanner = ScannerService(libs_json)
 
-        # Start the intensive task in background and return immediately
-        # to avoid Cloudflare 524 (Timeout) errors
-        asyncio.create_task(run_scan_in_background(scanner, force))
+        # Start the intensive task in a separate THREAD to avoid blocking main loop
+        t = threading.Thread(target=run_scan_in_thread, args=(scanner, force))
+        t.start()
 
         return {
             "success": True,
-            "message": "Escaneo iniciado en segundo plano. Esto puede tardar varios minutos dependiendo del tamaño de la librería.",
+            "message": "Escaneo iniciado en segundo plano (Thread). Esto puede tardar varios minutos dependiendo del tamaño de la librería.",
         }
     except Exception as e:
         logger.error(f"Error starting background scan: {e}")
@@ -1095,13 +1101,17 @@ async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, An
     if not series_hash:
         return {"success": False, "message": "series_hash es requerido."}
 
-    async def run_sync_in_background(scanner_obj, s_hash, force_val):
+    def run_series_scan_in_thread(scanner_obj, s_hash, force_val):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            logger.info(f"Background series scan started (Hash: {s_hash}, Force: {force_val})")
-            await scanner_obj.sync_series(s_hash, force_scan=force_val)
-            logger.info(f"Background series scan for {s_hash} completed successfully.")
+            logger.info(f"Background series scan thread started (Hash: {s_hash}, Force: {force_val})")
+            loop.run_until_complete(scanner_obj.sync_series(s_hash, force_scan=force_val))
+            logger.info(f"Background series scan thread for {s_hash} completed successfully.")
         except Exception as e:
-            logger.error(f"Background series scan error for {s_hash}: {e}")
+            logger.error(f"Background series scan thread error for {s_hash}: {e}")
+        finally:
+            loop.close()
 
     try:
         from services.scanner_service import ScannerService
@@ -1115,8 +1125,9 @@ async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, An
 
         scanner = ScannerService(libs_json)
 
-        # Start the intensive task in background
-        asyncio.create_task(run_sync_in_background(scanner, series_hash, force))
+        # Start the intensive task in background thread
+        t = threading.Thread(target=run_series_scan_in_thread, args=(scanner, series_hash, force))
+        t.start()
 
         return {"success": True, "message": "Sincronización de serie iniciada en segundo plano."}
     except Exception as e:
@@ -1128,13 +1139,22 @@ async def handle_admin_enrich_metadata(data: dict[str, Any], user_data: dict[str
     """Activates manual enrichment of metadata from online sources."""
     check_staff(user_data)
 
-    async def run_enrichment_in_background(scanner_obj):
+    def run_enrichment_in_thread(scanner_obj):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            logger.info("Background metadata enrichment started")
-            await asyncio.to_thread(scanner_obj.enrich_all_metadata)
-            logger.info("Background metadata enrichment completed.")
+            logger.info("Background metadata enrichment thread started")
+            # enrich_all_metadata is sync? No, let's assume it might interact with async or be wrapped.
+            # Upon checking, enrich_all_metadata wasn't shown in the file view but presumed to be sync based on `asyncio.to_thread` usage in original code.
+            # Original code: await asyncio.to_thread(scanner_obj.enrich_all_metadata)
+            # This implies enrich_all_metadata IS synchronous.
+            # So we can just call it directly in the thread.
+            scanner_obj.enrich_all_metadata()
+            logger.info("Background metadata enrichment thread completed.")
         except Exception as e:
-            logger.error(f"Background enrichment error: {e}")
+            logger.error(f"Background enrichment thread error: {e}")
+        finally:
+            loop.close()
 
     try:
         from services.scanner_service import ScannerService
@@ -1142,7 +1162,8 @@ async def handle_admin_enrich_metadata(data: dict[str, Any], user_data: dict[str
         libs_json = os.getenv("LOCAL_LIBRARIES")
         scanner = ScannerService(libs_json or "{}")
 
-        asyncio.create_task(run_enrichment_in_background(scanner))
+        t = threading.Thread(target=run_enrichment_in_thread, args=(scanner,))
+        t.start()
 
         return {
             "success": True,
