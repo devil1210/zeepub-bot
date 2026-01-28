@@ -252,18 +252,51 @@ const SeriesDetailWrapper = () => {
   };
 
   const handleBack = () => {
+    console.log('🔍 [DEBUG] SeriesDetailWrapper.handleBack called', {
+      currentPath: pathname,
+      historyStackLength: navState.historyStack.length,
+      seriesId
+    });
+
     if (navState.historyStack.length > 1) {
+      console.log('🚀 [DEBUG] Using navigate(-1) - history has entries');
       navigate(-1);
       return;
     }
+    
+    console.log('🚀 [DEBUG] Fallback: navigating to /search');
     navigate('/search');
   };
 
   const handleSelectVolume = (vol: Volume, selectedSeries?: Series) => {
+    console.log('🔍 [DEBUG] SeriesDetailWrapper.handleSelectVolume called', {
+      volumeId: vol?.id,
+      volumeTitle: vol?.title,
+      selectedSeriesId: selectedSeries?.id,
+      currentSeriesId: series?.id,
+      urlSeriesId: seriesId
+    });
+
     const targetSeries = selectedSeries || series || ({ id: seriesId } as Series);
     const targetSeriesId = targetSeries?.id || seriesId;
-    if (!targetSeriesId || !vol?.id) return;
-    navigate(`/read/${targetSeriesId}/${vol.id}`, {
+    
+    if (!targetSeriesId || !vol?.id) {
+      console.error('❌ [DEBUG] Missing IDs for navigation', {
+        targetSeriesId,
+        volumeId: vol?.id
+      });
+      return;
+    }
+
+    const route = `/read/${targetSeriesId}/${vol.id}`;
+    console.log('🚀 [DEBUG] Navigating to:', {
+      route,
+      targetSeriesId,
+      volumeId: vol.id,
+      state: { series: targetSeries, volume: vol }
+    });
+
+    navigate(route, {
       state: { series: targetSeries, volume: vol }
     });
   };
@@ -298,14 +331,26 @@ const BookDetailWrapper = () => {
   const seriesId = series?.id || parts[2];
 
   const handleBack = () => {
+    console.log('🔍 [DEBUG] BookDetailWrapper.handleBack called', {
+      currentPath: pathname,
+      historyStackLength: navState.historyStack.length,
+      seriesId,
+      volumeId
+    });
+
     if (navState.historyStack.length > 1) {
+      console.log('🚀 [DEBUG] Using navigate(-1) - history has entries');
       navigate(-1);
       return;
     }
+    
     if (seriesId) {
+      console.log('🚀 [DEBUG] Fallback: navigating to series', { seriesId });
       navigate(`/series/${seriesId}`, { state: { series } });
       return;
     }
+    
+    console.log('🚀 [DEBUG] Fallback: navigating to /search');
     navigate('/search');
   };
 
