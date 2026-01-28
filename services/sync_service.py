@@ -124,6 +124,7 @@ class SyncService:
                             "author": s.author,
                             "description": s.description,
                             "tags": s.tags,
+                            "demographics": s.demographics,
                             "cover_url": s.cover_url,
                             "book_type": s.book_type,
                             "publisher": s.publisher,

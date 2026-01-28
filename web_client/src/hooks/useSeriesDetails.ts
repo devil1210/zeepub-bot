@@ -44,7 +44,9 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
                         description: (data.summary || data.description || initialSeries.description)?.replace(/<br\s*\/?>/gi, '\n'),
                         englishTitle: data.english_title,
                         spanishTitle: data.spanish_title,
-                        romajiTitle: data.romaji_title || data.romaji
+                        romajiTitle: data.romaji_title || data.romaji,
+                        demographics: data.demographics,
+                        tags: data.tags
                     } as Series);
 
                     if (data.volumes) {

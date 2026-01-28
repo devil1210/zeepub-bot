@@ -230,6 +230,11 @@ def check_migrations():
                             "ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());"
                         )
                     )
+                    conn.execute(
+                        text(
+                            "ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS demographics JSONB;"
+                        )
+                    )
                     conn.commit()
                     _log.info("Checked/Added columns to series_metadata")
                 except Exception as e:

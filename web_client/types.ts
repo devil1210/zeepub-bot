@@ -93,6 +93,8 @@ export interface Series {
   group?: string;
   is_uncensored?: boolean;
   color_mode?: string;
+  demographics?: string[];
+  tags?: string[];
   volumes: Volume[];
 }
 

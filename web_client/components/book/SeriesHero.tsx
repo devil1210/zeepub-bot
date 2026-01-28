@@ -94,12 +94,37 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
 
                     <div className="flex-1 pb-4 w-full">
                         <div className="flex flex-wrap items-center gap-4 mb-4 animate-in fade-in slide-in-from-left duration-700">
-                            <button
-                                onClick={() => onSearch?.(series.genre || '')}
-                                className="px-4 py-1.5 rounded-full text-[10px] font-black bg-primary/20 text-primary border border-primary/30 uppercase tracking-[0.2em] hover:bg-primary/30 transition-all shadow-lg shadow-primary/10"
-                            >
-                                {series.genre || 'Fantasía'}
-                            </button>
+                            {(series.demographics || []).map((demo: string, idx: number) => (
+                                <button
+                                    key={`demo-${idx}`}
+                                    onClick={() => onSearch?.(demo)}
+                                    className="px-4 py-1.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-[0.2em] hover:bg-emerald-500/30 transition-all shadow-lg shadow-emerald-500/10"
+                                >
+                                    {demo}
+                                </button>
+                            ))}
+                            {(series.tags || []).map((tag: string, idx: number) => {
+                                // Filter out special tags if needed, or just show them
+                                // Avoid showing if same as genre to prevent duplicates if genre implies tag
+                                if (tag === series.genre) return null;
+                                return (
+                                    <button
+                                        key={`tag-${idx}`}
+                                        onClick={() => onSearch?.(tag)}
+                                        className="px-4 py-1.5 rounded-full text-[10px] font-black bg-primary/20 text-primary border border-primary/30 uppercase tracking-[0.2em] hover:bg-primary/30 transition-all shadow-lg shadow-primary/10"
+                                    >
+                                        {tag}
+                                    </button>
+                                );
+                            })}
+                            {!series.tags?.length && series.genre && (
+                                <button
+                                    onClick={() => onSearch?.(series.genre || '')}
+                                    className="px-4 py-1.5 rounded-full text-[10px] font-black bg-primary/20 text-primary border border-primary/30 uppercase tracking-[0.2em] hover:bg-primary/30 transition-all shadow-lg shadow-primary/10"
+                                >
+                                    {series.genre}
+                                </button>
+                            )}
                             <div className="flex items-center gap-2 text-yellow-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 shadow-xl">
                                 <Star className="w-4 h-4 fill-current" />
                                 <span className="text-[13px] font-black">{series.rating > 0 ? series.rating.toFixed(1) : '—'}</span>

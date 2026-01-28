@@ -51,6 +51,7 @@ class SeriesMetadata(Base):
 
     description = Column(String(5000))
     tags = Column(JSON)  # Géneros consolidados
+    demographics = Column(JSON)  # Demografía (Seinen, Shonen, etc)
 
     cover_url = Column(String(1024))  # Portada representativa de la serie
     book_count = Column(Integer, default=0)

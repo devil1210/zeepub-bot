@@ -328,7 +328,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     lastUpdated: curVolume.modifiedAtOpf ? formatDate(String(curVolume.modifiedAtOpf)) : (curVolume.modifiedAt ? formatDate(String(curVolume.modifiedAt)) : 'N/A'),
     publishedDate: formatDate(String(curVolume.publishedDate || '')),
     description: String(curVolume.description || 'Sin sinopsis disponible.'),
-    displayTitle: String(curVolume.englishTitle || curSeries?.englishTitle || curSeries?.title || curVolume.title || 'Libro sin título'),
+    displayTitle: String(curSeries?.title || curVolume.englishTitle || curVolume.title || 'Libro sin título'),
     romajiTitle: String(curVolume.romajiTitle || curSeries?.romajiTitle || ''),
     illustrator: String(curVolume.illustrator || 'N/A'),
     translator: String(curVolume.translator || 'ZeePub'),
@@ -360,7 +360,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
   const detailItems = [
     { label: 'Serie', value: curSeries.title, highlight: true, clickable: true, type: 'series' },
-    { label: 'Volumen', value: curVolume.volumeNumber > 0 ? `${curVolume.volumeNumber}` : 'Único' },
+    { label: 'Volumen', value: `${curVolume.volumeNumber}` },
     { label: 'Tipo de libro', value: displayData.bookType },
     { label: 'ISBN', value: displayData.isbn, highlight: true, font: 'mono' },
     { label: 'ASIN', value: displayData.asin, highlight: true, font: 'mono' },
