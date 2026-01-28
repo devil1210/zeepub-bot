@@ -1107,7 +1107,9 @@ async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, An
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            logger.info(f"Background series scan thread started (Hash: {s_hash}, Force: {force_val})")
+            logger.info(
+                f"Background series scan thread started (Hash: {s_hash}, Force: {force_val})"
+            )
             loop.run_until_complete(scanner_obj.sync_series(s_hash, force_scan=force_val))
             logger.info(f"Background series scan thread for {s_hash} completed successfully.")
         except Exception as e:

@@ -109,7 +109,6 @@ class SyncService:
                 # Fallback: simple query to wake up connection or ignore if RPC not found
                 pass
 
-
             # Upsert in small batches to avoid payload limits
             batch_size = 50
             for i in range(0, len(series_list), batch_size):
