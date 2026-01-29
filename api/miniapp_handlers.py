@@ -2358,6 +2358,56 @@ async def handle_admin_get_duplicates(data: dict[str, Any], user_data: dict[str,
         session.close()
 
 
+async def handle_admin_recheck_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
+    """Revisa los registros de duplicados y elimina los que ya no existen o ya no chocan."""
+    if user_data.get("level") not in ["admin", "staff"]:
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+
+    session = get_session()
+    try:
+        dups = session.query(DuplicateBook).all()
+        removed_count = 0
+
+        for d in dups:
+            # 1. Si el archivo duplicado ya NO existe en el disco, eliminar el registro
+            if not os.path.exists(d.duplicate_filepath):
+                session.delete(d)
+                removed_count += 1
+                continue
+
+            # 2. Si el archivo original tampoco existe físicamente
+            if not os.path.exists(d.original_filepath):
+                # El "duplicado" ahora es técnicamente el único superviviente físico.
+                # Lo quitamos de esta lista para que el próximo scan lo procese como nuevo.
+                session.delete(d)
+                removed_count += 1
+                continue
+
+            # 3. Verificar si el "original" sigue indexado en la base de datos principal
+            original_in_db = (
+                session.query(LocalBook).filter_by(filepath=d.original_filepath).first()
+            )
+            if not original_in_db:
+                # El original existe en disco pero no está en la DB? Raro, pero limpiamos el registro
+                # para que el scan decida qué hacer.
+                session.delete(d)
+                removed_count += 1
+                continue
+
+        session.commit()
+        return {
+            "success": True,
+            "message": f"Limpieza completada. Se eliminaron {removed_count} registros obsoletos.",
+            "removed_count": removed_count,
+        }
+    except Exception as e:
+        logger.error(f"Error rechecking duplicates: {e}")
+        session.rollback()
+        return {"success": False, "message": str(e)}
+    finally:
+        session.close()
+
+
 async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
     """Limpia la tabla de registros de duplicados."""
     if user_data.get("level") not in ["admin", "staff"]:

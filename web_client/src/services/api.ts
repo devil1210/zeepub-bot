@@ -213,6 +213,7 @@ export const api = {
     adminSyncThemes: () => rpc('admin_sync_themes'),
     adminRenameThemes: () => rpc('admin_rename_themes'),
     adminGetDuplicates: () => rpc('admin_get_duplicates'),
+    adminRecheckDuplicates: () => rpc('admin_recheck_duplicates'),
     adminClearDuplicates: () => rpc('admin_clear_duplicates'),
     adminScanUser: (userId: string) => rpc('admin_scan_user', { userId }),
     getSystemLogs: (level: string = 'INFO', hours?: number) => rpc('admin_get_system_logs', { level, hours }),

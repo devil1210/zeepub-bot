@@ -31,6 +31,7 @@ export const DuplicatesDashboard: React.FC = () => {
     const [clearing, setClearing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDuplicate, setSelectedDuplicate] = useState<DuplicateEntry | null>(null);
+    const [rechecking, setRechecking] = useState(false);
 
     const fetchDuplicates = async () => {
         setLoading(true);
@@ -59,6 +60,20 @@ export const DuplicatesDashboard: React.FC = () => {
             console.error('Error clearing duplicates:', error);
         } finally {
             setClearing(false);
+        }
+    };
+
+    const handleRecheck = async () => {
+        setRechecking(true);
+        try {
+            const res = await (api as any).adminRecheckDuplicates();
+            if (res.success) {
+                await fetchDuplicates();
+            }
+        } catch (error) {
+            console.error('Error rechecking duplicates:', error);
+        } finally {
+            setRechecking(false);
         }
     };
 
@@ -117,13 +132,23 @@ export const DuplicatesDashboard: React.FC = () => {
                             className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-premium-sm text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all"
                         />
                     </div>
-                    <button
-                        onClick={fetchDuplicates}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-                    >
-                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                        Refrescar
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleRecheck}
+                            disabled={rechecking || loading}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 ${rechecking ? 'animate-spin' : ''}`} />
+                            Verificar Existencia
+                        </button>
+                        <button
+                            onClick={fetchDuplicates}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                            Refrescar
+                        </button>
+                    </div>
                 </div>
 
                 {/* Table */}
