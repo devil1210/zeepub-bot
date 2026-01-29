@@ -55,7 +55,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   // Fetch Data if needed
   useEffect(() => {
     const fetchData = async () => {
-      if (initialVolume && initialSeries) {
+      if (initialVolume && initialSeries && (initialVolume.wordCount || initialVolume.word_count)) {
         setLoading(false);
         return;
       }

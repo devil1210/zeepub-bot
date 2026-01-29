@@ -35,6 +35,7 @@ export interface Volume {
   published_at?: string;
   pages?: number;
   pageCount?: number;
+  page_count?: number;
   format: 'EPUB' | 'PDF' | 'MOBI';
   rating: number;
   description?: string;
@@ -44,7 +45,9 @@ export interface Volume {
   size?: string;
   uploader?: string;
   wordCount?: number;
+  word_count?: number;
   readingTime?: number;
+  reading_time?: number;
   readTime?: string;
   tags?: string[];
   genres?: string[];
@@ -58,10 +61,11 @@ export interface Volume {
   typesetter?: string;
   layout_by?: string;
   layoutBy?: string;
+  epubVersion?: string;
+  epub_version?: string;
   group?: string;
   isbn?: string;
   asin?: string;
-  epubVersion?: string;
   modifiedAt?: string;
   modifiedAtOpf?: string;
   englishTitle?: string;
