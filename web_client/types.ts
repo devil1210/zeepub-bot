@@ -55,7 +55,9 @@ export interface Volume {
   demographics?: string[];
   isVerified?: boolean;
   downloadCount?: number;
+  download_count?: number;
   ratingCount?: number;
+  rating_count?: number;
   illustrator?: string;
   translator?: string;
   typesetter?: string;
@@ -67,7 +69,9 @@ export interface Volume {
   isbn?: string;
   asin?: string;
   modifiedAt?: string;
+  modified_at?: string;
   modifiedAtOpf?: string;
+  modified_at_opf?: string;
   englishTitle?: string;
   english_title?: string;
   spanishTitle?: string;
@@ -76,9 +80,12 @@ export interface Volume {
   book_type?: string;
   series?: string;
   cleanTitle?: string;
-  is_uncensored?: boolean;
+  is_uncensored?: boolean | number;
   color_mode?: string;
   publisher?: string;
+  file_size?: number;
+  fileSize?: number;
+  summary?: string;
 }
 
 export interface Series {
