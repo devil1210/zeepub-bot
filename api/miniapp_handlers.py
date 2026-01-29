@@ -2363,6 +2363,9 @@ async def handle_admin_recheck_duplicates(data: dict[str, Any], user_data: dict[
     if user_data.get("level") not in ["admin", "staff"]:
         raise HTTPException(status_code=403, detail="No tienes permisos")
 
+    from services.hash_service import hash_service
+    from utils.helpers import process_book_identity_comprehensive
+
     session = get_session()
     try:
         dups = session.query(DuplicateBook).all()
@@ -2375,21 +2378,44 @@ async def handle_admin_recheck_duplicates(data: dict[str, Any], user_data: dict[
                 removed_count += 1
                 continue
 
-            # 2. Si el archivo original tampoco existe físicamente
+            # 2. Si el archivo original ya NO existe, el duplicado ya no es duplicado
             if not os.path.exists(d.original_filepath):
-                # El "duplicado" ahora es técnicamente el único superviviente físico.
-                # Lo quitamos de esta lista para que el próximo scan lo procese como nuevo.
                 session.delete(d)
                 removed_count += 1
                 continue
 
-            # 3. Verificar si el "original" sigue indexado en la base de datos principal
+            # 3. VERIFICACIÓN PROFUNDA: ¿Han cambiado los metadatos?
+            try:
+                # Extraer identidad actual del archivo duplicado
+                identity = process_book_identity_comprehensive(d.duplicate_filepath)
+                if identity:
+                    # Generar hash actual
+                    current_hash = hash_service.generate_book_hash(
+                        series=identity["series"],
+                        author=identity["author"],
+                        book_type=identity["book_type"],
+                        volume=identity["volume"],
+                        translator=identity["translator"],
+                        layout_by=identity["layout_by"],
+                    )
+
+                    # Si el hash ya no es el mismo que el registrado como duplicado,
+                    # o ya no choca con el original (que tiene el hash d.book_hash)
+                    if current_hash != d.book_hash:
+                        logger.info(
+                            f"Identidad cambiada para {d.duplicate_filepath}. Eliminando de duplicados."
+                        )
+                        session.delete(d)
+                        removed_count += 1
+                        continue
+            except Exception as e:
+                logger.error(f"Error analizando identidad en recheck: {e}")
+
+            # 4. Verificar si el "original" sigue indexado en la base de datos principal
             original_in_db = (
                 session.query(LocalBook).filter_by(filepath=d.original_filepath).first()
             )
             if not original_in_db:
-                # El original existe en disco pero no está en la DB? Raro, pero limpiamos el registro
-                # para que el scan decida qué hacer.
                 session.delete(d)
                 removed_count += 1
                 continue
