@@ -54,7 +54,7 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
                             id: v._id || v.id,
                             seriesId: data._id || data.id,
                             title: v.title,
-                            volumeNumber: v.seriesIndex || 1,
+                            volumeNumber: v.volumeNumber ?? v.volume ?? 1,
                             coverUrl: {
                                 cover_low: v.cover_low,
                                 cover_medium: v.cover_medium,

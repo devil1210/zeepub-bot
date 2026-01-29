@@ -54,7 +54,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ book, se
             </div>
             <div className="text-center px-2">
                 <p className="text-sm font-black text-white truncate mb-0.5 group-hover:text-primary transition-colors">{book.cleanTitle || book.title}</p>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest opacity-60">Volumen {book.seriesIndex || (index + 1)}</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest opacity-60">Volumen {book.volumeNumber ?? book.volume ?? book.seriesIndex ?? (index + 1)}</p>
             </div>
         </div>
     );

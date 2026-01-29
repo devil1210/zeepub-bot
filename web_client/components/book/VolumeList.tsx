@@ -54,7 +54,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                         <div className="flex-1 min-w-0 flex flex-col py-1 z-10">
                             {/* Clean Header Info */}
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1 text-[10px] font-black uppercase tracking-widest">
-                                <span className="text-primary opacity-90">VOLUMEN {vol.volumeNumber}</span>
+                                <span className="text-primary opacity-90">{vol.volumeNumber === 0 ? 'VOLUMEN ÚNICO' : `VOLUMEN ${vol.volumeNumber}`}</span>
                                 {vol.group && (
                                     <>
                                         <span className="w-1 h-1 rounded-full bg-white/10"></span>
@@ -111,7 +111,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                             {/* Floating Badges */}
                             <div className="absolute top-4 left-4 flex flex-col gap-2">
                                 <span className="bg-primary text-white text-[10px] font-black px-4 py-2 rounded-premium-sm uppercase tracking-widest shadow-2xl border border-white/10">
-                                    Vol {vol.volumeNumber}
+                                    {vol.volumeNumber === 0 ? 'Único' : `Vol ${vol.volumeNumber}`}
                                 </span>
                                 {vol.color_mode === 'color' && (
                                     <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[9px] font-black px-3 py-1.5 rounded-premium-sm uppercase tracking-widest shadow-2xl border border-white/10">
