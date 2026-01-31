@@ -38,7 +38,7 @@ const defaultSettings: ThemeSettings = {
   accentOpacity: 0.2,
   searchBarOpacity: 0.8,
   headerOpacity: 0.9,
-  glassBlur: 20, /* Pro Max Default */
+  glassBlur: 12, /* Enterprise Standard v3.5.0 */
   theme: 'dark',
   fontSize: 14,
   coverWidth: 120,

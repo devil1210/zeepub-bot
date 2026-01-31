@@ -103,9 +103,9 @@
 
       /* Base Glass Settings (Default / Pro Max) */
       --glass-opacity: 0.6;
-      --glass-blur: 20px;
-      /* Increased from 12px for cleaner look */
-      --glass-border-opacity: 0.08;
+      --glass-blur: 12px;
+      /* Enterprise Standard v3.5.0 */
+      --glass-border-opacity: 0.05;
 
       /* Theme Defaults */
       --app-bg: #050505;
@@ -144,7 +144,7 @@
     body {
       background-color: var(--bg-color);
       overscroll-behavior-y: none;
-      transition: background-color 0.3s ease;
+      transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     ::-webkit-scrollbar {
@@ -182,16 +182,18 @@
       backdrop-filter: blur(var(--glass-blur));
       -webkit-backdrop-filter: blur(var(--glass-blur));
 
-      /* Border handling using thematic border variable with subtle gradient hint for depth */
-      border: var(--border-width-premium) solid var(--panel-border);
-      border-top-color: rgba(255, 255, 255, 0.15);
-      /* Top highlight */
+      /* Liquid Glass Border Standard (Biselado dinámico) */
+      border: var(--border-width-premium) solid transparent;
+      background-clip: padding-box, border-box;
+      background-image:
+        linear-gradient(var(--panel-bg), var(--panel-bg)),
+        linear-gradient(to bottom right, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
 
       /* Shadows (Pro Max Soft) */
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.24);
 
-      /* Transition for smooth settings updates */
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      /* Transition: Organic Liquid Standard (400-600ms) */
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .glass-panel:hover {

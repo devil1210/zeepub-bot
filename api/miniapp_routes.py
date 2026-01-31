@@ -36,7 +36,7 @@ class UserLevelModel(BaseModel):
     canUploadEpub: bool = False
     # Extra UI fields for new interface
     theme: str | None = "dark"
-    primaryColor: str | None = "#3b82f6"
+    primaryColor: str | None = "#2b6cee"
     fontSize: int | None = 14
     glassBlur: int | None = 12
     navOpacity: float | None = 0.8
@@ -342,7 +342,7 @@ async def check_user_access(
         # Force clean structure only if missing
         eff["settings"] = {
             "theme": "dark",
-            "primaryColor": "#3b82f6",
+            "primaryColor": "#2b6cee",
             "fontSize": 14,
             "navOpacity": 0.8,
             "accentOpacity": 0.2,

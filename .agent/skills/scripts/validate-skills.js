@@ -1,3 +1,7 @@
+/**
+ * Legacy / alternative validator. For CI and PR checks, use scripts/validate_skills.py.
+ * Run: npm run validate (or npm run validate:strict)
+ */
 const fs = require('fs');
 const path = require('path');
 const { listSkillIds, parseFrontmatter } = require('../lib/skill-utils');

@@ -1,4 +1,4 @@
-# Getting Started with Antigravity Awesome Skills (V3)
+# Getting Started with Antigravity Awesome Skills (V4)
 
 **New here? This guide will help you supercharge your AI Agent in 5 minutes.**
 
@@ -15,15 +15,25 @@ AI Agents (like **Claude Code**, **Gemini**, **Cursor**) are smart, but they lac
 
 ## ⚡️ Quick Start: The "Starter Packs"
 
-Don't panic about the 552+ skills. You don't need them all at once.
+Don't panic about the 624+ skills. You don't need them all at once.
 We have curated **Starter Packs** to get you running immediately.
+
+You **install the full repo once** (npx or clone); Starter Packs are curated lists to help you **pick which skills to use** by role (e.g. Web Wizard, Hacker Pack)—they are not a different way to install.
 
 ### 1. Install the Repo
 
-Copy the skills to your agent's folder:
+**Option A — npx (easiest):**
 
 ```bash
-# Universal Installation (works for most agents)
+npx antigravity-awesome-skills
+```
+
+This clones to `~/.agent/skills` by default. Use `--cursor`, `--claude`, or `--gemini` to install for a specific tool, or `--path <dir>` for a custom location. Run `npx antigravity-awesome-skills --help` for details.
+
+**Option B — git clone:**
+
+```bash
+# Universal (works for most agents)
 git clone https://github.com/sickn33/antigravity-awesome-skills.git .agent/skills
 ```
 
@@ -76,7 +86,7 @@ Once installed, just talk to your AI naturally.
 
 ---
 
-## 🛡️ Trust & Safety (New in V3)
+## 🛡️ Trust & Safety (New in V4)
 
 We classify skills so you know what you're running:
 
@@ -90,8 +100,8 @@ _Check the [Skill Catalog](../CATALOG.md) for the full list._
 
 ## ❓ FAQ
 
-**Q: Do I need to install all 552 skills?**
-A: You clone the whole repo, but your AI only _reads_ the ones you ask for (or that are relevant). It's lightweight!
+**Q: Do I need to install all 624 skills?**
+A: You clone the whole repo once; your AI only _reads_ the skills you invoke (or that are relevant), so it stays lightweight. **Starter Packs** in [BUNDLES.md](BUNDLES.md) are curated lists to help you discover the right skills for your role—they don't change how you install.
 
 **Q: Can I make my own skills?**
 A: Yes! Use the **@skill-creator** skill to build your own.

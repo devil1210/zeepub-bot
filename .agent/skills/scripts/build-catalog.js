@@ -326,10 +326,10 @@ function buildCatalog() {
   const aliases = buildAliases(catalog.skills);
   const bundleData = buildBundles(catalog.skills);
 
-  const catalogPath = path.join(ROOT, 'catalog.json');
+  const catalogPath = path.join(ROOT, 'data', 'catalog.json');
   const catalogMarkdownPath = path.join(ROOT, 'CATALOG.md');
-  const bundlesPath = path.join(ROOT, 'bundles.json');
-  const aliasesPath = path.join(ROOT, 'aliases.json');
+  const bundlesPath = path.join(ROOT, 'data', 'bundles.json');
+  const aliasesPath = path.join(ROOT, 'data', 'aliases.json');
 
   fs.writeFileSync(catalogPath, JSON.stringify(catalog, null, 2));
   fs.writeFileSync(catalogMarkdownPath, renderCatalogMarkdown(catalog));

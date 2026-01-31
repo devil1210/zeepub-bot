@@ -340,11 +340,11 @@ const NavButton: React.FC<{
         >
             <div
                 key={label} // Trigger animation on label/button change
-                className={`p-1.5 rounded-full transition-all duration-500 animate-in zoom-in-75 fade-in duration-300 ${isActive && highlightOnActive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}
+                className={`p-1.5 rounded-full transition-all duration-500 animate-in zoom-in-75 fade-in duration-500 ${isActive && highlightOnActive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}
             >
                 <Icon className={`w-4 h-4 ${(isActive && highlightOnActive) ? 'text-white' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
             </div>
-            <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-80 group-hover:opacity-100 transition-opacity">{label}</span>
+            <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-80 group-hover:opacity-100 transition-opacity duration-500">{label}</span>
             {isActive && !highlightOnActive && (
                 <div className="absolute bottom-1 w-1 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.8)] animate-in fade-in zoom-in duration-500"></div>
             )}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-01-28T16:10:28.837Z",
+  "generatedAt": "2026-01-31T07:45:50.746Z",
   "aliases": {
     "accessibility-compliance-audit": "accessibility-compliance-accessibility-audit",
     "active directory attacks": "active-directory-attacks",
@@ -24,6 +24,7 @@
     "cicd-automation-automate": "cicd-automation-workflow-automate",
     "claude code guide": "claude-code-guide",
     "d3-viz": "claude-d3js-skill",
+    "claude-win11-skill": "claude-win11-speckit-update-skill",
     "cloud penetration testing": "cloud-penetration-testing",
     "code-documentation-explain": "code-documentation-code-explain",
     "code-documentation-generate": "code-documentation-doc-generate",
