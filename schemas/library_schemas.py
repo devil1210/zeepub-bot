@@ -69,6 +69,8 @@ class SeriesDTO(BaseModel):
     cover: str | None = None
     coverUrl: CoverUrlDTO | None = None
     numBooks: int = 0
+    book_type: str | None = None
+    format: str = "EPUB"
     rating_average: float = 0.0
     rating_count: int = 0
     is_series: bool = True

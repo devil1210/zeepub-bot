@@ -175,6 +175,7 @@ class LibraryService:
                             cover=s.cover_url,
                         ),
                         numBooks=s.book_count,
+                        book_type=s.book_type,
                         rating_average=s.rating_average,
                         rating_count=s.rating_count,
                         lastUpdated=s.updated_at.isoformat() if s.updated_at else None,
@@ -466,6 +467,7 @@ class LibraryService:
                             "series_spanish": s.series_spanish,
                             "is_folder": True,
                             "numBooks": s.book_count,
+                            "book_type": s.book_type,
                             "cover": s.cover_url,
                             "series_hash": s.series_hash,
                         }

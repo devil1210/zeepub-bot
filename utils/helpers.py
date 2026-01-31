@@ -3,6 +3,7 @@ import os
 import re
 from typing import Any
 from urllib.parse import urljoin, urlparse
+from utils.epub_extractor import clean_metadata_tags
 
 from config.config_settings import config
 
@@ -257,33 +258,40 @@ def process_book_identity_comprehensive(
     elif epub_path:
         series_spanish = extract_spanish_series_from_filename(os.path.basename(epub_path))
 
-    # Categorización inteligente de tipos
-    raw_tags = meta.get("tags", [])
+    # Categorización inteligente de tipos y extracción de metadata del título
+    parsed = parse_metadata_from_title(title)
+    all_found_tags = list(meta.get("tags", [])) + parsed.get("tags", [])
+    
     book_type = meta.get("book_type")
     if not book_type:
-        for tag in raw_tags:
+        for tag in all_found_tags:
             t_lower = tag.lower().strip()
             if t_lower in ["nl", "nw", "wn"]:
                 book_type = {
                     "nl": "Novela Ligera",
                     "nw": "Novela Web",
-                    "wn": "Web Novel",
+                    "wn": "Novela Web", # Normalizar a Novela Web
                 }[t_lower]
                 break
             elif "novela" in t_lower:
-                book_type = tag
+                # Si el tag dice "Novela Ligera" o "Novela Web" directamente
+                if "ligera" in t_lower:
+                    book_type = "Novela Ligera"
+                elif "web" in t_lower:
+                    book_type = "Novela Web"
+                else:
+                    book_type = tag
                 break
-
-    # Fallback a parseo inteligente del título si falta serie o volumen
-    if not series or volume is None:
-        parsed = parse_metadata_from_title(title)
-        if not series and parsed.get("series"):
-            series = parsed["series"]
-        if volume is None and parsed.get("volume"):
-            try:
-                volume = float(parsed["volume"])
-            except Exception:
-                volume = None
+    
+    # Limpiar el título para la UI (eliminar tags residuales)
+    ui_title = parsed.get("clean_title") or clean_metadata_tags(title)
+    if not series and parsed.get("series"):
+        series = parsed["series"]
+    if volume is None and parsed.get("volume"):
+        try:
+            volume = float(parsed["volume"])
+        except Exception:
+            volume = None
 
     # --- ENRICHMENT FROM FILENAME ---
     # Detectar variantes de edición (Color, Censura) desde el nombre de archivo
@@ -322,7 +330,7 @@ def process_book_identity_comprehensive(
         "layout_by": layout_by,
         "language": language,
         "series_spanish": series_spanish,
-        "title": title,
+        "title": ui_title,
         "published_at": meta.get("published_at"),
         "edition": meta.get("edition"),
         "is_uncensored": meta.get("is_uncensored", 0),

@@ -153,6 +153,7 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
             "color_mode": rep.get("color_mode") if rep else None,
             "demographics": series.demographics if series else rep.get("demographics", []),
             "tags": series.tags if series else rep.get("tags", []),
+            "book_type": series.book_type if series else rep.get("book_type"),
             "is_series": True,
             "volumes": volumes,
         }

@@ -55,7 +55,7 @@ class EpubMetadataExtractor:
                 if metadata_node is not None:
                     # Clean title from tags like [ShinsengumiTL]
                     raw_title = self._get_dc_value(metadata_node, "title")
-                    self.metadata["title"] = clean_metadata_tags(raw_title)
+                    self.metadata["title"] = raw_title
                     self.metadata["publisher"] = self._get_dc_value(metadata_node, "publisher")
                     self.metadata["language"] = self._get_dc_value(metadata_node, "language")
                     self.metadata["description"] = self._get_dc_value(metadata_node, "description")

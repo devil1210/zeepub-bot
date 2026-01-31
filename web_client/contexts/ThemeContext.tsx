@@ -212,8 +212,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const cB = getHexPart(settings.cardColor, 5, 7);
       root.style.setProperty('--glass-rgb', `${cR}, ${cG}, ${cB}`);
 
-      // Construct card color with transparency
-      let cardAlpha = settings.theme === 'amoled' ? 1 : (settings.glassOpacity ?? 0.6);
+      // Construct card color with transparency - Increased base opacity for better visibility
+      let cardAlpha = settings.theme === 'amoled' ? 1 : Math.max(0.8, settings.glassOpacity ?? 0.6);
       if (settings.theme !== 'amoled' && settings.cardColor.length === 9) {
         cardAlpha = getHexPart(settings.cardColor, 7, 9) / 255;
       }
