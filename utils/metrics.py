@@ -40,7 +40,9 @@ class MetricsManager:
         self.commands_total = Counter(
             "zeepub_commands_total", "Total de comandos ejecutados", ["command"]
         )
-        self.errors_total = Counter("zeepub_errors_total", "Total de errores manejados", ["type"])
+        self.errors_total = Counter(
+            "zeepub_errors_total", "Total de errores manejados", ["type"]
+        )
 
         # Histogramas
         self.request_duration_seconds = Histogram(
@@ -55,7 +57,9 @@ class MetricsManager:
         )
 
         # Gauges
-        self.active_users = Gauge("zeepub_active_users", "Usuarios activos estimados (última hora)")
+        self.active_users = Gauge(
+            "zeepub_active_users", "Usuarios activos estimados (última hora)"
+        )
 
     def start_server(self, port: int = 8000):
         """Inicia el servidor de métricas en un puerto separado."""

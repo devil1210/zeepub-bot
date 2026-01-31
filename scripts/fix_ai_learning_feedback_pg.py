@@ -59,7 +59,7 @@ async def fix_ai_feedback_table():
             if url:
                 safe_url = url.split("@")[-1] if "@" in url else "N/A"
                 logger.info(f"Host intentado: {safe_url}")
-        except:
+        except Exception:
             pass
 
 

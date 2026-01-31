@@ -13,6 +13,7 @@ def _log_error(msg: str):
     sys.stderr.write(f"[REDDIT ERROR] {msg}\n")
     sys.stderr.flush()
 
+
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 
 # Depth configurations: (min, max) threads to request
@@ -68,12 +69,30 @@ Return JSON:
 
 def _extract_core_subject(topic: str) -> str:
     """Extract core subject from verbose query for retry."""
-    noise = ['best', 'top', 'how to', 'tips for', 'practices', 'features',
-             'killer', 'guide', 'tutorial', 'recommendations', 'advice',
-             'prompting', 'using', 'for', 'with', 'the', 'of', 'in', 'on']
+    noise = [
+        "best",
+        "top",
+        "how to",
+        "tips for",
+        "practices",
+        "features",
+        "killer",
+        "guide",
+        "tutorial",
+        "recommendations",
+        "advice",
+        "prompting",
+        "using",
+        "for",
+        "with",
+        "the",
+        "of",
+        "in",
+        "on",
+    ]
     words = topic.lower().split()
     result = [w for w in words if w not in noise]
-    return ' '.join(result[:3]) or topic  # Keep max 3 words
+    return " ".join(result[:3]) or topic  # Keep max 3 words
 
 
 def search_reddit(
@@ -118,12 +137,7 @@ def search_reddit(
     payload = {
         "model": model,
         "tools": [
-            {
-                "type": "web_search",
-                "filters": {
-                    "allowed_domains": ["reddit.com"]
-                }
-            }
+            {"type": "web_search", "filters": {"allowed_domains": ["reddit.com"]}}
         ],
         "include": ["web_search_call.action.sources"],
         "input": REDDIT_SEARCH_PROMPT.format(
@@ -152,7 +166,9 @@ def parse_reddit_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
     # Check for API errors first
     if "error" in response and response["error"]:
         error = response["error"]
-        err_msg = error.get("message", str(error)) if isinstance(error, dict) else str(error)
+        err_msg = (
+            error.get("message", str(error)) if isinstance(error, dict) else str(error)
+        )
         _log_error(f"OpenAI API error: {err_msg}")
         if http.DEBUG:
             _log_error(f"Full error response: {json.dumps(response, indent=2)[:1000]}")
@@ -188,7 +204,10 @@ def parse_reddit_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
                 break
 
     if not output_text:
-        print(f"[REDDIT WARNING] No output text found in OpenAI response. Keys present: {list(response.keys())}", flush=True)
+        print(
+            f"[REDDIT WARNING] No output text found in OpenAI response. Keys present: {list(response.keys())}",
+            flush=True,
+        )
         return items
 
     # Extract JSON from the response
@@ -211,7 +230,7 @@ def parse_reddit_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
             continue
 
         clean_item = {
-            "id": f"R{i+1}",
+            "id": f"R{i + 1}",
             "title": str(item.get("title", "")).strip(),
             "url": url,
             "subreddit": str(item.get("subreddit", "")).strip().lstrip("r/"),
@@ -222,7 +241,7 @@ def parse_reddit_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
 
         # Validate date format
         if clean_item["date"]:
-            if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(clean_item["date"])):
+            if not re.match(r"^\d{4}-\d{2}-\d{2}$", str(clean_item["date"])):
                 clean_item["date"] = None
 
         clean_items.append(clean_item)

@@ -14,8 +14,8 @@ def normalize_text(text: str) -> str:
     - Collapse whitespace
     """
     text = text.lower()
-    text = re.sub(r'[^\w\s]', ' ', text)
-    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r"[^\w\s]", " ", text)
+    text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 
@@ -24,7 +24,7 @@ def get_ngrams(text: str, n: int = 3) -> Set[str]:
     text = normalize_text(text)
     if len(text) < n:
         return {text}
-    return {text[i:i+n] for i in range(len(text) - n + 1)}
+    return {text[i : i + n] for i in range(len(text) - n + 1)}
 
 
 def jaccard_similarity(set1: Set[str], set2: Set[str]) -> float:

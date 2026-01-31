@@ -31,10 +31,10 @@ SCOPES=read_products,write_products
 
         result = EnvLoader.load_env_file(env_file)
 
-        assert result['SHOPIFY_API_KEY'] == 'test_key'
-        assert result['SHOPIFY_API_SECRET'] == 'test_secret'
-        assert result['SHOP_DOMAIN'] == 'test.myshopify.com'
-        assert result['SCOPES'] == 'read_products,write_products'
+        assert result["SHOPIFY_API_KEY"] == "test_key"
+        assert result["SHOPIFY_API_SECRET"] == "test_secret"
+        assert result["SHOP_DOMAIN"] == "test.myshopify.com"
+        assert result["SCOPES"] == "read_products,write_products"
 
     def test_load_env_file_with_quotes(self, tmp_path):
         """Test loading .env file with quoted values."""
@@ -46,8 +46,8 @@ SHOPIFY_API_SECRET='test_secret'
 
         result = EnvLoader.load_env_file(env_file)
 
-        assert result['SHOPIFY_API_KEY'] == 'test_key'
-        assert result['SHOPIFY_API_SECRET'] == 'test_secret'
+        assert result["SHOPIFY_API_KEY"] == "test_key"
+        assert result["SHOPIFY_API_SECRET"] == "test_secret"
 
     def test_load_env_file_nonexistent(self, tmp_path):
         """Test loading non-existent .env file."""
@@ -65,9 +65,9 @@ ANOTHER_VALID=test
 
         result = EnvLoader.load_env_file(env_file)
 
-        assert result['VALID_KEY'] == 'value'
-        assert result['ANOTHER_VALID'] == 'test'
-        assert 'INVALID_LINE_NO_EQUALS' not in result
+        assert result["VALID_KEY"] == "value"
+        assert result["ANOTHER_VALID"] == "test"
+        assert "INVALID_LINE_NO_EQUALS" not in result
 
     def test_get_env_paths(self, tmp_path):
         """Test getting .env file paths from universal directory structure."""
@@ -99,7 +99,9 @@ ANOTHER_VALID=test
         skill_dir.mkdir(parents=True)
 
         (skill_dir / ".env").write_text("SHOPIFY_API_KEY=skill_key")
-        (skills_dir / ".env").write_text("SHOPIFY_API_KEY=skills_key\nSHOP_DOMAIN=skills.myshopify.com")
+        (skills_dir / ".env").write_text(
+            "SHOPIFY_API_KEY=skills_key\nSHOP_DOMAIN=skills.myshopify.com"
+        )
 
         monkeypatch.setenv("SHOPIFY_API_KEY", "process_key")
 
@@ -129,7 +131,7 @@ class TestShopifyInitializer:
             shopify_api_key="test_key",
             shopify_api_secret="test_secret",
             shop_domain="test.myshopify.com",
-            scopes="read_products,write_products"
+            scopes="read_products,write_products",
         )
 
     @pytest.fixture
@@ -139,41 +141,41 @@ class TestShopifyInitializer:
 
     def test_prompt_with_default(self, initializer):
         """Test prompt with default value."""
-        with patch('builtins.input', return_value=''):
+        with patch("builtins.input", return_value=""):
             result = initializer.prompt("Test", "default_value")
             assert result == "default_value"
 
     def test_prompt_with_input(self, initializer):
         """Test prompt with user input."""
-        with patch('builtins.input', return_value='user_input'):
+        with patch("builtins.input", return_value="user_input"):
             result = initializer.prompt("Test", "default_value")
             assert result == "user_input"
 
     def test_select_option_valid(self, initializer):
         """Test select option with valid choice."""
-        options = ['app', 'extension', 'theme']
-        with patch('builtins.input', return_value='2'):
+        options = ["app", "extension", "theme"]
+        with patch("builtins.input", return_value="2"):
             result = initializer.select_option("Choose", options)
-            assert result == 'extension'
+            assert result == "extension"
 
     def test_select_option_invalid_then_valid(self, initializer):
         """Test select option with invalid then valid choice."""
-        options = ['app', 'extension']
-        with patch('builtins.input', side_effect=['5', 'invalid', '1']):
+        options = ["app", "extension"]
+        with patch("builtins.input", side_effect=["5", "invalid", "1"]):
             result = initializer.select_option("Choose", options)
-            assert result == 'app'
+            assert result == "app"
 
     def test_check_cli_installed_success(self, initializer):
         """Test CLI installed check - success."""
         mock_result = Mock()
         mock_result.returncode = 0
 
-        with patch('subprocess.run', return_value=mock_result):
+        with patch("subprocess.run", return_value=mock_result):
             assert initializer.check_cli_installed() is True
 
     def test_check_cli_installed_failure(self, initializer):
         """Test CLI installed check - failure."""
-        with patch('subprocess.run', side_effect=FileNotFoundError):
+        with patch("subprocess.run", side_effect=FileNotFoundError):
             assert initializer.check_cli_installed() is False
 
     def test_create_app_config(self, initializer, tmp_path):
@@ -197,7 +199,7 @@ class TestShopifyInitializer:
 
         content = config_file.read_text()
         assert 'name = "test-ext"' in content
-        assert 'purchase.checkout.block.render' in content
+        assert "purchase.checkout.block.render" in content
 
     def test_create_extension_config_admin_action(self, initializer, tmp_path):
         """Test creating admin action extension config."""
@@ -205,7 +207,7 @@ class TestShopifyInitializer:
 
         config_file = tmp_path / "shopify.extension.toml"
         content = config_file.read_text()
-        assert 'admin.product-details.action.render' in content
+        assert "admin.product-details.action.render" in content
 
     def test_create_readme(self, initializer, tmp_path):
         """Test creating README file."""
@@ -215,17 +217,17 @@ class TestShopifyInitializer:
         assert readme_file.exists()
 
         content = readme_file.read_text()
-        assert '# Test App' in content
-        assert 'shopify app dev' in content
+        assert "# Test App" in content
+        assert "shopify app dev" in content
 
-    @patch('builtins.input')
-    @patch('builtins.print')
+    @patch("builtins.input")
+    @patch("builtins.print")
     def test_init_app(self, mock_print, mock_input, initializer, tmp_path, monkeypatch):
         """Test app initialization."""
         monkeypatch.chdir(tmp_path)
 
         # Mock user inputs
-        mock_input.side_effect = ['my-app', 'read_products,write_products']
+        mock_input.side_effect = ["my-app", "read_products,write_products"]
 
         initializer.init_app()
 
@@ -240,17 +242,19 @@ class TestShopifyInitializer:
 
         # Check package.json content
         package_json = json.loads((app_dir / "package.json").read_text())
-        assert package_json['name'] == 'my-app'
-        assert 'dev' in package_json['scripts']
+        assert package_json["name"] == "my-app"
+        assert "dev" in package_json["scripts"]
 
-    @patch('builtins.input')
-    @patch('builtins.print')
-    def test_init_extension(self, mock_print, mock_input, initializer, tmp_path, monkeypatch):
+    @patch("builtins.input")
+    @patch("builtins.print")
+    def test_init_extension(
+        self, mock_print, mock_input, initializer, tmp_path, monkeypatch
+    ):
         """Test extension initialization."""
         monkeypatch.chdir(tmp_path)
 
         # Mock user inputs: type selection (1 = checkout), name
-        mock_input.side_effect = ['1', 'my-extension']
+        mock_input.side_effect = ["1", "my-extension"]
 
         initializer.init_extension()
 
@@ -260,43 +264,47 @@ class TestShopifyInitializer:
         assert (ext_dir / "shopify.extension.toml").exists()
         assert (ext_dir / "README.md").exists()
 
-    @patch('builtins.input')
-    @patch('builtins.print')
+    @patch("builtins.input")
+    @patch("builtins.print")
     def test_init_theme(self, mock_print, mock_input, initializer):
         """Test theme initialization."""
-        mock_input.return_value = 'my-theme'
+        mock_input.return_value = "my-theme"
 
         initializer.init_theme()
 
         assert mock_print.called
 
-    @patch('builtins.print')
+    @patch("builtins.print")
     def test_run_no_cli(self, mock_print, initializer):
         """Test run when CLI not installed."""
-        with patch.object(initializer, 'check_cli_installed', return_value=False):
+        with patch.object(initializer, "check_cli_installed", return_value=False):
             with pytest.raises(SystemExit) as exc_info:
                 initializer.run()
             assert exc_info.value.code == 1
 
-    @patch.object(ShopifyInitializer, 'check_cli_installed', return_value=True)
-    @patch.object(ShopifyInitializer, 'init_app')
-    @patch('builtins.input')
-    @patch('builtins.print')
-    def test_run_app_selected(self, mock_print, mock_input, mock_init_app, mock_cli_check, initializer):
+    @patch.object(ShopifyInitializer, "check_cli_installed", return_value=True)
+    @patch.object(ShopifyInitializer, "init_app")
+    @patch("builtins.input")
+    @patch("builtins.print")
+    def test_run_app_selected(
+        self, mock_print, mock_input, mock_init_app, mock_cli_check, initializer
+    ):
         """Test run with app selection."""
-        mock_input.return_value = '1'  # Select app
+        mock_input.return_value = "1"  # Select app
 
         initializer.run()
 
         mock_init_app.assert_called_once()
 
-    @patch.object(ShopifyInitializer, 'check_cli_installed', return_value=True)
-    @patch.object(ShopifyInitializer, 'init_extension')
-    @patch('builtins.input')
-    @patch('builtins.print')
-    def test_run_extension_selected(self, mock_print, mock_input, mock_init_ext, mock_cli_check, initializer):
+    @patch.object(ShopifyInitializer, "check_cli_installed", return_value=True)
+    @patch.object(ShopifyInitializer, "init_extension")
+    @patch("builtins.input")
+    @patch("builtins.print")
+    def test_run_extension_selected(
+        self, mock_print, mock_input, mock_init_ext, mock_cli_check, initializer
+    ):
         """Test run with extension selection."""
-        mock_input.return_value = '2'  # Select extension
+        mock_input.return_value = "2"  # Select extension
 
         initializer.run()
 
@@ -306,8 +314,8 @@ class TestShopifyInitializer:
 class TestMain:
     """Test main function."""
 
-    @patch('shopify_init.ShopifyInitializer')
-    @patch('shopify_init.EnvLoader')
+    @patch("shopify_init.ShopifyInitializer")
+    @patch("shopify_init.EnvLoader")
     def test_main_success(self, mock_loader, mock_initializer):
         """Test main function success path."""
         from shopify_init import main
@@ -318,33 +326,33 @@ class TestMain:
         mock_init_instance = Mock()
         mock_initializer.return_value = mock_init_instance
 
-        with patch('builtins.print'):
+        with patch("builtins.print"):
             main()
 
         mock_init_instance.run.assert_called_once()
 
-    @patch('shopify_init.ShopifyInitializer')
-    @patch('sys.exit')
+    @patch("shopify_init.ShopifyInitializer")
+    @patch("sys.exit")
     def test_main_keyboard_interrupt(self, mock_exit, mock_initializer):
         """Test main function with keyboard interrupt."""
         from shopify_init import main
 
         mock_initializer.return_value.run.side_effect = KeyboardInterrupt
 
-        with patch('builtins.print'):
+        with patch("builtins.print"):
             main()
 
         mock_exit.assert_called_with(0)
 
-    @patch('shopify_init.ShopifyInitializer')
-    @patch('sys.exit')
+    @patch("shopify_init.ShopifyInitializer")
+    @patch("sys.exit")
     def test_main_exception(self, mock_exit, mock_initializer):
         """Test main function with exception."""
         from shopify_init import main
 
         mock_initializer.return_value.run.side_effect = Exception("Test error")
 
-        with patch('builtins.print'):
+        with patch("builtins.print"):
             main()
 
         mock_exit.assert_called_with(1)
@@ -368,7 +376,7 @@ class TestEnvConfig:
             shopify_api_key="key",
             shopify_api_secret="secret",
             shop_domain="test.myshopify.com",
-            scopes="read_products"
+            scopes="read_products",
         )
 
         assert config.shopify_api_key == "key"

@@ -25,7 +25,9 @@ class AIService:
             return cls._models_cache[model_name]
 
         if not config.GEMINI_API_KEY:
-            logger.warning("GEMINI_API_KEY no configurada. Funciones de IA deshabilitadas.")
+            logger.warning(
+                "GEMINI_API_KEY no configurada. Funciones de IA deshabilitadas."
+            )
             return None
 
         try:
@@ -52,7 +54,9 @@ class AIService:
             return None
 
     @classmethod
-    async def _call_gemini_with_retry(cls, prompt: str, model=None, max_retries: int = 3):
+    async def _call_gemini_with_retry(
+        cls, prompt: str, model=None, max_retries: int = 3
+    ):
         """
         Ejecuta una consulta a Gemini con reintentos y fallback automático entre modelos.
         """
@@ -81,7 +85,10 @@ class AIService:
         for model_name in models_to_try:
             # 1. Verificar si el modelo está en cooldown por cuota agotada
             now = time.time()
-            if model_name in cls._exhausted_until and now < cls._exhausted_until[model_name]:
+            if (
+                model_name in cls._exhausted_until
+                and now < cls._exhausted_until[model_name]
+            ):
                 # Si el modelo principal está agotado, saltamos al siguiente
                 if len(models_to_try) > 1:
                     continue
@@ -114,7 +121,9 @@ class AIService:
                             break
                         else:
                             # Era el último modelo disponible
-                            logger.error("❌ Todos los modelos agotaron su cuota definitivamente.")
+                            logger.error(
+                                "❌ Todos los modelos agotaron su cuota definitivamente."
+                            )
                             raise e
                 except Exception as e:
                     logger.error(f"❌ Error inesperado en {model_name}: {e}")
@@ -184,7 +193,9 @@ class AIService:
             txt = AIService._extract_json_from_text(response.text)
             data = json.loads(txt)
             if data.get("suggested_filename"):
-                data["suggested_filename"] = AIService.sanitize_filename(data["suggested_filename"])
+                data["suggested_filename"] = AIService.sanitize_filename(
+                    data["suggested_filename"]
+                )
             return data
         except Exception as e:
             logger.error(f"Error en consulta a Gemini: {e}")
@@ -213,7 +224,10 @@ class AIService:
         try:
             response = await AIService._call_gemini_with_retry(prompt)
             if not response:
-                return {"proposed_english": current_name, "proposed_spanish": current_name}
+                return {
+                    "proposed_english": current_name,
+                    "proposed_spanish": current_name,
+                }
             txt = AIService._extract_json_from_text(response.text)
             return json.loads(txt)
         except Exception:
@@ -288,7 +302,9 @@ class AIService:
             with get_session() as session:
                 # Get valid siglas
                 res_siglas = session.execute(
-                    text("SELECT siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 100")
+                    text(
+                        "SELECT siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 100"
+                    )
                 )
                 valid_siglas = [r[0] for r in res_siglas]
 
@@ -299,22 +315,24 @@ class AIService:
                     )
                 )
                 corrections = [
-                    f"IA propuso '{r[0]}' pero el usuario corrigió a '{r[1]}'" for r in res_learning
+                    f"IA propuso '{r[0]}' pero el usuario corrigió a '{r[1]}'"
+                    for r in res_learning
                 ]
 
                 if valid_siglas:
-                    learning_context += (
-                        f"\nSIGLAS VÁLIDAS CONOCIDAS (Úsalas si encajan): {', '.join(valid_siglas)}"
-                    )
+                    learning_context += f"\nSIGLAS VÁLIDAS CONOCIDAS (Úsalas si encajan): {', '.join(valid_siglas)}"
                 if corrections:
-                    learning_context += "\nAPRENDIZAJE DE CORRECCIONES PASADAS:\n" + "\n".join(
-                        corrections
+                    learning_context += (
+                        "\nAPRENDIZAJE DE CORRECCIONES PASADAS:\n"
+                        + "\n".join(corrections)
                     )
         except Exception as e:
             logger.warning(f"Failed to load learning context: {e}")
 
         try:
-            full_prompt = prompt + f"\n\nCONTEXTO ADICIONAL DE APRENDIZAJE:\n{learning_context}"
+            full_prompt = (
+                prompt + f"\n\nCONTEXTO ADICIONAL DE APRENDIZAJE:\n{learning_context}"
+            )
             response = await AIService._call_gemini_with_retry(full_prompt)
             if not response:
                 return {"error": "AI failed or quota exceeded"}
@@ -347,9 +365,13 @@ class AIService:
                 # Use IA volume if it's a dict or a plain number (backward compatibility)
                 if isinstance(vol_info, dict):
                     current_vol = vol_info.get("volume", book.get("volume", 0))
-                    book_siglas = vol_info.get("siglas") or proposal["group_siglas"] or "Unknown"
+                    book_siglas = (
+                        vol_info.get("siglas") or proposal["group_siglas"] or "Unknown"
+                    )
                 else:
-                    current_vol = vol_info if vol_info is not None else book.get("volume", 0)
+                    current_vol = (
+                        vol_info if vol_info is not None else book.get("volume", 0)
+                    )
                     book_siglas = proposal["group_siglas"] or "Unknown"
 
                 # Handling volume string
@@ -378,8 +400,12 @@ class AIService:
                     prefix = "[SC]"
 
                 # Generar nuevo nombre de archivo usando el nombre en ESPAÑOL y las SIGLAS INDIVIDUALES
-                spanish_name = proposal["proposed_spanish"] or proposal["proposed_series"]
-                raw_filename = f"{prefix}{spanish_name} - {vol_part} [{book_siglas}].epub"
+                spanish_name = (
+                    proposal["proposed_spanish"] or proposal["proposed_series"]
+                )
+                raw_filename = (
+                    f"{prefix}{spanish_name} - {vol_part} [{book_siglas}].epub"
+                )
                 new_filename = AIService.sanitize_filename(raw_filename)
 
                 if book.get("filename") != new_filename:
@@ -396,7 +422,10 @@ class AIService:
                     )
 
             # Check if there is NO CHANGE at all (Series matches AND no files renamed)
-            if proposal["proposed_series"] == current_series_name and not proposal["changes"]:
+            if (
+                proposal["proposed_series"] == current_series_name
+                and not proposal["changes"]
+            ):
                 # If proposed is identical to current and no changes, mark as 'sin propuesta'
                 proposal["proposed_series"] = "sin propuesta"
                 proposal["proposed_spanish"] = "sin propuesta"

@@ -89,7 +89,9 @@ async def mostrar_colecciones(
         elif rel == "next":
             st["nav"]["next"] = href
 
-    logger.debug(f"Final nav state - prev: {st['nav']['prev']}, next: {st['nav']['next']}")
+    logger.debug(
+        f"Final nav state - prev: {st['nav']['prev']}, next: {st['nav']['next']}"
+    )
 
     # NO sobrescribas el prev del feed con el historial
     # El historial se usa solo para "Subir nivel", no para paginación
@@ -164,7 +166,11 @@ async def mostrar_colecciones(
             p0_clean = clean_title_part(parts[0])
             feed_clean = clean_title_part(clean_feed_title_part)
 
-            if p0_clean == feed_clean or p0_clean in feed_clean or feed_clean in p0_clean:
+            if (
+                p0_clean == feed_clean
+                or p0_clean in feed_clean
+                or feed_clean in p0_clean
+            ):
                 known_romaji = parts[1].strip()
                 known_english = re.sub(r"^[^\w\(\)]+", "", parts[0]).strip()
 
@@ -204,7 +210,9 @@ async def mostrar_colecciones(
             if col["titulo"] == "Todas las bibliotecas":
                 titulo_boton = "📚 Mi Catálogo"
 
-            keyboard.append([InlineKeyboardButton(titulo_boton, callback_data=f"col|{i}")])
+            keyboard.append(
+                [InlineKeyboardButton(titulo_boton, callback_data=f"col|{i}")]
+            )
     else:
         for b in libros:
             key = uuid.uuid4().hex[:8]
@@ -258,7 +266,11 @@ async def mostrar_colecciones(
 
                     # 3. Last chance: check if the full original title contains the Romaji name
                     # (Useful if tag parsing failed)
-                    if not is_redundant and s_romaji and s_romaji in simplify(b["titulo"]):
+                    if (
+                        not is_redundant
+                        and s_romaji
+                        and s_romaji in simplify(b["titulo"])
+                    ):
                         is_redundant = True
 
             if is_redundant:
@@ -272,16 +284,22 @@ async def mostrar_colecciones(
                     s_name = s_name[:27] + "..."
                 display_title = f"{s_name}{tags_str}"
 
-            keyboard.append([InlineKeyboardButton(display_title, callback_data=f"lib|{key}")])
+            keyboard.append(
+                [InlineKeyboardButton(display_title, callback_data=f"lib|{key}")]
+            )
 
     # 3. Botones de navegación (Subir nivel, Anterior, Siguiente)
     nav_buttons = []
     if st["historial"]:
-        nav_buttons.append(InlineKeyboardButton("⬆️ Subir nivel", callback_data="subir_nivel"))
+        nav_buttons.append(
+            InlineKeyboardButton("⬆️ Subir nivel", callback_data="subir_nivel")
+        )
     if st["nav"]["prev"]:
         nav_buttons.append(InlineKeyboardButton("⬅️ Anterior", callback_data="nav|prev"))
     if st["nav"]["next"]:
-        nav_buttons.append(InlineKeyboardButton("➡️ Siguiente", callback_data="nav|next"))
+        nav_buttons.append(
+            InlineKeyboardButton("➡️ Siguiente", callback_data="nav|next")
+        )
 
     if nav_buttons:
         keyboard.append(nav_buttons)
@@ -405,9 +423,15 @@ async def mostrar_recomendaciones(update: Update, context: ContextTypes.DEFAULT_
         }
         st["libros"][key] = b_state
 
-        rating_str = f" ⭐ {book.get('rating_average'):.1f}" if book.get("rating_average") else ""
+        rating_str = (
+            f" ⭐ {book.get('rating_average'):.1f}"
+            if book.get("rating_average")
+            else ""
+        )
         display_text = f"{book['title']} ({book['author']}){rating_str}"
-        keyboard.append([InlineKeyboardButton(display_text, callback_data=f"lib|{key}")])
+        keyboard.append(
+            [InlineKeyboardButton(display_text, callback_data=f"lib|{key}")]
+        )
 
     # Botón Volver
     # Si venimos de un menú, 'Subir Nivel' o 'Volver'
@@ -422,4 +446,6 @@ async def mostrar_recomendaciones(update: Update, context: ContextTypes.DEFAULT_
             text, reply_markup=reply_markup, parse_mode="HTML"
         )
     else:
-        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="HTML")
+        await update.message.reply_text(
+            text, reply_markup=reply_markup, parse_mode="HTML"
+        )

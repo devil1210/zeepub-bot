@@ -80,7 +80,8 @@ class MemoryCache:
             "size": len(self.cache),
             "max_size": self.max_size,
             "expired": expired,
-            "hit_rate": getattr(self, "_hits", 0) / max(getattr(self, "_requests", 1), 1),
+            "hit_rate": getattr(self, "_hits", 0)
+            / max(getattr(self, "_requests", 1), 1),
         }
 
 
@@ -141,7 +142,9 @@ class AsyncTTLCache:
         """
         now = datetime.utcnow()
         async with self._write_lock:
-            expired_keys = [k for k, (_, expires_at) in self._cache.items() if expires_at < now]
+            expired_keys = [
+                k for k, (_, expires_at) in self._cache.items() if expires_at < now
+            ]
             for key in expired_keys:
                 del self._cache[key]
             return len(expired_keys)
@@ -152,7 +155,9 @@ class AsyncTTLCache:
         """
         now = datetime.utcnow()
         total_entries = len(self._cache)
-        expired_entries = sum(1 for _, expires_at in self._cache.values() if expires_at < now)
+        expired_entries = sum(
+            1 for _, expires_at in self._cache.values() if expires_at < now
+        )
 
         return {
             "total_entries": total_entries,
@@ -194,7 +199,9 @@ class CacheManager:
 
         return None
 
-    async def set_user(self, telegram_id: int, user_data: dict[str, Any], ttl: int = 300) -> None:
+    async def set_user(
+        self, telegram_id: int, user_data: dict[str, Any], ttl: int = 300
+    ) -> None:
         """Guarda usuario en cache."""
         await self.user_cache.set(f"user:{telegram_id}", user_data, ttl)
         self.memory_cache.set(f"user:{telegram_id}", user_data, ttl)

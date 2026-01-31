@@ -250,7 +250,9 @@ def check_migrations():
                         )
                     )
                     conn.execute(
-                        text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS demographics JSONB;")
+                        text(
+                            "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS demographics JSONB;"
+                        )
                     )
                     conn.execute(
                         text(
@@ -285,7 +287,9 @@ def check_migrations():
                     conn.commit()
                     _log.info("Checked/Added Metadata and Title columns to local_books")
                 except Exception as e:
-                    _log.warning(f"Error checking Metadata/Title columns on local_books: {e}")
+                    _log.warning(
+                        f"Error checking Metadata/Title columns on local_books: {e}"
+                    )
                     conn.rollback()
 
             # 2. user_levels
@@ -378,9 +382,13 @@ def check_migrations():
                         )
                     )
                     conn.commit()
-                    _log.info("Checked/Added edition, series and cover columns to local_books")
+                    _log.info(
+                        "Checked/Added edition, series and cover columns to local_books"
+                    )
                 except Exception as e:
-                    _log.warning(f"Error checking edition/series/cover columns on local_books: {e}")
+                    _log.warning(
+                        f"Error checking edition/series/cover columns on local_books: {e}"
+                    )
                     conn.rollback()
 
             # 5. upload_books
@@ -432,7 +440,9 @@ def check_migrations():
                     conn.commit()
                     _log.info("Checked/Added edition columns to download_history")
                 except Exception as e:
-                    _log.warning(f"Error checking edition columns on download_history: {e}")
+                    _log.warning(
+                        f"Error checking edition columns on download_history: {e}"
+                    )
                     conn.rollback()
 
             # 7. user_ratings book_hash
@@ -502,7 +512,9 @@ def init_library_db():
         check_migrations()
 
     except Exception as e:
-        _log.error(f"Error crítico inicializando base de datos de librería: {e}", exc_info=True)
+        _log.error(
+            f"Error crítico inicializando base de datos de librería: {e}", exc_info=True
+        )
         raise
 
 

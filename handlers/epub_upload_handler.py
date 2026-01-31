@@ -1104,7 +1104,7 @@ class EPUBUploader:
             # Eliminar archivo temporal si existe
             if epub_path.exists():
                 epub_path.unlink()
-        except:
+        except Exception:
             pass
 
         # Eliminar del estado pendiente
@@ -1117,7 +1117,7 @@ class EPUBUploader:
             from config.config_settings import config
 
             return user_id in config.ADMIN_USERS
-        except:
+        except Exception:
             return False
 
     def _log_history(

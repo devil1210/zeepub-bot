@@ -48,7 +48,7 @@ class MetricsRepository:
                         "title": title,
                     }
                     self.supabase.get_client().table("user_downloads").insert(data).execute()
-                except:
+                except Exception:
                     pass
         except Exception as e:
             logger.error(f"Postgres metrics add_download error: {e}")
@@ -126,7 +126,7 @@ class MetricsRepository:
                 try:
                     data = {"user_id": user_id, "book_hash": book_hash, "rating": rating}
                     self.supabase.get_client().table("user_ratings").upsert(data).execute()
-                except:
+                except Exception:
                     pass
         except Exception as e:
             logger.error(f"Postgres metrics add_rating error: {e}")

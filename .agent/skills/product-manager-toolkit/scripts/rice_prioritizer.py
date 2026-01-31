@@ -14,13 +14,21 @@ class RICECalculator:
     """Calculate RICE scores for feature prioritization"""
 
     def __init__(self):
-        self.impact_map = {"massive": 3.0, "high": 2.0, "medium": 1.0, "low": 0.5, "minimal": 0.25}
+        self.impact_map = {
+            "massive": 3.0,
+            "high": 2.0,
+            "medium": 1.0,
+            "low": 0.5,
+            "minimal": 0.25,
+        }
 
         self.confidence_map = {"high": 100, "medium": 80, "low": 50}
 
         self.effort_map = {"xl": 13, "l": 8, "m": 5, "s": 3, "xs": 1}
 
-    def calculate_rice(self, reach: int, impact: str, confidence: str, effort: str) -> float:
+    def calculate_rice(
+        self, reach: int, impact: str, confidence: str, effort: str
+    ) -> float:
         """
         Calculate RICE score
 
@@ -65,7 +73,9 @@ class RICECalculator:
         if not features:
             return {}
 
-        total_effort = sum(self.effort_map.get(f.get("effort", "m").lower(), 5) for f in features)
+        total_effort = sum(
+            self.effort_map.get(f.get("effort", "m").lower(), 5) for f in features
+        )
 
         total_reach = sum(f.get("reach", 0) for f in features)
 
@@ -99,7 +109,9 @@ class RICECalculator:
             "total_features": len(features),
             "total_effort_months": total_effort,
             "total_reach": total_reach,
-            "average_rice": round(sum(f["rice_score"] for f in features) / len(features), 2),
+            "average_rice": round(
+                sum(f["rice_score"] for f in features) / len(features), 2
+            ),
             "effort_distribution": effort_distribution,
             "impact_distribution": impact_distribution,
             "quick_wins": len(quick_wins),
@@ -108,7 +120,9 @@ class RICECalculator:
             "big_bets_list": big_bets[:3],  # Top 3 big bets
         }
 
-    def generate_roadmap(self, features: list[dict], team_capacity: int = 10) -> list[dict]:
+    def generate_roadmap(
+        self, features: list[dict], team_capacity: int = 10
+    ) -> list[dict]:
         """
         Generate a quarterly roadmap based on team capacity
 
@@ -145,7 +159,9 @@ class RICECalculator:
                 }
 
         if current_quarter["features"]:
-            current_quarter["capacity_available"] = team_capacity - current_quarter["capacity_used"]
+            current_quarter["capacity_available"] = (
+                team_capacity - current_quarter["capacity_used"]
+            )
             quarters.append(current_quarter)
 
         return quarters
@@ -171,7 +187,9 @@ def format_output(features: list[dict], analysis: dict, roadmap: list[dict]) -> 
     # Portfolio analysis
     output.append("\n📈 PORTFOLIO ANALYSIS\n")
     output.append(f"Total Features: {analysis.get('total_features', 0)}")
-    output.append(f"Total Effort: {analysis.get('total_effort_months', 0)} person-months")
+    output.append(
+        f"Total Effort: {analysis.get('total_effort_months', 0)} person-months"
+    )
     output.append(f"Total Reach: {analysis.get('total_reach', 0):,} users")
     output.append(f"Average RICE Score: {analysis.get('average_rice', 0)}")
 
@@ -190,7 +208,9 @@ def format_output(features: list[dict], analysis: dict, roadmap: list[dict]) -> 
             f"\nQ{quarter['quarter']} - Capacity: {quarter['capacity_used']}/{quarter['capacity_used'] + quarter['capacity_available']} person-months"
         )
         for feature in quarter["features"]:
-            output.append(f"   • {feature.get('name', 'Unnamed')} (RICE: {feature['rice_score']})")
+            output.append(
+                f"   • {feature.get('name', 'Unnamed')} (RICE: {feature['rice_score']})"
+            )
 
     return "\n".join(output)
 
@@ -237,10 +257,38 @@ def create_sample_csv(filepath: str):
         ["API Rate Limiting", "2000", "low", "high", "xs", "Add rate limiting to API"],
         ["Social Login", "12000", "high", "medium", "m", "Add Google/Facebook login"],
         ["Export to PDF", "3000", "medium", "low", "s", "Export reports as PDF"],
-        ["Team Collaboration", "4000", "massive", "low", "xl", "Real-time collaboration features"],
-        ["Search Improvements", "15000", "high", "high", "m", "Enhance search functionality"],
-        ["Onboarding Flow", "20000", "massive", "high", "s", "Improve new user onboarding"],
-        ["Analytics Dashboard", "6000", "high", "medium", "l", "Advanced analytics for users"],
+        [
+            "Team Collaboration",
+            "4000",
+            "massive",
+            "low",
+            "xl",
+            "Real-time collaboration features",
+        ],
+        [
+            "Search Improvements",
+            "15000",
+            "high",
+            "high",
+            "m",
+            "Enhance search functionality",
+        ],
+        [
+            "Onboarding Flow",
+            "20000",
+            "massive",
+            "high",
+            "s",
+            "Improve new user onboarding",
+        ],
+        [
+            "Analytics Dashboard",
+            "6000",
+            "high",
+            "medium",
+            "l",
+            "Advanced analytics for users",
+        ],
     ]
 
     with open(filepath, "w", newline="") as f:
@@ -251,15 +299,23 @@ def create_sample_csv(filepath: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="RICE Framework for Feature Prioritization")
+    parser = argparse.ArgumentParser(
+        description="RICE Framework for Feature Prioritization"
+    )
     parser.add_argument(
         "input", nargs="?", help='CSV file with features or "sample" to create sample'
     )
     parser.add_argument(
-        "--capacity", type=int, default=10, help="Team capacity per quarter (person-months)"
+        "--capacity",
+        type=int,
+        default=10,
+        help="Team capacity per quarter (person-months)",
     )
     parser.add_argument(
-        "--output", choices=["text", "json", "csv"], default="text", help="Output format"
+        "--output",
+        choices=["text", "json", "csv"],
+        default="text",
+        help="Output format",
     )
 
     args = parser.parse_args()

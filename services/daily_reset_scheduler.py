@@ -58,7 +58,9 @@ async def daily_reset_loop(bot=None):
                                 chat_id=admin_id, text=report_text, parse_mode="HTML"
                             )
                         except Exception as e:
-                            logger.error(f"Error enviando reporte a admin {admin_id}: {e}")
+                            logger.error(
+                                f"Error enviando reporte a admin {admin_id}: {e}"
+                            )
 
                     # Resetear stats
                     reset_stats()

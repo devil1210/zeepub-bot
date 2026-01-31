@@ -147,7 +147,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
             async with pg_manager.get_session() as session:
                 theme = await session.get(AppTheme, id)
                 return self._to_dict(theme) if theme else None
-        except:
+        except Exception:
             return None
 
     async def create(self, entity: dict[str, Any]) -> dict[str, Any]:
@@ -165,7 +165,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
                     await session.commit()
                     return True
             return False
-        except:
+        except Exception:
             return False
 
 

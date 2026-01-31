@@ -25,9 +25,9 @@ def parse_version(model_id: str) -> Optional[Tuple[int, ...]]:
         gpt-5.2 -> (5, 2)
         gpt-5.2.1 -> (5, 2, 1)
     """
-    match = re.search(r'(\d+(?:\.\d+)*)', model_id)
+    match = re.search(r"(\d+(?:\.\d+)*)", model_id)
     if match:
-        return tuple(int(x) for x in match.group(1).split('.'))
+        return tuple(int(x) for x in match.group(1).split("."))
     return None
 
 
@@ -36,11 +36,11 @@ def is_mainline_openai_model(model_id: str) -> bool:
     model_lower = model_id.lower()
 
     # Must be gpt-5 series
-    if not re.match(r'^gpt-5(\.\d+)*$', model_lower):
+    if not re.match(r"^gpt-5(\.\d+)*$", model_lower):
         return False
 
     # Exclude variants
-    excludes = ['mini', 'nano', 'chat', 'codex', 'pro', 'preview', 'turbo']
+    excludes = ["mini", "nano", "chat", "codex", "pro", "preview", "turbo"]
     for exc in excludes:
         if exc in model_lower:
             return False

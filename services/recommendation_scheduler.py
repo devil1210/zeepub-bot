@@ -70,7 +70,13 @@ async def send_recommendation_to_user(context: ContextTypes.DEFAULT_TYPE, uid: i
             local_id = book.get("id")
             kb = []
             if local_id:
-                kb = [[InlineKeyboardButton("📥 Ver", callback_data=f"lib|local_{local_id}")]]
+                kb = [
+                    [
+                        InlineKeyboardButton(
+                            "📥 Ver", callback_data=f"lib|local_{local_id}"
+                        )
+                    ]
+                ]
 
             await context.bot.send_message(
                 chat_id=uid,

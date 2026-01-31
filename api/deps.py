@@ -70,7 +70,11 @@ async def get_current_user_data(
     init_data = x_telegram_init_data or x_telegram_data
     tg_user = None
     if init_data and "debug" in str(init_data).lower():
-        tg_user = {"id": user_id, "first_name": "Admin (Debug)", "username": "admin_debug"}
+        tg_user = {
+            "id": user_id,
+            "first_name": "Admin (Debug)",
+            "username": "admin_debug",
+        }
     elif init_data:
         try:
             res = validate_telegram_data(init_data, config.TELEGRAM_TOKEN)
@@ -84,7 +88,9 @@ async def get_current_user_data(
     if x_simulated_level and x_simulated_level.isdigit():
         sim_level = int(x_simulated_level)
 
-    data = await get_effective_user(user_id, tg_user=tg_user, simulated_level_id=sim_level)
+    data = await get_effective_user(
+        user_id, tg_user=tg_user, simulated_level_id=sim_level
+    )
 
     # Override level to admin for debug mode
     if init_data and "debug" in str(init_data).lower():
@@ -107,13 +113,17 @@ async def get_current_user_permissions(
     return await get_user_access_data(user_id)
 
 
-async def require_admin(access_data: dict[str, Any] = Depends(get_current_user_permissions)):
+async def require_admin(
+    access_data: dict[str, Any] = Depends(get_current_user_permissions),
+):
     """
     Enforces staff or higher roles.
     Uses the lighter access_data dependency.
     """
     if not access_data.get("isStaff") and not access_data.get("isAdmin"):
-        raise HTTPException(status_code=403, detail="Admin or Staff privileges required")
+        raise HTTPException(
+            status_code=403, detail="Admin or Staff privileges required"
+        )
     return access_data
 
 
@@ -124,9 +134,9 @@ async def require_mini_app_access(
     Enforces mini app access permission.
     """
     # Admins/Staff always have access, others check granular permission
-    if not access_data.get("isStaff") and Permission.ACCESS_MINI_APP.value not in access_data.get(
-        "permissions", []
-    ):
+    if not access_data.get(
+        "isStaff"
+    ) and Permission.ACCESS_MINI_APP.value not in access_data.get("permissions", []):
         raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.",

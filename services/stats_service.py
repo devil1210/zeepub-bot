@@ -23,10 +23,14 @@ class StatsService:
         async with pg_manager.get_session() as session:
             try:
                 # 1. User Stats
-                user_count = (await session.execute(select(func.count(User.id)))).scalar() or 0
+                user_count = (
+                    await session.execute(select(func.count(User.id)))
+                ).scalar() or 0
 
                 # 2. Book Stats
-                book_count = (await session.execute(select(func.count(LocalBook.id)))).scalar() or 0
+                book_count = (
+                    await session.execute(select(func.count(LocalBook.id)))
+                ).scalar() or 0
 
                 # 3. Downloads (Global)
                 total_downloads = await download_repo.get_global_total_downloads()

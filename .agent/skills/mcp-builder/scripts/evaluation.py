@@ -172,7 +172,9 @@ async def evaluate_single_task(
     start_time = time.time()
 
     print(f"Task {task_index + 1}: Running task with question: {qa_pair['question']}")
-    response, tool_metrics = await agent_loop(client, model, qa_pair["question"], tools, connection)
+    response, tool_metrics = await agent_loop(
+        client, model, qa_pair["question"], tools, connection
+    )
 
     response_value = extract_xml_content(response, "response")
     summary = extract_xml_content(response, "summary")
@@ -187,7 +189,9 @@ async def evaluate_single_task(
         "score": int(response_value == qa_pair["answer"]) if response_value else 0,
         "total_duration": duration_seconds,
         "tool_calls": tool_metrics,
-        "num_tool_calls": sum(len(metrics["durations"]) for metrics in tool_metrics.values()),
+        "num_tool_calls": sum(
+            len(metrics["durations"]) for metrics in tool_metrics.values()
+        ),
         "summary": summary,
         "feedback": feedback,
     }
@@ -245,13 +249,19 @@ async def run_evaluation(
     results = []
     for i, qa_pair in enumerate(qa_pairs):
         print(f"Processing task {i + 1}/{len(qa_pairs)}")
-        result = await evaluate_single_task(client, model, qa_pair, tools, connection, i)
+        result = await evaluate_single_task(
+            client, model, qa_pair, tools, connection, i
+        )
         results.append(result)
 
     correct = sum(r["score"] for r in results)
     accuracy = (correct / len(results)) * 100 if results else 0
-    average_duration_s = sum(r["total_duration"] for r in results) / len(results) if results else 0
-    average_tool_calls = sum(r["num_tool_calls"] for r in results) / len(results) if results else 0
+    average_duration_s = (
+        sum(r["total_duration"] for r in results) / len(results) if results else 0
+    )
+    average_tool_calls = (
+        sum(r["num_tool_calls"] for r in results) / len(results) if results else 0
+    )
     total_tool_calls = sum(r["num_tool_calls"] for r in results)
 
     report = REPORT_HEADER.format(
@@ -346,12 +356,17 @@ Examples:
     )
 
     stdio_group = parser.add_argument_group("stdio options")
-    stdio_group.add_argument("-c", "--command", help="Command to run MCP server (stdio only)")
+    stdio_group.add_argument(
+        "-c", "--command", help="Command to run MCP server (stdio only)"
+    )
     stdio_group.add_argument(
         "-a", "--args", nargs="+", help="Arguments for the command (stdio only)"
     )
     stdio_group.add_argument(
-        "-e", "--env", nargs="+", help="Environment variables in KEY=VALUE format (stdio only)"
+        "-e",
+        "--env",
+        nargs="+",
+        help="Environment variables in KEY=VALUE format (stdio only)",
     )
 
     remote_group = parser.add_argument_group("sse/http options")
@@ -365,7 +380,10 @@ Examples:
     )
 
     parser.add_argument(
-        "-o", "--output", type=Path, help="Output file for evaluation report (default: stdout)"
+        "-o",
+        "--output",
+        type=Path,
+        help="Output file for evaluation report (default: stdout)",
     )
 
     args = parser.parse_args()

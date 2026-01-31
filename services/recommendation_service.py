@@ -24,7 +24,9 @@ class RecommendationService:
 
             async with pg_manager.get_session() as session:
                 # 1. Obtener historial de descargas
-                dl_stmt = select(UserDownload.book_hash).where(UserDownload.user_id == user_id)
+                dl_stmt = select(UserDownload.book_hash).where(
+                    UserDownload.user_id == user_id
+                )
                 dl_res = await session.execute(dl_stmt)
                 downloaded_hashes = {row[0] for row in dl_res.fetchall() if row[0]}
 
@@ -44,7 +46,9 @@ class RecommendationService:
                     )
 
                 # 3. Analizar perfiles (Tags y Autores)
-                hist_stmt = select(LocalBook).where(LocalBook.book_hash.in_(combined_hashes))
+                hist_stmt = select(LocalBook).where(
+                    LocalBook.book_hash.in_(combined_hashes)
+                )
                 hist_res = await session.execute(hist_stmt)
                 history_books = hist_res.scalars().all()
 
@@ -53,20 +57,28 @@ class RecommendationService:
 
                 for b in history_books:
                     if b.author and b.author != "Desconocido":
-                        authors_freq[b.author] = authors_freq.get(b.author, 0) + 2  # Peso autores
+                        authors_freq[b.author] = (
+                            authors_freq.get(b.author, 0) + 2
+                        )  # Peso autores
                     if b.tags:
                         for t in b.tags:
                             tags_freq[t] = tags_freq.get(t, 0) + 1
 
                 # Top de cada uno
-                top_authors = sorted(authors_freq.items(), key=lambda x: x[1], reverse=True)[:3]
-                top_tags = sorted(tags_freq.items(), key=lambda x: x[1], reverse=True)[:5]
+                top_authors = sorted(
+                    authors_freq.items(), key=lambda x: x[1], reverse=True
+                )[:3]
+                top_tags = sorted(tags_freq.items(), key=lambda x: x[1], reverse=True)[
+                    :5
+                ]
 
                 target_authors = [a[0] for a in top_authors]
                 target_tags = [t[0] for t in top_tags]
 
                 # 4. Buscar similares
-                cand_stmt = select(LocalBook).where(LocalBook.book_hash.notin_(downloaded_hashes))
+                cand_stmt = select(LocalBook).where(
+                    LocalBook.book_hash.notin_(downloaded_hashes)
+                )
 
                 # Construir filtros dinámicos (OR de autores o tags)
                 filters = []
@@ -78,7 +90,8 @@ class RecommendationService:
                     # LocalBook.tags is JSON (Column(JSON))
                     # In Postgres, we can use JSONB containment or just cast to string for simplicity if it varies
                     tag_filters = [
-                        cast(LocalBook.tags, String).ilike(f"%{tag}%") for tag in target_tags
+                        cast(LocalBook.tags, String).ilike(f"%{tag}%")
+                        for tag in target_tags
                     ]
                     filters.append(or_(*tag_filters))
 
@@ -159,5 +172,5 @@ class RecommendationService:
                     res = await last_resort.execute(stmt)
                     books = res.scalars().all()
                     return [book.to_dict() for book in books]
-            except:
+            except Exception:
                 return []

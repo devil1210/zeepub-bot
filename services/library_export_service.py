@@ -54,7 +54,9 @@ class LibraryExportService:
                     "id": s.id,
                     "name": s.name,
                     "path": s.path,
-                    "last_scanned": (s.last_scanned.isoformat() if s.last_scanned else None),
+                    "last_scanned": (
+                        s.last_scanned.isoformat() if s.last_scanned else None
+                    ),
                 }
                 for s in sources
             ]
@@ -135,14 +137,20 @@ class LibraryExportService:
 
             # Importar fuentes
             for source_data in data.get("sources", []):
-                existing = session.query(LibrarySource).filter_by(path=source_data["path"]).first()
+                existing = (
+                    session.query(LibrarySource)
+                    .filter_by(path=source_data["path"])
+                    .first()
+                )
 
                 if existing:
                     if merge:
                         existing.name = source_data["name"]
                         stats["sources_updated"] += 1
                 else:
-                    new_source = LibrarySource(name=source_data["name"], path=source_data["path"])
+                    new_source = LibrarySource(
+                        name=source_data["name"], path=source_data["path"]
+                    )
                     session.add(new_source)
                     stats["sources_added"] += 1
 
@@ -152,7 +160,9 @@ class LibraryExportService:
             for book_data in data.get("books", []):
                 # Buscar por filepath (identificador único)
                 existing = (
-                    session.query(LocalBook).filter_by(filepath=book_data["filepath"]).first()
+                    session.query(LocalBook)
+                    .filter_by(filepath=book_data["filepath"])
+                    .first()
                 )
 
                 if existing:

@@ -43,7 +43,9 @@ class EpubMetadataExtractor:
                 # 1. Encontrar el archivo OPF
                 container_xml = z.read("META-INF/container.xml")
                 root = ET.fromstring(container_xml)
-                opf_path = root.find(".//container:rootfile", self.NAMESPACE).get("full-path")
+                opf_path = root.find(".//container:rootfile", self.NAMESPACE).get(
+                    "full-path"
+                )
 
                 # 2. Leer el OPF
                 opf_content = z.read(opf_path)
@@ -56,15 +58,28 @@ class EpubMetadataExtractor:
                     # Clean title from tags like [ShinsengumiTL]
                     raw_title = self._get_dc_value(metadata_node, "title")
                     self.metadata["title"] = raw_title
-                    self.metadata["publisher"] = self._get_dc_value(metadata_node, "publisher")
-                    self.metadata["language"] = self._get_dc_value(metadata_node, "language")
-                    self.metadata["description"] = self._get_dc_value(metadata_node, "description")
-                    self.metadata["book_type"] = self._get_dc_value(metadata_node, "type")
-                    self.metadata["published_at"] = self._get_dc_value(metadata_node, "date")
+                    self.metadata["publisher"] = self._get_dc_value(
+                        metadata_node, "publisher"
+                    )
+                    self.metadata["language"] = self._get_dc_value(
+                        metadata_node, "language"
+                    )
+                    self.metadata["description"] = self._get_dc_value(
+                        metadata_node, "description"
+                    )
+                    self.metadata["book_type"] = self._get_dc_value(
+                        metadata_node, "type"
+                    )
+                    self.metadata["published_at"] = self._get_dc_value(
+                        metadata_node, "date"
+                    )
 
                     # Extraer fecha de modificación de dc:date (específico de EPUB2/Calibre)
                     for date_node in metadata_node.findall("dc:date", self.NAMESPACE):
-                        if date_node.get("{http://www.idpf.org/2007/opf}event") == "modification":
+                        if (
+                            date_node.get("{http://www.idpf.org/2007/opf}event")
+                            == "modification"
+                        ):
                             self.metadata["modified_at_opf"] = date_node.text
                             break
 
@@ -74,13 +89,15 @@ class EpubMetadataExtractor:
                     creators_jap = {}  # id -> jap_text
                     for node in metadata_node.findall("dc:creator", self.NAMESPACE):
                         creators[
-                            node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")
+                            node.get("{http://www.w3.org/XML/1998/namespace}id")
+                            or node.get("id")
                         ] = node.text
 
                     contributors = {}  # id -> text
                     for node in metadata_node.findall("dc:contributor", self.NAMESPACE):
                         contributors[
-                            node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")
+                            node.get("{http://www.w3.org/XML/1998/namespace}id")
+                            or node.get("id")
                         ] = node.text
 
                     # Roles y Scripts Alternativos
@@ -96,7 +113,10 @@ class EpubMetadataExtractor:
                                 role_map[cid] = meta.text
                             elif (
                                 prop == "alternate-script"
-                                and meta.get("{http://www.w3.org/XML/1998/namespace}lang") == "ja"
+                                and meta.get(
+                                    "{http://www.w3.org/XML/1998/namespace}lang"
+                                )
+                                == "ja"
                                 or meta.get("xml:lang") == "ja"
                             ):
                                 creators_jap[cid] = meta.text
@@ -138,7 +158,10 @@ class EpubMetadataExtractor:
                         id_text = ident.text or ""
                         # Limpiar prefijos comunes como urn:isbn:, urn:amazon:, urn:uri:
                         clean_id = re.sub(
-                            r"^urn:(isbn|amazon|uri|uuid|asin):", "", id_text, flags=re.IGNORECASE
+                            r"^urn:(isbn|amazon|uri|uuid|asin):",
+                            "",
+                            id_text,
+                            flags=re.IGNORECASE,
                         ).strip()
 
                         lower_id = id_text.lower()
@@ -178,7 +201,9 @@ class EpubMetadataExtractor:
                         prop = meta.get("property")
 
                         if name == "calibre:series" and not self.metadata.get("series"):
-                            self.metadata["series"] = clean_metadata_tags(meta.get("content"))
+                            self.metadata["series"] = clean_metadata_tags(
+                                meta.get("content")
+                            )
 
                         # CALIBRE INDEX (Base priority)
                         elif name == "calibre:series_index":
@@ -218,12 +243,18 @@ class EpubMetadataExtractor:
                             break
 
                     # Option 1: Detection via tags/subjects
-                    if any(x in all_tags_text for x in ["sin censura", "uncensored", "no censura"]):
+                    if any(
+                        x in all_tags_text
+                        for x in ["sin censura", "uncensored", "no censura"]
+                    ):
                         self.metadata["is_uncensored"] = 1
 
                     # Also check in edition field if found
                     edition_text = (self.metadata.get("edition") or "").lower()
-                    if any(x in edition_text for x in ["sin censura", "uncensored", "no censura"]):
+                    if any(
+                        x in edition_text
+                        for x in ["sin censura", "uncensored", "no censura"]
+                    ):
                         self.metadata["is_uncensored"] = 1
 
                     if (
@@ -235,7 +266,8 @@ class EpubMetadataExtractor:
                     ):
                         self.metadata["color_mode"] = "color"
                     elif any(
-                        x in all_tags_text for x in ["blanco y negro", "b&w", "grayscale", "b/n"]
+                        x in all_tags_text
+                        for x in ["blanco y negro", "b&w", "grayscale", "b/n"]
                     ):
                         self.metadata["color_mode"] = "bw"
 
@@ -266,7 +298,9 @@ class EpubMetadataExtractor:
                         self.metadata["title"] = clean_metadata_tags(raw_title)
 
                 # 4. Calcular métricas técnicas (palabras, páginas)
-                self._calculate_technical_metrics(z, opf_root, os.path.dirname(opf_path))
+                self._calculate_technical_metrics(
+                    z, opf_root, os.path.dirname(opf_path)
+                )
 
                 # 5. Encontrar la portada
                 self._extract_cover(z, opf_root, os.path.dirname(opf_path))
@@ -441,7 +475,9 @@ class EpubMetadataExtractor:
                     ratio = 200 / float(low_img.width)
                     height = int(float(low_img.height) * float(ratio))
                     low_img = low_img.resize((200, height), Image.LANCZOS)
-                low_img.save(low_path, "JPEG", quality=70, optimize=True, progressive=True)
+                low_img.save(
+                    low_path, "JPEG", quality=70, optimize=True, progressive=True
+                )
 
                 return {
                     "original": original_path,

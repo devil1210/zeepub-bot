@@ -50,7 +50,8 @@ class TelegramDeliveryProvider(DeliveryProvider):
             target_chat_id=options.get("target_chat_id") or int(target_id),
             message_thread_id=options.get("message_thread_id"),
             metadata_override=book_data,
-            explicit_file_buffer=book_data.get("epub_buffer") or book_data.get("file_buffer"),
+            explicit_file_buffer=book_data.get("epub_buffer")
+            or book_data.get("file_buffer"),
             job_queue=options.get("job_queue"),
             auto_delete_seconds=options.get("auto_delete_seconds", 0),
         )

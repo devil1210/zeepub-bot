@@ -78,31 +78,35 @@ def normalize_reddit_items(
         # Parse comments
         top_comments = []
         for c in item.get("top_comments", []):
-            top_comments.append(schema.Comment(
-                score=c.get("score", 0),
-                date=c.get("date"),
-                author=c.get("author", ""),
-                excerpt=c.get("excerpt", ""),
-                url=c.get("url", ""),
-            ))
+            top_comments.append(
+                schema.Comment(
+                    score=c.get("score", 0),
+                    date=c.get("date"),
+                    author=c.get("author", ""),
+                    excerpt=c.get("excerpt", ""),
+                    url=c.get("url", ""),
+                )
+            )
 
         # Determine date confidence
         date_str = item.get("date")
         date_confidence = dates.get_date_confidence(date_str, from_date, to_date)
 
-        normalized.append(schema.RedditItem(
-            id=item.get("id", ""),
-            title=item.get("title", ""),
-            url=item.get("url", ""),
-            subreddit=item.get("subreddit", ""),
-            date=date_str,
-            date_confidence=date_confidence,
-            engagement=engagement,
-            top_comments=top_comments,
-            comment_insights=item.get("comment_insights", []),
-            relevance=item.get("relevance", 0.5),
-            why_relevant=item.get("why_relevant", ""),
-        ))
+        normalized.append(
+            schema.RedditItem(
+                id=item.get("id", ""),
+                title=item.get("title", ""),
+                url=item.get("url", ""),
+                subreddit=item.get("subreddit", ""),
+                date=date_str,
+                date_confidence=date_confidence,
+                engagement=engagement,
+                top_comments=top_comments,
+                comment_insights=item.get("comment_insights", []),
+                relevance=item.get("relevance", 0.5),
+                why_relevant=item.get("why_relevant", ""),
+            )
+        )
 
     return normalized
 
@@ -140,17 +144,19 @@ def normalize_x_items(
         date_str = item.get("date")
         date_confidence = dates.get_date_confidence(date_str, from_date, to_date)
 
-        normalized.append(schema.XItem(
-            id=item.get("id", ""),
-            text=item.get("text", ""),
-            url=item.get("url", ""),
-            author_handle=item.get("author_handle", ""),
-            date=date_str,
-            date_confidence=date_confidence,
-            engagement=engagement,
-            relevance=item.get("relevance", 0.5),
-            why_relevant=item.get("why_relevant", ""),
-        ))
+        normalized.append(
+            schema.XItem(
+                id=item.get("id", ""),
+                text=item.get("text", ""),
+                url=item.get("url", ""),
+                author_handle=item.get("author_handle", ""),
+                date=date_str,
+                date_confidence=date_confidence,
+                engagement=engagement,
+                relevance=item.get("relevance", 0.5),
+                why_relevant=item.get("why_relevant", ""),
+            )
+        )
 
     return normalized
 

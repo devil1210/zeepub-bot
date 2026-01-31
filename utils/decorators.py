@@ -27,7 +27,9 @@ def admin_only(func):
         if update:
             user_id = update.effective_user.id
             if user_id not in config.ADMIN_USERS:
-                await update.message.reply_text("❌ Este comando es solo para administradores.")
+                await update.message.reply_text(
+                    "❌ Este comando es solo para administradores."
+                )
                 return
         return await func(*args, **kwargs)
 
@@ -42,7 +44,9 @@ def log_user_action(action_name: str):
             if update:
                 user_id = update.effective_user.id
                 username = update.effective_user.username or "unknown"
-                logger.info(f"User {user_id} (@{username}) performed action: {action_name}")
+                logger.info(
+                    f"User {user_id} (@{username}) performed action: {action_name}"
+                )
             return await func(*args, **kwargs)
 
         return wrapper
@@ -68,7 +72,9 @@ def rate_limit(limit_type_str: str, max_requests: int = 10, window_seconds: int 
 
                 allowed = await rate_limiter.is_allowed(user_id, limit_type)
                 if not allowed:
-                    logger.warning(f"Rate limit exceeded for user {user_id} on {limit_type_str}")
+                    logger.warning(
+                        f"Rate limit exceeded for user {user_id} on {limit_type_str}"
+                    )
                     # Reply if possible
                     if update.message:
                         await update.message.reply_text(

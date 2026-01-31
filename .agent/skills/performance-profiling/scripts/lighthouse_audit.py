@@ -44,8 +44,12 @@ def run_lighthouse(url: str) -> dict:
             return {
                 "url": url,
                 "scores": {
-                    "performance": int(categories.get("performance", {}).get("score", 0) * 100),
-                    "accessibility": int(categories.get("accessibility", {}).get("score", 0) * 100),
+                    "performance": int(
+                        categories.get("performance", {}).get("score", 0) * 100
+                    ),
+                    "accessibility": int(
+                        categories.get("accessibility", {}).get("score", 0) * 100
+                    ),
                     "best_practices": int(
                         categories.get("best-practices", {}).get("score", 0) * 100
                     ),
@@ -54,12 +58,17 @@ def run_lighthouse(url: str) -> dict:
                 "summary": get_summary(categories),
             }
         else:
-            return {"error": "Lighthouse failed to generate report", "stderr": result.stderr[:500]}
+            return {
+                "error": "Lighthouse failed to generate report",
+                "stderr": result.stderr[:500],
+            }
 
     except subprocess.TimeoutExpired:
         return {"error": "Lighthouse audit timed out"}
     except FileNotFoundError:
-        return {"error": "Lighthouse CLI not found. Install with: npm install -g lighthouse"}
+        return {
+            "error": "Lighthouse CLI not found. Install with: npm install -g lighthouse"
+        }
 
 
 def get_summary(categories: dict) -> str:

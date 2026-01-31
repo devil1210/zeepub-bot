@@ -66,7 +66,9 @@ def check_tsconfig():
 
         # Check module settings
         print(f"\n  Module: {compiler_opts.get('module', 'not set')}")
-        print(f"  Module Resolution: {compiler_opts.get('moduleResolution', 'not set')}")
+        print(
+            f"  Module Resolution: {compiler_opts.get('moduleResolution', 'not set')}"
+        )
         print(f"  Target: {compiler_opts.get('target', 'not set')}")
 
     except json.JSONDecodeError:
@@ -152,7 +154,9 @@ def check_any_usage():
     print("\n⚠️ 'any' Type Usage:")
     print("-" * 40)
 
-    result = run_cmd("grep -r ': any' --include='*.ts' --include='*.tsx' src/ 2>/dev/null | wc -l")
+    result = run_cmd(
+        "grep -r ': any' --include='*.ts' --include='*.tsx' src/ 2>/dev/null | wc -l"
+    )
     count = result.strip()
     if count and count != "0":
         print(f"  ⚠️ Found {count} occurrences of ': any'")

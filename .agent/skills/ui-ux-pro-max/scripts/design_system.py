@@ -46,7 +46,9 @@ class DesignSystemGenerator:
         for domain, config in SEARCH_CONFIG.items():
             if domain == "style" and style_priority:
                 # For style, also search with priority keywords
-                priority_query = " ".join(style_priority[:2]) if style_priority else query
+                priority_query = (
+                    " ".join(style_priority[:2]) if style_priority else query
+                )
                 combined_query = f"{query} {priority_query}"
                 results[domain] = search(combined_query, domain, config["max_results"])
             else:
@@ -102,7 +104,9 @@ class DesignSystemGenerator:
 
         return {
             "pattern": rule.get("Recommended_Pattern", ""),
-            "style_priority": [s.strip() for s in rule.get("Style_Priority", "").split("+")],
+            "style_priority": [
+                s.strip() for s in rule.get("Style_Priority", "").split("+")
+            ],
             "color_mood": rule.get("Color_Mood", ""),
             "typography_mood": rule.get("Typography_Mood", ""),
             "key_effects": rule.get("Key_Effects", ""),
@@ -175,7 +179,9 @@ class DesignSystemGenerator:
         typography_results = self._extract_results(search_results.get("typography", {}))
         landing_results = self._extract_results(search_results.get("landing", {}))
 
-        best_style = self._select_best_match(style_results, reasoning.get("style_priority", []))
+        best_style = self._select_best_match(
+            style_results, reasoning.get("style_priority", [])
+        )
         best_color = color_results[0] if color_results else {}
         best_typography = typography_results[0] if typography_results else {}
         best_landing = landing_results[0] if landing_results else {}
@@ -194,7 +200,9 @@ class DesignSystemGenerator:
                     "Pattern Name", reasoning.get("pattern", "Hero + Features + CTA")
                 ),
                 "sections": best_landing.get("Section Order", "Hero > Features > CTA"),
-                "cta_placement": best_landing.get("Primary CTA Placement", "Above fold"),
+                "cta_placement": best_landing.get(
+                    "Primary CTA Placement", "Above fold"
+                ),
                 "color_strategy": best_landing.get("Color Strategy", ""),
                 "conversion": best_landing.get("Conversion Optimization", ""),
             },
@@ -273,16 +281,22 @@ def format_ascii_box(design_system: dict) -> str:
     w = BOX_WIDTH - 1
 
     lines.append("+" + "-" * w + "+")
-    lines.append(f"|  TARGET: {project} - RECOMMENDED DESIGN SYSTEM".ljust(BOX_WIDTH) + "|")
+    lines.append(
+        f"|  TARGET: {project} - RECOMMENDED DESIGN SYSTEM".ljust(BOX_WIDTH) + "|"
+    )
     lines.append("+" + "-" * w + "+")
     lines.append("|" + " " * BOX_WIDTH + "|")
 
     # Pattern section
     lines.append(f"|  PATTERN: {pattern.get('name', '')}".ljust(BOX_WIDTH) + "|")
     if pattern.get("conversion"):
-        lines.append(f"|     Conversion: {pattern.get('conversion', '')}".ljust(BOX_WIDTH) + "|")
+        lines.append(
+            f"|     Conversion: {pattern.get('conversion', '')}".ljust(BOX_WIDTH) + "|"
+        )
     if pattern.get("cta_placement"):
-        lines.append(f"|     CTA: {pattern.get('cta_placement', '')}".ljust(BOX_WIDTH) + "|")
+        lines.append(
+            f"|     CTA: {pattern.get('cta_placement', '')}".ljust(BOX_WIDTH) + "|"
+        )
     lines.append("|     Sections:".ljust(BOX_WIDTH) + "|")
     for i, section in enumerate(sections, 1):
         lines.append(f"|       {i}. {section}".ljust(BOX_WIDTH) + "|")
@@ -291,10 +305,14 @@ def format_ascii_box(design_system: dict) -> str:
     # Style section
     lines.append(f"|  STYLE: {style.get('name', '')}".ljust(BOX_WIDTH) + "|")
     if style.get("keywords"):
-        for line in wrap_text(f"Keywords: {style.get('keywords', '')}", "|     ", BOX_WIDTH):
+        for line in wrap_text(
+            f"Keywords: {style.get('keywords', '')}", "|     ", BOX_WIDTH
+        ):
             lines.append(line.ljust(BOX_WIDTH) + "|")
     if style.get("best_for"):
-        for line in wrap_text(f"Best For: {style.get('best_for', '')}", "|     ", BOX_WIDTH):
+        for line in wrap_text(
+            f"Best For: {style.get('best_for', '')}", "|     ", BOX_WIDTH
+        ):
             lines.append(line.ljust(BOX_WIDTH) + "|")
     if style.get("performance") or style.get("accessibility"):
         perf_a11y = f"Performance: {style.get('performance', '')} | Accessibility: {style.get('accessibility', '')}"
@@ -303,10 +321,16 @@ def format_ascii_box(design_system: dict) -> str:
 
     # Colors section
     lines.append("|  COLORS:".ljust(BOX_WIDTH) + "|")
-    lines.append(f"|     Primary:    {colors.get('primary', '')}".ljust(BOX_WIDTH) + "|")
-    lines.append(f"|     Secondary:  {colors.get('secondary', '')}".ljust(BOX_WIDTH) + "|")
+    lines.append(
+        f"|     Primary:    {colors.get('primary', '')}".ljust(BOX_WIDTH) + "|"
+    )
+    lines.append(
+        f"|     Secondary:  {colors.get('secondary', '')}".ljust(BOX_WIDTH) + "|"
+    )
     lines.append(f"|     CTA:        {colors.get('cta', '')}".ljust(BOX_WIDTH) + "|")
-    lines.append(f"|     Background: {colors.get('background', '')}".ljust(BOX_WIDTH) + "|")
+    lines.append(
+        f"|     Background: {colors.get('background', '')}".ljust(BOX_WIDTH) + "|"
+    )
     lines.append(f"|     Text:       {colors.get('text', '')}".ljust(BOX_WIDTH) + "|")
     if colors.get("notes"):
         for line in wrap_text(f"Notes: {colors.get('notes', '')}", "|     ", BOX_WIDTH):
@@ -321,18 +345,28 @@ def format_ascii_box(design_system: dict) -> str:
         + "|"
     )
     if typography.get("mood"):
-        for line in wrap_text(f"Mood: {typography.get('mood', '')}", "|     ", BOX_WIDTH):
+        for line in wrap_text(
+            f"Mood: {typography.get('mood', '')}", "|     ", BOX_WIDTH
+        ):
             lines.append(line.ljust(BOX_WIDTH) + "|")
     if typography.get("best_for"):
-        for line in wrap_text(f"Best For: {typography.get('best_for', '')}", "|     ", BOX_WIDTH):
+        for line in wrap_text(
+            f"Best For: {typography.get('best_for', '')}", "|     ", BOX_WIDTH
+        ):
             lines.append(line.ljust(BOX_WIDTH) + "|")
     if typography.get("google_fonts_url"):
         lines.append(
-            f"|     Google Fonts: {typography.get('google_fonts_url', '')}".ljust(BOX_WIDTH) + "|"
+            f"|     Google Fonts: {typography.get('google_fonts_url', '')}".ljust(
+                BOX_WIDTH
+            )
+            + "|"
         )
     if typography.get("css_import"):
         lines.append(
-            f"|     CSS Import: {typography.get('css_import', '')[:70]}...".ljust(BOX_WIDTH) + "|"
+            f"|     CSS Import: {typography.get('css_import', '')[:70]}...".ljust(
+                BOX_WIDTH
+            )
+            + "|"
         )
     lines.append("|" + " " * BOX_WIDTH + "|")
 
@@ -495,9 +529,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Generate Design System")
     parser.add_argument("query", help="Search query (e.g., 'SaaS dashboard')")
-    parser.add_argument("--project-name", "-p", type=str, default=None, help="Project name")
     parser.add_argument(
-        "--format", "-f", choices=["ascii", "markdown"], default="ascii", help="Output format"
+        "--project-name", "-p", type=str, default=None, help="Project name"
+    )
+    parser.add_argument(
+        "--format",
+        "-f",
+        choices=["ascii", "markdown"],
+        default="ascii",
+        help="Output format",
     )
 
     args = parser.parse_args()

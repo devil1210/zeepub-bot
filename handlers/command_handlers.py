@@ -558,7 +558,7 @@ class CommandHandlers:
                     for line in f:
                         if line.startswith("WEB_CLIENT_DIR="):
                             current = line.split("=")[1].strip()
-            except:
+            except Exception:
                 current = os.getenv("WEB_CLIENT_DIR", "web_client (default)")
 
             await context.bot.send_message(

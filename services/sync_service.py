@@ -34,7 +34,10 @@ class SyncService:
         Ejecuta la sincronización completa de la librería (Series, Libros, Ratings, etc.) hacia Supabase.
         """
         if not config.ENABLE_SUPABASE:
-            return {"success": False, "message": "Supabase no está habilitado en la configuración."}
+            return {
+                "success": False,
+                "message": "Supabase no está habilitado en la configuración.",
+            }
 
         client = supabase_manager.get_client()
         if not client:
@@ -87,7 +90,10 @@ class SyncService:
             }
 
         except Exception as e:
-            logger.error(f"Error crítico en SyncService.sync_library_to_cloud: {e}", exc_info=True)
+            logger.error(
+                f"Error crítico en SyncService.sync_library_to_cloud: {e}",
+                exc_info=True,
+            )
             return {"success": False, "message": str(e)}
 
     # --- Private Helper Methods per Table ---
@@ -194,7 +200,9 @@ class SyncService:
                     "type": p.type,
                     "secondary_hash": p.secondary_hash,
                     "created_at": p.created_at.isoformat() if p.created_at else None,
-                    "processed_at": p.processed_at.isoformat() if p.processed_at else None,
+                    "processed_at": p.processed_at.isoformat()
+                    if p.processed_at
+                    else None,
                 }
                 for p in proposals
             ]
@@ -222,7 +230,9 @@ class SyncService:
                     "id": src.id,
                     "name": src.name,
                     "path": src.path,
-                    "last_scanned": src.last_scanned.isoformat() if src.last_scanned else None,
+                    "last_scanned": src.last_scanned.isoformat()
+                    if src.last_scanned
+                    else None,
                 }
                 for src in sources
             ]
@@ -325,7 +335,9 @@ class SyncService:
             for i in range(0, len(data), 50):
                 batch = data[i : i + 50]
                 try:
-                    client.table("local_books").upsert(batch, on_conflict="book_hash").execute()
+                    client.table("local_books").upsert(
+                        batch, on_conflict="book_hash"
+                    ).execute()
                     stats["books"] += len(batch)
                 except Exception as ex:
                     logger.error(f"Error syncing books batch {i}: {ex}")
@@ -375,7 +387,9 @@ class SyncService:
                     "book_hash": d.book_hash,
                     "series_hash": d.series_hash,
                     "title": d.title,
-                    "downloaded_at": d.downloaded_at.isoformat() if d.downloaded_at else None,
+                    "downloaded_at": d.downloaded_at.isoformat()
+                    if d.downloaded_at
+                    else None,
                 }
                 for d in dls
             ]

@@ -29,12 +29,18 @@ async def search_local_books(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
     source_id: int | None = None,
-    search_type: str = Query("all", pattern="^(all|title|author|illustrator|translator|genres)$"),
+    search_type: str = Query(
+        "all", pattern="^(all|title|author|illustrator|translator|genres)$"
+    ),
     user_data: dict = Depends(require_mini_app_access),
 ):
     """Busca libros en la base de datos local con filtros opcionales."""
     return await LibraryService.search_books(
-        query=q, page=page, items_per_page=page_size, search_type=search_type, source_id=source_id
+        query=q,
+        page=page,
+        items_per_page=page_size,
+        search_type=search_type,
+        source_id=source_id,
     )
 
 
@@ -49,7 +55,9 @@ async def upload_epubs(
     """
     valid_files = [f for f in files if f.filename.lower().endswith(".epub")]
     if not valid_files:
-        raise HTTPException(status_code=400, detail="No se recibieron archivos EPUB válidos")
+        raise HTTPException(
+            status_code=400, detail="No se recibieron archivos EPUB válidos"
+        )
 
     saved_paths = []
 
@@ -65,7 +73,9 @@ async def upload_epubs(
         source = result.scalar_one_or_none()
 
         if not source:
-            raise HTTPException(status_code=404, detail="No hay fuentes de librería configuradas")
+            raise HTTPException(
+                status_code=404, detail="No hay fuentes de librería configuradas"
+            )
 
         target_dir = source.path
         if not os.path.exists(target_dir):
@@ -109,7 +119,9 @@ async def upload_epubs(
 
 
 @router.get("/api/library/books/{book_id}")
-async def get_book_detail(book_id: str, user_data: dict = Depends(require_mini_app_access)):
+async def get_book_detail(
+    book_id: str, user_data: dict = Depends(require_mini_app_access)
+):
     """Retorna el detalle de un libro específico."""
     clean_id = int(book_id.replace("local_", ""))
     book = await LibraryService.get_book_by_id(clean_id)
@@ -130,14 +142,18 @@ async def get_book_detail(book_id: str, user_data: dict = Depends(require_mini_a
 
 @router.patch("/api/library/books/{book_id}")
 async def update_book(
-    book_id: str, updates: dict[str, Any] = Body(...), user_data: dict = Depends(require_admin)
+    book_id: str,
+    updates: dict[str, Any] = Body(...),
+    user_data: dict = Depends(require_admin),
 ):
     """Actualiza metadatos de un libro (Admin only)."""
     try:
         clean_id = int(book_id.replace("local_", ""))
         success = await LibraryService.update_book_metadata(clean_id, updates)
         if not success:
-            raise HTTPException(status_code=404, detail="Libro no encontrado o error al actualizar")
+            raise HTTPException(
+                status_code=404, detail="Libro no encontrado o error al actualizar"
+            )
         return {"success": True}
     except ValueError:
         raise HTTPException(status_code=400, detail="ID inválido")
@@ -145,7 +161,8 @@ async def update_book(
 
 @router.get("/api/library/regroup/suggestions")
 async def get_regroup_suggestions(
-    threshold: float = Query(0.8, ge=0.0, le=1.0), user_data: dict = Depends(require_admin)
+    threshold: float = Query(0.8, ge=0.0, le=1.0),
+    user_data: dict = Depends(require_admin),
 ):
     """
     Lista grupos de libros sugeridos para unificar en series.
@@ -198,14 +215,19 @@ from services.backup_service import BackupService
 
 
 @router.post("/api/library/backup")
-async def create_backup(compress: bool = Query(True), user_data: dict = Depends(require_admin)):
+async def create_backup(
+    compress: bool = Query(True), user_data: dict = Depends(require_admin)
+):
     path = await BackupService.generate_backup_file(compress=compress)
     return {"success": True, "backup_path": path}
 
 
 @router.get("/api/library/backups")
 async def list_backups(user_data: dict = Depends(require_admin)):
-    return {"backups": BackupService.list_backups(), "stats": BackupService.get_backup_stats()}
+    return {
+        "backups": BackupService.list_backups(),
+        "stats": BackupService.get_backup_stats(),
+    }
 
 
 @router.post("/api/library/restore")
@@ -213,7 +235,9 @@ async def restore_backup(
     backup_filename: str = Query(...), user_data: dict = Depends(require_admin)
 ):
     # Restoration from PG SQL is complex via API, placeholder for now
-    raise HTTPException(status_code=501, detail="Restauración SQL no disponible vía API todavía.")
+    raise HTTPException(
+        status_code=501, detail="Restauración SQL no disponible vía API todavía."
+    )
 
 
 @router.delete("/api/library/backups/{backup_filename}")
@@ -242,7 +266,10 @@ async def export_library(
 async def import_library(
     data: dict, merge: bool = Query(True), user_data: dict = Depends(require_admin)
 ):
-    return {"success": True, "stats": LibraryExportService.import_from_json(data, merge=merge)}
+    return {
+        "success": True,
+        "stats": LibraryExportService.import_from_json(data, merge=merge),
+    }
 
 
 # ===== MAINTENANCE ENDPOINTS =====

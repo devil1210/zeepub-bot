@@ -74,7 +74,11 @@ def set_setting(key: str, value: str):
             # but here specifically for standard SQL logic.
             sel = sa.select(settings.c.key).where(settings.c.key == key)
             if conn.execute(sel).first():
-                upd = settings.update().where(settings.c.key == key).values(value=str(value))
+                upd = (
+                    settings.update()
+                    .where(settings.c.key == key)
+                    .values(value=str(value))
+                )
                 conn.execute(upd)
             else:
                 ins = settings.insert().values(key=key, value=str(value))

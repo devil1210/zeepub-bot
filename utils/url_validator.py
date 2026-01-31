@@ -9,7 +9,9 @@ _validator_task: asyncio.Task | None = None
 
 
 async def _validator_loop(interval: int = 3600, batch_size: int = 50):
-    logger.info("URL validator started (interval=%s sec, batch=%s)", interval, batch_size)
+    logger.info(
+        "URL validator started (interval=%s sec, batch=%s)", interval, batch_size
+    )
     try:
         while True:
             try:
@@ -41,7 +43,9 @@ def start_background_validator(
         logger.debug("Validator already running")
         return _validator_task
     _loop = loop or asyncio.get_event_loop()
-    _validator_task = _loop.create_task(_validator_loop(interval=interval, batch_size=batch_size))
+    _validator_task = _loop.create_task(
+        _validator_loop(interval=interval, batch_size=batch_size)
+    )
     return _validator_task
 
 

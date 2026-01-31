@@ -71,7 +71,7 @@ def get_date_confidence(date_str: Optional[str], from_date: str, to_date: str) -
         'high', 'med', or 'low'
     """
     if not date_str:
-        return 'low'
+        return "low"
 
     try:
         dt = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -79,15 +79,15 @@ def get_date_confidence(date_str: Optional[str], from_date: str, to_date: str) -
         end = datetime.strptime(to_date, "%Y-%m-%d").date()
 
         if start <= dt <= end:
-            return 'high'
+            return "high"
         elif dt < start:
             # Older than range
-            return 'low'
+            return "low"
         else:
             # Future date (suspicious)
-            return 'low'
+            return "low"
     except ValueError:
-        return 'low'
+        return "low"
 
 
 def days_ago(date_str: Optional[str]) -> Optional[int]:

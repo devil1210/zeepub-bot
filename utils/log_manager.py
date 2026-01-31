@@ -50,7 +50,13 @@ class LogBufferHandler(logging.Handler):
             # Map levels so we show 'higher' levels too if requested?
             # Usually users want EXACT level or 'that level and above'.
             # Let's do exact comparison or 'above' based on standard logging levels.
-            level_map = {"DEBUG": 10, "INFO": 20, "WARNING": 30, "ERROR": 40, "CRITICAL": 50}
+            level_map = {
+                "DEBUG": 10,
+                "INFO": 20,
+                "WARNING": 30,
+                "ERROR": 40,
+                "CRITICAL": 50,
+            }
             min_val = level_map.get(level, 0)
             logs = [log for log in logs if level_map.get(log["level"], 0) >= min_val]
 

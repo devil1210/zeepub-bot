@@ -46,7 +46,10 @@ def find_api_files(project_path: Path) -> list:
     return [
         f
         for f in files
-        if not any(x in str(f) for x in ["node_modules", ".git", "dist", "build", "__pycache__"])
+        if not any(
+            x in str(f)
+            for x in ["node_modules", ".git", "dist", "build", "__pycache__"]
+        )
     ]
 
 
@@ -75,7 +78,12 @@ def check_openapi_spec(file_path: Path) -> dict:
             if "components:" in content or "definitions:" in content:
                 passed.append("[OK] Schema components defined")
 
-            return {"file": str(file_path), "passed": passed, "issues": issues, "type": "openapi"}
+            return {
+                "file": str(file_path),
+                "passed": passed,
+                "issues": issues,
+                "type": "openapi",
+            }
 
         # JSON OpenAPI checks
         if "openapi" in spec or "swagger" in spec:
@@ -98,14 +106,23 @@ def check_openapi_spec(file_path: Path) -> dict:
                 for method, details in methods.items():
                     if method in ["get", "post", "put", "patch", "delete"]:
                         if "responses" not in details:
-                            issues.append(f"[X] {method.upper()} {path}: No responses defined")
+                            issues.append(
+                                f"[X] {method.upper()} {path}: No responses defined"
+                            )
                         if "summary" not in details and "description" not in details:
-                            issues.append(f"[!] {method.upper()} {path}: No description")
+                            issues.append(
+                                f"[!] {method.upper()} {path}: No description"
+                            )
 
     except Exception as e:
         issues.append(f"[X] Parse error: {e}")
 
-    return {"file": str(file_path), "passed": passed, "issues": issues, "type": "openapi"}
+    return {
+        "file": str(file_path),
+        "passed": passed,
+        "issues": issues,
+        "type": "openapi",
+    }
 
 
 def check_api_code(file_path: Path) -> dict:
@@ -117,7 +134,13 @@ def check_api_code(file_path: Path) -> dict:
         content = file_path.read_text(encoding="utf-8")
 
         # Check for error handling
-        error_patterns = [r"try\s*{", r"try:", r"\.catch\(", r"except\s+", r"catch\s*\("]
+        error_patterns = [
+            r"try\s*{",
+            r"try:",
+            r"\.catch\(",
+            r"except\s+",
+            r"catch\s*\(",
+        ]
         has_error_handling = any(re.search(p, content) for p in error_patterns)
         if has_error_handling:
             passed.append("[OK] Error handling present")

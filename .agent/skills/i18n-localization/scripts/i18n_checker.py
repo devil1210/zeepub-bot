@@ -88,7 +88,7 @@ def check_locale_completeness(locale_files: list) -> dict:
                 if lang not in locales:
                     locales[lang] = {}
                 locales[lang][f.stem] = set(flatten_keys(content))
-            except:
+            except Exception:
                 continue
 
     if len(locales) < 2:
@@ -197,12 +197,14 @@ def check_hardcoded_strings(project_path: Path) -> dict:
                 if matches and not has_i18n:
                     hardcoded_found = True
                     if len(hardcoded_examples) < 5:
-                        hardcoded_examples.append(f"{file_path.name}: {str(matches[0])[:40]}...")
+                        hardcoded_examples.append(
+                            f"{file_path.name}: {str(matches[0])[:40]}..."
+                        )
 
             if hardcoded_found:
                 files_with_hardcoded += 1
 
-        except:
+        except Exception:
             continue
 
     passed.append(f"[OK] Analyzed {len(code_files)} code files")
@@ -252,7 +254,9 @@ def main():
 
     # Summary
     critical_issues = sum(
-        1 for i in locale_result["issues"] + code_result["issues"] if i.startswith("[X]")
+        1
+        for i in locale_result["issues"] + code_result["issues"]
+        if i.startswith("[X]")
     )
 
     print("\n" + "=" * 60)

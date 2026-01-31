@@ -112,7 +112,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                             "book_id": book_id,
                         }
                         self.supabase.get_client().table("download_history").insert(data).execute()
-                    except:
+                    except Exception:
                         pass
 
                 return new_id

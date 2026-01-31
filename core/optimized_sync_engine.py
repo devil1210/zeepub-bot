@@ -229,7 +229,7 @@ class OptimizedSyncEngine:
                 # Usar invalidate_user que es lo correcto en cache_manager
                 try:
                     await cache_manager.delete_user(user_data["telegram_id"])
-                except:
+                except Exception:
                     pass
 
             logger.info(f"Synced {len(result.data)} users from Supabase to local")

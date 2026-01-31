@@ -20,7 +20,7 @@ from pathlib import Path
 # Fix Windows console encoding
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-except:
+except Exception:
     pass
 
 
@@ -39,26 +39,36 @@ def detect_project_type(project_path: Path) -> dict:
 
             # Check for lint script
             if "lint" in scripts:
-                result["linters"].append({"name": "npm lint", "cmd": ["npm", "run", "lint"]})
+                result["linters"].append(
+                    {"name": "npm lint", "cmd": ["npm", "run", "lint"]}
+                )
             elif "eslint" in deps:
-                result["linters"].append({"name": "eslint", "cmd": ["npx", "eslint", "."]})
+                result["linters"].append(
+                    {"name": "eslint", "cmd": ["npx", "eslint", "."]}
+                )
 
             # Check for TypeScript
             if "typescript" in deps or (project_path / "tsconfig.json").exists():
-                result["linters"].append({"name": "tsc", "cmd": ["npx", "tsc", "--noEmit"]})
+                result["linters"].append(
+                    {"name": "tsc", "cmd": ["npx", "tsc", "--noEmit"]}
+                )
 
-        except:
+        except Exception:
             pass
 
     # Python project
-    if (project_path / "pyproject.toml").exists() or (project_path / "requirements.txt").exists():
+    if (project_path / "pyproject.toml").exists() or (
+        project_path / "requirements.txt"
+    ).exists():
         result["type"] = "python"
 
         # Check for ruff
         result["linters"].append({"name": "ruff", "cmd": ["ruff", "check", "."]})
 
         # Check for mypy
-        if (project_path / "mypy.ini").exists() or (project_path / "pyproject.toml").exists():
+        if (project_path / "mypy.ini").exists() or (
+            project_path / "pyproject.toml"
+        ).exists():
             result["linters"].append({"name": "mypy", "cmd": ["mypy", "."]})
 
     return result

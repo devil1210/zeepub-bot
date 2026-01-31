@@ -30,6 +30,7 @@ RETRY_DELAY = 1.0  # seconds
 @dataclass
 class GraphQLResponse:
     """Container for GraphQL response data."""
+
     data: Optional[Dict[str, Any]] = None
     errors: Optional[List[Dict[str, Any]]] = None
     extensions: Optional[Dict[str, Any]] = None
@@ -41,8 +42,8 @@ class GraphQLResponse:
     @property
     def query_cost(self) -> Optional[int]:
         """Get the actual query cost from extensions."""
-        if self.extensions and 'cost' in self.extensions:
-            return self.extensions['cost'].get('actualQueryCost')
+        if self.extensions and "cost" in self.extensions:
+            return self.extensions["cost"].get("actualQueryCost")
         return None
 
 
@@ -65,9 +66,11 @@ class ShopifyGraphQL:
             shop_domain: Store domain (e.g., 'my-store.myshopify.com')
             access_token: Admin API access token
         """
-        self.shop_domain = shop_domain.replace('https://', '').replace('http://', '')
+        self.shop_domain = shop_domain.replace("https://", "").replace("http://", "")
         self.access_token = access_token
-        self.base_url = f"https://{self.shop_domain}/admin/api/{API_VERSION}/graphql.json"
+        self.base_url = (
+            f"https://{self.shop_domain}/admin/api/{API_VERSION}/graphql.json"
+        )
 
     def execute(self, query: str, variables: Optional[Dict] = None) -> GraphQLResponse:
         """
@@ -86,29 +89,29 @@ class ShopifyGraphQL:
 
         headers = {
             "Content-Type": "application/json",
-            "X-Shopify-Access-Token": self.access_token
+            "X-Shopify-Access-Token": self.access_token,
         }
 
         for attempt in range(MAX_RETRIES):
             try:
                 request = Request(
                     self.base_url,
-                    data=json.dumps(payload).encode('utf-8'),
+                    data=json.dumps(payload).encode("utf-8"),
                     headers=headers,
-                    method='POST'
+                    method="POST",
                 )
 
                 with urlopen(request, timeout=30) as response:
-                    result = json.loads(response.read().decode('utf-8'))
+                    result = json.loads(response.read().decode("utf-8"))
                     return GraphQLResponse(
-                        data=result.get('data'),
-                        errors=result.get('errors'),
-                        extensions=result.get('extensions')
+                        data=result.get("data"),
+                        errors=result.get("errors"),
+                        extensions=result.get("extensions"),
                     )
 
             except HTTPError as e:
                 if e.code == 429:  # Rate limited
-                    delay = RETRY_DELAY * (2 ** attempt)
+                    delay = RETRY_DELAY * (2**attempt)
                     print(f"Rate limited. Retrying in {delay}s...")
                     time.sleep(delay)
                     continue
@@ -123,10 +126,7 @@ class ShopifyGraphQL:
     # ==================== Query Templates ====================
 
     def get_products(
-        self,
-        first: int = 10,
-        query: Optional[str] = None,
-        after: Optional[str] = None
+        self, first: int = 10, query: Optional[str] = None, after: Optional[str] = None
     ) -> GraphQLResponse:
         """
         Query products with pagination.
@@ -170,10 +170,7 @@ class ShopifyGraphQL:
         return self.execute(gql, {"first": first, "query": query, "after": after})
 
     def get_orders(
-        self,
-        first: int = 10,
-        query: Optional[str] = None,
-        after: Optional[str] = None
+        self, first: int = 10, query: Optional[str] = None, after: Optional[str] = None
     ) -> GraphQLResponse:
         """
         Query orders with pagination.
@@ -222,10 +219,7 @@ class ShopifyGraphQL:
         return self.execute(gql, {"first": first, "query": query, "after": after})
 
     def get_customers(
-        self,
-        first: int = 10,
-        query: Optional[str] = None,
-        after: Optional[str] = None
+        self, first: int = 10, query: Optional[str] = None, after: Optional[str] = None
     ) -> GraphQLResponse:
         """
         Query customers with pagination.
@@ -297,9 +291,7 @@ class ShopifyGraphQL:
     # ==================== Pagination Helpers ====================
 
     def paginate_products(
-        self,
-        batch_size: int = 50,
-        query: Optional[str] = None
+        self, batch_size: int = 50, query: Optional[str] = None
     ) -> Generator[Dict, None, None]:
         """
         Generator that yields all products with automatic pagination.
@@ -318,22 +310,20 @@ class ShopifyGraphQL:
             if not response.is_success or not response.data:
                 break
 
-            products = response.data.get('products', {})
-            edges = products.get('edges', [])
+            products = response.data.get("products", {})
+            edges = products.get("edges", [])
 
             for edge in edges:
-                yield edge['node']
+                yield edge["node"]
 
-            page_info = products.get('pageInfo', {})
-            if not page_info.get('hasNextPage'):
+            page_info = products.get("pageInfo", {})
+            if not page_info.get("hasNextPage"):
                 break
 
-            cursor = page_info.get('endCursor')
+            cursor = page_info.get("endCursor")
 
     def paginate_orders(
-        self,
-        batch_size: int = 50,
-        query: Optional[str] = None
+        self, batch_size: int = 50, query: Optional[str] = None
     ) -> Generator[Dict, None, None]:
         """
         Generator that yields all orders with automatic pagination.
@@ -352,20 +342,21 @@ class ShopifyGraphQL:
             if not response.is_success or not response.data:
                 break
 
-            orders = response.data.get('orders', {})
-            edges = orders.get('edges', [])
+            orders = response.data.get("orders", {})
+            edges = orders.get("edges", [])
 
             for edge in edges:
-                yield edge['node']
+                yield edge["node"]
 
-            page_info = orders.get('pageInfo', {})
-            if not page_info.get('hasNextPage'):
+            page_info = orders.get("pageInfo", {})
+            if not page_info.get("hasNextPage"):
                 break
 
-            cursor = page_info.get('endCursor')
+            cursor = page_info.get("endCursor")
 
 
 # ==================== Utility Functions ====================
+
 
 def extract_id(gid: str) -> str:
     """
@@ -377,7 +368,7 @@ def extract_id(gid: str) -> str:
     Returns:
         Numeric ID string (e.g., '123')
     """
-    return gid.split('/')[-1] if gid else ''
+    return gid.split("/")[-1] if gid else ""
 
 
 def build_gid(resource_type: str, id: str) -> str:
@@ -396,12 +387,13 @@ def build_gid(resource_type: str, id: str) -> str:
 
 # ==================== Example Usage ====================
 
+
 def main():
     """Example usage of ShopifyGraphQL client."""
 
     # Load from environment
-    shop = os.environ.get('SHOP_DOMAIN', 'your-store.myshopify.com')
-    token = os.environ.get('SHOPIFY_ACCESS_TOKEN', '')
+    shop = os.environ.get("SHOP_DOMAIN", "your-store.myshopify.com")
+    token = os.environ.get("SHOPIFY_ACCESS_TOKEN", "")
 
     if not token:
         print("Set SHOPIFY_ACCESS_TOKEN environment variable")
@@ -414,14 +406,14 @@ def main():
     response = client.get_products(first=5)
 
     if response.is_success:
-        products = response.data['products']['edges']
+        products = response.data["products"]["edges"]
         for edge in products:
-            product = edge['node']
+            product = edge["node"]
             print(f"  - {product['title']} ({product['status']})")
         print(f"\nQuery cost: {response.query_cost}")
     else:
         print(f"Errors: {response.errors}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

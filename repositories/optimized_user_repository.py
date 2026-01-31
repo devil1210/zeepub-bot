@@ -118,7 +118,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
                 self.supabase.get_client().table("users").update(
                     {"level_id": level_id, "level": level_key}
                 ).eq("telegram_id", telegram_id).execute()
-            except:
+            except Exception:
                 pass
 
     async def increment_download_count(self, telegram_id: int):
@@ -152,7 +152,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
                     await session.commit()
                     return True
             return False
-        except:
+        except Exception:
             return False
 
     async def upsert(self, data: dict[str, Any]) -> dict[str, Any] | None:

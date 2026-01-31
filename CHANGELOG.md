@@ -5,6 +5,20 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.5.0] - 2026-01-31
+
+### Añadido
+- **Búsqueda Interactiva (Mini App)**: Todos los metadatos en la vista de detalles del libro (Géneros, Demografía, Autor, Idioma, Traductor, Uploader, etc.) ahora son interactivos. Al pulsar sobre cualquier badge o detalle, se inicia automáticamente una búsqueda filtrada por ese término.
+- **Detección de Tipos de Libro**: Mejora significativa en la identificación de formatos (`[NL]`, `[NW]`, `[MG]`) desde el extractor de metadatos, asegurando que se muestre correctamente el tipo de contenido en la interfaz.
+
+### Fixed
+- **Navegación**: Corregida la sincronización entre el estado de búsqueda global y la navegación desde las páginas de detalles de libros y series.
+- **Backend Audit**: Corrección masiva de errores de linter (PEP8, bare excepts, re-exportaciones) en todo el core para cumplir con los estándares Enterprise.
+- **Sincronización de Base de Datos**: Validación de esquemas sincronizada entre PostgreSQL local y Supabase.
+
+### Technical
+- **Flujo de Release**: Implementación del manifesto de operación v3.5.0 con workflows automatizados de Auditoría, DB-Sync y Push.
+
 ## [4.13.3] - 2026-01-01
 
 ### Fixed

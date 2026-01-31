@@ -20,18 +20,30 @@ from . import schema
 
 # Month name mappings for date parsing
 MONTH_MAP = {
-    "jan": 1, "january": 1,
-    "feb": 2, "february": 2,
-    "mar": 3, "march": 3,
-    "apr": 4, "april": 4,
+    "jan": 1,
+    "january": 1,
+    "feb": 2,
+    "february": 2,
+    "mar": 3,
+    "march": 3,
+    "apr": 4,
+    "april": 4,
     "may": 5,
-    "jun": 6, "june": 6,
-    "jul": 7, "july": 7,
-    "aug": 8, "august": 8,
-    "sep": 9, "sept": 9, "september": 9,
-    "oct": 10, "october": 10,
-    "nov": 11, "november": 11,
-    "dec": 12, "december": 12,
+    "jun": 6,
+    "june": 6,
+    "jul": 7,
+    "july": 7,
+    "aug": 8,
+    "august": 8,
+    "sep": 9,
+    "sept": 9,
+    "september": 9,
+    "oct": 10,
+    "october": 10,
+    "nov": 11,
+    "november": 11,
+    "dec": 12,
+    "december": 12,
 }
 
 
@@ -50,21 +62,21 @@ def extract_date_from_url(url: str) -> Optional[str]:
         Date string in YYYY-MM-DD format, or None
     """
     # Pattern 1: /YYYY/MM/DD/ (most common)
-    match = re.search(r'/(\d{4})/(\d{2})/(\d{2})/', url)
+    match = re.search(r"/(\d{4})/(\d{2})/(\d{2})/", url)
     if match:
         year, month, day = match.groups()
         if 2020 <= int(year) <= 2030 and 1 <= int(month) <= 12 and 1 <= int(day) <= 31:
             return f"{year}-{month}-{day}"
 
     # Pattern 2: /YYYY-MM-DD/ or /YYYY-MM-DD-
-    match = re.search(r'/(\d{4})-(\d{2})-(\d{2})[-/]', url)
+    match = re.search(r"/(\d{4})-(\d{2})-(\d{2})[-/]", url)
     if match:
         year, month, day = match.groups()
         if 2020 <= int(year) <= 2030 and 1 <= int(month) <= 12 and 1 <= int(day) <= 31:
             return f"{year}-{month}-{day}"
 
     # Pattern 3: /YYYYMMDD/ (compact)
-    match = re.search(r'/(\d{4})(\d{2})(\d{2})/', url)
+    match = re.search(r"/(\d{4})(\d{2})(\d{2})/", url)
     if match:
         year, month, day = match.groups()
         if 2020 <= int(year) <= 2030 and 1 <= int(month) <= 12 and 1 <= int(day) <= 31:
@@ -95,10 +107,10 @@ def extract_date_from_snippet(text: str) -> Optional[str]:
 
     # Pattern 1: Month DD, YYYY (e.g., "January 24, 2026")
     match = re.search(
-        r'\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|'
-        r'jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)'
-        r'\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})\b',
-        text_lower
+        r"\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
+        r"jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)"
+        r"\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})\b",
+        text_lower,
     )
     if match:
         month_str, day, year = match.groups()
@@ -108,11 +120,11 @@ def extract_date_from_snippet(text: str) -> Optional[str]:
 
     # Pattern 2: DD Month YYYY (e.g., "24 January 2026")
     match = re.search(
-        r'\b(\d{1,2})(?:st|nd|rd|th)?\s+'
-        r'(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|'
-        r'jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)'
-        r'\s+(\d{4})\b',
-        text_lower
+        r"\b(\d{1,2})(?:st|nd|rd|th)?\s+"
+        r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
+        r"jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)"
+        r"\s+(\d{4})\b",
+        text_lower,
     )
     if match:
         day, month_str, year = match.groups()
@@ -121,7 +133,7 @@ def extract_date_from_snippet(text: str) -> Optional[str]:
             return f"{year}-{month:02d}-{int(day):02d}"
 
     # Pattern 3: YYYY-MM-DD (ISO format)
-    match = re.search(r'\b(\d{4})-(\d{2})-(\d{2})\b', text)
+    match = re.search(r"\b(\d{4})-(\d{2})-(\d{2})\b", text)
     if match:
         year, month, day = match.groups()
         if 2020 <= int(year) <= 2030 and 1 <= int(month) <= 12 and 1 <= int(day) <= 31:
@@ -138,7 +150,7 @@ def extract_date_from_snippet(text: str) -> Optional[str]:
         return today.strftime("%Y-%m-%d")
 
     # "N days ago"
-    match = re.search(r'\b(\d+)\s*days?\s*ago\b', text_lower)
+    match = re.search(r"\b(\d+)\s*days?\s*ago\b", text_lower)
     if match:
         days = int(match.group(1))
         if days <= 60:  # Reasonable range
@@ -146,7 +158,7 @@ def extract_date_from_snippet(text: str) -> Optional[str]:
             return date.strftime("%Y-%m-%d")
 
     # "N hours ago" -> today
-    match = re.search(r'\b(\d+)\s*hours?\s*ago\b', text_lower)
+    match = re.search(r"\b(\d+)\s*hours?\s*ago\b", text_lower)
     if match:
         return today.strftime("%Y-%m-%d")
 
@@ -301,7 +313,7 @@ def parse_websearch_results(
         date = result.get("date")  # Use provided date if available
         date_confidence = "low"
 
-        if date and re.match(r'^\d{4}-\d{2}-\d{2}$', str(date)):
+        if date and re.match(r"^\d{4}-\d{2}-\d{2}$", str(date)):
             # Provided date is valid
             date_confidence = "med"
         else:
@@ -327,7 +339,7 @@ def parse_websearch_results(
             relevance = 0.5
 
         item = {
-            "id": f"W{i+1}",
+            "id": f"W{i + 1}",
             "title": title[:200],  # Truncate long titles
             "url": url,
             "source_domain": extract_domain(url),

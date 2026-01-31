@@ -140,10 +140,14 @@ async def get_effective_user(
             # From API/WebApp
             first_name = tg_user.get("first_name", "")
             last_name = tg_user.get("last_name", "")
-            nickname_from_tg = f"{first_name} {last_name}".strip() or tg_user.get("username")
+            nickname_from_tg = f"{first_name} {last_name}".strip() or tg_user.get(
+                "username"
+            )
         else:
             # From Bot (Telegram User object)
-            nickname_from_tg = getattr(tg_user, "full_name", getattr(tg_user, "first_name", None))
+            nickname_from_tg = getattr(
+                tg_user, "full_name", getattr(tg_user, "first_name", None)
+            )
 
         # Propagate name and username from tg_user if present
         name_from_tg = nickname_from_tg
@@ -175,7 +179,12 @@ async def get_effective_user(
     def normalize_ui(s: dict[str, Any]):
         """Normaliza valores de opacidad y asegura que no haya Nones en campos críticos."""
         # 1. Opacity normalization (0-100 to 0.0-1.0)
-        opacity_keys = ["navOpacity", "accentOpacity", "glassOpacity", "cardGlowIntensity"]
+        opacity_keys = [
+            "navOpacity",
+            "accentOpacity",
+            "glassOpacity",
+            "cardGlowIntensity",
+        ]
         for k in opacity_keys:
             if k in s and isinstance(s[k], (int, float)):
                 if s[k] > 1.1:
@@ -219,7 +228,9 @@ async def get_effective_user(
 
     is_config_admin = (uid in config.ADMIN_USERS) or (uid == 133994080)
     if is_config_admin:
-        logger.info(f"🛡️ Admin identified: {uid} (Config Match: {uid in config.ADMIN_USERS})")
+        logger.info(
+            f"🛡️ Admin identified: {uid} (Config Match: {uid in config.ADMIN_USERS})"
+        )
 
     # 1. Config Admins always have top precedence
     if is_config_admin:
@@ -244,10 +255,12 @@ async def get_effective_user(
         if info and info.get("level_id") != 1:
             try:
                 await user_repo.update_user_level(uid, "Administrador", days=3650)
-                logger.info(f"Fixed level mismatch for admin {uid}: forced to level_id 1")
+                logger.info(
+                    f"Fixed level mismatch for admin {uid}: forced to level_id 1"
+                )
                 # Reload info after update
                 info = await get_user_info(uid)
-            except:
+            except Exception:
                 pass
 
         # Merge personal settings on top of global defaults
@@ -270,11 +283,17 @@ async def get_effective_user(
                 "username": info.get("username")
                 if (info and info.get("username"))
                 else (username_from_tg or ""),
-                "roles": info.get("roles") if (info and info.get("roles")) else ["Administrador"],
+                "roles": info.get("roles")
+                if (info and info.get("roles"))
+                else ["Administrador"],
                 "has_mini_app_access": True,
                 "is_real_admin": True,
-                "can_request_books": info.get("can_request_books", True) if info else True,
-                "has_library_access": info.get("has_library_access", True) if info else True,
+                "can_request_books": info.get("can_request_books", True)
+                if info
+                else True,
+                "has_library_access": info.get("has_library_access", True)
+                if info
+                else True,
                 "can_upload_epub": info.get("can_upload_epub", True) if info else True,
                 "settings": normalize_ui(base_settings),
                 "level_info": {  # Default level info for config admins if DB is missing it
@@ -301,7 +320,9 @@ async def get_effective_user(
 
     # 2. Check DB Info
     info: dict[str, Any] | None = await get_user_info(uid)
-    if info and uid not in config.ADMIN_USERS:  # Admins already handled result base above
+    if (
+        info and uid not in config.ADMIN_USERS
+    ):  # Admins already handled result base above
         # Check expiration
         expires_at: datetime | None = info.get("expires_at")
         if expires_at and expires_at < datetime.now():
@@ -329,7 +350,9 @@ async def get_effective_user(
                     "role": info.get("role"),
                     "status_label": info.get("role") or level_str.capitalize(),
                     "expires_at": expires_at,
-                    "nickname": info.get("nickname") or result.get("nickname") or f"User_{uid}",
+                    "nickname": info.get("nickname")
+                    or result.get("nickname")
+                    or f"User_{uid}",
                     "name": info.get("name") or result.get("name") or f"User_{uid}",
                     "username": info.get("username") or result.get("username") or "",
                     "roles": info.get("roles") or [],
@@ -346,7 +369,9 @@ async def get_effective_user(
     # 3. PROACTIVE SYNC: Create minimal user record if not exists
     if not info and uid not in config.ADMIN_USERS:
         logger.info(f"Auto-registering user {uid} (Lector level)")
-        await user_repo.create_minimal_user(uid, name=name_from_tg, username=username_from_tg)
+        await user_repo.create_minimal_user(
+            uid, name=name_from_tg, username=username_from_tg
+        )
 
     # 4. Access Info (Levels & Permissions)
     access_info = await user_repo.get_access_info(uid)
@@ -372,7 +397,14 @@ async def get_effective_user(
             except (ValueError, TypeError):
                 lvl_id = 6
 
-            level_to_role = {1: "admin", 2: "staff", 3: "premium", 4: "vip", 5: "white", 6: "free"}
+            level_to_role = {
+                1: "admin",
+                2: "staff",
+                3: "premium",
+                4: "vip",
+                5: "white",
+                6: "free",
+            }
 
             if lvl_id in level_to_role:
                 result["level"] = level_to_role[lvl_id]
@@ -420,9 +452,11 @@ async def get_effective_user(
             if exported_raw:
                 try:
                     exported_list = (
-                        json.loads(exported_raw) if isinstance(exported_raw, str) else exported_raw
+                        json.loads(exported_raw)
+                        if isinstance(exported_raw, str)
+                        else exported_raw
                     )
-                except:
+                except Exception:
                     exported_list = []
 
             is_forced = level_settings.get("forceSettings", False)
@@ -462,7 +496,7 @@ async def get_effective_user(
                     result["ui_exported_settings"] = json.loads(exported)
                 else:
                     result["ui_exported_settings"] = exported
-            except:
+            except Exception:
                 result["ui_exported_settings"] = []
         else:
             # Fallback for old/empty tiers
@@ -512,7 +546,9 @@ async def get_effective_user(
     is_real_admin = (uid in config.ADMIN_USERS) or result.get("is_admin_db", False)
 
     if is_real_admin and simulated_level_id is not None:
-        logger.info(f"ADMIN SIMULATION: User {uid} simulating level {simulated_level_id}")
+        logger.info(
+            f"ADMIN SIMULATION: User {uid} simulating level {simulated_level_id}"
+        )
         sim_level = await tier_service.get_tier_by_id(simulated_level_id)
         if sim_level:
             # Override essential access flags
@@ -524,7 +560,7 @@ async def get_effective_user(
             lvl_id_sim = sim_level.get("id")
             try:
                 sid = int(lvl_id_sim) if lvl_id_sim is not None else 6
-            except:
+            except Exception:
                 sid = 6
 
             if sid in level_to_role:
@@ -614,12 +650,21 @@ async def get_user_access_data(uid: int) -> dict[str, Any]:
         lvl_id_raw = access_info["level"].get("id")
         try:
             lvl_id = int(lvl_id_raw) if lvl_id_raw is not None else 0
-        except:
+        except Exception:
             lvl_id = 0
 
-        level_to_role = {1: "admin", 2: "staff", 3: "premium", 4: "vip", 5: "white", 6: "free"}
+        level_to_role = {
+            1: "admin",
+            2: "staff",
+            3: "premium",
+            4: "vip",
+            5: "white",
+            6: "free",
+        }
 
-        level_slug = level_to_role.get(lvl_id, access_info["level"]["name"].lower().strip())
+        level_slug = level_to_role.get(
+            lvl_id, access_info["level"]["name"].lower().strip()
+        )
 
         user_data_for_rbac = {
             "telegram_id": uid,
@@ -637,7 +682,9 @@ async def get_user_access_data(uid: int) -> dict[str, Any]:
             "permissions": list(permissions),
         }
 
-    await user_cache.set(cache_key, access_data, custom_ttl=300)  # 5 min cache for lite version
+    await user_cache.set(
+        cache_key, access_data, custom_ttl=300
+    )  # 5 min cache for lite version
     return access_data
 
 
@@ -689,7 +736,9 @@ async def check_milestones(uid: int, context) -> str | None:
         }
 
         if cms and cms.enabled:
-            return await cms.get_text(slug, user=None)  # user will be handled by plugin if needed
+            return await cms.get_text(
+                slug, user=None
+            )  # user will be handled by plugin if needed
         return defaults.get(count)
 
     return None
@@ -763,7 +812,9 @@ async def sync_user_from_env(telegram_id: int, tg_user=None) -> dict | None:
         return None  # No está en ninguna lista del ENV
 
     # Obtener usuario actual
-    current_user = await get_effective_user(telegram_id, tg_user=tg_user, use_cache=False)
+    current_user = await get_effective_user(
+        telegram_id, tg_user=tg_user, use_cache=False
+    )
     current_level = current_user.get("level", "free")
     current_role = current_user.get("role")
 
@@ -848,7 +899,10 @@ async def sync_user_profile_photo(telegram_id: int, bot) -> str | None:
         relative_url = f"/api/profiles/{thumb_filename}"
 
         await user_repo.upsert(
-            telegram_id=telegram_id, level=level_name, level_id=level_id, photo_url=relative_url
+            telegram_id=telegram_id,
+            level=level_name,
+            level_id=level_id,
+            photo_url=relative_url,
         )
 
         await user_cache.invalidate(f"user_effective:{telegram_id}")

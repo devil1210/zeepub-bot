@@ -51,7 +51,10 @@ def main():
         help="Port for each server (must match --server count)",
     )
     parser.add_argument(
-        "--timeout", type=int, default=30, help="Timeout in seconds per server (default: 30)"
+        "--timeout",
+        type=int,
+        default=30,
+        help="Timeout in seconds per server (default: 30)",
     )
     parser.add_argument(
         "command", nargs=argparse.REMAINDER, help="Command to run after server(s) ready"
@@ -85,7 +88,10 @@ def main():
 
             # Use shell=True to support commands with cd and &&
             process = subprocess.Popen(
-                server["cmd"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                server["cmd"],
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             )
             server_processes.append(process)
 

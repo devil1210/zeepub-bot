@@ -3,6 +3,7 @@
 # Attempts: 3
 # Passed: False
 
+
 def poly(xs: list, x: float):
     """
     Evaluates polynomial with coefficients xs at point x.
@@ -12,7 +13,7 @@ def poly(xs: list, x: float):
 
 
 def find_zero(xs: list):
-    """ xs are coefficients of a polynomial.
+    """xs are coefficients of a polynomial.
     find_zero find x such that poly(x) = 0.
     find_zero returns only only zero point, even if there are many.
     Moreover, find_zero only takes list xs having even number of coefficients
@@ -25,12 +26,12 @@ def find_zero(xs: list):
     """
     # Find initial bounds where polynomial changes sign
     low, high = -1000.0, 1000.0
-    
+
     # Ensure we have opposite signs at bounds
     while poly(xs, low) * poly(xs, high) > 0:
         low *= 2
         high *= 2
-    
+
     # Binary search (bisection method)
     tolerance = 1e-10
     while high - low > tolerance:
@@ -41,5 +42,5 @@ def find_zero(xs: list):
             high = mid
         else:
             low = mid
-    
+
     return (low + high) / 2

@@ -25,4 +25,6 @@ class StructuredLogger:
 
     def log_download(self, user_id: int, book_title: str, success: bool):
         """Log específico para descargas."""
-        self.log_event("info", "book_download", user_id=user_id, book=book_title, success=success)
+        self.log_event(
+            "info", "book_download", user_id=user_id, book=book_title, success=success
+        )

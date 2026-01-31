@@ -58,7 +58,9 @@ async def fetch_bytes(
 
             async with sess.get(url, timeout=request_timeout, auth=auth) as resp:
                 # Log response status and headers for debugging
-                logger.debug(f"Response status: {resp.status}, headers: {dict(resp.headers)}")
+                logger.debug(
+                    f"Response status: {resp.status}, headers: {dict(resp.headers)}"
+                )
 
                 # Check for Cloudflare errors
                 if resp.status == 403:
@@ -91,7 +93,9 @@ async def fetch_bytes(
                         )
                         return tmp.name
                     except Exception as e:
-                        logger.error("Error al escribir chunks en tmpfile %s: %s", tmp.name, e)
+                        logger.error(
+                            "Error al escribir chunks en tmpfile %s: %s", tmp.name, e
+                        )
                         try:
                             os.unlink(tmp.name)
                         except Exception:
@@ -115,7 +119,9 @@ async def fetch_bytes(
                         )
                         return tmp.name
                     except Exception as e:
-                        logger.error("Error al escribir data en tmpfile %s: %s", tmp.name, e)
+                        logger.error(
+                            "Error al escribir data en tmpfile %s: %s", tmp.name, e
+                        )
                         try:
                             os.unlink(tmp.name)
                         except Exception:
@@ -132,11 +138,17 @@ async def fetch_bytes(
 
             # If this is not the last attempt, wait before retrying
             if attempt < max_retries - 1:
-                delay = retry_delays[attempt] if attempt < len(retry_delays) else retry_delays[-1]
+                delay = (
+                    retry_delays[attempt]
+                    if attempt < len(retry_delays)
+                    else retry_delays[-1]
+                )
                 logger.info(f"Reintentando en {delay} segundos...")
                 await asyncio.sleep(delay)
             else:
-                logger.error(f"Error fetch_bytes después de {max_retries} intentos para {url}: {e}")
+                logger.error(
+                    f"Error fetch_bytes después de {max_retries} intentos para {url}: {e}"
+                )
                 return None
         except Exception as e:
             msg = f"Error inesperado fetch_bytes para {url}: {e}"
@@ -165,7 +177,9 @@ async def parse_feed_from_url(url: str):
                 with open(data, "rb") as f:
                     content = f.read()
             except Exception as e:
-                logger.error("parse_feed_from_url: error leyendo tmpfile %s: %s", data, e)
+                logger.error(
+                    "parse_feed_from_url: error leyendo tmpfile %s: %s", data, e
+                )
                 return None
             feed = await asyncio.to_thread(feedparser.parse, content)
         else:

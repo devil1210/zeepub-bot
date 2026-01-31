@@ -32,7 +32,9 @@ class MetadataOrchestrator:
                 lb = res_hash.scalar_one_or_none()
 
                 # Fallback: try by ID
-                if not lb and (str(book_id).startswith("local_") or str(book_id).isdigit()):
+                if not lb and (
+                    str(book_id).startswith("local_") or str(book_id).isdigit()
+                ):
                     clean_id = int(str(book_id).replace("local_", ""))
                     stmt_id = select(LocalBook).where(LocalBook.id == clean_id)
                     res_id = await session.execute(stmt_id)
