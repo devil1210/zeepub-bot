@@ -228,7 +228,7 @@ async def handle_bot_info(data: dict[str, Any], user_data: dict[str, Any]):
     try:
         ui_defaults_raw = get_setting("ui_defaults_global", "{}")
         ui_defaults = json.loads(ui_defaults_raw)
-    except:
+    except Exception:
         ui_defaults = {}
 
     # Robust Defaults if DB is empty
@@ -1579,7 +1579,7 @@ async def handle_admin_get_tier_config(data: dict[str, Any], user_data: dict[str
         elif tier_name:
             # Fallback to fetching all and finding by name if no ID
             all_lvls = await user_repo.get_all_levels()
-            tier = next((l for l in all_lvls if l["name"].lower() == tier_name.lower()), None)
+            tier = next((lvl for lvl in all_lvls if lvl["name"].lower() == tier_name.lower()), None)
 
         if not tier:
             raise HTTPException(
@@ -2488,7 +2488,7 @@ async def handle_admin_send_logs_telegram(data: dict[str, Any], user_data: dict[
             return {"success": False, "message": "No hay logs disponibles para enviar."}
 
         # Format logs
-        log_text = "\n".join([f"[{l['time']}] {l['level']}: {l['msg']}" for l in logs])
+        log_text = "\n".join([f"[{log_entry['time']}] {log_entry['level']}: {log_entry['msg']}" for log_entry in logs])
 
         # Create file
         file_obj = io.BytesIO(log_text.encode("utf-8"))
@@ -2763,7 +2763,6 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
             if not books:
                 return {"success": False, "message": "Serie no encontrada"}
 
-            count = len(books)
             rep_book = books[0]  # Usar cualquiera como representante base
             current_name = rep_book.series or series_name or rep_book.title
 
