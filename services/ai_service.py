@@ -149,11 +149,14 @@ class AIService:
         1. **Volume (CRÍTICO)**: Extrae el número de volumen con total precisión.
            - Si el archivo no especifica volumen, es un tomo único, o el volumen es 0, pon 0.0.
         2. **Group & Siglas (REGLAS ESTRICTAS)**:
-           - Longitud Máxima: Las siglas NO deben superar los 6 caracteres.
-           - Unicidad: Cada grupo debe tener una sigla única. 
-           - Claridad Identificable: Si hay conflicto (mismas siglas), no uses números. Expande la sigla usando letras del nombre para que sea descriptiva (ej. Dark Translations = DARKT, Dragoon Translations = DRAGT).
-           - Nombres como Siglas: Si el nombre del grupo tiene una sola palabra de 6 letras o menos (ej. "MiraiK"), la sigla puede ser el mismo nombre.
-           - Consistencia: Si el nombre del grupo es casi idéntico (variaciones de espacios o mayúsculas), asígnales la misma sigla.
+           - **IMPORTANTE**: Usa el campo 'publisher' de los metadatos para identificar al grupo.
+           - Si el 'publisher' coincide con uno de los nombres en la 'LISTA DE GRUPOS' proporcionada, DEBES usar la sigla correspondiente de esa lista.
+           - Si no hay coincidencia, sigue estas reglas:
+             - Longitud Máxima: Las siglas NO deben superar los 6 caracteres.
+             - Unicidad: Cada grupo debe tener una sigla única. 
+             - Claridad Identificable: Si hay conflicto (mismas siglas), no uses números. Expande la sigla usando letras del nombre para que sea descriptiva (ej. Dark Translations = DARKT, Dragoon Translations = DRAGT).
+             - Nombres como Siglas: Si el nombre del grupo tiene una sola palabra de 6 letras o menos (ej. "MiraiK"), la sigla puede ser el mismo nombre.
+             - Consistencia: Si el nombre del grupo es casi idéntico (variaciones de espacios o mayúsculas), asígnales la misma sigla.
         3. **Suggested Filename**: Genera el nombre EXACTO: "{{Prefix}}{{Series Spanish}} - {{Volumen}} [{{Siglas}}].epub".
            - **Prefix (CRÍTICO)**:
              - Si el libro tiene "Ilustraciones a Color" en sus géneros: usa `[Color]`.
@@ -169,7 +172,9 @@ class AIService:
 
         Datos de Entrada:
         - Filename Original: "{filename}"
-        - Metadata Cruda: {json.dumps(raw_meta, default=str)}
+        - Metadata Cruda (Contiene 'publisher'): {json.dumps(raw_meta, default=str)}
+        
+        {{group_context}}
 
         Devuelve SOLO un JSON:
         {{
@@ -186,6 +191,10 @@ class AIService:
         """
 
         try:
+            # Inject context if possible
+            group_context = await AIService._get_group_context()
+            prompt = prompt.replace("{group_context}", group_context)
+            
             # Ejecutar con reintentos y fallback automático
             response = await AIService._call_gemini_with_retry(prompt)
             if not response:
@@ -243,11 +252,6 @@ class AIService:
         """
         # 1. Preparar contexto para la IA
         # Preferimos mostrar el filename o el nombre en español para que la IA entienda el estado actual
-        sample_titles = []
-        for b in books[:10]:
-            name = b.get("filename") or b.get("spanish_title") or b.get("title", "")
-            sample_titles.append(name)
-
         prompt = f"""
         Actúa como un bibliotecario experto. Analiza este grupo de libros y propón una estandarización coherente.
         
@@ -255,16 +259,19 @@ class AIService:
         - El campo 'reason' (explicación) debe estar SIEMPRE en ESPAÑOL.
         
         Nombre Actual en DB: "{current_series_name}"
-        Archivos de muestra: {json.dumps(sample_titles, indent=2)}
+        Datos de libros (filename y publisher): {json.dumps([{ 'f': b.get('filename'), 'p': b.get('publisher') } for b in books[:15]], indent=2)}
         
         Tareas:
         1. **Proposed English Name**: El nombre canónico en INGLÉS/ROMAJI.
         2. **Proposed Spanish Name**: El nombre oficial en ESPAÑOL.
-        3. **Group Siglas & Name (REGLAS ESTRICTAS)**:
-           - **Group Full Name**: El nombre completo descriptivo del grupo.
-           - **Group Siglas**: Siglas de <= 6 caracteres. No uses números si hay conflicto. Expande usando letras descriptivas del nombre (ej: 'DARKT', 'DRAGT').
-           - Nombres como Siglas: Si es una palabra de <= 6 letras, úsala tal cual.
-           - Consistencia: Nombres casi idénticos = misma sigla.
+        3. **Group Siglas & Name (PROPRIEDAD CRÍTICA)**:
+           - **IMPORTANTE**: Usa el campo 'publisher' de cada libro para identificar al grupo.
+           - Si el 'publisher' coincide con uno de los nombres en la 'LISTA DE GRUPOS' proporcionada, DEBES usar la sigla correspondiente de esa lista.
+           - Si no hay coincidencia, sigue estas reglas:
+             - **Group Full Name**: El nombre completo descriptivo del grupo.
+             - **Group Siglas**: Siglas de <= 6 caracteres. No uses números si hay conflicto. Expande usando letras descriptivas del nombre (ej: 'DARKT', 'DRAGT').
+             - Nombres como Siglas: Si es una palabra de <= 6 letras, úsala tal cual.
+             - Consistencia: Nombres casi idénticos = misma sigla.
         4. **Volumes**: Para cada archivo, confirma su volumen real. Usa 0.0 si es Volumen Único.
         
         SEGURIDAD DE ARCHIVOS:
@@ -290,6 +297,8 @@ class AIService:
         }}
         
         NOTA: Si detectas que los libros de la serie han sido traducidos por diferentes grupos, especifica la 'sigla' correcta para cada archivo dentro del objeto 'volumes'. Si no estás seguro o todos son iguales, usa el 'group_siglas' general de la serie como fallback.
+        
+        {{group_context}}
         """
 
         # 0. Get Learning Context (RAG-lite)
@@ -330,8 +339,10 @@ class AIService:
             logger.warning(f"Failed to load learning context: {e}")
 
         try:
+            group_context = await AIService._get_group_context()
             full_prompt = (
-                prompt + f"\n\nCONTEXTO ADICIONAL DE APRENDIZAJE:\n{learning_context}"
+                prompt.replace("{group_context}", group_context)
+                + f"\n\nCONTEXTO ADICIONAL DE APRENDIZAJE:\n{learning_context}"
             )
             response = await AIService._call_gemini_with_retry(full_prompt)
             if not response:
@@ -436,11 +447,33 @@ class AIService:
 
             return proposal
 
-            return proposal
-
         except Exception as e:
             logger.error(f"Error analyzing series: {e}")
             return {"error": str(e)}
+
+    @staticmethod
+    async def _get_group_context() -> str:
+        """Obtiene el mapeo de grupos y siglas para inyectar en el prompt."""
+        context = ""
+        try:
+            from sqlalchemy import text
+
+            from utils.library_db import get_session
+
+            with get_session() as session:
+                res = session.execute(
+                    text(
+                        "SELECT name, siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 200"
+                    )
+                )
+                mappings = [f"'{r[0]}' -> sigla: '{r[1]}'" for r in res]
+                if mappings:
+                    context = "\nLISTA DE GRUPOS VÁLIDOS (Nombre -> Sigla):\n" + "\n".join(
+                        mappings
+                    )
+        except Exception as e:
+            logger.warning(f"Error fetching group context: {e}")
+        return context
 
     @staticmethod
     async def analyze_potential_merge(series_a: dict, series_b: dict) -> dict | None:
