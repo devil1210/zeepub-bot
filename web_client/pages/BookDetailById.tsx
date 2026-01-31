@@ -17,7 +17,7 @@ interface BookDetailByIdProps {
 export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, onNavigate }) => {
     const { settings } = useTheme();
     const { webApp } = useTelegram();
-    const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
+    const { setContextType, registerCallbacks, setVisible, setCustomActions, setSearchTerm } = useNavigation();
     const [book, setBook] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -105,6 +105,15 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
         }
     };
 
+    const handleSearch = (term: string, scope?: string) => {
+        if (setSearchTerm && onNavigate) {
+            // If it's a specific field like translator, maybe add prefix? 
+            // For now, let's stick to the term as the user expects.
+            setSearchTerm(term);
+            onNavigate('search');
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -138,7 +147,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
                 series={book as Series}
                 onBack={onBack}
                 onSelectVolume={handleSelectVolume}
-                onSearch={(term) => onNavigate && onNavigate('search')}
+                onSearch={handleSearch}
             />
         );
     }
@@ -151,6 +160,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
             bookId={bookId}
             onBack={onBack}
             onNavigate={onNavigate}
+            onSearch={handleSearch}
         />
     );
 };

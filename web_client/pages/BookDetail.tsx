@@ -377,12 +377,12 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   const detailItems = [
     { label: 'Serie', value: displayData.displayTitle, highlight: true, clickable: true, type: 'series' },
     { label: 'Volumen', value: displayData.volumeDisplay },
-    { label: 'Tipo de libro', value: displayData.bookType },
+    { label: 'Tipo de libro', value: displayData.bookType, clickable: true, type: 'type' },
     { label: 'ISBN', value: displayData.isbn, highlight: true, font: 'mono' },
     { label: 'ASIN', value: displayData.asin, highlight: true, font: 'mono' },
-    { label: 'Idioma', value: displayData.language, highlight: true },
+    { label: 'Idioma', value: displayData.language, highlight: true, clickable: true, type: 'language' },
     { label: 'Traductor', value: displayData.translator || 'ZeePub', color: 'text-indigo-600 dark:text-indigo-400', clickable: true, type: 'translator' },
-    { label: 'Grupo Traductor', value: displayData.publisher !== 'N/A' ? displayData.publisher : (displayData.group || 'ZeePub'), highlight: true },
+    { label: 'Grupo Traductor', value: displayData.publisher !== 'N/A' ? displayData.publisher : (displayData.group || 'ZeePub'), highlight: true, clickable: true, type: 'group' },
     { label: 'Fecha de publicación', value: displayData.publishedDate, highlight: true },
   ];
 
@@ -394,7 +394,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
     { label: 'Lectura Aprox.', value: displayData.readTime },
     { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
-    { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400' },
+    { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400', clickable: true, type: 'uploader' },
     { label: 'Fecha de actualización', value: displayData.lastUpdated, highlight: true },
   ];
 
