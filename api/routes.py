@@ -74,7 +74,6 @@ async def get_feed(
         if not feed:
             raise HTTPException(status_code=404, detail="No se pudo cargar el feed")
 
-
         # Helper para normalizar URLs
         def normalize_url(href):
             if not href:
@@ -615,8 +614,6 @@ async def tunnel_opds(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-
 @router.get("/dl/{url_hash}")
 async def short_download(url_hash: str):
     """
@@ -667,7 +664,6 @@ async def public_download(
 
         if not data:
             raise HTTPException(status_code=404, detail="Could not fetch file")
-
 
         # Determinar si es archivo o bytes
         if isinstance(data, str) and os.path.exists(data):
@@ -732,7 +728,8 @@ async def prepare_facebook_post(
             (
                 link_obj["href"]
                 for link_obj in book.get("links", [])
-                if "acquisition" in link_obj.get("rel", "") or "epub" in link_obj.get("type", "")
+                if "acquisition" in link_obj.get("rel", "")
+                or "epub" in link_obj.get("type", "")
             ),
             None,
         )
