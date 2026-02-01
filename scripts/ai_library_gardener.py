@@ -55,7 +55,9 @@ async def get_series_for_proposal(limit: int = 20):
         for h in hashes:
             # Obtener libros de la serie
             stmt_books = (
-                select(LocalBook).where(LocalBook.series_hash == h).order_by(LocalBook.volume.asc())
+                select(LocalBook)
+                .where(LocalBook.series_hash == h)
+                .order_by(LocalBook.volume.asc())
             )
             books = (await session.execute(stmt_books)).scalars().all()
 
@@ -94,7 +96,9 @@ async def process_proposals(series_list: list[dict]):
             )
 
             if not proposal or proposal.get("proposed_series") == "sin propuesta":
-                console.print("  [yellow]IA no encontró cambios necesarios. Saltando.[/yellow]")
+                console.print(
+                    "  [yellow]IA no encontró cambios necesarios. Saltando.[/yellow]"
+                )
                 continue
 
             # Guardar en MetadataProposal
@@ -118,7 +122,9 @@ async def process_proposals(series_list: list[dict]):
                 await session.commit()
 
                 proposed_total += 1
-                console.print("  [green]✅ Propuesta guardada para revisión admin.[/green]")
+                console.print(
+                    "  [green]✅ Propuesta guardada para revisión admin.[/green]"
+                )
                 console.print(
                     f"  [dim]Sugerencia:[/dim] {proposal.get('proposed_series')} / {proposal.get('proposed_spanish')}"
                 )
@@ -197,7 +203,9 @@ async def find_merges(limit: int = 5):
                         "book_count": s2.book_count,
                     }
 
-                    merge_analysis = await AIService.analyze_potential_merge(s1_dict, s2_dict)
+                    merge_analysis = await AIService.analyze_potential_merge(
+                        s1_dict, s2_dict
+                    )
 
                     if merge_analysis and merge_analysis.get("is_same"):
                         # Guardar propuesta de unificación
@@ -211,8 +219,12 @@ async def find_merges(limit: int = 5):
                         session.add(new_prop)
                         await session.commit()
 
-                        console.print("  [green]✅ Propuesta de FUSIÓN generada.[/green]")
-                        console.print(f"  [dim]Razón:[/dim] {merge_analysis.get('reason')}")
+                        console.print(
+                            "  [green]✅ Propuesta de FUSIÓN generada.[/green]"
+                        )
+                        console.print(
+                            f"  [dim]Razón:[/dim] {merge_analysis.get('reason')}"
+                        )
                         merge_count += 1
 
                         if merge_count >= limit:
@@ -235,7 +247,9 @@ async def main():
     from config.config_settings import config
 
     if not config.GEMINI_API_KEY:
-        console.print("[bold red]❌ Error: GEMINI_API_KEY no encontrada en config.[/bold red]")
+        console.print(
+            "[bold red]❌ Error: GEMINI_API_KEY no encontrada en config.[/bold red]"
+        )
         return
 
     while True:
@@ -254,7 +268,9 @@ async def main():
 
         # 2. Si no hubo enriquecimientos, buscar fusiones
         if batch_count == 0:
-            console.print("[yellow]Buscando posibles fusiones de series duplicadas...[/yellow]")
+            console.print(
+                "[yellow]Buscando posibles fusiones de series duplicadas...[/yellow]"
+            )
             merge_count = await find_merges(limit=5)
             if merge_count == 0:
                 console.print(

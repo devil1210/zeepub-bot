@@ -39,14 +39,18 @@ def upgrade():
         sa.Column("path_collision", sa.String(10), server_default="False"),
         sa.Column("processed", sa.String(10), server_default="False"),
         sa.Column("upload_metadata", sa.JSON()),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 
     # Create indexes for performance
     op.create_index("ix_upload_books_book_hash", "upload_books", ["book_hash"])
     op.create_index("ix_upload_books_telegram_id", "upload_books", ["telegram_id"])
-    op.create_index("ix_upload_books_identity_match", "upload_books", ["identity_match"])
+    op.create_index(
+        "ix_upload_books_identity_match", "upload_books", ["identity_match"]
+    )
 
 
 def downgrade():

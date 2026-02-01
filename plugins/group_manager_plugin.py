@@ -85,12 +85,17 @@ class GroupManagerPlugin(BasePlugin):
             app.add_handler(CommandHandler("rules", self.reglas))
 
             # Events
-            app.add_handler(ChatMemberHandler(self.track_chats, ChatMemberHandler.MY_CHAT_MEMBER))
-            app.add_handler(ChatMemberHandler(self.welcome_member, ChatMemberHandler.CHAT_MEMBER))
+            app.add_handler(
+                ChatMemberHandler(self.track_chats, ChatMemberHandler.MY_CHAT_MEMBER)
+            )
+            app.add_handler(
+                ChatMemberHandler(self.welcome_member, ChatMemberHandler.CHAT_MEMBER)
+            )
             # Add MessageHandler for service messages (when bot is not admin or update is simple)
             app.add_handler(
                 MessageHandler(
-                    filters.StatusUpdate.NEW_CHAT_MEMBERS, self.welcome_new_members_message
+                    filters.StatusUpdate.NEW_CHAT_MEMBERS,
+                    self.welcome_new_members_message,
                 )
             )
 
@@ -195,7 +200,9 @@ class GroupManagerPlugin(BasePlugin):
         finally:
             session.close()
 
-    async def set_group_welcome(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def set_group_welcome(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         if not self._is_admin(update.effective_user.id):
             return
 
@@ -222,7 +229,9 @@ class GroupManagerPlugin(BasePlugin):
                 # Let's auto-create but warn if not authorized.
                 group = GroupSettings(chat_id=chat_id)
                 session.add(group)
-                msg_extra = " (Nota: El grupo aún no está autorizado, usa /authorize_group)"
+                msg_extra = (
+                    " (Nota: El grupo aún no está autorizado, usa /authorize_group)"
+                )
             else:
                 msg_extra = ""
 
@@ -280,7 +289,9 @@ class GroupManagerPlugin(BasePlugin):
 
         session = self.CustomMsgSession()
         try:
-            exists = session.query(StoredMessage).filter_by(slug=slug).first() is not None
+            exists = (
+                session.query(StoredMessage).filter_by(slug=slug).first() is not None
+            )
             return exists
         except Exception as e:
             logger.error(f"Error checking slug: {e}")
@@ -300,7 +311,9 @@ class GroupManagerPlugin(BasePlugin):
         finally:
             session.close()
 
-    async def track_chats(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def track_chats(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ) -> None:
         """Track when bot is added/removed from groups and send introduction."""
         result = self._extract_status_change(update.my_chat_member)
         if result is None:
@@ -321,7 +334,9 @@ class GroupManagerPlugin(BasePlugin):
                 try:
                     if hasattr(msg_data, "text_content") and msg_data.text_content:
                         await context.bot.send_message(
-                            chat_id=chat_id, text=msg_data.text_content, parse_mode="HTML"
+                            chat_id=chat_id,
+                            text=msg_data.text_content,
+                            parse_mode="HTML",
                         )
                     else:
                         await context.bot.copy_message(
@@ -351,13 +366,17 @@ class GroupManagerPlugin(BasePlugin):
                         chat_id=chat_id, text=intro_message, parse_mode="HTML"
                     )
                 except Exception as e:
-                    logger.error(f"Error sending default introduction to {chat_id}: {e}")
+                    logger.error(
+                        f"Error sending default introduction to {chat_id}: {e}"
+                    )
 
         # Bot was removed from the group
         elif was_member and not is_member:
             logger.info(f"Bot removed from group {chat_id}")
 
-    async def welcome_member(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def welcome_member(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ) -> None:
         """Greet new members in authorized groups."""
         result = self._extract_status_change(update.chat_member)
         if result is None:
@@ -412,7 +431,9 @@ class GroupManagerPlugin(BasePlugin):
 
         return was_member, is_member
 
-    async def welcome_new_members_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def welcome_new_members_message(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """Handle new_chat_members service message."""
         if not update.message or not update.message.new_chat_members:
             return
@@ -438,9 +459,13 @@ class GroupManagerPlugin(BasePlugin):
         for user in update.message.new_chat_members:
             if user.is_bot:
                 continue
-            await self._send_welcome(context, chat_id, user, msg_data, reply_to_message_id=reply_to)
+            await self._send_welcome(
+                context, chat_id, user, msg_data, reply_to_message_id=reply_to
+            )
 
-    async def _send_welcome(self, context, chat_id, user, msg_data, reply_to_message_id=None):
+    async def _send_welcome(
+        self, context, chat_id, user, msg_data, reply_to_message_id=None
+    ):
         """Helper to send the welcome message to a specific user."""
         first_name = user.first_name
         safe_name = html.escape(first_name)

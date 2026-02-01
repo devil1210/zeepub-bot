@@ -31,11 +31,15 @@ def upgrade():
         sa.Column("ai_reason", sa.Text(), nullable=True),
         sa.Column("user_reason", sa.Text(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP")
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("idx_ai_learning_series_hash", "ai_learning_feedback", ["series_hash"])
+    op.create_index(
+        "idx_ai_learning_series_hash", "ai_learning_feedback", ["series_hash"]
+    )
 
 
 def downgrade():

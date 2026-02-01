@@ -89,13 +89,15 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
             "description": data.get("description"),
             "theme_type": data.get("theme_type") or data.get("theme"),
             "primary_color": data.get("primary_color") or data.get("primaryColor"),
-            "background_color": data.get("background_color") or data.get("backgroundColor"),
+            "background_color": data.get("background_color")
+            or data.get("backgroundColor"),
             "card_color": data.get("card_color") or data.get("cardColor"),
             "glass_opacity": data.get("glass_opacity") or data.get("glassOpacity"),
             "nav_opacity": data.get("nav_opacity") or data.get("navOpacity"),
             "accent_opacity": data.get("accent_opacity") or data.get("accentOpacity"),
             "glass_blur": data.get("glass_blur") or data.get("glassBlur"),
-            "card_glow_intensity": data.get("card_glow_intensity") or data.get("cardGlowIntensity"),
+            "card_glow_intensity": data.get("card_glow_intensity")
+            or data.get("cardGlowIntensity"),
             "font_size": data.get("font_size") or data.get("fontSize"),
             "cover_width": data.get("cover_width") or data.get("coverWidth"),
             "banner_content_offset": data.get("banner_content_offset")

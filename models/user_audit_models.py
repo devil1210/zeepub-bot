@@ -17,7 +17,9 @@ class UserAuditLog(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     # Usuario afectado
-    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), index=True, nullable=False)
+    user_id = Column(
+        BigInteger, ForeignKey("users.telegram_id"), index=True, nullable=False
+    )
     username = Column(String(255))  # Snapshot del username en el momento del cambio
 
     # Quién hizo el cambio
@@ -39,7 +41,9 @@ class UserAuditLog(Base):
     new_value = Column(JSON)  # Valor nuevo
 
     # Metadata adicional
-    changes_summary = Column(JSON)  # Resumen completo de todos los cambios en esta acción
+    changes_summary = Column(
+        JSON
+    )  # Resumen completo de todos los cambios en esta acción
     ip_address = Column(String(45))  # IPv4 o IPv6
     user_agent = Column(String(512))
 

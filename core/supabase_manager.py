@@ -28,7 +28,9 @@ class SupabaseManager:
 
     def get_client(self) -> Client:
         if not self.client:
-            raise RuntimeError("Supabase client is not initialized. Check your credentials.")
+            raise RuntimeError(
+                "Supabase client is not initialized. Check your credentials."
+            )
         return self.client
 
     async def execute_query(self, table: str, query_type: str = "select", **kwargs):
@@ -67,7 +69,14 @@ class SupabaseManager:
                 error_str = str(e)
                 if any(
                     err in error_str
-                    for err in ["500", "502", "503", "504", "Bad Gateway", "Service Unavailable"]
+                    for err in [
+                        "500",
+                        "502",
+                        "503",
+                        "504",
+                        "Bad Gateway",
+                        "Service Unavailable",
+                    ]
                 ):
                     if attempt < max_retries - 1:
                         logger.warning(

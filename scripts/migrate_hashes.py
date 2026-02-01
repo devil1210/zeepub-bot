@@ -47,7 +47,9 @@ async def migrate_local_books():
         )
         book.series_hash = sh
 
-        logger.debug(f"Poblando hashes para: {book.title} -> Book:{bh[:8]}, Series:{sh[:8]}")
+        logger.debug(
+            f"Poblando hashes para: {book.title} -> Book:{bh[:8]}, Series:{sh[:8]}"
+        )
 
     session.commit()
     session.close()

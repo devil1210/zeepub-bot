@@ -51,7 +51,9 @@ async def test_epub_metadata():
 
     # Check what would be used
     print("\n=== Format Check ===")
-    print(f"titulo_serie (collection): {opf_meta.get('titulo_serie') if opf_meta else None}")
+    print(
+        f"titulo_serie (collection): {opf_meta.get('titulo_serie') if opf_meta else None}"
+    )
     print(f"internal_title: {internal_title}")
 
     if internal_title and opf_meta and opf_meta.get("titulo_serie"):

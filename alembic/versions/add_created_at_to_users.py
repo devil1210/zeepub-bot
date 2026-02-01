@@ -23,7 +23,9 @@ def upgrade():
     try:
         op.add_column("users", sa.Column("created_at", sa.DateTime(), nullable=True))
         # Update existing records with current timestamp
-        op.execute("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
+        op.execute(
+            "UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"
+        )
         # Make column not nullable after updating existing records
         op.alter_column("users", "created_at", nullable=False)
     except Exception as e:

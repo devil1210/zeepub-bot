@@ -194,7 +194,7 @@ class AIService:
             # Inject context if possible
             group_context = await AIService._get_group_context()
             prompt = prompt.replace("{group_context}", group_context)
-            
+
             # Ejecutar con reintentos y fallback automático
             response = await AIService._call_gemini_with_retry(prompt)
             if not response:
@@ -259,7 +259,7 @@ class AIService:
         - El campo 'reason' (explicación) debe estar SIEMPRE en ESPAÑOL.
         
         Nombre Actual en DB: "{current_series_name}"
-        Datos de libros (filename y publisher): {json.dumps([{ 'f': b.get('filename'), 'p': b.get('publisher') } for b in books[:15]], indent=2)}
+        Datos de libros (filename y publisher): {json.dumps([{"f": b.get("filename"), "p": b.get("publisher")} for b in books[:15]], indent=2)}
         
         Tareas:
         1. **Proposed English Name**: El nombre canónico en INGLÉS/ROMAJI.
@@ -468,8 +468,9 @@ class AIService:
                 )
                 mappings = [f"'{r[0]}' -> sigla: '{r[1]}'" for r in res]
                 if mappings:
-                    context = "\nLISTA DE GRUPOS VÁLIDOS (Nombre -> Sigla):\n" + "\n".join(
-                        mappings
+                    context = (
+                        "\nLISTA DE GRUPOS VÁLIDOS (Nombre -> Sigla):\n"
+                        + "\n".join(mappings)
                     )
         except Exception as e:
             logger.warning(f"Error fetching group context: {e}")

@@ -42,7 +42,9 @@ class MaintenancePlugin(BasePlugin):
             app.add_handler(CommandHandler("backup_db", self.backup_db))
             app.add_handler(CommandHandler("restore_db", self.restore_db))
             app.add_handler(CommandHandler("latest_books", self.latest_books))
-            app.add_handler(CommandHandler("scan_library", self.scan_library, block=False))
+            app.add_handler(
+                CommandHandler("scan_library", self.scan_library, block=False)
+            )
             app.add_handler(CommandHandler("reset_stats", self.reset_stats))
             app.add_handler(CommandHandler("reset_library", self.reset_library))
             app.add_handler(CommandHandler("find_duplicates", self.find_duplicates))
@@ -102,7 +104,10 @@ class MaintenancePlugin(BasePlugin):
         if uid not in config.ADMIN_USERS:
             return
 
-        if not update.message.reply_to_message or not update.message.reply_to_message.document:
+        if (
+            not update.message.reply_to_message
+            or not update.message.reply_to_message.document
+        ):
             await update.message.reply_text("⚠️ Responde a un archivo .sql")
             return
 
@@ -128,7 +133,10 @@ class MaintenancePlugin(BasePlugin):
 
             cmd = ["psql", "-h", pg_host, "-U", pg_user, "-d", pg_db, "-f", filename]
             proc = await asyncio.create_subprocess_exec(
-                *cmd, env=env, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                *cmd,
+                env=env,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
             stdout, stderr = await proc.communicate()
 
@@ -238,7 +246,9 @@ class MaintenancePlugin(BasePlugin):
             if not rows:
                 await update.message.reply_text("✅ No hay duplicados.")
                 return
-            await update.message.reply_text(f"📊 Encontrados {len(rows)} grupos de duplicados.")
+            await update.message.reply_text(
+                f"📊 Encontrados {len(rows)} grupos de duplicados."
+            )
         except Exception as e:
             await update.message.reply_text(f"❌ Error: {e}")
 

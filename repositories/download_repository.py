@@ -111,7 +111,9 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                             "color_mode": color_mode,
                             "book_id": book_id,
                         }
-                        self.supabase.get_client().table("download_history").insert(data).execute()
+                        self.supabase.get_client().table("download_history").insert(
+                            data
+                        ).execute()
                     except Exception:
                         pass
 
@@ -120,7 +122,9 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
             logger.error(f"Postgres add_download error: {e}")
             return 0
 
-    async def get_user_downloads(self, user_id: int, limit: int = 10) -> list[dict[str, Any]]:
+    async def get_user_downloads(
+        self, user_id: int, limit: int = 10
+    ) -> list[dict[str, Any]]:
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
@@ -130,7 +134,9 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                     ORDER BY downloaded_at DESC
                     LIMIT :limit
                 """)
-                result = await session.execute(query, {"user_id": user_id, "limit": limit})
+                result = await session.execute(
+                    query, {"user_id": user_id, "limit": limit}
+                )
                 rows = result.fetchall()
                 results = []
                 for row in rows:
@@ -144,7 +150,9 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
             logger.error(f"Postgres get_user_downloads error: {e}")
             return []
 
-    async def get_download_count(self, user_id: int, since: datetime | None = None) -> int:
+    async def get_download_count(
+        self, user_id: int, since: datetime | None = None
+    ) -> int:
         try:
             async with pg_manager.get_session() as session:
                 if since:
@@ -153,7 +161,9 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                     )
                     params = {"uid": user_id, "since": since}
                 else:
-                    query = text("SELECT COUNT(*) FROM download_history WHERE user_id = :uid")
+                    query = text(
+                        "SELECT COUNT(*) FROM download_history WHERE user_id = :uid"
+                    )
                     params = {"uid": user_id}
 
                 result = await session.execute(query, params)
@@ -163,7 +173,11 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
             return 0
 
     async def has_user_downloaded(
-        self, user_id: int, title: str, clean_title: str | None = None, book_hash: str | None = None
+        self,
+        user_id: int,
+        title: str,
+        clean_title: str | None = None,
+        book_hash: str | None = None,
     ) -> bool:
         try:
             from utils.epub_extractor import clean_metadata_tags
@@ -176,7 +190,9 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                         "SELECT 1 FROM download_history WHERE user_id = :uid AND book_hash = :hash LIMIT 1"
                     )
                     if (
-                        await session.execute(query, {"uid": user_id, "hash": book_hash})
+                        await session.execute(
+                            query, {"uid": user_id, "hash": book_hash}
+                        )
                     ).fetchone():
                         return True
 
@@ -186,7 +202,9 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                     LIMIT 1
                 """)
                 if (
-                    await session.execute(query, {"uid": user_id, "t": title, "ct": search_clean})
+                    await session.execute(
+                        query, {"uid": user_id, "t": title, "ct": search_clean}
+                    )
                 ).fetchone():
                     return True
             return False
@@ -204,7 +222,9 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
 
             async with pg_manager.get_session() as session:
                 if book_hash:
-                    query = text("SELECT COUNT(*) FROM download_history WHERE book_hash = :hash")
+                    query = text(
+                        "SELECT COUNT(*) FROM download_history WHERE book_hash = :hash"
+                    )
                     count = (await session.execute(query, {"hash": book_hash})).scalar()
                     if count > 0:
                         return count

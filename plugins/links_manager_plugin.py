@@ -60,7 +60,9 @@ class LinksManagerPlugin(BasePlugin):
 
         # Verificar permisos (solo publishers)
         if uid not in config.FACEBOOK_PUBLISHERS:
-            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            await update.message.reply_text(
+                "⛔ No tienes permisos para usar este comando."
+            )
             return
 
         thread_id = get_thread_id(update)
@@ -79,7 +81,10 @@ class LinksManagerPlugin(BasePlugin):
             # Validar con timeout de 10 segundos total
             if recent_links:
                 try:
-                    tasks = [validate_and_update_url(item[0], item[1]) for item in recent_links]
+                    tasks = [
+                        validate_and_update_url(item[0], item[1])
+                        for item in recent_links
+                    ]
                     await asyncio.wait_for(
                         asyncio.gather(*tasks, return_exceptions=True), timeout=10.0
                     )
@@ -91,7 +96,9 @@ class LinksManagerPlugin(BasePlugin):
             broken = get_broken_links(limit=5)
 
             # Construir reporte
-            success_rate = (stats["valid"] / stats["total"] * 100) if stats["total"] > 0 else 0
+            success_rate = (
+                (stats["valid"] / stats["total"] * 100) if stats["total"] > 0 else 0
+            )
 
             report = "🔍 <b>Estado de Links Acortados</b>\n\n"
             report += "📊 <b>Estadísticas:</b>\n"
@@ -140,7 +147,9 @@ class LinksManagerPlugin(BasePlugin):
 
         # Verificar permisos (solo publishers)
         if uid not in config.FACEBOOK_PUBLISHERS:
-            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            await update.message.reply_text(
+                "⛔ No tienes permisos para usar este comando."
+            )
             return
 
         thread_id = get_thread_id(update)
@@ -169,9 +178,13 @@ class LinksManagerPlugin(BasePlugin):
                 return
 
             # Construir mensaje
-            report = f"📋 <b>Links Acortados Recientes</b> (últimos {len(recent_links)})\n\n"
+            report = (
+                f"📋 <b>Links Acortados Recientes</b> (últimos {len(recent_links)})\n\n"
+            )
 
-            for i, (hash_val, _url, book_title, created_at) in enumerate(recent_links, 1):
+            for i, (hash_val, _url, book_title, created_at) in enumerate(
+                recent_links, 1
+            ):
                 title_display = (
                     (book_title[:45] + "...")
                     if book_title and len(book_title) > 45
@@ -212,7 +225,9 @@ class LinksManagerPlugin(BasePlugin):
 
         # Verificar que sea publisher
         if uid not in config.FACEBOOK_PUBLISHERS:
-            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            await update.message.reply_text(
+                "⛔ No tienes permisos para usar este comando."
+            )
             return
 
         # Verificar argumentos
@@ -232,7 +247,9 @@ class LinksManagerPlugin(BasePlugin):
                     f"✅ Link con hash <code>{hash_to_purge}</code> eliminado de la caché.",
                     parse_mode="HTML",
                 )
-                logger.info(f"Admin {uid} eliminó link {hash_to_purge} de la caché (PostgreSQL).")
+                logger.info(
+                    f"Admin {uid} eliminó link {hash_to_purge} de la caché (PostgreSQL)."
+                )
             else:
                 await update.message.reply_text(
                     f"ℹ️ No se encontró ningún link con hash <code>{hash_to_purge}</code> en la caché.",
@@ -240,5 +257,9 @@ class LinksManagerPlugin(BasePlugin):
                 )
 
         except Exception as e:
-            logger.error(f"Error en purge_link para hash {hash_to_purge}: {e}", exc_info=True)
-            await update.message.reply_text(f"❌ Error al intentar eliminar el link: {str(e)}")
+            logger.error(
+                f"Error en purge_link para hash {hash_to_purge}: {e}", exc_info=True
+            )
+            await update.message.reply_text(
+                f"❌ Error al intentar eliminar el link: {str(e)}"
+            )

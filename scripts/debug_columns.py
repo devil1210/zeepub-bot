@@ -16,7 +16,9 @@ async def check():
 
     engine = create_async_engine(db_url)
 
-    print(f"Checking database columns for series_metadata at {db_url.split('@')[-1]}...")
+    print(
+        f"Checking database columns for series_metadata at {db_url.split('@')[-1]}..."
+    )
     try:
         async with engine.begin() as conn:
             result = await conn.execute(

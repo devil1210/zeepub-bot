@@ -64,7 +64,9 @@ class VerificationPlugin(BasePlugin):
                     await context.bot.do_api_request("verifyUser", payload)
 
                 status = "verificado" if verify else "desverificado"
-                await update.message.reply_text(f"✅ Usuario {target_id} {status} correctamente.")
+                await update.message.reply_text(
+                    f"✅ Usuario {target_id} {status} correctamente."
+                )
             except Exception as e:
                 await update.message.reply_text(f"❌ Error al verificar usuario: {e}")
 

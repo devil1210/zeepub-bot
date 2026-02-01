@@ -39,7 +39,9 @@ class StoredMessage(Base):
     source_chat_id = Column(BigInteger, nullable=False)
     source_message_id = Column(Integer, nullable=False)
     description = Column(Text, nullable=True)
-    text_content = Column(Text, nullable=True)  # Contenido capturado para reemplazo de variables
+    text_content = Column(
+        Text, nullable=True
+    )  # Contenido capturado para reemplazo de variables
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -1556,7 +1558,9 @@ class CustomMessagesPlugin(BasePlugin):
                     )
                     conn.commit()
                 except Exception as ex:
-                    logger.warning(f"Migration check failed (might be already up to date): {ex}")
+                    logger.warning(
+                        f"Migration check failed (might be already up to date): {ex}"
+                    )
 
             self.Session = sessionmaker(bind=self.engine)
             # Load global vars to cache
@@ -1580,18 +1584,24 @@ class CustomMessagesPlugin(BasePlugin):
             app.add_handler(CommandHandler("set_welcome", self.set_welcome))
 
             app.add_handler(CommandHandler("templates", self.templates))
-            app.add_handler(CommandHandler("template", self.templates))  # Alias requested by user
+            app.add_handler(
+                CommandHandler("template", self.templates)
+            )  # Alias requested by user
             app.add_handler(CommandHandler("template_vars", self.vars))  # Legacy alias
             app.add_handler(CommandHandler("vars", self.vars))
             app.add_handler(CommandHandler("set_var", self.set_var))
             app.add_handler(CommandHandler("del_var", self.del_var))
 
-            app.add_handler(CallbackQueryHandler(self.templates_callback, pattern=r"^templates\|"))
+            app.add_handler(
+                CallbackQueryHandler(self.templates_callback, pattern=r"^templates\|")
+            )
 
             # ChatMemberHandler for welcome message
             # MY_CHAT_MEMBER is triggered when bot is added/promoted/removed
             app.add_handler(
-                ChatMemberHandler(self.welcome_handler, ChatMemberHandler.MY_CHAT_MEMBER)
+                ChatMemberHandler(
+                    self.welcome_handler, ChatMemberHandler.MY_CHAT_MEMBER
+                )
             )
 
             logger.info("Plugin CustomMessages: Handlers registrados.")
@@ -1738,7 +1748,9 @@ class CustomMessagesPlugin(BasePlugin):
                 descargas_text = "✅ Descargas ilimitadas"
         else:
             remaining = max_dl - used
-            descargas_text = f"⚡️ Te quedan {remaining if remaining > 0 else 0} descargas por día"
+            descargas_text = (
+                f"⚡️ Te quedan {remaining if remaining > 0 else 0} descargas por día"
+            )
 
         # Reset Time
         reset_time_str = None
@@ -1778,7 +1790,9 @@ class CustomMessagesPlugin(BasePlugin):
         # If user wants [Rol] to be SPECIFICALLY the custom function, we should use that.
         # However, for consistency, let's use the status_label which defaults to role name if no custom label.
 
-        rol_funcional = user_data.get("custom_status")  # [Rol] - Sólo si hay custom status real
+        rol_funcional = user_data.get(
+            "custom_status"
+        )  # [Rol] - Sólo si hay custom status real
         apodo = user_data.get("nickname")  # [Apodo] - None si no existe
 
         return {
@@ -1792,7 +1806,9 @@ class CustomMessagesPlugin(BasePlugin):
 
     # --- Helper Methods for Template System ---
 
-    async def get_text(self, slug: str, default_text: str = None, user=None, **replacements) -> str:
+    async def get_text(
+        self, slug: str, default_text: str = None, user=None, **replacements
+    ) -> str:
         """
         Recupera el texto de un mensaje guardado por su slug.
         Orden de prioridad:
@@ -1839,7 +1855,9 @@ class CustomMessagesPlugin(BasePlugin):
         # 1.1 Inject Bot Info (if available)
         if self.bot:
             vars_to_use["BotNombre"] = self.bot.first_name
-            vars_to_use["BotAlias"] = f"@{self.bot.username}" if self.bot.username else "Bot"
+            vars_to_use["BotAlias"] = (
+                f"@{self.bot.username}" if self.bot.username else "Bot"
+            )
 
         # 1.2 Inject Chat context if replacements has it or try to infer?
         # Often 'chat_id' is passed as extra or available in update
@@ -1892,7 +1910,9 @@ class CustomMessagesPlugin(BasePlugin):
                 is_true = True
             return content if is_true else ""
 
-        final_text = re.sub(r"{{if\s+(\w+)}}(.*?){{endif}}", replacer, final_text, flags=re.DOTALL)
+        final_text = re.sub(
+            r"{{if\s+(\w+)}}(.*?){{endif}}", replacer, final_text, flags=re.DOTALL
+        )
 
         # 5. Variable Replacement
         for key, value in vars_to_use.items():
@@ -1922,11 +1942,15 @@ class CustomMessagesPlugin(BasePlugin):
             return
 
         if not update.message.reply_to_message:
-            await update.message.reply_text("❌ Debes responder al mensaje que quieres guardar.")
+            await update.message.reply_text(
+                "❌ Debes responder al mensaje que quieres guardar."
+            )
             return
 
         if not context.args:
-            await update.message.reply_text("❌ Uso: Responder al mensaje + /add_msge <id_unico>")
+            await update.message.reply_text(
+                "❌ Uso: Responder al mensaje + /add_msge <id_unico>"
+            )
             return
 
         slug = context.args[0].lower()
@@ -1939,7 +1963,9 @@ class CustomMessagesPlugin(BasePlugin):
         try:
             # Capturar texto o caption para guardarlo
             content_text = (
-                original_msg.text_html or original_msg.caption_html or "Mensaje Multimedia"
+                original_msg.text_html
+                or original_msg.caption_html
+                or "Mensaje Multimedia"
             )
 
             self._save_message(
@@ -1977,7 +2003,9 @@ class CustomMessagesPlugin(BasePlugin):
         # 2. No arguments: show first page of list
         await self._show_message_list(update, context, 1)
 
-    async def _preview_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE, slug: str):
+    async def _preview_message(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE, slug: str
+    ):
         """Internal helper to preview a specific message by slug."""
         msg = self._get_message(slug)
         entry = TEMPLATE_REGISTRY.get(slug)
@@ -2007,7 +2035,9 @@ class CustomMessagesPlugin(BasePlugin):
             try:
                 user = None
                 try:
-                    member = await context.bot.get_chat_member(update.effective_chat.id, target_uid)
+                    member = await context.bot.get_chat_member(
+                        update.effective_chat.id, target_uid
+                    )
                     user = member.user
                 except Exception:
                     chat = await context.bot.get_chat(target_uid)
@@ -2046,7 +2076,9 @@ class CustomMessagesPlugin(BasePlugin):
                     message_thread_id=get_thread_id(update),
                 )
             except Exception as e:
-                await update.message.reply_text(f"❌ Error al previsualizar multimedia: {e}")
+                await update.message.reply_text(
+                    f"❌ Error al previsualizar multimedia: {e}"
+                )
 
     async def _show_message_list(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE, page: int
@@ -2256,7 +2288,9 @@ class CustomMessagesPlugin(BasePlugin):
                     parse_mode="HTML",
                 )
             except Exception as e:
-                await update.message.reply_text(f"❌ Error al enviar mensaje guardado: {e}")
+                await update.message.reply_text(
+                    f"❌ Error al enviar mensaje guardado: {e}"
+                )
         else:
             # It is NOT a stored message, send as text (Legacy behavior)
             try:
@@ -2292,7 +2326,9 @@ class CustomMessagesPlugin(BasePlugin):
         else:
             # Verify if valid slug
             if arg not in TEMPLATE_REGISTRY and not self._get_message(arg):
-                await update.message.reply_text("❌ ID no encontrado. Usa uno de /list_msge")
+                await update.message.reply_text(
+                    "❌ ID no encontrado. Usa uno de /list_msge"
+                )
                 return
 
             self._set_setting("welcome_msg_id", arg)
@@ -2368,7 +2404,9 @@ class CustomMessagesPlugin(BasePlugin):
                 cat = "Modo Evil (Privado)"
             elif slug.startswith("search_"):
                 cat = "Búsqueda"
-            elif any(x in slug for x in ["status", "banned", "bot_", "cancel", "private"]):
+            elif any(
+                x in slug for x in ["status", "banned", "bot_", "cancel", "private"]
+            ):
                 cat = "Sistema y Estado"
             else:
                 cat = "Otros"
@@ -2396,9 +2434,15 @@ class CustomMessagesPlugin(BasePlugin):
             for cat in cat_order:
                 # Callback: templates|cat|<cat_name>|1
                 buttons.append(
-                    [InlineKeyboardButton(f"📂 {cat}", callback_data=f"templates|cat|{cat}|1")]
+                    [
+                        InlineKeyboardButton(
+                            f"📂 {cat}", callback_data=f"templates|cat|{cat}|1"
+                        )
+                    ]
                 )
-            buttons.append([InlineKeyboardButton("❌ Cerrar", callback_data="templates|close")])
+            buttons.append(
+                [InlineKeyboardButton("❌ Cerrar", callback_data="templates|close")]
+            )
         else:
             # Pagination Buttons
             nav_row = []
@@ -2421,7 +2465,11 @@ class CustomMessagesPlugin(BasePlugin):
 
             # Back Button
             buttons.append(
-                [InlineKeyboardButton("🔙 Volver a Categorías", callback_data="templates|home")]
+                [
+                    InlineKeyboardButton(
+                        "🔙 Volver a Categorías", callback_data="templates|home"
+                    )
+                ]
             )
 
         return InlineKeyboardMarkup(buttons)
@@ -2438,7 +2486,9 @@ class CustomMessagesPlugin(BasePlugin):
             parse_mode="HTML",
         )
 
-    async def templates_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def templates_callback(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         query = update.callback_query
         uid = update.effective_user.id
 
@@ -2492,7 +2542,9 @@ class CustomMessagesPlugin(BasePlugin):
             keyboard = self._build_templates_keyboard(
                 current_cat=cat_name, page=page, has_more=has_more
             )
-            await query.edit_message_text(text, reply_markup=keyboard, parse_mode="HTML")
+            await query.edit_message_text(
+                text, reply_markup=keyboard, parse_mode="HTML"
+            )
             return
 
     async def set_var(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -2586,7 +2638,9 @@ class CustomMessagesPlugin(BasePlugin):
         if not was_member and is_member:
             # Bot added to a new chat!
             chat_id = update.effective_chat.id
-            logger.info(f"Bot añadido a grupo {chat_id}. Enviando bienvenida si corresponde.")
+            logger.info(
+                f"Bot añadido a grupo {chat_id}. Enviando bienvenida si corresponde."
+            )
 
             # Use get_text to support default templates too, not just DB copy
             # But copy_message is richer for multimedia.
@@ -2606,6 +2660,8 @@ class CustomMessagesPlugin(BasePlugin):
                 # Text based
                 try:
                     text = await self.get_text(current_welcome_id)
-                    await context.bot.send_message(chat_id=chat_id, text=text, parse_mode="HTML")
+                    await context.bot.send_message(
+                        chat_id=chat_id, text=text, parse_mode="HTML"
+                    )
                 except Exception as e:
                     logger.error(f"Error enviando bienvenida (text): {e}")

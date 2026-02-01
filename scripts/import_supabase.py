@@ -138,10 +138,17 @@ async def import_data():
         # 3. Import Users (Optional - Just Admin)
         print("\n📥 Importing Admin Users...")
         admin_ids = [
-            int(uid.strip()) for uid in os.getenv("ADMIN_USERS", "").split(",") if uid.strip()
+            int(uid.strip())
+            for uid in os.getenv("ADMIN_USERS", "").split(",")
+            if uid.strip()
         ]
         if admin_ids:
-            res = supabase.table("users").select("*").in_("telegram_id", admin_ids).execute()
+            res = (
+                supabase.table("users")
+                .select("*")
+                .in_("telegram_id", admin_ids)
+                .execute()
+            )
             users_data = res.data
             for item in users_data:
                 user = User(

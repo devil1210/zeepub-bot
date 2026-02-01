@@ -37,7 +37,9 @@ async def diagnose_themes():
 
         async with engine.begin() as conn:
             # Obtener todos los temas
-            result = await conn.execute(text("SELECT id, name FROM app_themes ORDER BY name"))
+            result = await conn.execute(
+                text("SELECT id, name FROM app_themes ORDER BY name")
+            )
             all_themes = result.fetchall()
 
             logger.info(f"\nTotal themes found: {len(all_themes)}")
@@ -81,7 +83,9 @@ async def diagnose_themes():
 
             # Sugerir acción
             if themes_ending_2:
-                logger.info(f"\n✅ ACTION: Found {len(themes_ending_2)} themes to rename")
+                logger.info(
+                    f"\n✅ ACTION: Found {len(themes_ending_2)} themes to rename"
+                )
                 for theme_id, name in themes_ending_2:
                     base_name = name.replace(" 2", "").strip()
                     logger.info(f"  - '{name}' → '{base_name} Pro' (suggested)")

@@ -25,7 +25,9 @@ def find_schema_files(project_path: Path) -> list:
 
     # SQLAlchemy models
     model_files = list(project_path.glob("**/models/*.py"))
-    schemas.extend([("sqlalchemy", f) for f in model_files if not f.name.startswith("__")])
+    schemas.extend(
+        [("sqlalchemy", f) for f in model_files if not f.name.startswith("__")]
+    )
 
     # SQL migrations
     sql_files = list(project_path.glob("alembic/versions/*.py"))  # Alembic migrations
@@ -48,7 +50,11 @@ def validate_sqlalchemy_model(file_path: Path) -> list:
         # Check for __tablename__
         classes = re.findall(r"class\s+(\w+)", content)
         for cls in classes:
-            if cls not in ["Base", "UserRole", "BookType"]:  # Skip some common non-table classes
+            if cls not in [
+                "Base",
+                "UserRole",
+                "BookType",
+            ]:  # Skip some common non-table classes
                 if "__tablename__" not in content and f"class {cls}" in content:
                     # Very simple check
                     pass

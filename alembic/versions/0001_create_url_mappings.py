@@ -24,7 +24,9 @@ def upgrade():
         sa.Column("book_title", sa.Text),
         sa.Column("series_name", sa.Text),
         sa.Column("volume_number", sa.Text),
-        sa.Column("created_at", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")),
+        sa.Column(
+            "created_at", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")
+        ),
         sa.Column("last_checked", sa.DateTime),
         sa.Column("is_valid", sa.Boolean, server_default=sa.true()),
         sa.Column("failed_checks", sa.Integer, server_default="0"),

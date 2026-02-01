@@ -56,7 +56,9 @@ async def main():
 
 if __name__ == "__main__":
     if TOKEN == "TU_TOKEN_AQUI":
-        print("❌ ERROR: Debes reemplazar 'TU_TOKEN_AQUI' con tu token real de Telegram")
+        print(
+            "❌ ERROR: Debes reemplazar 'TU_TOKEN_AQUI' con tu token real de Telegram"
+        )
         print("📝 Ve a https://t.me/BotFather para obtener tu token")
     else:
         asyncio.run(main())

@@ -53,7 +53,9 @@ async def rename_themes():
         async with engine.begin() as conn:
             # Verificar temas existentes
             logger.info("Checking existing themes...")
-            result = await conn.execute(text("SELECT id, name FROM app_themes ORDER BY name"))
+            result = await conn.execute(
+                text("SELECT id, name FROM app_themes ORDER BY name")
+            )
             existing_themes = result.fetchall()
 
             logger.info(f"Found {len(existing_themes)} themes:")
@@ -65,7 +67,8 @@ async def rename_themes():
             for old_name, new_name in THEME_RENAMES.items():
                 # Verificar si el tema con "2" existe
                 result = await conn.execute(
-                    text("SELECT id FROM app_themes WHERE name = :old_name"), {"old_name": old_name}
+                    text("SELECT id FROM app_themes WHERE name = :old_name"),
+                    {"old_name": old_name},
                 )
                 theme_to_rename = result.fetchone()
 
@@ -93,7 +96,9 @@ async def rename_themes():
                         {"new_name": new_name, "theme_id": theme_id},
                     )
 
-                    logger.info(f"✅ Renamed theme ID {theme_id}: '{old_name}' → '{new_name}'")
+                    logger.info(
+                        f"✅ Renamed theme ID {theme_id}: '{old_name}' → '{new_name}'"
+                    )
                     renamed_count += 1
                 else:
                     logger.info(f"Theme '{old_name}' not found, skipping")
@@ -103,7 +108,9 @@ async def rename_themes():
 
             # Verificar estado final
             logger.info("\nFinal theme list:")
-            result = await conn.execute(text("SELECT id, name FROM app_themes ORDER BY name"))
+            result = await conn.execute(
+                text("SELECT id, name FROM app_themes ORDER BY name")
+            )
             final_themes = result.fetchall()
             for theme in final_themes:
                 logger.info(f"  - ID: {theme[0]}, Name: {theme[1]}")

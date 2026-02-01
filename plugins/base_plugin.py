@@ -41,5 +41,7 @@ class BasePlugin(ABC):
     ) -> dict[str, Any] | None:
         return None
 
-    async def on_download_complete(self, user_id: int, epub_url: str, success: bool) -> None:
+    async def on_download_complete(
+        self, user_id: int, epub_url: str, success: bool
+    ) -> None:
         pass

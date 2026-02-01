@@ -26,13 +26,22 @@ def upgrade():
         sa.Column("priority", sa.Integer(), nullable=False),
         sa.Column("color", sa.String(20), nullable=True),
         sa.Column(
-            "has_mini_app_access", sa.Boolean(), nullable=False, server_default=sa.text("false")
+            "has_mini_app_access",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.text("false"),
         ),
         sa.Column(
-            "created_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")
+            "created_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP"),
         ),
         sa.Column(
-            "updated_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")
+            "updated_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP"),
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -52,7 +61,9 @@ def upgrade():
     op.add_column("users", sa.Column("level_id", sa.Integer(), nullable=True))
 
     # Create foreign key
-    op.create_foreign_key("fk_users_level_id", "users", "user_levels", ["level_id"], ["id"])
+    op.create_foreign_key(
+        "fk_users_level_id", "users", "user_levels", ["level_id"], ["id"]
+    )
 
     # Migrate existing users to new level system
     op.execute("""
@@ -72,7 +83,10 @@ def upgrade():
         sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("granted_by", sa.BigInteger(), nullable=True),
         sa.Column(
-            "granted_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")
+            "granted_at",
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP"),
         ),
         sa.PrimaryKeyConstraint("user_id"),
     )
@@ -86,7 +100,9 @@ def upgrade():
     try:
         op.add_column(
             "users",
-            sa.Column("total_downloads", sa.Integer(), nullable=False, server_default="0"),
+            sa.Column(
+                "total_downloads", sa.Integer(), nullable=False, server_default="0"
+            ),
         )
     except Exception:
         pass  # Column might already exist

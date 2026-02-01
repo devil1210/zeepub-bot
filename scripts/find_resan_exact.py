@@ -18,7 +18,9 @@ from models.library_models import LocalBook
 
 async def find_resan():
     async with pg_manager.get_session() as session:
-        res = await session.execute(select(LocalBook).where(LocalBook.layout_by.ilike("%Resan%")))
+        res = await session.execute(
+            select(LocalBook).where(LocalBook.layout_by.ilike("%Resan%"))
+        )
         books = res.scalars().all()
 
         print(f"Checking {len(books)} books by Resan:")

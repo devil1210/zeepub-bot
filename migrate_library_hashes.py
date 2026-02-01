@@ -46,7 +46,9 @@ def migrate():
                     logger.info(f"Actualizados {updated_count} libros...")
 
         session.commit()
-        logger.info(f"Migración completada. Se actualizaron los hashes de {updated_count} libros.")
+        logger.info(
+            f"Migración completada. Se actualizaron los hashes de {updated_count} libros."
+        )
 
     except Exception as e:
         logger.error(f"Error durante la migración: {e}")

@@ -22,16 +22,8 @@ def upgrade():
     try:
         op.add_column(
             "user_levels",
-            sa.Column("daily_downloads", sa.Integer(), nullable=False, server_default="1"),
-        )
-    except Exception:
-        pass
-
-    try:
-        op.add_column(
-            "user_levels",
             sa.Column(
-                "early_access", sa.Boolean(), nullable=False, server_default=sa.text("false")
+                "daily_downloads", sa.Integer(), nullable=False, server_default="1"
             ),
         )
     except Exception:
@@ -41,7 +33,10 @@ def upgrade():
         op.add_column(
             "user_levels",
             sa.Column(
-                "custom_themes", sa.Boolean(), nullable=False, server_default=sa.text("false")
+                "early_access",
+                sa.Boolean(),
+                nullable=False,
+                server_default=sa.text("false"),
             ),
         )
     except Exception:
@@ -49,7 +44,21 @@ def upgrade():
 
     try:
         op.add_column(
-            "user_levels", sa.Column("price", sa.Float(), nullable=False, server_default="0.0")
+            "user_levels",
+            sa.Column(
+                "custom_themes",
+                sa.Boolean(),
+                nullable=False,
+                server_default=sa.text("false"),
+            ),
+        )
+    except Exception:
+        pass
+
+    try:
+        op.add_column(
+            "user_levels",
+            sa.Column("price", sa.Float(), nullable=False, server_default="0.0"),
         )
     except Exception:
         pass

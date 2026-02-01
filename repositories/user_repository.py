@@ -134,7 +134,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
             async with pg_manager.get_session() as session:
                 stmt = (
                     select(User)
-                    .options(selectinload(User.ui_settings), selectinload(User.level_info))
+                    .options(
+                        selectinload(User.ui_settings), selectinload(User.level_info)
+                    )
                     .where(User.telegram_id == telegram_id)
                 )
 
@@ -370,7 +372,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
         except Exception as e:
             logger.error(f"Error seeding default levels: {e}")
 
-    async def update_user_level(self, telegram_id: int, level_name: str, days: int = 30) -> bool:
+    async def update_user_level(
+        self, telegram_id: int, level_name: str, days: int = 30
+    ) -> bool:
         """Actualiza el nivel de un usuario y su fecha de expiración."""
         try:
             from datetime import timedelta
@@ -519,7 +523,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
             logger.error(f"Error fetching level by id: {e}")
             return None
 
-    async def update_user_settings(self, telegram_id: int, settings: dict[str, Any]) -> bool:
+    async def update_user_settings(
+        self, telegram_id: int, settings: dict[str, Any]
+    ) -> bool:
         """Actualiza la configuración de UI del usuario."""
         try:
             # Map frontend keys to DB columns
@@ -548,7 +554,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
             if db_settings:
                 async with pg_manager.get_session() as session:
                     # Check if exists
-                    stmt = select(UserUISettings).where(UserUISettings.user_id == telegram_id)
+                    stmt = select(UserUISettings).where(
+                        UserUISettings.user_id == telegram_id
+                    )
                     result = await session.execute(stmt)
                     ui_settings = result.scalar_one_or_none()
 
@@ -598,9 +606,17 @@ class UserRepository(BaseRepository[dict[str, Any]]):
 
                 # Order by updated_at or telegram_id if created_at has issues in some environments
                 try:
-                    query = query.order_by(User.created_at.desc()).limit(limit).offset(offset)
+                    query = (
+                        query.order_by(User.created_at.desc())
+                        .limit(limit)
+                        .offset(offset)
+                    )
                 except Exception:
-                    query = query.order_by(User.telegram_id.desc()).limit(limit).offset(offset)
+                    query = (
+                        query.order_by(User.telegram_id.desc())
+                        .limit(limit)
+                        .offset(offset)
+                    )
 
                 result = await session.execute(query)
                 users = result.scalars().all()
@@ -637,7 +653,11 @@ class UserRepository(BaseRepository[dict[str, Any]]):
     ):
         """Creates a basic user record if not exists."""
         return await self.upsert(
-            telegram_id=telegram_id, level="free", name=name, username=username, role="user"
+            telegram_id=telegram_id,
+            level="free",
+            name=name,
+            username=username,
+            role="user",
         )
 
     async def create(self, entity: dict[str, Any]) -> dict[str, Any]:
@@ -704,7 +724,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
             "user": 6,
         }
         lvl_str = str(level).lower() if level is not None else "free"
-        level_id = level_id if level_id is not None else level_to_tier_id.get(lvl_str, 6)
+        level_id = (
+            level_id if level_id is not None else level_to_tier_id.get(lvl_str, 6)
+        )
 
         # 1. Postgres ORM
         try:
@@ -747,10 +769,16 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                 await cache_manager.delete_user(telegram_id)
 
                 # 2. Supabase Fallback
-                data = {"telegram_id": telegram_id, "level": lvl_str, "level_id": level_id}
+                data = {
+                    "telegram_id": telegram_id,
+                    "level": lvl_str,
+                    "level_id": level_id,
+                }
                 if expires_at is not None:
                     data["expires_at"] = (
-                        expires_at.isoformat() if hasattr(expires_at, "isoformat") else expires_at
+                        expires_at.isoformat()
+                        if hasattr(expires_at, "isoformat")
+                        else expires_at
                     )
                 if role is not None:
                     data["role"] = role
@@ -812,7 +840,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
         try:
             async with pg_manager.get_session() as session:
                 # 1. Obtener el ID del nivel
-                stmt_level = select(UserLevel).where(UserLevel.name == level_name.lower())
+                stmt_level = select(UserLevel).where(
+                    UserLevel.name == level_name.lower()
+                )
                 res_level = await session.execute(stmt_level)
                 level_obj = res_level.scalar_one_or_none()
 
@@ -834,7 +864,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
             async with pg_manager.get_session() as session:
                 stmt = (
                     select(User)
-                    .options(selectinload(User.ui_settings), selectinload(User.level_info))
+                    .options(
+                        selectinload(User.ui_settings), selectinload(User.level_info)
+                    )
                     .where(User.telegram_id == telegram_id)
                 )
 
@@ -855,13 +887,17 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                         "earlyAccess": lvl.early_access if lvl else False,
                         "customThemes": lvl.custom_themes if lvl else False,
                         "price": lvl.price if lvl else 0,
-                        "allowThemeTemplates": lvl.allow_theme_templates if lvl else False,
+                        "allowThemeTemplates": lvl.allow_theme_templates
+                        if lvl
+                        else False,
                         "theme": lvl.ui_theme if lvl else "dark",
                         "primaryColor": lvl.ui_primary_color if lvl else "#3b82f6",
                         "fontSize": lvl.ui_font_size if lvl else 14,
                         "glassBlur": lvl.ui_glass_blur if lvl else 12,
                         "navOpacity": (lvl.ui_nav_opacity / 100.0) if lvl else 0.8,
-                        "accentOpacity": (lvl.ui_accent_opacity / 100.0) if lvl else 0.2,
+                        "accentOpacity": (lvl.ui_accent_opacity / 100.0)
+                        if lvl
+                        else 0.2,
                         "glassOpacity": (lvl.panel_transparency / 100.0)
                         if lvl and lvl.panel_transparency is not None
                         else 0.6,
@@ -884,7 +920,9 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                         "isAdmin": is_admin,
                         "isRealAdmin": is_admin,
                         "isBetaTester": (user.beta_tester or is_admin) is not False,
-                        "name": user.name or user.nickname or f"User_{user.telegram_id}",
+                        "name": user.name
+                        or user.nickname
+                        or f"User_{user.telegram_id}",
                         "username": user.username or "",
                         "roles": [],
                         "insignias": user.insignias or [],

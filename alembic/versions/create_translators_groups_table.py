@@ -25,7 +25,9 @@ def upgrade():
         sa.Column("name", sa.Text(), nullable=False),
         sa.Column("siglas", sa.Text(), nullable=True),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP")
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name", "siglas", name="uq_translators_groups_name_siglas"),

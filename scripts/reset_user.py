@@ -40,14 +40,18 @@ async def nuclear_reset_user(telegram_id: int):
             logger.info("Cleaning local tables...")
 
             # User UI Settings
-            await conn.execute(text(f"DELETE FROM user_ui_settings WHERE user_id = {telegram_id}"))
+            await conn.execute(
+                text(f"DELETE FROM user_ui_settings WHERE user_id = {telegram_id}")
+            )
 
             # User Ratings / Downloads (Optional - maybe keep history? No, nuclear means nuclear)
             # await conn.execute(text(f"DELETE FROM user_ratings WHERE user_id = {telegram_id}"))
             # await conn.execute(text(f"DELETE FROM user_downloads WHERE user_id = {telegram_id}"))
 
             # The User record itself
-            await conn.execute(text(f"DELETE FROM users WHERE telegram_id = {telegram_id}"))
+            await conn.execute(
+                text(f"DELETE FROM users WHERE telegram_id = {telegram_id}")
+            )
 
             logger.info("✅ Local user record deleted.")
 
@@ -62,7 +66,9 @@ async def nuclear_reset_user(telegram_id: int):
             client = supabase_manager.get_client()
 
             # UI Settings
-            client.table("user_ui_settings").delete().eq("user_id", telegram_id).execute()
+            client.table("user_ui_settings").delete().eq(
+                "user_id", telegram_id
+            ).execute()
 
             # User
             client.table("users").delete().eq("telegram_id", telegram_id).execute()
@@ -72,7 +78,9 @@ async def nuclear_reset_user(telegram_id: int):
         except Exception as e:
             logger.error(f"❌ Error wiping Supabase: {e}")
 
-    logger.info("✨ RESET COMPLETE. Restart the bot and access the Mini App to regenerate.")
+    logger.info(
+        "✨ RESET COMPLETE. Restart the bot and access the Mini App to regenerate."
+    )
 
 
 if __name__ == "__main__":

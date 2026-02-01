@@ -41,7 +41,9 @@ def diagnose_epub(epub_path):
             opf_files = [f for f in file_list if f.lower().endswith(".opf")]
             container_files = [f for f in file_list if "container.xml" in f.lower()]
             ncx_files = [f for f in file_list if f.lower().endswith(".ncx")]
-            html_files = [f for f in file_list if f.lower().endswith((".html", ".htm", ".xhtml"))]
+            html_files = [
+                f for f in file_list if f.lower().endswith((".html", ".htm", ".xhtml"))
+            ]
 
             print("\n📁 ARCHIVOS ENCONTRADOS:")
             print(f"   📄 OPF (metadata): {len(opf_files)}")
@@ -68,7 +70,9 @@ def diagnose_epub(epub_path):
                     root = ET.fromstring(container_content)
 
                     # Buscar rootfile
-                    namespaces = {"container": "urn:oasis:names:tc:opendocument:xmlns:container"}
+                    namespaces = {
+                        "container": "urn:oasis:names:tc:opendocument:xmlns:container"
+                    }
                     rootfiles = root.findall(".//container:rootfile", namespaces)
 
                     for rootfile in rootfiles:

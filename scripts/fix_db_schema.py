@@ -5,7 +5,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 # Getting DB URL from env or default
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+asyncpg://zeepub:zeepub@db:5432/zeepub")
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL", "postgresql+asyncpg://zeepub:zeepub@db:5432/zeepub"
+)
 
 # Ensure asyncpg driver
 if "postgresql://" in DATABASE_URL and "postgresql+asyncpg" not in DATABASE_URL:

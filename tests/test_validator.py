@@ -53,7 +53,9 @@ async def test_get_candidates_and_validator(mock_url_cache, monkeypatch):
     with patch.dict(sys.modules, {"utils.url_validator": url_validator}):
         spec2.loader.exec_module(url_validator)
         loop = asyncio.get_event_loop()
-        task = url_validator.start_background_validator(loop=loop, interval=1, batch_size=5)
+        task = url_validator.start_background_validator(
+            loop=loop, interval=1, batch_size=5
+        )
         # Smoke test: give it a bit of time
         await asyncio.sleep(0.1)
         url_validator.stop_background_validator()

@@ -21,7 +21,9 @@ async def find_book_size():
         # Search for size approx 4.29 MB
         # 4.29 * 1024 * 1024 = 4498391
         res = await session.execute(
-            select(LocalBook).where(LocalBook.file_size >= 4400000, LocalBook.file_size <= 4600000)
+            select(LocalBook).where(
+                LocalBook.file_size >= 4400000, LocalBook.file_size <= 4600000
+            )
         )
         books = res.scalars().all()
 

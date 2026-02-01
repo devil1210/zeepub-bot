@@ -43,16 +43,16 @@ class PostgresManager:
             db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
         elif db_url.startswith("postgresql://") and "+asyncpg" not in db_url:
             db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-
         try:
-            self.engine = create_async_engine(
-                db_url,
-                echo=False,
-                pool_size=config.DB_POOL_SIZE,
-                max_overflow=config.DB_MAX_OVERFLOW,
-                pool_pre_ping=True,  # Check connection health before use
-                connect_args={"server_settings": {"jit": "off"}},
-            )
+            engine_args = {
+                "echo": False,
+                "pool_pre_ping": True,
+                "pool_size": config.DB_POOL_SIZE,
+                "max_overflow": config.DB_MAX_OVERFLOW,
+                "connect_args": {"server_settings": {"jit": "off"}},
+            }
+
+            self.engine = create_async_engine(db_url, **engine_args)
 
             self.session_maker = async_sessionmaker(
                 self.engine, expire_on_commit=False, class_=AsyncSession
@@ -61,7 +61,9 @@ class PostgresManager:
             # Verify connection
             async with self.engine.begin() as conn:
                 await conn.run_sync(
-                    lambda _: logger.info("Postgres connection established successfully.")
+                    lambda _: logger.info(
+                        "Postgres connection established successfully."
+                    )
                 )
 
             self._initialized = True
@@ -75,7 +77,9 @@ class PostgresManager:
         if not self.session_maker:
             await self.initialize()
             if not self.session_maker:
-                raise RuntimeError("Database (PostgreSQL) is not initialized. Check DATABASE_URL.")
+                raise RuntimeError(
+                    "Database (PostgreSQL) is not initialized. Check DATABASE_URL."
+                )
 
         async with self.session_maker() as session:
             try:

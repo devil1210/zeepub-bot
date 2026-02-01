@@ -27,7 +27,9 @@ class SuggestionsPlugin(BasePlugin):
         try:
             from telegram.ext import CallbackQueryHandler
 
-            bot_instance.add_handler(CommandHandler("sugerencia", self.sugerencia_command))
+            bot_instance.add_handler(
+                CommandHandler("sugerencia", self.sugerencia_command)
+            )
             bot_instance.add_handler(
                 CallbackQueryHandler(self.suggestion_callback, pattern="^suggestion\\|")
             )
@@ -40,7 +42,9 @@ class SuggestionsPlugin(BasePlugin):
     async def cleanup(self) -> None:
         pass
 
-    async def sugerencia_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def sugerencia_command(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         uid = update.effective_user.id
         thread_id = get_thread_id(update)
 
@@ -69,12 +73,17 @@ class SuggestionsPlugin(BasePlugin):
 
         keyboard = [
             [
-                InlineKeyboardButton("✅ Aceptar", callback_data=f"suggestion|accept|{uid}"),
-                InlineKeyboardButton("❌ Rechazar", callback_data=f"suggestion|reject|{uid}"),
+                InlineKeyboardButton(
+                    "✅ Aceptar", callback_data=f"suggestion|accept|{uid}"
+                ),
+                InlineKeyboardButton(
+                    "❌ Rechazar", callback_data=f"suggestion|reject|{uid}"
+                ),
             ],
             [
                 InlineKeyboardButton(
-                    "💬 Respuesta Personalizada", callback_data=f"suggestion|custom|{uid}"
+                    "💬 Respuesta Personalizada",
+                    callback_data=f"suggestion|custom|{uid}",
                 )
             ],
         ]
@@ -96,7 +105,9 @@ class SuggestionsPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def suggestion_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def suggestion_callback(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """Handle button clicks on suggestion messages."""
         query = update.callback_query
         await query.answer()
@@ -114,7 +125,9 @@ class SuggestionsPlugin(BasePlugin):
                 text = await cms.get_text("suggestion_accepted")
 
             try:
-                await context.bot.send_message(chat_id=user_id, text=text, parse_mode="HTML")
+                await context.bot.send_message(
+                    chat_id=user_id, text=text, parse_mode="HTML"
+                )
                 await query.edit_message_text(
                     text=query.message.text + "\n\n✅ <b>Aceptada y notificada</b>",
                     parse_mode="HTML",
@@ -131,7 +144,9 @@ class SuggestionsPlugin(BasePlugin):
                 text = await cms.get_text("suggestion_rejected")
 
             try:
-                await context.bot.send_message(chat_id=user_id, text=text, parse_mode="HTML")
+                await context.bot.send_message(
+                    chat_id=user_id, text=text, parse_mode="HTML"
+                )
                 await query.edit_message_text(
                     text=query.message.text + "\n\n❌ <b>Rechazada y notificada</b>",
                     parse_mode="HTML",

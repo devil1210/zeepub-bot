@@ -89,13 +89,17 @@ class ZeePubBot:
         self.app.add_handler(CallbackQueryHandler(button_handler), group=1)
 
         # Mensajes de texto
-        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto))
+        self.app.add_handler(
+            MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto)
+        )
 
         # JSON Upload Handler
         from handlers.message_handlers import handle_donation_proof, handle_json_upload
 
         self.app.add_handler(
-            MessageHandler(filters.Document.MimeType("application/json"), handle_json_upload)
+            MessageHandler(
+                filters.Document.MimeType("application/json"), handle_json_upload
+            )
         )
         # Donation Proof Handler (Photo or Document)
         self.app.add_handler(
@@ -143,13 +147,17 @@ class ZeePubBot:
         bot_initialized = False
         for attempt in range(max_retries):
             try:
-                logger.info(f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})...")
+                logger.info(
+                    f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})..."
+                )
                 await self.app.initialize()
 
                 # Verify bot is actually ready by accessing bot.id
                 try:
                     _ = self.app.bot.id
-                    logger.info(f"Bot inicializado exitosamente (ID: {self.app.bot.id}).")
+                    logger.info(
+                        f"Bot inicializado exitosamente (ID: {self.app.bot.id})."
+                    )
                     bot_initialized = True
                     break
                 except RuntimeError as e:
@@ -165,11 +173,15 @@ class ZeePubBot:
             except Exception as e:
                 # Check if it's already initialized (happens on retry)
                 if "already initialized" in str(e).lower():
-                    logger.info("Bot ya estaba marcado como inicializado, verificando estado...")
+                    logger.info(
+                        "Bot ya estaba marcado como inicializado, verificando estado..."
+                    )
                     # Try to access bot.id to verify it's really ready
                     try:
                         _ = self.app.bot.id
-                        logger.info(f"Bot verificado correctamente (ID: {self.app.bot.id}).")
+                        logger.info(
+                            f"Bot verificado correctamente (ID: {self.app.bot.id})."
+                        )
                         bot_initialized = True
                         break
                     except RuntimeError:
@@ -226,7 +238,9 @@ class ZeePubBot:
 
                         success, msg = await trigger_watchtower_update()
                         await context.bot.send_message(
-                            chat_id=update.effective_chat.id, text=msg, parse_mode="HTML"
+                            chat_id=update.effective_chat.id,
+                            text=msg,
+                            parse_mode="HTML",
                         )
                     except Exception as ex:
                         await context.bot.send_message(
@@ -234,7 +248,9 @@ class ZeePubBot:
                             text=f"❌ Error crítico en update: {ex}",
                         )
 
-                self.app.add_handler(CommandHandler("update_system", emergency_update_handler))
+                self.app.add_handler(
+                    CommandHandler("update_system", emergency_update_handler)
+                )
 
                 # Notify admins of Safe Mode
                 for admin_id in config.ADMIN_USERS:
@@ -245,7 +261,9 @@ class ZeePubBot:
                             parse_mode="HTML",
                         )
                     except Exception as ex:
-                        logger.warning(f"Could not notify admin {admin_id} of safe mode: {ex}")
+                        logger.warning(
+                            f"Could not notify admin {admin_id} of safe mode: {ex}"
+                        )
             except Exception as e2:
                 logger.error(f"FATAL: Could not register emergency handler: {e2}")
 
@@ -262,17 +280,23 @@ class ZeePubBot:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                logger.info(f"Iniciando polling (intento {attempt + 1}/{max_retries})...")
+                logger.info(
+                    f"Iniciando polling (intento {attempt + 1}/{max_retries})..."
+                )
                 await self.app.updater.start_polling()
                 logger.info("Bot iniciado en modo asíncrono (API).")
                 break
             except Exception as e:
                 if attempt < max_retries - 1:
                     wait = 5 * (attempt + 1)
-                    logger.warning(f"Error iniciando polling: {e}. Reintentando en {wait}s...")
+                    logger.warning(
+                        f"Error iniciando polling: {e}. Reintentando en {wait}s..."
+                    )
                     await asyncio.sleep(wait)
                 else:
-                    logger.error(f"No se pudo iniciar polling tras {max_retries} intentos: {e}")
+                    logger.error(
+                        f"No se pudo iniciar polling tras {max_retries} intentos: {e}"
+                    )
                     raise
 
         # Inicializar schedulers y updates usando BotInitializer
@@ -288,9 +312,15 @@ class ZeePubBot:
         await session_manager.close()
         logger.info("Bot detenido (API).")
 
-    async def _metrics_middleware(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def _metrics_middleware(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """Middleware para recolectar métricas básicas."""
-        if update.message and update.message.text and update.message.text.startswith("/"):
+        if (
+            update.message
+            and update.message.text
+            and update.message.text.startswith("/")
+        ):
             try:
                 cmd = update.message.text.split()[0].split("@")[0]
                 metrics.inc_command(cmd)

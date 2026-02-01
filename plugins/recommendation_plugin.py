@@ -37,14 +37,18 @@ class RecommendationPlugin(BasePlugin):
 
         app.add_handler(CommandHandler("recommend", self.command_recommend))
         app.add_handler(CommandHandler("settings", self.command_settings))
-        app.add_handler(CallbackQueryHandler(self.handle_settings_callback, pattern="^settings_"))
+        app.add_handler(
+            CallbackQueryHandler(self.handle_settings_callback, pattern="^settings_")
+        )
 
         return True
 
     async def cleanup(self) -> None:
         pass
 
-    async def command_recommend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def command_recommend(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """Genera recomendaciones inmediatas."""
         uid = update.effective_user.id
         from services.user_service import get_effective_user
@@ -52,7 +56,9 @@ class RecommendationPlugin(BasePlugin):
         user_info = await get_effective_user(uid)
 
         if user_info.get("role") not in ("admin", "staff"):
-            await update.message.reply_text("⛔ Esta función está en Beta exclusiva para Staff.")
+            await update.message.reply_text(
+                "⛔ Esta función está en Beta exclusiva para Staff."
+            )
             return
 
         await update.message.reply_text("🤔 Analizando tus gustos...")
@@ -83,7 +89,13 @@ class RecommendationPlugin(BasePlugin):
             kb = []
             if local_id:
                 # Use standard flow: lib|local_{id}
-                kb = [[InlineKeyboardButton("📥 Ver Libro", callback_data=f"lib|local_{local_id}")]]
+                kb = [
+                    [
+                        InlineKeyboardButton(
+                            "📥 Ver Libro", callback_data=f"lib|local_{local_id}"
+                        )
+                    ]
+                ]
 
             # Enviar portada si hay path
             sent = False
@@ -112,7 +124,9 @@ class RecommendationPlugin(BasePlugin):
                     reply_markup=InlineKeyboardMarkup(kb),
                 )
 
-    async def command_settings(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def command_settings(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """Menú de configuración de usuario."""
         uid = update.effective_user.id
         settings = await get_user_settings(uid)
@@ -122,7 +136,9 @@ class RecommendationPlugin(BasePlugin):
         status_icon = "✅" if recomm_enabled else "❌"
         action = "enable" if not recomm_enabled else "disable"
 
-        text = "⚙️ <b>Configuración Personal</b>\n\nAquí puedes gestionar tus preferencias."
+        text = (
+            "⚙️ <b>Configuración Personal</b>\n\nAquí puedes gestionar tus preferencias."
+        )
 
         keyboard = [
             [
@@ -137,7 +153,9 @@ class RecommendationPlugin(BasePlugin):
             text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
         )
 
-    async def handle_settings_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_settings_callback(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         query = update.callback_query
         data = query.data
         uid = update.effective_user.id
@@ -164,7 +182,9 @@ class RecommendationPlugin(BasePlugin):
             ]
 
             try:
-                await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(keyboard))
+                await query.edit_message_reply_markup(
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
             except Exception:
                 pass  # Identical content
 

@@ -17,7 +17,9 @@ if not url or not key:
 
 # If I can't run SQL, I'll just skip and warn.
 print(f"URL: {url}")
-print("Intentando ejecutar SQL vía REST API (si está habilitado el pg_net o similar)...")
+print(
+    "Intentando ejecutar SQL vía REST API (si está habilitado el pg_net o similar)..."
+)
 
 # Actually, Supabase doesn't have a direct SQL REST endpoint unless configured.
 # But many people use 'rpc' if they have a 'exec_sql' function.
