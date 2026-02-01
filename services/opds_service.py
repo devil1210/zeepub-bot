@@ -111,16 +111,17 @@ async def mostrar_colecciones(
 
         # Check if folder for correct fallback
         has_subsection = any(
-            getattr(l, "rel", "") == "subsection" for l in getattr(entry, "links", [])
+            getattr(link_obj, "rel", "") == "subsection"
+            for link_obj in getattr(entry, "links", [])
         )
         author = extract_author(entry, is_folder=has_subsection)
         href_entry = getattr(entry, "link", "")
         href_sub, portada = None, None
         acqs = []
 
-        for l in getattr(entry, "links", []):
-            rel = getattr(l, "rel", "")
-            href_l = abs_url(config.BASE_URL, l.href)
+        for link_obj in getattr(entry, "links", []):
+            rel = getattr(link_obj, "rel", "")
+            href_l = abs_url(config.BASE_URL, link_obj.href)
             if rel == "subsection":
                 href_sub = href_l
             elif "acquisition" in rel:

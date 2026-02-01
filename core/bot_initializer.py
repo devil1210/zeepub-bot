@@ -2,17 +2,16 @@ import json
 import logging
 import os
 
+from config.config_settings import config
 from services.backup_scheduler import start_backup_scheduler
 from services.daily_reset_scheduler import start_daily_reset_scheduler
 from services.recommendation_scheduler import start_recommendations_scheduler
 from services.weekly_reports import start_weekly_scheduler
 from utils.download_limiter import load_downloads
 from utils.helpers import escapar_html, get_last_commit_message, get_version_string
+from utils.metrics import metrics
 
 logger = logging.getLogger(__name__)
-
-from config.config_settings import config
-from utils.metrics import metrics
 
 
 class BotInitializer:

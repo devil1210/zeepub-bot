@@ -1,10 +1,14 @@
+import asyncio
 import hashlib
 import hmac
 import json
 import logging
 import os
 from typing import Any
+from urllib.parse import parse_qs, unquote, urljoin, urlparse
 
+import aiofiles
+import aiohttp
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
@@ -26,6 +30,7 @@ from utils.helpers import (
     parse_metadata_from_title,
 )
 from utils.http_client import fetch_bytes
+from utils.url_cache import get_url_from_hash
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
@@ -69,7 +74,6 @@ async def get_feed(
         if not feed:
             raise HTTPException(status_code=404, detail="No se pudo cargar el feed")
 
-        from urllib.parse import urljoin
 
         # Helper para normalizar URLs
         def normalize_url(href):
@@ -240,11 +244,11 @@ async def get_feed(
                     "categories": categories,
                     "links": [
                         {
-                            "href": normalize_url(l.get("href")),
-                            "rel": l.get("rel"),
-                            "type": l.get("type"),
+                            "href": normalize_url(link_obj.get("href")),
+                            "rel": link_obj.get("rel"),
+                            "type": link_obj.get("type"),
                         }
-                        for l in getattr(entry, "links", [])
+                        for link_obj in getattr(entry, "links", [])
                     ],
                 }
             )
@@ -279,7 +283,6 @@ async def get_feed(
             )
 
         # Second pass: fetch covers for folders that don't have one
-        import asyncio
 
         async def fetch_folder_cover(res):
             if res["subsection_url"] and not res["cover_url"]:
@@ -288,15 +291,15 @@ async def get_feed(
                     sub_entries = getattr(sub_feed, "entries", [])
                     if sub_entries:
                         first_book = sub_entries[0]
-                        for l in getattr(first_book, "links", []):
-                            l_type = l.get("type", "")
-                            l_rel = l.get("rel", "")
+                        for link_obj in getattr(first_book, "links", []):
+                            l_type = link_obj.get("type", "")
+                            l_rel = link_obj.get("rel", "")
                             if (
                                 "image" in l_type
                                 or "cover" in l_rel
                                 or l_rel == "http://opds-spec.org/image"
                             ):
-                                res["cover_url"] = normalize_url(l.get("href"))
+                                res["cover_url"] = normalize_url(link_obj.get("href"))
                                 break
                 except httpx.HTTPStatusError as e:
                     logger.warning(
@@ -342,10 +345,8 @@ async def get_feed(
         # Try to guess current page
         current_page = 1
         if url and "page=" in url:
-            import urllib.parse
-
-            parsed = urllib.parse.urlparse(url)
-            params = urllib.parse.parse_qs(parsed.query)
+            parsed = urlparse(url)
+            params = parse_qs(parsed.query)
             try:
                 current_page = int(params.get("page", [1])[0])
             except ValueError:
@@ -370,11 +371,11 @@ async def get_feed(
                 logger.warning(f"Unexpected error calculating total pages: {e}")
         processed_links = [
             {
-                "href": normalize_url(l.get("href")),
-                "rel": l.get("rel"),
-                "type": l.get("type"),
+                "href": normalize_url(link_obj.get("href")),
+                "rel": link_obj.get("rel"),
+                "type": link_obj.get("type"),
             }
-            for l in getattr(feed.feed, "links", [])
+            for link_obj in getattr(feed.feed, "links", [])
         ]
 
         return {
@@ -614,7 +615,6 @@ async def tunnel_opds(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-from utils.url_cache import get_url_from_hash
 
 
 @router.get("/dl/{url_hash}")
@@ -629,7 +629,6 @@ async def short_download(url_hash: str):
             raise HTTPException(status_code=404, detail="Short URL not found")
 
         # Extraer título del final de la URL
-        from urllib.parse import unquote, urlparse
 
         parsed = urlparse(url)
         title = unquote(parsed.path.split("/")[-1]).replace(".epub", "")
@@ -659,7 +658,6 @@ async def public_download(
 
         # Usar fetch_bytes para obtener el contenido (memoria o archivo temp)
         # Nota: fetch_bytes maneja archivos grandes escribiendo a disco
-        import aiohttp
 
         auth = None
         if config.OPDS_AUTH:
@@ -670,12 +668,10 @@ async def public_download(
         if not data:
             raise HTTPException(status_code=404, detail="Could not fetch file")
 
-        from fastapi.responses import StreamingResponse
 
         # Determinar si es archivo o bytes
         if isinstance(data, str) and os.path.exists(data):
             # Es un archivo temporal - usar aiofiles para streaming async
-            import aiofiles
 
             async def iterfile_async():
                 try:
@@ -734,9 +730,9 @@ async def prepare_facebook_post(
         title = book.get("title", "Libro")
         download_url = next(
             (
-                l["href"]
-                for l in book.get("links", [])
-                if "acquisition" in l.get("rel", "") or "epub" in l.get("type", "")
+                link_obj["href"]
+                for link_obj in book.get("links", [])
+                if "acquisition" in link_obj.get("rel", "") or "epub" in link_obj.get("type", "")
             ),
             None,
         )
@@ -746,7 +742,6 @@ async def prepare_facebook_post(
             raise HTTPException(status_code=400, detail="No download URL found")
 
         # Construir link público acortado con SHA256
-        from urllib.parse import unquote, urlparse
 
         from utils.url_cache import create_short_url
 

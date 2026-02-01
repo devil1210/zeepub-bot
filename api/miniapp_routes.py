@@ -453,7 +453,7 @@ async def get_levels(user_data: dict[str, Any] = Depends(require_admin)):
     levels = await user_repo.get_all_levels()
 
     logger.info(f"Found {len(levels)} access levels")
-    return {"levels": [UserLevelModel(**l) for l in levels]}
+    return {"levels": [UserLevelModel(**lvl) for lvl in levels]}
 
 
 @router.put("/api/admin/levels")

@@ -13,4 +13,4 @@ fi
 
 # Start the bot
 echo "Starting ZeePub Bot..."
-exec python run_with_api.py
+exec /root/zeepub_bot/venv/bin/python run_with_api.py
