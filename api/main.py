@@ -57,9 +57,12 @@ async def lifespan(app: FastAPI):
         logger.error(f"Migration check failed: {e}")
 
     if config.DATABASE_URL:
-        logger.info("📦 Base de Datos: PostgreSQL (Activa)")
+        if "postgresql" in config.DATABASE_URL:
+            logger.info("📦 Base de Datos: PostgreSQL (Activa)")
+        else:
+            logger.info(f"📦 Base de Datos: {config.DATABASE_URL.split(':', 1)[0]} (Activa)")
     else:
-        logger.error("📦 ERROR: DATABASE_URL no configurada. Postgres es mandatorio.")
+        logger.warning("📦 WARNING: DATABASE_URL no configurada.")
     try:
         await bot.initialize()
 

@@ -104,8 +104,10 @@ class BotConfig:
     ENABLE_PLUGINS: bool = os.getenv("ENABLE_PLUGINS", "true").lower() == "true"
     PLUGIN_DIRECTORY: str = os.getenv("PLUGIN_DIRECTORY", "plugins")
 
-    # Plugin PostgreSQL (Siempre ON ahora que es obligatorio)
-    ENABLE_POSTGRES_PLUGIN: bool = True
+    # Plugin PostgreSQL
+    ENABLE_POSTGRES_PLUGIN: bool = (
+        os.getenv("ENABLE_POSTGRES_PLUGIN", "True").lower() == "true"
+    )
 
     # Plugin Group Manager
     ENABLE_GROUP_MANAGER: bool = (
@@ -217,7 +219,11 @@ class BotConfig:
         if not self.DATABASE_URL:
             errors.append("DATABASE_URL")
         elif "sqlite" in self.DATABASE_URL:
-            errors.append("DATABASE_URL (Must be PostgreSQL, SQLite is removed)")
+            import logging
+
+            logging.getLogger("config").warning(
+                "⚠️ Usando SQLite. Se recomienda migrar a PostgreSQL según el manifiesto."
+            )
 
         # Validar que al menos tengamos los sufijos (usando los nombres del .env)
         if not self.OPDS_ROOT_START_SUFFIX:
