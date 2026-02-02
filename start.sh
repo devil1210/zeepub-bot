@@ -13,4 +13,13 @@ fi
 
 # Start the bot
 echo "Starting ZeePub Bot..."
-python3 run_with_api.py
+# Detección inteligente del entorno (Docker vs VPS Local)
+if [ -f "/root/zeepub_bot/venv/bin/python" ]; then
+    PYTHON_EXE="/root/zeepub_bot/venv/bin/python"
+elif [ -f "/app/venv/bin/python" ]; then
+    PYTHON_EXE="/app/venv/bin/python"
+else
+    PYTHON_EXE="python3"
+fi
+
+exec $PYTHON_EXE run_with_api.py
