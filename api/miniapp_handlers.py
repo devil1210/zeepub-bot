@@ -2830,6 +2830,17 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
                         "message": f"Error de IA: {proposal['error']}",
                     }
 
+                # If no changes are needed, log feedback immediately
+                if proposal.get("no_changes_needed"):
+                    await AIService.log_feedback(
+                        series_hash=series_hash,
+                        original=current_name,
+                        proposed=proposal.get("proposed_series", current_name),
+                        final=proposal.get("proposed_series", current_name),
+                        status="no_changes",
+                        ai_reason=proposal.get("reason", "Serie ya optimizada"),
+                    )
+
                 return {"success": True, "proposal": proposal, "dry_run": True}
 
             # --- EXECUTE MODE (STAGING) ---
