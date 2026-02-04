@@ -212,6 +212,17 @@ def check_migrations():
                 )
                 conn.commit()
 
+            # 8. archived_series columns
+            if table_exists("archived_series"):
+                add_column_if_missing("archived_series", "spanish_title", "VARCHAR(255)")
+                add_column_if_missing("archived_series", "book_type", "VARCHAR(100)")
+                add_column_if_missing("archived_series", "publisher", "VARCHAR(255)")
+
+            # 9. archived_books columns
+            if table_exists("archived_books"):
+                add_column_if_missing("archived_books", "author", "VARCHAR(255)")
+                add_column_if_missing("archived_books", "book_type", "VARCHAR(100)")
+
             _log.info(f"Migrations for {engine.dialect.name} completed.")
 
     except Exception as e:
