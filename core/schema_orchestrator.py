@@ -112,7 +112,23 @@ class SchemaOrchestrator:
                     "user_ui_settings", "title_language", "VARCHAR(20) DEFAULT 'romaji'"
                 )
 
-                # Auto-Migration for Users (Ensure created_at exists)
+                await SchemaOrchestrator._check_and_add_column(
+                    "user_levels", "allow_theme_templates", "BOOLEAN DEFAULT FALSE"
+                )
+                await SchemaOrchestrator._check_and_add_column(
+                    "user_levels", "can_upload_epub", "BOOLEAN DEFAULT FALSE"
+                )
+
+                # Auto-Migration for Users (Ensure created_at and email exists)
+                await SchemaOrchestrator._check_and_add_column(
+                    "users", "email", "VARCHAR(255) UNIQUE"
+                )
+                await SchemaOrchestrator._check_and_add_column(
+                    "users", "can_upload_epub", "BOOLEAN DEFAULT FALSE"
+                )
+                await SchemaOrchestrator._check_and_add_column(
+                    "users", "updated_at", "TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())"
+                )
                 await SchemaOrchestrator._check_and_add_column(
                     "users", "created_at", "TIMESTAMP DEFAULT NOW()"
                 )
