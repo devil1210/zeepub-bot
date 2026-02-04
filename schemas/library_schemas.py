@@ -75,6 +75,9 @@ class SeriesDTO(BaseModel):
     rating_count: int = 0
     is_series: bool = True
     type: str = "series"
+    illustrator: str | None = None
+    translator: str | None = None
+    layout_by: str | None = None
     lastUpdated: str | None = None
 
 

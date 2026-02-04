@@ -123,8 +123,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
             lastUpdated: item.updatedDate || 'Reciente',
             illustrator: item.illustrator,
             translator: item.translator,
-            typesetter: item.typesetter,
-            group: item.group,
+            typesetter: item.layout_by || item.typesetter,
+            group: item.translator || item.group,
             book_type: item.book_type || 'Novela Ligera',
             is_uncensored: item.is_uncensored,
             color_mode: item.color_mode,
@@ -171,18 +171,34 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
     }
   };
 
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    setCurrentPage(1);
-  }, [searchTerm, selectedScope, activeSort]);
+  // Track previous search params to detect when to reset page
+  const prevSearchParams = useRef({ searchTerm, selectedScope, activeSort });
 
   useEffect(() => {
+    // Determine if we should reset to page 1
+    const paramsChanged =
+      prevSearchParams.current.searchTerm !== searchTerm ||
+      prevSearchParams.current.selectedScope !== selectedScope ||
+      prevSearchParams.current.activeSort !== activeSort;
+
+    if (paramsChanged) {
+      prevSearchParams.current = { searchTerm, selectedScope, activeSort };
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+        return; // The effect will trigger again with currentPage = 1
+      }
+    }
+
     const timer = setTimeout(() => {
-      doSearch(searchTerm, currentPage);
+      if (searchTerm || selectedScope !== 'TODOS') {
+        doSearch(searchTerm, currentPage);
+      } else {
+        // Optional: clear results if search is empty, or show recommendations
+        // For now, let's just do the search (it will return everything)
+        doSearch(searchTerm, currentPage);
+      }
     }, 500);
+
     return () => clearTimeout(timer);
   }, [searchTerm, currentPage, selectedScope, activeSort]);
 
