@@ -333,28 +333,9 @@ async def buscar_zeepubs_directo(update, context, uid: int, query: str = None):
         local_results = search_res.get("results", [])
 
         if local_results:
-            fake_entries = []
-            for b in local_results:
-                entry = SimpleNamespace(
-                    title=b["title"],
-                    author=b["author"] or "Desconocido",
-                    link=b.get("filepath", ""),
-                    links=[
-                        SimpleNamespace(rel="acquisition", href=b.get("filepath", "")),
-                        SimpleNamespace(
-                            rel="image",
-                            href=b.get("cover_medium") or b.get("cover_low") or "",
-                        ),
-                    ],
-                )
-                fake_entries.append(entry)
+            from services.library_ui_service import mostrar_resultados_locales
 
-            fake_feed = SimpleNamespace(
-                feed=SimpleNamespace(title=f"🔍 Resultados Locales: {query}", links=[]),
-                entries=fake_entries,
-            )
-            st["titulo"] = f"🔍 Resultados: {query}"
-            await mostrar_colecciones(update, context, feed=fake_feed, new_message=True)
+            await mostrar_resultados_locales(update, context, query, local_results)
             return
 
         # Si no hay local, buscar en el root OPDS

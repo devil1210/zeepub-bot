@@ -607,3 +607,85 @@ class LibraryService:
             except Exception as e:
                 logger.error(f"[LibraryService.get_catalog] Error: {e}")
                 return {"items": [], "total": 0}
+    @staticmethod
+    async def get_genres() -> list[str]:
+        """Obtiene la lista de géneros únicos (procedente de la columna tags)."""
+        async with pg_manager.get_session() as session:
+            try:
+                # tags es JSONB en Postgres
+                stmt = select(func.distinct(func.jsonb_array_elements_text(cast(LocalBook.tags, func.jsonb)))).order_by(1)
+                res = await session.execute(stmt)
+                return [r[0] for r in res.all() if r[0]]
+            except Exception as e:
+                logger.error(f"Error fetching genres: {e}")
+                return []
+
+    @staticmethod
+    async def get_authors() -> list[str]:
+        """Obtiene la lista de autores únicos."""
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = select(func.distinct(LocalBook.author)).where(LocalBook.author != "").order_by(LocalBook.author.asc())
+                res = await session.execute(stmt)
+                return [r[0] for r in res.all() if r[0]]
+            except Exception as e:
+                logger.error(f"Error fetching authors: {e}")
+                return []
+
+    @staticmethod
+    async def get_series_by_tag(tag: str, page: int = 1, page_size: int = 20) -> dict[str, Any]:
+        """Obtiene series filtradas por un tag específico."""
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = select(SeriesMetadata).where(cast(SeriesMetadata.tags, String).ilike(f"%{tag}%"))
+                
+                count_stmt = select(func.count()).select_from(stmt.subquery())
+                total = (await session.execute(count_stmt)).scalar() or 0
+                
+                stmt = stmt.order_by(SeriesMetadata.series_name.asc()).offset((page - 1) * page_size).limit(page_size)
+                res = await session.execute(stmt)
+                series = res.scalars().all()
+                
+                items = []
+                for s in series:
+                    items.append({
+                        "id": f"series_{s.series_hash}",
+                        "title": s.series_name,
+                        "series_hash": s.series_hash,
+                        "is_folder": True,
+                        "cover": s.cover_url
+                    })
+                
+                return {"items": items, "total": total}
+            except Exception as e:
+                logger.error(f"Error filtering series by tag: {e}")
+                return {"items": [], "total": 0}
+
+    @staticmethod
+    async def get_series_by_author(author: str, page: int = 1, page_size: int = 20) -> dict[str, Any]:
+        """Obtiene series filtradas por autor."""
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = select(SeriesMetadata).where(SeriesMetadata.author.ilike(f"%{author}%"))
+                
+                count_stmt = select(func.count()).select_from(stmt.subquery())
+                total = (await session.execute(count_stmt)).scalar() or 0
+                
+                stmt = stmt.order_by(SeriesMetadata.series_name.asc()).offset((page - 1) * page_size).limit(page_size)
+                res = await session.execute(stmt)
+                series = res.scalars().all()
+                
+                items = []
+                for s in series:
+                    items.append({
+                        "id": f"series_{s.series_hash}",
+                        "title": s.series_name,
+                        "series_hash": s.series_hash,
+                        "is_folder": True,
+                        "cover": s.cover_url
+                    })
+                
+                return {"items": items, "total": total}
+            except Exception as e:
+                logger.error(f"Error filtering series by author: {e}")
+                return {"items": [], "total": 0}

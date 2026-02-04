@@ -10,6 +10,7 @@ from telegram.ext import CommandHandler, ContextTypes
 from config.config_settings import config
 from core.state_manager import state_manager
 from services.opds_service import mostrar_colecciones
+from services.library_ui_service import mostrar_menu_principal
 from services.user_service import get_effective_user
 
 # from utils.http_client import parse_feed_from_url  <-- Removing this
@@ -207,13 +208,9 @@ class CommandHandlers:
 
         # (publisher prompt shown above; continue)
 
-        # Usuarios normales
-        root = config.OPDS_ROOT_START
-        st["opds_root"] = root
-        st["opds_root_base"] = root
+        # Usuarios normales: ir directamente a la Biblioteca Local
         st["historial"] = []
-        st["ultima_pagina"] = root
-        await mostrar_colecciones(update, context, root, from_collection=False, new_message=True)
+        await mostrar_menu_principal(update, context)
 
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /status: informa estado interno, nivel de usuario y descargas restantes."""

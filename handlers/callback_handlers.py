@@ -13,6 +13,13 @@ from services.opds_service import (
     mostrar_colecciones,
     mostrar_recomendaciones,
 )
+from services.library_ui_service import (
+    mostrar_menu_principal,
+    mostrar_generos,
+    mostrar_series,
+    mostrar_volumenes_local,
+    mostrar_autores_local
+)
 from services.telegram_service import publicar_libro
 
 logger = logging.getLogger(__name__)
@@ -39,11 +46,8 @@ async def set_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text = await cms.get_text("destination_selected")
         await query.answer(text)
 
-        # Si no es admin, ir directamente a ZeePubs [ES]
-        if uid not in config.ADMIN_USERS:
-            await buscar_zeepubs_directo(update, context, uid)
-        else:
-            await mostrar_colecciones(update, context, st["opds_root"], from_collection=False)
+        # Ir directamente a la Biblioteca Local (basada en BD local)
+        await mostrar_menu_principal(update, context)
         return
 
     # Destino manual
@@ -70,14 +74,8 @@ async def ver_catalogo_normal(update: Update, context: ContextTypes.DEFAULT_TYPE
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
 
-    root = config.OPDS_ROOT_START
-    st["opds_root"] = root
-    st["opds_root_base"] = root
-    st["historial"] = []
-    st["ultima_pagina"] = root
-    st["titulo"] = "📚 Categorías"
-
-    await mostrar_colecciones(update, context, root, from_collection=False)
+    st["titulo"] = "📚 Biblioteca Local"
+    await mostrar_menu_principal(update, context)
 
 
 async def handle_manual_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -164,7 +162,7 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def abrir_zeepubs(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await buscar_zeepubs_directo(update, context, update.effective_user.id)
+    await mostrar_menu_principal(update, context)
 
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -206,11 +204,45 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         return
 
+    # === Local Navigation Dispatchers ===
+    if data == "nav_local|genres":
+        await mostrar_generos(update, context)
+        return
+    if data == "nav_local|authors":
+        await mostrar_autores_local(update, context)
+        return
+    if data.startswith("nav_local|"):
+        _, origin = data.split("|", 1)
+        await mostrar_series(update, context, origin_type=origin)
+        return
+    if data.startswith("gen|"):
+        _, tag = data.split("|", 1)
+        await mostrar_series(update, context, origin_type="genre", filter_val=tag)
+        return
+    if data.startswith("aut|"):
+        _, auth = data.split("|", 1)
+        await mostrar_series(update, context, origin_type="author", filter_val=auth)
+        return
+    if data.startswith("nav_p|"):
+        parts = data.split("|")
+        # Format: nav_p|origin|filter|page
+        origin = parts[1]
+        filter_v = parts[2]
+        page = int(parts[3])
+        await mostrar_series(update, context, origin_type=origin, filter_val=filter_v or None, page=page)
+        return
+
     # Selección de colección
     if data.startswith("col|"):
         idx = int(data.split("|", 1)[1])
         col = st["colecciones"].get(idx)
         if col:
+            href = col.get("href", "")
+            if href.startswith("local_series|"):
+                series_hash = href.split("|")[1]
+                await mostrar_volumenes_local(update, context, series_hash)
+                return
+
             titulo_col = col.get("titulo", "").lower()
 
             # Si no es admin y es "Todas las bibliotecas", saltar a ZeePubs [ES] directamente
@@ -588,6 +620,33 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Subir nivel (usar historial para ir al nivel anterior)
     if data == "subir_nivel":
+        # === Local Navigation Back Logic ===
+        view = st.get("current_view")
+        if view == "series_list":
+            prev_view = st.get("prev_view_local")
+            if prev_view == "genres":
+                await mostrar_generos(update, context)
+                return
+            elif prev_view == "authors":
+                await mostrar_autores_local(update, context)
+                return
+            else:
+                await mostrar_menu_principal(update, context)
+                return
+        if view in ("genres", "authors", "all_series", "newest"):
+            await mostrar_menu_principal(update, context)
+            return
+        if view == "volumes_local":
+            await mostrar_series(
+                update,
+                context,
+                origin_type=st.get("origin_type"),
+                filter_val=st.get("filter_val"),
+                page=st.get("current_page", 1),
+            )
+            return
+
+        # Original OPDS back logic
         if "historial" not in st:
             st["historial"] = []
 

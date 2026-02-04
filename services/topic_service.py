@@ -32,7 +32,7 @@ class TopicService:
 
         from repositories.user_repository import user_repo
 
-        user_data = await user_repo.get_user_by_id(user_id)
+        user_data = await user_repo.get_by_id(user_id)
         if not user_data:
             return {}
 
@@ -65,7 +65,7 @@ class TopicService:
         """Recupera el thread_id para un slug específico."""
         from repositories.user_repository import user_repo
 
-        user_data = await user_repo.get_user_by_id(user_id)
+        user_data = await user_repo.get_by_id(user_id)
         if not user_data:
             return None
         return user_data.get("settings", {}).get("topics", {}).get(slug)
