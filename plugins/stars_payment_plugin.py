@@ -41,18 +41,14 @@ class StarsPaymentPlugin(BasePlugin):
     async def cleanup(self) -> None:
         pass
 
-    async def pre_checkout_handler(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def pre_checkout_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Responde a la consulta previa al pago."""
         query = update.pre_checkout_query
         # Aquí podrías validar disponibilidad del nivel, etc.
         # Por ahora aceptamos todos
         await query.answer(ok=True)
 
-    async def successful_payment_handler(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def successful_payment_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Maneja el pago exitoso y actualiza el nivel del usuario."""
         payment = update.message.successful_payment
         user = update.effective_user
@@ -70,9 +66,7 @@ class StarsPaymentPlugin(BasePlugin):
             new_role = "patrocinador"
 
         # Actualizar en la DB
-        await user_repo.upsert(
-            telegram_id=user.id, role=new_role, nickname=user.first_name
-        )
+        await user_repo.upsert(telegram_id=user.id, role=new_role, nickname=user.first_name)
 
         # Limpiar caché del servicio de usuario
         await invalidate_user_cache(user.id)

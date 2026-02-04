@@ -17,9 +17,7 @@ class DownloadHistory(Base):
     __tablename__ = "download_history"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(
-        BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True
-    )
+    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
 
     # Relaciones
     user = relationship("User", backref="download_history")

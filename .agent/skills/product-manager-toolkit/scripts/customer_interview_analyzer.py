@@ -188,9 +188,7 @@ class InterviewAnalyzer:
                 jobs.append(
                     {
                         "job": job,
-                        "pattern": pattern.pattern
-                        if hasattr(pattern, "pattern")
-                        else pattern,
+                        "pattern": pattern.pattern if hasattr(pattern, "pattern") else pattern,
                     }
                 )
 
@@ -357,18 +355,13 @@ class InterviewAnalyzer:
 
         # Filter out common words
         common_words = {"this", "that", "it", "them", "other", "another", "something"}
-        competitors = [
-            c for c in competitors if c.lower() not in common_words and len(c) > 2
-        ]
+        competitors = [c for c in competitors if c.lower() not in common_words and len(c) > 2]
 
         return list(competitors)[:5]
 
     def _assess_severity(self, text: str) -> str:
         """Assess severity of pain point"""
-        if any(
-            word in text
-            for word in ["very", "extremely", "really", "totally", "completely"]
-        ):
+        if any(word in text for word in ["very", "extremely", "really", "totally", "completely"]):
             return "high"
         elif any(word in text for word in ["somewhat", "bit", "little", "slightly"]):
             return "low"
@@ -394,10 +387,7 @@ class InterviewAnalyzer:
 
     def _assess_request_priority(self, text: str) -> str:
         """Assess priority of request"""
-        if any(
-            word in text
-            for word in ["critical", "urgent", "asap", "immediately", "blocking"]
-        ):
+        if any(word in text for word in ["critical", "urgent", "asap", "immediately", "blocking"]):
             return "critical"
         elif any(word in text for word in ["need", "important", "should", "must"]):
             return "high"
@@ -475,9 +465,7 @@ def format_single_interview(analysis: dict) -> str:
     if analysis["pain_points"]:
         output.append("\n🔥 Pain Points Identified:")
         for i, pain in enumerate(analysis["pain_points"][:5], 1):
-            output.append(
-                f"\n{i}. [{pain['severity'].upper()}] {pain['quote'][:100]}..."
-            )
+            output.append(f"\n{i}. [{pain['severity'].upper()}] {pain['quote'][:100]}...")
 
     # Feature Requests
     if analysis["feature_requests"]:

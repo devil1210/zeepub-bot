@@ -278,17 +278,13 @@ def run_research(
             try:
                 if mock:
                     mock_thread = load_fixture("reddit_thread_sample.json")
-                    reddit_items[i] = reddit_enrich.enrich_reddit_item(
-                        item, mock_thread
-                    )
+                    reddit_items[i] = reddit_enrich.enrich_reddit_item(item, mock_thread)
                 else:
                     reddit_items[i] = reddit_enrich.enrich_reddit_item(item)
             except Exception as e:
                 # Log but don't crash - keep the unenriched item
                 if progress:
-                    progress.show_error(
-                        f"Enrich failed for {item.get('url', 'unknown')}: {e}"
-                    )
+                    progress.show_error(f"Enrich failed for {item.get('url', 'unknown')}: {e}")
 
             raw_reddit_enriched.append(reddit_items[i])
 
@@ -469,16 +465,12 @@ def main():
     progress.start_processing()
 
     # Normalize items
-    normalized_reddit = normalize.normalize_reddit_items(
-        reddit_items, from_date, to_date
-    )
+    normalized_reddit = normalize.normalize_reddit_items(reddit_items, from_date, to_date)
     normalized_x = normalize.normalize_x_items(x_items, from_date, to_date)
 
     # Hard date filter: exclude items with verified dates outside the range
     # This is the safety net - even if prompts let old content through, this filters it
-    filtered_reddit = normalize.filter_by_date_range(
-        normalized_reddit, from_date, to_date
-    )
+    filtered_reddit = normalize.filter_by_date_range(normalized_reddit, from_date, to_date)
     filtered_x = normalize.filter_by_date_range(normalized_x, from_date, to_date)
 
     # Score items
@@ -522,9 +514,7 @@ def main():
         progress.show_complete(len(deduped_reddit), len(deduped_x))
 
     # Output result
-    output_result(
-        report, args.emit, web_needed, args.topic, from_date, to_date, missing_keys
-    )
+    output_result(report, args.emit, web_needed, args.topic, from_date, to_date, missing_keys)
 
 
 def output_result(

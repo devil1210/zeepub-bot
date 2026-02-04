@@ -64,9 +64,7 @@ async def daily_backup_scheduler(bot):
                 hour = int(hour_str)
                 minute = int(minute_str)
             except Exception:
-                logger.warning(
-                    f"Formato de export_time inválido '{export_time}', usando 04:00"
-                )
+                logger.warning(f"Formato de export_time inválido '{export_time}', usando 04:00")
                 hour, minute = 4, 0
 
             now = datetime.now()

@@ -1,10 +1,9 @@
 """Terminal UI utilities for last30days skill."""
 
-import sys
-import time
-import threading
 import random
-from typing import Optional
+import sys
+import threading
+import time
 
 # Check if we're in a real terminal (not captured by Claude Code)
 IS_TTY = sys.stderr.isatty()
@@ -139,7 +138,7 @@ class Spinner:
         self.message = message
         self.color = color
         self.running = False
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
         self.frame_idx = 0
         self.shown_static = False
 
@@ -188,7 +187,7 @@ class ProgressDisplay:
 
     def __init__(self, topic: str, show_banner: bool = True):
         self.topic = topic
-        self.spinner: Optional[Spinner] = None
+        self.spinner: Spinner | None = None
         self.start_time = time.time()
 
         if show_banner:
@@ -207,16 +206,12 @@ class ProgressDisplay:
 
     def start_reddit(self):
         msg = random.choice(REDDIT_MESSAGES)
-        self.spinner = Spinner(
-            f"{Colors.YELLOW}Reddit{Colors.RESET} {msg}", Colors.YELLOW
-        )
+        self.spinner = Spinner(f"{Colors.YELLOW}Reddit{Colors.RESET} {msg}", Colors.YELLOW)
         self.spinner.start()
 
     def end_reddit(self, count: int):
         if self.spinner:
-            self.spinner.stop(
-                f"{Colors.YELLOW}Reddit{Colors.RESET} Found {count} threads"
-            )
+            self.spinner.stop(f"{Colors.YELLOW}Reddit{Colors.RESET} Found {count} threads")
 
     def start_reddit_enrich(self, current: int, total: int):
         if self.spinner:
@@ -231,15 +226,11 @@ class ProgressDisplay:
     def update_reddit_enrich(self, current: int, total: int):
         if self.spinner:
             msg = random.choice(ENRICHING_MESSAGES)
-            self.spinner.update(
-                f"{Colors.YELLOW}Reddit{Colors.RESET} [{current}/{total}] {msg}"
-            )
+            self.spinner.update(f"{Colors.YELLOW}Reddit{Colors.RESET} [{current}/{total}] {msg}")
 
     def end_reddit_enrich(self):
         if self.spinner:
-            self.spinner.stop(
-                f"{Colors.YELLOW}Reddit{Colors.RESET} Enriched with engagement data"
-            )
+            self.spinner.stop(f"{Colors.YELLOW}Reddit{Colors.RESET} Enriched with engagement data")
 
     def start_x(self):
         msg = random.choice(X_MESSAGES)
@@ -252,9 +243,7 @@ class ProgressDisplay:
 
     def start_processing(self):
         msg = random.choice(PROCESSING_MESSAGES)
-        self.spinner = Spinner(
-            f"{Colors.PURPLE}Processing{Colors.RESET} {msg}", Colors.PURPLE
-        )
+        self.spinner = Spinner(f"{Colors.PURPLE}Processing{Colors.RESET} {msg}", Colors.PURPLE)
         self.spinner.start()
 
     def end_processing(self):
@@ -264,13 +253,9 @@ class ProgressDisplay:
     def show_complete(self, reddit_count: int, x_count: int):
         elapsed = time.time() - self.start_time
         if IS_TTY:
-            sys.stderr.write(
-                f"\n{Colors.GREEN}{Colors.BOLD}✓ Research complete{Colors.RESET} "
-            )
+            sys.stderr.write(f"\n{Colors.GREEN}{Colors.BOLD}✓ Research complete{Colors.RESET} ")
             sys.stderr.write(f"{Colors.DIM}({elapsed:.1f}s){Colors.RESET}\n")
-            sys.stderr.write(
-                f"  {Colors.YELLOW}Reddit:{Colors.RESET} {reddit_count} threads  "
-            )
+            sys.stderr.write(f"  {Colors.YELLOW}Reddit:{Colors.RESET} {reddit_count} threads  ")
             sys.stderr.write(f"{Colors.CYAN}X:{Colors.RESET} {x_count} posts\n\n")
         else:
             sys.stderr.write(
@@ -301,17 +286,13 @@ class ProgressDisplay:
     def end_web_only(self):
         """End web-only spinner."""
         if self.spinner:
-            self.spinner.stop(
-                f"{Colors.GREEN}Web{Colors.RESET} Claude will search the web"
-            )
+            self.spinner.stop(f"{Colors.GREEN}Web{Colors.RESET} Claude will search the web")
 
     def show_web_only_complete(self):
         """Show completion for web-only mode."""
         elapsed = time.time() - self.start_time
         if IS_TTY:
-            sys.stderr.write(
-                f"\n{Colors.GREEN}{Colors.BOLD}✓ Ready for web search{Colors.RESET} "
-            )
+            sys.stderr.write(f"\n{Colors.GREEN}{Colors.BOLD}✓ Ready for web search{Colors.RESET} ")
             sys.stderr.write(f"{Colors.DIM}({elapsed:.1f}s){Colors.RESET}\n")
             sys.stderr.write(
                 f"  {Colors.GREEN}Web:{Colors.RESET} Claude will search blogs, docs & news\n\n"

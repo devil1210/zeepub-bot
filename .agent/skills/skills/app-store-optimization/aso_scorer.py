@@ -3,7 +3,7 @@ ASO scoring module for App Store Optimization.
 Calculates comprehensive ASO health score across multiple dimensions.
 """
 
-from typing import Dict, List, Any
+from typing import Any
 
 
 class ASOScorer:
@@ -35,11 +35,11 @@ class ASOScorer:
 
     def calculate_overall_score(
         self,
-        metadata: Dict[str, Any],
-        ratings: Dict[str, Any],
-        keyword_performance: Dict[str, Any],
-        conversion: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        metadata: dict[str, Any],
+        ratings: dict[str, Any],
+        keyword_performance: dict[str, Any],
+        conversion: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Calculate comprehensive ASO score (0-100).
 
@@ -116,7 +116,7 @@ class ASOScorer:
             "weaknesses": self._identify_weaknesses(self.score_breakdown),
         }
 
-    def score_metadata_quality(self, metadata: Dict[str, Any]) -> float:
+    def score_metadata_quality(self, metadata: dict[str, Any]) -> float:
         """
         Score metadata quality (0-100).
 
@@ -174,9 +174,7 @@ class ASOScorer:
             density_score = 30
         elif keyword_density < self.BENCHMARKS["keyword_density"]["min"]:
             # Too low - proportional scoring
-            density_score = (
-                keyword_density / self.BENCHMARKS["keyword_density"]["min"]
-            ) * 20
+            density_score = (keyword_density / self.BENCHMARKS["keyword_density"]["min"]) * 20
         else:
             # Too high (keyword stuffing) - penalty
             excess = keyword_density - self.BENCHMARKS["keyword_density"]["optimal"]
@@ -186,7 +184,7 @@ class ASOScorer:
 
         return round(sum(scores), 1)
 
-    def score_ratings_reviews(self, ratings: Dict[str, Any]) -> float:
+    def score_ratings_reviews(self, ratings: dict[str, Any]) -> float:
         """
         Score ratings and reviews (0-100).
 
@@ -220,15 +218,12 @@ class ASOScorer:
         elif total_ratings >= self.BENCHMARKS["ratings_count"]["min"]:
             # Proportional scoring
             proportion = (total_ratings - self.BENCHMARKS["ratings_count"]["min"]) / (
-                self.BENCHMARKS["ratings_count"]["target"]
-                - self.BENCHMARKS["ratings_count"]["min"]
+                self.BENCHMARKS["ratings_count"]["target"] - self.BENCHMARKS["ratings_count"]["min"]
             )
             rating_volume_score = 15 + (proportion * 15)
         else:
             # Very low volume
-            rating_volume_score = (
-                total_ratings / self.BENCHMARKS["ratings_count"]["min"]
-            ) * 15
+            rating_volume_score = (total_ratings / self.BENCHMARKS["ratings_count"]["min"]) * 15
 
         # Rating velocity score (0-20 points)
         if recent_ratings > 100:
@@ -244,7 +239,7 @@ class ASOScorer:
 
         return round(min(total_score, 100), 1)
 
-    def score_keyword_performance(self, keyword_performance: Dict[str, Any]) -> float:
+    def score_keyword_performance(self, keyword_performance: dict[str, Any]) -> float:
         """
         Score keyword ranking performance (0-100).
 
@@ -268,9 +263,7 @@ class ASOScorer:
             )
             top_10_score = 25 + (proportion * 25)
         else:
-            top_10_score = (
-                top_10_count / self.BENCHMARKS["keywords_top_10"]["min"]
-            ) * 25
+            top_10_score = (top_10_count / self.BENCHMARKS["keywords_top_10"]["min"]) * 25
 
         # Top 50 score (0-30 points)
         if top_50_count >= self.BENCHMARKS["keywords_top_50"]["target"]:
@@ -282,9 +275,7 @@ class ASOScorer:
             )
             top_50_score = 15 + (proportion * 15)
         else:
-            top_50_score = (
-                top_50_count / self.BENCHMARKS["keywords_top_50"]["min"]
-            ) * 15
+            top_50_score = (top_50_count / self.BENCHMARKS["keywords_top_50"]["min"]) * 15
 
         # Coverage score (0-10 points) - based on top 100
         coverage_score = min((top_100_count / 30) * 10, 10)
@@ -301,7 +292,7 @@ class ASOScorer:
 
         return round(min(total_score, 100), 1)
 
-    def score_conversion_metrics(self, conversion: Dict[str, Any]) -> float:
+    def score_conversion_metrics(self, conversion: dict[str, Any]) -> float:
         """
         Score conversion performance (0-100).
 
@@ -311,25 +302,19 @@ class ASOScorer:
         """
         conversion_rate = conversion.get("impression_to_install", 0.0)
         downloads_30d = conversion.get("downloads_last_30_days", 0)
-        downloads_trend = conversion.get(
-            "downloads_trend", "stable"
-        )  # 'up', 'stable', 'down'
+        downloads_trend = conversion.get("downloads_trend", "stable")  # 'up', 'stable', 'down'
 
         # Conversion rate score (0-70 points)
         if conversion_rate >= self.BENCHMARKS["conversion_rate"]["target"]:
             conversion_score = 70
         elif conversion_rate >= self.BENCHMARKS["conversion_rate"]["min"]:
-            proportion = (
-                conversion_rate - self.BENCHMARKS["conversion_rate"]["min"]
-            ) / (
+            proportion = (conversion_rate - self.BENCHMARKS["conversion_rate"]["min"]) / (
                 self.BENCHMARKS["conversion_rate"]["target"]
                 - self.BENCHMARKS["conversion_rate"]["min"]
             )
             conversion_score = 35 + (proportion * 35)
         else:
-            conversion_score = (
-                conversion_rate / self.BENCHMARKS["conversion_rate"]["min"]
-            ) * 35
+            conversion_score = (conversion_rate / self.BENCHMARKS["conversion_rate"]["min"]) * 35
 
         # Download velocity score (0-20 points)
         if downloads_30d > 10000:
@@ -359,7 +344,7 @@ class ASOScorer:
         ratings_score: float,
         keyword_score: float,
         conversion_score: float,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate prioritized recommendations based on scores."""
         recommendations = []
 
@@ -464,9 +449,7 @@ class ASOScorer:
         else:
             return "Poor - Requires immediate ASO overhaul"
 
-    def _prioritize_actions(
-        self, recommendations: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def _prioritize_actions(self, recommendations: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Prioritize actions by impact and urgency."""
         # Sort by priority (high first) and expected impact
         priority_order = {"high": 0, "medium": 1, "low": 2}
@@ -477,21 +460,17 @@ class ASOScorer:
 
         return sorted_recommendations[:3]  # Top 3 priority actions
 
-    def _identify_strengths(self, score_breakdown: Dict[str, Any]) -> List[str]:
+    def _identify_strengths(self, score_breakdown: dict[str, Any]) -> list[str]:
         """Identify areas of strength (scores >= 75)."""
         strengths = []
 
         for category, data in score_breakdown.items():
             if data["score"] >= 75:
-                strengths.append(
-                    f"{category.replace('_', ' ').title()}: {data['score']}/100"
-                )
+                strengths.append(f"{category.replace('_', ' ').title()}: {data['score']}/100")
 
-        return (
-            strengths if strengths else ["Focus on building strengths across all areas"]
-        )
+        return strengths if strengths else ["Focus on building strengths across all areas"]
 
-    def _identify_weaknesses(self, score_breakdown: Dict[str, Any]) -> List[str]:
+    def _identify_weaknesses(self, score_breakdown: dict[str, Any]) -> list[str]:
         """Identify areas needing improvement (scores < 60)."""
         weaknesses = []
 
@@ -505,11 +484,11 @@ class ASOScorer:
 
 
 def calculate_aso_score(
-    metadata: Dict[str, Any],
-    ratings: Dict[str, Any],
-    keyword_performance: Dict[str, Any],
-    conversion: Dict[str, Any],
-) -> Dict[str, Any]:
+    metadata: dict[str, Any],
+    ratings: dict[str, Any],
+    keyword_performance: dict[str, Any],
+    conversion: dict[str, Any],
+) -> dict[str, Any]:
     """
     Convenience function to calculate ASO score.
 
@@ -523,6 +502,4 @@ def calculate_aso_score(
         Complete ASO score report
     """
     scorer = ASOScorer()
-    return scorer.calculate_overall_score(
-        metadata, ratings, keyword_performance, conversion
-    )
+    return scorer.calculate_overall_score(metadata, ratings, keyword_performance, conversion)

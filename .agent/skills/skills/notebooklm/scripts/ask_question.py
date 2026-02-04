@@ -10,9 +10,9 @@ See: https://github.com/microsoft/playwright/issues/36139
 """
 
 import argparse
+import re
 import sys
 import time
-import re
 from pathlib import Path
 
 from patchright.sync_api import sync_playwright
@@ -21,10 +21,10 @@ from patchright.sync_api import sync_playwright
 sys.path.insert(0, str(Path(__file__).parent))
 
 from auth_manager import AuthManager
-from notebook_manager import NotebookLibrary
-from config import QUERY_INPUT_SELECTORS, RESPONSE_SELECTORS
 from browser_utils import BrowserFactory, StealthUtils
+from notebook_manager import NotebookLibrary
 
+from config import QUERY_INPUT_SELECTORS, RESPONSE_SELECTORS
 
 # Follow-up reminder (adapted from MCP server for stateless operation)
 # Since we don't have persistent sessions, we encourage comprehensive questions
@@ -66,9 +66,7 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
         playwright = sync_playwright().start()
 
         # Launch persistent browser context using factory
-        context = BrowserFactory.launch_persistent_context(
-            playwright, headless=headless
-        )
+        context = BrowserFactory.launch_persistent_context(playwright, headless=headless)
 
         # Navigate to notebook
         page = context.new_page()
@@ -76,9 +74,7 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
         page.goto(notebook_url, wait_until="domcontentloaded")
 
         # Wait for NotebookLM
-        page.wait_for_url(
-            re.compile(r"^https://notebooklm\.google\.com/"), timeout=10000
-        )
+        page.wait_for_url(re.compile(r"^https://notebooklm\.google\.com/"), timeout=10000)
 
         # Wait for query input (MCP approach)
         print("  ⏳ Waiting for query input...")
@@ -224,11 +220,7 @@ def main():
             if notebooks:
                 print("\n📚 Available notebooks:")
                 for nb in notebooks:
-                    mark = (
-                        " [ACTIVE]"
-                        if nb.get("id") == library.active_notebook_id
-                        else ""
-                    )
+                    mark = " [ACTIVE]" if nb.get("id") == library.active_notebook_id else ""
                     print(f"  {nb['id']}: {nb['name']}{mark}")
                 print("\nSpecify with --notebook-id or set active:")
                 print("python scripts/run.py notebook_manager.py activate --id ID")

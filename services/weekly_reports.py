@@ -19,9 +19,7 @@ async def generate_weekly_report():
         stats = get_stats()
         broken = get_broken_links(limit=10)
 
-        success_rate = (
-            (stats["valid"] / stats["total"] * 100) if stats["total"] > 0 else 0
-        )
+        success_rate = (stats["valid"] / stats["total"] * 100) if stats["total"] > 0 else 0
 
         report = "📊 <b>Reporte Semanal de Links</b>\n\n"
         report += "📈 <b>Estadísticas Generales:</b>\n"
@@ -35,9 +33,7 @@ async def generate_weekly_report():
             report += "⚠️ <b>Links Rotos (máximo 10):</b>\n"
             for hash_val, title, failed, _last_checked in broken:
                 title_short = (
-                    (title[:35] + "...")
-                    if title and len(title) > 35
-                    else (title or "Sin título")
+                    (title[:35] + "...") if title and len(title) > 35 else (title or "Sin título")
                 )
                 report += f"  • {title_short}\n"
                 report += f"    Hash: <code>{hash_val}</code> (Fallos: {failed}/3)\n"
@@ -65,9 +61,7 @@ async def send_weekly_reports(bot):
         sent_count = 0
         for publisher_id in config.FACEBOOK_PUBLISHERS:
             try:
-                await bot.send_message(
-                    chat_id=publisher_id, text=report, parse_mode="HTML"
-                )
+                await bot.send_message(chat_id=publisher_id, text=report, parse_mode="HTML")
                 sent_count += 1
                 logger.info(f"Reporte semanal enviado a publisher {publisher_id}")
             except Exception as e:

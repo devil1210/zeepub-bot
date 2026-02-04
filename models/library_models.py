@@ -107,9 +107,7 @@ class UploadBook(Base):
     series_hash = Column(String(64))
 
     # Estado del procesamiento
-    identity_match = Column(
-        String(10), default="False"
-    )  # Si coincide con libro existente
+    identity_match = Column(String(10), default="False")  # Si coincide con libro existente
     path_collision = Column(String(10), default="False")  # Si hay colisión de ruta
     processed = Column(String(10), default="False")  # Si ya fue procesado
 
@@ -150,9 +148,7 @@ class LibrarySource(Base):
     )  # Ej: "/home/zeepubs/drive/02-Publicaciones"
     last_scanned = Column(DateTime, default=None)
 
-    books = relationship(
-        "LocalBook", back_populates="source", cascade="all, delete-orphan"
-    )
+    books = relationship("LocalBook", back_populates="source", cascade="all, delete-orphan")
 
 
 class LocalBook(Base):
@@ -178,9 +174,7 @@ class LocalBook(Base):
     english_title = Column(String(512))
     jap_title = Column(String(512))
     series = Column(String(255))
-    series_spanish = Column(
-        String(255)
-    )  # New column for Spanish series name from filename
+    series_spanish = Column(String(255))  # New column for Spanish series name from filename
     volume = Column(Float)  # Soporta 1, 1.5, etc
     edition = Column(String(255))  # Ej: "Honorificos", "Colector", etc.
 
@@ -228,9 +222,7 @@ class LocalBook(Base):
     cover_original = Column(String(1024))  # Original extracted from EPUB (full quality)
     cover_high = Column(String(1024))  # High quality: 800px width, 85% quality
     cover_medium = Column(String(1024))  # Medium quality: 400px width, 80% quality
-    cover_low = Column(
-        String(1024)
-    )  # Low quality: 200px width, 70% quality (default for UI)
+    cover_low = Column(String(1024))  # Low quality: 200px width, 70% quality (default for UI)
 
     # Trazabilidad
     file_created_at = Column(DateTime)
@@ -239,9 +231,7 @@ class LocalBook(Base):
 
     # Identificadores estables basados en metadatos
     series_metadata_id = Column(Integer, ForeignKey("series_metadata.id"), index=True)
-    series_hash = Column(
-        String(64), index=True
-    )  # Mantener por compatibilidad y búsqueda rápida
+    series_hash = Column(String(64), index=True)  # Mantener por compatibilidad y búsqueda rápida
     book_hash = Column(
         String(64), index=True, unique=True
     )  # Identificador único del libro (antes content_hash)
@@ -249,12 +239,8 @@ class LocalBook(Base):
     source = relationship("LibrarySource", back_populates="books")
     series_info = relationship("SeriesMetadata", back_populates="books")
 
-    ratings = relationship(
-        "UserRating", back_populates="book", cascade="all, delete-orphan"
-    )
-    downloads = relationship(
-        "UserDownload", back_populates="book", cascade="all, delete-orphan"
-    )
+    ratings = relationship("UserRating", back_populates="book", cascade="all, delete-orphan")
+    downloads = relationship("UserDownload", back_populates="book", cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -284,21 +270,14 @@ class LocalBook(Base):
                 if self.file_size and self.file_size > 0
                 else "0 MB"
             ),
-            "modifiedAt": (
-                self.file_modified_at.isoformat() if self.file_modified_at else None
-            ),
-            "modified_at": (
-                self.file_modified_at.isoformat() if self.file_modified_at else None
-            ),
+            "modifiedAt": (self.file_modified_at.isoformat() if self.file_modified_at else None),
+            "modified_at": (self.file_modified_at.isoformat() if self.file_modified_at else None),
             # Portadas
             "cover_original": self.cover_original,
             "cover_high": self.cover_high,
             "cover_medium": self.cover_medium,
             "cover_low": self.cover_low,
-            "cover": self.cover_low
-            or self.cover_medium
-            or self.cover_high
-            or self.cover_original,
+            "cover": self.cover_low or self.cover_medium or self.cover_high or self.cover_original,
             "cover_thumb": self.cover_low,
             # Trazabilidad
             "filename": self.filename,
@@ -361,9 +340,7 @@ class UserRating(Base):
     __tablename__ = "user_ratings"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(
-        BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True
-    )
+    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
     book_id = Column(
         Integer, ForeignKey("local_books.id"), nullable=True
     )  # Opcional si el libro existe
@@ -383,9 +360,7 @@ class UserDownload(Base):
     __tablename__ = "user_downloads"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(
-        BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True
-    )
+    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
 
     # Relación flexible: Preferimos ID si existe, pero guardamos hashes por si el libro se borra
     book_id = Column(Integer, ForeignKey("local_books.id"), nullable=True)
@@ -454,13 +429,9 @@ class MetadataProposal(Base):
     # La propuesta completa en formato JSON (lo que devuelve AIService.analyze_series_for_updates)
     proposal_data = Column(JSON, nullable=False)
 
-    status = Column(
-        String(20), default="pending", index=True
-    )  # pending, approved, rejected
+    status = Column(String(20), default="pending", index=True)  # pending, approved, rejected
     type = Column(String(20), default="enrich", index=True)  # enrich, merge
-    secondary_hash = Column(
-        String(64), index=True
-    )  # Para propuestas de MERGE (serie B)
+    secondary_hash = Column(String(64), index=True)  # Para propuestas de MERGE (serie B)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     processed_at = Column(DateTime)

@@ -97,9 +97,7 @@ class ThemeSyncService:
             return []
 
         try:
-            result = (
-                supabase_manager.get_client().table("app_themes").select("*").execute()
-            )
+            result = supabase_manager.get_client().table("app_themes").select("*").execute()
             return result.data if result and result.data else []
         except Exception as e:
             logger.error(f"Error getting Supabase themes: {e}")
@@ -134,26 +132,19 @@ class ThemeSyncService:
         normalized = {
             "name": name,
             "description": theme_data.get("description"),
-            "theme_type": theme_data.get("theme_type")
-            or theme_data.get("theme")
-            or "dark",
-            "primary_color": theme_data.get("primary_color")
-            or theme_data.get("primaryColor"),
+            "theme_type": theme_data.get("theme_type") or theme_data.get("theme") or "dark",
+            "primary_color": theme_data.get("primary_color") or theme_data.get("primaryColor"),
             "background_color": theme_data.get("background_color")
             or theme_data.get("backgroundColor"),
             "card_color": theme_data.get("card_color") or theme_data.get("cardColor"),
-            "glass_opacity": theme_data.get("glass_opacity")
-            or theme_data.get("glassOpacity"),
-            "nav_opacity": theme_data.get("nav_opacity")
-            or theme_data.get("navOpacity"),
-            "accent_opacity": theme_data.get("accent_opacity")
-            or theme_data.get("accentOpacity"),
+            "glass_opacity": theme_data.get("glass_opacity") or theme_data.get("glassOpacity"),
+            "nav_opacity": theme_data.get("nav_opacity") or theme_data.get("navOpacity"),
+            "accent_opacity": theme_data.get("accent_opacity") or theme_data.get("accentOpacity"),
             "glass_blur": theme_data.get("glass_blur") or theme_data.get("glassBlur"),
             "card_glow_intensity": theme_data.get("card_glow_intensity")
             or theme_data.get("cardGlowIntensity"),
             "font_size": theme_data.get("font_size") or theme_data.get("fontSize"),
-            "cover_width": theme_data.get("cover_width")
-            or theme_data.get("coverWidth"),
+            "cover_width": theme_data.get("cover_width") or theme_data.get("coverWidth"),
             "banner_content_offset": theme_data.get("banner_content_offset")
             or theme_data.get("bannerContentOffset"),
         }
@@ -243,9 +234,7 @@ class ThemeSyncService:
                 session.add(new_theme)
                 local_map[norm_name] = new_theme  # Evitar duplicados en el mismo loop
                 added_count += 1
-                logger.debug(
-                    f"Sincronización: Agregado tema '{supabase_theme['name']}'"
-                )
+                logger.debug(f"Sincronización: Agregado tema '{supabase_theme['name']}'")
             else:
                 # Actualizar tema existente
                 existing_theme = local_map[norm_name]
@@ -253,9 +242,7 @@ class ThemeSyncService:
                     if value is not None:
                         setattr(existing_theme, key, value)
                 updated_count += 1
-                logger.debug(
-                    f"Sincronización: Actualizado tema '{supabase_theme['name']}'"
-                )
+                logger.debug(f"Sincronización: Actualizado tema '{supabase_theme['name']}'")
 
         await session.commit()
         return added_count, updated_count
@@ -401,9 +388,7 @@ class ThemeSyncService:
             try:
                 # Sincronizar en ambas direcciones
                 local_added, local_updated = await self.sync_supabase_to_local(session)
-                supabase_added, supabase_updated = await self.sync_local_to_supabase(
-                    session
-                )
+                supabase_added, supabase_updated = await self.sync_local_to_supabase(session)
 
                 local_after = len(await self.get_local_themes(session))
                 supabase_after = len(await self.get_supabase_themes())
@@ -461,9 +446,7 @@ class ThemeSyncService:
             try:
                 # Sincronizar en ambas direcciones
                 local_added, local_updated = await self.sync_supabase_to_local(session)
-                supabase_added, supabase_updated = await self.sync_local_to_supabase(
-                    session
-                )
+                supabase_added, supabase_updated = await self.sync_local_to_supabase(session)
 
                 local_after = len(await self.get_local_themes(session))
                 supabase_after = len(await self.get_supabase_themes())

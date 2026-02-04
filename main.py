@@ -119,9 +119,7 @@ async def fix_schema_if_needed():
 
             # Índices en claves foráneas
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);")
             )
             await conn.execute(
                 text(
@@ -145,9 +143,7 @@ async def fix_schema_if_needed():
             # --- COLUMNAS DE METADATA EXTENDIDA (MIGRACIÓN 2025) ---
             # local_books
             await conn.execute(
-                text(
-                    "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);"
-                )
+                text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);")
             )
             await conn.execute(
                 text(
@@ -155,9 +151,7 @@ async def fix_schema_if_needed():
                 )
             )
             await conn.execute(
-                text(
-                    "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(512);"
-                )
+                text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(512);")
             )
             await conn.execute(
                 text(
@@ -165,9 +159,7 @@ async def fix_schema_if_needed():
                 )
             )
             await conn.execute(
-                text(
-                    "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);"
-                )
+                text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);")
             )
 
             # user_levels
@@ -219,9 +211,7 @@ async def initialize_application():
             f"Initial sync completed: {sync_result.get('added', 0)} themes added, {sync_result.get('updated', 0)} updated"
         )
     else:
-        logger.warning(
-            f"Initial sync failed: {sync_result.get('error', 'Unknown error')}"
-        )
+        logger.warning(f"Initial sync failed: {sync_result.get('error', 'Unknown error')}")
 
     # Schedule daily sync
     from apscheduler.schedulers.asyncio import AsyncIOScheduler

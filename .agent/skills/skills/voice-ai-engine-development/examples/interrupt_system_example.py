@@ -6,10 +6,10 @@ that allows users to interrupt the bot mid-sentence.
 """
 
 import asyncio
-import threading
-from typing import Any
-from dataclasses import dataclass
 import logging
+import threading
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -255,9 +255,7 @@ class MockSynthesisResult:
 
     def get_message_up_to(self, seconds: float) -> str:
         """Get partial message up to specified seconds"""
-        full_message = (
-            "I think the weather will be nice today and tomorrow and the day after."
-        )
+        full_message = "I think the weather will be nice today and tomorrow and the day after."
         chars_per_second = len(full_message) / 1.0  # Assume 1 second total
         char_index = int(seconds * chars_per_second)
         return full_message[:char_index]
@@ -295,9 +293,7 @@ async def example_interrupt_scenario():
 
     # Create interruptible event
     stop_event = threading.Event()
-    interruptible_event = InterruptibleEvent(
-        payload="Bot is speaking...", is_interruptible=True
-    )
+    interruptible_event = InterruptibleEvent(payload="Bot is speaking...", is_interruptible=True)
     conversation.add_interruptible_event(interruptible_event)
 
     # Start bot speaking

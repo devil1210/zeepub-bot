@@ -36,9 +36,7 @@ async def rename_themes():
         async with pg_manager.get_session() as session:
             # Verificar temas existentes
             logger.info("Checking existing themes...")
-            result = await session.execute(
-                text("SELECT id, name FROM app_themes ORDER BY name")
-            )
+            result = await session.execute(text("SELECT id, name FROM app_themes ORDER BY name"))
             existing_themes = result.fetchall()
 
             logger.info(f"Found {len(existing_themes)} themes:")
@@ -79,9 +77,7 @@ async def rename_themes():
                         {"new_name": new_name, "theme_id": theme_id},
                     )
 
-                    logger.info(
-                        f"✅ Renamed theme ID {theme_id}: '{old_name}' → '{new_name}'"
-                    )
+                    logger.info(f"✅ Renamed theme ID {theme_id}: '{old_name}' → '{new_name}'")
                     renamed_count += 1
                 else:
                     logger.info(f"Theme '{old_name}' not found, skipping")
@@ -93,9 +89,7 @@ async def rename_themes():
 
             # Verificar estado final
             logger.info("\nFinal theme list:")
-            result = await session.execute(
-                text("SELECT id, name FROM app_themes ORDER BY name")
-            )
+            result = await session.execute(text("SELECT id, name FROM app_themes ORDER BY name"))
             final_themes = result.fetchall()
             for theme in final_themes:
                 logger.info(f"  - ID: {theme[0]}, Name: {theme[1]}")

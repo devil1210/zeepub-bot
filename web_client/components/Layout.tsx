@@ -66,7 +66,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--bg-color)]/20 to-[var(--bg-color)]"></div>
       </div>
 
-      <div className="fixed inset-0 bg-[var(--bg-color)]/60 backdrop-blur-[2px] z-[1] pointer-events-none"></div>
+      <div className="fixed inset-0 bg-[var(--bg-color)]/60 z-[1] pointer-events-none"></div>
 
       {/* ================= DESKTOP SIDEBAR ================= */}
       <aside className="hidden md:flex flex-col w-72 h-full z-20 glass-panel border-r border-[var(--panel-border)] relative rounded-none">

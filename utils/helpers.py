@@ -3,9 +3,9 @@ import os
 import re
 from typing import Any
 from urllib.parse import urljoin, urlparse
-from utils.epub_extractor import clean_metadata_tags
 
 from config.config_settings import config
+from utils.epub_extractor import clean_metadata_tags
 
 
 def extract_creators_by_role(entry, role_code: str) -> str | None:
@@ -24,9 +24,7 @@ def extract_creators_by_role(entry, role_code: str) -> str | None:
     # 2. Buscar en namespaces dc:creator o dc:contributor
     # Algunas fuentes usan dc_creator_ill, dc_creator_trl o similar si se mapean
     if hasattr(entry, "get"):
-        val = entry.get(f"dc_creator_{role_code}") or entry.get(
-            f"dc_contributor_{role_code}"
-        )
+        val = entry.get(f"dc_creator_{role_code}") or entry.get(f"dc_contributor_{role_code}")
         if isinstance(val, str):
             creators.append(val)
 
@@ -52,9 +50,7 @@ def extract_author(entry, is_folder=False) -> str:
 
     # Fallback legacy logic
     author = None
-    single_author = (
-        entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
-    )
+    single_author = entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
     if hasattr(single_author, "name"):
         author = single_author.name
     elif isinstance(single_author, dict):
@@ -69,19 +65,13 @@ def extract_author(entry, is_folder=False) -> str:
             else getattr(entry, "author_detail", None)
         )
         if detail:
-            author = (
-                detail.get("name")
-                if hasattr(detail, "get")
-                else getattr(detail, "name", None)
-            )
+            author = detail.get("name") if hasattr(detail, "get") else getattr(detail, "name", None)
 
     if not author:
         if hasattr(entry, "get"):
             author = entry.get("dc_creator") or entry.get("dcterms_creator")
         else:
-            author = getattr(entry, "dc_creator", None) or getattr(
-                entry, "dcterms_creator", None
-            )
+            author = getattr(entry, "dc_creator", None) or getattr(entry, "dcterms_creator", None)
 
     if not author:
         author = "Colección" if is_folder else "Desconocido"
@@ -138,9 +128,7 @@ def is_command_for_bot(update, bot_username: str) -> bool:
     for entity in update.message.entities:
         if entity.type == "bot_command":
             # Extraer el texto del comando
-            command_text = update.message.text[
-                entity.offset : entity.offset + entity.length
-            ]
+            command_text = update.message.text[entity.offset : entity.offset + entity.length]
 
             # Si el comando tiene @botusername, verificar que sea este bot
             if "@" in command_text:
@@ -228,9 +216,7 @@ def extract_spanish_series_from_filename(filename: str) -> str:
     name = re.sub(r"\[.*?\]", "", name)
 
     # 3. Quitar patrón de volumen - VXX, VXX, etc.
-    vol_pattern = (
-        r"(?:\s*[\-\–\—\−]?\s*(?:Volumen|Vol\.?|Tomo|v\.?|V)\s*\d+(?:\.\d+)?.*)"
-    )
+    vol_pattern = r"(?:\s*[\-\–\—\−]?\s*(?:Volumen|Vol\.?|Tomo|v\.?|V)\s*\d+(?:\.\d+)?.*)"
     name = re.sub(vol_pattern, "", name, flags=re.IGNORECASE).strip()
 
     # 4. Quitar guiones y símbolos al final que puedan haber quedado
@@ -270,9 +256,7 @@ def process_book_identity_comprehensive(
     if original_filename:
         series_spanish = extract_spanish_series_from_filename(original_filename)
     elif epub_path:
-        series_spanish = extract_spanish_series_from_filename(
-            os.path.basename(epub_path)
-        )
+        series_spanish = extract_spanish_series_from_filename(os.path.basename(epub_path))
 
     # Categorización inteligente de tipos y extracción de metadata del título
     parsed = parse_metadata_from_title(title)
@@ -312,9 +296,7 @@ def process_book_identity_comprehensive(
     # --- ENRICHMENT FROM FILENAME ---
     # Detectar variantes de edición (Color, Censura) desde el nombre de archivo
     # si no vinieron en la metadata interna.
-    filename_to_check = original_filename or (
-        os.path.basename(epub_path) if epub_path else ""
-    )
+    filename_to_check = original_filename or (os.path.basename(epub_path) if epub_path else "")
     if filename_to_check:
         fname_lower = filename_to_check.lower()
 
@@ -323,8 +305,7 @@ def process_book_identity_comprehensive(
             meta.get("color_mode", "bw") == "bw"
         ):  # Default in extractor is "bw", check if filename says otherwise
             if any(
-                x in fname_lower
-                for x in ["[color]", "(color)", "[full color]", "color version"]
+                x in fname_lower for x in ["[color]", "(color)", "[full color]", "color version"]
             ):
                 meta["color_mode"] = "color"
 
@@ -402,9 +383,7 @@ def generate_series_hash(
     """
     from services.hash_service import hash_service
 
-    return hash_service.generate_series_hash(
-        series=series, author=author, book_type=book_type
-    )
+    return hash_service.generate_series_hash(series=series, author=author, book_type=book_type)
 
 
 def limpiar_html_basico(texto_html: str) -> str:
@@ -412,9 +391,7 @@ def limpiar_html_basico(texto_html: str) -> str:
         return ""
     texto_html = texto_html.replace("<br>", "\n").replace("<br/>", "\n")
     texto_limpio = re.sub(r"<.*?>", "", texto_html)
-    return "\n".join(
-        [ln.rstrip() for ln in texto_limpio.strip().splitlines() if ln.strip()]
-    )
+    return "\n".join([ln.rstrip() for ln in texto_limpio.strip().splitlines() if ln.strip()])
 
 
 def build_search_url(query: str, uid: int = None, role: str = None) -> str:
@@ -470,11 +447,7 @@ def find_zeepubs_destino(feed, prefer_libraries: bool = False):
             if rel == "subsection" and href:
                 full = abs_url(config.BASE_URL, href)
                 candidatos.append((title, full))
-                if (
-                    "zeepub" in tnorm
-                    or "zeepubs" in tnorm
-                    or tnorm == norm("ZeePubs [ES]")
-                ):
+                if "zeepub" in tnorm or "zeepubs" in tnorm or tnorm == norm("ZeePubs [ES]"):
                     logging.debug(
                         "find_zeepubs_destino: título coincide con 'zeepub(s)': %r -> %s",
                         title,
@@ -500,9 +473,7 @@ def find_zeepubs_destino(feed, prefer_libraries: bool = False):
                 )
                 return href
     if len(candidatos) == 1:
-        logging.debug(
-            "find_zeepubs_destino: unique candidate, returning %s", candidatos[0][1]
-        )
+        logging.debug("find_zeepubs_destino: unique candidate, returning %s", candidatos[0][1])
         return candidatos[0][1]
     logging.debug(
         "find_zeepubs_destino: no destination found (candidates=%s)",
@@ -740,17 +711,13 @@ def formatear_mensaje_portada(meta: dict, include_slug: bool = True) -> str:
     categoria = meta.get("categoria") or "Desconocida"
     generos = ", ".join(meta.get("generos") or []) or "Desconocido"
     demografia = ", ".join(meta.get("demografia") or []) or "Desconocida"
-    autor = meta.get("autor") or (
-        meta.get("autores")[0] if meta.get("autores") else "Desconocido"
-    )
+    autor = meta.get("autor") or (meta.get("autores")[0] if meta.get("autores") else "Desconocido")
     ilustrador = meta.get("ilustrador") or "Desconocido"
     maqus = meta.get("maquetadores") or []
     if not maqus:
         maqu_line = "<b>Maquetado por:</b>  #ZeePub"
     else:
-        maqu_line = "<b>Maquetado por:</b> " + " ".join(
-            f"#{m.replace(' ', '')}" for m in maqus
-        )
+        maqu_line = "<b>Maquetado por:</b> " + " ".join(f"#{m.replace(' ', '')}" for m in maqus)
 
     traduccion_parts = []
     if meta.get("traductor"):
@@ -808,9 +775,7 @@ def formatear_titulo_fb(meta: dict) -> str:
         if not series:
             series = full_title
 
-        lines.extend(
-            [f"Epub de: {series} ║ {collection_title} ║ {internal_title}", volume]
-        )
+        lines.extend([f"Epub de: {series} ║ {collection_title} ║ {internal_title}", volume])
     else:
         # Lógica antigua (fallback)
         titulo_vol = meta.get("titulo_volumen") or ""
@@ -828,18 +793,14 @@ def formatear_metadata_fb(meta: dict) -> str:
     categoria = meta.get("categoria") or "Desconocida"
     generos = ", ".join(meta.get("generos") or []) or "Desconocido"
     demografia = ", ".join(meta.get("demografia") or []) or "Desconocida"
-    autor = meta.get("autor") or (
-        meta.get("autores")[0] if meta.get("autores") else "Desconocido"
-    )
+    autor = meta.get("autor") or (meta.get("autores")[0] if meta.get("autores") else "Desconocido")
     ilustrador = meta.get("ilustrador") or "Desconocido"
     maqus = meta.get("maquetadores") or []
 
     if not maqus:
         maqu_line = "<b>Maquetado por:</b>  #ZeePub"
     else:
-        maqu_line = "<b>Maquetado por:</b> " + " ".join(
-            f"#{m.replace(' ', '')}" for m in maqus
-        )
+        maqu_line = "<b>Maquetado por:</b> " + " ".join(f"#{m.replace(' ', '')}" for m in maqus)
 
     traduccion_parts = []
     if meta.get("traductor"):

@@ -3,14 +3,13 @@ import sys
 
 from PIL import Image, ImageDraw
 
-
 # Creates "validation" images with rectangles for the bounding box information that
 # Claude creates when determining where to add text annotations in PDFs. See forms.md.
 
 
 def create_validation_image(page_number, fields_json_path, input_path, output_path):
     # Input file should be in the `fields.json` format described in forms.md.
-    with open(fields_json_path, "r") as f:
+    with open(fields_json_path) as f:
         data = json.load(f)
 
         img = Image.open(input_path)
@@ -27,9 +26,7 @@ def create_validation_image(page_number, fields_json_path, input_path, output_pa
                 num_boxes += 2
 
         img.save(output_path)
-        print(
-            f"Created validation image at {output_path} with {num_boxes} bounding boxes"
-        )
+        print(f"Created validation image at {output_path} with {num_boxes} bounding boxes")
 
 
 if __name__ == "__main__":
@@ -42,6 +39,4 @@ if __name__ == "__main__":
     fields_json_path = sys.argv[2]
     input_image_path = sys.argv[3]
     output_image_path = sys.argv[4]
-    create_validation_image(
-        page_number, fields_json_path, input_image_path, output_image_path
-    )
+    create_validation_image(page_number, fields_json_path, input_image_path, output_image_path)

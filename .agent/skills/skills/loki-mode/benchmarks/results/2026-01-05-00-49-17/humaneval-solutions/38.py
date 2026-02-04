@@ -7,7 +7,5 @@ def decode_cyclic(s: str):
     # reverse the cycle operation: shift the last character to the front
     # encode does: abc -> bca (shift left)
     # decode should: bca -> abc (shift right, i.e., last char to front)
-    groups = [
-        (group[-1] + group[:-1]) if len(group) == 3 else group for group in groups
-    ]
+    groups = [(group[-1] + group[:-1]) if len(group) == 3 else group for group in groups]
     return "".join(groups)

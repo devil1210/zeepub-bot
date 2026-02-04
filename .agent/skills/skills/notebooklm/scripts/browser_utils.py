@@ -4,11 +4,12 @@ Handles browser launching, stealth features, and common interactions
 """
 
 import json
-import time
 import random
+import time
 
-from patchright.sync_api import Playwright, BrowserContext, Page
-from config import BROWSER_PROFILE_DIR, STATE_FILE, BROWSER_ARGS, USER_AGENT
+from patchright.sync_api import BrowserContext, Page, Playwright
+
+from config import BROWSER_ARGS, BROWSER_PROFILE_DIR, STATE_FILE, USER_AGENT
 
 
 class BrowserFactory:
@@ -46,7 +47,7 @@ class BrowserFactory:
         """Inject cookies from state.json if available"""
         if STATE_FILE.exists():
             try:
-                with open(STATE_FILE, "r") as f:
+                with open(STATE_FILE) as f:
                     state = json.load(f)
                     if "cookies" in state and len(state["cookies"]) > 0:
                         context.add_cookies(state["cookies"])
@@ -64,9 +65,7 @@ class StealthUtils:
         time.sleep(random.uniform(min_ms / 1000, max_ms / 1000))
 
     @staticmethod
-    def human_type(
-        page: Page, selector: str, text: str, wpm_min: int = 320, wpm_max: int = 480
-    ):
+    def human_type(page: Page, selector: str, text: str, wpm_min: int = 320, wpm_max: int = 480):
         """Type with human-like speed"""
         element = page.query_selector(selector)
         if not element:

@@ -5,8 +5,8 @@ Manages virtual environment and dependencies automatically
 """
 
 import os
-import sys
 import subprocess
+import sys
 import venv
 from pathlib import Path
 
@@ -87,9 +87,7 @@ class SkillEnvironment:
                     print("✅ Chrome installed")
                 except subprocess.CalledProcessError as e:
                     print(f"⚠️ Warning: Failed to install Chrome: {e}")
-                    print(
-                        "   You may need to run manually: python -m patchright install chrome"
-                    )
+                    print("   You may need to run manually: python -m patchright install chrome")
                     print("   Chrome is required (not Chromium) for reliability!")
 
                 return True
@@ -161,13 +159,9 @@ def main():
 
     parser = argparse.ArgumentParser(description="Setup NotebookLM skill environment")
 
-    parser.add_argument(
-        "--check", action="store_true", help="Check if environment is set up"
-    )
+    parser.add_argument("--check", action="store_true", help="Check if environment is set up")
 
-    parser.add_argument(
-        "--run", help="Run a script with the venv (e.g., --run ask_question.py)"
-    )
+    parser.add_argument("--run", help="Run a script with the venv (e.g., --run ask_question.py)")
 
     parser.add_argument("args", nargs="*", help="Arguments to pass to the script")
 
@@ -195,9 +189,7 @@ def main():
         print(f"   Virtual env: {env.venv_dir}")
         print(f"   Python: {env.get_python_executable()}")
         print(f"\nTo activate manually: {env.activate_instructions()}")
-        print(
-            "Or run scripts directly: python setup_environment.py --run script_name.py"
-        )
+        print("Or run scripts directly: python setup_environment.py --run script_name.py")
     else:
         print("\n❌ Environment setup failed")
         return 1

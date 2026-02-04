@@ -96,9 +96,7 @@ class RBACService:
         await self.perm_cache.set(cache_key, list(permissions))
         return permissions
 
-    async def has_permission(
-        self, user_data: dict[str, Any], permission: Permission
-    ) -> bool:
+    async def has_permission(self, user_data: dict[str, Any], permission: Permission) -> bool:
         """Efficiently check if a user has a specific permission."""
         perms = await self.get_user_permissions(user_data)
         return permission.value in perms

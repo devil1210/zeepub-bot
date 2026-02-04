@@ -88,9 +88,7 @@ class TestScoreRedditItems(unittest.TestCase):
                 subreddit="test",
                 date=today,
                 date_confidence="high",
-                engagement=schema.Engagement(
-                    score=100, num_comments=50, upvote_ratio=0.9
-                ),
+                engagement=schema.Engagement(score=100, num_comments=50, upvote_ratio=0.9),
                 relevance=0.9,
             ),
             schema.RedditItem(
@@ -100,9 +98,7 @@ class TestScoreRedditItems(unittest.TestCase):
                 subreddit="test",
                 date=today,
                 date_confidence="high",
-                engagement=schema.Engagement(
-                    score=10, num_comments=5, upvote_ratio=0.8
-                ),
+                engagement=schema.Engagement(score=10, num_comments=5, upvote_ratio=0.8),
                 relevance=0.5,
             ),
         ]
@@ -131,9 +127,7 @@ class TestScoreXItems(unittest.TestCase):
                 author_handle="user1",
                 date=today,
                 date_confidence="high",
-                engagement=schema.Engagement(
-                    likes=100, reposts=25, replies=15, quotes=5
-                ),
+                engagement=schema.Engagement(likes=100, reposts=25, replies=15, quotes=5),
                 relevance=0.9,
             ),
         ]

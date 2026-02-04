@@ -63,12 +63,8 @@ class TestJaccardSimilarity(unittest.TestCase):
 class TestFindDuplicates(unittest.TestCase):
     def test_no_duplicates(self):
         items = [
-            schema.RedditItem(
-                id="R1", title="Completely different topic A", url="", subreddit=""
-            ),
-            schema.RedditItem(
-                id="R2", title="Another unrelated subject B", url="", subreddit=""
-            ),
+            schema.RedditItem(id="R1", title="Completely different topic A", url="", subreddit=""),
+            schema.RedditItem(id="R2", title="Another unrelated subject B", url="", subreddit=""),
         ]
         result = dedupe.find_duplicates(items)
         self.assertEqual(result, [])
@@ -117,9 +113,7 @@ class TestDedupeItems(unittest.TestCase):
 
     def test_keeps_all_unique(self):
         items = [
-            schema.RedditItem(
-                id="R1", title="Topic about apples", url="", subreddit="", score=90
-            ),
+            schema.RedditItem(id="R1", title="Topic about apples", url="", subreddit="", score=90),
             schema.RedditItem(
                 id="R2", title="Discussion of oranges", url="", subreddit="", score=50
             ),

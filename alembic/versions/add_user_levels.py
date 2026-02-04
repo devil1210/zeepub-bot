@@ -61,9 +61,7 @@ def upgrade():
     op.add_column("users", sa.Column("level_id", sa.Integer(), nullable=True))
 
     # Create foreign key
-    op.create_foreign_key(
-        "fk_users_level_id", "users", "user_levels", ["level_id"], ["id"]
-    )
+    op.create_foreign_key("fk_users_level_id", "users", "user_levels", ["level_id"], ["id"])
 
     # Migrate existing users to new level system
     op.execute("""
@@ -100,9 +98,7 @@ def upgrade():
     try:
         op.add_column(
             "users",
-            sa.Column(
-                "total_downloads", sa.Integer(), nullable=False, server_default="0"
-            ),
+            sa.Column("total_downloads", sa.Integer(), nullable=False, server_default="0"),
         )
     except Exception:
         pass  # Column might already exist

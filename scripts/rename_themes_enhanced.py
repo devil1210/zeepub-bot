@@ -39,9 +39,7 @@ async def check_and_rename_themes():
         async with engine.begin() as conn:
             # 1. Obtener TODOS los temas existentes
             logger.info("Checking ALL existing themes...")
-            result = await conn.execute(
-                text("SELECT id, name FROM app_themes ORDER BY name")
-            )
+            result = await conn.execute(text("SELECT id, name FROM app_themes ORDER BY name"))
             all_themes = result.fetchall()
 
             logger.info(f"Found {len(all_themes)} total themes:")
@@ -58,16 +56,12 @@ async def check_and_rename_themes():
                     logger.info(f"Found theme with '2': ID {theme[0]}, Name: '{name}'")
 
             if not themes_with_2:
-                logger.info(
-                    "No themes found ending with '2'. Checking for other patterns..."
-                )
+                logger.info("No themes found ending with '2'. Checking for other patterns...")
                 # Buscar otros patrones posibles
                 for theme in all_themes:
                     name = theme[1]
                     if name and ("2" in name):
-                        logger.info(
-                            f"Theme containing '2': ID {theme[0]}, Name: '{name}'"
-                        )
+                        logger.info(f"Theme containing '2': ID {theme[0]}, Name: '{name}'")
                 return
 
             logger.info(f"Found {len(themes_with_2)} themes to rename")
@@ -134,18 +128,14 @@ async def check_and_rename_themes():
                     {"new_name": new_name, "theme_id": theme_id},
                 )
 
-                logger.info(
-                    f"✅ Renamed theme ID {theme_id}: '{old_name}' → '{new_name}'"
-                )
+                logger.info(f"✅ Renamed theme ID {theme_id}: '{old_name}' → '{new_name}'")
                 renamed_count += 1
 
             # 4. Verificación final
             logger.info(f"\nRenaming completed. {renamed_count} themes renamed.")
 
             logger.info("\nFinal theme list:")
-            result = await conn.execute(
-                text("SELECT id, name FROM app_themes ORDER BY name")
-            )
+            result = await conn.execute(text("SELECT id, name FROM app_themes ORDER BY name"))
             final_themes = result.fetchall()
             for theme in final_themes:
                 logger.info(f"  - ID: {theme[0]}, Name: '{theme[1]}'")

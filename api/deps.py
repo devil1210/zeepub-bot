@@ -88,9 +88,7 @@ async def get_current_user_data(
     if x_simulated_level and x_simulated_level.isdigit():
         sim_level = int(x_simulated_level)
 
-    data = await get_effective_user(
-        user_id, tg_user=tg_user, simulated_level_id=sim_level
-    )
+    data = await get_effective_user(user_id, tg_user=tg_user, simulated_level_id=sim_level)
 
     # Override level to admin for debug mode
     if init_data and "debug" in str(init_data).lower():
@@ -121,9 +119,7 @@ async def require_admin(
     Uses the lighter access_data dependency.
     """
     if not access_data.get("isStaff") and not access_data.get("isAdmin"):
-        raise HTTPException(
-            status_code=403, detail="Admin or Staff privileges required"
-        )
+        raise HTTPException(status_code=403, detail="Admin or Staff privileges required")
     return access_data
 
 
@@ -134,9 +130,9 @@ async def require_mini_app_access(
     Enforces mini app access permission.
     """
     # Admins/Staff always have access, others check granular permission
-    if not access_data.get(
-        "isStaff"
-    ) and Permission.ACCESS_MINI_APP.value not in access_data.get("permissions", []):
+    if not access_data.get("isStaff") and Permission.ACCESS_MINI_APP.value not in access_data.get(
+        "permissions", []
+    ):
         raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.",

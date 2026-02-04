@@ -100,9 +100,7 @@ async def analyze_library_paths():
             # Resumen de patrones
             logger.info("📊 RESUMEN DE PATRONES ENCONTRADOS:")
             logger.info("=" * 40)
-            for pattern, count in sorted(
-                path_patterns.items(), key=lambda x: x[1], reverse=True
-            ):
+            for pattern, count in sorted(path_patterns.items(), key=lambda x: x[1], reverse=True):
                 logger.info(f"   {pattern}: {count} libros")
 
             logger.info("\n🏗️ ANÁLISIS ESTRUCTURAL:")
@@ -126,8 +124,7 @@ async def analyze_library_paths():
                         if len(parts) >= 2:
                             folder = parts[0]
                             if author and (
-                                folder.lower() in author.lower()
-                                or author.lower() in folder.lower()
+                                folder.lower() in author.lower() or author.lower() in folder.lower()
                             ):
                                 logger.info(f"   📁 {file_path}")
                                 count += 1

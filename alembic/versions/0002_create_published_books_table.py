@@ -30,9 +30,7 @@ def upgrade():
         sa.Column("slug", sa.Text, nullable=True),
         sa.Column("file_size", sa.Integer, nullable=True),
         sa.Column("file_unique_id", sa.Text, nullable=True),
-        sa.Column(
-            "date_published", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")
-        ),
+        sa.Column("date_published", sa.DateTime, server_default=sa.text("CURRENT_TIMESTAMP")),
     )
     # Create index on slug for faster lookups
     op.create_index("ix_published_books_slug", "published_books", ["slug"])

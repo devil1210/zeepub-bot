@@ -91,9 +91,7 @@ class UserAuditService:
                 session.close()
 
     @staticmethod
-    def get_user_history(
-        user_id: str, limit: int = 50, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    def get_user_history(user_id: str, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
         """
         Obtiene el historial de cambios de un usuario.
 
@@ -142,12 +140,7 @@ class UserAuditService:
             if changed_by_id:
                 query = query.filter(UserAuditLog.changed_by_id == changed_by_id)
 
-            logs = (
-                query.order_by(UserAuditLog.created_at.desc())
-                .limit(limit)
-                .offset(offset)
-                .all()
-            )
+            logs = query.order_by(UserAuditLog.created_at.desc()).limit(limit).offset(offset).all()
 
             return [log.to_dict() for log in logs]
         finally:

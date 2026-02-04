@@ -4,7 +4,6 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 CACHE_DIR = Path.home() / ".cache" / "last30days"
 DEFAULT_TTL_HOURS = 24
@@ -42,7 +41,7 @@ def is_cache_valid(cache_path: Path, ttl_hours: int = DEFAULT_TTL_HOURS) -> bool
         return False
 
 
-def load_cache(cache_key: str, ttl_hours: int = DEFAULT_TTL_HOURS) -> Optional[dict]:
+def load_cache(cache_key: str, ttl_hours: int = DEFAULT_TTL_HOURS) -> dict | None:
     """Load data from cache if valid."""
     cache_path = get_cache_path(cache_key)
 
@@ -50,13 +49,13 @@ def load_cache(cache_key: str, ttl_hours: int = DEFAULT_TTL_HOURS) -> Optional[d
         return None
 
     try:
-        with open(cache_path, "r") as f:
+        with open(cache_path) as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError):
         return None
 
 
-def get_cache_age_hours(cache_path: Path) -> Optional[float]:
+def get_cache_age_hours(cache_path: Path) -> float | None:
     """Get age of cache file in hours."""
     if not cache_path.exists():
         return None
@@ -83,7 +82,7 @@ def load_cache_with_age(cache_key: str, ttl_hours: int = DEFAULT_TTL_HOURS) -> t
     age = get_cache_age_hours(cache_path)
 
     try:
-        with open(cache_path, "r") as f:
+        with open(cache_path) as f:
             return json.load(f), age
     except (json.JSONDecodeError, OSError):
         return None, None
@@ -121,7 +120,7 @@ def load_model_cache() -> dict:
         return {}
 
     try:
-        with open(MODEL_CACHE_FILE, "r") as f:
+        with open(MODEL_CACHE_FILE) as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError):
         return {}
@@ -137,7 +136,7 @@ def save_model_cache(data: dict):
         pass
 
 
-def get_cached_model(provider: str) -> Optional[str]:
+def get_cached_model(provider: str) -> str | None:
     """Get cached model selection for a provider."""
     cache = load_model_cache()
     return cache.get(provider)

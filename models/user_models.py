@@ -120,9 +120,7 @@ class UserLevel(Base):
     __tablename__ = "user_levels"
 
     id = Column(Integer, primary_key=True)
-    name = Column(
-        String(50), unique=True, nullable=False
-    )  # python_free, python_premium
+    name = Column(String(50), unique=True, nullable=False)  # python_free, python_premium
     priority = Column(Integer, default=0)
 
     # Metadata visual
@@ -161,9 +159,7 @@ class UserLevel(Base):
     show_recommendations = Column(Boolean, default=True)
 
     # Default Theme Association
-    default_theme_id = Column(
-        Integer, ForeignKey("app_themes.id"), nullable=True, index=True
-    )
+    default_theme_id = Column(Integer, ForeignKey("app_themes.id"), nullable=True, index=True)
     default_theme = relationship("AppTheme")
 
     users = relationship("User", back_populates="level_info")

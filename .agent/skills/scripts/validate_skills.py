@@ -1,6 +1,6 @@
+import argparse
 import os
 import re
-import argparse
 import sys
 
 
@@ -32,9 +32,7 @@ def validate_skills(skills_dir, strict_mode=False):
 
     # Pre-compiled regex
     security_disclaimer_pattern = re.compile(r"AUTHORIZED USE ONLY", re.IGNORECASE)
-    trigger_section_pattern = re.compile(
-        r"^##\s+When to Use", re.MULTILINE | re.IGNORECASE
-    )
+    trigger_section_pattern = re.compile(r"^##\s+When to Use", re.MULTILINE | re.IGNORECASE)
 
     valid_risk_levels = ["none", "safe", "critical", "offensive"]
 
@@ -48,7 +46,7 @@ def validate_skills(skills_dir, strict_mode=False):
             rel_path = os.path.relpath(skill_path, skills_dir)
 
             try:
-                with open(skill_path, "r", encoding="utf-8") as f:
+                with open(skill_path, encoding="utf-8") as f:
                     content = f.read()
             except Exception as e:
                 errors.append(f"❌ {rel_path}: Unreadable file - {str(e)}")
@@ -130,9 +128,7 @@ def validate_skills(skills_dir, strict_mode=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Validate Antigravity Skills")
-    parser.add_argument(
-        "--strict", action="store_true", help="Fail on warnings (for CI)"
-    )
+    parser.add_argument("--strict", action="store_true", help="Fail on warnings (for CI)")
     args = parser.parse_args()
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

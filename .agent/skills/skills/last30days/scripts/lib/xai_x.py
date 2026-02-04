@@ -3,7 +3,7 @@
 import json
 import re
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from . import http
 
@@ -63,8 +63,8 @@ def search_x(
     from_date: str,
     to_date: str,
     depth: str = "default",
-    mock_response: Optional[Dict] = None,
-) -> Dict[str, Any]:
+    mock_response: dict | None = None,
+) -> dict[str, Any]:
     """Search X for relevant posts using xAI API with live search.
 
     Args:
@@ -113,7 +113,7 @@ def search_x(
     return http.post(XAI_RESPONSES_URL, payload, headers=headers, timeout=timeout)
 
 
-def parse_x_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
+def parse_x_response(response: dict[str, Any]) -> list[dict[str, Any]]:
     """Parse xAI response to extract X items.
 
     Args:
@@ -127,9 +127,7 @@ def parse_x_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
     # Check for API errors first
     if "error" in response and response["error"]:
         error = response["error"]
-        err_msg = (
-            error.get("message", str(error)) if isinstance(error, dict) else str(error)
-        )
+        err_msg = error.get("message", str(error)) if isinstance(error, dict) else str(error)
         _log_error(f"xAI API error: {err_msg}")
         if http.DEBUG:
             _log_error(f"Full error response: {json.dumps(response, indent=2)[:1000]}")
@@ -192,15 +190,9 @@ def parse_x_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
         if isinstance(eng_raw, dict):
             engagement = {
                 "likes": int(eng_raw.get("likes", 0)) if eng_raw.get("likes") else None,
-                "reposts": int(eng_raw.get("reposts", 0))
-                if eng_raw.get("reposts")
-                else None,
-                "replies": int(eng_raw.get("replies", 0))
-                if eng_raw.get("replies")
-                else None,
-                "quotes": int(eng_raw.get("quotes", 0))
-                if eng_raw.get("quotes")
-                else None,
+                "reposts": int(eng_raw.get("reposts", 0)) if eng_raw.get("reposts") else None,
+                "replies": int(eng_raw.get("replies", 0)) if eng_raw.get("replies") else None,
+                "quotes": int(eng_raw.get("quotes", 0)) if eng_raw.get("quotes") else None,
             }
 
         clean_item = {

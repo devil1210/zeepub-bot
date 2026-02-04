@@ -3,8 +3,8 @@ Launch checklist module for App Store Optimization.
 Generates comprehensive pre-launch and update checklists.
 """
 
-from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
+from typing import Any
 
 
 class LaunchChecklistGenerator:
@@ -23,8 +23,8 @@ class LaunchChecklistGenerator:
         self.platform = platform
 
     def generate_prelaunch_checklist(
-        self, app_info: Dict[str, Any], launch_date: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, app_info: dict[str, Any], launch_date: str | None = None
+    ) -> dict[str, Any]:
         """
         Generate comprehensive pre-launch checklist.
 
@@ -42,29 +42,23 @@ class LaunchChecklistGenerator:
             checklist["checklists"]["apple"] = self._generate_apple_checklist(app_info)
 
         if self.platform in ["google", "both"]:
-            checklist["checklists"]["google"] = self._generate_google_checklist(
-                app_info
-            )
+            checklist["checklists"]["google"] = self._generate_google_checklist(app_info)
 
         # Add universal checklist items
-        checklist["checklists"]["universal"] = self._generate_universal_checklist(
-            app_info
-        )
+        checklist["checklists"]["universal"] = self._generate_universal_checklist(app_info)
 
         # Generate timeline
         if launch_date:
             checklist["timeline"] = self._generate_launch_timeline(launch_date)
 
         # Calculate completion status
-        checklist["summary"] = self._calculate_checklist_summary(
-            checklist["checklists"]
-        )
+        checklist["summary"] = self._calculate_checklist_summary(checklist["checklists"])
 
         return checklist
 
     def validate_app_store_compliance(
-        self, app_data: Dict[str, Any], platform: str = "apple"
-    ) -> Dict[str, Any]:
+        self, app_data: dict[str, Any], platform: str = "apple"
+    ) -> dict[str, Any]:
         """
         Validate compliance with app store guidelines.
 
@@ -96,9 +90,9 @@ class LaunchChecklistGenerator:
     def create_update_plan(
         self,
         current_version: str,
-        planned_features: List[str],
+        planned_features: list[str],
         update_frequency: str = "monthly",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create update cadence and feature rollout plan.
 
@@ -120,8 +114,7 @@ class LaunchChecklistGenerator:
 
         # Generate "What's New" templates
         whats_new_templates = [
-            self._generate_whats_new_template(version_data)
-            for version_data in feature_schedule
+            self._generate_whats_new_template(version_data) for version_data in feature_schedule
         ]
 
         return {
@@ -137,8 +130,8 @@ class LaunchChecklistGenerator:
         self,
         app_category: str,
         target_audience: str,
-        current_date: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        current_date: str | None = None,
+    ) -> dict[str, Any]:
         """
         Recommend optimal launch timing.
 
@@ -159,9 +152,7 @@ class LaunchChecklistGenerator:
         competitive_rec = self._analyze_competitive_timing(app_category)
 
         # Calculate optimal dates
-        optimal_dates = self._calculate_optimal_dates(
-            current_date, day_of_week_rec, seasonal_rec
-        )
+        optimal_dates = self._calculate_optimal_dates(current_date, day_of_week_rec, seasonal_rec)
 
         return {
             "current_date": current_date,
@@ -176,7 +167,7 @@ class LaunchChecklistGenerator:
 
     def plan_seasonal_campaigns(
         self, app_category: str, current_month: int = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Identify seasonal opportunities for ASO campaigns.
 
@@ -191,14 +182,11 @@ class LaunchChecklistGenerator:
             current_month = datetime.now().month
 
         # Identify relevant seasonal events
-        seasonal_opportunities = self._identify_seasonal_opportunities(
-            app_category, current_month
-        )
+        seasonal_opportunities = self._identify_seasonal_opportunities(app_category, current_month)
 
         # Generate campaign ideas
         campaigns = [
-            self._generate_seasonal_campaign(opportunity)
-            for opportunity in seasonal_opportunities
+            self._generate_seasonal_campaign(opportunity) for opportunity in seasonal_opportunities
         ]
 
         return {
@@ -209,9 +197,7 @@ class LaunchChecklistGenerator:
             "implementation_timeline": self._create_seasonal_timeline(campaigns),
         }
 
-    def _generate_apple_checklist(
-        self, app_info: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+    def _generate_apple_checklist(self, app_info: dict[str, Any]) -> list[dict[str, Any]]:
         """Generate Apple App Store specific checklist."""
         return [
             {
@@ -289,9 +275,7 @@ class LaunchChecklistGenerator:
             },
         ]
 
-    def _generate_google_checklist(
-        self, app_info: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+    def _generate_google_checklist(self, app_info: dict[str, Any]) -> list[dict[str, Any]]:
         """Generate Google Play Store specific checklist."""
         return [
             {
@@ -368,9 +352,7 @@ class LaunchChecklistGenerator:
             },
         ]
 
-    def _generate_universal_checklist(
-        self, app_info: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+    def _generate_universal_checklist(self, app_info: dict[str, Any]) -> list[dict[str, Any]]:
         """Generate universal (both platforms) checklist."""
         return [
             {
@@ -416,7 +398,7 @@ class LaunchChecklistGenerator:
             },
         ]
 
-    def _generate_launch_timeline(self, launch_date: str) -> List[Dict[str, Any]]:
+    def _generate_launch_timeline(self, launch_date: str) -> list[dict[str, Any]]:
         """Generate timeline with milestones leading to launch."""
         launch_dt = datetime.strptime(launch_date, "%Y-%m-%d")
 
@@ -462,8 +444,8 @@ class LaunchChecklistGenerator:
         return milestones
 
     def _calculate_checklist_summary(
-        self, checklists: Dict[str, List[Dict[str, Any]]]
-    ) -> Dict[str, Any]:
+        self, checklists: dict[str, list[dict[str, Any]]]
+    ) -> dict[str, Any]:
         """Calculate completion summary."""
         total_items = 0
         completed_items = 0
@@ -475,9 +457,7 @@ class LaunchChecklistGenerator:
                     if item["status"] == "completed":
                         completed_items += 1
 
-        completion_percentage = (
-            (completed_items / total_items * 100) if total_items > 0 else 0
-        )
+        completion_percentage = (completed_items / total_items * 100) if total_items > 0 else 0
 
         return {
             "total_items": total_items,
@@ -488,7 +468,7 @@ class LaunchChecklistGenerator:
         }
 
     def _validate_apple_compliance(
-        self, app_data: Dict[str, Any], validation_results: Dict[str, Any]
+        self, app_data: dict[str, Any], validation_results: dict[str, Any]
     ) -> None:
         """Validate Apple App Store compliance."""
         # Check for required fields
@@ -501,9 +481,7 @@ class LaunchChecklistGenerator:
         # Check metadata character limits
         title = app_data.get("title", "")
         if len(title) > 30:
-            validation_results["errors"].append(
-                f"Title exceeds 30 characters ({len(title)})"
-            )
+            validation_results["errors"].append(f"Title exceeds 30 characters ({len(title)})")
 
         # Warnings for best practices
         subtitle = app_data.get("subtitle", "")
@@ -519,7 +497,7 @@ class LaunchChecklistGenerator:
             )
 
     def _validate_google_compliance(
-        self, app_data: Dict[str, Any], validation_results: Dict[str, Any]
+        self, app_data: dict[str, Any], validation_results: dict[str, Any]
     ) -> None:
         """Validate Google Play Store compliance."""
         # Check for required fields
@@ -527,16 +505,12 @@ class LaunchChecklistGenerator:
             validation_results["errors"].append("Privacy Policy URL is required")
 
         if not app_data.get("feature_graphic"):
-            validation_results["errors"].append(
-                "Feature graphic (1024x500px) is required"
-            )
+            validation_results["errors"].append("Feature graphic (1024x500px) is required")
 
         # Check metadata character limits
         title = app_data.get("title", "")
         if len(title) > 50:
-            validation_results["errors"].append(
-                f"Title exceeds 50 characters ({len(title)})"
-            )
+            validation_results["errors"].append(f"Title exceeds 50 characters ({len(title)})")
 
         short_desc = app_data.get("short_description", "")
         if len(short_desc) > 80:
@@ -550,7 +524,7 @@ class LaunchChecklistGenerator:
 
     def _calculate_next_versions(
         self, current_version: str, update_frequency: str, feature_count: int
-    ) -> List[str]:
+    ) -> list[str]:
         """Calculate next version numbers."""
         # Parse current version (assume semantic versioning)
         parts = current_version.split(".")
@@ -578,19 +552,15 @@ class LaunchChecklistGenerator:
         return versions
 
     def _distribute_features(
-        self, features: List[str], versions: List[str]
-    ) -> List[Dict[str, Any]]:
+        self, features: list[str], versions: list[str]
+    ) -> list[dict[str, Any]]:
         """Distribute features across versions."""
         features_per_version = max(1, len(features) // len(versions))
 
         schedule = []
         for i, version in enumerate(versions):
             start_idx = i * features_per_version
-            end_idx = (
-                start_idx + features_per_version
-                if i < len(versions) - 1
-                else len(features)
-            )
+            end_idx = start_idx + features_per_version if i < len(versions) - 1 else len(features)
 
             schedule.append(
                 {
@@ -604,13 +574,9 @@ class LaunchChecklistGenerator:
 
         return schedule
 
-    def _generate_whats_new_template(
-        self, version_data: Dict[str, Any]
-    ) -> Dict[str, str]:
+    def _generate_whats_new_template(self, version_data: dict[str, Any]) -> dict[str, str]:
         """Generate What's New template for version."""
-        features_list = "\n".join(
-            [f"• {feature}" for feature in version_data["features"]]
-        )
+        features_list = "\n".join([f"• {feature}" for feature in version_data["features"]])
 
         template = f"""Version {version_data["version"]}
 
@@ -622,7 +588,7 @@ Have feedback? Contact us at support@[company].com"""
 
         return {"version": version_data["version"], "template": template}
 
-    def _generate_update_recommendations(self, update_frequency: str) -> List[str]:
+    def _generate_update_recommendations(self, update_frequency: str) -> list[str]:
         """Generate recommendations for update strategy."""
         recommendations = []
 
@@ -645,7 +611,7 @@ Have feedback? Contact us at support@[company].com"""
 
         return recommendations
 
-    def _recommend_day_of_week(self, app_category: str) -> Dict[str, Any]:
+    def _recommend_day_of_week(self, app_category: str) -> dict[str, Any]:
         """Recommend best day of week to launch."""
         # General recommendations based on category
         if app_category.lower() in ["games", "entertainment"]:
@@ -664,9 +630,7 @@ Have feedback? Contact us at support@[company].com"""
                 "rationale": "Mid-week provides good balance and review potential",
             }
 
-    def _recommend_seasonal_timing(
-        self, app_category: str, current_date: str
-    ) -> Dict[str, Any]:
+    def _recommend_seasonal_timing(self, app_category: str, current_date: str) -> dict[str, Any]:
         """Recommend seasonal timing considerations."""
         current_dt = datetime.strptime(current_date, "%Y-%m-%d")
         month = current_dt.month
@@ -691,7 +655,7 @@ Have feedback? Contact us at support@[company].com"""
             "good_periods": good_periods,
         }
 
-    def _analyze_competitive_timing(self, app_category: str) -> Dict[str, str]:
+    def _analyze_competitive_timing(self, app_category: str) -> dict[str, str]:
         """Analyze competitive timing considerations."""
         return {
             "recommendation": "Research competitor launch schedules in your category",
@@ -699,8 +663,8 @@ Have feedback? Contact us at support@[company].com"""
         }
 
     def _calculate_optimal_dates(
-        self, current_date: str, day_rec: Dict[str, Any], seasonal_rec: Dict[str, Any]
-    ) -> List[str]:
+        self, current_date: str, day_rec: dict[str, Any], seasonal_rec: dict[str, Any]
+    ) -> list[str]:
         """Calculate optimal launch dates."""
         current_dt = datetime.strptime(current_date, "%Y-%m-%d")
 
@@ -730,19 +694,21 @@ Have feedback? Contact us at support@[company].com"""
         return optimal_dates
 
     def _generate_timing_recommendation(
-        self, optimal_dates: List[str], seasonal_rec: Dict[str, Any]
+        self, optimal_dates: list[str], seasonal_rec: dict[str, Any]
     ) -> str:
         """Generate final timing recommendation."""
         if seasonal_rec["avoid_periods"]:
             return f"Consider launching in {optimal_dates[1]} to avoid {seasonal_rec['avoid_periods'][0]}"
         elif seasonal_rec["good_periods"]:
-            return f"Launch on {optimal_dates[0]} to capitalize on {seasonal_rec['good_periods'][0]}"
+            return (
+                f"Launch on {optimal_dates[0]} to capitalize on {seasonal_rec['good_periods'][0]}"
+            )
         else:
             return f"Recommended launch date: {optimal_dates[0]}"
 
     def _identify_seasonal_opportunities(
         self, app_category: str, current_month: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Identify seasonal opportunities for category."""
         opportunities = []
 
@@ -763,9 +729,7 @@ Have feedback? Contact us at support@[company].com"""
                 {
                     "event": "Holiday Shopping Season",
                     "dates": "November-December",
-                    "relevance": "high"
-                    if app_category.lower() in ["shopping", "gifts"]
-                    else "low",
+                    "relevance": "high" if app_category.lower() in ["shopping", "gifts"] else "low",
                 }
             )
 
@@ -781,9 +745,7 @@ Have feedback? Contact us at support@[company].com"""
 
         return opportunities
 
-    def _generate_seasonal_campaign(
-        self, opportunity: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _generate_seasonal_campaign(self, opportunity: dict[str, Any]) -> dict[str, Any]:
         """Generate campaign idea for seasonal opportunity."""
         return {
             "event": opportunity["event"],
@@ -792,17 +754,16 @@ Have feedback? Contact us at support@[company].com"""
             "promotion_strategy": "Consider limited-time features or discounts",
         }
 
-    def _create_seasonal_timeline(self, campaigns: List[Dict[str, Any]]) -> List[str]:
+    def _create_seasonal_timeline(self, campaigns: list[dict[str, Any]]) -> list[str]:
         """Create implementation timeline for campaigns."""
         return [
-            f"30 days before: Plan {campaign['event']} campaign strategy"
-            for campaign in campaigns
+            f"30 days before: Plan {campaign['event']} campaign strategy" for campaign in campaigns
         ]
 
 
 def generate_launch_checklist(
-    platform: str, app_info: Dict[str, Any], launch_date: Optional[str] = None
-) -> Dict[str, Any]:
+    platform: str, app_info: dict[str, Any], launch_date: str | None = None
+) -> dict[str, Any]:
     """
     Convenience function to generate launch checklist.
 

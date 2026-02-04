@@ -118,9 +118,7 @@ class EPUBUploader:
             }
 
             # Enviar vista previa para validación
-            await self.send_preview_for_approval(
-                update, upload_id, metadata, file.file_name
-            )
+            await self.send_preview_for_approval(update, upload_id, metadata, file.file_name)
 
         except Exception as e:
             logger.error(f"Error processing EPUB: {e}")
@@ -130,9 +128,7 @@ class EPUBUploader:
 
     async def download_epub(self, file, context: ContextTypes.DEFAULT_TYPE) -> Path:
         """Descarga el archivo EPUB."""
-        temp_file = (
-            self.temp_dir / f"{file.file_name}_{datetime.now().timestamp()}.epub"
-        )
+        temp_file = self.temp_dir / f"{file.file_name}_{datetime.now().timestamp()}.epub"
 
         # Descargar archivo
         new_file = await context.bot.get_file(file.file_id)
@@ -173,9 +169,7 @@ class EPUBUploader:
                     logger.info(f"Found OPF files: {opf_files}")
 
                     # Buscar container.xml
-                    container_files = [
-                        f for f in file_list if "container.xml" in f.lower()
-                    ]
+                    container_files = [f for f in file_list if "container.xml" in f.lower()]
                     logger.info(f"Found container files: {container_files}")
 
                     if not opf_files and not container_files:
@@ -258,9 +252,7 @@ class EPUBUploader:
             # Pasamos metadata enriquecida + contexto
             from services.settings_service import get_setting
 
-            bg_ai_enabled = (
-                get_setting("enable_background_ai_scan", "false").lower() == "true"
-            )
+            bg_ai_enabled = get_setting("enable_background_ai_scan", "false").lower() == "true"
 
             ai_data = None
             if bg_ai_enabled:
@@ -268,9 +260,7 @@ class EPUBUploader:
                     original_filename, {**metadata, **extra_context}
                 )
             else:
-                logger.info(
-                    "🤖 AI Background Analysis skipped (disabled by user setting)"
-                )
+                logger.info("🤖 AI Background Analysis skipped (disabled by user setting)")
 
             if ai_data:
                 logger.info(f"🤖 AI Analysis Result: {ai_data}")
@@ -304,9 +294,7 @@ class EPUBUploader:
                 if ai_data.get("color_mode"):
                     metadata["color_mode"] = ai_data["color_mode"]
             else:
-                logger.warning(
-                    "🤖 AI Analysis skipped or failed (using standard regex logic)"
-                )
+                logger.warning("🤖 AI Analysis skipped or failed (using standard regex logic)")
 
             # --- LÓGICA UNIFICADA DE IDENTIDAD (Regla 8) ---
             # Aunque la IA nos de datos, las reglas de identidad (hashes) deben generarse
@@ -328,9 +316,7 @@ class EPUBUploader:
                 "translator": metadata.get("translator"),
                 "layout_by": metadata.get("layout_by"),
                 "language": metadata.get("language"),
-                "series_spanish": metadata.get(
-                    "series_spanish"
-                ),  # Importante para agrupamiento
+                "series_spanish": metadata.get("series_spanish"),  # Importante para agrupamiento
                 "is_uncensored": metadata.get("is_uncensored", 0),
                 "color_mode": metadata.get("color_mode"),
             }
@@ -415,9 +401,7 @@ class EPUBUploader:
 
                 # Comparar con libros existentes usando misma lógica que scanner
                 existing_book = (
-                    session.query(LocalBook)
-                    .filter(LocalBook.book_hash == book_hash)
-                    .first()
+                    session.query(LocalBook).filter(LocalBook.book_hash == book_hash).first()
                 )
 
                 if existing_book:
@@ -437,9 +421,7 @@ class EPUBUploader:
             metadata["series_hash"] = series_hash
 
             # Generar ruta sugerida inteligente
-            metadata["suggested_path"] = self._get_smart_destination(
-                metadata, original_filename
-            )
+            metadata["suggested_path"] = self._get_smart_destination(metadata, original_filename)
 
             logger.info(
                 f"Successfully extracted metadata: title='{metadata.get('title')}', hash='{book_hash}', identity_match={metadata['identity_match']}"
@@ -453,9 +435,7 @@ class EPUBUploader:
             logger.error(f"Full traceback: {traceback.format_exc()}")
             return None
 
-    def _get_smart_destination(
-        self, metadata: dict[str, Any], original_filename: str
-    ) -> str:
+    def _get_smart_destination(self, metadata: dict[str, Any], original_filename: str) -> str:
         """
         Determina la mejor ruta y nombre de archivo para el libro.
         1. Busca si ya existe la serie (por series_hash).
@@ -476,9 +456,7 @@ class EPUBUploader:
         # 1. Intentar encontrar carpeta de serie existente
         if series_hash:
             with get_session() as session:
-                existing_book = (
-                    session.query(LocalBook).filter_by(series_hash=series_hash).first()
-                )
+                existing_book = session.query(LocalBook).filter_by(series_hash=series_hash).first()
                 if existing_book:
                     # Usar la misma carpeta que el libro existente
                     Path(existing_book.filepath)
@@ -501,9 +479,7 @@ class EPUBUploader:
             tag = self.determine_novel_type_tag(metadata, original_filename)
 
             if series:
-                series_ok = re.sub(
-                    r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE
-                )
+                series_ok = re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE)
                 series_clean = self.clean_filename(series_ok)
                 series_folder_name = f"{series_clean} - {author} [{tag}]"
             else:
@@ -517,9 +493,7 @@ class EPUBUploader:
             filename = metadata["ai_filename"]
         else:
             # Fallback a lógica patrística antigua
-            filename = self._generate_pattern_filename(
-                target_dir, metadata, original_filename
-            )
+            filename = self._generate_pattern_filename(target_dir, metadata, original_filename)
 
         return f"{series_folder_name}/{filename}"
 
@@ -582,9 +556,7 @@ class EPUBUploader:
                     library_series_spanish = existing_series_book.series_spanish
 
         # Usar el nombre de la librería si existe, sino el de este archivo
-        base_series_name = (
-            library_series_spanish or metadata.get("series_spanish") or series
-        )
+        base_series_name = library_series_spanish or metadata.get("series_spanish") or series
 
         if target_dir.exists():
             files = [f for f in os.listdir(target_dir) if f.lower().endswith(".epub")]
@@ -631,13 +603,9 @@ class EPUBUploader:
 
     def generate_path(self, metadata: dict[str, Any]) -> str:
         """DEPRECATED: Use _get_smart_destination instead."""
-        return self._get_smart_destination(
-            metadata, metadata.get("original_filename", "")
-        )
+        return self._get_smart_destination(metadata, metadata.get("original_filename", ""))
 
-    def determine_novel_type_tag(
-        self, metadata: dict[str, Any], original_filename: str
-    ) -> str:
+    def determine_novel_type_tag(self, metadata: dict[str, Any], original_filename: str) -> str:
         """Determina si es Novela Ligera [NL] o Novela Web [NW]."""
 
         # 1. Revisar si el filename original ya indica el tipo
@@ -755,9 +723,7 @@ class EPUBUploader:
         if metadata.get("category"):
             preview_text += f"\n📂 **Categoría:** {metadata.get('category', 'N/A')}"
         if metadata.get("demography"):
-            preview_text += (
-                f"\n👥 **Demografía:** {', '.join(metadata.get('demography', []))}"
-            )
+            preview_text += f"\n👥 **Demografía:** {', '.join(metadata.get('demography', []))}"
 
         preview_text += f"""
         
@@ -773,22 +739,20 @@ class EPUBUploader:
 
         if identity_match:
             # Caso 1: El libro ya existe (ID idéntico)
-            preview_text += "\n\n⚠️ **DUPLICADO DETECTADO**\nEsta misma edición ya existe en la biblioteca."
+            preview_text += (
+                "\n\n⚠️ **DUPLICADO DETECTADO**\nEsta misma edición ya existe en la biblioteca."
+            )
             if path_match and identity_match["id"] == path_match["id"]:
-                preview_text += (
-                    f"\n📍 **Ubicación coincidente:** `{identity_match['path']}`"
-                )
+                preview_text += f"\n📍 **Ubicación coincidente:** `{identity_match['path']}`"
             else:
+                preview_text += f"\n📍 **Se encuentra actualmente en:** `{identity_match['path']}`"
                 preview_text += (
-                    f"\n📍 **Se encuentra actualmente en:** `{identity_match['path']}`"
+                    f"\n📁 **Nueva ubicación sugerida:** `{metadata.get('suggested_path')}`"
                 )
-                preview_text += f"\n📁 **Nueva ubicación sugerida:** `{metadata.get('suggested_path')}`"
 
             diffs = self.compare_metadata(metadata, metadata.get("existing_data"))
             if diffs:
-                preview_text += (
-                    f"\n\n🔍 **Cambios respecto a la versión actual:**\n{diffs}"
-                )
+                preview_text += f"\n\n🔍 **Cambios respecto a la versión actual:**\n{diffs}"
 
             approve_label = "🔄 Actualizar / Reemplazar"
             callback_prefix = "replace_epub"
@@ -801,7 +765,9 @@ class EPUBUploader:
                 preview_text += f"\n👤 **Libro que estorba:** `{path_match['path']}`"
                 diffs = self.compare_metadata(metadata, metadata.get("existing_data"))
                 if diffs:
-                    preview_text += f"\n\n🔍 **Diferencias con el archivo a sobrescribir:**\n{diffs}"
+                    preview_text += (
+                        f"\n\n🔍 **Diferencias con el archivo a sobrescribir:**\n{diffs}"
+                    )
 
             approve_label = "⚠️ Sobrescribir Archivo"
             callback_prefix = "overwrite_epub"
@@ -815,18 +781,10 @@ class EPUBUploader:
         # Botones de acción
         keyboard = [
             [
-                InlineKeyboardButton(
-                    approve_label, callback_data=f"{callback_prefix}_{upload_id}"
-                ),
-                InlineKeyboardButton(
-                    "❌ Rechazar", callback_data=f"reject_epub_{upload_id}"
-                ),
+                InlineKeyboardButton(approve_label, callback_data=f"{callback_prefix}_{upload_id}"),
+                InlineKeyboardButton("❌ Rechazar", callback_data=f"reject_epub_{upload_id}"),
             ],
-            [
-                InlineKeyboardButton(
-                    "📝 Editar Ruta", callback_data=f"edit_path_{upload_id}"
-                )
-            ],
+            [InlineKeyboardButton("📝 Editar Ruta", callback_data=f"edit_path_{upload_id}")],
         ]
 
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -835,9 +793,7 @@ class EPUBUploader:
             preview_text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN
         )
 
-    async def handle_approval_callback(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def handle_approval_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Maneja los callbacks de aprobación/rechazo."""
         query = update.callback_query
         await query.answer()
@@ -918,11 +874,7 @@ class EPUBUploader:
             metadata = upload_info["metadata"]
             suggested_path = metadata.get("suggested_path", "")
 
-            status_msg = (
-                "🔄 Reemplazando libro..."
-                if is_replacement
-                else "✅ Procesando upload..."
-            )
+            status_msg = "🔄 Reemplazando libro..." if is_replacement else "✅ Procesando upload..."
             await query.edit_message_text(status_msg, parse_mode=ParseMode.MARKDOWN)
 
             # Si es reemplazo por hash, eliminar el archivo físico antiguo primero
@@ -942,9 +894,7 @@ class EPUBUploader:
                 if target_path.exists():
                     try:
                         target_path.unlink()
-                        logger.info(
-                            f"Deleted existing file for overwrite collision: {target_path}"
-                        )
+                        logger.info(f"Deleted existing file for overwrite collision: {target_path}")
                     except Exception as e:
                         logger.error(f"Error deleting existing file for overwrite: {e}")
 
@@ -1007,9 +957,7 @@ class EPUBUploader:
         try:
             file_path = Path(upload_info["file_path"])
 
-            await query.edit_message_text(
-                "❌ **Upload rechazado**", parse_mode=ParseMode.MARKDOWN
-            )
+            await query.edit_message_text("❌ **Upload rechazado**", parse_mode=ParseMode.MARKDOWN)
 
             # Limpiar archivo temporal
             self.cleanup_upload(upload_id, file_path)
@@ -1028,9 +976,7 @@ class EPUBUploader:
         except Exception as log_err:
             logger.error(f"Error logging rejection: {log_err}")
 
-    async def request_path_edit(
-        self, query, upload_id: str, upload_info: dict[str, Any]
-    ):
+    async def request_path_edit(self, query, upload_id: str, upload_info: dict[str, Any]):
         """Solicita edición de ruta."""
         current_path = upload_info["metadata"].get("suggested_path", "")
 
@@ -1045,9 +991,7 @@ class EPUBUploader:
         # Marcar que estamos esperando edición de ruta
         query.message.chat_data[f"editing_path_{upload_id}"] = True
 
-    def compare_metadata(
-        self, new_data: dict[str, Any], old_data: dict[str, Any] | None
-    ) -> str:
+    def compare_metadata(self, new_data: dict[str, Any], old_data: dict[str, Any] | None) -> str:
         """Compara metadatos y devuelve un string con las diferencias."""
         if not old_data:
             return ""
@@ -1072,22 +1016,14 @@ class EPUBUploader:
 
             # Usar normalización básica para comparar
             if norm_string(new_val) != norm_string(old_val):
-                diffs.append(
-                    f"🔹 **{label}**: `{old_val or 'N/A'}` ➡️ `{new_val or 'N/A'}`"
-                )
+                diffs.append(f"🔹 **{label}**: `{old_val or 'N/A'}` ➡️ `{new_val or 'N/A'}`")
 
         # Tags (Géneros) - Comparar listas
         new_tags = set(
-            t.strip().lower()
-            for t in (new_data.get("tags") or "").split(",")
-            if t.strip()
+            t.strip().lower() for t in (new_data.get("tags") or "").split(",") if t.strip()
         )
         old_tags = (
-            set(
-                t.strip().lower()
-                for t in (old_data.get("tags") or "").split(",")
-                if t.strip()
-            )
+            set(t.strip().lower() for t in (old_data.get("tags") or "").split(",") if t.strip())
             if isinstance(old_data.get("tags"), str)
             else set()
         )
@@ -1158,14 +1094,10 @@ class EPUBUploader:
                 logger.info(f"✅ Libro indexado inmediatamente: {full_path}")
                 return True
             elif scan_result and scan_result.get("duplicates"):
-                logger.warning(
-                    f"⚠️ Libro detectado como duplicado durante indexado: {full_path}"
-                )
+                logger.warning(f"⚠️ Libro detectado como duplicado durante indexado: {full_path}")
                 return True
             else:
-                logger.error(
-                    f"❌ Error indexando el libro después de moverlo: {scan_result}"
-                )
+                logger.error(f"❌ Error indexando el libro después de moverlo: {scan_result}")
                 return True  # Retornamos True porque el archivo ya se movió con éxito
 
         except Exception as e:

@@ -4,11 +4,10 @@ Architecture Diagram Generator
 Automated tool for senior architect tasks
 """
 
-import sys
-import json
 import argparse
+import json
+import sys
 from pathlib import Path
-from typing import Dict
 
 
 class ArchitectureDiagramGenerator:
@@ -19,7 +18,7 @@ class ArchitectureDiagramGenerator:
         self.verbose = verbose
         self.results = {}
 
-    def run(self) -> Dict:
+    def run(self) -> dict:
         """Execute the main functionality"""
         print(f"🚀 Running {self.__class__.__name__}...")
         print(f"📁 Target: {self.target_path}")
@@ -56,9 +55,7 @@ class ArchitectureDiagramGenerator:
 
         # Add analysis results
         if self.verbose:
-            print(
-                f"✓ Analysis complete: {len(self.results.get('findings', []))} findings"
-            )
+            print(f"✓ Analysis complete: {len(self.results.get('findings', []))} findings")
 
     def generate_report(self):
         """Generate and display the report"""
@@ -75,9 +72,7 @@ def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(description="Architecture Diagram Generator")
     parser.add_argument("target", help="Target path to analyze or process")
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
     parser.add_argument("--output", "-o", help="Output file path")
 

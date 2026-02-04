@@ -37,9 +37,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "idx_ai_learning_series_hash", "ai_learning_feedback", ["series_hash"]
-    )
+    op.create_index("idx_ai_learning_series_hash", "ai_learning_feedback", ["series_hash"])
 
 
 def downgrade():

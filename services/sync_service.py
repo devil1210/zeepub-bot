@@ -200,9 +200,7 @@ class SyncService:
                     "type": p.type,
                     "secondary_hash": p.secondary_hash,
                     "created_at": p.created_at.isoformat() if p.created_at else None,
-                    "processed_at": p.processed_at.isoformat()
-                    if p.processed_at
-                    else None,
+                    "processed_at": p.processed_at.isoformat() if p.processed_at else None,
                 }
                 for p in proposals
             ]
@@ -230,9 +228,7 @@ class SyncService:
                     "id": src.id,
                     "name": src.name,
                     "path": src.path,
-                    "last_scanned": src.last_scanned.isoformat()
-                    if src.last_scanned
-                    else None,
+                    "last_scanned": src.last_scanned.isoformat() if src.last_scanned else None,
                 }
                 for src in sources
             ]
@@ -335,9 +331,7 @@ class SyncService:
             for i in range(0, len(data), 50):
                 batch = data[i : i + 50]
                 try:
-                    client.table("local_books").upsert(
-                        batch, on_conflict="book_hash"
-                    ).execute()
+                    client.table("local_books").upsert(batch, on_conflict="book_hash").execute()
                     stats["books"] += len(batch)
                 except Exception as ex:
                     logger.error(f"Error syncing books batch {i}: {ex}")
@@ -387,9 +381,7 @@ class SyncService:
                     "book_hash": d.book_hash,
                     "series_hash": d.series_hash,
                     "title": d.title,
-                    "downloaded_at": d.downloaded_at.isoformat()
-                    if d.downloaded_at
-                    else None,
+                    "downloaded_at": d.downloaded_at.isoformat() if d.downloaded_at else None,
                 }
                 for d in dls
             ]

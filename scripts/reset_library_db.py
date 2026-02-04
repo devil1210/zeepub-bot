@@ -23,9 +23,7 @@ COVERS_DIR = os.path.join(LIBRARY_DIR, "covers")
 
 def confirm_reset():
     """Pedir confirmación al usuario antes de eliminar"""
-    print(
-        "⚠️  ADVERTENCIA: Vas a eliminar TODA la base de datos local de la biblioteca."
-    )
+    print("⚠️  ADVERTENCIA: Vas a eliminar TODA la base de datos local de la biblioteca.")
     print("   Esto incluye:")
     print("   - Todos los libros indexados")
     print("   - Todas las portadas generadas")
@@ -34,9 +32,7 @@ def confirm_reset():
     print("   Necesitarás volver a escanear tu biblioteca después de esto.")
     print("")
 
-    response = input(
-        "¿Estás seguro de que quieres continuar? (escribe 'SI' para confirmar): "
-    )
+    response = input("¿Estás seguro de que quieres continuar? (escribe 'SI' para confirmar): ")
     return response.strip().upper() == "SI"
 
 
@@ -60,11 +56,7 @@ def reset_database():
         try:
             # Contar archivos antes de eliminar
             cover_count = len(
-                [
-                    f
-                    for f in os.listdir(COVERS_DIR)
-                    if os.path.isfile(os.path.join(COVERS_DIR, f))
-                ]
+                [f for f in os.listdir(COVERS_DIR) if os.path.isfile(os.path.join(COVERS_DIR, f))]
             )
 
             shutil.rmtree(COVERS_DIR)
@@ -91,9 +83,7 @@ def reset_database():
         print(item)
     print("=" * 60)
     print("\n✨ Base de datos reseteada exitosamente!")
-    print(
-        "\n📝 Próximo paso: Ejecuta el escaneo de biblioteca para reindexar tus libros."
-    )
+    print("\n📝 Próximo paso: Ejecuta el escaneo de biblioteca para reindexar tus libros.")
 
     return True
 

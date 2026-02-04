@@ -6,9 +6,9 @@ that properly buffers responses to prevent audio jumping.
 """
 
 import asyncio
-from typing import AsyncGenerator, List, Dict
-from dataclasses import dataclass
 import logging
+from collections.abc import AsyncGenerator
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,9 @@ class GeminiAgent:
     - Handles interrupts gracefully
     """
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
-        self.conversation_history: List[Message] = []
+        self.conversation_history: list[Message] = []
         self.system_prompt = config.get("prompt", "You are a helpful AI assistant.")
         self.current_task = None
 
@@ -86,27 +86,19 @@ class GeminiAgent:
 
         except Exception as e:
             logger.error(f"❌ [AGENT] Error generating response: {e}")
-            full_response = (
-                "I apologize, but I encountered an error. Could you please try again?"
-            )
+            full_response = "I apologize, but I encountered an error. Could you please try again?"
 
         # CRITICAL: Only yield after buffering the ENTIRE response
         # This prevents multiple TTS calls that cause audio jumping
         if full_response.strip():
             # Add to conversation history
-            self.conversation_history.append(
-                Message(role="assistant", content=full_response)
-            )
+            self.conversation_history.append(Message(role="assistant", content=full_response))
 
-            logger.info(
-                f"✅ [AGENT] Generated complete response ({len(full_response)} chars)"
-            )
+            logger.info(f"✅ [AGENT] Generated complete response ({len(full_response)} chars)")
 
-            yield GeneratedResponse(
-                message=full_response.strip(), is_interruptible=True
-            )
+            yield GeneratedResponse(message=full_response.strip(), is_interruptible=True)
 
-    def _build_gemini_contents(self) -> List[Dict]:
+    def _build_gemini_contents(self) -> list[dict]:
         """
         Build conversation contents for Gemini API
 
@@ -138,9 +130,7 @@ class GeminiAgent:
 
         return contents
 
-    async def _simulate_gemini_stream(
-        self, user_input: str
-    ) -> AsyncGenerator[str, None]:
+    async def _simulate_gemini_stream(self, user_input: str) -> AsyncGenerator[str, None]:
         """
         Simulate Gemini streaming response
 
@@ -175,15 +165,10 @@ class GeminiAgent:
         Args:
             partial_message: The partial message that was actually spoken
         """
-        if (
-            self.conversation_history
-            and self.conversation_history[-1].role == "assistant"
-        ):
+        if self.conversation_history and self.conversation_history[-1].role == "assistant":
             # Update the last bot message with the partial message
             self.conversation_history[-1].content = partial_message
-            logger.info(
-                f"📝 [AGENT] Updated history with partial message: '{partial_message}'"
-            )
+            logger.info(f"📝 [AGENT] Updated history with partial message: '{partial_message}'")
 
     def cancel_current_task(self):
         """Cancel the current generation task (for interrupts)"""
@@ -191,7 +176,7 @@ class GeminiAgent:
             self.current_task.cancel()
             logger.info("🛑 [AGENT] Cancelled current generation task")
 
-    def get_conversation_history(self) -> List[Message]:
+    def get_conversation_history(self) -> list[Message]:
         """Get the full conversation history"""
         return self.conversation_history.copy()
 

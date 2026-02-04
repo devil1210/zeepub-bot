@@ -3,9 +3,9 @@ Review analysis module for App Store Optimization.
 Analyzes user reviews for sentiment, issues, and feature requests.
 """
 
-from typing import Dict, List, Any
-from collections import Counter
 import re
+from collections import Counter
+from typing import Any
 
 
 class ReviewAnalyzer:
@@ -85,7 +85,7 @@ class ReviewAnalyzer:
         self.reviews = []
         self.analysis_cache = {}
 
-    def analyze_sentiment(self, reviews: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def analyze_sentiment(self, reviews: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Analyze sentiment across reviews.
 
@@ -124,21 +124,13 @@ class ReviewAnalyzer:
         # Calculate percentages
         total = len(reviews)
         sentiment_distribution = {
-            "positive": round((sentiment_counts["positive"] / total) * 100, 1)
-            if total > 0
-            else 0,
-            "neutral": round((sentiment_counts["neutral"] / total) * 100, 1)
-            if total > 0
-            else 0,
-            "negative": round((sentiment_counts["negative"] / total) * 100, 1)
-            if total > 0
-            else 0,
+            "positive": round((sentiment_counts["positive"] / total) * 100, 1) if total > 0 else 0,
+            "neutral": round((sentiment_counts["neutral"] / total) * 100, 1) if total > 0 else 0,
+            "negative": round((sentiment_counts["negative"] / total) * 100, 1) if total > 0 else 0,
         }
 
         # Calculate average rating
-        avg_rating = (
-            sum(r.get("rating", 0) for r in reviews) / total if total > 0 else 0
-        )
+        avg_rating = sum(r.get("rating", 0) for r in reviews) / total if total > 0 else 0
 
         return {
             "total_reviews_analyzed": total,
@@ -150,8 +142,8 @@ class ReviewAnalyzer:
         }
 
     def extract_common_themes(
-        self, reviews: List[Dict[str, Any]], min_mentions: int = 3
-    ) -> Dict[str, Any]:
+        self, reviews: list[dict[str, Any]], min_mentions: int = 3
+    ) -> dict[str, Any]:
         """
         Extract frequently mentioned themes and topics.
 
@@ -228,8 +220,8 @@ class ReviewAnalyzer:
         }
 
     def identify_issues(
-        self, reviews: List[Dict[str, Any]], rating_threshold: int = 3
-    ) -> Dict[str, Any]:
+        self, reviews: list[dict[str, Any]], rating_threshold: int = 3
+    ) -> dict[str, Any]:
         """
         Identify bugs, crashes, and other issues from reviews.
 
@@ -276,9 +268,7 @@ class ReviewAnalyzer:
         categorized_issues = self._categorize_issues(issues)
 
         # Calculate issue severity
-        severity_scores = self._calculate_issue_severity(
-            categorized_issues, len(reviews)
-        )
+        severity_scores = self._calculate_issue_severity(categorized_issues, len(reviews))
 
         return {
             "total_issues_found": len(issues),
@@ -291,7 +281,7 @@ class ReviewAnalyzer:
             ),
         }
 
-    def find_feature_requests(self, reviews: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def find_feature_requests(self, reviews: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Extract feature requests and desired improvements.
 
@@ -308,9 +298,7 @@ class ReviewAnalyzer:
             rating = review.get("rating", 3)
 
             # Check for feature request indicators
-            is_feature_request = any(
-                keyword in text for keyword in self.FEATURE_REQUEST_KEYWORDS
-            )
+            is_feature_request = any(keyword in text for keyword in self.FEATURE_REQUEST_KEYWORDS)
 
             if is_feature_request:
                 # Extract the specific request
@@ -342,8 +330,8 @@ class ReviewAnalyzer:
         }
 
     def track_sentiment_trends(
-        self, reviews_by_period: Dict[str, List[Dict[str, Any]]]
-    ) -> Dict[str, Any]:
+        self, reviews_by_period: dict[str, list[dict[str, Any]]]
+    ) -> dict[str, Any]:
         """
         Track sentiment changes over time.
 
@@ -363,12 +351,8 @@ class ReviewAnalyzer:
                     "period": period,
                     "total_reviews": len(reviews),
                     "average_rating": sentiment["average_rating"],
-                    "positive_percentage": sentiment["sentiment_distribution"][
-                        "positive"
-                    ],
-                    "negative_percentage": sentiment["sentiment_distribution"][
-                        "negative"
-                    ],
+                    "positive_percentage": sentiment["sentiment_distribution"]["positive"],
+                    "negative_percentage": sentiment["sentiment_distribution"]["negative"],
                 }
             )
 
@@ -377,16 +361,12 @@ class ReviewAnalyzer:
             first_period = trends[0]
             last_period = trends[-1]
 
-            rating_change = (
-                last_period["average_rating"] - first_period["average_rating"]
-            )
+            rating_change = last_period["average_rating"] - first_period["average_rating"]
             sentiment_change = (
                 last_period["positive_percentage"] - first_period["positive_percentage"]
             )
 
-            trend_direction = self._determine_trend_direction(
-                rating_change, sentiment_change
-            )
+            trend_direction = self._determine_trend_direction(rating_change, sentiment_change)
         else:
             trend_direction = "insufficient_data"
 
@@ -397,7 +377,7 @@ class ReviewAnalyzer:
             "insights": self._generate_trend_insights(trends, trend_direction),
         }
 
-    def generate_response_templates(self, issue_category: str) -> List[Dict[str, str]]:
+    def generate_response_templates(self, issue_category: str) -> list[dict[str, str]]:
         """
         Generate response templates for common review scenarios.
 
@@ -489,7 +469,7 @@ class ReviewAnalyzer:
         else:
             return "neutral"
 
-    def _assess_sentiment_trend(self, distribution: Dict[str, float]) -> str:
+    def _assess_sentiment_trend(self, distribution: dict[str, float]) -> str:
         """Assess overall sentiment trend."""
         positive = distribution["positive"]
         negative = distribution["negative"]
@@ -506,8 +486,8 @@ class ReviewAnalyzer:
             return "mixed"
 
     def _categorize_themes(
-        self, common_words: List[Dict[str, Any]], common_phrases: List[Dict[str, Any]]
-    ) -> Dict[str, List[str]]:
+        self, common_words: list[dict[str, Any]], common_phrases: list[dict[str, Any]]
+    ) -> dict[str, list[str]]:
         """Categorize themes from words and phrases."""
         themes = {
             "features": [],
@@ -553,7 +533,7 @@ class ReviewAnalyzer:
 
         return {k: v for k, v in themes.items() if v}  # Remove empty categories
 
-    def _generate_theme_insights(self, themes: Dict[str, List[str]]) -> List[str]:
+    def _generate_theme_insights(self, themes: dict[str, list[str]]) -> list[str]:
         """Generate insights from themes."""
         insights = []
 
@@ -565,9 +545,7 @@ class ReviewAnalyzer:
 
         return insights[:5]
 
-    def _categorize_issues(
-        self, issues: List[Dict[str, Any]]
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    def _categorize_issues(self, issues: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
         """Categorize issues by type."""
         categories = {"crashes": [], "bugs": [], "performance": [], "compatibility": []}
 
@@ -586,8 +564,8 @@ class ReviewAnalyzer:
         return {k: v for k, v in categories.items() if v}
 
     def _calculate_issue_severity(
-        self, categorized_issues: Dict[str, List[Dict[str, Any]]], total_reviews: int
-    ) -> Dict[str, Dict[str, Any]]:
+        self, categorized_issues: dict[str, list[dict[str, Any]]], total_reviews: int
+    ) -> dict[str, dict[str, Any]]:
         """Calculate severity scores for each issue category."""
         severity_scores = {}
 
@@ -614,8 +592,8 @@ class ReviewAnalyzer:
         return severity_scores
 
     def _rank_issues_by_severity(
-        self, severity_scores: Dict[str, Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, severity_scores: dict[str, dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Rank issues by severity score."""
         ranked = sorted(
             [{"category": cat, **data} for cat, data in severity_scores.items()],
@@ -626,9 +604,9 @@ class ReviewAnalyzer:
 
     def _generate_issue_recommendations(
         self,
-        categorized_issues: Dict[str, List[Dict[str, Any]]],
-        severity_scores: Dict[str, Dict[str, Any]],
-    ) -> List[str]:
+        categorized_issues: dict[str, list[dict[str, Any]]],
+        severity_scores: dict[str, dict[str, Any]],
+    ) -> list[str]:
         """Generate recommendations for addressing issues."""
         recommendations = []
 
@@ -638,9 +616,7 @@ class ReviewAnalyzer:
                     f"URGENT: Address {category} issues immediately - affecting {score_data['percentage']}% of reviews"
                 )
             elif score_data["priority"] == "high":
-                recommendations.append(
-                    f"HIGH PRIORITY: Focus on {category} issues in next update"
-                )
+                recommendations.append(f"HIGH PRIORITY: Focus on {category} issues in next update")
 
         return recommendations
 
@@ -654,8 +630,8 @@ class ReviewAnalyzer:
         return text[:100]  # Fallback
 
     def _cluster_feature_requests(
-        self, feature_requests: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, feature_requests: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Cluster similar feature requests."""
         # Simplified clustering - group by common keywords
         clusters = {}
@@ -687,16 +663,14 @@ class ReviewAnalyzer:
         ]
 
     def _prioritize_feature_requests(
-        self, clustered_requests: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, clustered_requests: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Prioritize feature requests by frequency."""
-        return sorted(
-            clustered_requests, key=lambda x: x["request_count"], reverse=True
-        )[:10]
+        return sorted(clustered_requests, key=lambda x: x["request_count"], reverse=True)[:10]
 
     def _generate_feature_recommendations(
-        self, prioritized_requests: List[Dict[str, Any]]
-    ) -> List[str]:
+        self, prioritized_requests: list[dict[str, Any]]
+    ) -> list[str]:
         """Generate recommendations for feature requests."""
         recommendations = []
 
@@ -708,15 +682,11 @@ class ReviewAnalyzer:
             )
 
         if len(prioritized_requests) > 1:
-            recommendations.append(
-                f"Also consider: {prioritized_requests[1]['feature_theme']}"
-            )
+            recommendations.append(f"Also consider: {prioritized_requests[1]['feature_theme']}")
 
         return recommendations
 
-    def _determine_trend_direction(
-        self, rating_change: float, sentiment_change: float
-    ) -> str:
+    def _determine_trend_direction(self, rating_change: float, sentiment_change: float) -> str:
         """Determine overall trend direction."""
         if rating_change > 0.2 and sentiment_change > 5:
             return "improving"
@@ -726,17 +696,15 @@ class ReviewAnalyzer:
             return "stable"
 
     def _generate_trend_insights(
-        self, trends: List[Dict[str, Any]], trend_direction: str
-    ) -> List[str]:
+        self, trends: list[dict[str, Any]], trend_direction: str
+    ) -> list[str]:
         """Generate insights from trend analysis."""
         insights = []
 
         if trend_direction == "improving":
             insights.append("Positive trend: User satisfaction is increasing over time")
         elif trend_direction == "declining":
-            insights.append(
-                "WARNING: User satisfaction is declining - immediate action needed"
-            )
+            insights.append("WARNING: User satisfaction is declining - immediate action needed")
         else:
             insights.append("Sentiment is stable - maintain current quality")
 
@@ -753,7 +721,7 @@ class ReviewAnalyzer:
         return insights
 
 
-def analyze_reviews(app_name: str, reviews: List[Dict[str, Any]]) -> Dict[str, Any]:
+def analyze_reviews(app_name: str, reviews: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Convenience function to perform comprehensive review analysis.
 

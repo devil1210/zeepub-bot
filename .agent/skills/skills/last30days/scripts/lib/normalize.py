@@ -1,6 +1,6 @@
 """Normalization of raw API data to canonical schema."""
 
-from typing import Any, Dict, List, TypeVar
+from typing import Any, TypeVar
 
 from . import dates, schema
 
@@ -8,11 +8,11 @@ T = TypeVar("T", schema.RedditItem, schema.XItem, schema.WebSearchItem)
 
 
 def filter_by_date_range(
-    items: List[T],
+    items: list[T],
     from_date: str,
     to_date: str,
     require_date: bool = False,
-) -> List[T]:
+) -> list[T]:
     """Hard filter: Remove items outside the date range.
 
     This is the safety net - even if the prompt lets old content through,
@@ -48,10 +48,10 @@ def filter_by_date_range(
 
 
 def normalize_reddit_items(
-    items: List[Dict[str, Any]],
+    items: list[dict[str, Any]],
     from_date: str,
     to_date: str,
-) -> List[schema.RedditItem]:
+) -> list[schema.RedditItem]:
     """Normalize raw Reddit items to schema.
 
     Args:
@@ -112,10 +112,10 @@ def normalize_reddit_items(
 
 
 def normalize_x_items(
-    items: List[Dict[str, Any]],
+    items: list[dict[str, Any]],
     from_date: str,
     to_date: str,
-) -> List[schema.XItem]:
+) -> list[schema.XItem]:
     """Normalize raw X items to schema.
 
     Args:
@@ -161,6 +161,6 @@ def normalize_x_items(
     return normalized
 
 
-def items_to_dicts(items: List) -> List[Dict[str, Any]]:
+def items_to_dicts(items: list) -> list[dict[str, Any]]:
     """Convert schema items to dicts for JSON serialization."""
     return [item.to_dict() for item in items]

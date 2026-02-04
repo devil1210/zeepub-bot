@@ -88,7 +88,9 @@ class StatsPlugin(BasePlugin):
                 return
 
             cms = context.application.plugin_manager.get_plugin("custom_messages")
-            base_header = f"📋 <b>Usuarios con nivel: {target_level.capitalize()}</b> ({len(users_list)})\n\n"
+            base_header = (
+                f"📋 <b>Usuarios con nivel: {target_level.capitalize()}</b> ({len(users_list)})\n\n"
+            )
             msg = (
                 await cms.get_text(
                     "stats_list_header",

@@ -53,9 +53,7 @@ class TestSelectOpenAIModel(unittest.TestCase):
             {"id": "gpt-5.1", "created": 1701388800},
             {"id": "gpt-5", "created": 1698710400},
         ]
-        result = models.select_openai_model(
-            "fake-key", policy="auto", mock_models=mock_models
-        )
+        result = models.select_openai_model("fake-key", policy="auto", mock_models=mock_models)
         self.assertEqual(result, "gpt-5.2")
 
     def test_auto_filters_variants(self):
@@ -64,9 +62,7 @@ class TestSelectOpenAIModel(unittest.TestCase):
             {"id": "gpt-5-mini", "created": 1704067200},
             {"id": "gpt-5.1", "created": 1701388800},
         ]
-        result = models.select_openai_model(
-            "fake-key", policy="auto", mock_models=mock_models
-        )
+        result = models.select_openai_model("fake-key", policy="auto", mock_models=mock_models)
         self.assertEqual(result, "gpt-5.2")
 
 

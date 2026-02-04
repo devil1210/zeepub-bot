@@ -6,30 +6,29 @@ Interactive script to scaffold Shopify apps, extensions, or themes.
 Supports environment variable loading from multiple locations.
 """
 
-import os
-import sys
 import json
+import os
 import subprocess
-from pathlib import Path
-from typing import Dict, Optional, List
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass
 class EnvConfig:
     """Environment configuration container."""
 
-    shopify_api_key: Optional[str] = None
-    shopify_api_secret: Optional[str] = None
-    shop_domain: Optional[str] = None
-    scopes: Optional[str] = None
+    shopify_api_key: str | None = None
+    shopify_api_secret: str | None = None
+    shop_domain: str | None = None
+    scopes: str | None = None
 
 
 class EnvLoader:
     """Load environment variables from multiple sources in priority order."""
 
     @staticmethod
-    def load_env_file(filepath: Path) -> Dict[str, str]:
+    def load_env_file(filepath: Path) -> dict[str, str]:
         """
         Load environment variables from .env file.
 
@@ -44,7 +43,7 @@ class EnvLoader:
             return env_vars
 
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
@@ -56,7 +55,7 @@ class EnvLoader:
         return env_vars
 
     @staticmethod
-    def get_env_paths(skill_dir: Path) -> List[Path]:
+    def get_env_paths(skill_dir: Path) -> list[Path]:
         """
         Get list of .env file paths in priority order.
 
@@ -146,7 +145,7 @@ class ShopifyInitializer:
         """
         self.config = config
 
-    def prompt(self, message: str, default: Optional[str] = None) -> str:
+    def prompt(self, message: str, default: str | None = None) -> str:
         """
         Prompt user for input.
 
@@ -162,7 +161,7 @@ class ShopifyInitializer:
         user_input = input(f"{message}: ").strip()
         return user_input if user_input else (default or "")
 
-    def select_option(self, message: str, options: List[str]) -> str:
+    def select_option(self, message: str, options: list[str]) -> str:
         """
         Prompt user to select from options.
 
@@ -278,9 +277,7 @@ api_access = true
         config_path.write_text(config_content)
         print(f"✓ Created {config_path}")
 
-    def create_readme(
-        self, project_dir: Path, project_type: str, project_name: str
-    ) -> None:
+    def create_readme(self, project_dir: Path, project_type: str, project_name: str) -> None:
         """
         Create README.md file.
 
@@ -324,9 +321,7 @@ shopify {project_type} deploy
         print("\n=== Shopify App Initialization ===\n")
 
         app_name = self.prompt("App name", "my-shopify-app")
-        scopes = self.prompt(
-            "Access scopes", self.config.scopes or "read_products,write_products"
-        )
+        scopes = self.prompt("Access scopes", self.config.scopes or "read_products,write_products")
 
         project_dir = Path.cwd() / app_name
         project_dir.mkdir(exist_ok=True)

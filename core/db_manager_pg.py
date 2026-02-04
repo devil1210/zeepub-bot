@@ -61,9 +61,7 @@ class PostgresManager:
             # Verify connection
             async with self.engine.begin() as conn:
                 await conn.run_sync(
-                    lambda _: logger.info(
-                        "Postgres connection established successfully."
-                    )
+                    lambda _: logger.info("Postgres connection established successfully.")
                 )
 
             self._initialized = True
@@ -77,9 +75,7 @@ class PostgresManager:
         if not self.session_maker:
             await self.initialize()
             if not self.session_maker:
-                raise RuntimeError(
-                    "Database (PostgreSQL) is not initialized. Check DATABASE_URL."
-                )
+                raise RuntimeError("Database (PostgreSQL) is not initialized. Check DATABASE_URL.")
 
         async with self.session_maker() as session:
             try:

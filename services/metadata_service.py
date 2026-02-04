@@ -109,9 +109,7 @@ async def obtener_metadatos_opds(series_id: str, volume_id: str) -> dict[str, An
 
         # Entrada del volumen
         for entry in root.findall("atom:entry", ns):
-            hrefs = [
-                link.attrib.get("href", "") for link in entry.findall("atom:link", ns)
-            ]
+            hrefs = [link.attrib.get("href", "") for link in entry.findall("atom:link", ns)]
             if any(f"/volume/{volume_id}/" in href for href in hrefs):
                 # Título volumen
                 title_el = entry.find("atom:title", ns)

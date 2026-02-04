@@ -34,9 +34,7 @@ class SchemaOrchestrator:
         try:
             # Debug: Log tables in metadata
             table_names = list(Base.metadata.tables.keys())
-            logger.info(
-                f"Metadata contains {len(table_names)} tables: {', '.join(table_names)}"
-            )
+            logger.info(f"Metadata contains {len(table_names)} tables: {', '.join(table_names)}")
 
             async with pg_manager.engine.begin() as conn:
                 # Create all tables defined in SQLAlchemy models
@@ -269,29 +267,21 @@ class SchemaOrchestrator:
                         return  # Should exist if metadata worked
 
                     stmt_source = select(LibrarySource).limit(1)
-                    existing_source = (
-                        await session.execute(stmt_source)
-                    ).scalar_one_or_none()
+                    existing_source = (await session.execute(stmt_source)).scalar_one_or_none()
                     if not existing_source:
                         logger.info("Seeding default Library Source (/library)...")
-                        default_source = LibrarySource(
-                            name="Principal", path="/library"
-                        )
+                        default_source = LibrarySource(name="Principal", path="/library")
                         session.add(default_source)
                         await session.commit()
 
                     return  # Success!
 
                 except Exception as e:
-                    logger.error(
-                        f"Attempt {attempt + 1} - Error seeding initial data: {e}"
-                    )
+                    logger.error(f"Attempt {attempt + 1} - Error seeding initial data: {e}")
                     await asyncio.sleep(2)
 
     @staticmethod
-    async def _check_and_add_column(
-        table_name: str, column_name: str, column_type: str
-    ):
+    async def _check_and_add_column(table_name: str, column_name: str, column_type: str):
         """Helper to add missing columns safely."""
         async with pg_manager.get_session() as session:
             try:
@@ -317,15 +307,11 @@ class SchemaOrchestrator:
                         f"Column '{column_name}' missing in '{table_name}'. Adding it..."
                     )
                     await session.execute(
-                        text(
-                            f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
-                        )
+                        text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
                     )
                     await session.commit()
             except Exception as e:
-                logger.error(
-                    f"Error checking column {column_name} in {table_name}: {e}"
-                )
+                logger.error(f"Error checking column {column_name} in {table_name}: {e}")
 
 
 # Global instance

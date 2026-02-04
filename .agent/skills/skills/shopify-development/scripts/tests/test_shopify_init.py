@@ -4,15 +4,16 @@ Tests for shopify_init.py
 Run with: pytest test_shopify_init.py -v --cov=shopify_init --cov-report=term-missing
 """
 
-import sys
 import json
-import pytest
+import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from shopify_init import EnvLoader, EnvConfig, ShopifyInitializer
+from shopify_init import EnvConfig, EnvLoader, ShopifyInitializer
 
 
 class TestEnvLoader:
@@ -247,9 +248,7 @@ class TestShopifyInitializer:
 
     @patch("builtins.input")
     @patch("builtins.print")
-    def test_init_extension(
-        self, mock_print, mock_input, initializer, tmp_path, monkeypatch
-    ):
+    def test_init_extension(self, mock_print, mock_input, initializer, tmp_path, monkeypatch):
         """Test extension initialization."""
         monkeypatch.chdir(tmp_path)
 

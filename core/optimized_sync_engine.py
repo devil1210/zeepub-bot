@@ -96,9 +96,7 @@ class OptimizedSyncEngine:
             await self._detect_user_changes()
 
             # Detectar cambios en niveles (menos frecuente)
-            if datetime.utcnow() - self.last_sync_times["user_levels"] > timedelta(
-                hours=1
-            ):
+            if datetime.utcnow() - self.last_sync_times["user_levels"] > timedelta(hours=1):
                 await self._detect_level_changes()
 
         except Exception as e:
@@ -125,9 +123,7 @@ class OptimizedSyncEngine:
                 self.pending_changes["users"].update(changed_users)
 
                 if changed_users:
-                    logger.info(
-                        f"Detected {len(changed_users)} user changes in Supabase"
-                    )
+                    logger.info(f"Detected {len(changed_users)} user changes in Supabase")
 
         except Exception as e:
             logger.error(f"Error detecting user changes: {e}")
@@ -314,9 +310,7 @@ class OptimizedSyncEngine:
             return
 
         try:
-            result = (
-                supabase_manager.get_client().table("user_levels").select("*").execute()
-            )
+            result = supabase_manager.get_client().table("user_levels").select("*").execute()
 
             if not result or not result.data:
                 return
@@ -342,21 +336,13 @@ class OptimizedSyncEngine:
                         "can_download": level_data.get("can_download", True),
                         "can_read": level_data.get("can_read", True),
                         "daily_downloads": level_data.get("daily_downloads", 5),
-                        "has_mini_app_access": level_data.get(
-                            "has_mini_app_access", True
-                        ),
-                        "has_library_access": level_data.get(
-                            "has_library_access", True
-                        ),
+                        "has_mini_app_access": level_data.get("has_mini_app_access", True),
+                        "has_library_access": level_data.get("has_library_access", True),
                         "can_request_books": level_data.get("can_request_books", True),
                         "early_access": level_data.get("early_access", False),
                         "custom_themes": level_data.get("custom_themes", False),
-                        "allow_theme_templates": level_data.get(
-                            "allow_theme_templates", False
-                        ),
-                        "show_recommendations": level_data.get(
-                            "show_recommendations", True
-                        ),
+                        "allow_theme_templates": level_data.get("allow_theme_templates", False),
+                        "show_recommendations": level_data.get("show_recommendations", True),
                         "default_theme_id": level_data.get("default_theme_id"),
                         # ... otros campos de UI
                     }
@@ -486,9 +472,7 @@ class OptimizedSyncEngine:
         """Obtiene estado actual de sincronización."""
         return {
             "running": self.running,
-            "last_sync_times": {
-                k: v.isoformat() for k, v in self.last_sync_times.items()
-            },
+            "last_sync_times": {k: v.isoformat() for k, v in self.last_sync_times.items()},
             "pending_changes": {k: len(v) for k, v in self.pending_changes.items()},
             "supabase_active": supabase_manager.is_active,
             "postgres_enabled": config.ENABLE_POSTGRES_PLUGIN,

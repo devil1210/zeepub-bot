@@ -74,9 +74,7 @@ def check_migrations():
                 if not column_exists(table, column):
                     _log.info(f"Adding column {column} to {table}...")
                     try:
-                        conn.execute(
-                            text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
-                        )
+                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};"))
                         conn.commit()
                     except Exception as e:
                         _log.warning(f"Could not add column {column} to {table}: {e}")
@@ -106,18 +104,12 @@ def check_migrations():
                     conn.commit()
 
                 # Check for additional columns in series_metadata
-                add_column_if_missing(
-                    "series_metadata", "series_spanish", "VARCHAR(255)"
-                )
+                add_column_if_missing("series_metadata", "series_spanish", "VARCHAR(255)")
                 add_column_if_missing("series_metadata", "book_type", "VARCHAR(100)")
                 add_column_if_missing("series_metadata", "publisher", "VARCHAR(255)")
                 add_column_if_missing("series_metadata", "demographics", "JSONB")
-                add_column_if_missing(
-                    "series_metadata", "rating_average", "FLOAT DEFAULT 0.0"
-                )
-                add_column_if_missing(
-                    "series_metadata", "rating_count", "INTEGER DEFAULT 0"
-                )
+                add_column_if_missing("series_metadata", "rating_average", "FLOAT DEFAULT 0.0")
+                add_column_if_missing("series_metadata", "rating_count", "INTEGER DEFAULT 0")
 
                 conn.execute(
                     text(
@@ -138,9 +130,7 @@ def check_migrations():
                 add_column_if_missing("local_books", "english_title", "VARCHAR(512)")
                 add_column_if_missing("local_books", "jap_title", "VARCHAR(512)")
                 add_column_if_missing("local_books", "series_spanish", "VARCHAR(255)")
-                add_column_if_missing(
-                    "local_books", "is_uncensored", "INTEGER DEFAULT 0"
-                )
+                add_column_if_missing("local_books", "is_uncensored", "INTEGER DEFAULT 0")
                 add_column_if_missing("local_books", "color_mode", "VARCHAR(50)")
                 add_column_if_missing("local_books", "series_metadata_id", "INTEGER")
                 add_column_if_missing("local_books", "cover_original", "VARCHAR(1024)")
@@ -155,19 +145,13 @@ def check_migrations():
                 add_column_if_missing(
                     "user_levels", "allow_theme_templates", "BOOLEAN DEFAULT FALSE"
                 )
-                add_column_if_missing(
-                    "user_levels", "can_upload_epub", "BOOLEAN DEFAULT FALSE"
-                )
+                add_column_if_missing("user_levels", "can_upload_epub", "BOOLEAN DEFAULT FALSE")
                 add_column_if_missing("user_levels", "default_theme_id", "INTEGER")
-                add_column_if_missing(
-                    "user_levels", "show_recommendations", "BOOLEAN DEFAULT TRUE"
-                )
+                add_column_if_missing("user_levels", "show_recommendations", "BOOLEAN DEFAULT TRUE")
 
             # 3. users
             if table_exists("users"):
-                add_column_if_missing(
-                    "users", "can_upload_epub", "BOOLEAN DEFAULT FALSE"
-                )
+                add_column_if_missing("users", "can_upload_epub", "BOOLEAN DEFAULT FALSE")
 
             # 4. upload_books
             if table_exists("upload_books"):
@@ -192,9 +176,7 @@ def check_migrations():
 
             # 5. download_history
             if table_exists("download_history"):
-                add_column_if_missing(
-                    "download_history", "is_uncensored", "INTEGER DEFAULT 0"
-                )
+                add_column_if_missing("download_history", "is_uncensored", "INTEGER DEFAULT 0")
                 add_column_if_missing("download_history", "color_mode", "VARCHAR(50)")
 
             # 6. user_ratings book_hash
@@ -246,9 +228,7 @@ def init_library_db():
         check_migrations()
 
     except Exception as e:
-        _log.error(
-            f"Error crítico inicializando base de datos de librería: {e}", exc_info=True
-        )
+        _log.error(f"Error crítico inicializando base de datos de librería: {e}", exc_info=True)
         raise
 
 

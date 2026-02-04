@@ -28,9 +28,7 @@ class SupabaseManager:
 
     def get_client(self) -> Client:
         if not self.client:
-            raise RuntimeError(
-                "Supabase client is not initialized. Check your credentials."
-            )
+            raise RuntimeError("Supabase client is not initialized. Check your credentials.")
         return self.client
 
     async def execute_query(self, table: str, query_type: str = "select", **kwargs):

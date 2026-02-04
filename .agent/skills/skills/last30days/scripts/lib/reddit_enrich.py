@@ -1,13 +1,13 @@
 """Reddit thread enrichment with real engagement metrics."""
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import urlparse
 
-from . import http, dates
+from . import dates, http
 
 
-def extract_reddit_path(url: str) -> Optional[str]:
+def extract_reddit_path(url: str) -> str | None:
     """Extract the path from a Reddit URL.
 
     Args:
@@ -25,9 +25,7 @@ def extract_reddit_path(url: str) -> Optional[str]:
         return None
 
 
-def fetch_thread_data(
-    url: str, mock_data: Optional[Dict] = None
-) -> Optional[Dict[str, Any]]:
+def fetch_thread_data(url: str, mock_data: dict | None = None) -> dict[str, Any] | None:
     """Fetch Reddit thread JSON data.
 
     Args:
@@ -51,7 +49,7 @@ def fetch_thread_data(
         return None
 
 
-def parse_thread_data(data: Any) -> Dict[str, Any]:
+def parse_thread_data(data: Any) -> dict[str, Any]:
     """Parse Reddit thread JSON into structured data.
 
     Args:
@@ -108,7 +106,7 @@ def parse_thread_data(data: Any) -> Dict[str, Any]:
     return result
 
 
-def get_top_comments(comments: List[Dict], limit: int = 10) -> List[Dict[str, Any]]:
+def get_top_comments(comments: list[dict], limit: int = 10) -> list[dict[str, Any]]:
     """Get top comments sorted by score.
 
     Args:
@@ -127,7 +125,7 @@ def get_top_comments(comments: List[Dict], limit: int = 10) -> List[Dict[str, An
     return sorted_comments[:limit]
 
 
-def extract_comment_insights(comments: List[Dict], limit: int = 7) -> List[str]:
+def extract_comment_insights(comments: list[dict], limit: int = 7) -> list[str]:
     """Extract key insights from top comments.
 
     Uses simple heuristics to identify valuable comments:
@@ -178,9 +176,9 @@ def extract_comment_insights(comments: List[Dict], limit: int = 7) -> List[str]:
 
 
 def enrich_reddit_item(
-    item: Dict[str, Any],
-    mock_thread_data: Optional[Dict] = None,
-) -> Dict[str, Any]:
+    item: dict[str, Any],
+    mock_thread_data: dict | None = None,
+) -> dict[str, Any]:
     """Enrich a Reddit item with real engagement data.
 
     Args:

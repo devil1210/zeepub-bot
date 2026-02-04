@@ -22,9 +22,7 @@ def upgrade():
     try:
         op.add_column(
             "user_levels",
-            sa.Column(
-                "daily_downloads", sa.Integer(), nullable=False, server_default="1"
-            ),
+            sa.Column("daily_downloads", sa.Integer(), nullable=False, server_default="1"),
         )
     except Exception:
         pass

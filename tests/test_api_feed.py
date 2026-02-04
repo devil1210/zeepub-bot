@@ -74,9 +74,7 @@ async def test_get_feed_renaming_logic():
                 [
                     MockEntry(
                         "ZeePubs ES",
-                        links=[
-                            {"rel": "subsection", "href": "http://direct-zeepubs-es"}
-                        ],
+                        links=[{"rel": "subsection", "href": "http://direct-zeepubs-es"}],
                     )
                 ]
             ),  # 2. libraries listing
@@ -162,9 +160,7 @@ async def test_get_feed_admin_default_start(monkeypatch):
         mock_get_feed.return_value = MockFeed([])
 
         # Calling without URL should default to START, not EVIL
-        await get_feed(
-            url=None, user_data={"role": "admin", "has_mini_app_access": True}
-        )
+        await get_feed(url=None, user_data={"role": "admin", "has_mini_app_access": True})
 
         # Verify it fetched START
         args, _ = mock_get_feed.call_args

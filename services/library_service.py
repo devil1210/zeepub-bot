@@ -54,9 +54,7 @@ class LibraryService:
                     .scalar_subquery()
                 )
 
-                stmt = select(LocalBook, dl_subquery.label("download_count")).where(
-                    or_(*filters)
-                )
+                stmt = select(LocalBook, dl_subquery.label("download_count")).where(or_(*filters))
 
                 if source_id:
                     stmt = stmt.where(LocalBook.source_id == source_id)
@@ -67,11 +65,7 @@ class LibraryService:
 
                 # Pagination
                 start = (page - 1) * items_per_page
-                stmt = (
-                    stmt.order_by(LocalBook.title.asc())
-                    .offset(start)
-                    .limit(items_per_page)
-                )
+                stmt = stmt.order_by(LocalBook.title.asc()).offset(start).limit(items_per_page)
 
                 result = await session.execute(stmt)
                 rows = result.all()  # [(book, dl_count), ...]
@@ -84,9 +78,7 @@ class LibraryService:
                     b_dict = b.to_dict()
 
                     # Map to DTO
-                    dto = BookDTO(
-                        **b_dict, download_count=dl_count, coverUrl=b.cover_low
-                    )
+                    dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=b.cover_low)
                     results.append(dto.model_dump())
 
                 total_pages = (total_items + items_per_page - 1) // items_per_page
@@ -139,11 +131,7 @@ class LibraryService:
                 )
 
                 if source_id:
-                    stmt = (
-                        stmt.join(LocalBook)
-                        .where(LocalBook.source_id == source_id)
-                        .distinct()
-                    )
+                    stmt = stmt.join(LocalBook).where(LocalBook.source_id == source_id).distinct()
 
                 if sort_by == "newest":
                     stmt = stmt.order_by(SeriesMetadata.id.desc())
@@ -181,9 +169,7 @@ class LibraryService:
                             cover_high=s.cover_url.replace("_low.jpg", "_high.jpg")
                             if s.cover_url
                             else None,
-                            cover_original=s.cover_url.replace(
-                                "_low.jpg", "_original.jpg"
-                            )
+                            cover_original=s.cover_url.replace("_low.jpg", "_original.jpg")
                             if s.cover_url
                             else None,
                             cover=s.cover_url,
@@ -241,9 +227,7 @@ class LibraryService:
 
                     b_dict = b.to_dict()
 
-                    dto = BookDTO(
-                        **b_dict, download_count=dl_count, coverUrl=b.cover_low
-                    )
+                    dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=b.cover_low)
                     results.append(dto.model_dump())
 
                 return results
@@ -278,9 +262,7 @@ class LibraryService:
 
                 b_dict = book.to_dict()
 
-                dto = BookDTO(
-                    **b_dict, download_count=dl_count, coverUrl=book.cover_low
-                )
+                dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=book.cover_low)
                 return dto.model_dump()
             except Exception as e:
                 logger.error(f"[LibraryService.get_book_by_id] Error: {e}")
@@ -380,9 +362,7 @@ class LibraryService:
                             continue
 
                         # Similitud de título
-                        similarity = SequenceMatcher(
-                            None, book_a.title, book_b.title
-                        ).ratio()
+                        similarity = SequenceMatcher(None, book_a.title, book_b.title).ratio()
                         if similarity >= threshold:
                             current_group.append(book_b)
                             used_ids.add(book_b.id)
@@ -468,11 +448,7 @@ class LibraryService:
                 stmt = select(SeriesMetadata)
 
                 if source_id:
-                    stmt = (
-                        stmt.join(LocalBook)
-                        .where(LocalBook.source_id == source_id)
-                        .distinct()
-                    )
+                    stmt = stmt.join(LocalBook).where(LocalBook.source_id == source_id).distinct()
 
                 stmt = stmt.order_by(SeriesMetadata.series_name.asc())
 

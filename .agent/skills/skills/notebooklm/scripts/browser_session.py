@@ -5,10 +5,10 @@ Individual browser session for persistent NotebookLM conversations
 Based on the original NotebookLM API implementation
 """
 
-import time
 import sys
-from typing import Any, Dict, Optional
+import time
 from pathlib import Path
+from typing import Any
 
 from patchright.sync_api import BrowserContext
 
@@ -58,9 +58,7 @@ class BrowserSession:
 
         try:
             # Navigate to notebook
-            self.page.goto(
-                self.notebook_url, wait_until="domcontentloaded", timeout=30000
-            )
+            self.page.goto(self.notebook_url, wait_until="domcontentloaded", timeout=30000)
 
             # Check if login is needed
             if "accounts.google.com" in self.page.url:
@@ -87,9 +85,7 @@ class BrowserSession:
         """Wait for NotebookLM page to be ready"""
         try:
             # Wait for chat input
-            self.page.wait_for_selector(
-                "textarea.query-box-input", timeout=10000, state="visible"
-            )
+            self.page.wait_for_selector("textarea.query-box-input", timeout=10000, state="visible")
         except Exception:
             # Try alternative selector
             self.page.wait_for_selector(
@@ -98,7 +94,7 @@ class BrowserSession:
                 state="visible",
             )
 
-    def ask(self, question: str) -> Dict[str, Any]:
+    def ask(self, question: str) -> dict[str, Any]:
         """
         Ask a question in this session
 
@@ -120,14 +116,10 @@ class BrowserSession:
             # Find chat input
             chat_input_selector = "textarea.query-box-input"
             try:
-                self.page.wait_for_selector(
-                    chat_input_selector, timeout=5000, state="visible"
-                )
+                self.page.wait_for_selector(chat_input_selector, timeout=5000, state="visible")
             except Exception:
                 chat_input_selector = 'textarea[aria-label="Feld für Anfragen"]'
-                self.page.wait_for_selector(
-                    chat_input_selector, timeout=5000, state="visible"
-                )
+                self.page.wait_for_selector(chat_input_selector, timeout=5000, state="visible")
 
             # Click and type with human-like behavior
             self.stealth.realistic_click(self.page, chat_input_selector)
@@ -168,22 +160,18 @@ class BrowserSession:
                 "session_id": self.id,
             }
 
-    def _snapshot_latest_response(self) -> Optional[str]:
+    def _snapshot_latest_response(self) -> str | None:
         """Get the current latest response text"""
         try:
             # Use correct NotebookLM selector
-            responses = self.page.query_selector_all(
-                ".to-user-container .message-text-content"
-            )
+            responses = self.page.query_selector_all(".to-user-container .message-text-content")
             if responses:
                 return responses[-1].inner_text()
         except Exception:
             pass
         return None
 
-    def _wait_for_latest_answer(
-        self, previous_answer: Optional[str], timeout: int = 120
-    ) -> str:
+    def _wait_for_latest_answer(self, previous_answer: str | None, timeout: int = 120) -> str:
         """Wait for and extract the new answer"""
         start_time = time.time()
         last_candidate = None
@@ -201,9 +189,7 @@ class BrowserSession:
 
             try:
                 # Use correct NotebookLM selector
-                responses = self.page.query_selector_all(
-                    ".to-user-container .message-text-content"
-                )
+                responses = self.page.query_selector_all(".to-user-container .message-text-content")
 
                 if responses:
                     latest_text = responses[-1].inner_text().strip()
@@ -252,7 +238,7 @@ class BrowserSession:
 
         print(f"✅ Session {self.id} closed")
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """Get information about this session"""
         return {
             "id": self.id,

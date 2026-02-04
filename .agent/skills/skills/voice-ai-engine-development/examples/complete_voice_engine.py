@@ -6,10 +6,11 @@ with all core components: Transcriber, Agent, Synthesizer, and WebSocket integra
 """
 
 import asyncio
-from typing import Dict, AsyncGenerator
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from dataclasses import dataclass
 import logging
+from collections.abc import AsyncGenerator
+from dataclasses import dataclass
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -88,7 +89,7 @@ class BaseWorker:
 class DeepgramTranscriber(BaseWorker):
     """Converts audio chunks to text transcriptions using Deepgram"""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         super().__init__(asyncio.Queue(), asyncio.Queue())
         self.config = config
         self.is_muted = False
@@ -140,7 +141,7 @@ class DeepgramTranscriber(BaseWorker):
 class GeminiAgent(BaseWorker):
     """LLM-powered conversational agent using Google Gemini"""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         super().__init__(asyncio.Queue(), asyncio.Queue())
         self.config = config
         self.conversation_history = []
@@ -148,9 +149,7 @@ class GeminiAgent(BaseWorker):
     async def process(self, transcription: Transcription):
         """Process transcription and generate response"""
         # Add user message to history
-        self.conversation_history.append(
-            {"role": "user", "content": transcription.message}
-        )
+        self.conversation_history.append({"role": "user", "content": transcription.message})
 
         logger.info(f"🤖 [AGENT] Generating response for: '{transcription.message}'")
 
@@ -158,9 +157,7 @@ class GeminiAgent(BaseWorker):
         async for response in self.generate_response(transcription.message):
             self.output_queue.put_nowait(response)
 
-    async def generate_response(
-        self, user_input: str
-    ) -> AsyncGenerator[AgentResponse, None]:
+    async def generate_response(self, user_input: str) -> AsyncGenerator[AgentResponse, None]:
         """Generate streaming response from LLM"""
         # In a real implementation, this would call Gemini API
         # For this example, we'll simulate a streaming response
@@ -170,14 +167,10 @@ class GeminiAgent(BaseWorker):
 
         # IMPORTANT: Buffer entire response before yielding
         # This prevents audio jumping/cutting off
-        full_response = (
-            f"I understand you said: {user_input}. How can I assist you further?"
-        )
+        full_response = f"I understand you said: {user_input}. How can I assist you further?"
 
         # Add to conversation history
-        self.conversation_history.append(
-            {"role": "assistant", "content": full_response}
-        )
+        self.conversation_history.append({"role": "assistant", "content": full_response})
 
         logger.info(f"🤖 [AGENT] Generated: '{full_response}'")
 
@@ -193,12 +186,10 @@ class GeminiAgent(BaseWorker):
 class ElevenLabsSynthesizer:
     """Converts text to speech using ElevenLabs"""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
 
-    async def create_speech(
-        self, message: str, chunk_size: int = 1024
-    ) -> SynthesisResult:
+    async def create_speech(self, message: str, chunk_size: int = 1024) -> SynthesisResult:
         """
         Generate speech audio from text
 

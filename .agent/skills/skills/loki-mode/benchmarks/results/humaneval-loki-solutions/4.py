@@ -3,10 +3,8 @@
 # Attempts: 1
 # Passed: True
 
-from typing import List
 
-
-def mean_absolute_deviation(numbers: List[float]) -> float:
+def mean_absolute_deviation(numbers: list[float]) -> float:
     """For a given list of input numbers, calculate Mean Absolute Deviation
     around the mean of this dataset.
     Mean Absolute Deviation is the average absolute difference between each

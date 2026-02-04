@@ -23,9 +23,7 @@ def extract_internal_title(data_or_path: bytes | str) -> str | None:
             zf = zipfile.ZipFile(data_or_path)
 
         # Buscar archivos candidatos
-        candidates = [
-            n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()
-        ]
+        candidates = [n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()]
 
         # Regex para fulltitle: <tag ... epub:type="fulltitle" ...> content </tag>
         fulltitle_pattern = re.compile(
@@ -34,12 +32,8 @@ def extract_internal_title(data_or_path: bytes | str) -> str | None:
         )
 
         # Regex para componentes internos
-        title_pat = re.compile(
-            r'epub:type="title"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL
-        )
-        subtitle_pat = re.compile(
-            r'epub:type="subtitle"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL
-        )
+        title_pat = re.compile(r'epub:type="title"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
+        subtitle_pat = re.compile(r'epub:type="subtitle"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
 
         # Regex legacy/fallback
         pattern_legacy = re.compile(
@@ -114,9 +108,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         try:
             container = z.read("META-INF/container.xml")
             tree = ET.fromstring(container)
-            for rf in tree.findall(
-                ".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile"
-            ):
+            for rf in tree.findall(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile"):
                 path = rf.attrib.get("full-path", "")
                 if path.lower().endswith(".opf"):
                     return z.read(path)
@@ -240,9 +232,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                 if el.text:
                     raw_date = el.text.strip()
                     # Si ya tenemos una fecha, solo sobrescribimos si el evento es 'publication'
-                    attribs = {
-                        local_name_attr(k).lower(): v for k, v in el.attrib.items()
-                    }
+                    attribs = {local_name_attr(k).lower(): v for k, v in el.attrib.items()}
                     event = attribs.get("event", "")
 
                     parsed = parse_date(raw_date)
@@ -346,13 +336,9 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         if any(x in all_subjects for x in ["sin censura", "uncensored", "no censura"]):
             out["is_uncensored"] = 1
 
-        if any(
-            x in all_subjects for x in ["ilustraciones a color", "color", "full color"]
-        ):
+        if any(x in all_subjects for x in ["ilustraciones a color", "color", "full color"]):
             out["color_mode"] = "color"
-        elif any(
-            x in all_subjects for x in ["blanco y negro", "b&w", "grayscale", "b/n"]
-        ):
+        elif any(x in all_subjects for x in ["blanco y negro", "b&w", "grayscale", "b/n"]):
             out["color_mode"] = "bw"
 
         # Meta properties Zeepub
@@ -439,18 +425,14 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                         current = out.get("isbn")
                         if not current:
                             out["isbn"] = clean_val
-                        elif (
-                            len(re.sub(r"[^0-9X]", "", current)) == 10
-                            and len(candidate) == 13
-                        ):
+                        elif len(re.sub(r"[^0-9X]", "", current)) == 10 and len(candidate) == 13:
                             out["isbn"] = clean_val
 
         # Fallback: Buscar ISBN en dc:source o dc:relation si aun no tenemos
         if not out["isbn"]:
             for el in root.iter():
                 if (
-                    local_name(el).lower()
-                    in ("source", "dc:source", "relation", "dc:relation")
+                    local_name(el).lower() in ("source", "dc:source", "relation", "dc:relation")
                     and el.text
                 ):
                     txt = el.text.strip()
@@ -673,9 +655,7 @@ async def enrich_metadata_from_epub(
                 if opf_meta.get(key):
                     meta[key] = opf_meta[key]
         else:
-            logger.warning(
-                "OPF metadata parsing returned None - no metadata extracted from OPF"
-            )
+            logger.warning("OPF metadata parsing returned None - no metadata extracted from OPF")
     except Exception as e:
         logger.error(f"enrich_metadata_from_epub: OPF parse failed: {e}", exc_info=True)
 
@@ -696,15 +676,11 @@ async def enrich_metadata_from_epub(
 
     # Extract filename title from URL
     try:
-        filename_title = unquote(urlparse(epub_url).path.split("/")[-1]).replace(
-            ".epub", ""
-        )
+        filename_title = unquote(urlparse(epub_url).path.split("/")[-1]).replace(".epub", "")
         meta["filename_title"] = filename_title
         logger.debug(f"Filename title extracted: {filename_title}")
     except Exception as e:
-        logger.error(
-            f"enrich_metadata_from_epub: filename extraction failed: {e}", exc_info=True
-        )
+        logger.error(f"enrich_metadata_from_epub: filename extraction failed: {e}", exc_info=True)
 
     # Extract publisher URL from HTML (prioritized over OPF)
     try:
@@ -715,9 +691,7 @@ async def enrich_metadata_from_epub(
                 f"enrich_metadata_from_epub: publisher_url updated from HTML: {html_publisher_url}"
             )
     except Exception as e:
-        logger.debug(
-            f"enrich_metadata_from_epub: HTML publisher URL extraction failed: {e}"
-        )
+        logger.debug(f"enrich_metadata_from_epub: HTML publisher URL extraction failed: {e}")
 
     logger.info(f"Metadata enrichment completed. Keys present: {list(meta.keys())}")
     return meta
@@ -737,9 +711,7 @@ def extract_publisher_url_from_html(data_or_path: bytes | str) -> str | None:
             zf = zipfile.ZipFile(data_or_path)
 
         # Buscar archivos candidatos
-        candidates = [
-            n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()
-        ]
+        candidates = [n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()]
 
         # Regex patterns
         # Busca el bloque de Página Web

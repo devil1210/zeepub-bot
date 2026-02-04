@@ -13,11 +13,11 @@ Checks:
     - Naming conventions
 """
 
-import sys
 import json
 import re
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 # Fix Windows console encoding
 try:
@@ -65,9 +65,7 @@ def validate_prisma_schema(file_path: Path) -> list:
 
             # Check for createdAt/updatedAt
             if "createdAt" not in model_body and "created_at" not in model_body:
-                issues.append(
-                    f"Model '{model_name}' missing createdAt field (recommended)"
-                )
+                issues.append(f"Model '{model_name}' missing createdAt field (recommended)")
 
             # Check for @relation without fields
             relations = re.findall(r"@relation\([^)]*\)", model_body)
@@ -78,10 +76,7 @@ def validate_prisma_schema(file_path: Path) -> list:
             # Check for @@index suggestions
             foreign_keys = re.findall(r"(\w+Id)\s+\w+", model_body)
             for fk in foreign_keys:
-                if (
-                    f"@@index([{fk}])" not in content
-                    and f'@@index(["{fk}"])' not in content
-                ):
+                if f"@@index([{fk}])" not in content and f'@@index(["{fk}"])' not in content:
                     issues.append(
                         f"Consider adding @@index([{fk}]) for better query performance in {model_name}"
                     )
@@ -136,9 +131,7 @@ def main():
             issues = []  # Drizzle validation could be added
 
         if issues:
-            all_issues.append(
-                {"file": str(file_path.name), "type": schema_type, "issues": issues}
-            )
+            all_issues.append({"file": str(file_path.name), "type": schema_type, "issues": issues})
 
     # Summary
     print("\n" + "=" * 60)

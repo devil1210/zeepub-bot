@@ -9,8 +9,8 @@ Usage:
   python3 scripts/skills_manager.py disable SKILL # Disable a skill
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 SKILLS_DIR = Path(__file__).parent.parent / "skills"
@@ -21,11 +21,7 @@ def list_active():
     """List all active skills"""
     print("🟢 Active Skills:\n")
     skills = sorted(
-        [
-            d.name
-            for d in SKILLS_DIR.iterdir()
-            if d.is_dir() and not d.name.startswith(".")
-        ]
+        [d.name for d in SKILLS_DIR.iterdir() if d.is_dir() and not d.name.startswith(".")]
     )
     symlinks = sorted([s.name for s in SKILLS_DIR.iterdir() if s.is_symlink()])
 

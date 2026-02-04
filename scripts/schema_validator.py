@@ -25,9 +25,7 @@ def find_schema_files(project_path: Path) -> list:
 
     # SQLAlchemy models
     model_files = list(project_path.glob("**/models/*.py"))
-    schemas.extend(
-        [("sqlalchemy", f) for f in model_files if not f.name.startswith("__")]
-    )
+    schemas.extend([("sqlalchemy", f) for f in model_files if not f.name.startswith("__")])
 
     # SQL migrations
     sql_files = list(project_path.glob("alembic/versions/*.py"))  # Alembic migrations

@@ -73,9 +73,7 @@ class BotInitializer:
             if chat_id:
                 v = get_version_string()
                 commit_msg = get_last_commit_message()
-                logger.info(
-                    f"Sending update success message to {chat_id} (Thread: {thread_id})"
-                )
+                logger.info(f"Sending update success message to {chat_id} (Thread: {thread_id})")
                 try:
                     await bot.send_message(
                         chat_id=chat_id,

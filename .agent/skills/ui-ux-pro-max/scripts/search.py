@@ -27,9 +27,7 @@ def format_output(result):
     else:
         output.append("## UI Pro Max Search Results")
         output.append(f"**Domain:** {result['domain']} | **Query:** {result['query']}")
-    output.append(
-        f"**Source:** {result['file']} | **Found:** {result['count']} results\n"
-    )
+    output.append(f"**Source:** {result['file']} | **Found:** {result['count']} results\n")
 
     for i, row in enumerate(result["results"], 1):
         output.append(f"### Result {i}")
@@ -46,9 +44,7 @@ def format_output(result):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="UI Pro Max Search")
     parser.add_argument("query", help="Search query")
-    parser.add_argument(
-        "--domain", "-d", choices=list(CSV_CONFIG.keys()), help="Search domain"
-    )
+    parser.add_argument("--domain", "-d", choices=list(CSV_CONFIG.keys()), help="Search domain")
     parser.add_argument(
         "--stack",
         "-s",

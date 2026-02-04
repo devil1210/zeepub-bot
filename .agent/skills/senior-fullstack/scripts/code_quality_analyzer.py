@@ -55,9 +55,7 @@ class CodeQualityAnalyzer:
 
         # Add analysis results
         if self.verbose:
-            print(
-                f"✓ Analysis complete: {len(self.results.get('findings', []))} findings"
-            )
+            print(f"✓ Analysis complete: {len(self.results.get('findings', []))} findings")
 
     def generate_report(self):
         """Generate and display the report"""
@@ -74,9 +72,7 @@ def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(description="Code Quality Analyzer")
     parser.add_argument("target", help="Target path to analyze or process")
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
     parser.add_argument("--output", "-o", help="Output file path")
 

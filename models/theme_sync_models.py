@@ -51,7 +51,5 @@ class ThemeSyncLog(Base):
             "themes_deleted": self.themes_deleted,
             "errors": self.errors,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
         }

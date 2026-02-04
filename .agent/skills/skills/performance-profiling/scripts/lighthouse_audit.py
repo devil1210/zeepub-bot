@@ -8,10 +8,10 @@ Output: JSON with performance scores
 Note: Requires lighthouse CLI (npm install -g lighthouse)
 """
 
-import subprocess
 import json
-import sys
 import os
+import subprocess
+import sys
 import tempfile
 
 
@@ -36,7 +36,7 @@ def run_lighthouse(url: str) -> dict:
         )
 
         if os.path.exists(output_path):
-            with open(output_path, "r") as f:
+            with open(output_path) as f:
                 report = json.load(f)
             os.unlink(output_path)
 
@@ -44,12 +44,8 @@ def run_lighthouse(url: str) -> dict:
             return {
                 "url": url,
                 "scores": {
-                    "performance": int(
-                        categories.get("performance", {}).get("score", 0) * 100
-                    ),
-                    "accessibility": int(
-                        categories.get("accessibility", {}).get("score", 0) * 100
-                    ),
+                    "performance": int(categories.get("performance", {}).get("score", 0) * 100),
+                    "accessibility": int(categories.get("accessibility", {}).get("score", 0) * 100),
                     "best_practices": int(
                         categories.get("best-practices", {}).get("score", 0) * 100
                     ),
@@ -66,9 +62,7 @@ def run_lighthouse(url: str) -> dict:
     except subprocess.TimeoutExpired:
         return {"error": "Lighthouse audit timed out"}
     except FileNotFoundError:
-        return {
-            "error": "Lighthouse CLI not found. Install with: npm install -g lighthouse"
-        }
+        return {"error": "Lighthouse CLI not found. Install with: npm install -g lighthouse"}
 
 
 def get_summary(categories: dict) -> str:

@@ -539,9 +539,7 @@ class HelpPlugin(BasePlugin):
             app.add_handler(CommandHandler("menu", self.help_interactive))
             app.add_handler(CommandHandler("help_full", self.help_interactive))
 
-            app.add_handler(
-                CallbackQueryHandler(self.help_navigation_callback, pattern=r"^help\|")
-            )
+            app.add_handler(CallbackQueryHandler(self.help_navigation_callback, pattern=r"^help\|"))
 
             # Dynamic Menu Management (Admin Only)
             app.add_handler(CommandHandler("add_menu_cmd", self.add_menu_cmd))
@@ -650,9 +648,7 @@ class HelpPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def help_interactive(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def help_interactive(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Muestra el menú principal de ayuda (Interactivo)."""
         uid = update.effective_user.id
         thread_id = get_thread_id(update)
@@ -680,9 +676,7 @@ class HelpPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def help_navigation_callback(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def help_navigation_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
         uid = update.effective_user.id
         data = query.data.split("|")
@@ -709,7 +703,9 @@ class HelpPlugin(BasePlugin):
 
         if action == "home":
             cms = context.application.plugin_manager.get_plugin("custom_messages")
-            base_text = "🤖 <b>Ayuda de ZeePub Bot</b>\n\nSelecciona una categoría para ver los comandos:"
+            base_text = (
+                "🤖 <b>Ayuda de ZeePub Bot</b>\n\nSelecciona una categoría para ver los comandos:"
+            )
             text = base_text
             if cms and cms.enabled:
                 text = await cms.get_text(
@@ -717,9 +713,7 @@ class HelpPlugin(BasePlugin):
                 )
 
             keyboard = self._build_category_keyboard(is_admin, is_publisher)
-            await query.edit_message_text(
-                text=text, reply_markup=keyboard, parse_mode="HTML"
-            )
+            await query.edit_message_text(text=text, reply_markup=keyboard, parse_mode="HTML")
 
         visible_cats = self._get_visible_categories(is_admin, is_publisher)
 
@@ -741,9 +735,7 @@ class HelpPlugin(BasePlugin):
                 )
 
             keyboard = self._build_commands_keyboard(cat_key)
-            await query.edit_message_text(
-                text=text, reply_markup=keyboard, parse_mode="HTML"
-            )
+            await query.edit_message_text(text=text, reply_markup=keyboard, parse_mode="HTML")
 
         elif action == "cmd":
             # View Command Detail
@@ -788,9 +780,7 @@ class HelpPlugin(BasePlugin):
                     text += f"💡 <b>Ejemplo:</b> <code>{ex_safe}</code>"
 
             keyboard = self._build_detail_keyboard(cmd_data["cat"])
-            await query.edit_message_text(
-                text=text, reply_markup=keyboard, parse_mode="HTML"
-            )
+            await query.edit_message_text(text=text, reply_markup=keyboard, parse_mode="HTML")
 
         await query.answer()
 
@@ -832,17 +822,13 @@ class HelpPlugin(BasePlugin):
             buttons.append(row)
 
         # Back button
-        buttons.append(
-            [InlineKeyboardButton("🔙 Volver al Inicio", callback_data="help|home")]
-        )
+        buttons.append([InlineKeyboardButton("🔙 Volver al Inicio", callback_data="help|home")])
         return InlineKeyboardMarkup(buttons)
 
     def _build_detail_keyboard(self, cat_key):
         buttons = [
             [
-                InlineKeyboardButton(
-                    "🔙 Volver a Categoría", callback_data=f"help|cat|{cat_key}"
-                ),
+                InlineKeyboardButton("🔙 Volver a Categoría", callback_data=f"help|cat|{cat_key}"),
                 InlineKeyboardButton("🏠 Inicio", callback_data="help|home"),
             ]
         ]
@@ -870,9 +856,7 @@ class HelpPlugin(BasePlugin):
 
                 cms = manager.get_plugin("custom_messages")
             except Exception:
-                logger.debug(
-                    "Custom messages plugin not available during command update"
-                )
+                logger.debug("Custom messages plugin not available during command update")
 
             # 1. Comandos para TODOS (Básicos)
             # Intentar cargar desde DB
@@ -882,9 +866,7 @@ class HelpPlugin(BasePlugin):
                     cmd_list = [c.strip() for c in raw_cmds.split(",") if c.strip()]
                     public_cmds = []
                     for c_name in cmd_list:
-                        fallback_desc = COMMANDS_REGISTRY.get(c_name, {}).get(
-                            "desc", "Comando bot"
-                        )
+                        fallback_desc = COMMANDS_REGISTRY.get(c_name, {}).get("desc", "Comando bot")
 
                         desc = fallback_desc
                         if cms and cms.enabled:
@@ -904,17 +886,13 @@ class HelpPlugin(BasePlugin):
             # Registramos el set público en TODOS los scopes globales
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeDefault())
             await asyncio.sleep(0.5)
-            await bot.set_my_commands(
-                public_cmds, scope=BotCommandScopeAllPrivateChats()
-            )
+            await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllPrivateChats())
             await asyncio.sleep(0.5)
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllGroupChats())
             await asyncio.sleep(0.5)
 
             # Los admins de grupo también ven el menú básico por defecto (evita que vean menú vacío)
-            await bot.set_my_commands(
-                public_cmds, scope=BotCommandScopeAllChatAdministrators()
-            )
+            await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllChatAdministrators())
             await asyncio.sleep(0.5)
 
             logger.info("Comandos básicos registrados en todos los scopes globales.")
@@ -938,9 +916,7 @@ class HelpPlugin(BasePlugin):
             for admin_id in config.ADMIN_USERS:
                 try:
                     # Esto aplica SOLO al chat privado del admin
-                    await bot.set_my_commands(
-                        all_cmds, scope=BotCommandScopeChat(chat_id=admin_id)
-                    )
+                    await bot.set_my_commands(all_cmds, scope=BotCommandScopeChat(chat_id=admin_id))
                     count_admins += 1
                     # Rate limiting to avoid connection resets/flood
                     await asyncio.sleep(1.0)
@@ -953,9 +929,7 @@ class HelpPlugin(BasePlugin):
                 f"Menú de comandos extendido registrado para {count_admins} administradores en privado."
             )
         except Exception as e:
-            logger.error(
-                f"Error actualizando menú de comandos en Telegram: {e}", exc_info=True
-            )
+            logger.error(f"Error actualizando menú de comandos en Telegram: {e}", exc_info=True)
 
     async def _get_default_public_cmds_dynamic(self, cms=None):
         from telegram import BotCommand
@@ -975,9 +949,7 @@ class HelpPlugin(BasePlugin):
         for c_name, fallback_desc in default_list:
             desc = fallback_desc
             if cms and cms.enabled:
-                desc = await cms.get_text(
-                    f"cmd_menu_desc_{c_name}", default_text=fallback_desc
-                )
+                desc = await cms.get_text(f"cmd_menu_desc_{c_name}", default_text=fallback_desc)
             cmds.append(BotCommand(c_name, desc))
 
         return cmds
@@ -1082,9 +1054,7 @@ class HelpPlugin(BasePlugin):
             return
 
         if len(context.args) < 2:
-            await update.message.reply_text(
-                "❌ Uso: /move_menu_cmd <comando> <posición>"
-            )
+            await update.message.reply_text("❌ Uso: /move_menu_cmd <comando> <posición>")
             return
 
         cmd = context.args[0].lower().replace("/", "")
@@ -1109,9 +1079,7 @@ class HelpPlugin(BasePlugin):
             return
 
         if pos < 0 or pos >= len(cmds):
-            await update.message.reply_text(
-                f"❌ Posición fuera de rango (1-{len(cmds)})."
-            )
+            await update.message.reply_text(f"❌ Posición fuera de rango (1-{len(cmds)}).")
             return
 
         # Move logic
@@ -1130,9 +1098,7 @@ class HelpPlugin(BasePlugin):
         if not await self._is_bot_admin(update.effective_user.id):
             return
 
-        await update.message.reply_text(
-            "🔄 Refrescando menú de comandos en Telegram..."
-        )
+        await update.message.reply_text("🔄 Refrescando menú de comandos en Telegram...")
         await self.update_bot_commands(context.bot)
         await update.message.reply_text("✅ Menú refrescado.")
 
@@ -1149,9 +1115,7 @@ class HelpPlugin(BasePlugin):
         """
         uid = update.effective_user.id
         if not await self._is_bot_admin(uid):
-            await update.message.reply_text(
-                "⛔ Solo administradores pueden usar este comando."
-            )
+            await update.message.reply_text("⛔ Solo administradores pueden usar este comando.")
             return
 
         thread_id = get_thread_id(update)

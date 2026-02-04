@@ -3,7 +3,7 @@ Localization helper module for App Store Optimization.
 Manages multi-language ASO optimization strategies.
 """
 
-from typing import Dict, List, Any
+from typing import Any
 
 
 class LocalizationHelper:
@@ -64,7 +64,7 @@ class LocalizationHelper:
         current_market: str = "en-US",
         budget_level: str = "medium",
         target_market_count: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Recommend priority markets for localization.
 
@@ -107,29 +107,23 @@ class LocalizationHelper:
         recommended_markets = recommended_markets[:max_markets]
 
         # Calculate potential ROI
-        total_potential_revenue_share = sum(
-            m["revenue_share"] for m in recommended_markets
-        )
+        total_potential_revenue_share = sum(m["revenue_share"] for m in recommended_markets)
 
         return {
             "recommended_markets": recommended_markets,
             "total_markets": len(recommended_markets),
             "estimated_total_revenue_lift": f"{total_potential_revenue_share * 100:.1f}%",
-            "estimated_cost": self._estimate_total_localization_cost(
-                recommended_markets
-            ),
-            "implementation_priority": self._prioritize_implementation(
-                recommended_markets
-            ),
+            "estimated_cost": self._estimate_total_localization_cost(recommended_markets),
+            "implementation_priority": self._prioritize_implementation(recommended_markets),
         }
 
     def translate_metadata(
         self,
-        source_metadata: Dict[str, str],
+        source_metadata: dict[str, str],
         source_language: str,
         target_language: str,
         platform: str = "apple",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate localized metadata with character limit considerations.
 
@@ -194,11 +188,11 @@ class LocalizationHelper:
 
     def adapt_keywords(
         self,
-        source_keywords: List[str],
+        source_keywords: list[str],
         source_language: str,
         target_language: str,
         target_market: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Adapt keywords for target market (not just direct translation).
 
@@ -246,10 +240,10 @@ class LocalizationHelper:
 
     def validate_translations(
         self,
-        translated_metadata: Dict[str, str],
+        translated_metadata: dict[str, str],
         target_language: str,
         platform: str = "apple",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate translated metadata for character limits and quality.
 
@@ -297,9 +291,7 @@ class LocalizationHelper:
                 )
 
         # Quality checks
-        quality_issues = self._check_translation_quality(
-            translated_metadata, target_language
-        )
+        quality_issues = self._check_translation_quality(translated_metadata, target_language)
 
         validation_results["quality_checks"] = quality_issues
 
@@ -312,11 +304,11 @@ class LocalizationHelper:
 
     def calculate_localization_roi(
         self,
-        target_markets: List[str],
+        target_markets: list[str],
         current_monthly_downloads: int,
         localization_cost: float,
         expected_lift_percentage: float = 0.15,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Estimate ROI of localization investment.
 
@@ -346,9 +338,7 @@ class LocalizationHelper:
                 continue
 
             # Estimate downloads from this market
-            market_downloads = int(
-                current_monthly_downloads * market_info["revenue_share"]
-            )
+            market_downloads = int(current_monthly_downloads * market_info["revenue_share"])
             expected_increase = int(market_downloads * expected_lift_percentage)
             total_expected_lift += expected_increase
 
@@ -385,7 +375,7 @@ class LocalizationHelper:
             "recommendation": self._generate_roi_recommendation(payback_months),
         }
 
-    def _estimate_translation_cost(self, language: str) -> Dict[str, float]:
+    def _estimate_translation_cost(self, language: str) -> dict[str, float]:
         """Estimate translation cost for a language."""
         # Base cost per word (professional translation)
         base_cost_per_word = 0.12
@@ -419,14 +409,12 @@ class LocalizationHelper:
             "estimated_cost": round(estimated_cost, 2),
         }
 
-    def _estimate_total_localization_cost(self, markets: List[Dict[str, Any]]) -> str:
+    def _estimate_total_localization_cost(self, markets: list[dict[str, Any]]) -> str:
         """Estimate total cost for multiple markets."""
         total = sum(m["estimated_translation_cost"]["estimated_cost"] for m in markets)
         return f"${total:,.2f}"
 
-    def _prioritize_implementation(
-        self, markets: List[Dict[str, Any]]
-    ) -> List[Dict[str, str]]:
+    def _prioritize_implementation(self, markets: list[dict[str, Any]]) -> list[dict[str, str]]:
         """Create phased implementation plan."""
         phases = []
 
@@ -467,30 +455,24 @@ class LocalizationHelper:
 
     def _get_translation_notes(
         self, field: str, target_language: str, estimated_length: int, limit: int
-    ) -> List[str]:
+    ) -> list[str]:
         """Get translation-specific notes for field."""
         notes = []
 
         if estimated_length > limit:
-            notes.append(
-                f"Condensing required - aim for {limit - 10} characters to allow buffer"
-            )
+            notes.append(f"Condensing required - aim for {limit - 10} characters to allow buffer")
 
         if field == "title" and target_language.startswith("zh"):
-            notes.append(
-                "Chinese characters convey more meaning - may need fewer characters"
-            )
+            notes.append("Chinese characters convey more meaning - may need fewer characters")
 
         if field == "keywords" and target_language.startswith("de"):
-            notes.append(
-                "German compound words may be longer - prioritize shorter keywords"
-            )
+            notes.append("German compound words may be longer - prioritize shorter keywords")
 
         return notes
 
     def _generate_translation_recommendations(
-        self, target_language: str, warnings: List[str]
-    ) -> List[str]:
+        self, target_language: str, warnings: list[str]
+    ) -> list[str]:
         """Generate translation recommendations."""
         recommendations = [
             "Use professional native speakers for translation",
@@ -498,18 +480,14 @@ class LocalizationHelper:
         ]
 
         if warnings:
-            recommendations.append(
-                "Work with translator to condense text while preserving meaning"
-            )
+            recommendations.append("Work with translator to condense text while preserving meaning")
 
         if target_language.startswith("zh") or target_language.startswith("ja"):
             recommendations.append("Consider cultural context and local idioms")
 
         return recommendations
 
-    def _get_cultural_keyword_considerations(
-        self, target_market: str
-    ) -> Dict[str, List[str]]:
+    def _get_cultural_keyword_considerations(self, target_market: str) -> dict[str, list[str]]:
         """Get cultural considerations for keywords by market."""
         # Simplified example - real implementation would be more comprehensive
         considerations = {
@@ -534,7 +512,7 @@ class LocalizationHelper:
 
         return considerations.get(target_market, considerations["default"])
 
-    def _get_search_patterns(self, target_market: str) -> List[str]:
+    def _get_search_patterns(self, target_market: str) -> list[str]:
         """Get search pattern notes for market."""
         patterns = {
             "China": [
@@ -562,8 +540,8 @@ class LocalizationHelper:
             return "direct_translation"  # Direct translation usually sufficient
 
     def _check_translation_quality(
-        self, translated_metadata: Dict[str, str], target_language: str
-    ) -> List[str]:
+        self, translated_metadata: dict[str, str], target_language: str
+    ) -> list[str]:
         """Basic quality checks for translations."""
         issues = []
 
@@ -593,7 +571,7 @@ class LocalizationHelper:
 
 def plan_localization_strategy(
     current_market: str, budget_level: str, monthly_downloads: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convenience function to plan localization strategy.
 
@@ -615,9 +593,7 @@ def plan_localization_strategy(
     market_codes = [m["language"] for m in target_markets["recommended_markets"]]
 
     # Calculate ROI
-    estimated_cost = float(
-        target_markets["estimated_cost"].replace("$", "").replace(",", "")
-    )
+    estimated_cost = float(target_markets["estimated_cost"].replace("$", "").replace(",", ""))
 
     roi_analysis = helper.calculate_localization_roi(
         market_codes, monthly_downloads, estimated_cost

@@ -27,9 +27,7 @@ def Strongest_Extension(class_name, extensions):
     )
 
     for ext in extensions[1:]:
-        strength = sum(1 for c in ext if c.isupper()) - sum(
-            1 for c in ext if c.islower()
-        )
+        strength = sum(1 for c in ext if c.isupper()) - sum(1 for c in ext if c.islower())
         if strength > max_strength:
             max_strength = strength
             strongest_ext = ext

@@ -49,9 +49,7 @@ class CommandHandlers:
         try:
             synced = await sync_user_from_env(uid, tg_user=update.effective_user)
             if synced:
-                logger.info(
-                    f"User {uid} auto-synced from ENV: level={synced.get('level')}"
-                )
+                logger.info(f"User {uid} auto-synced from ENV: level={synced.get('level')}")
         except Exception as e:
             logger.error(f"Error syncing user {uid} from ENV: {e}")
 
@@ -66,9 +64,7 @@ class CommandHandlers:
 
         if left == "ilimitadas":
             text = (
-                await cms.get_text(
-                    "start_welcome_unlimited", user=update.effective_user
-                )
+                await cms.get_text("start_welcome_unlimited", user=update.effective_user)
                 if (cms and cms.enabled)
                 else "👋 ¡Hola {first_name}! Comencemos.\n\n✅ Tienes descargas ilimitadas.".replace(
                     "{first_name}", first_name
@@ -152,18 +148,12 @@ class CommandHandlers:
                         callback_data="set_publish_temp|facebook",
                     )
                 ],
-                [
-                    InlineKeyboardButton(
-                        "⛔ Omitir", callback_data="set_publish_temp|none"
-                    )
-                ],
+                [InlineKeyboardButton("⛔ Omitir", callback_data="set_publish_temp|none")],
             ]
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_txt = "🔧 Eres publisher — ¿dónde quieres publicar la próxima vez que selecciones un libro?"
             text_pub = (
-                await cms.get_text("publisher_target_prompt")
-                if (cms and cms.enabled)
-                else base_txt
+                await cms.get_text("publisher_target_prompt") if (cms and cms.enabled) else base_txt
             )
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -193,26 +183,16 @@ class CommandHandlers:
             # Mostrar opciones de destino
             keyboard = [
                 [InlineKeyboardButton("📍 Aquí", callback_data="destino|aqui")],
-                [
-                    InlineKeyboardButton(
-                        "📣 BotTest", callback_data="destino|@ZeePubBotTest"
-                    )
-                ],
+                [InlineKeyboardButton("📣 BotTest", callback_data="destino|@ZeePubBotTest")],
                 [InlineKeyboardButton("📣 ZeePubs", callback_data="destino|@ZeePubs")],
-                [
-                    InlineKeyboardButton(
-                        "📚 Mi Catálogo", callback_data="ver_catalogo_normal"
-                    )
-                ],
+                [InlineKeyboardButton("📚 Mi Catálogo", callback_data="ver_catalogo_normal")],
                 [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
             ]
 
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_txt = "🔧 Modo Evil: ¿Dónde quieres publicar?"
             text_evil = (
-                await cms.get_text("evil_mode_prompt")
-                if (cms and cms.enabled)
-                else base_txt
+                await cms.get_text("evil_mode_prompt") if (cms and cms.enabled) else base_txt
             )
 
             await context.bot.send_message(
@@ -232,9 +212,7 @@ class CommandHandlers:
         st["opds_root_base"] = root
         st["historial"] = []
         st["ultima_pagina"] = root
-        await mostrar_colecciones(
-            update, context, root, from_collection=False, new_message=True
-        )
+        await mostrar_colecciones(update, context, root, from_collection=False, new_message=True)
 
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /status: informa estado interno, nivel de usuario y descargas restantes."""
@@ -246,9 +224,7 @@ class CommandHandlers:
             if uid in config.ADMIN_USERS:
                 target_user = update.message.reply_to_message.from_user
                 uid = target_user.id
-                logger.info(
-                    f"Admin {update.effective_user.id} requested status for user {uid}"
-                )
+                logger.info(f"Admin {update.effective_user.id} requested status for user {uid}")
 
         st = state_manager.get_user_state(uid)
 
@@ -304,9 +280,7 @@ class CommandHandlers:
         # Calcular tiempo para próximo reset
 
         now = datetime.now()
-        next_midnight = (now + timedelta(days=1)).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        next_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         time_left = next_midnight - now
         hours, remainder = divmod(int(time_left.total_seconds()), 3600)
         minutes, _ = divmod(remainder, 60)
@@ -458,9 +432,7 @@ class CommandHandlers:
 
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_pwd = "🔒 Modo Privado. Por favor, ingresa la contraseña:"
-        text_pwd = (
-            cms.get_text("evil_password_prompt") if (cms and cms.enabled) else base_pwd
-        )
+        text_pwd = cms.get_text("evil_password_prompt") if (cms and cms.enabled) else base_pwd
 
         message = await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -497,11 +469,7 @@ class CommandHandlers:
 
             msg = default_msg
             if cms and cms.enabled:
-                exp_str = (
-                    expires_at.strftime("%Y-%m-%d %H:%M")
-                    if expires_at
-                    else "Indefinido"
-                )
+                exp_str = expires_at.strftime("%Y-%m-%d %H:%M") if expires_at else "Indefinido"
                 msg = cms.get_text("banned_message", Fecha=exp_str)
 
             await context.bot.send_message(
@@ -524,11 +492,7 @@ class CommandHandlers:
 
             if not feed or not getattr(feed, "entries", []):
                 keyboard = [
-                    [
-                        InlineKeyboardButton(
-                            "🔄 Volver a buscar", callback_data="buscar"
-                        )
-                    ],
+                    [InlineKeyboardButton("🔄 Volver a buscar", callback_data="buscar")],
                     [
                         InlineKeyboardButton(
                             "📚 Ir a colecciones", callback_data="volver_colecciones"
@@ -567,9 +531,7 @@ class CommandHandlers:
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_search = "🔍 ¿Qué libro buscas? Escribe el título o autor:"
             text_search = (
-                await cms.get_text("search_prompt")
-                if (cms and cms.enabled)
-                else base_search
+                await cms.get_text("search_prompt") if (cms and cms.enabled) else base_search
             )
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,

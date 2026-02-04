@@ -19,14 +19,10 @@ def fix():
         )
 
         print("Añadiendo columna spanish_title a local_books...")
-        cur.execute(
-            "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(255);"
-        )
+        cur.execute("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(255);")
 
         print("Añadiendo columna book_id a download_history...")
-        cur.execute(
-            "ALTER TABLE download_history ADD COLUMN IF NOT EXISTS book_id INTEGER;"
-        )
+        cur.execute("ALTER TABLE download_history ADD COLUMN IF NOT EXISTS book_id INTEGER;")
 
         print("✅ Columnas añadidas con éxito via puerto 5432!")
         cur.close()

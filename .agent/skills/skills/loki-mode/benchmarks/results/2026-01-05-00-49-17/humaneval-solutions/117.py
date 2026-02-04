@@ -18,9 +18,7 @@ def select_words(s, n):
     result = []
 
     for word in s.split():
-        consonant_count = sum(
-            1 for char in word if char.isalpha() and char not in vowels
-        )
+        consonant_count = sum(1 for char in word if char.isalpha() and char not in vowels)
         if consonant_count == n:
             result.append(word)
 

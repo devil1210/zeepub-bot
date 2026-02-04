@@ -115,11 +115,7 @@ class DonationsPlugin(BasePlugin):
                     callback_data=f"notificar_donacion|{uid}",
                 )
             ],
-            [
-                InlineKeyboardButton(
-                    "⏳ Donar más tarde", callback_data=f"cerrar_donacion|{uid}"
-                )
-            ],
+            [InlineKeyboardButton("⏳ Donar más tarde", callback_data=f"cerrar_donacion|{uid}")],
         ]
 
         msg = await context.bot.send_message(
@@ -148,9 +144,7 @@ class DonationsPlugin(BasePlugin):
         job = context.job
         data = job.data
         try:
-            await context.bot.delete_message(
-                chat_id=data["chat_id"], message_id=data["message_id"]
-            )
+            await context.bot.delete_message(chat_id=data["chat_id"], message_id=data["message_id"])
         except Exception as e:
             logger.debug(f"DonationPlugin: Auto-delete failed: {e}")
 
@@ -246,9 +240,7 @@ class DonationsPlugin(BasePlugin):
         }
 
         if level not in key_map:
-            await update.message.reply_text(
-                "❌ Nivel inválido. Usa: white, vip, premium, meses"
-            )
+            await update.message.reply_text("❌ Nivel inválido. Usa: white, vip, premium, meses")
             return
 
         set_setting(key_map[level], amount)
@@ -256,8 +248,6 @@ class DonationsPlugin(BasePlugin):
         if level in ("meses", "duration"):
             msg_text = f"✅ Duración de beneficios actualizada a: <b>{amount} meses</b>"
         else:
-            msg_text = (
-                f"✅ Precio para <b>{level}</b> actualizado a: <b>${amount} USD</b>"
-            )
+            msg_text = f"✅ Precio para <b>{level}</b> actualizado a: <b>${amount} USD</b>"
 
         await update.message.reply_text(msg_text, parse_mode="HTML")

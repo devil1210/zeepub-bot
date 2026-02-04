@@ -47,9 +47,7 @@ class MetricsRepository:
                         "series_hash": series_hash,
                         "title": title,
                     }
-                    self.supabase.get_client().table("user_downloads").insert(
-                        data
-                    ).execute()
+                    self.supabase.get_client().table("user_downloads").insert(data).execute()
                 except Exception:
                     pass
         except Exception as e:
@@ -63,9 +61,7 @@ class MetricsRepository:
                 query = text(
                     "SELECT 1 FROM user_downloads WHERE user_id = :user_id AND book_hash = :book_hash LIMIT 1"
                 )
-                result = await session.execute(
-                    query, {"user_id": user_id, "book_hash": book_hash}
-                )
+                result = await session.execute(query, {"user_id": user_id, "book_hash": book_hash})
                 return result.fetchone() is not None
         except Exception as e:
             logger.error(f"Postgres metrics has_downloaded error: {e}")
@@ -76,9 +72,7 @@ class MetricsRepository:
             return 0
         try:
             async with pg_manager.get_session() as session:
-                query = text(
-                    "SELECT COUNT(*) FROM user_downloads WHERE book_hash = :book_hash"
-                )
+                query = text("SELECT COUNT(*) FROM user_downloads WHERE book_hash = :book_hash")
                 result = await session.execute(query, {"book_hash": book_hash})
                 return result.scalar() or 0
         except Exception as e:
@@ -90,9 +84,7 @@ class MetricsRepository:
             return 0
         try:
             async with pg_manager.get_session() as session:
-                query = text(
-                    "SELECT COUNT(*) FROM user_downloads WHERE series_hash = :series_hash"
-                )
+                query = text("SELECT COUNT(*) FROM user_downloads WHERE series_hash = :series_hash")
                 result = await session.execute(query, {"series_hash": series_hash})
                 return result.scalar() or 0
         except Exception as e:
@@ -138,9 +130,7 @@ class MetricsRepository:
                         "book_hash": book_hash,
                         "rating": rating,
                     }
-                    self.supabase.get_client().table("user_ratings").upsert(
-                        data
-                    ).execute()
+                    self.supabase.get_client().table("user_ratings").upsert(data).execute()
                 except Exception:
                     pass
         except Exception as e:
@@ -157,9 +147,7 @@ class MetricsRepository:
                 result = await session.execute(query, {"book_hash": book_hash})
                 row = result.fetchone()
                 return {
-                    "average": round(float(row[0]), 1)
-                    if row and row[0] is not None
-                    else 0.0,
+                    "average": round(float(row[0]), 1) if row and row[0] is not None else 0.0,
                     "count": row[1] if row else 0,
                 }
         except Exception as e:

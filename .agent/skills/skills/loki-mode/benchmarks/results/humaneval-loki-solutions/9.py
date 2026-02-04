@@ -3,10 +3,8 @@
 # Attempts: 1
 # Passed: True
 
-from typing import List
 
-
-def rolling_max(numbers: List[int]) -> List[int]:
+def rolling_max(numbers: list[int]) -> list[int]:
     """From a given list of integers, generate a list of rolling maximum element found until given moment
     in the sequence.
     >>> rolling_max([1, 2, 3, 2, 3, 4, 2])

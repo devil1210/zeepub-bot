@@ -59,9 +59,7 @@ async def fix_postgres_schema():
             engine = None
 
     if not engine:
-        logger.error(
-            "❌ All connection attempts failed. Please ensure Postgres is running."
-        )
+        logger.error("❌ All connection attempts failed. Please ensure Postgres is running.")
         return
 
     try:
@@ -76,9 +74,7 @@ async def fix_postgres_schema():
                 ADD COLUMN IF NOT EXISTS default_theme_id INTEGER DEFAULT NULL REFERENCES app_themes(id);
             """)
             )
-            logger.info(
-                "Added default_theme_id column successfully (if it didn't exist)."
-            )
+            logger.info("Added default_theme_id column successfully (if it didn't exist).")
 
             await conn.execute(
                 text("""
@@ -116,9 +112,7 @@ async def fix_postgres_schema():
             # 2. Claves Foráneas con Índice (Punto 1 del plan anterior)
             logger.info("Añadiendo índices a claves foráneas críticas...")
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);")
             )
             await conn.execute(
                 text(
@@ -127,9 +121,7 @@ async def fix_postgres_schema():
             )
 
             # 3. Optimización de Series (Punto 2 del plan - Integer vs String)
-            logger.info(
-                "Optimizando relación de series (LocalBook -> SeriesMetadata)..."
-            )
+            logger.info("Optimizando relación de series (LocalBook -> SeriesMetadata)...")
             await conn.execute(
                 text("""
                 ALTER TABLE local_books 
@@ -143,9 +135,7 @@ async def fix_postgres_schema():
             )
 
             # 4. Spanish Title y Book ID (Fix Errors Section)
-            logger.info(
-                "Añadiendo columnas para corrección de errores de metadatos y descargas..."
-            )
+            logger.info("Añadiendo columnas para corrección de errores de metadatos y descargas...")
             await conn.execute(
                 text("""
                 ALTER TABLE series_metadata 

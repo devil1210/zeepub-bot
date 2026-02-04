@@ -37,9 +37,7 @@ class SyncEngine:
 
     async def _sync_loop(self):
         while self.running:
-            await asyncio.sleep(
-                self.sync_interval
-            )  # Wait first, as start() already triggered one
+            await asyncio.sleep(self.sync_interval)  # Wait first, as start() already triggered one
             try:
                 if config.ENABLE_SUPABASE and config.ENABLE_POSTGRES_PLUGIN:
                     await self.sync_down_all()
@@ -64,9 +62,7 @@ class SyncEngine:
     async def sync_levels_down(self):
         """Syncs user_levels from Supabase -> local."""
         try:
-            res = (
-                supabase_manager.get_client().table("user_levels").select("*").execute()
-            )
+            res = supabase_manager.get_client().table("user_levels").select("*").execute()
             if not res.data:
                 return
 
@@ -100,9 +96,7 @@ class SyncEngine:
                         "can_upload_epub": lvl.get("can_upload_epub", False),
                         "early_access": lvl.get("early_access", False),
                         "custom_themes": lvl.get("custom_themes", False),
-                        "allow_theme_templates": lvl.get(
-                            "allow_theme_templates", False
-                        ),
+                        "allow_theme_templates": lvl.get("allow_theme_templates", False),
                         "show_recommendations": lvl.get("show_recommendations", True),
                     }
                     stmt = (
@@ -118,20 +112,14 @@ class SyncEngine:
     async def sync_themes_down(self):
         """Syncs app_themes from Supabase -> local."""
         try:
-            res = (
-                supabase_manager.get_client().table("app_themes").select("*").execute()
-            )
+            res = supabase_manager.get_client().table("app_themes").select("*").execute()
             if not res.data:
                 return
 
             async with pg_manager.get_session() as session:
                 for t in res.data:
                     # Omit internal IDs if necessary, but here we sync IDs too
-                    t_data = {
-                        k: v
-                        for k, v in t.items()
-                        if k not in ["created_at", "updated_at"]
-                    }
+                    t_data = {k: v for k, v in t.items() if k not in ["created_at", "updated_at"]}
                     stmt = (
                         pg_insert(AppTheme)
                         .values(**t_data)
@@ -184,9 +172,7 @@ class SyncEngine:
                     stmt = (
                         pg_insert(User)
                         .values(**user_data)
-                        .on_conflict_do_update(
-                            index_elements=["telegram_id"], set_=user_data
-                        )
+                        .on_conflict_do_update(index_elements=["telegram_id"], set_=user_data)
                     )
                     await session.execute(stmt)
                 await session.commit()
@@ -196,12 +182,7 @@ class SyncEngine:
     async def sync_ui_settings_down(self):
         """Syncs user_ui_settings from Supabase -> local."""
         try:
-            res = (
-                supabase_manager.get_client()
-                .table("user_ui_settings")
-                .select("*")
-                .execute()
-            )
+            res = supabase_manager.get_client().table("user_ui_settings").select("*").execute()
             if not res.data:
                 return
 
@@ -223,12 +204,7 @@ class SyncEngine:
         try:
             from sqlalchemy import text
 
-            res = (
-                supabase_manager.get_client()
-                .table("bot_settings")
-                .select("*")
-                .execute()
-            )
+            res = supabase_manager.get_client().table("bot_settings").select("*").execute()
             if not res.data:
                 return
 
@@ -242,9 +218,7 @@ class SyncEngine:
                     await session.execute(stmt, {"key": s["key"], "value": s["value"]})
                 await session.commit()
         except Exception as e:
-            logger.debug(
-                f"Bot settings sync skipped (table might not exist locally yet): {e}"
-            )
+            logger.debug(f"Bot settings sync skipped (table might not exist locally yet): {e}")
 
 
 sync_engine = SyncEngine()

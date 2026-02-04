@@ -115,9 +115,7 @@ def create_short_url(
                     conn.execute(ins)
                     return url_hash
                 except IntegrityError:
-                    sel2 = sa.select(url_mappings.c.url).where(
-                        url_mappings.c.hash == url_hash
-                    )
+                    sel2 = sa.select(url_mappings.c.url).where(url_mappings.c.hash == url_hash)
                     r2 = conn.execute(sel2).first()
                     if r2 and r2[0] == url:
                         return url_hash
@@ -240,12 +238,7 @@ def get_stats() -> dict:
         metadata = MetaData()
         url_mappings = Table("url_mappings", metadata, autoload_with=engine)
         with engine.connect() as conn:
-            total = (
-                conn.execute(
-                    sa.select(sa.func.count()).select_from(url_mappings)
-                ).scalar()
-                or 0
-            )
+            total = conn.execute(sa.select(sa.func.count()).select_from(url_mappings)).scalar() or 0
             valid = (
                 conn.execute(
                     sa.select(sa.func.count())

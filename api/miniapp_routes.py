@@ -134,9 +134,7 @@ async def handle_bot_request(
 
         if not rbac_service.is_staff(
             user_effective
-        ) and Permission.ACCESS_MINI_APP.value not in user_effective.get(
-            "permissions", []
-        ):
+        ) and Permission.ACCESS_MINI_APP.value not in user_effective.get("permissions", []):
             raise HTTPException(
                 status_code=403,
                 detail="Tu nivel de usuario no tiene acceso a la Mini App",
@@ -333,9 +331,9 @@ async def check_user_access(
     is_staff = rbac_service.is_staff(eff)
 
     # Force access for all admins/staff
-    has_access = eff.get(
-        "has_mini_app_access"
-    ) or Permission.ACCESS_MINI_APP.value in eff.get("permissions", [])
+    has_access = eff.get("has_mini_app_access") or Permission.ACCESS_MINI_APP.value in eff.get(
+        "permissions", []
+    )
     if is_staff:
         has_access = True
 
@@ -420,12 +418,8 @@ async def check_user_access(
         status_label=eff.get("status_label") or "Lector",
         hasLibraryAccess=eff.get("has_library_access", True),
         canRequestBooks=eff.get("can_request_books", True),
-        canUploadEpub=eff.get(
-            "can_upload_epub", access_info.get("canUploadEpub", False)
-        ),
-        ui_exported_settings=eff.get(
-            "ui_exported_settings", ["theme", "primaryColor", "fontSize"]
-        ),
+        canUploadEpub=eff.get("can_upload_epub", access_info.get("canUploadEpub", False)),
+        ui_exported_settings=eff.get("ui_exported_settings", ["theme", "primaryColor", "fontSize"]),
         titlePreference=user_settings.get("title_preference") or "romaji",
     )
 
@@ -484,14 +478,10 @@ async def upload_epub_miniapp(
         and not user_data.get("is_real_admin")
         and not is_configured_admin
     ):
-        raise HTTPException(
-            status_code=403, detail="No tienes permiso para subir archivos EPUB"
-        )
+        raise HTTPException(status_code=403, detail="No tienes permiso para subir archivos EPUB")
 
     if not file.filename.lower().endswith(".epub"):
-        raise HTTPException(
-            status_code=400, detail="Solo se admiten archivos EPUB (.epub)"
-        )
+        raise HTTPException(status_code=400, detail="Solo se admiten archivos EPUB (.epub)")
 
     import tempfile
     from datetime import datetime
@@ -505,16 +495,12 @@ async def upload_epub_miniapp(
 
     try:
         # Guardar archivo temporal
-        temp_file = (
-            temp_dir / f"app_{user_data['user_id']}_{datetime.now().timestamp()}.epub"
-        )
+        temp_file = temp_dir / f"app_{user_data['user_id']}_{datetime.now().timestamp()}.epub"
         with open(temp_file, "wb") as f:
             f.write(await file.read())
 
         # Analizar EPUB
-        metadata = await epub_uploader.analyze_epub(
-            temp_file, file.filename, user_data["user_id"]
-        )
+        metadata = await epub_uploader.analyze_epub(temp_file, file.filename, user_data["user_id"])
 
         if not metadata:
             if temp_file.exists():
@@ -587,9 +573,7 @@ async def confirm_epub_upload_miniapp(
         suggested_path = custom_path or metadata.get("suggested_path")
 
         # Mover a la librería
-        success = await epub_uploader.add_to_library(
-            file_path, suggested_path, metadata
-        )
+        success = await epub_uploader.add_to_library(file_path, suggested_path, metadata)
 
         if success:
             # Log success
@@ -613,9 +597,7 @@ async def confirm_epub_upload_miniapp(
                 status="error",
                 error_message="Failed to move file to library",
             )
-            raise HTTPException(
-                status_code=500, detail="Error al mover el archivo a la librería"
-            )
+            raise HTTPException(status_code=500, detail="Error al mover el archivo a la librería")
 
     except Exception as e:
         logger.error(f"Error confirming upload: {e}")
@@ -629,9 +611,7 @@ async def upload_epub_bulk(
 ):
     """Sube múltiples EPUBs de una vez."""
     if not user_data.get("can_upload_epub") and user_data.get("level") != "admin":
-        raise HTTPException(
-            status_code=403, detail="No tienes permiso para subir archivos EPUB"
-        )
+        raise HTTPException(status_code=403, detail="No tienes permiso para subir archivos EPUB")
 
     import tempfile
     from datetime import datetime
@@ -645,9 +625,7 @@ async def upload_epub_bulk(
     results = []
     for file in files:
         if not file.filename.lower().endswith(".epub"):
-            results.append(
-                {"filename": file.filename, "success": False, "error": "No es un EPUB"}
-            )
+            results.append({"filename": file.filename, "success": False, "error": "No es un EPUB"})
             continue
 
         try:
@@ -691,9 +669,7 @@ async def upload_epub_bulk(
                 }
             )
         except Exception as e:
-            results.append(
-                {"filename": file.filename, "success": False, "error": str(e)}
-            )
+            results.append({"filename": file.filename, "success": False, "error": str(e)})
 
     return {"results": results}
 
@@ -742,18 +718,14 @@ async def get_bot_avatar(file_id: str):
         download_url = file_obj.file_path
 
         if not download_url.startswith("http"):
-            download_url = (
-                f"https://api.telegram.org/file/bot{token}/{file_obj.file_path}"
-            )
+            download_url = f"https://api.telegram.org/file/bot{token}/{file_obj.file_path}"
 
         # Create a generator for streaming
         async def file_stream():
             async with httpx.AsyncClient() as client:
                 async with client.stream("GET", download_url) as response:
                     if response.status_code != 200:
-                        raise HTTPException(
-                            status_code=404, detail="Upstream image not found"
-                        )
+                        raise HTTPException(status_code=404, detail="Upstream image not found")
                     async for chunk in response.aiter_bytes():
                         yield chunk
 

@@ -97,20 +97,14 @@ def log_published_book(
 
         # Extract fields from meta
         title = meta.get("titulo_volumen") or meta.get("titulo")
-        author = meta.get("autor") or (
-            meta.get("autores")[0] if meta.get("autores") else None
-        )
+        author = meta.get("autor") or (meta.get("autores")[0] if meta.get("autores") else None)
         series = meta.get("titulo_serie")
-        volume = meta.get(
-            "volume_index"
-        )  # Might need adjustment based on meta structure
+        volume = meta.get("volume_index")  # Might need adjustment based on meta structure
 
         # Extract extended metadata fields
         # Maquetado por: convert list to comma-separated string
         maquetadores = meta.get("maquetadores", [])
-        maquetado_por = (
-            ", ".join(maquetadores) if isinstance(maquetadores, list) else maquetadores
-        )
+        maquetado_por = ", ".join(maquetadores) if isinstance(maquetadores, list) else maquetadores
 
         # Demografia: convert list to comma-separated string or take first element
         demografia_list = meta.get("demografia", [])
@@ -284,10 +278,7 @@ def process_history_json(file_path: str) -> dict[str, int]:
             msg_id = msg.get("id")
 
             # Skip synopsis messages explicitly
-            if (
-                text_content.strip().startswith("Sinopsis")
-                or "Sinopsis:" in text_content[:20]
-            ):
+            if text_content.strip().startswith("Sinopsis") or "Sinopsis:" in text_content[:20]:
                 logger.debug(f"Skipping synopsis message {msg_id}")
                 continue
 
@@ -302,9 +293,7 @@ def process_history_json(file_path: str) -> dict[str, int]:
                         title = parts[2].strip()
                     elif len(parts) == 1:
                         title = parts[0].strip()  # Fallback
-                elif (
-                    "║" in line
-                ):  # Handle lines like "Series ║ Title" without "Epub de:"
+                elif "║" in line:  # Handle lines like "Series ║ Title" without "Epub de:"
                     parts = line.split("║")
                     if len(parts) >= 1:
                         series = parts[0].strip()
@@ -388,9 +377,7 @@ def process_history_json(file_path: str) -> dict[str, int]:
                         stats["imported"] += 1
                         logger.debug(f"Successfully imported book: {slug}")
             except Exception as e:
-                logger.error(
-                    f"Error importing msg {msg_id} (slug: {slug}): {e}", exc_info=True
-                )
+                logger.error(f"Error importing msg {msg_id} (slug: {slug}): {e}", exc_info=True)
         stats["errors"] += 1
 
     logger.info(

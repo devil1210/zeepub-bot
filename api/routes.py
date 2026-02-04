@@ -129,9 +129,7 @@ async def get_feed(
                             break
                     if libraries_url:
                         lib_feed = await get_cached_feed(libraries_url)
-                        direct_url = find_zeepubs_destino(
-                            lib_feed, prefer_libraries=True
-                        )
+                        direct_url = find_zeepubs_destino(lib_feed, prefer_libraries=True)
                         if direct_url:
                             sub_lib_feed = await get_cached_feed(direct_url)
                             deep_link = None
@@ -159,9 +157,7 @@ async def get_feed(
                 ):
                     cover_url = normalize_url(link.get("href"))
                 elif link_rel == "subsection":
-                    subsection_url = entry_override_url or normalize_url(
-                        link.get("href")
-                    )
+                    subsection_url = entry_override_url or normalize_url(link.get("href"))
 
             if not cover_url and hasattr(entry, "content"):
                 for content in entry.content:
@@ -301,22 +297,16 @@ async def get_feed(
                                 res["cover_url"] = normalize_url(link_obj.get("href"))
                                 break
                 except httpx.HTTPStatusError as e:
-                    logger.warning(
-                        f"HTTP error fetching sub-feed {res['subsection_url']}: {e}"
-                    )
+                    logger.warning(f"HTTP error fetching sub-feed {res['subsection_url']}: {e}")
                 except httpx.RequestError as e:
-                    logger.warning(
-                        f"Request error fetching sub-feed {res['subsection_url']}: {e}"
-                    )
+                    logger.warning(f"Request error fetching sub-feed {res['subsection_url']}: {e}")
                 except Exception as e:
                     logger.warning(
                         f"Unexpected error fetching sub-feed {res['subsection_url']}: {e}"
                     )
 
         folder_tasks = [
-            fetch_folder_cover(e)
-            for e in entries
-            if e["subsection_url"] and not e["cover_url"]
+            fetch_folder_cover(e) for e in entries if e["subsection_url"] and not e["cover_url"]
         ]
         if folder_tasks:
             # We process sequential for the main feed to avoid overloading the OPDS server
@@ -359,9 +349,7 @@ async def get_feed(
         items_per_page = feed.feed.get("opensearch_itemsperpage")
         if total_results and items_per_page:
             try:
-                total_pages = (int(total_results) + int(items_per_page) - 1) // int(
-                    items_per_page
-                )
+                total_pages = (int(total_results) + int(items_per_page) - 1) // int(items_per_page)
             except ValueError:
                 logger.debug(
                     f"Could not calculate total pages from results={total_results}, items_per_page={items_per_page}"
@@ -481,9 +469,7 @@ async def bot_avatar_proxy(file_id: str = Query(...)):
             return Response(
                 content=resp.content,
                 media_type="image/jpeg",
-                headers={
-                    "Cache-Control": "public, max-age=31536000"
-                },  # Cache for a year
+                headers={"Cache-Control": "public, max-age=31536000"},  # Cache for a year
             )
     except Exception as e:
         logger.error(f"Error proxying bot avatar {file_id}: {e}", exc_info=True)
@@ -521,9 +507,7 @@ async def tunnel_opds(
     else:
         target_url = url
 
-    logger.info(
-        f"Tunneling OPDS -> {target_url} for user {current_uid} (admin_mode={admin_mode})"
-    )
+    logger.info(f"Tunneling OPDS -> {target_url} for user {current_uid} (admin_mode={admin_mode})")
 
     headers = {
         "User-Agent": "ZeePubBot/4.5 (OPDS Tunnel)",
@@ -546,22 +530,16 @@ async def tunnel_opds(
             content_type = r.headers.get("content-type", "")
 
             # If it's XML, we might want to modify it (renaming, relinking)
-            if "xml" in content_type and (
-                user_data.get("role") != "admin" or not admin_mode
-            ):
+            if "xml" in content_type and (user_data.get("role") != "admin" or not admin_mode):
                 import re
 
                 xml_text = r.text
 
                 # 1. Rename and Relink "Todas las bibliotecas" -> "Biblioteca Zeepubs"
                 if "Todas las bibliotecas" in xml_text:
-                    xml_text = xml_text.replace(
-                        "Todas las bibliotecas", "Biblioteca Zeepubs"
-                    )
+                    xml_text = xml_text.replace("Todas las bibliotecas", "Biblioteca Zeepubs")
                     # Relink /libraries -> /libraries/1 for direct library access
-                    xml_text = re.sub(
-                        r'/libraries(?=["\s/])(?!/1)', "/libraries/1", xml_text
-                    )
+                    xml_text = re.sub(r'/libraries(?=["\s/])(?!/1)', "/libraries/1", xml_text)
 
                 # 2. Hide unwanted sections from the ROOT feed (Mi Catálogo)
                 if "<id>root</id>" in xml_text or "<id>libraries</id>" in xml_text:
@@ -580,10 +558,7 @@ async def tunnel_opds(
 
                 # 3. Add "Todas las colecciones" to specific sub-feeds as requested
                 sub_feeds = ["/on-deck", "/reading-list", "/want-to-read"]
-                if (
-                    any(sub in target_url for sub in sub_feeds)
-                    and "</feed>" in xml_text
-                ):
+                if any(sub in target_url for sub in sub_feeds) and "</feed>" in xml_text:
                     # Find base OPDS URL to point collections link correctly
                     base_opds = target_url
                     for sub in sub_feeds:
@@ -602,9 +577,7 @@ async def tunnel_opds(
 """
                     xml_text = xml_text.replace("</feed>", extra_entry + "</feed>")
 
-                return Response(
-                    content=xml_text.encode("utf-8"), media_type=content_type
-                )
+                return Response(content=xml_text.encode("utf-8"), media_type=content_type)
 
             # For non-XML (binary icons, etc), stream it
             return StreamingResponse(r.aiter_bytes(), media_type=content_type)
@@ -680,9 +653,7 @@ async def public_download(
                     try:
                         os.unlink(data)
                     except Exception as e:
-                        logger.debug(
-                            "Could not remove temp file from streaming proxy: %s", e
-                        )
+                        logger.debug("Could not remove temp file from streaming proxy: %s", e)
 
             return StreamingResponse(
                 content=iterfile_async(),
@@ -728,8 +699,7 @@ async def prepare_facebook_post(
             (
                 link_obj["href"]
                 for link_obj in book.get("links", [])
-                if "acquisition" in link_obj.get("rel", "")
-                or "epub" in link_obj.get("type", "")
+                if "acquisition" in link_obj.get("rel", "") or "epub" in link_obj.get("type", "")
             ),
             None,
         )
@@ -774,9 +744,9 @@ async def prepare_facebook_post(
                     meta["internal_title"] = internal_title
 
                 # Extraer filename title
-                filename_title = unquote(
-                    urlparse(download_url).path.split("/")[-1]
-                ).replace(".epub", "")
+                filename_title = unquote(urlparse(download_url).path.split("/")[-1]).replace(
+                    ".epub", ""
+                )
                 meta["filename_title"] = filename_title
 
                 # Debug logging
@@ -892,9 +862,7 @@ async def get_config(user_data: dict[str, Any] = Depends(require_mini_app_access
 
     if is_publisher:
         # Publishers ven TAMBIÉN la vista previa de FB
-        destinations.append(
-            {"name": "📍 Aquí (Vista Previa FB)", "id": "me_fb_preview"}
-        )
+        destinations.append({"name": "📍 Aquí (Vista Previa FB)", "id": "me_fb_preview"})
 
     # 2. Canales de Admin
     if is_admin:
@@ -962,13 +930,9 @@ async def download_book(
         user_id = user_data.get("user_id", 0)
 
         if not download_url or not user_id:
-            raise HTTPException(
-                status_code=400, detail="Missing required fields or authentication"
-            )
+            raise HTTPException(status_code=400, detail="Missing required fields or authentication")
 
-        logger.info(
-            f"Download request from user {user_id}: {title} -> {target_chat_id}"
-        )
+        logger.info(f"Download request from user {user_id}: {title} -> {target_chat_id}")
 
         from api.main import bot
         from services.telegram_service import enviar_libro_directo
@@ -1034,14 +998,10 @@ async def zitadel_enrich_token(request: Request):
 
                 # Comparación segura contra timing attacks
                 if not hmac.compare_digest(signature, expected_signature):
-                    logger.error(
-                        f"⛔ Invalid ZITADEL signature from IP: {request.client.host}"
-                    )
+                    logger.error(f"⛔ Invalid ZITADEL signature from IP: {request.client.host}")
                     raise HTTPException(status_code=401, detail="Invalid signature")
         else:
-            logger.warning(
-                "⚠️ ZITADEL_SIGNING_KEY not configured - skipping signature validation"
-            )
+            logger.warning("⚠️ ZITADEL_SIGNING_KEY not configured - skipping signature validation")
 
         # Parsear el JSON que envía ZITADEL
         try:
@@ -1086,15 +1046,11 @@ async def zitadel_enrich_token(request: Request):
 
         # 5. Email (último recurso)
         if not preferred_username:
-            preferred_username = (
-                safe_str(human_data.get("email")) if human_data else None
-            )
+            preferred_username = safe_str(human_data.get("email")) if human_data else None
 
         # 1. Agregar preferred_username si se encontró
         if preferred_username:
-            claims_list.append(
-                {"key": "preferred_username", "value": preferred_username}
-            )
+            claims_list.append({"key": "preferred_username", "value": preferred_username})
 
         # 2. Agregar roles fijos para todos los usuarios de ZeePubs
         claims_list.append(

@@ -17,9 +17,9 @@ Usage:
     python geo_checker.py <project_path>
 """
 
-import sys
-import re
 import json
+import re
+import sys
 from pathlib import Path
 
 # Fix Windows console encoding
@@ -155,9 +155,7 @@ def check_page(file_path: Path) -> dict:
             if "Organization" in content or "Person" in content:
                 passed.append("Entity schema present")
     else:
-        issues.append(
-            "No JSON-LD structured data (AI engines prefer structured content)"
-        )
+        issues.append("No JSON-LD structured data (AI engines prefer structured content)")
 
     # 2. Heading Structure
     h1_count = len(re.findall(r"<h1[^>]*>", content, re.I))

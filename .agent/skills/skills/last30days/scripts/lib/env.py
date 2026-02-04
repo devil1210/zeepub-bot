@@ -2,19 +2,19 @@
 
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any
 
 CONFIG_DIR = Path.home() / ".config" / "last30days"
 CONFIG_FILE = CONFIG_DIR / ".env"
 
 
-def load_env_file(path: Path) -> Dict[str, str]:
+def load_env_file(path: Path) -> dict[str, str]:
     """Load environment variables from a file."""
     env = {}
     if not path.exists():
         return env
 
-    with open(path, "r") as f:
+    with open(path) as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
@@ -31,24 +31,21 @@ def load_env_file(path: Path) -> Dict[str, str]:
     return env
 
 
-def get_config() -> Dict[str, Any]:
+def get_config() -> dict[str, Any]:
     """Load configuration from ~/.config/last30days/.env and environment."""
     # Load from config file first
     file_env = load_env_file(CONFIG_FILE)
 
     # Environment variables override file
     config = {
-        "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY")
-        or file_env.get("OPENAI_API_KEY"),
+        "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY") or file_env.get("OPENAI_API_KEY"),
         "XAI_API_KEY": os.environ.get("XAI_API_KEY") or file_env.get("XAI_API_KEY"),
         "OPENAI_MODEL_POLICY": os.environ.get("OPENAI_MODEL_POLICY")
         or file_env.get("OPENAI_MODEL_POLICY", "auto"),
-        "OPENAI_MODEL_PIN": os.environ.get("OPENAI_MODEL_PIN")
-        or file_env.get("OPENAI_MODEL_PIN"),
+        "OPENAI_MODEL_PIN": os.environ.get("OPENAI_MODEL_PIN") or file_env.get("OPENAI_MODEL_PIN"),
         "XAI_MODEL_POLICY": os.environ.get("XAI_MODEL_POLICY")
         or file_env.get("XAI_MODEL_POLICY", "latest"),
-        "XAI_MODEL_PIN": os.environ.get("XAI_MODEL_PIN")
-        or file_env.get("XAI_MODEL_PIN"),
+        "XAI_MODEL_PIN": os.environ.get("XAI_MODEL_PIN") or file_env.get("XAI_MODEL_PIN"),
     }
 
     return config
@@ -59,7 +56,7 @@ def config_exists() -> bool:
     return CONFIG_FILE.exists()
 
 
-def get_available_sources(config: Dict[str, Any]) -> str:
+def get_available_sources(config: dict[str, Any]) -> str:
     """Determine which sources are available based on API keys.
 
     Returns: 'both', 'reddit', 'x', or 'web' (fallback when no keys)
@@ -77,7 +74,7 @@ def get_available_sources(config: Dict[str, Any]) -> str:
         return "web"  # Fallback: WebSearch only (no API keys needed)
 
 
-def get_missing_keys(config: Dict[str, Any]) -> str:
+def get_missing_keys(config: dict[str, Any]) -> str:
     """Determine which API keys are missing.
 
     Returns: 'both', 'reddit', 'x', or 'none'
@@ -97,7 +94,7 @@ def get_missing_keys(config: Dict[str, Any]) -> str:
 
 def validate_sources(
     requested: str, available: str, include_web: bool = False
-) -> tuple[str, Optional[str]]:
+) -> tuple[str, str | None]:
     """Validate requested sources against available keys.
 
     Args:

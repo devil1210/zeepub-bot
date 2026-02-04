@@ -2,7 +2,6 @@
 
 import json
 from pathlib import Path
-from typing import Optional
 
 from . import schema
 
@@ -16,9 +15,7 @@ def ensure_output_dir():
 
 def _assess_data_freshness(report: schema.Report) -> dict:
     """Assess how much data is actually from the last 30 days."""
-    reddit_recent = sum(
-        1 for r in report.reddit if r.date and r.date >= report.range_from
-    )
+    reddit_recent = sum(1 for r in report.reddit if r.date and r.date >= report.range_from)
     x_recent = sum(1 for x in report.x if x.date and x.date >= report.range_from)
     web_recent = sum(1 for w in report.web if w.date and w.date >= report.range_from)
 
@@ -36,9 +33,7 @@ def _assess_data_freshness(report: schema.Report) -> dict:
     }
 
 
-def render_compact(
-    report: schema.Report, limit: int = 15, missing_keys: str = "none"
-) -> str:
+def render_compact(report: schema.Report, limit: int = 15, missing_keys: str = "none") -> str:
     """Render compact output for Claude to synthesize.
 
     Args:
@@ -58,9 +53,7 @@ def render_compact(
     # Assess data freshness and add honesty warning if needed
     freshness = _assess_data_freshness(report)
     if freshness["is_sparse"]:
-        lines.append(
-            "**⚠️ LIMITED RECENT DATA** - Few discussions from the last 30 days."
-        )
+        lines.append("**⚠️ LIMITED RECENT DATA** - Few discussions from the last 30 days.")
         lines.append(
             f"Only {freshness['total_recent']} item(s) confirmed from {report.range_from} to {report.range_to}."
         )
@@ -74,9 +67,7 @@ def render_compact(
         lines.append("**🌐 WEB SEARCH MODE** - Claude will search blogs, docs & news")
         lines.append("")
         lines.append("---")
-        lines.append(
-            "**⚡ Want better results?** Add API keys to unlock Reddit & X data:"
-        )
+        lines.append("**⚡ Want better results?** Add API keys to unlock Reddit & X data:")
         lines.append("- `OPENAI_API_KEY` → Reddit threads with real upvotes & comments")
         lines.append("- `XAI_API_KEY` → X posts with real likes & reposts")
         lines.append("- Edit `~/.config/last30days/.env` to add keys")
@@ -85,12 +76,8 @@ def render_compact(
 
     # Cache indicator
     if report.from_cache:
-        age_str = (
-            f"{report.cache_age_hours:.1f}h old" if report.cache_age_hours else "cached"
-        )
-        lines.append(
-            f"**⚡ CACHED RESULTS** ({age_str}) - use `--refresh` for fresh data"
-        )
+        age_str = f"{report.cache_age_hours:.1f}h old" if report.cache_age_hours else "cached"
+        lines.append(f"**⚡ CACHED RESULTS** ({age_str}) - use `--refresh` for fresh data")
         lines.append("")
 
     lines.append(f"**Date Range:** {report.range_from} to {report.range_to}")
@@ -103,14 +90,10 @@ def render_compact(
 
     # Coverage note for partial coverage
     if report.mode == "reddit-only" and missing_keys == "x":
-        lines.append(
-            "*💡 Tip: Add XAI_API_KEY for X/Twitter data and better triangulation.*"
-        )
+        lines.append("*💡 Tip: Add XAI_API_KEY for X/Twitter data and better triangulation.*")
         lines.append("")
     elif report.mode == "x-only" and missing_keys == "reddit":
-        lines.append(
-            "*💡 Tip: Add OPENAI_API_KEY for Reddit data and better triangulation.*"
-        )
+        lines.append("*💡 Tip: Add OPENAI_API_KEY for Reddit data and better triangulation.*")
         lines.append("")
 
     # Reddit items
@@ -140,11 +123,7 @@ def render_compact(
                     eng_str = f" [{', '.join(parts)}]"
 
             date_str = f" ({item.date})" if item.date else " (date unknown)"
-            conf_str = (
-                f" [date:{item.date_confidence}]"
-                if item.date_confidence != "high"
-                else ""
-            )
+            conf_str = f" [date:{item.date_confidence}]" if item.date_confidence != "high" else ""
 
             lines.append(
                 f"**{item.id}** (score:{item.score}) r/{item.subreddit}{date_str}{conf_str}{eng_str}"
@@ -188,11 +167,7 @@ def render_compact(
                     eng_str = f" [{', '.join(parts)}]"
 
             date_str = f" ({item.date})" if item.date else " (date unknown)"
-            conf_str = (
-                f" [date:{item.date_confidence}]"
-                if item.date_confidence != "high"
-                else ""
-            )
+            conf_str = f" [date:{item.date_confidence}]" if item.date_confidence != "high" else ""
 
             lines.append(
                 f"**{item.id}** (score:{item.score}) @{item.author_handle}{date_str}{conf_str}{eng_str}"
@@ -213,11 +188,7 @@ def render_compact(
         lines.append("")
         for item in report.web[:limit]:
             date_str = f" ({item.date})" if item.date else " (date unknown)"
-            conf_str = (
-                f" [date:{item.date_confidence}]"
-                if item.date_confidence != "high"
-                else ""
-            )
+            conf_str = f" [date:{item.date_confidence}]" if item.date_confidence != "high" else ""
 
             lines.append(
                 f"**{item.id}** [WEB] (score:{item.score}) {item.source_domain}{date_str}{conf_str}"
@@ -265,9 +236,7 @@ def render_context_snippet(report: schema.Report) -> str:
     lines.append("")
     lines.append("## Summary")
     lines.append("")
-    lines.append(
-        "*See full report for best practices, prompt pack, and detailed sources.*"
-    )
+    lines.append("*See full report for best practices, prompt pack, and detailed sources.*")
     lines.append("")
 
     return "\n".join(lines)
@@ -388,9 +357,9 @@ def render_full_report(report: schema.Report) -> str:
 
 def write_outputs(
     report: schema.Report,
-    raw_openai: Optional[dict] = None,
-    raw_xai: Optional[dict] = None,
-    raw_reddit_enriched: Optional[list] = None,
+    raw_openai: dict | None = None,
+    raw_xai: dict | None = None,
+    raw_reddit_enriched: list | None = None,
 ):
     """Write all output files.
 

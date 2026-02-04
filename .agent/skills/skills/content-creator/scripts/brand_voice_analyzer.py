@@ -3,9 +3,8 @@
 Brand Voice Analyzer - Analyzes content to establish and maintain brand voice consistency
 """
 
-import re
-from typing import Dict, List
 import json
+import re
 
 
 class BrandVoiceAnalyzer:
@@ -47,7 +46,7 @@ class BrandVoiceAnalyzer:
             },
         }
 
-    def analyze_text(self, text: str) -> Dict:
+    def analyze_text(self, text: str) -> dict:
         """Analyze text for brand voice characteristics"""
         text_lower = text.lower()
         word_count = len(text.split())
@@ -115,7 +114,7 @@ class BrandVoiceAnalyzer:
 
         return max(1, syllable_count)
 
-    def _analyze_sentences(self, text: str) -> Dict:
+    def _analyze_sentences(self, text: str) -> dict:
         """Analyze sentence structure"""
         sentences = re.split(r"[.!?]+", text)
         sentences = [s.strip() for s in sentences if s.strip()]
@@ -140,15 +139,13 @@ class BrandVoiceAnalyzer:
             "count": len(sentences),
         }
 
-    def _generate_recommendations(self, analysis: Dict) -> List[str]:
+    def _generate_recommendations(self, analysis: dict) -> list[str]:
         """Generate recommendations based on analysis"""
         recommendations = []
 
         # Readability recommendations
         if analysis["readability_score"] < 30:
-            recommendations.append(
-                "Consider simplifying language for better readability"
-            )
+            recommendations.append("Consider simplifying language for better readability")
         elif analysis["readability_score"] > 70:
             recommendations.append(
                 "Content is very easy to read - consider if this matches your audience"
@@ -156,9 +153,7 @@ class BrandVoiceAnalyzer:
 
         # Sentence variety
         if analysis["sentence_analysis"]["variety"] == "low":
-            recommendations.append(
-                "Vary sentence length for better flow and engagement"
-            )
+            recommendations.append("Vary sentence length for better flow and engagement")
 
         # Voice consistency
         if analysis["voice_profile"]:
@@ -209,7 +204,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) > 1:
-        with open(sys.argv[1], "r") as f:
+        with open(sys.argv[1]) as f:
             content = f.read()
 
         output_format = sys.argv[2] if len(sys.argv) > 2 else "text"

@@ -5,10 +5,9 @@ Calculates RICE scores for feature prioritization
 RICE = (Reach x Impact x Confidence) / Effort
 """
 
-import json
-import csv
-from typing import List, Dict
 import argparse
+import csv
+import json
 
 
 class RICECalculator:
@@ -27,9 +26,7 @@ class RICECalculator:
 
         self.effort_map = {"xl": 13, "l": 8, "m": 5, "s": 3, "xs": 1}
 
-    def calculate_rice(
-        self, reach: int, impact: str, confidence: str, effort: str
-    ) -> float:
+    def calculate_rice(self, reach: int, impact: str, confidence: str, effort: str) -> float:
         """
         Calculate RICE score
 
@@ -49,7 +46,7 @@ class RICECalculator:
         rice_score = (reach * impact_score * confidence_score) / effort_score
         return round(rice_score, 2)
 
-    def prioritize_features(self, features: List[Dict]) -> List[Dict]:
+    def prioritize_features(self, features: list[dict]) -> list[dict]:
         """
         Calculate RICE scores and rank features
 
@@ -67,16 +64,14 @@ class RICECalculator:
         # Sort by RICE score descending
         return sorted(features, key=lambda x: x["rice_score"], reverse=True)
 
-    def analyze_portfolio(self, features: List[Dict]) -> Dict:
+    def analyze_portfolio(self, features: list[dict]) -> dict:
         """
         Analyze the feature portfolio for balance and insights
         """
         if not features:
             return {}
 
-        total_effort = sum(
-            self.effort_map.get(f.get("effort", "m").lower(), 5) for f in features
-        )
+        total_effort = sum(self.effort_map.get(f.get("effort", "m").lower(), 5) for f in features)
 
         total_reach = sum(f.get("reach", 0) for f in features)
 
@@ -110,9 +105,7 @@ class RICECalculator:
             "total_features": len(features),
             "total_effort_months": total_effort,
             "total_reach": total_reach,
-            "average_rice": round(
-                sum(f["rice_score"] for f in features) / len(features), 2
-            ),
+            "average_rice": round(sum(f["rice_score"] for f in features) / len(features), 2),
             "effort_distribution": effort_distribution,
             "impact_distribution": impact_distribution,
             "quick_wins": len(quick_wins),
@@ -121,9 +114,7 @@ class RICECalculator:
             "big_bets_list": big_bets[:3],  # Top 3 big bets
         }
 
-    def generate_roadmap(
-        self, features: List[Dict], team_capacity: int = 10
-    ) -> List[Dict]:
+    def generate_roadmap(self, features: list[dict], team_capacity: int = 10) -> list[dict]:
         """
         Generate a quarterly roadmap based on team capacity
 
@@ -160,15 +151,13 @@ class RICECalculator:
                 }
 
         if current_quarter["features"]:
-            current_quarter["capacity_available"] = (
-                team_capacity - current_quarter["capacity_used"]
-            )
+            current_quarter["capacity_available"] = team_capacity - current_quarter["capacity_used"]
             quarters.append(current_quarter)
 
         return quarters
 
 
-def format_output(features: List[Dict], analysis: Dict, roadmap: List[Dict]) -> str:
+def format_output(features: list[dict], analysis: dict, roadmap: list[dict]) -> str:
     """Format the results for display"""
     output = ["=" * 60]
     output.append("RICE PRIORITIZATION RESULTS")
@@ -188,9 +177,7 @@ def format_output(features: List[Dict], analysis: Dict, roadmap: List[Dict]) -> 
     # Portfolio analysis
     output.append("\n📈 PORTFOLIO ANALYSIS\n")
     output.append(f"Total Features: {analysis.get('total_features', 0)}")
-    output.append(
-        f"Total Effort: {analysis.get('total_effort_months', 0)} person-months"
-    )
+    output.append(f"Total Effort: {analysis.get('total_effort_months', 0)} person-months")
     output.append(f"Total Reach: {analysis.get('total_reach', 0):,} users")
     output.append(f"Average RICE Score: {analysis.get('average_rice', 0)}")
 
@@ -209,17 +196,15 @@ def format_output(features: List[Dict], analysis: Dict, roadmap: List[Dict]) -> 
             f"\nQ{quarter['quarter']} - Capacity: {quarter['capacity_used']}/{quarter['capacity_used'] + quarter['capacity_available']} person-months"
         )
         for feature in quarter["features"]:
-            output.append(
-                f"   • {feature.get('name', 'Unnamed')} (RICE: {feature['rice_score']})"
-            )
+            output.append(f"   • {feature.get('name', 'Unnamed')} (RICE: {feature['rice_score']})")
 
     return "\n".join(output)
 
 
-def load_features_from_csv(filepath: str) -> List[Dict]:
+def load_features_from_csv(filepath: str) -> list[dict]:
     """Load features from CSV file"""
     features = []
-    with open(filepath, "r") as f:
+    with open(filepath) as f:
         reader = csv.DictReader(f)
         for row in reader:
             feature = {
@@ -300,9 +285,7 @@ def create_sample_csv(filepath: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="RICE Framework for Feature Prioritization"
-    )
+    parser = argparse.ArgumentParser(description="RICE Framework for Feature Prioritization")
     parser.add_argument(
         "input", nargs="?", help='CSV file with features or "sample" to create sample'
     )

@@ -4,8 +4,8 @@ Type Coverage Checker - Measures TypeScript/Python type coverage.
 Identifies untyped functions, any usage, and type safety issues.
 """
 
-import sys
 import re
+import sys
 from pathlib import Path
 
 # Fix Windows console encoding for Unicode output
@@ -23,9 +23,7 @@ def check_typescript_coverage(project_path: Path) -> dict:
     stats = {"any_count": 0, "untyped_functions": 0, "total_functions": 0}
 
     ts_files = list(project_path.rglob("*.ts")) + list(project_path.rglob("*.tsx"))
-    ts_files = [
-        f for f in ts_files if "node_modules" not in str(f) and ".d.ts" not in str(f)
-    ]
+    ts_files = [f for f in ts_files if "node_modules" not in str(f) and ".d.ts" not in str(f)]
 
     if not ts_files:
         return {
@@ -69,9 +67,7 @@ def check_typescript_coverage(project_path: Path) -> dict:
 
     if stats["total_functions"] > 0:
         typed_ratio = (
-            (stats["total_functions"] - stats["untyped_functions"])
-            / stats["total_functions"]
-            * 100
+            (stats["total_functions"] - stats["untyped_functions"]) / stats["total_functions"] * 100
         )
         if typed_ratio >= 80:
             passed.append(f"[OK] Type coverage: {typed_ratio:.0f}%")
@@ -142,9 +138,7 @@ def check_python_coverage(project_path: Path) -> dict:
         elif typed_ratio >= 40:
             issues.append(f"[!] Type hints coverage: {typed_ratio:.0f}%")
         else:
-            issues.append(
-                f"[X] Type hints coverage: {typed_ratio:.0f}% (add type hints)"
-            )
+            issues.append(f"[X] Type hints coverage: {typed_ratio:.0f}% (add type hints)")
 
     if stats["any_count"] == 0:
         passed.append("[OK] No 'Any' types found")

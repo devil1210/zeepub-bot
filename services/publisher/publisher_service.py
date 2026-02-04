@@ -65,9 +65,7 @@ class TelegramPublisherProvider(PublisherProvider):
 
         # 2. Get and Send Synopsis
         sinopsis = (
-            book_data.get("description")
-            or book_data.get("summary")
-            or book_data.get("sinopsis")
+            book_data.get("description") or book_data.get("summary") or book_data.get("sinopsis")
         )
 
         # Fallback for OPDS synopsis fetching if not in book_data
@@ -82,9 +80,7 @@ class TelegramPublisherProvider(PublisherProvider):
 
                 try:
                     if volume_id:
-                        sinopsis = await obtener_sinopsis_opds_volumen(
-                            series_id, volume_id
-                        )
+                        sinopsis = await obtener_sinopsis_opds_volumen(series_id, volume_id)
                     if not sinopsis:
                         sinopsis = await obtener_sinopsis_opds(series_id)
                 except Exception:
@@ -107,9 +103,7 @@ class TelegramPublisherProvider(PublisherProvider):
                 )
             except BadRequest as e:
                 if "thread not found" in str(e).lower():
-                    await self.bot.send_message(
-                        chat_id=target_id, text=text, parse_mode="HTML"
-                    )
+                    await self.bot.send_message(chat_id=target_id, text=text, parse_mode="HTML")
 
         # 3. Send Buttons/Interactive part
         if options.get("with_buttons", True):
@@ -120,9 +114,7 @@ class TelegramPublisherProvider(PublisherProvider):
             if not keyboard:
                 keyboard = [
                     [
-                        InlineKeyboardButton(
-                            "📥 Descargar", callback_data="descargar_confirm"
-                        ),
+                        InlineKeyboardButton("📥 Descargar", callback_data="descargar_confirm"),
                         InlineKeyboardButton("↩️ Volver", callback_data="volver_ultima"),
                     ]
                 ]
@@ -239,9 +231,7 @@ class FacebookPublisherProvider(PublisherProvider):
                     dl_domain = config.DL_DOMAIN.rstrip("/")
                     if not dl_domain.startswith("http"):
                         dl_domain = f"https://{dl_domain}"
-                    url_hash = create_short_url(
-                        download_url, book_title=book_data.get("title")
-                    )
+                    url_hash = create_short_url(download_url, book_title=book_data.get("title"))
                     public_link = f"{dl_domain}/api/dl/{url_hash}"
                 except Exception:
                     pass

@@ -11,7 +11,7 @@ def string_xor(a: str, b: str) -> str:
     '100'
     """
     result = []
-    for char_a, char_b in zip(a, b):
+    for char_a, char_b in zip(a, b, strict=False):
         if char_a == char_b:
             result.append("0")
         else:

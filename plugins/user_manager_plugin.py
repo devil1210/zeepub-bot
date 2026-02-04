@@ -189,9 +189,7 @@ class UserManagerPlugin(BasePlugin):
         else:
             msg += " (Permanente/Hasta cancelación)."
 
-        await update.message.reply_text(
-            msg, parse_mode="HTML", message_thread_id=thread_id
-        )
+        await update.message.reply_text(msg, parse_mode="HTML", message_thread_id=thread_id)
 
     async def remove_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -212,9 +210,7 @@ class UserManagerPlugin(BasePlugin):
 
         target_id_str = context.args[0]
         if not target_id_str.isdigit():
-            await update.message.reply_text(
-                "❌ ID inválido.", message_thread_id=thread_id
-            )
+            await update.message.reply_text("❌ ID inválido.", message_thread_id=thread_id)
             return
         target_id = int(target_id_str)
 
@@ -257,9 +253,7 @@ class UserManagerPlugin(BasePlugin):
             # First arg was consumed as ID
             args_start_idx = 1
             if len(context.args) < 2:
-                await msg.reply_text(
-                    "❌ Indica el rol/label.", message_thread_id=thread_id
-                )
+                await msg.reply_text("❌ Indica el rol/label.", message_thread_id=thread_id)
                 return
         else:
             if len(context.args) < 1:
@@ -277,7 +271,9 @@ class UserManagerPlugin(BasePlugin):
         # If only one word and it is a delete keyword
         if len(context.args) == args_start_idx + 1 and first_word in delete_keywords:
             new_label = None
-            success_msg = f"✅ Rol/label eliminado para <code>{target_id}</code> (vuelve a default)."
+            success_msg = (
+                f"✅ Rol/label eliminado para <code>{target_id}</code> (vuelve a default)."
+            )
         else:
             new_label = " ".join(context.args[args_start_idx:])
             success_msg = f"✅ Rol/label actualizado para <code>{target_id}</code> ({target_name}): <b>{new_label}</b>"
@@ -418,9 +414,7 @@ class UserManagerPlugin(BasePlugin):
 
         save_download(target_uid, 0)
 
-        logger.info(
-            f"Admin {uid} reseteó descargas de usuario {target_uid} (antes: {old_count})"
-        )
+        logger.info(f"Admin {uid} reseteó descargas de usuario {target_uid} (antes: {old_count})")
 
         await update.message.reply_text(
             f"✅ Contador de descargas reseteado para el usuario {target_uid}.\n"
@@ -428,9 +422,7 @@ class UserManagerPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def approve_donation(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def approve_donation(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /approve_donation <id> <rol> [meses]
         Aprueba una donación, actualiza el nivel del usuario y le notifica.
@@ -505,14 +497,10 @@ class UserManagerPlugin(BasePlugin):
         text = base_text
 
         if cms and cms.enabled:
-            text = await cms.get_text(
-                "donation_approved", Nivel=nivel_text, Duración=duracion_text
-            )
+            text = await cms.get_text("donation_approved", Nivel=nivel_text, Duración=duracion_text)
 
         try:
-            await context.bot.send_message(
-                chat_id=target_id, text=text, parse_mode="HTML"
-            )
+            await context.bot.send_message(chat_id=target_id, text=text, parse_mode="HTML")
         except Exception as e:
             logger.warning(f"No se pudo notificar al usuario {target_id}: {e}")
 
@@ -554,9 +542,7 @@ class UserManagerPlugin(BasePlugin):
             text = await cms.get_text("donation_rejected")
 
         try:
-            await context.bot.send_message(
-                chat_id=target_id, text=text, parse_mode="HTML"
-            )
+            await context.bot.send_message(chat_id=target_id, text=text, parse_mode="HTML")
         except Exception as e:
             logger.warning(f"No se pudo notificar al usuario {target_id}: {e}")
 
@@ -569,9 +555,7 @@ class UserManagerPlugin(BasePlugin):
             message_thread_id=thread_id,
         )
 
-    async def refresh_user_command(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ):
+    async def refresh_user_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         /refresh_user <id>
         Limpia el caché del bot para un usuario específico.

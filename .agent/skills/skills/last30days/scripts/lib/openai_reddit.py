@@ -3,7 +3,7 @@
 import json
 import re
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from . import http
 
@@ -102,9 +102,9 @@ def search_reddit(
     from_date: str,
     to_date: str,
     depth: str = "default",
-    mock_response: Optional[Dict] = None,
+    mock_response: dict | None = None,
     _retry: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Search Reddit for relevant threads using OpenAI Responses API.
 
     Args:
@@ -136,9 +136,7 @@ def search_reddit(
     # We rely on prompt to filter out developers.reddit.com, etc.
     payload = {
         "model": model,
-        "tools": [
-            {"type": "web_search", "filters": {"allowed_domains": ["reddit.com"]}}
-        ],
+        "tools": [{"type": "web_search", "filters": {"allowed_domains": ["reddit.com"]}}],
         "include": ["web_search_call.action.sources"],
         "input": REDDIT_SEARCH_PROMPT.format(
             topic=topic,
@@ -152,7 +150,7 @@ def search_reddit(
     return http.post(OPENAI_RESPONSES_URL, payload, headers=headers, timeout=timeout)
 
 
-def parse_reddit_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
+def parse_reddit_response(response: dict[str, Any]) -> list[dict[str, Any]]:
     """Parse OpenAI response to extract Reddit items.
 
     Args:
@@ -166,9 +164,7 @@ def parse_reddit_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
     # Check for API errors first
     if "error" in response and response["error"]:
         error = response["error"]
-        err_msg = (
-            error.get("message", str(error)) if isinstance(error, dict) else str(error)
-        )
+        err_msg = error.get("message", str(error)) if isinstance(error, dict) else str(error)
         _log_error(f"OpenAI API error: {err_msg}")
         if http.DEBUG:
             _log_error(f"Full error response: {json.dumps(response, indent=2)[:1000]}")

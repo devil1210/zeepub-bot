@@ -24,9 +24,7 @@ class RateLimitManager:
         self._lock = asyncio.Lock()
         self._default_limits: dict[RateLimitType, tuple[int, int]] = {}
 
-    def set_default_limit(
-        self, limit_type: RateLimitType, max_requests: int, window_seconds: int
-    ):
+    def set_default_limit(self, limit_type: RateLimitType, max_requests: int, window_seconds: int):
         self._default_limits[limit_type] = (max_requests, window_seconds)
 
     async def _ensure_user(self, user_id: int):
