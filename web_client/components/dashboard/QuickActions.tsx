@@ -1,5 +1,6 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface QuickActionItem {
     id: string;
@@ -29,7 +30,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ actions, onNavigate,
                     <button
                         key={item.id}
                         onClick={() => onNavigate(item.id)}
-                        className="group relative h-44 flex flex-col items-center justify-center text-center gap-4 cursor-pointer active:scale-95 hover:scale-[1.02] transition-all duration-700"
+                        className="group relative h-32 md:h-44 flex flex-col items-center justify-center text-center gap-4 cursor-pointer active:scale-95 hover:scale-[1.02] transition-all duration-700"
                         aria-label={`Acceder a ${item.label}`}
                     >
                         <div className="absolute inset-0 glass-panel rounded-[2.8rem] bg-white/[0.01] group-hover:bg-white/[0.07] group-hover:border-white/20 group-hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-1000"></div>

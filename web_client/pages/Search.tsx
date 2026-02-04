@@ -86,6 +86,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       },
       onScopeClick: () => setIsScopeModalOpen(true),
       onViewModeChange: (mode: 'list' | 'grid') => setNavViewMode(mode),
+      onHome: () => onNavigate && onNavigate('dashboard')
     });
     return () => unregister();
   }, [totalPages, registerCallbacks]);
