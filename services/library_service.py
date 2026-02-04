@@ -35,16 +35,21 @@ class LibraryService:
                     LocalBook.series_spanish.ilike(pattern),
                     LocalBook.romaji_title.ilike(pattern),
                     LocalBook.english_title.ilike(pattern),
+                    LocalBook.spanish_title.ilike(pattern),
                 ]
 
                 if search_type in ("all", "todos", "genres", "géneros", "tags"):
                     filters.append(cast(LocalBook.tags, String).ilike(pattern))
-                if search_type in ("all", "todos", "translator", "traductor"):
+                if search_type in ("all", "todos", "demographics", "demografía"):
+                    filters.append(cast(LocalBook.demographics, String).ilike(pattern))
+                if search_type in ("all", "todos", "translator", "traductor", "group", "grupo"):
                     filters.append(LocalBook.translator.ilike(pattern))
                 if search_type in ("all", "todos", "illustrator", "ilustrador"):
                     filters.append(LocalBook.illustrator.ilike(pattern))
-                if search_type in ("all", "todos", "layout", "maquetador"):
+                if search_type in ("all", "todos", "layout", "maquetador", "typesetter"):
                     filters.append(LocalBook.layout_by.ilike(pattern))
+                if search_type in ("all", "todos", "isbn"):
+                    filters.append(LocalBook.isbn.ilike(pattern))
 
                 # Subquery for download count
                 dl_subquery = (
@@ -120,22 +125,68 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             try:
                 pattern = f"%{query}%"
+                search_type = search_type.lower() if search_type else "todos"
 
-                stmt = select(SeriesMetadata).where(
-                    or_(
-                        SeriesMetadata.series_name.ilike(pattern),
-                        SeriesMetadata.series_spanish.ilike(pattern),
-                        SeriesMetadata.author.ilike(pattern),
-                        cast(SeriesMetadata.tags, String).ilike(pattern),
-                    )
-                )
+                # 1. Construcción dinámica de filtros y necesidad de Join
+                filters = []
+                require_lb_join = False
+
+                # Filtros por Metadatos de Serie
+                if search_type in ("todos", "all", "series", "serie", "título", "títulos"):
+                    filters.append(SeriesMetadata.series_name.ilike(pattern))
+                    filters.append(SeriesMetadata.series_spanish.ilike(pattern))
+
+                if search_type in ("todos", "all", "author", "autor"):
+                    filters.append(SeriesMetadata.author.ilike(pattern))
+
+                if search_type in ("todos", "all", "tags", "géneros", "genres"):
+                    filters.append(cast(SeriesMetadata.tags, String).ilike(pattern))
+
+                if search_type in ("todos", "all", "demographics", "demografía"):
+                    filters.append(cast(SeriesMetadata.demographics, String).ilike(pattern))
+
+                # Filtros por Metadatos de Libros Individuales (Requieren JOIN)
+                if search_type in ("todos", "all", "maquetador", "layout", "typesetter"):
+                    filters.append(LocalBook.layout_by.ilike(pattern))
+                    require_lb_join = True
+
+                if search_type in ("todos", "all", "traductor", "translator", "group", "grupo"):
+                    filters.append(LocalBook.translator.ilike(pattern))
+                    require_lb_join = True
+
+                if search_type in ("todos", "all", "illustrator", "ilustrador"):
+                    filters.append(SeriesMetadata.illustrator.ilike(pattern))
+                    filters.append(LocalBook.illustrator.ilike(pattern))
+                    require_lb_join = True
+
+                if search_type in ("todos", "all", "isbn"):
+                    filters.append(LocalBook.isbn.ilike(pattern))
+                    require_lb_join = True
+
+                # 2. Construcción de Query Base
+                stmt = select(SeriesMetadata)
+
+                if require_lb_join or source_id:
+                    # Join con LocalBook para filtros de volumen o de fuente
+                    stmt = stmt.join(LocalBook, SeriesMetadata.series_hash == LocalBook.series_hash)
+
+                if filters:
+                    stmt = stmt.where(or_(*filters))
 
                 if source_id:
-                    stmt = stmt.join(LocalBook).where(LocalBook.source_id == source_id).distinct()
+                    stmt = stmt.where(LocalBook.source_id == source_id)
 
+                # Siempre usar distinct si hay JOIN para evitar series duplicadas
+                if require_lb_join or source_id:
+                    stmt = stmt.distinct()
+
+                # 3. Ordenamiento
                 if sort_by == "newest":
                     stmt = stmt.order_by(SeriesMetadata.id.desc())
                 elif sort_by == "popular":
+                    stmt = stmt.order_by(SeriesMetadata.rating_count.desc())
+                elif sort_by == "downloads":
+                    # Por ahora usamos rating_count como proxy para popularidad si se pide por descargas
                     stmt = stmt.order_by(SeriesMetadata.rating_count.desc())
                 else:
                     stmt = stmt.order_by(SeriesMetadata.series_name.asc())
