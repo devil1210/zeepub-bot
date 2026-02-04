@@ -33,6 +33,7 @@ class User(Base):
     name = Column(String(255))
     nickname = Column(String(255))
     photo_url = Column(String(500), nullable=True)  # URL local de la foto de perfil
+    email = Column(String(255), nullable=True, unique=True)
 
     # Nivel/Permisos
     level_id = Column(

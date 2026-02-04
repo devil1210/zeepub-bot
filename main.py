@@ -186,6 +186,9 @@ async def fix_schema_if_needed():
                 )
             )
             await conn.execute(
+                text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;")
+            )
+            await conn.execute(
                 text(
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());"
                 )

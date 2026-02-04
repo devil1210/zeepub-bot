@@ -121,6 +121,7 @@ class UserRepository(BaseRepository[dict[str, Any]]):
             "has_library_access": user.has_library_access,
             "can_request_books": user.can_request_books,
             "can_upload_epub": user.can_upload_epub,
+            "email": user.email,
         }
 
     async def get_by_id(self, telegram_id: int) -> dict[str, Any] | None:
@@ -149,7 +150,7 @@ class UserRepository(BaseRepository[dict[str, Any]]):
         # 3. Supabase REST (Secondary Fallback)
         if self.supabase.is_active:
             try:
-                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books, photo_url, can_upload_epub"
+                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books, photo_url, can_upload_epub, email"
                 res = (
                     self.supabase.get_client()
                     .table("users")
@@ -175,10 +176,52 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                         "level_id": user.get("level_id", 6),
                         "can_upload_epub": user.get("can_upload_epub", False),
                         "photo_url": user.get("photo_url"),
+                        "email": user.get("email"),
                     }
             except Exception as e:
                 logger.error(f"Supabase error in get_by_id: {e}")
 
+        return None
+
+    async def get_by_email(self, email: str) -> dict[str, Any] | None:
+        """Busca un usuario por su correo electrónico."""
+        try:
+            async with pg_manager.get_session() as session:
+                stmt = (
+                    select(User)
+                    .options(selectinload(User.ui_settings), selectinload(User.level_info))
+                    .where(User.email == email.lower())
+                )
+                result = await session.execute(stmt)
+                user = result.scalar_one_or_none()
+                if user:
+                    return self._to_dict(user)
+        except Exception as e:
+            logger.error(f"Error fetching user by email: {e}")
+
+        # Fallback Supabase
+        if self.supabase.is_active:
+            try:
+                res = (
+                    self.supabase.get_client()
+                    .table("users")
+                    .select("*")
+                    .eq("email", email.lower())
+                    .execute()
+                )
+                if res.data:
+                    user_data = res.data[0]
+                    return {
+                        "telegram_id": int(user_data["telegram_id"]),
+                        "email": user_data.get("email"),
+                        "level": user_data.get("level", "free"),
+                        "role": user_data.get("role"),
+                        "nickname": user_data.get("nickname"),
+                        "name": user_data.get("name"),
+                        "username": user_data.get("username"),
+                    }
+            except Exception as e:
+                logger.error(f"Supabase error in get_by_email: {e}")
         return None
 
     # ... CRUD methods ... (create, update, delete, upsert kept as is or simplified)
@@ -621,6 +664,33 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                 }
             ]
 
+    async def update_user_email(self, telegram_id: int, email: str) -> bool:
+        """Actualiza solo el email de un usuario."""
+        try:
+            async with pg_manager.get_session() as session:
+                stmt = select(User).where(User.telegram_id == telegram_id)
+                res = await session.execute(stmt)
+                user = res.scalar_one_or_none()
+                if user:
+                    user.email = email.lower()
+                    await session.commit()
+
+                    # Sincronizar con Supabase
+                    if self.supabase.is_active:
+                        try:
+                            self.supabase.get_client().table("users").update(
+                                {"email": email.lower()}
+                            ).eq("telegram_id", telegram_id).execute()
+                        except Exception as s_err:
+                            logger.warning(f"Supabase email sync failed: {s_err}")
+
+                    await cache_manager.delete_user(telegram_id)
+                    return True
+                return False
+        except Exception as e:
+            logger.error(f"Error updating user email: {e}")
+            return False
+
     async def get_all_user_ids_and_settings(self) -> list[tuple]:
         """Returns a list of (telegram_id, settings_dict) for all users."""
         try:
@@ -690,6 +760,7 @@ class UserRepository(BaseRepository[dict[str, Any]]):
         roles: list | None = None,
         insignias: list | None = None,
         level_id: int | None = None,
+        email: str | None = None,
         has_library_access: bool | None = None,
         can_request_books: bool | None = None,
         can_upload_epub: bool | None = None,
@@ -734,6 +805,8 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                     user.username = username
                 if insignias is not None:
                     user.insignias = insignias
+                if email is not None:
+                    user.email = email
                 if has_library_access is not None:
                     user.has_library_access = has_library_access
                 if can_request_books is not None:
@@ -770,6 +843,8 @@ class UserRepository(BaseRepository[dict[str, Any]]):
                     data["username"] = username
                 if insignias is not None:
                     data["insignias"] = insignias
+                if email is not None:
+                    data["email"] = email
                 if has_library_access is not None:
                     data["has_library_access"] = has_library_access
                 if can_request_books is not None:

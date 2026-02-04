@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTheme } from './ThemeContext';
 import { setSimulatedLevelHeader } from '../src/services/api';
+import { supabase } from '../src/services/supabase';
 
 
 interface TelegramUser {
@@ -91,6 +92,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [titlePreference, setTitlePreference] = useState<'romaji' | 'english' | 'original'>('romaji');
   const { updateSettings } = useTheme();
 
+  const [isTelegram, setIsTelegram] = useState(false);
+
   // Load simulated level from storage on mount
   useEffect(() => {
     const saved = localStorage.getItem('simulatedLevel');
@@ -100,6 +103,40 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setSimulatedLevelHeader(levelId);
     }
   }, []);
+
+  // Supabase Session Observer
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && !isTelegram) {
+        // Map Supabase User to TelegramUser format for compatibility
+        const sbUser = session.user;
+        setUser({
+          id: parseInt(sbUser.id.substring(0, 8), 16) || 0, // Mocked ID from UUID
+          first_name: sbUser.user_metadata.full_name || sbUser.email?.split('@')[0] || 'Web User',
+          username: sbUser.email || 'web_user',
+          photo_url: sbUser.user_metadata.avatar_url
+        });
+        refreshStatus();
+      }
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session && !isTelegram) {
+        const sbUser = session.user;
+        setUser({
+          id: parseInt(sbUser.id.substring(0, 8), 16) || 0,
+          first_name: sbUser.user_metadata.full_name || sbUser.email?.split('@')[0] || 'Web User',
+          username: sbUser.email || 'web_user',
+          photo_url: sbUser.user_metadata.avatar_url
+        });
+        refreshStatus();
+      } else if (event === 'SIGNED_OUT') {
+        if (!isTelegram) setUser(null);
+      }
+    });
+
+    return () => authListener.subscription.unsubscribe();
+  }, [isTelegram]);
 
   const handleSetSimulatedLevel = (levelId: number | null) => {
     setSimulatedLevel(levelId);
@@ -199,9 +236,10 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     // Check if running inside Telegram
-    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData) {
       const tg = (window as any).Telegram.WebApp;
       setWebApp(tg);
+      setIsTelegram(true);
 
       // Initialize
       tg.ready();
@@ -225,20 +263,15 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       refreshBotInfo();
 
     } else {
-      // Fallback for browser testing
-      console.log("Telegram WebApp not detected. Running in browser mode.");
+      // Fallback for browser mode
+      console.log("Telegram WebApp not detected or no initData. Running in browser mode.");
+      setIsTelegram(false);
       setReady(true);
-      // Mock user for dev - dev users are beta testers
-      setUser({
-        id: 133994080,
-        first_name: "Charly",
-        last_name: "Silva",
-        username: "Devil_1210",
-        photo_url: "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"
-      });
-      setIsBetaTester(true); // Dev mode = always beta tester for testing new UI
-      refreshStatus();
+
+      // We don't mock 'user' anymore by default to enable the LoginGate
+      // refreshBotInfo and status will attempt to fetch based on Supabase JWT if present
       refreshBotInfo();
+      refreshStatus();
     }
   }, []);
 

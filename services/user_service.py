@@ -108,6 +108,11 @@ async def get_user_info(telegram_id: int) -> dict[str, Any] | None:
     return await user_repo.get_by_id(telegram_id)
 
 
+async def get_user_by_email(email: str) -> dict[str, Any] | None:
+    """Busca un usuario por su correo electrónico."""
+    return await user_repo.get_by_email(email)
+
+
 async def get_effective_user(
     uid: int,
     use_cache: bool = True,

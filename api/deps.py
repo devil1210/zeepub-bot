@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 async def get_telegram_user_id(
+    authorization: str | None = Header(None),
     x_telegram_init_data: str | None = Header(None, alias="x-telegram-init-data"),
     x_telegram_data: str | None = Header(None, alias="X-Telegram-Data"),
     uid: int | None = Query(None),
@@ -19,6 +20,7 @@ async def get_telegram_user_id(
     """
     Dependency that extracts and validates the Telegram User ID from headers or query.
     Prioritizes initData validation for security.
+    Falls back to Supabase Auth for browser-based access.
     """
     init_data = x_telegram_init_data or x_telegram_data
     bot_token = config.TELEGRAM_TOKEN
@@ -29,15 +31,34 @@ async def get_telegram_user_id(
         admin_id = list(config.ADMIN_USERS)[0] if config.ADMIN_USERS else 133994080
         return admin_id
 
+    # 1. Telegram WebApp Auth (Priority)
     if init_data:
         user_data = validate_telegram_data(init_data, bot_token)
         if not user_data:
             logger.warning(f"Invalid initData received: {init_data[:20]}...")
-            raise HTTPException(status_code=401, detail="Invalid Telegram data")
+            # We don't raise here yet to allow Supabase fallback
+        else:
+            user_id = user_data.get("user", {}).get("id")
+            if user_id:
+                return user_id
 
-        user_id = user_data.get("user", {}).get("id")
-        if user_id:
-            return user_id
+    # 2. Supabase Auth (Fallback for Browser)
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        from core.supabase_manager import supabase_manager
+
+        if supabase_manager.is_active:
+            try:
+                # get_user validates the token with Supabase
+                user_res = supabase_manager.get_client().auth.get_user(token)
+                if user_res.user and user_res.user.email:
+                    from services.user_service import get_user_by_email
+
+                    db_user = await get_user_by_email(user_res.user.email)
+                    if db_user:
+                        return db_user.get("telegram_id", 0)
+            except Exception as e:
+                logger.debug(f"Supabase auth validation failed: {e}")
 
     # Fallback for dev or legacy (insecure)
     if uid:
@@ -48,6 +69,7 @@ async def get_telegram_user_id(
 
 
 async def get_current_user_data(
+    authorization: str | None = Header(None),
     x_telegram_init_data: str | None = Header(None, alias="x-telegram-init-data"),
     x_telegram_data: str | None = Header(None, alias="X-Telegram-Data"),
     x_simulated_level: str | None = Header(None, alias="x-simulated-level"),

@@ -37,6 +37,8 @@ class CommandHandlers:
         app.add_handler(CommandHandler("plugins", self.plugins))
         app.add_handler(CommandHandler("evil", self.evil))
         app.add_handler(CommandHandler("changeweb", self.changeweb))
+        app.add_handler(CommandHandler("acceso_web", self.acceso_web))
+        app.add_handler(CommandHandler("web_login", self.acceso_web))
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
@@ -628,4 +630,58 @@ class CommandHandlers:
                 chat_id=update.effective_chat.id,
                 text=f"❌ Error al actualizar configuración: {e}",
                 message_thread_id=thread_id,
+            )
+
+    async def acceso_web(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Genera un enlace de acceso mágico para la web."""
+        uid = update.effective_user.id
+        from services.user_service import get_effective_user
+
+        user_info = await get_effective_user(uid)
+        email = user_info.get("email")
+
+        if not email:
+            # Pedir email
+            st = state_manager.get_user_state(uid)
+            st["esperando_email"] = True
+            await update.message.reply_html(
+                "📧 <b>Acceso Web</b>\n\nPara vincular tu cuenta con la web, necesito tu correo electrónico.\n\nPor favor, escribe tu email a continuación:"
+            )
+            return
+
+        # Generar Magic Link vía Supabase Admin
+        from core.supabase_manager import supabase_manager
+
+        if not supabase_manager.is_active:
+            await update.message.reply_html("❌ El servicio Supabase no está configurado.")
+            return
+
+        try:
+            client = supabase_manager.get_client()
+            # redirectTo debe coincidir con los permitidos en Supabase Auth Settings
+            redirect_url = config.WEBAPP_URL
+            if not redirect_url.startswith("http"):
+                redirect_url = f"https://{redirect_url}"
+
+            # Generar link de login (Magic Link)
+            res = client.auth.admin.generate_link(
+                {"type": "magiclink", "email": email, "options": {"redirectTo": redirect_url}}
+            )
+
+            # Validar respuesta
+            if not res or not hasattr(res, "properties") or not res.properties.action_link:
+                raise ValueError("No se recibió action_link de Supabase")
+
+            link = res.properties.action_link
+
+            await update.message.reply_html(
+                f"🔗 <b>¡Listo! {update.effective_user.first_name}</b>\n\n"
+                f"Puedes acceder a la web usando este enlace (válido por 1 hora):\n\n"
+                f"<a href='{link}'>🚀 Entrar a ZeePub Web</a>\n\n"
+                f"<i>Este enlace te autenticará automáticamente vinculando tu ID de Telegram ({uid}).</i>"
+            )
+        except Exception as e:
+            logger.error(f"Error generando link mágico para {uid} ({email}): {e}")
+            await update.message.reply_html(
+                "❌ Error al generar el acceso web. Por favor, asegúrate de que tu email esté registrado en Supabase o reintenta más tarde."
             )

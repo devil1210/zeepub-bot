@@ -36,15 +36,24 @@ const apiClient = axios.create({
     },
 });
 
-// Interceptor to add Telegram Auth Data to every request
-apiClient.interceptors.request.use((config) => {
+import { supabase } from './supabase';
+
+// Interceptor to add Auth Data to every request
+apiClient.interceptors.request.use(async (config) => {
     const initData = getInitData();
+
     if (initData) {
         config.headers['X-Telegram-Init-Data'] = initData;
+        config.headers['X-Telegram-Data'] = initData;
+        config.headers['X-Auth-Method'] = 'telegram';
+    } else {
+        // Fallback to Supabase Auth for browser users
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            config.headers['Authorization'] = `Bearer ${session.access_token}`;
+            config.headers['X-Auth-Method'] = 'supabase';
+        }
     }
-
-    // Fallback/Legacy header if needed by some older middleware
-    config.headers['X-Telegram-Data'] = initData;
 
     if (simulatedLevelId !== null) {
         config.headers['X-Simulated-Level'] = simulatedLevelId.toString();

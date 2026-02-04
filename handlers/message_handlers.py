@@ -175,6 +175,46 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         return
 
+    # 1.5) Esperando email para acceso web
+    if st.get("esperando_email"):
+        import re
+
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if re.match(email_pattern, text):
+            st["esperando_email"] = False
+            # Guardar email en DB
+            from repositories.user_repository import UserRepository
+
+            repo = UserRepository()
+            success = await repo.update_user_email(uid, text)
+
+            if success:
+                await update.message.reply_html(
+                    f"✅ <b>Correo guardado:</b> <code>{text.lower()}</code>\n\n"
+                    "Generando tu enlace de acceso..."
+                )
+                # Disparar lógica de acceso_web
+                from handlers.command_handlers import CommandHandlers
+
+                handler = CommandHandlers(context.application)
+                await handler.acceso_web(update, context)
+            else:
+                # Check if it was because of duplicate email
+                existing = await repo.get_by_email(text)
+                if existing:
+                    await update.message.reply_html(
+                        "❌ Este correo ya está vinculado a otra cuenta de Telegram."
+                    )
+                else:
+                    await update.message.reply_html(
+                        "❌ Error al guardar el correo. Por favor reintenta."
+                    )
+        else:
+            await update.message.reply_html(
+                "❌ El formato del correo no es válido. Por favor, escribe un email correcto:"
+            )
+        return
+
     # 2) Destino manual
     if st.get("esperando_destino_manual"):
         st["esperando_destino_manual"] = False
