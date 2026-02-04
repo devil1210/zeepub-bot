@@ -3,9 +3,9 @@ Keyword analysis module for App Store Optimization.
 Analyzes keyword search volume, competition, and relevance for app discovery.
 """
 
-from typing import Dict, List, Any, Optional, Tuple
 import re
 from collections import Counter
+from typing import Any
 
 
 class KeywordAnalyzer:
@@ -33,7 +33,7 @@ class KeywordAnalyzer:
         search_volume: int = 0,
         competing_apps: int = 0,
         relevance_score: float = 0.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze a single keyword for ASO potential.
 
@@ -74,7 +74,7 @@ class KeywordAnalyzer:
         self.analyzed_keywords[keyword] = analysis
         return analysis
 
-    def compare_keywords(self, keywords_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def compare_keywords(self, keywords_data: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Compare multiple keywords and rank by potential.
 
@@ -126,8 +126,8 @@ class KeywordAnalyzer:
         }
 
     def find_long_tail_opportunities(
-        self, base_keyword: str, modifiers: List[str]
-    ) -> List[Dict[str, Any]]:
+        self, base_keyword: str, modifiers: list[str]
+    ) -> list[dict[str, Any]]:
         """
         Generate long-tail keyword variations.
 
@@ -173,7 +173,7 @@ class KeywordAnalyzer:
                     "keyword": question_keyword,
                     "pattern": "question_based",
                     "estimated_competition": "very_low",
-                    "rationale": f"Informational search query",
+                    "rationale": "Informational search query",
                 }
             )
 
@@ -181,7 +181,7 @@ class KeywordAnalyzer:
 
     def extract_keywords_from_text(
         self, text: str, min_word_length: int = 3
-    ) -> List[Tuple[str, int]]:
+    ) -> list[tuple[str, int]]:
         """
         Extract potential keywords from text (descriptions, reviews).
 
@@ -241,7 +241,7 @@ class KeywordAnalyzer:
 
         return all_keywords[:50]  # Top 50
 
-    def calculate_keyword_density(self, text: str, target_keywords: List[str]) -> Dict[str, float]:
+    def calculate_keyword_density(self, text: str, target_keywords: list[str]) -> dict[str, float]:
         """
         Calculate keyword density in text.
 
@@ -351,9 +351,9 @@ class KeywordAnalyzer:
 
     def _generate_comparison_summary(
         self,
-        primary_keywords: List[Dict[str, Any]],
-        secondary_keywords: List[Dict[str, Any]],
-        long_tail_keywords: List[Dict[str, Any]],
+        primary_keywords: list[dict[str, Any]],
+        secondary_keywords: list[dict[str, Any]],
+        long_tail_keywords: list[dict[str, Any]],
     ) -> str:
         """Generate summary of keyword comparison."""
         summary_parts = []
@@ -377,7 +377,7 @@ class KeywordAnalyzer:
         return " ".join(summary_parts)
 
 
-def analyze_keyword_set(keywords_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+def analyze_keyword_set(keywords_data: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Convenience function to analyze a set of keywords.
 

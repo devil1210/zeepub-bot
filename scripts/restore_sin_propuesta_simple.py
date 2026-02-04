@@ -4,6 +4,7 @@ Versión simplificada con SQL directo
 """
 
 import os
+
 from sqlalchemy import create_engine, text
 
 # Usar DATABASE_URL del entorno o la local por defecto
@@ -64,14 +65,14 @@ try:
             books = conn.execute(book_query, {"hash": series_hash}).fetchall()
 
             if not books:
-                print(f"   ⚠️ No se encontraron libros para esta serie\n")
+                print("   ⚠️ No se encontraron libros para esta serie\n")
                 continue
 
             # Buscar nombres válidos
             valid_english = None
             valid_spanish = None
 
-            print(f"\n   📖 Nombres encontrados en los libros:")
+            print("\n   📖 Nombres encontrados en los libros:")
             for idx, (series_name, series_spanish, filename) in enumerate(books, 1):
                 print(f"      {idx}. EN: {series_name}")
                 print(f"         ES: {series_spanish}")
@@ -100,11 +101,11 @@ try:
                 )
                 conn.commit()
 
-                print(f"\n   ✅ Serie restaurada:")
+                print("\n   ✅ Serie restaurada:")
                 print(f"      EN: {new_english}")
                 print(f"      ES: {new_spanish}\n")
             else:
-                print(f"   ⚠️ No se pudo recuperar un nombre válido\n")
+                print("   ⚠️ No se pudo recuperar un nombre válido\n")
 
         print(f"✅ Proceso completado. {len(affected_series)} series procesadas.")
 

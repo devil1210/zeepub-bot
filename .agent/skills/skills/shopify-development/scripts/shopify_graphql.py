@@ -12,14 +12,14 @@ Usage:
     products = client.get_products(first=10)
 """
 
+import json
 import os
 import time
-import json
-from typing import Dict, List, Optional, Any, Generator
+from collections.abc import Generator
 from dataclasses import dataclass
-from urllib.request import Request, urlopen
+from typing import Any
 from urllib.error import HTTPError
-
+from urllib.request import Request, urlopen
 
 # API Configuration
 API_VERSION = "2026-01"
@@ -31,16 +31,16 @@ RETRY_DELAY = 1.0  # seconds
 class GraphQLResponse:
     """Container for GraphQL response data."""
 
-    data: Optional[Dict[str, Any]] = None
-    errors: Optional[List[Dict[str, Any]]] = None
-    extensions: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
+    errors: list[dict[str, Any]] | None = None
+    extensions: dict[str, Any] | None = None
 
     @property
     def is_success(self) -> bool:
         return self.errors is None or len(self.errors) == 0
 
     @property
-    def query_cost(self) -> Optional[int]:
+    def query_cost(self) -> int | None:
         """Get the actual query cost from extensions."""
         if self.extensions and "cost" in self.extensions:
             return self.extensions["cost"].get("actualQueryCost")
@@ -70,7 +70,7 @@ class ShopifyGraphQL:
         self.access_token = access_token
         self.base_url = f"https://{self.shop_domain}/admin/api/{API_VERSION}/graphql.json"
 
-    def execute(self, query: str, variables: Optional[Dict] = None) -> GraphQLResponse:
+    def execute(self, query: str, variables: dict | None = None) -> GraphQLResponse:
         """
         Execute a GraphQL query/mutation.
 
@@ -111,7 +111,7 @@ class ShopifyGraphQL:
                     time.sleep(delay)
                     continue
                 raise
-            except Exception as e:
+            except Exception:
                 if attempt == MAX_RETRIES - 1:
                     raise
                 time.sleep(RETRY_DELAY)
@@ -121,7 +121,7 @@ class ShopifyGraphQL:
     # ==================== Query Templates ====================
 
     def get_products(
-        self, first: int = 10, query: Optional[str] = None, after: Optional[str] = None
+        self, first: int = 10, query: str | None = None, after: str | None = None
     ) -> GraphQLResponse:
         """
         Query products with pagination.
@@ -165,7 +165,7 @@ class ShopifyGraphQL:
         return self.execute(gql, {"first": first, "query": query, "after": after})
 
     def get_orders(
-        self, first: int = 10, query: Optional[str] = None, after: Optional[str] = None
+        self, first: int = 10, query: str | None = None, after: str | None = None
     ) -> GraphQLResponse:
         """
         Query orders with pagination.
@@ -214,7 +214,7 @@ class ShopifyGraphQL:
         return self.execute(gql, {"first": first, "query": query, "after": after})
 
     def get_customers(
-        self, first: int = 10, query: Optional[str] = None, after: Optional[str] = None
+        self, first: int = 10, query: str | None = None, after: str | None = None
     ) -> GraphQLResponse:
         """
         Query customers with pagination.
@@ -253,7 +253,7 @@ class ShopifyGraphQL:
         """
         return self.execute(gql, {"first": first, "query": query, "after": after})
 
-    def set_metafields(self, metafields: List[Dict]) -> GraphQLResponse:
+    def set_metafields(self, metafields: list[dict]) -> GraphQLResponse:
         """
         Set metafields on resources.
 
@@ -286,8 +286,8 @@ class ShopifyGraphQL:
     # ==================== Pagination Helpers ====================
 
     def paginate_products(
-        self, batch_size: int = 50, query: Optional[str] = None
-    ) -> Generator[Dict, None, None]:
+        self, batch_size: int = 50, query: str | None = None
+    ) -> Generator[dict, None, None]:
         """
         Generator that yields all products with automatic pagination.
 
@@ -318,8 +318,8 @@ class ShopifyGraphQL:
             cursor = page_info.get("endCursor")
 
     def paginate_orders(
-        self, batch_size: int = 50, query: Optional[str] = None
-    ) -> Generator[Dict, None, None]:
+        self, batch_size: int = 50, query: str | None = None
+    ) -> Generator[dict, None, None]:
         """
         Generator that yields all orders with automatic pagination.
 
@@ -385,7 +385,6 @@ def build_gid(resource_type: str, id: str) -> str:
 
 def main():
     """Example usage of ShopifyGraphQL client."""
-    import os
 
     # Load from environment
     shop = os.environ.get("SHOP_DOMAIN", "your-store.myshopify.com")

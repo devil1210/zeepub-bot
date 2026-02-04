@@ -674,7 +674,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
     """Calcula y devuelve estadísticas globales reales desde PostgreSQL para el Panel Admin."""
     check_staff(user_data)
 
-    from sqlalchemy import select, text
+    from sqlalchemy import text
 
     from core.db_manager_pg import pg_manager
 
@@ -2726,8 +2726,6 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve listados de series pendientes y revisadas por la IA."""
     from sqlalchemy import text
 
-    from core.db_manager_pg import pg_manager
-
     list_type = data.get("type", "pending")  # 'pending' or 'reviewed'
     limit = data.get("limit", 100)
     offset = data.get("offset", 0)
@@ -2842,8 +2840,9 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
                     )
 
                     # Also save as approved proposal for AI learning
-                    from models.library_models import MetadataProposal
                     from datetime import datetime
+
+                    from models.library_models import MetadataProposal
 
                     existing = (
                         session.query(MetadataProposal)
@@ -2924,7 +2923,6 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
     if not proposal and not proposal_id:
         raise HTTPException(status_code=400, detail="Faltan datos de la propuesta")
 
-    from models.library_models import SeriesMetadata
     from utils.library_db import get_session
 
     with get_session() as session:
@@ -3144,7 +3142,6 @@ async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any])
     if not proposal_id:
         raise HTTPException(status_code=400, detail="Falta proposal_id")
 
-    from models.library_models import SeriesMetadata
     from services.scanner_service import ScannerService
     from utils.library_db import get_session
 
@@ -3225,7 +3222,6 @@ async def handle_ai_generate_summary(data: dict[str, Any], user_data: dict[str, 
     """
     Genera una sinopsis corta por IA para un libro.
     """
-    from sqlalchemy import select
 
     from core.db_manager_pg import pg_manager
     from services.ai_service import AIService
@@ -3323,7 +3319,6 @@ async def handle_ai_reset_series(data: dict[str, Any], user_data: dict[str, Any]
 
     from sqlalchemy import update
 
-    from models.library_models import SeriesMetadata
     from utils.library_db import get_session
 
     with get_session() as session:

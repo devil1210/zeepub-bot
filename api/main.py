@@ -127,7 +127,7 @@ async def add_cache_headers(request: Request, call_next):
     ):
         response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     # Short cache for HTML (1 hour, must revalidate)
-    elif path.endswith(".html") or path == "/" or not "." in path.split("/")[-1]:
+    elif path.endswith(".html") or path == "/" or "." not in path.split("/")[-1]:
         response.headers["Cache-Control"] = "public, max-age=3600, must-revalidate"
     # No cache for API endpoints
     elif path.startswith("/api/"):

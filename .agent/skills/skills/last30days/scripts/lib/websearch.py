@@ -12,11 +12,10 @@ The typical flow is:
 
 import re
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse
 
 from . import schema
-
 
 # Month name mappings for date parsing
 MONTH_MAP = {
@@ -47,7 +46,7 @@ MONTH_MAP = {
 }
 
 
-def extract_date_from_url(url: str) -> Optional[str]:
+def extract_date_from_url(url: str) -> str | None:
     """Try to extract a date from URL path.
 
     Many sites embed dates in URLs like:
@@ -85,7 +84,7 @@ def extract_date_from_url(url: str) -> Optional[str]:
     return None
 
 
-def extract_date_from_snippet(text: str) -> Optional[str]:
+def extract_date_from_snippet(text: str) -> str | None:
     """Try to extract a date from text snippet or title.
 
     Looks for patterns like:
@@ -179,7 +178,7 @@ def extract_date_signals(
     url: str,
     snippet: str,
     title: str,
-) -> Tuple[Optional[str], str]:
+) -> tuple[str | None, str]:
     """Extract date from any available signal.
 
     Tries URL first (most reliable), then snippet, then title.
@@ -264,11 +263,11 @@ def is_excluded_domain(url: str) -> bool:
 
 
 def parse_websearch_results(
-    results: List[Dict[str, Any]],
+    results: list[dict[str, Any]],
     topic: str,
     from_date: str = "",
     to_date: str = "",
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Parse WebSearch results into normalized format.
 
     This function expects results from Claude's WebSearch tool.
@@ -356,10 +355,10 @@ def parse_websearch_results(
 
 
 def normalize_websearch_items(
-    items: List[Dict[str, Any]],
+    items: list[dict[str, Any]],
     from_date: str,
     to_date: str,
-) -> List[schema.WebSearchItem]:
+) -> list[schema.WebSearchItem]:
     """Convert parsed dicts to WebSearchItem objects.
 
     Args:
@@ -389,7 +388,7 @@ def normalize_websearch_items(
     return result
 
 
-def dedupe_websearch(items: List[schema.WebSearchItem]) -> List[schema.WebSearchItem]:
+def dedupe_websearch(items: list[schema.WebSearchItem]) -> list[schema.WebSearchItem]:
     """Remove duplicate WebSearch items.
 
     Deduplication is based on URL.

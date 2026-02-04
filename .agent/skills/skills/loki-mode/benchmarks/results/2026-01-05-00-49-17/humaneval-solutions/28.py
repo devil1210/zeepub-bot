@@ -1,7 +1,4 @@
-from typing import List
-
-
-def concatenate(strings: List[str]) -> str:
+def concatenate(strings: list[str]) -> str:
     """Concatenate list of strings into a single string
     >>> concatenate([])
     ''

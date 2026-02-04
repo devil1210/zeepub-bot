@@ -1,7 +1,6 @@
 """Near-duplicate detection for last30days skill."""
 
 import re
-from typing import List, Set, Tuple, Union
 
 from . import schema
 
@@ -19,7 +18,7 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 
-def get_ngrams(text: str, n: int = 3) -> Set[str]:
+def get_ngrams(text: str, n: int = 3) -> set[str]:
     """Get character n-grams from text."""
     text = normalize_text(text)
     if len(text) < n:
@@ -27,7 +26,7 @@ def get_ngrams(text: str, n: int = 3) -> Set[str]:
     return {text[i : i + n] for i in range(len(text) - n + 1)}
 
 
-def jaccard_similarity(set1: Set[str], set2: Set[str]) -> float:
+def jaccard_similarity(set1: set[str], set2: set[str]) -> float:
     """Compute Jaccard similarity between two sets."""
     if not set1 or not set2:
         return 0.0
@@ -36,7 +35,7 @@ def jaccard_similarity(set1: Set[str], set2: Set[str]) -> float:
     return intersection / union if union > 0 else 0.0
 
 
-def get_item_text(item: Union[schema.RedditItem, schema.XItem]) -> str:
+def get_item_text(item: schema.RedditItem | schema.XItem) -> str:
     """Get comparable text from an item."""
     if isinstance(item, schema.RedditItem):
         return item.title
@@ -45,9 +44,9 @@ def get_item_text(item: Union[schema.RedditItem, schema.XItem]) -> str:
 
 
 def find_duplicates(
-    items: List[Union[schema.RedditItem, schema.XItem]],
+    items: list[schema.RedditItem | schema.XItem],
     threshold: float = 0.7,
-) -> List[Tuple[int, int]]:
+) -> list[tuple[int, int]]:
     """Find near-duplicate pairs in items.
 
     Args:
@@ -72,9 +71,9 @@ def find_duplicates(
 
 
 def dedupe_items(
-    items: List[Union[schema.RedditItem, schema.XItem]],
+    items: list[schema.RedditItem | schema.XItem],
     threshold: float = 0.7,
-) -> List[Union[schema.RedditItem, schema.XItem]]:
+) -> list[schema.RedditItem | schema.XItem]:
     """Remove near-duplicates, keeping highest-scored item.
 
     Args:
@@ -105,16 +104,16 @@ def dedupe_items(
 
 
 def dedupe_reddit(
-    items: List[schema.RedditItem],
+    items: list[schema.RedditItem],
     threshold: float = 0.7,
-) -> List[schema.RedditItem]:
+) -> list[schema.RedditItem]:
     """Dedupe Reddit items."""
     return dedupe_items(items, threshold)
 
 
 def dedupe_x(
-    items: List[schema.XItem],
+    items: list[schema.XItem],
     threshold: float = 0.7,
-) -> List[schema.XItem]:
+) -> list[schema.XItem]:
     """Dedupe X items."""
     return dedupe_items(items, threshold)

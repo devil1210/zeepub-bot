@@ -5,10 +5,9 @@ Calculates RICE scores for feature prioritization
 RICE = (Reach x Impact x Confidence) / Effort
 """
 
-import json
-import csv
-from typing import List, Dict, Tuple
 import argparse
+import csv
+import json
 
 
 class RICECalculator:
@@ -41,7 +40,7 @@ class RICECalculator:
         rice_score = (reach * impact_score * confidence_score) / effort_score
         return round(rice_score, 2)
 
-    def prioritize_features(self, features: List[Dict]) -> List[Dict]:
+    def prioritize_features(self, features: list[dict]) -> list[dict]:
         """
         Calculate RICE scores and rank features
 
@@ -59,7 +58,7 @@ class RICECalculator:
         # Sort by RICE score descending
         return sorted(features, key=lambda x: x["rice_score"], reverse=True)
 
-    def analyze_portfolio(self, features: List[Dict]) -> Dict:
+    def analyze_portfolio(self, features: list[dict]) -> dict:
         """
         Analyze the feature portfolio for balance and insights
         """
@@ -109,7 +108,7 @@ class RICECalculator:
             "big_bets_list": big_bets[:3],  # Top 3 big bets
         }
 
-    def generate_roadmap(self, features: List[Dict], team_capacity: int = 10) -> List[Dict]:
+    def generate_roadmap(self, features: list[dict], team_capacity: int = 10) -> list[dict]:
         """
         Generate a quarterly roadmap based on team capacity
 
@@ -152,7 +151,7 @@ class RICECalculator:
         return quarters
 
 
-def format_output(features: List[Dict], analysis: Dict, roadmap: List[Dict]) -> str:
+def format_output(features: list[dict], analysis: dict, roadmap: list[dict]) -> str:
     """Format the results for display"""
     output = ["=" * 60]
     output.append("RICE PRIORITIZATION RESULTS")
@@ -196,10 +195,10 @@ def format_output(features: List[Dict], analysis: Dict, roadmap: List[Dict]) -> 
     return "\n".join(output)
 
 
-def load_features_from_csv(filepath: str) -> List[Dict]:
+def load_features_from_csv(filepath: str) -> list[dict]:
     """Load features from CSV file"""
     features = []
-    with open(filepath, "r") as f:
+    with open(filepath) as f:
         reader = csv.DictReader(f)
         for row in reader:
             feature = {

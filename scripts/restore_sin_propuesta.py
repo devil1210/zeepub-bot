@@ -2,13 +2,15 @@
 Script para restaurar series que fueron renombradas incorrectamente a "sin propuesta"
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
+
 from sqlalchemy import text
+
 from utils.library_db import get_session
 
 logging.basicConfig(level=logging.INFO)
@@ -65,11 +67,11 @@ def restore_sin_propuesta_series():
             books = session.execute(book_query, {"hash": series_hash}).fetchall()
 
             if not books:
-                logger.warning(f"   ⚠️ No se encontraron libros para esta serie")
+                logger.warning("   ⚠️ No se encontraron libros para esta serie")
                 continue
 
             # Mostrar opciones de nombres encontrados
-            logger.info(f"\n   📖 Nombres encontrados en los libros:")
+            logger.info("\n   📖 Nombres encontrados en los libros:")
             unique_names = {}
             for idx, (series_name, series_spanish, filename) in enumerate(books, 1):
                 logger.info(f"      {idx}. EN: {series_name}")
@@ -100,11 +102,11 @@ def restore_sin_propuesta_series():
                 )
                 session.commit()
 
-                logger.info(f"   ✅ Serie restaurada:")
+                logger.info("   ✅ Serie restaurada:")
                 logger.info(f"      EN: {new_english}")
                 logger.info(f"      ES: {new_spanish}")
             else:
-                logger.warning(f"   ⚠️ No se pudo recuperar un nombre válido para esta serie")
+                logger.warning("   ⚠️ No se pudo recuperar un nombre válido para esta serie")
 
         logger.info(f"\n✅ Proceso completado. {len(affected_series)} series procesadas.")
 
