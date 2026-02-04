@@ -2972,6 +2972,9 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             # If not in data, fallback to proposal
             if not proposed_spanish:
                 proposed_spanish = proposal.get("proposed_spanish")
+            
+            # Debug logging
+            logger.info(f"📝 Applying AI changes - Series: {proposed_series}, Spanish: {proposed_spanish}")
 
             if series:
                 series.series_name = proposed_series
@@ -3055,6 +3058,10 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                     book.volume = proposal["volumes"][orig_filename]
 
             updated_count += len(books)
+            
+            # Commit metadata changes immediately to ensure they're visible to subsequent AI analysis
+            session.commit()
+            logger.info(f"✅ Series metadata updated and committed: {proposed_series} (ES: {proposed_spanish})")
 
         # 2. Apply File Renames
         if apply_renames and approved_changes:
