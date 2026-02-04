@@ -1,13 +1,13 @@
 """Reddit thread enrichment with real engagement metrics."""
 
 import re
-from typing import Any
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
-from . import dates, http
+from . import http, dates
 
 
-def extract_reddit_path(url: str) -> str | None:
+def extract_reddit_path(url: str) -> Optional[str]:
     """Extract the path from a Reddit URL.
 
     Args:
@@ -21,11 +21,11 @@ def extract_reddit_path(url: str) -> str | None:
         if "reddit.com" not in parsed.netloc:
             return None
         return parsed.path
-    except Exception:
+    except:
         return None
 
 
-def fetch_thread_data(url: str, mock_data: dict | None = None) -> dict[str, Any] | None:
+def fetch_thread_data(url: str, mock_data: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
     """Fetch Reddit thread JSON data.
 
     Args:
@@ -49,7 +49,7 @@ def fetch_thread_data(url: str, mock_data: dict | None = None) -> dict[str, Any]
         return None
 
 
-def parse_thread_data(data: Any) -> dict[str, Any]:
+def parse_thread_data(data: Any) -> Dict[str, Any]:
     """Parse Reddit thread JSON into structured data.
 
     Args:
@@ -106,7 +106,7 @@ def parse_thread_data(data: Any) -> dict[str, Any]:
     return result
 
 
-def get_top_comments(comments: list[dict], limit: int = 10) -> list[dict[str, Any]]:
+def get_top_comments(comments: List[Dict], limit: int = 10) -> List[Dict[str, Any]]:
     """Get top comments sorted by score.
 
     Args:
@@ -125,7 +125,7 @@ def get_top_comments(comments: list[dict], limit: int = 10) -> list[dict[str, An
     return sorted_comments[:limit]
 
 
-def extract_comment_insights(comments: list[dict], limit: int = 7) -> list[str]:
+def extract_comment_insights(comments: List[Dict], limit: int = 7) -> List[str]:
     """Extract key insights from top comments.
 
     Uses simple heuristics to identify valuable comments:
@@ -176,9 +176,9 @@ def extract_comment_insights(comments: list[dict], limit: int = 7) -> list[str]:
 
 
 def enrich_reddit_item(
-    item: dict[str, Any],
-    mock_thread_data: dict | None = None,
-) -> dict[str, Any]:
+    item: Dict[str, Any],
+    mock_thread_data: Optional[Dict] = None,
+) -> Dict[str, Any]:
     """Enrich a Reddit item with real engagement data.
 
     Args:

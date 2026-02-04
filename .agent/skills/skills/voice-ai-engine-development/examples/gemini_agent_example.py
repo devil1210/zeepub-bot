@@ -6,9 +6,9 @@ that properly buffers responses to prevent audio jumping.
 """
 
 import asyncio
-import logging
-from collections.abc import AsyncGenerator
+from typing import AsyncGenerator, List, Dict
 from dataclasses import dataclass
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,9 @@ class GeminiAgent:
     - Handles interrupts gracefully
     """
 
-    def __init__(self, config: dict):
+    def __init__(self, config: Dict):
         self.config = config
-        self.conversation_history: list[Message] = []
+        self.conversation_history: List[Message] = []
         self.system_prompt = config.get("prompt", "You are a helpful AI assistant.")
         self.current_task = None
 
@@ -98,7 +98,7 @@ class GeminiAgent:
 
             yield GeneratedResponse(message=full_response.strip(), is_interruptible=True)
 
-    def _build_gemini_contents(self) -> list[dict]:
+    def _build_gemini_contents(self) -> List[Dict]:
         """
         Build conversation contents for Gemini API
 
@@ -116,10 +116,7 @@ class GeminiAgent:
         # Add system prompt as first user message
         if self.system_prompt:
             contents.append(
-                {
-                    "role": "user",
-                    "parts": [{"text": f"System Instruction: {self.system_prompt}"}],
-                }
+                {"role": "user", "parts": [{"text": f"System Instruction: {self.system_prompt}"}]}
             )
             contents.append({"role": "model", "parts": [{"text": "Understood."}]})
 
@@ -176,7 +173,7 @@ class GeminiAgent:
             self.current_task.cancel()
             logger.info("🛑 [AGENT] Cancelled current generation task")
 
-    def get_conversation_history(self) -> list[Message]:
+    def get_conversation_history(self) -> List[Message]:
         """Get the full conversation history"""
         return self.conversation_history.copy()
 
@@ -204,11 +201,7 @@ async def example_usage():
     agent = GeminiAgent(config)
 
     # Simulate conversation
-    user_messages = [
-        "Hello, how are you?",
-        "What's the weather like today?",
-        "Thank you!",
-    ]
+    user_messages = ["Hello, how are you?", "What's the weather like today?", "Thank you!"]
 
     for user_message in user_messages:
         print(f"\n👤 User: {user_message}")

@@ -5,22 +5,17 @@ Calculates RICE scores for feature prioritization
 RICE = (Reach x Impact x Confidence) / Effort
 """
 
-import argparse
-import csv
 import json
+import csv
+from typing import List, Dict, Tuple
+import argparse
 
 
 class RICECalculator:
     """Calculate RICE scores for feature prioritization"""
 
     def __init__(self):
-        self.impact_map = {
-            "massive": 3.0,
-            "high": 2.0,
-            "medium": 1.0,
-            "low": 0.5,
-            "minimal": 0.25,
-        }
+        self.impact_map = {"massive": 3.0, "high": 2.0, "medium": 1.0, "low": 0.5, "minimal": 0.25}
 
         self.confidence_map = {"high": 100, "medium": 80, "low": 50}
 
@@ -46,7 +41,7 @@ class RICECalculator:
         rice_score = (reach * impact_score * confidence_score) / effort_score
         return round(rice_score, 2)
 
-    def prioritize_features(self, features: list[dict]) -> list[dict]:
+    def prioritize_features(self, features: List[Dict]) -> List[Dict]:
         """
         Calculate RICE scores and rank features
 
@@ -64,7 +59,7 @@ class RICECalculator:
         # Sort by RICE score descending
         return sorted(features, key=lambda x: x["rice_score"], reverse=True)
 
-    def analyze_portfolio(self, features: list[dict]) -> dict:
+    def analyze_portfolio(self, features: List[Dict]) -> Dict:
         """
         Analyze the feature portfolio for balance and insights
         """
@@ -114,7 +109,7 @@ class RICECalculator:
             "big_bets_list": big_bets[:3],  # Top 3 big bets
         }
 
-    def generate_roadmap(self, features: list[dict], team_capacity: int = 10) -> list[dict]:
+    def generate_roadmap(self, features: List[Dict], team_capacity: int = 10) -> List[Dict]:
         """
         Generate a quarterly roadmap based on team capacity
 
@@ -157,7 +152,7 @@ class RICECalculator:
         return quarters
 
 
-def format_output(features: list[dict], analysis: dict, roadmap: list[dict]) -> str:
+def format_output(features: List[Dict], analysis: Dict, roadmap: List[Dict]) -> str:
     """Format the results for display"""
     output = ["=" * 60]
     output.append("RICE PRIORITIZATION RESULTS")
@@ -201,10 +196,10 @@ def format_output(features: list[dict], analysis: dict, roadmap: list[dict]) -> 
     return "\n".join(output)
 
 
-def load_features_from_csv(filepath: str) -> list[dict]:
+def load_features_from_csv(filepath: str) -> List[Dict]:
     """Load features from CSV file"""
     features = []
-    with open(filepath) as f:
+    with open(filepath, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
             feature = {
@@ -243,38 +238,10 @@ def create_sample_csv(filepath: str):
         ["API Rate Limiting", "2000", "low", "high", "xs", "Add rate limiting to API"],
         ["Social Login", "12000", "high", "medium", "m", "Add Google/Facebook login"],
         ["Export to PDF", "3000", "medium", "low", "s", "Export reports as PDF"],
-        [
-            "Team Collaboration",
-            "4000",
-            "massive",
-            "low",
-            "xl",
-            "Real-time collaboration features",
-        ],
-        [
-            "Search Improvements",
-            "15000",
-            "high",
-            "high",
-            "m",
-            "Enhance search functionality",
-        ],
-        [
-            "Onboarding Flow",
-            "20000",
-            "massive",
-            "high",
-            "s",
-            "Improve new user onboarding",
-        ],
-        [
-            "Analytics Dashboard",
-            "6000",
-            "high",
-            "medium",
-            "l",
-            "Advanced analytics for users",
-        ],
+        ["Team Collaboration", "4000", "massive", "low", "xl", "Real-time collaboration features"],
+        ["Search Improvements", "15000", "high", "high", "m", "Enhance search functionality"],
+        ["Onboarding Flow", "20000", "massive", "high", "s", "Improve new user onboarding"],
+        ["Analytics Dashboard", "6000", "high", "medium", "l", "Advanced analytics for users"],
     ]
 
     with open(filepath, "w", newline="") as f:
@@ -290,16 +257,10 @@ def main():
         "input", nargs="?", help='CSV file with features or "sample" to create sample'
     )
     parser.add_argument(
-        "--capacity",
-        type=int,
-        default=10,
-        help="Team capacity per quarter (person-months)",
+        "--capacity", type=int, default=10, help="Team capacity per quarter (person-months)"
     )
     parser.add_argument(
-        "--output",
-        choices=["text", "json", "csv"],
-        default="text",
-        help="Output format",
+        "--output", choices=["text", "json", "csv"], default="text", help="Output format"
     )
 
     args = parser.parse_args()

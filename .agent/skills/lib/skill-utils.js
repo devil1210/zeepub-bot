@@ -149,12 +149,39 @@ function readSkill(skillDir, skillId) {
 
 function listSkillIds(skillsDir) {
   return fs.readdirSync(skillsDir)
-    .filter(entry => !entry.startsWith('.') && fs.statSync(path.join(skillsDir, entry)).isDirectory())
+    .filter(entry => {
+      if (entry.startsWith('.')) return false;
+      const dirPath = path.join(skillsDir, entry);
+      if (!fs.statSync(dirPath).isDirectory()) return false;
+      const skillPath = path.join(dirPath, 'SKILL.md');
+      return fs.existsSync(skillPath);
+    })
     .sort();
+}
+
+/**
+ * Recursively list all skill directory paths under skillsDir (relative paths).
+ * Matches generate_index.py behavior so catalog includes nested skills (e.g. game-development/2d-games).
+ */
+function listSkillIdsRecursive(skillsDir, baseDir = skillsDir, acc = []) {
+  const entries = fs.readdirSync(baseDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name.startsWith('.')) continue;
+    if (!entry.isDirectory()) continue;
+    const dirPath = path.join(baseDir, entry.name);
+    const skillPath = path.join(dirPath, 'SKILL.md');
+    const relPath = path.relative(skillsDir, dirPath);
+    if (fs.existsSync(skillPath)) {
+      acc.push(relPath);
+    }
+    listSkillIdsRecursive(skillsDir, dirPath, acc);
+  }
+  return acc.sort();
 }
 
 module.exports = {
   listSkillIds,
+  listSkillIdsRecursive,
   parseFrontmatter,
   parseInlineList,
   readSkill,

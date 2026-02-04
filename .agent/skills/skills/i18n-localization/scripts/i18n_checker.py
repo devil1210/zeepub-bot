@@ -4,9 +4,9 @@ i18n Checker - Detects hardcoded strings and missing translations.
 Scans for untranslated text in React, Vue, and Python files.
 """
 
-import json
-import re
 import sys
+import re
+import json
 from pathlib import Path
 
 # Fix Windows console encoding for Unicode output
@@ -88,7 +88,7 @@ def check_locale_completeness(locale_files: list) -> dict:
                 if lang not in locales:
                     locales[lang] = {}
                 locales[lang][f.stem] = set(flatten_keys(content))
-            except Exception:
+            except:
                 continue
 
     if len(locales) < 2:
@@ -202,7 +202,7 @@ def check_hardcoded_strings(project_path: Path) -> dict:
             if hardcoded_found:
                 files_with_hardcoded += 1
 
-        except Exception:
+        except:
             continue
 
     passed.append(f"[OK] Analyzed {len(code_files)} code files")

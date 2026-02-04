@@ -1004,10 +1004,10 @@ class Document:
 
         if not rsids_elements:
             # Add new rsids section
-            rsids_xml = f"""<{prefix}:rsids>
+            rsids_xml = f'''<{prefix}:rsids>
   <{prefix}:rsidRoot {prefix}:val="{self.rsid}"/>
   <{prefix}:rsid {prefix}:val="{self.rsid}"/>
-</{prefix}:rsids>"""
+</{prefix}:rsids>'''
 
             # Try to insert after compat, before clrSchemeMapping, or before closing tag
             inserted = False
@@ -1049,12 +1049,12 @@ class Document:
         escaped_text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         # Note: w:rsidR, w:rsidRDefault, w:rsidP on w:p, w:rsidR on w:r,
         # and w:author, w:date, w:initials on w:comment are automatically added by DocxXMLEditor
-        comment_xml = f"""<w:comment w:id="{comment_id}">
+        comment_xml = f'''<w:comment w:id="{comment_id}">
   <w:p w14:paraId="{para_id}" w14:textId="77777777">
     <w:r><w:rPr><w:rStyle w:val="CommentReference"/></w:rPr><w:annotationRef/></w:r>
     <w:r><w:rPr><w:color w:val="000000"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t>{escaped_text}</w:t></w:r>
   </w:p>
-</w:comment>"""
+</w:comment>'''
         editor.append_to(root, comment_xml)
 
     def _add_to_comments_extended_xml(self, para_id, parent_para_id):
@@ -1104,21 +1104,21 @@ class Document:
 
         Note: w:rsidR is automatically added by DocxXMLEditor.
         """
-        return f"""<w:commentRangeEnd w:id="{comment_id}"/>
+        return f'''<w:commentRangeEnd w:id="{comment_id}"/>
 <w:r>
   <w:rPr><w:rStyle w:val="CommentReference"/></w:rPr>
   <w:commentReference w:id="{comment_id}"/>
-</w:r>"""
+</w:r>'''
 
     def _comment_ref_run_xml(self, comment_id):
         """Generate XML for comment reference run.
 
         Note: w:rsidR is automatically added by DocxXMLEditor.
         """
-        return f"""<w:r>
+        return f'''<w:r>
   <w:rPr><w:rStyle w:val="CommentReference"/></w:rPr>
   <w:commentReference w:id="{comment_id}"/>
-</w:r>"""
+</w:r>'''
 
     # ==================== Private: Metadata Updates ====================
 
@@ -1160,9 +1160,9 @@ class Document:
 
         # Add author with proper XML escaping to prevent injection
         escaped_author = html.escape(author, quote=True)
-        person_xml = f"""<w15:person w15:author="{escaped_author}">
+        person_xml = f'''<w15:person w15:author="{escaped_author}">
   <w15:presenceInfo w15:providerId="None" w15:userId="{escaped_author}"/>
-</w15:person>"""
+</w15:person>'''
         editor.append_to(root, person_xml)
 
     def _ensure_comment_relationships(self):

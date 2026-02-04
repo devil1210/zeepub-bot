@@ -17,9 +17,9 @@ Usage:
     python geo_checker.py <project_path>
 """
 
-import json
-import re
 import sys
+import re
+import json
 from pathlib import Path
 
 # Fix Windows console encoding
@@ -134,12 +134,7 @@ def check_page(file_path: Path) -> dict:
     try:
         content = file_path.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
-        return {
-            "file": str(file_path.name),
-            "passed": [],
-            "issues": [f"Error: {e}"],
-            "score": 0,
-        }
+        return {"file": str(file_path.name), "passed": [], "issues": [f"Error: {e}"], "score": 0}
 
     issues = []
     passed = []
@@ -182,13 +177,7 @@ def check_page(file_path: Path) -> dict:
         issues.append("No author info (AI prefers attributed content)")
 
     # 4. Publication Date (Freshness signal)
-    date_patterns = [
-        "datePublished",
-        "dateModified",
-        "datetime=",
-        "pubdate",
-        "article:published",
-    ]
+    date_patterns = ["datePublished", "dateModified", "datetime=", "pubdate", "article:published"]
     has_date = any(re.search(p, content, re.I) for p in date_patterns)
     if has_date:
         passed.append("Publication date found")
@@ -255,12 +244,7 @@ def check_page(file_path: Path) -> dict:
     total = len(passed) + len(issues)
     score = (len(passed) / total * 100) if total > 0 else 0
 
-    return {
-        "file": str(file_path.name),
-        "passed": passed,
-        "issues": issues,
-        "score": round(score),
-    }
+    return {"file": str(file_path.name), "passed": passed, "issues": issues, "score": round(score)}
 
 
 def main():

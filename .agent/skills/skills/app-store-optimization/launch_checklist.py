@@ -3,8 +3,8 @@ Launch checklist module for App Store Optimization.
 Generates comprehensive pre-launch and update checklists.
 """
 
+from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
-from typing import Any
 
 
 class LaunchChecklistGenerator:
@@ -23,8 +23,8 @@ class LaunchChecklistGenerator:
         self.platform = platform
 
     def generate_prelaunch_checklist(
-        self, app_info: dict[str, Any], launch_date: str | None = None
-    ) -> dict[str, Any]:
+        self, app_info: Dict[str, Any], launch_date: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Generate comprehensive pre-launch checklist.
 
@@ -57,8 +57,8 @@ class LaunchChecklistGenerator:
         return checklist
 
     def validate_app_store_compliance(
-        self, app_data: dict[str, Any], platform: str = "apple"
-    ) -> dict[str, Any]:
+        self, app_data: Dict[str, Any], platform: str = "apple"
+    ) -> Dict[str, Any]:
         """
         Validate compliance with app store guidelines.
 
@@ -88,11 +88,8 @@ class LaunchChecklistGenerator:
         return validation_results
 
     def create_update_plan(
-        self,
-        current_version: str,
-        planned_features: list[str],
-        update_frequency: str = "monthly",
-    ) -> dict[str, Any]:
+        self, current_version: str, planned_features: List[str], update_frequency: str = "monthly"
+    ) -> Dict[str, Any]:
         """
         Create update cadence and feature rollout plan.
 
@@ -127,11 +124,8 @@ class LaunchChecklistGenerator:
         }
 
     def optimize_launch_timing(
-        self,
-        app_category: str,
-        target_audience: str,
-        current_date: str | None = None,
-    ) -> dict[str, Any]:
+        self, app_category: str, target_audience: str, current_date: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Recommend optimal launch timing.
 
@@ -167,7 +161,7 @@ class LaunchChecklistGenerator:
 
     def plan_seasonal_campaigns(
         self, app_category: str, current_month: int = None
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         Identify seasonal opportunities for ASO campaigns.
 
@@ -197,7 +191,7 @@ class LaunchChecklistGenerator:
             "implementation_timeline": self._create_seasonal_timeline(campaigns),
         }
 
-    def _generate_apple_checklist(self, app_info: dict[str, Any]) -> list[dict[str, Any]]:
+    def _generate_apple_checklist(self, app_info: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Generate Apple App Store specific checklist."""
         return [
             {
@@ -216,14 +210,8 @@ class LaunchChecklistGenerator:
                     {"task": "Subtitle (30 chars max)", "status": "pending"},
                     {"task": "Promotional text (170 chars max)", "status": "pending"},
                     {"task": "Description (4000 chars max)", "status": "pending"},
-                    {
-                        "task": "Keywords (100 chars, comma-separated)",
-                        "status": "pending",
-                    },
-                    {
-                        "task": "Category selection (primary + secondary)",
-                        "status": "pending",
-                    },
+                    {"task": "Keywords (100 chars, comma-separated)", "status": "pending"},
+                    {"task": "Category selection (primary + secondary)", "status": "pending"},
                 ],
             },
             {
@@ -232,28 +220,16 @@ class LaunchChecklistGenerator:
                     {"task": "App icon (1024x1024px)", "status": "pending"},
                     {"task": 'Screenshots (iPhone 6.7" required)', "status": "pending"},
                     {"task": 'Screenshots (iPhone 5.5" required)', "status": "pending"},
-                    {
-                        "task": 'Screenshots (iPad Pro 12.9" if iPad app)',
-                        "status": "pending",
-                    },
-                    {
-                        "task": "App preview video (optional but recommended)",
-                        "status": "pending",
-                    },
+                    {"task": 'Screenshots (iPad Pro 12.9" if iPad app)', "status": "pending"},
+                    {"task": "App preview video (optional but recommended)", "status": "pending"},
                 ],
             },
             {
                 "category": "Technical Requirements (Apple)",
                 "items": [
-                    {
-                        "task": "Build uploaded to App Store Connect",
-                        "status": "pending",
-                    },
+                    {"task": "Build uploaded to App Store Connect", "status": "pending"},
                     {"task": "TestFlight testing completed", "status": "pending"},
-                    {
-                        "task": "App tested on required iOS versions",
-                        "status": "pending",
-                    },
+                    {"task": "App tested on required iOS versions", "status": "pending"},
                     {"task": "Crash-free rate > 99%", "status": "pending"},
                     {"task": "All links in app/metadata working", "status": "pending"},
                 ],
@@ -262,38 +238,23 @@ class LaunchChecklistGenerator:
                 "category": "Legal & Privacy (Apple)",
                 "items": [
                     {"task": "Privacy Policy URL provided", "status": "pending"},
-                    {
-                        "task": "Terms of Service URL (if applicable)",
-                        "status": "pending",
-                    },
-                    {
-                        "task": "Data collection declarations accurate",
-                        "status": "pending",
-                    },
+                    {"task": "Terms of Service URL (if applicable)", "status": "pending"},
+                    {"task": "Data collection declarations accurate", "status": "pending"},
                     {"task": "Third-party SDKs disclosed", "status": "pending"},
                 ],
             },
         ]
 
-    def _generate_google_checklist(self, app_info: dict[str, Any]) -> list[dict[str, Any]]:
+    def _generate_google_checklist(self, app_info: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Generate Google Play Store specific checklist."""
         return [
             {
                 "category": "Play Console Setup",
                 "items": [
-                    {
-                        "task": "Google Play Console account created",
-                        "status": "pending",
-                    },
+                    {"task": "Google Play Console account created", "status": "pending"},
                     {"task": "Developer profile completed", "status": "pending"},
-                    {
-                        "task": "Payment merchant account linked (if paid app)",
-                        "status": "pending",
-                    },
-                    {
-                        "task": "Content rating questionnaire completed",
-                        "status": "pending",
-                    },
+                    {"task": "Payment merchant account linked (if paid app)", "status": "pending"},
+                    {"task": "Content rating questionnaire completed", "status": "pending"},
                 ],
             },
             {
@@ -312,14 +273,8 @@ class LaunchChecklistGenerator:
                     {"task": "App icon (512x512px)", "status": "pending"},
                     {"task": "Feature graphic (1024x500px)", "status": "pending"},
                     {"task": "Screenshots (2-8 required, phone)", "status": "pending"},
-                    {
-                        "task": "Screenshots (tablet, if applicable)",
-                        "status": "pending",
-                    },
-                    {
-                        "task": "Promo video (YouTube link, optional)",
-                        "status": "pending",
-                    },
+                    {"task": "Screenshots (tablet, if applicable)", "status": "pending"},
+                    {"task": "Promo video (YouTube link, optional)", "status": "pending"},
                 ],
             },
             {
@@ -327,14 +282,8 @@ class LaunchChecklistGenerator:
                 "items": [
                     {"task": "APK/AAB uploaded to Play Console", "status": "pending"},
                     {"task": "Internal testing completed", "status": "pending"},
-                    {
-                        "task": "App tested on required Android versions",
-                        "status": "pending",
-                    },
-                    {
-                        "task": "Target API level meets requirements",
-                        "status": "pending",
-                    },
+                    {"task": "App tested on required Android versions", "status": "pending"},
+                    {"task": "Target API level meets requirements", "status": "pending"},
                     {"task": "All permissions justified", "status": "pending"},
                 ],
             },
@@ -344,15 +293,12 @@ class LaunchChecklistGenerator:
                     {"task": "Privacy Policy URL provided", "status": "pending"},
                     {"task": "Data safety section completed", "status": "pending"},
                     {"task": "Ads disclosure (if applicable)", "status": "pending"},
-                    {
-                        "task": "In-app purchase disclosure (if applicable)",
-                        "status": "pending",
-                    },
+                    {"task": "In-app purchase disclosure (if applicable)", "status": "pending"},
                 ],
             },
         ]
 
-    def _generate_universal_checklist(self, app_info: dict[str, Any]) -> list[dict[str, Any]]:
+    def _generate_universal_checklist(self, app_info: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Generate universal (both platforms) checklist."""
         return [
             {
@@ -370,10 +316,7 @@ class LaunchChecklistGenerator:
                 "items": [
                     {"task": "Keyword research completed", "status": "pending"},
                     {"task": "Competitor analysis done", "status": "pending"},
-                    {
-                        "task": "A/B test plan created for post-launch",
-                        "status": "pending",
-                    },
+                    {"task": "A/B test plan created for post-launch", "status": "pending"},
                     {"task": "Analytics tracking configured", "status": "pending"},
                 ],
             },
@@ -398,7 +341,7 @@ class LaunchChecklistGenerator:
             },
         ]
 
-    def _generate_launch_timeline(self, launch_date: str) -> list[dict[str, Any]]:
+    def _generate_launch_timeline(self, launch_date: str) -> List[Dict[str, Any]]:
         """Generate timeline with milestones leading to launch."""
         launch_dt = datetime.strptime(launch_date, "%Y-%m-%d")
 
@@ -444,8 +387,8 @@ class LaunchChecklistGenerator:
         return milestones
 
     def _calculate_checklist_summary(
-        self, checklists: dict[str, list[dict[str, Any]]]
-    ) -> dict[str, Any]:
+        self, checklists: Dict[str, List[Dict[str, Any]]]
+    ) -> Dict[str, Any]:
         """Calculate completion summary."""
         total_items = 0
         completed_items = 0
@@ -468,7 +411,7 @@ class LaunchChecklistGenerator:
         }
 
     def _validate_apple_compliance(
-        self, app_data: dict[str, Any], validation_results: dict[str, Any]
+        self, app_data: Dict[str, Any], validation_results: Dict[str, Any]
     ) -> None:
         """Validate Apple App Store compliance."""
         # Check for required fields
@@ -497,7 +440,7 @@ class LaunchChecklistGenerator:
             )
 
     def _validate_google_compliance(
-        self, app_data: dict[str, Any], validation_results: dict[str, Any]
+        self, app_data: Dict[str, Any], validation_results: Dict[str, Any]
     ) -> None:
         """Validate Google Play Store compliance."""
         # Check for required fields
@@ -524,15 +467,11 @@ class LaunchChecklistGenerator:
 
     def _calculate_next_versions(
         self, current_version: str, update_frequency: str, feature_count: int
-    ) -> list[str]:
+    ) -> List[str]:
         """Calculate next version numbers."""
         # Parse current version (assume semantic versioning)
         parts = current_version.split(".")
-        major, minor, patch = (
-            int(parts[0]),
-            int(parts[1]),
-            int(parts[2] if len(parts) > 2 else 0),
-        )
+        major, minor, patch = int(parts[0]), int(parts[1]), int(parts[2] if len(parts) > 2 else 0)
 
         versions = []
         for i in range(feature_count):
@@ -552,8 +491,8 @@ class LaunchChecklistGenerator:
         return versions
 
     def _distribute_features(
-        self, features: list[str], versions: list[str]
-    ) -> list[dict[str, Any]]:
+        self, features: List[str], versions: List[str]
+    ) -> List[Dict[str, Any]]:
         """Distribute features across versions."""
         features_per_version = max(1, len(features) // len(versions))
 
@@ -574,7 +513,7 @@ class LaunchChecklistGenerator:
 
         return schedule
 
-    def _generate_whats_new_template(self, version_data: dict[str, Any]) -> dict[str, str]:
+    def _generate_whats_new_template(self, version_data: Dict[str, Any]) -> Dict[str, str]:
         """Generate What's New template for version."""
         features_list = "\n".join([f"• {feature}" for feature in version_data["features"]])
 
@@ -588,7 +527,7 @@ Have feedback? Contact us at support@[company].com"""
 
         return {"version": version_data["version"], "template": template}
 
-    def _generate_update_recommendations(self, update_frequency: str) -> list[str]:
+    def _generate_update_recommendations(self, update_frequency: str) -> List[str]:
         """Generate recommendations for update strategy."""
         recommendations = []
 
@@ -611,7 +550,7 @@ Have feedback? Contact us at support@[company].com"""
 
         return recommendations
 
-    def _recommend_day_of_week(self, app_category: str) -> dict[str, Any]:
+    def _recommend_day_of_week(self, app_category: str) -> Dict[str, Any]:
         """Recommend best day of week to launch."""
         # General recommendations based on category
         if app_category.lower() in ["games", "entertainment"]:
@@ -630,7 +569,7 @@ Have feedback? Contact us at support@[company].com"""
                 "rationale": "Mid-week provides good balance and review potential",
             }
 
-    def _recommend_seasonal_timing(self, app_category: str, current_date: str) -> dict[str, Any]:
+    def _recommend_seasonal_timing(self, app_category: str, current_date: str) -> Dict[str, Any]:
         """Recommend seasonal timing considerations."""
         current_dt = datetime.strptime(current_date, "%Y-%m-%d")
         month = current_dt.month
@@ -655,7 +594,7 @@ Have feedback? Contact us at support@[company].com"""
             "good_periods": good_periods,
         }
 
-    def _analyze_competitive_timing(self, app_category: str) -> dict[str, str]:
+    def _analyze_competitive_timing(self, app_category: str) -> Dict[str, str]:
         """Analyze competitive timing considerations."""
         return {
             "recommendation": "Research competitor launch schedules in your category",
@@ -663,20 +602,14 @@ Have feedback? Contact us at support@[company].com"""
         }
 
     def _calculate_optimal_dates(
-        self, current_date: str, day_rec: dict[str, Any], seasonal_rec: dict[str, Any]
-    ) -> list[str]:
+        self, current_date: str, day_rec: Dict[str, Any], seasonal_rec: Dict[str, Any]
+    ) -> List[str]:
         """Calculate optimal launch dates."""
         current_dt = datetime.strptime(current_date, "%Y-%m-%d")
 
         # Find next occurrence of recommended day
         target_day = day_rec["recommended_day"]
-        days_map = {
-            "Monday": 0,
-            "Tuesday": 1,
-            "Wednesday": 2,
-            "Thursday": 3,
-            "Friday": 4,
-        }
+        days_map = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, "Friday": 4}
         target_day_num = days_map.get(target_day, 2)
 
         days_ahead = (target_day_num - current_dt.weekday()) % 7
@@ -694,7 +627,7 @@ Have feedback? Contact us at support@[company].com"""
         return optimal_dates
 
     def _generate_timing_recommendation(
-        self, optimal_dates: list[str], seasonal_rec: dict[str, Any]
+        self, optimal_dates: List[str], seasonal_rec: Dict[str, Any]
     ) -> str:
         """Generate final timing recommendation."""
         if seasonal_rec["avoid_periods"]:
@@ -708,7 +641,7 @@ Have feedback? Contact us at support@[company].com"""
 
     def _identify_seasonal_opportunities(
         self, app_category: str, current_month: int
-    ) -> list[dict[str, Any]]:
+    ) -> List[Dict[str, Any]]:
         """Identify seasonal opportunities for category."""
         opportunities = []
 
@@ -736,16 +669,12 @@ Have feedback? Contact us at support@[company].com"""
         # Category-specific
         if app_category.lower() == "education" and current_month in [8, 9]:
             opportunities.append(
-                {
-                    "event": "Back to School",
-                    "dates": "August-September",
-                    "relevance": "high",
-                }
+                {"event": "Back to School", "dates": "August-September", "relevance": "high"}
             )
 
         return opportunities
 
-    def _generate_seasonal_campaign(self, opportunity: dict[str, Any]) -> dict[str, Any]:
+    def _generate_seasonal_campaign(self, opportunity: Dict[str, Any]) -> Dict[str, Any]:
         """Generate campaign idea for seasonal opportunity."""
         return {
             "event": opportunity["event"],
@@ -754,7 +683,7 @@ Have feedback? Contact us at support@[company].com"""
             "promotion_strategy": "Consider limited-time features or discounts",
         }
 
-    def _create_seasonal_timeline(self, campaigns: list[dict[str, Any]]) -> list[str]:
+    def _create_seasonal_timeline(self, campaigns: List[Dict[str, Any]]) -> List[str]:
         """Create implementation timeline for campaigns."""
         return [
             f"30 days before: Plan {campaign['event']} campaign strategy" for campaign in campaigns
@@ -762,8 +691,8 @@ Have feedback? Contact us at support@[company].com"""
 
 
 def generate_launch_checklist(
-    platform: str, app_info: dict[str, Any], launch_date: str | None = None
-) -> dict[str, Any]:
+    platform: str, app_info: Dict[str, Any], launch_date: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Convenience function to generate launch checklist.
 

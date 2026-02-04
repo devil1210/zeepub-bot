@@ -11,16 +11,16 @@ Supports:
     - Python: ruff check, mypy
 """
 
-import json
 import subprocess
 import sys
-from datetime import datetime
+import json
 from pathlib import Path
+from datetime import datetime
 
 # Fix Windows console encoding
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-except Exception:
+except:
     pass
 
 
@@ -47,7 +47,7 @@ def detect_project_type(project_path: Path) -> dict:
             if "typescript" in deps or (project_path / "tsconfig.json").exists():
                 result["linters"].append({"name": "tsc", "cmd": ["npx", "tsc", "--noEmit"]})
 
-        except Exception:
+        except:
             pass
 
     # Python project
@@ -97,7 +97,7 @@ def main():
     project_path = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
 
     print(f"\n{'=' * 60}")
-    print("[LINT RUNNER] Unified Linting")
+    print(f"[LINT RUNNER] Unified Linting")
     print(f"{'=' * 60}")
     print(f"Project: {project_path}")
     print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

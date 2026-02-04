@@ -5,8 +5,8 @@ Ensures all scripts run with the correct virtual environment
 """
 
 import os
-import subprocess
 import sys
+import subprocess
 from pathlib import Path
 
 

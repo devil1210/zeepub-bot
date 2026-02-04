@@ -6,7 +6,8 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from typing import Any
+from typing import Any, Dict, Optional
+from urllib.parse import urlencode
 
 DEFAULT_TIMEOUT = 30
 DEBUG = os.environ.get("LAST30DAYS_DEBUG", "").lower() in ("1", "true", "yes")
@@ -27,12 +28,7 @@ USER_AGENT = "last30days-skill/1.0 (Claude Code Skill)"
 class HTTPError(Exception):
     """HTTP request error with status code."""
 
-    def __init__(
-        self,
-        message: str,
-        status_code: int | None = None,
-        body: str | None = None,
-    ):
+    def __init__(self, message: str, status_code: Optional[int] = None, body: Optional[str] = None):
         super().__init__(message)
         self.status_code = status_code
         self.body = body
@@ -41,11 +37,11 @@ class HTTPError(Exception):
 def request(
     method: str,
     url: str,
-    headers: dict[str, str] | None = None,
-    json_data: dict[str, Any] | None = None,
+    headers: Optional[Dict[str, str]] = None,
+    json_data: Optional[Dict[str, Any]] = None,
     timeout: int = DEFAULT_TIMEOUT,
     retries: int = MAX_RETRIES,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Make an HTTP request and return JSON response.
 
     Args:
@@ -87,7 +83,7 @@ def request(
             body = None
             try:
                 body = e.read().decode("utf-8")
-            except Exception:
+            except:
                 pass
             log(f"HTTP Error {e.code}: {e.reason}")
             if body:
@@ -121,22 +117,19 @@ def request(
     raise HTTPError("Request failed with no error details")
 
 
-def get(url: str, headers: dict[str, str] | None = None, **kwargs) -> dict[str, Any]:
+def get(url: str, headers: Optional[Dict[str, str]] = None, **kwargs) -> Dict[str, Any]:
     """Make a GET request."""
     return request("GET", url, headers=headers, **kwargs)
 
 
 def post(
-    url: str,
-    json_data: dict[str, Any],
-    headers: dict[str, str] | None = None,
-    **kwargs,
-) -> dict[str, Any]:
+    url: str, json_data: Dict[str, Any], headers: Optional[Dict[str, str]] = None, **kwargs
+) -> Dict[str, Any]:
     """Make a POST request with JSON body."""
     return request("POST", url, headers=headers, json_data=json_data, **kwargs)
 
 
-def get_reddit_json(path: str) -> dict[str, Any]:
+def get_reddit_json(path: str) -> Dict[str, Any]:
     """Fetch Reddit thread JSON.
 
     Args:

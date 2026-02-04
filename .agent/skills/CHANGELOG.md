@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.7.0] - 2026-02-03 - "Installer Fix & OpenCode Docs"
+
+> Critical installer fix for Windows and OpenCode documentation completion.
+
+### Fixed
+
+- **Installer**: Resolved `ReferenceError` for `tagArg` variable in `bin/install.js` ensuring correct execution on Windows/PowerShell (PR #53).
+
+### Documentation
+
+- **OpenCode**: Completed documentation for OpenCode integration in `README.md`.
+
+---
+
+## [4.6.0] - 2026-02-01 - "SPDD & Radix UI Design System"
+
+> Agent workflow docs (SPDD) and Radix UI design system skill.
+
+### Added
+
+- **New Skill**: `radix-ui-design-system` – Build accessible design systems with Radix UI primitives (headless, theming, WCAG, examples).
+- **Docs**: `skills/SPDD/` – Research, spec, and implementation workflow docs (1-research.md, 2-spec.md, 3-implementation.md).
+
+### Registry
+
+- **Total Skills**: 626 (from 625). Catalog regenerated.
+
+---
+
 ## [4.5.0] - 2026-01-31 - "Stitch UI Design"
 
 > Expert prompting guide for Google Stitch AI-powered UI design tool.

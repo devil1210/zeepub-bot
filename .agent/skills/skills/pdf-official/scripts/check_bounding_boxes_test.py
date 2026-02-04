@@ -1,7 +1,6 @@
-import io
-import json
 import unittest
-
+import json
+import io
 from check_bounding_boxes import get_bounding_box_messages
 
 
@@ -66,12 +65,7 @@ class TestGetBoundingBoxMessages(unittest.TestCase):
                 {
                     "description": "Email",
                     "page_number": 1,
-                    "label_bounding_box": [
-                        40,
-                        20,
-                        80,
-                        40,
-                    ],  # Overlaps with Name's boxes
+                    "label_bounding_box": [40, 20, 80, 40],  # Overlaps with Name's boxes
                     "entry_bounding_box": [160, 10, 250, 30],
                 },
             ]
@@ -95,12 +89,7 @@ class TestGetBoundingBoxMessages(unittest.TestCase):
                 {
                     "description": "Email",
                     "page_number": 2,
-                    "label_bounding_box": [
-                        10,
-                        10,
-                        50,
-                        30,
-                    ],  # Same coordinates but different page
+                    "label_bounding_box": [10, 10, 50, 30],  # Same coordinates but different page
                     "entry_bounding_box": [60, 10, 150, 30],
                 },
             ]
@@ -180,12 +169,7 @@ class TestGetBoundingBoxMessages(unittest.TestCase):
                     "description": "Name",
                     "page_number": 1,
                     "label_bounding_box": [10, 10, 50, 30],
-                    "entry_bounding_box": [
-                        60,
-                        10,
-                        150,
-                        20,
-                    ],  # Small height but no entry_text
+                    "entry_bounding_box": [60, 10, 150, 20],  # Small height but no entry_text
                 }
             ]
         }

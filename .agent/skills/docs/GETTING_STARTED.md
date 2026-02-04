@@ -15,7 +15,7 @@ AI Agents (like **Claude Code**, **Gemini**, **Cursor**) are smart, but they lac
 
 ## ⚡️ Quick Start: The "Starter Packs"
 
-Don't panic about the 624+ skills. You don't need them all at once.
+Don't panic about the 626+ skills. You don't need them all at once.
 We have curated **Starter Packs** to get you running immediately.
 
 You **install the full repo once** (npx or clone); Starter Packs are curated lists to help you **pick which skills to use** by role (e.g. Web Wizard, Hacker Pack)—they are not a different way to install.
@@ -28,7 +28,9 @@ You **install the full repo once** (npx or clone); Starter Packs are curated lis
 npx antigravity-awesome-skills
 ```
 
-This clones to `~/.agent/skills` by default. Use `--cursor`, `--claude`, or `--gemini` to install for a specific tool, or `--path <dir>` for a custom location. Run `npx antigravity-awesome-skills --help` for details.
+This clones to `~/.agent/skills` by default. Use `--cursor`, `--claude`, `--gemini`, or `--codex` to install for a specific tool, or `--path <dir>` for a custom location. Run `npx antigravity-awesome-skills --help` for details.
+
+If you see a 404 error, use: `npx github:sickn33/antigravity-awesome-skills`
 
 **Option B — git clone:**
 
@@ -80,6 +82,7 @@ Once installed, just talk to your AI naturally.
 | :-------------- | :-------------- | :---------------- |
 | **Claude Code** | ✅ Full Support | `.claude/skills/` |
 | **Gemini CLI**  | ✅ Full Support | `.gemini/skills/` |
+| **Codex CLI**   | ✅ Full Support | `.codex/skills/`  |
 | **Antigravity** | ✅ Native       | `.agent/skills/`  |
 | **Cursor**      | ✅ Native       | `.cursor/skills/` |
 | **Copilot**     | ⚠️ Text Only    | Manual copy-paste |
@@ -100,7 +103,7 @@ _Check the [Skill Catalog](../CATALOG.md) for the full list._
 
 ## ❓ FAQ
 
-**Q: Do I need to install all 624 skills?**
+**Q: Do I need to install all 626 skills?**
 A: You clone the whole repo once; your AI only _reads_ the skills you invoke (or that are relevant), so it stays lightweight. **Starter Packs** in [BUNDLES.md](BUNDLES.md) are curated lists to help you discover the right skills for your role—they don't change how you install.
 
 **Q: Can I make my own skills?**

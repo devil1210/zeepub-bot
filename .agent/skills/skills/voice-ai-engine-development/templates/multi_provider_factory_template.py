@@ -5,9 +5,9 @@ Use this template to create a factory that supports multiple providers
 for transcription, LLM, and TTS services.
 """
 
-import logging
+from typing import Dict, Any
 from abc import ABC, abstractmethod
-from typing import Any
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class VoiceComponentFactory:
             "playht": self._create_playht_synthesizer,
         }
 
-    def create_transcriber(self, config: dict[str, Any]):
+    def create_transcriber(self, config: Dict[str, Any]):
         """
         Create transcriber based on configuration
 
@@ -105,7 +105,7 @@ class VoiceComponentFactory:
         logger.info(f"🎤 Creating transcriber: {provider}")
         return self.transcriber_providers[provider](config)
 
-    def create_agent(self, config: dict[str, Any]):
+    def create_agent(self, config: Dict[str, Any]):
         """
         Create LLM agent based on configuration
 
@@ -128,7 +128,7 @@ class VoiceComponentFactory:
         logger.info(f"🤖 Creating agent: {provider}")
         return self.llm_providers[provider](config)
 
-    def create_synthesizer(self, config: dict[str, Any]):
+    def create_synthesizer(self, config: Dict[str, Any]):
         """
         Create TTS synthesizer based on configuration
 
@@ -155,7 +155,7 @@ class VoiceComponentFactory:
     # Transcriber Implementations
     # ========================================================================
 
-    def _create_deepgram_transcriber(self, config: dict[str, Any]):
+    def _create_deepgram_transcriber(self, config: Dict[str, Any]):
         """Create Deepgram transcriber"""
         # TODO: Implement Deepgram transcriber
         # from .transcribers.deepgram import DeepgramTranscriber
@@ -166,17 +166,17 @@ class VoiceComponentFactory:
         # )
         raise NotImplementedError("Deepgram transcriber not implemented")
 
-    def _create_assemblyai_transcriber(self, config: dict[str, Any]):
+    def _create_assemblyai_transcriber(self, config: Dict[str, Any]):
         """Create AssemblyAI transcriber"""
         # TODO: Implement AssemblyAI transcriber
         raise NotImplementedError("AssemblyAI transcriber not implemented")
 
-    def _create_azure_transcriber(self, config: dict[str, Any]):
+    def _create_azure_transcriber(self, config: Dict[str, Any]):
         """Create Azure Speech transcriber"""
         # TODO: Implement Azure transcriber
         raise NotImplementedError("Azure transcriber not implemented")
 
-    def _create_google_transcriber(self, config: dict[str, Any]):
+    def _create_google_transcriber(self, config: Dict[str, Any]):
         """Create Google Cloud Speech transcriber"""
         # TODO: Implement Google transcriber
         raise NotImplementedError("Google transcriber not implemented")
@@ -185,7 +185,7 @@ class VoiceComponentFactory:
     # LLM Agent Implementations
     # ========================================================================
 
-    def _create_openai_agent(self, config: dict[str, Any]):
+    def _create_openai_agent(self, config: Dict[str, Any]):
         """Create OpenAI agent"""
         # TODO: Implement OpenAI agent
         # from .agents.openai import OpenAIAgent
@@ -196,7 +196,7 @@ class VoiceComponentFactory:
         # )
         raise NotImplementedError("OpenAI agent not implemented")
 
-    def _create_gemini_agent(self, config: dict[str, Any]):
+    def _create_gemini_agent(self, config: Dict[str, Any]):
         """Create Google Gemini agent"""
         # TODO: Implement Gemini agent
         # from .agents.gemini import GeminiAgent
@@ -207,7 +207,7 @@ class VoiceComponentFactory:
         # )
         raise NotImplementedError("Gemini agent not implemented")
 
-    def _create_claude_agent(self, config: dict[str, Any]):
+    def _create_claude_agent(self, config: Dict[str, Any]):
         """Create Anthropic Claude agent"""
         # TODO: Implement Claude agent
         raise NotImplementedError("Claude agent not implemented")
@@ -216,7 +216,7 @@ class VoiceComponentFactory:
     # TTS Synthesizer Implementations
     # ========================================================================
 
-    def _create_elevenlabs_synthesizer(self, config: dict[str, Any]):
+    def _create_elevenlabs_synthesizer(self, config: Dict[str, Any]):
         """Create ElevenLabs synthesizer"""
         # TODO: Implement ElevenLabs synthesizer
         # from .synthesizers.elevenlabs import ElevenLabsSynthesizer
@@ -227,22 +227,22 @@ class VoiceComponentFactory:
         # )
         raise NotImplementedError("ElevenLabs synthesizer not implemented")
 
-    def _create_azure_synthesizer(self, config: dict[str, Any]):
+    def _create_azure_synthesizer(self, config: Dict[str, Any]):
         """Create Azure TTS synthesizer"""
         # TODO: Implement Azure synthesizer
         raise NotImplementedError("Azure synthesizer not implemented")
 
-    def _create_google_synthesizer(self, config: dict[str, Any]):
+    def _create_google_synthesizer(self, config: Dict[str, Any]):
         """Create Google Cloud TTS synthesizer"""
         # TODO: Implement Google synthesizer
         raise NotImplementedError("Google synthesizer not implemented")
 
-    def _create_polly_synthesizer(self, config: dict[str, Any]):
+    def _create_polly_synthesizer(self, config: Dict[str, Any]):
         """Create Amazon Polly synthesizer"""
         # TODO: Implement Polly synthesizer
         raise NotImplementedError("Polly synthesizer not implemented")
 
-    def _create_playht_synthesizer(self, config: dict[str, Any]):
+    def _create_playht_synthesizer(self, config: Dict[str, Any]):
         """Create Play.ht synthesizer"""
         # TODO: Implement Play.ht synthesizer
         raise NotImplementedError("Play.ht synthesizer not implemented")

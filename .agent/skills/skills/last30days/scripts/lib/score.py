@@ -1,6 +1,7 @@
 """Popularity-aware scoring for last30days skill."""
 
 import math
+from typing import List, Optional, Union
 
 from . import dates, schema
 
@@ -23,16 +24,14 @@ DEFAULT_ENGAGEMENT = 35
 UNKNOWN_ENGAGEMENT_PENALTY = 10
 
 
-def log1p_safe(x: int | None) -> float:
+def log1p_safe(x: Optional[int]) -> float:
     """Safe log1p that handles None and negative values."""
     if x is None or x < 0:
         return 0.0
     return math.log1p(x)
 
 
-def compute_reddit_engagement_raw(
-    engagement: schema.Engagement | None,
-) -> float | None:
+def compute_reddit_engagement_raw(engagement: Optional[schema.Engagement]) -> Optional[float]:
     """Compute raw engagement score for Reddit item.
 
     Formula: 0.55*log1p(score) + 0.40*log1p(num_comments) + 0.05*(upvote_ratio*10)
@@ -50,9 +49,7 @@ def compute_reddit_engagement_raw(
     return 0.55 * score + 0.40 * comments + 0.05 * ratio
 
 
-def compute_x_engagement_raw(
-    engagement: schema.Engagement | None,
-) -> float | None:
+def compute_x_engagement_raw(engagement: Optional[schema.Engagement]) -> Optional[float]:
     """Compute raw engagement score for X item.
 
     Formula: 0.55*log1p(likes) + 0.25*log1p(reposts) + 0.15*log1p(replies) + 0.05*log1p(quotes)
@@ -71,7 +68,7 @@ def compute_x_engagement_raw(
     return 0.55 * likes + 0.25 * reposts + 0.15 * replies + 0.05 * quotes
 
 
-def normalize_to_100(values: list[float], default: float = 50) -> list[float]:
+def normalize_to_100(values: List[float], default: float = 50) -> List[float]:
     """Normalize a list of values to 0-100 scale.
 
     Args:
@@ -104,7 +101,7 @@ def normalize_to_100(values: list[float], default: float = 50) -> list[float]:
     return result
 
 
-def score_reddit_items(items: list[schema.RedditItem]) -> list[schema.RedditItem]:
+def score_reddit_items(items: List[schema.RedditItem]) -> List[schema.RedditItem]:
     """Compute scores for Reddit items.
 
     Args:
@@ -164,7 +161,7 @@ def score_reddit_items(items: list[schema.RedditItem]) -> list[schema.RedditItem
     return items
 
 
-def score_x_items(items: list[schema.XItem]) -> list[schema.XItem]:
+def score_x_items(items: List[schema.XItem]) -> List[schema.XItem]:
     """Compute scores for X items.
 
     Args:
@@ -224,9 +221,7 @@ def score_x_items(items: list[schema.XItem]) -> list[schema.XItem]:
     return items
 
 
-def score_websearch_items(
-    items: list[schema.WebSearchItem],
-) -> list[schema.WebSearchItem]:
+def score_websearch_items(items: List[schema.WebSearchItem]) -> List[schema.WebSearchItem]:
     """Compute scores for WebSearch items WITHOUT engagement metrics.
 
     Uses reweighted formula: 55% relevance + 45% recency - 15pt source penalty.
@@ -280,9 +275,7 @@ def score_websearch_items(
     return items
 
 
-def sort_items(
-    items: list[schema.RedditItem | schema.XItem | schema.WebSearchItem],
-) -> list:
+def sort_items(items: List[Union[schema.RedditItem, schema.XItem, schema.WebSearchItem]]) -> List:
     """Sort items by score (descending), then date, then source priority.
 
     Args:

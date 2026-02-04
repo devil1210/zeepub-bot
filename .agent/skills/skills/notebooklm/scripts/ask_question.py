@@ -10,9 +10,9 @@ See: https://github.com/microsoft/playwright/issues/36139
 """
 
 import argparse
-import re
 import sys
 import time
+import re
 from pathlib import Path
 
 from patchright.sync_api import sync_playwright
@@ -21,10 +21,10 @@ from patchright.sync_api import sync_playwright
 sys.path.insert(0, str(Path(__file__).parent))
 
 from auth_manager import AuthManager
-from browser_utils import BrowserFactory, StealthUtils
 from notebook_manager import NotebookLibrary
-
 from config import QUERY_INPUT_SELECTORS, RESPONSE_SELECTORS
+from browser_utils import BrowserFactory, StealthUtils
+
 
 # Follow-up reminder (adapted from MCP server for stateless operation)
 # Since we don't have persistent sessions, we encourage comprehensive questions
@@ -90,7 +90,7 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
                 if query_element:
                     print(f"  ✓ Found input: {selector}")
                     break
-            except Exception:
+            except:
                 continue
 
         if not query_element:
@@ -126,7 +126,7 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
                 if thinking_element and thinking_element.is_visible():
                     time.sleep(1)
                     continue
-            except Exception:
+            except:
                 pass
 
             # Try to find response with MCP selectors
@@ -147,7 +147,7 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
                             else:
                                 stable_count = 0
                                 last_text = text
-                except Exception:
+                except:
                     continue
 
             if answer:
@@ -175,13 +175,13 @@ def ask_notebooklm(question: str, notebook_url: str, headless: bool = True) -> s
         if context:
             try:
                 context.close()
-            except Exception:
+            except:
                 pass
 
         if playwright:
             try:
                 playwright.stop()
-            except Exception:
+            except:
                 pass
 
 
@@ -233,9 +233,7 @@ def main():
 
     # Ask the question
     answer = ask_notebooklm(
-        question=args.question,
-        notebook_url=notebook_url,
-        headless=not args.show_browser,
+        question=args.question, notebook_url=notebook_url, headless=not args.show_browser
     )
 
     if answer:

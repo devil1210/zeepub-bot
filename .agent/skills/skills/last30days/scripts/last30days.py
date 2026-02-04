@@ -18,7 +18,8 @@ import argparse
 import json
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Add lib to path
@@ -38,6 +39,7 @@ from lib import (
     schema,
     score,
     ui,
+    websearch,
     xai_x,
 )
 
@@ -217,28 +219,14 @@ def run_research(
             if progress:
                 progress.start_reddit()
             reddit_future = executor.submit(
-                _search_reddit,
-                topic,
-                config,
-                selected_models,
-                from_date,
-                to_date,
-                depth,
-                mock,
+                _search_reddit, topic, config, selected_models, from_date, to_date, depth, mock
             )
 
         if run_x:
             if progress:
                 progress.start_x()
             x_future = executor.submit(
-                _search_x,
-                topic,
-                config,
-                selected_models,
-                from_date,
-                to_date,
-                depth,
-                mock,
+                _search_x, topic, config, selected_models, from_date, to_date, depth, mock
             )
 
         # Collect results

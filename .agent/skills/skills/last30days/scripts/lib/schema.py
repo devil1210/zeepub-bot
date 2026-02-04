@@ -1,8 +1,8 @@
 """Data schemas for last30days skill."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
+from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
-from typing import Any
 
 
 @dataclass
@@ -10,17 +10,17 @@ class Engagement:
     """Engagement metrics."""
 
     # Reddit fields
-    score: int | None = None
-    num_comments: int | None = None
-    upvote_ratio: float | None = None
+    score: Optional[int] = None
+    num_comments: Optional[int] = None
+    upvote_ratio: Optional[float] = None
 
     # X fields
-    likes: int | None = None
-    reposts: int | None = None
-    replies: int | None = None
-    quotes: int | None = None
+    likes: Optional[int] = None
+    reposts: Optional[int] = None
+    replies: Optional[int] = None
+    quotes: Optional[int] = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         d = {}
         if self.score is not None:
             d["score"] = self.score
@@ -44,12 +44,12 @@ class Comment:
     """Reddit comment."""
 
     score: int
-    date: str | None
+    date: Optional[str]
     author: str
     excerpt: str
     url: str
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "score": self.score,
             "date": self.date,
@@ -67,7 +67,7 @@ class SubScores:
     recency: int = 0
     engagement: int = 0
 
-    def to_dict(self) -> dict[str, int]:
+    def to_dict(self) -> Dict[str, int]:
         return {
             "relevance": self.relevance,
             "recency": self.recency,
@@ -83,17 +83,17 @@ class RedditItem:
     title: str
     url: str
     subreddit: str
-    date: str | None = None
+    date: Optional[str] = None
     date_confidence: str = "low"
-    engagement: Engagement | None = None
-    top_comments: list[Comment] = field(default_factory=list)
-    comment_insights: list[str] = field(default_factory=list)
+    engagement: Optional[Engagement] = None
+    top_comments: List[Comment] = field(default_factory=list)
+    comment_insights: List[str] = field(default_factory=list)
     relevance: float = 0.5
     why_relevant: str = ""
     subs: SubScores = field(default_factory=SubScores)
     score: int = 0
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
             "title": self.title,
@@ -119,15 +119,15 @@ class XItem:
     text: str
     url: str
     author_handle: str
-    date: str | None = None
+    date: Optional[str] = None
     date_confidence: str = "low"
-    engagement: Engagement | None = None
+    engagement: Optional[Engagement] = None
     relevance: float = 0.5
     why_relevant: str = ""
     subs: SubScores = field(default_factory=SubScores)
     score: int = 0
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
             "text": self.text,
@@ -152,14 +152,14 @@ class WebSearchItem:
     url: str
     source_domain: str  # e.g., "medium.com", "github.com"
     snippet: str
-    date: str | None = None
+    date: Optional[str] = None
     date_confidence: str = "low"
     relevance: float = 0.5
     why_relevant: str = ""
     subs: SubScores = field(default_factory=SubScores)
     score: int = 0
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
             "title": self.title,
@@ -184,23 +184,23 @@ class Report:
     range_to: str
     generated_at: str
     mode: str  # 'reddit-only', 'x-only', 'both', 'web-only', etc.
-    openai_model_used: str | None = None
-    xai_model_used: str | None = None
-    reddit: list[RedditItem] = field(default_factory=list)
-    x: list[XItem] = field(default_factory=list)
-    web: list[WebSearchItem] = field(default_factory=list)
-    best_practices: list[str] = field(default_factory=list)
-    prompt_pack: list[str] = field(default_factory=list)
+    openai_model_used: Optional[str] = None
+    xai_model_used: Optional[str] = None
+    reddit: List[RedditItem] = field(default_factory=list)
+    x: List[XItem] = field(default_factory=list)
+    web: List[WebSearchItem] = field(default_factory=list)
+    best_practices: List[str] = field(default_factory=list)
+    prompt_pack: List[str] = field(default_factory=list)
     context_snippet_md: str = ""
     # Status tracking
-    reddit_error: str | None = None
-    x_error: str | None = None
-    web_error: str | None = None
+    reddit_error: Optional[str] = None
+    x_error: Optional[str] = None
+    web_error: Optional[str] = None
     # Cache info
     from_cache: bool = False
-    cache_age_hours: float | None = None
+    cache_age_hours: Optional[float] = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         d = {
             "topic": self.topic,
             "range": {
@@ -231,7 +231,7 @@ class Report:
         return d
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Report":
+    def from_dict(cls, data: Dict[str, Any]) -> "Report":
         """Create Report from serialized dict (handles cache format)."""
         # Handle range field conversion
         range_data = data.get("range", {})
@@ -334,8 +334,8 @@ def create_report(
     from_date: str,
     to_date: str,
     mode: str,
-    openai_model: str | None = None,
-    xai_model: str | None = None,
+    openai_model: Optional[str] = None,
+    xai_model: Optional[str] = None,
 ) -> Report:
     """Create a new report with metadata."""
     return Report(

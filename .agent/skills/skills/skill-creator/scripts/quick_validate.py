@@ -3,11 +3,11 @@
 Quick validation script for skills - minimal version
 """
 
-import re
 import sys
-from pathlib import Path
-
+import os
+import re
 import yaml
+from pathlib import Path
 
 
 def validate_skill(skill_path):
@@ -75,10 +75,7 @@ def validate_skill(skill_path):
             )
         # Check name length (max 64 characters per spec)
         if len(name) > 64:
-            return (
-                False,
-                f"Name is too long ({len(name)} characters). Maximum is 64 characters.",
-            )
+            return False, f"Name is too long ({len(name)} characters). Maximum is 64 characters."
 
     # Extract and validate description
     description = frontmatter.get("description", "")

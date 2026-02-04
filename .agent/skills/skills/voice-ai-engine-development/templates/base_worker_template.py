@@ -6,8 +6,8 @@ in your voice AI pipeline.
 """
 
 import asyncio
-import logging
 from typing import Any
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +68,7 @@ class BaseWorker:
             except Exception as e:
                 # Log error but don't crash the worker
                 logger.error(
-                    f"❌ [{self.__class__.__name__}] Error processing item: {e}",
-                    exc_info=True,
+                    f"❌ [{self.__class__.__name__}] Error processing item: {e}", exc_info=True
                 )
                 # Continue processing next item
 

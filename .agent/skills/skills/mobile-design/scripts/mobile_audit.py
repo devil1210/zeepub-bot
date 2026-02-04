@@ -65,10 +65,10 @@ Analyzes React Native / Flutter code for compliance with:
 Total: 50+ mobile-specific checks
 """
 
-import json
+import sys
 import os
 import re
-import sys
+import json
 from pathlib import Path
 
 
@@ -81,9 +81,9 @@ class MobileAuditor:
 
     def audit_file(self, filepath: str) -> None:
         try:
-            with open(filepath, encoding="utf-8", errors="replace") as f:
+            with open(filepath, "r", encoding="utf-8", errors="replace") as f:
                 content = f.read()
-        except Exception:
+        except:
             return
 
         self.files_checked += 1
@@ -151,10 +151,7 @@ class MobileAuditor:
             re.search(r"(?:onPress|onSubmit|delete|remove|confirm|purchase)", content)
         )
         has_haptics = bool(
-            re.search(
-                r"Haptics|Vibration|react-native-haptic-feedback|FeedbackManager",
-                content,
-            )
+            re.search(r"Haptics|Vibration|react-native-haptic-feedback|FeedbackManager", content)
         )
         if has_important_actions and not has_haptics:
             self.warnings.append(
@@ -253,8 +250,7 @@ class MobileAuditor:
         # 2.8 Inline Function Detection
         if is_react_native:
             inline_functions = re.findall(
-                r"(?:onPress|onPressIn|onPressOut|renderItem):\s*\([^)]*\)\s*=>",
-                content,
+                r"(?:onPress|onPressIn|onPressOut|renderItem):\s*\([^)]*\)\s*=>", content
             )
             if len(inline_functions) > 3:
                 self.warnings.append(
@@ -318,8 +314,7 @@ class MobileAuditor:
             has_custom_font = bool(re.search(r"fontFamily:\s*[\"'][^\"']+", content))
             has_system_font = bool(
                 re.search(
-                    r"fontFamily:\s*[\"']?(?:System|San Francisco|Roboto|-apple-system)",
-                    content,
+                    r"fontFamily:\s*[\"']?(?:System|San Francisco|Roboto|-apple-system)", content
                 )
             )
             if has_custom_font and not has_system_font:
@@ -332,8 +327,7 @@ class MobileAuditor:
             has_font_sizes = bool(re.search(r"fontSize:", content))
             has_scaling = bool(
                 re.search(
-                    r"allowFontScaling:\s*true|responsiveFontSize|useWindowDimensions",
-                    content,
+                    r"allowFontScaling:\s*true|responsiveFontSize|useWindowDimensions", content
                 )
             )
             if has_font_sizes and not has_scaling:
@@ -459,8 +453,7 @@ class MobileAuditor:
         # 8.3 Push Notification Support
         has_push = bool(
             re.search(
-                r"Notifications|pushNotification|Firebase\.messaging|PushNotificationIOS",
-                content,
+                r"Notifications|pushNotification|Firebase\.messaging|PushNotificationIOS", content
             )
         )
         has_push_handler = bool(
@@ -549,18 +542,13 @@ class MobileAuditor:
             font_weights = re.findall(
                 r'fontWeight:\s*["\']?(\d+|normal|bold|medium|light)', content
             )
-            weight_map = {
-                "normal": "400",
-                "light": "300",
-                "medium": "500",
-                "bold": "700",
-            }
+            weight_map = {"normal": "400", "light": "300", "medium": "500", "bold": "700"}
             numeric_weights = []
             for w in font_weights:
                 val = weight_map.get(w.lower(), w)
                 try:
                     numeric_weights.append(int(val))
-                except Exception:
+                except:
                     pass
 
             # Check if overusing bold (mobile should be regular-dominant)
@@ -601,7 +589,7 @@ class MobileAuditor:
                     saturation = (max_val - min_val) / max_val
                     if saturation > 0.8:  # Highly saturated
                         saturated_count += 1
-            except Exception:
+            except:
                 pass
 
         if saturated_count > 10:
@@ -615,8 +603,7 @@ class MobileAuditor:
         # Check for potential low contrast (light gray on white, dark gray on black)
         potential_low_contrast = bool(
             re.search(
-                r"#[EeEeEeEe].*#ffffff|#999999.*#ffffff|#333333.*#000000|#666666.*#000000",
-                content,
+                r"#[EeEeEeEe].*#ffffff|#999999.*#ffffff|#333333.*#000000|#666666.*#000000", content
             )
         )
         if potential_low_contrast:
@@ -631,10 +618,7 @@ class MobileAuditor:
         )
         if has_dark_mode:
             has_pure_white_text = bool(
-                re.search(
-                    r'color:\s*["\']?#ffffff|#fff["\']?\}|textColor:\s*["\']?white',
-                    content,
-                )
+                re.search(r'color:\s*["\']?#ffffff|#fff["\']?\}|textColor:\s*["\']?white', content)
             )
             if has_pure_white_text:
                 self.warnings.append(
@@ -726,10 +710,7 @@ class MobileAuditor:
             # 12.3 Material Elevation Check
             # Check for elevation values (Material 3 uses elevation for depth)
             has_elevation = bool(
-                re.search(
-                    r"elevation:\s*\d+|shadowOpacity|shadowRadius|android:elevation",
-                    content,
-                )
+                re.search(r"elevation:\s*\d+|shadowOpacity|shadowRadius|android:elevation", content)
             )
             has_box_shadow = bool(re.search(r"boxShadow:", content))
             if has_box_shadow and not has_elevation:
@@ -848,6 +829,7 @@ class MobileAuditor:
                     ".next",
                     "ios",
                     "android",
+                    "build",
                     ".idea",
                 }
             ]

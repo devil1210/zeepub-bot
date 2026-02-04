@@ -53,7 +53,7 @@ def validate_gif(
                 duration_ms = img.info.get("duration", 100)
                 total_duration = (duration_ms * frame_count) / 1000
                 fps = frame_count / total_duration if total_duration > 0 else 0
-            except Exception:
+            except:
                 total_duration = None
                 fps = None
 
@@ -104,7 +104,7 @@ def validate_gif(
             )
 
         if size_mb > 5.0:
-            print("  Note: Large file size - consider fewer frames/colors")
+            print(f"  Note: Large file size - consider fewer frames/colors")
 
     return dim_pass, results
 

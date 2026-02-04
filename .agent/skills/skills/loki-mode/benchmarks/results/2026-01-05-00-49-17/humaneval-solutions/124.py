@@ -52,5 +52,5 @@ def valid_date(date):
                 return False
 
         return True
-    except Exception:
+    except:
         return False

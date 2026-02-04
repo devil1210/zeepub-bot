@@ -20,16 +20,7 @@ def bf(planet1, planet2):
     bf("Earth", "Mercury") ==> ("Venus")
     bf("Mercury", "Uranus") ==> ("Venus", "Earth", "Mars", "Jupiter", "Saturn")
     """
-    planets = (
-        "Mercury",
-        "Venus",
-        "Earth",
-        "Mars",
-        "Jupiter",
-        "Saturn",
-        "Uranus",
-        "Neptune",
-    )
+    planets = ("Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune")
 
     if planet1 not in planets or planet2 not in planets:
         return ()

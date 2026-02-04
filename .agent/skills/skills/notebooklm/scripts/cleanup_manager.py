@@ -4,10 +4,10 @@ Cleanup Manager for NotebookLM Skill
 Manages cleanup of skill data and browser state
 """
 
-import argparse
 import shutil
+import argparse
 from pathlib import Path
-from typing import Any
+from typing import Dict, List, Any
 
 
 class CleanupManager:
@@ -27,7 +27,7 @@ class CleanupManager:
         self.skill_dir = Path(__file__).parent.parent
         self.data_dir = self.skill_dir / "data"
 
-    def get_cleanup_paths(self, preserve_library: bool = False) -> dict[str, Any]:
+    def get_cleanup_paths(self, preserve_library: bool = False) -> Dict[str, Any]:
         """
         Get paths that would be cleaned up
 
@@ -39,13 +39,7 @@ class CleanupManager:
 
         Note: .venv is NEVER deleted - it's part of the skill infrastructure
         """
-        paths = {
-            "browser_state": [],
-            "sessions": [],
-            "library": [],
-            "auth": [],
-            "other": [],
-        }
+        paths = {"browser_state": [], "sessions": [], "library": [], "auth": [], "other": []}
 
         total_size = 0
 
@@ -137,7 +131,7 @@ class CleanupManager:
 
     def perform_cleanup(
         self, preserve_library: bool = False, dry_run: bool = False
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         Perform the actual cleanup
 
@@ -245,9 +239,7 @@ Examples:
     )
 
     parser.add_argument(
-        "--preserve-library",
-        action="store_true",
-        help="Keep the notebook library (library.json)",
+        "--preserve-library", action="store_true", help="Keep the notebook library (library.json)"
     )
 
     parser.add_argument("--force", action="store_true", help="Skip confirmation prompt")
@@ -274,7 +266,7 @@ Examples:
         print("\n🗑️ Performing cleanup...")
         result = manager.perform_cleanup(args.preserve_library, dry_run=False)
 
-        print("\n✅ Cleanup complete!")
+        print(f"\n✅ Cleanup complete!")
         print(f"  Deleted: {result['deleted_count']} items")
         print(f"  Freed: {manager._format_size(result['deleted_size'])}")
 

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-01-31T07:45:50.746Z",
-  "total": 618,
+  "generatedAt": "2026-02-04T08:08:20.870Z",
+  "total": 631,
   "skills": [
     {
       "id": "3d-web-experience",
@@ -506,6 +506,56 @@
       "path": "skills/analytics-tracking/SKILL.md"
     },
     {
+      "id": "angular",
+      "name": "angular",
+      "description": "Modern Angular (v20+) expert with deep knowledge of Signals, Standalone Components, Zoneless applications, SSR/Hydration, and reactive patterns. Use PROACTIVELY for Angular development, component architecture, state management, performance optimization, and migration to modern patterns.",
+      "category": "architecture",
+      "tags": [
+        "angular"
+      ],
+      "triggers": [
+        "angular",
+        "v20",
+        "deep",
+        "knowledge",
+        "signals",
+        "standalone",
+        "components",
+        "zoneless",
+        "applications",
+        "ssr",
+        "hydration",
+        "reactive"
+      ],
+      "path": "skills/angular/SKILL.md"
+    },
+    {
+      "id": "angular-best-practices",
+      "name": "angular-best-practices",
+      "description": "Angular performance optimization and best practices guide. Use when writing, reviewing, or refactoring Angular code for optimal performance, bundle size, and rendering efficiency.",
+      "category": "general",
+      "tags": [
+        "angular",
+        "best",
+        "practices"
+      ],
+      "triggers": [
+        "angular",
+        "best",
+        "practices",
+        "performance",
+        "optimization",
+        "writing",
+        "reviewing",
+        "refactoring",
+        "code",
+        "optimal",
+        "bundle",
+        "size"
+      ],
+      "path": "skills/angular-best-practices/SKILL.md"
+    },
+    {
       "id": "angular-migration",
       "name": "angular-migration",
       "description": "Migrate from AngularJS to Angular using hybrid mode, incremental component rewriting, and dependency injection updates. Use when upgrading AngularJS applications, planning framework migrations, or modernizing legacy Angular code.",
@@ -529,6 +579,56 @@
         "updates"
       ],
       "path": "skills/angular-migration/SKILL.md"
+    },
+    {
+      "id": "angular-state-management",
+      "name": "angular-state-management",
+      "description": "Master modern Angular state management with Signals, NgRx, and RxJS. Use when setting up global state, managing component stores, choosing between state solutions, or migrating from legacy patterns.",
+      "category": "architecture",
+      "tags": [
+        "angular",
+        "state"
+      ],
+      "triggers": [
+        "angular",
+        "state",
+        "signals",
+        "ngrx",
+        "rxjs",
+        "setting",
+        "up",
+        "global",
+        "managing",
+        "component",
+        "stores",
+        "choosing"
+      ],
+      "path": "skills/angular-state-management/SKILL.md"
+    },
+    {
+      "id": "angular-ui-patterns",
+      "name": "angular-ui-patterns",
+      "description": "Modern Angular UI patterns for loading states, error handling, and data display. Use when building UI components, handling async data, or managing component states.",
+      "category": "data-ai",
+      "tags": [
+        "angular",
+        "ui"
+      ],
+      "triggers": [
+        "angular",
+        "ui",
+        "loading",
+        "states",
+        "error",
+        "handling",
+        "data",
+        "display",
+        "building",
+        "components",
+        "async",
+        "managing"
+      ],
+      "path": "skills/angular-ui-patterns/SKILL.md"
     },
     {
       "id": "anti-reversing-techniques",
@@ -759,6 +859,31 @@
         "language"
       ],
       "path": "skills/app-builder/SKILL.md"
+    },
+    {
+      "id": "app-builder/templates",
+      "name": "templates",
+      "description": "Project scaffolding templates for new applications. Use when creating new projects from scratch. Contains 12 templates for various tech stacks.",
+      "category": "general",
+      "tags": [
+        "app",
+        "builder/templates"
+      ],
+      "triggers": [
+        "app",
+        "builder/templates",
+        "scaffolding",
+        "new",
+        "applications",
+        "creating",
+        "scratch",
+        "contains",
+        "12",
+        "various",
+        "tech",
+        "stacks"
+      ],
+      "path": "skills/app-builder/templates/SKILL.md"
     },
     {
       "id": "app-store-optimization",
@@ -3067,6 +3192,31 @@
       "path": "skills/computer-use-agents/SKILL.md"
     },
     {
+      "id": "computer-vision-expert",
+      "name": "computer-vision-expert",
+      "description": "SOTA Computer Vision Expert (2026). Specialized in YOLO26, Segment Anything 3 (SAM 3), Vision Language Models, and real-time spatial analysis.",
+      "category": "general",
+      "tags": [
+        "computer",
+        "vision"
+      ],
+      "triggers": [
+        "computer",
+        "vision",
+        "sota",
+        "2026",
+        "specialized",
+        "yolo26",
+        "segment",
+        "anything",
+        "sam",
+        "language",
+        "models",
+        "real"
+      ],
+      "path": "skills/computer-vision-expert/SKILL.md"
+    },
+    {
       "id": "concise-planning",
       "name": "concise-planning",
       "description": "Use when a user asks for a plan for a coding task, to generate a clear, actionable, and atomic checklist.",
@@ -4779,30 +4929,6 @@
       "path": "skills/documentation-templates/SKILL.md"
     },
     {
-      "id": "docx",
-      "name": "docx",
-      "description": "Comprehensive document creation, editing, and analysis with support for tracked changes, comments, formatting preservation, and text extraction. When Claude needs to work with professional documents (.docx files) for: (1) Creating new documents, (2) Modifying or editing content, (3) Working with tracked changes, (4) Adding comments, or any other document tasks",
-      "category": "general",
-      "tags": [
-        "docx"
-      ],
-      "triggers": [
-        "docx",
-        "document",
-        "creation",
-        "editing",
-        "analysis",
-        "tracked",
-        "changes",
-        "comments",
-        "formatting",
-        "preservation",
-        "text",
-        "extraction"
-      ],
-      "path": "skills/docx/SKILL.md"
-    },
-    {
       "id": "docx-official",
       "name": "docx",
       "description": "Comprehensive document creation, editing, and analysis with support for tracked changes, comments, formatting preservation, and text extraction. When Claude needs to work with professional documents (.docx files) for: (1) Creating new documents, (2) Modifying or editing content, (3) Working with tracked changes, (4) Adding comments, or any other document tasks",
@@ -6271,6 +6397,245 @@
         "skills"
       ],
       "path": "skills/game-development/SKILL.md"
+    },
+    {
+      "id": "game-development/2d-games",
+      "name": "2d-games",
+      "description": "2D game development principles. Sprites, tilemaps, physics, camera.",
+      "category": "general",
+      "tags": [
+        "game",
+        "development/2d",
+        "games"
+      ],
+      "triggers": [
+        "game",
+        "development/2d",
+        "games",
+        "2d",
+        "development",
+        "principles",
+        "sprites",
+        "tilemaps",
+        "physics",
+        "camera"
+      ],
+      "path": "skills/game-development/2d-games/SKILL.md"
+    },
+    {
+      "id": "game-development/3d-games",
+      "name": "3d-games",
+      "description": "3D game development principles. Rendering, shaders, physics, cameras.",
+      "category": "general",
+      "tags": [
+        "game",
+        "development/3d",
+        "games"
+      ],
+      "triggers": [
+        "game",
+        "development/3d",
+        "games",
+        "3d",
+        "development",
+        "principles",
+        "rendering",
+        "shaders",
+        "physics",
+        "cameras"
+      ],
+      "path": "skills/game-development/3d-games/SKILL.md"
+    },
+    {
+      "id": "game-development/game-art",
+      "name": "game-art",
+      "description": "Game art principles. Visual style selection, asset pipeline, animation workflow.",
+      "category": "infrastructure",
+      "tags": [
+        "game",
+        "development/game",
+        "art"
+      ],
+      "triggers": [
+        "game",
+        "development/game",
+        "art",
+        "principles",
+        "visual",
+        "style",
+        "selection",
+        "asset",
+        "pipeline",
+        "animation"
+      ],
+      "path": "skills/game-development/game-art/SKILL.md"
+    },
+    {
+      "id": "game-development/game-audio",
+      "name": "game-audio",
+      "description": "Game audio principles. Sound design, music integration, adaptive audio systems.",
+      "category": "general",
+      "tags": [
+        "game",
+        "development/game",
+        "audio"
+      ],
+      "triggers": [
+        "game",
+        "development/game",
+        "audio",
+        "principles",
+        "sound",
+        "music",
+        "integration",
+        "adaptive"
+      ],
+      "path": "skills/game-development/game-audio/SKILL.md"
+    },
+    {
+      "id": "game-development/game-design",
+      "name": "game-design",
+      "description": "Game design principles. GDD structure, balancing, player psychology, progression.",
+      "category": "general",
+      "tags": [
+        "game",
+        "development/game"
+      ],
+      "triggers": [
+        "game",
+        "development/game",
+        "principles",
+        "gdd",
+        "structure",
+        "balancing",
+        "player",
+        "psychology",
+        "progression"
+      ],
+      "path": "skills/game-development/game-design/SKILL.md"
+    },
+    {
+      "id": "game-development/mobile-games",
+      "name": "mobile-games",
+      "description": "Mobile game development principles. Touch input, battery, performance, app stores.",
+      "category": "development",
+      "tags": [
+        "game",
+        "development/mobile",
+        "games"
+      ],
+      "triggers": [
+        "game",
+        "development/mobile",
+        "games",
+        "mobile",
+        "development",
+        "principles",
+        "touch",
+        "input",
+        "battery",
+        "performance",
+        "app",
+        "stores"
+      ],
+      "path": "skills/game-development/mobile-games/SKILL.md"
+    },
+    {
+      "id": "game-development/multiplayer",
+      "name": "multiplayer",
+      "description": "Multiplayer game development principles. Architecture, networking, synchronization.",
+      "category": "architecture",
+      "tags": [
+        "game",
+        "development/multiplayer"
+      ],
+      "triggers": [
+        "game",
+        "development/multiplayer",
+        "multiplayer",
+        "development",
+        "principles",
+        "architecture",
+        "networking",
+        "synchronization"
+      ],
+      "path": "skills/game-development/multiplayer/SKILL.md"
+    },
+    {
+      "id": "game-development/pc-games",
+      "name": "pc-games",
+      "description": "PC and console game development principles. Engine selection, platform features, optimization strategies.",
+      "category": "general",
+      "tags": [
+        "game",
+        "development/pc",
+        "games"
+      ],
+      "triggers": [
+        "game",
+        "development/pc",
+        "games",
+        "pc",
+        "console",
+        "development",
+        "principles",
+        "engine",
+        "selection",
+        "platform",
+        "features",
+        "optimization"
+      ],
+      "path": "skills/game-development/pc-games/SKILL.md"
+    },
+    {
+      "id": "game-development/vr-ar",
+      "name": "vr-ar",
+      "description": "VR/AR development principles. Comfort, interaction, performance requirements.",
+      "category": "general",
+      "tags": [
+        "game",
+        "development/vr",
+        "ar"
+      ],
+      "triggers": [
+        "game",
+        "development/vr",
+        "ar",
+        "vr",
+        "development",
+        "principles",
+        "comfort",
+        "interaction",
+        "performance",
+        "requirements"
+      ],
+      "path": "skills/game-development/vr-ar/SKILL.md"
+    },
+    {
+      "id": "game-development/web-games",
+      "name": "web-games",
+      "description": "Web browser game development principles. Framework selection, WebGPU, optimization, PWA.",
+      "category": "general",
+      "tags": [
+        "game",
+        "development/web",
+        "games"
+      ],
+      "triggers": [
+        "game",
+        "development/web",
+        "games",
+        "web",
+        "browser",
+        "development",
+        "principles",
+        "framework",
+        "selection",
+        "webgpu",
+        "optimization",
+        "pwa"
+      ],
+      "path": "skills/game-development/web-games/SKILL.md"
     },
     {
       "id": "gcp-cloud-run",
@@ -9605,30 +9970,6 @@
       "path": "skills/pci-compliance/SKILL.md"
     },
     {
-      "id": "pdf",
-      "name": "pdf",
-      "description": "Comprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms. When Claude needs to fill in a PDF form or programmatically process, generate, or analyze PDF documents at scale.",
-      "category": "workflow",
-      "tags": [
-        "pdf"
-      ],
-      "triggers": [
-        "pdf",
-        "manipulation",
-        "toolkit",
-        "extracting",
-        "text",
-        "tables",
-        "creating",
-        "new",
-        "pdfs",
-        "merging",
-        "splitting",
-        "documents"
-      ],
-      "path": "skills/pdf/SKILL.md"
-    },
-    {
       "id": "pdf-official",
       "name": "pdf",
       "description": "Comprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms. When Claude needs to fill in a PDF form or programmatically process, generate, or analyze PDF documents at scale.",
@@ -10085,30 +10426,6 @@
         "handling"
       ],
       "path": "skills/powershell-windows/SKILL.md"
-    },
-    {
-      "id": "pptx",
-      "name": "pptx",
-      "description": "Presentation creation, editing, and analysis. When Claude needs to work with presentations (.pptx files) for: (1) Creating new presentations, (2) Modifying or editing content, (3) Working with layouts, (4) Adding comments or speaker notes, or any other presentation tasks",
-      "category": "general",
-      "tags": [
-        "pptx"
-      ],
-      "triggers": [
-        "pptx",
-        "presentation",
-        "creation",
-        "editing",
-        "analysis",
-        "claude",
-        "work",
-        "presentations",
-        "files",
-        "creating",
-        "new",
-        "modifying"
-      ],
-      "path": "skills/pptx/SKILL.md"
     },
     {
       "id": "pptx-official",
@@ -10671,6 +10988,30 @@
       "path": "skills/quant-analyst/SKILL.md"
     },
     {
+      "id": "radix-ui-design-system",
+      "name": "radix-ui-design-system",
+      "description": "Build accessible design systems with Radix UI primitives. Headless component customization, theming strategies, and compound component patterns for production-grade UI libraries.",
+      "category": "architecture",
+      "tags": [
+        "radix",
+        "ui"
+      ],
+      "triggers": [
+        "radix",
+        "ui",
+        "accessible",
+        "primitives",
+        "headless",
+        "component",
+        "customization",
+        "theming",
+        "compound",
+        "grade",
+        "libraries"
+      ],
+      "path": "skills/radix-ui-design-system/SKILL.md"
+    },
+    {
       "id": "rag-engineer",
       "name": "rag-engineer",
       "description": "Expert in building Retrieval-Augmented Generation systems. Masters embedding models, vector databases, chunking strategies, and retrieval optimization for LLM applications. Use when: building RAG, vector search, embeddings, semantic search, document retrieval.",
@@ -10866,8 +11207,8 @@
     {
       "id": "readme",
       "name": "readme",
-      "description": "When the user wants to create or update a README.md file for a project. Also use when the user says",
-      "category": "general",
+      "description": "When the user wants to create or update a README.md file for a project. Also use when the user says 'write readme,' 'create readme,' 'document this project,' 'project documentation,' or asks for help with README.md. This skill creates absurdly thorough documentation covering local setup, architecture, and deployment.",
+      "category": "infrastructure",
       "tags": [
         "readme"
       ],
@@ -10878,7 +11219,12 @@
         "update",
         "md",
         "file",
-        "says"
+        "says",
+        "write",
+        "document",
+        "documentation",
+        "asks",
+        "skill"
       ],
       "path": "skills/readme/SKILL.md"
     },
@@ -14374,7 +14720,7 @@
     {
       "id": "vercel-deploy-claimable",
       "name": "vercel-deploy-claimable",
-      "description": "Deploy applications and websites to Vercel. Use this skill when the user requests deployment actions such as",
+      "description": "Deploy applications and websites to Vercel. Use this skill when the user requests deployment actions such as 'Deploy my app', 'Deploy this to production', 'Create a preview deployment', 'Deploy and give me the link', or 'Push this live'. No authentication required - returns preview URL and claimable deployment link.",
       "category": "infrastructure",
       "tags": [
         "vercel",
@@ -14392,7 +14738,8 @@
         "requests",
         "deployment",
         "actions",
-        "such"
+        "such",
+        "my"
       ],
       "path": "skills/vercel-deploy-claimable/SKILL.md"
     },
@@ -14946,30 +15293,6 @@
         "twitter"
       ],
       "path": "skills/x-article-publisher-skill/SKILL.md"
-    },
-    {
-      "id": "xlsx",
-      "name": "xlsx",
-      "description": "Comprehensive spreadsheet creation, editing, and analysis with support for formulas, formatting, data analysis, and visualization. When Claude needs to work with spreadsheets (.xlsx, .xlsm, .csv, .tsv, etc) for: (1) Creating new spreadsheets with formulas and formatting, (2) Reading or analyzing data, (3) Modify existing spreadsheets while preserving formulas, (4) Data analysis and visualization in spreadsheets, or (5) Recalculating formulas",
-      "category": "data-ai",
-      "tags": [
-        "xlsx"
-      ],
-      "triggers": [
-        "xlsx",
-        "spreadsheet",
-        "creation",
-        "editing",
-        "analysis",
-        "formulas",
-        "formatting",
-        "data",
-        "visualization",
-        "claude",
-        "work",
-        "spreadsheets"
-      ],
-      "path": "skills/xlsx/SKILL.md"
     },
     {
       "id": "xlsx-official",

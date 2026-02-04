@@ -3,7 +3,7 @@
 import json
 import re
 import sys
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from . import http
 
@@ -63,8 +63,8 @@ def search_x(
     from_date: str,
     to_date: str,
     depth: str = "default",
-    mock_response: dict | None = None,
-) -> dict[str, Any]:
+    mock_response: Optional[Dict] = None,
+) -> Dict[str, Any]:
     """Search X for relevant posts using xAI API with live search.
 
     Args:
@@ -113,7 +113,7 @@ def search_x(
     return http.post(XAI_RESPONSES_URL, payload, headers=headers, timeout=timeout)
 
 
-def parse_x_response(response: dict[str, Any]) -> list[dict[str, Any]]:
+def parse_x_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Parse xAI response to extract X items.
 
     Args:

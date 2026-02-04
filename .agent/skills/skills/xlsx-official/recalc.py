@@ -5,12 +5,11 @@ Recalculates all formulas in an Excel file using LibreOffice
 """
 
 import json
+import sys
+import subprocess
 import os
 import platform
-import subprocess
-import sys
 from pathlib import Path
-
 from openpyxl import load_workbook
 
 
@@ -26,15 +25,13 @@ def setup_libreoffice_macro():
     macro_file = os.path.join(macro_dir, "Module1.xba")
 
     if os.path.exists(macro_file):
-        with open(macro_file) as f:
+        with open(macro_file, "r") as f:
             if "RecalculateAndSave" in f.read():
                 return True
 
     if not os.path.exists(macro_dir):
         subprocess.run(
-            ["soffice", "--headless", "--terminate_after_init"],
-            capture_output=True,
-            timeout=10,
+            ["soffice", "--headless", "--terminate_after_init"], capture_output=True, timeout=10
         )
         os.makedirs(macro_dir, exist_ok=True)
 
@@ -90,10 +87,7 @@ def recalc(filename, timeout=30):
             # Check if gtimeout is available on macOS
             try:
                 subprocess.run(
-                    ["gtimeout", "--version"],
-                    capture_output=True,
-                    timeout=1,
-                    check=False,
+                    ["gtimeout", "--version"], capture_output=True, timeout=1, check=False
                 )
                 timeout_cmd = "gtimeout"
             except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -115,15 +109,7 @@ def recalc(filename, timeout=30):
     try:
         wb = load_workbook(filename, data_only=True)
 
-        excel_errors = [
-            "#VALUE!",
-            "#DIV/0!",
-            "#REF!",
-            "#NAME?",
-            "#NULL!",
-            "#NUM!",
-            "#N/A",
-        ]
+        excel_errors = ["#VALUE!", "#DIV/0!", "#REF!", "#NAME?", "#NULL!", "#NUM!", "#N/A"]
         error_details = {err: [] for err in excel_errors}
         total_errors = 0
 

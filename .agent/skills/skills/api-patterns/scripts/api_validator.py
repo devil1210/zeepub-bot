@@ -4,9 +4,9 @@ API Validator - Checks API endpoints for best practices.
 Validates OpenAPI specs, response formats, and common issues.
 """
 
+import sys
 import json
 import re
-import sys
 from pathlib import Path
 
 # Fix Windows console encoding for Unicode output
@@ -75,12 +75,7 @@ def check_openapi_spec(file_path: Path) -> dict:
             if "components:" in content or "definitions:" in content:
                 passed.append("[OK] Schema components defined")
 
-            return {
-                "file": str(file_path),
-                "passed": passed,
-                "issues": issues,
-                "type": "openapi",
-            }
+            return {"file": str(file_path), "passed": passed, "issues": issues, "type": "openapi"}
 
         # JSON OpenAPI checks
         if "openapi" in spec or "swagger" in spec:
@@ -110,12 +105,7 @@ def check_openapi_spec(file_path: Path) -> dict:
     except Exception as e:
         issues.append(f"[X] Parse error: {e}")
 
-    return {
-        "file": str(file_path),
-        "passed": passed,
-        "issues": issues,
-        "type": "openapi",
-    }
+    return {"file": str(file_path), "passed": passed, "issues": issues, "type": "openapi"}
 
 
 def check_api_code(file_path: Path) -> dict:
@@ -127,13 +117,7 @@ def check_api_code(file_path: Path) -> dict:
         content = file_path.read_text(encoding="utf-8")
 
         # Check for error handling
-        error_patterns = [
-            r"try\s*{",
-            r"try:",
-            r"\.catch\(",
-            r"except\s+",
-            r"catch\s*\(",
-        ]
+        error_patterns = [r"try\s*{", r"try:", r"\.catch\(", r"except\s+", r"catch\s*\("]
         has_error_handling = any(re.search(p, content) for p in error_patterns)
         if has_error_handling:
             passed.append("[OK] Error handling present")

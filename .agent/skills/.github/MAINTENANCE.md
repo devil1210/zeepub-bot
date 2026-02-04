@@ -1,4 +1,4 @@
-# 🛠️ Repository Maintenance Guide (V3)
+# 🛠️ Repository Maintenance Guide (V4)
 
 > **"If it's not documented, it's broken."**
 
@@ -24,25 +24,24 @@ Committing is NOT enough. You must PUSH to the remote.
 
 If you touch **any of these**:
 
-- `skills/` (aggiungi/rimuovi/modifichi skill)
-- la sezione **Full Skill Registry** di `README.md`
-- i **conteggi/claim** sul numero di skill (`256+ Agentic Skills...`, `(256/256)`, ecc.)
+- `skills/` (add/remove/modify skills)
+- the **Full Skill Registry** section of `README.md`
+- **counts/claims** about the number of skills (`560+ Agentic Skills...`, `(560/560)`, etc.)
 
-…allora **DEVI** eseguire la Validation Chain **PRIMA** di committare.
+…then you **MUST** run the Validation Chain **BEFORE** committing.
 
-- Eseguire `validate_skills.py` **NON è opzionale**.
-- Eseguire `generate_index.py` **NON è opzionale**.
-- Eseguire `update_readme.py` **NON è opzionale**.
+- Running `npm run chain` is **NOT optional**.
+- Running `npm run catalog` is **NOT optional**.
 
-Se la CI fallisce con:
+If CI fails with:
 
-> `❌ Detected uncommitted changes in README.md or skills_index.json`
+> `❌ Detected uncommitted changes produced by registry/readme/catalog scripts.`
 
-significa che **non hai eseguito o committato** correttamente la Validation Chain.
+it means you **did not run or commit** the Validation Chain correctly.
 
 ### 3. 📝 EVIDENCE OF WORK
 
-- You must create/update `walkthrough.md` or `RELEASE_NOTES.md` to document what changed.
+- You must create/update `walkthrough.md` or `CHANGELOG.md` to document what changed.
 - If you made something new, **link it** in the artifacts.
 
 ### 4. 🚫 NO BRANCHES
@@ -59,29 +58,23 @@ significa che **non hai eseguito o committato** correttamente la Validation Chai
 
 Before ANY commit that adds/modifies skills, run the chain:
 
-1.  **Validate Metadata & Quality**:
+1.  **Validate, index, and update readme**:
 
     ```bash
-    python3 scripts/validate_skills.py
+    npm run chain
     ```
 
     _Must return 0 errors for new skills._
 
-2.  **Regenerate Index**:
+2.  **Build catalog**:
 
     ```bash
-    python3 scripts/generate_index.py
+    npm run catalog
     ```
 
-3.  **Update Readme**:
-
+3.  **COMMIT GENERATED FILES**:
     ```bash
-    python3 scripts/update_readme.py
-    ```
-
-4.  **COMMIT GENERATED FILES**:
-    ```bash
-    git add skills_index.json README.md
+    git add README.md skills_index.json data/catalog.json data/bundles.json data/aliases.json CATALOG.md
     git commit -m "chore: sync generated files"
     ```
     > 🔴 **CRITICAL**: If you skip this, CI will fail with "Detected uncommitted changes".
@@ -102,13 +95,13 @@ After multiple PR merges or significant changes:
 3.  **Draft a Release**:
     - Go to [Releases Page](https://github.com/sickn33/antigravity-awesome-skills/releases).
     - Draft a new release for the merged changes.
-    - Tag version (e.g., `v3.1.0`).
+    - Tag version (e.g., `v4.1.0`).
 
 ---
 
 ## 2. 📝 Documentation "Pixel Perfect" Rules
 
-We discovered several consistency issues during V3 development. Follow these rules STRICTLY.
+We discovered several consistency issues during V4 development. Follow these rules STRICTLY.
 
 ### A. Table of Contents (TOC) Anchors
 
@@ -132,12 +125,12 @@ _Common pitfall: Updating the clone URL in README but leaving an old one in FAQ.
 ### C. Statistics Consistency (CRITICAL)
 
 If you add/remove skills, you **MUST** ensure the total count is identical in ALL locations.
-**Do not allow drift** (e.g., 356 in title, 354 in header).
+**Do not allow drift** (e.g., 560 in title, 558 in header).
 
 Locations to check:
 
-1.  **Title of `README.md`**: "356+ Agentic Skills..."
-2.  **`## Full Skill Registry (356/356)` header**.
+1.  **Title of `README.md`**: "560+ Agentic Skills..."
+2.  **`## Full Skill Registry (560/560)` header**.
 3.  **`docs/GETTING_STARTED.md` intro**.
 
 ### D. Credits Policy (Who goes where?)
@@ -166,7 +159,7 @@ Reject any PR that fails this:
 4.  **Examples**: Copy-pasteable code blocks?
 5.  **Actions**: "Run this command" vs "Think about this".
 
-### B. Risk Labels (V3)
+### B. Risk Labels (V4)
 
 - ⚪ **Safe**: Default.
 - 🔴 **Risk**: Destructive/Security tools. MUST have `[Authorized Use Only]` warning.
@@ -179,20 +172,30 @@ Reject any PR that fails this:
 When cutting a new version (e.g., V4):
 
 1.  **Run Full Validation**: `python3 scripts/validate_skills.py --strict`
-2.  **Update Changelog**: Create `RELEASE_NOTES.md`.
-3.  **Bump Version**: Update header in `README.md`.
+2.  **Update Changelog**: Add the new release section to `CHANGELOG.md`.
+3.  **Bump Version**:
+    - Update `package.json` → `"version": "X.Y.Z"` (source of truth for npm).
+    - Update version header in `README.md` if it displays the number.
+    - One-liner: `npm version patch` (or `minor`/`major`) — bumps `package.json` and creates a git tag; then amend if you need to tag after release.
 4.  **Tag Release**:
     ```bash
-    git tag -a v3.0.0 -m "V3 Enterprise Edition"
-    git push origin v3.0.0
+    git tag -a v4.0.0 -m "V4 Enterprise Edition"
+    git push origin v4.0.0
     ```
+5.  **Publish to npm** (so `npx antigravity-awesome-skills` works):
+    - **Option A (manual):** From repo root, with npm logged in and 2FA/token set up:
+      ```bash
+      npm publish
+      ```
+      You cannot republish the same version; always bump `package.json` before publishing.
+    - **Option B (CI):** On GitHub, create a **Release** (tag e.g. `v4.6.1`). The workflow [Publish to npm](.github/workflows/publish-npm.yml) runs on **Release published** and runs `npm publish` if the repo secret `NPM_TOKEN` is set (npm → Access Tokens → Granular token with Publish, then add as repo secret `NPM_TOKEN`).
 
-### 📋 Release Note Template
+### 📋 Changelog Entry Template
 
-All changeslogs/release notes MUST follow this structure to ensure professionalism and quality:
+Each new release section in `CHANGELOG.md` should follow [Keep a Changelog](https://keepachangelog.com/) and this structure:
 
 ```markdown
-# Release vX.Y.Z: [Theme Name]
+## [X.Y.Z] - YYYY-MM-DD - "[Theme Name]"
 
 > **[One-line catchy summary of the release]**
 

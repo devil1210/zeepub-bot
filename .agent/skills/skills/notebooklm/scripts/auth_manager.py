@@ -10,23 +10,22 @@ Implements hybrid auth approach:
 See: https://github.com/microsoft/playwright/issues/36139
 """
 
-import argparse
 import json
-import re
-import shutil
-import sys
 import time
+import argparse
+import shutil
+import re
+import sys
 from pathlib import Path
-from typing import Any
+from typing import Optional, Dict, Any
 
-from patchright.sync_api import BrowserContext, sync_playwright
+from patchright.sync_api import sync_playwright, BrowserContext
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+from config import BROWSER_STATE_DIR, STATE_FILE, AUTH_INFO_FILE, DATA_DIR
 from browser_utils import BrowserFactory
-
-from config import AUTH_INFO_FILE, BROWSER_STATE_DIR, DATA_DIR, STATE_FILE
 
 
 class AuthManager:
@@ -62,7 +61,7 @@ class AuthManager:
 
         return True
 
-    def get_auth_info(self) -> dict[str, Any]:
+    def get_auth_info(self) -> Dict[str, Any]:
         """Get authentication information"""
         info = {
             "authenticated": self.is_authenticated(),
@@ -72,7 +71,7 @@ class AuthManager:
 
         if self.auth_info_file.exists():
             try:
-                with open(self.auth_info_file) as f:
+                with open(self.auth_info_file, "r") as f:
                     saved_info = json.load(f)
                     info.update(saved_info)
             except Exception:
@@ -128,7 +127,7 @@ class AuthManager:
                     re.compile(r"^https://notebooklm\.google\.com/"), timeout=timeout_ms
                 )
 
-                print("  ✅ Login successful!")
+                print(f"  ✅ Login successful!")
 
                 # Save authentication state
                 self._save_browser_state(context)
@@ -254,11 +253,7 @@ class AuthManager:
 
             # Try to access NotebookLM
             page = context.new_page()
-            page.goto(
-                "https://notebooklm.google.com",
-                wait_until="domcontentloaded",
-                timeout=30000,
-            )
+            page.goto("https://notebooklm.google.com", wait_until="domcontentloaded", timeout=30000)
 
             # Check if we can access NotebookLM
             if "notebooklm.google.com" in page.url and "accounts.google.com" not in page.url:
@@ -295,10 +290,7 @@ def main():
     setup_parser = subparsers.add_parser("setup", help="Setup authentication")
     setup_parser.add_argument("--headless", action="store_true", help="Run in headless mode")
     setup_parser.add_argument(
-        "--timeout",
-        type=float,
-        default=10,
-        help="Login timeout in minutes (default: 10)",
+        "--timeout", type=float, default=10, help="Login timeout in minutes (default: 10)"
     )
 
     # Status command
@@ -313,10 +305,7 @@ def main():
     # Re-auth command
     reauth_parser = subparsers.add_parser("reauth", help="Re-authenticate (clear + setup)")
     reauth_parser.add_argument(
-        "--timeout",
-        type=float,
-        default=10,
-        help="Login timeout in minutes (default: 10)",
+        "--timeout", type=float, default=10, help="Login timeout in minutes (default: 10)"
     )
 
     args = parser.parse_args()

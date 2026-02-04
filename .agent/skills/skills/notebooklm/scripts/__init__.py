@@ -5,8 +5,8 @@ Provides automatic environment management for all scripts
 """
 
 import os
-import subprocess
 import sys
+import subprocess
 from pathlib import Path
 
 
@@ -52,8 +52,7 @@ def ensure_venv_and_run():
 
             print("   Installing dependencies in isolated environment...")
             subprocess.run(
-                [str(pip_exe), "install", "-q", "-r", str(requirements_file)],
-                check=True,
+                [str(pip_exe), "install", "-q", "-r", str(requirements_file)], check=True
             )
 
             # Also install patchright's chromium

@@ -14,11 +14,11 @@ Usage:
       -- python test.py
 """
 
-import argparse
-import socket
 import subprocess
-import sys
+import socket
 import time
+import sys
+import argparse
 
 
 def is_server_ready(port, timeout=30):
@@ -28,7 +28,7 @@ def is_server_ready(port, timeout=30):
         try:
             with socket.create_connection(("localhost", port), timeout=1):
                 return True
-        except (OSError, ConnectionRefusedError):
+        except (socket.error, ConnectionRefusedError):
             time.sleep(0.5)
     return False
 
@@ -51,10 +51,7 @@ def main():
         help="Port for each server (must match --server count)",
     )
     parser.add_argument(
-        "--timeout",
-        type=int,
-        default=30,
-        help="Timeout in seconds per server (default: 30)",
+        "--timeout", type=int, default=30, help="Timeout in seconds per server (default: 30)"
     )
     parser.add_argument(
         "command", nargs=argparse.REMAINDER, help="Command to run after server(s) ready"
@@ -76,7 +73,7 @@ def main():
         sys.exit(1)
 
     servers = []
-    for cmd, port in zip(args.servers, args.ports, strict=False):
+    for cmd, port in zip(args.servers, args.ports):
         servers.append({"cmd": cmd, "port": port})
 
     server_processes = []
@@ -88,10 +85,7 @@ def main():
 
             # Use shell=True to support commands with cd and &&
             process = subprocess.Popen(
-                server["cmd"],
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                server["cmd"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
             server_processes.append(process)
 

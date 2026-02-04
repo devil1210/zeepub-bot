@@ -1,7 +1,17 @@
-import argparse
 import os
 import re
+import argparse
 import sys
+
+WHEN_TO_USE_PATTERNS = [
+    re.compile(r"^##\s+When\s+to\s+Use", re.MULTILINE | re.IGNORECASE),
+    re.compile(r"^##\s+Use\s+this\s+skill\s+when", re.MULTILINE | re.IGNORECASE),
+    re.compile(r"^##\s+When\s+to\s+Use\s+This\s+Skill", re.MULTILINE | re.IGNORECASE),
+]
+
+
+def has_when_to_use_section(content):
+    return any(pattern.search(content) for pattern in WHEN_TO_USE_PATTERNS)
 
 
 def parse_frontmatter(content):
@@ -32,7 +42,6 @@ def validate_skills(skills_dir, strict_mode=False):
 
     # Pre-compiled regex
     security_disclaimer_pattern = re.compile(r"AUTHORIZED USE ONLY", re.IGNORECASE)
-    trigger_section_pattern = re.compile(r"^##\s+When to Use", re.MULTILINE | re.IGNORECASE)
 
     valid_risk_levels = ["none", "safe", "critical", "offensive"]
 
@@ -46,7 +55,7 @@ def validate_skills(skills_dir, strict_mode=False):
             rel_path = os.path.relpath(skill_path, skills_dir)
 
             try:
-                with open(skill_path, encoding="utf-8") as f:
+                with open(skill_path, "r", encoding="utf-8") as f:
                     content = f.read()
             except Exception as e:
                 errors.append(f"❌ {rel_path}: Unreadable file - {str(e)}")
@@ -90,7 +99,7 @@ def validate_skills(skills_dir, strict_mode=False):
                     warnings.append(msg)
 
             # 3. Content Checks (Triggers)
-            if not trigger_section_pattern.search(content):
+            if not has_when_to_use_section(content):
                 msg = f"⚠️  {rel_path}: Missing '## When to Use' section"
                 if strict_mode:
                     errors.append(msg.replace("⚠️", "❌"))

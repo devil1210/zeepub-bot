@@ -4,10 +4,12 @@ Fullstack Scaffolder
 Automated tool for senior fullstack tasks
 """
 
-import argparse
-import json
+import os
 import sys
+import json
+import argparse
 from pathlib import Path
+from typing import Dict, List, Optional
 
 
 class FullstackScaffolder:
@@ -18,7 +20,7 @@ class FullstackScaffolder:
         self.verbose = verbose
         self.results = {}
 
-    def run(self) -> dict:
+    def run(self) -> Dict:
         """Execute the main functionality"""
         print(f"🚀 Running {self.__class__.__name__}...")
         print(f"📁 Target: {self.target_path}")
