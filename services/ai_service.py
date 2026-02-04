@@ -538,7 +538,16 @@ class AIService:
                     from core.supabase_manager import supabase_manager
 
                     client = supabase_manager.get_client()
-                    client.table("ai_learning_feedback").insert(params).execute()
+                    # Supabase needs full column names, not abbreviated params
+                    supabase_params = {
+                        "series_hash": series_hash,
+                        "original_name": original or "Unknown",
+                        "proposed_name": proposed or final or original or "Unknown",
+                        "final_name": final or proposed or original or "Unknown",
+                        "status": status,
+                        "ai_reason": ai_reason,
+                    }
+                    client.table("ai_learning_feedback").insert(supabase_params).execute()
                 except Exception as cloud_e:
                     logger.warning(f"Failed to push feedback to cloud: {cloud_e}")
 
