@@ -21,7 +21,7 @@ class BookDTO(BaseModel):
     book_type: str | None = None
     cover: str | None = None
     coverUrl: str | None = None  # Simplified path for some views
-    
+
     # Detailed Cover Paths
     cover_low: str | None = None
     cover_medium: str | None = None
