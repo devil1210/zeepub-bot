@@ -23,7 +23,7 @@ export const BookCover: React.FC<BookCoverProps> = ({ title, coverUrl, coverThum
 
                 <div className="relative aspect-[2/3] rounded-[2.2rem] overflow-hidden shadow-2xl border border-white/10 group-hover:-translate-y-2 transition-all duration-700 bg-white/5">
                     <img
-                        src={getCoverUrl(coverUrl, coverThumbUrl, settings.coverQuality)}
+                        src={getCoverUrl(coverUrl, coverThumbUrl, 'mediana')}
                         alt={title}
                         className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                     />
