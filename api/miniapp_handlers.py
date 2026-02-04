@@ -2840,6 +2840,34 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
                         status="no_changes",
                         ai_reason=proposal.get("reason", "Serie ya optimizada"),
                     )
+                    
+                    # Also save as approved proposal for AI learning
+                    from models.library_models import MetadataProposal
+                    from datetime import datetime
+                    
+                    existing = (
+                        session.query(MetadataProposal)
+                        .filter_by(series_hash=series_hash)
+                        .filter(MetadataProposal.status.in_(["pending", "approved"]))
+                        .first()
+                    )
+                    
+                    if existing:
+                        # Update existing proposal
+                        existing.proposal_data = proposal
+                        existing.status = "approved"
+                        existing.processed_at = datetime.utcnow()
+                    else:
+                        # Create new approved proposal (as reference for AI)
+                        new_prop = MetadataProposal(
+                            series_hash=series_hash,
+                            proposal_data=proposal,
+                            status="approved",
+                            processed_at=datetime.utcnow(),
+                        )
+                        session.add(new_prop)
+                    
+                    session.commit()
 
                 return {"success": True, "proposal": proposal, "dry_run": True}
 
