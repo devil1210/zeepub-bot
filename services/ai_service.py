@@ -412,14 +412,15 @@ class AIService:
                     )
 
             # Check if there is NO CHANGE at all (Series matches AND no files renamed)
+            # IMPORTANT: Do NOT overwrite the series names. Just mark that no changes are needed.
             if proposal["proposed_series"] == current_series_name and not proposal["changes"]:
-                # If proposed is identical to current and no changes, mark as 'sin propuesta'
-                proposal["proposed_series"] = "sin propuesta"
-                proposal["proposed_spanish"] = "sin propuesta"
+                # Series is already perfect - keep the names as-is, just add a note
                 if not proposal["reason"]:
                     proposal["reason"] = (
-                        "El estado actual coincide perfectamente con la estandarización sugerida."
+                        "✅ El estado actual coincide perfectamente con la estandarización sugerida. No se requieren cambios."
                     )
+                # Add a flag to indicate no action needed (but DON'T change the names!)
+                proposal["no_changes_needed"] = True
 
             return proposal
 
